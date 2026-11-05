@@ -4601,3 +4601,162 @@ retain exact counters, commands, actual exits, audits, all 12 captures and origi
 PNGs, source/control proofs, focused/component checks and development failures.
 No observation is dropped or repeated to improve the result, and no whole-page,
 Brave, live-site, isolated rendering or scrolling gain is claimed for this change.
+
+
+## Detailed loading instruction budget (2026-11-06)
+
+The requested stage table is measured with opt-in process-counter boundaries,
+implemented in `8bc8e1f68`, summarized by `23199e8c5`, and extended for asynchronous
+module completion in `5dee51672`. **JavaScript-related scopes are the largest
+combined bucket: 9,071,443,857 instructions, or 30.3244%**. This combines module
+compilation/completion and the other engine evaluation/callback scopes below.
+It includes native DOM bindings inside those entries, while separately measured
+style/layout work is charged to its own rows. It is not a pure JavaScript VM
+instruction count. Native replay is also large at 21.3657%, and document style
+updates consume another 14.5511%.
+
+The detailed diagnostic totals **29,914,657,752 instructions**. This is a fresh
+instrumented capture, not a retroactive subdivision or scaling of the earlier
+**29,055,580,148** control sample. That exact historical sample is fully reconciled
+by the [historical checkpoint CSV](performance/chatgpt-load-stages-historical-20261106.csv)
+and [JSON](performance/chatgpt-load-stages-historical-20261106.json). Its 1,090
+cumulative checkpoints name the ends of non-overlapping gaps; a gap can include
+unmarked parent work, so those labels cannot establish exclusive function costs.
+The original archived browser log and its hashes remain linked in the evidence.
+
+The table covers exclusive-coalition creation through encoded document PNG,
+including startup, window setup and the unfocused five-second settling/rendering
+period. It measures CPU instructions rather than elapsed network waiting time.
+The original SOCKS-captured fixture and author scripts, private profiles/caches,
+1024×768 viewport, scale two and existing per-engine references are unchanged.
+No new live download is made. OS filesystem/shader caches remain retained.
+GPU execution and services outside the owned coalition remain excluded.
+
+| Stage (measured child scopes subtracted) | Instructions | Share | Calls |
+| --- | ---: | ---: | ---: |
+| Native document replay / retained raster handling | 6,391,481,365 | 21.3657% | 443 |
+| Async JavaScript module compilation, execution and bindings | 5,309,660,307 | 17.7494% | 288 |
+| Document style updates | 4,352,914,044 | 14.5511% | 882 |
+| Other browser startup / native event-loop work (residual) | 4,044,932,744 | 13.5216% | 1 |
+| Other JavaScript evaluation, callbacks and bindings | 3,761,783,550 | 12.5751% | 1,883 |
+| Absolutely positioned descendants | 2,219,264,679 | 7.4187% | 13 |
+| Owned helpers + process/coalition endpoint remainder | 693,367,685 | 2.3178% | — |
+| CSS parsing / stylesheet conversion | 595,660,990 | 1.9912% | 11 |
+| Background resource completion, excluding measured children | 324,871,080 | 1.0860% | 443 |
+| Document installation, including HTML/navigation work | 301,653,948 | 1.0084% | 1 |
+| Document layout coordination | 279,503,528 | 0.9343% | 870 |
+| Frame setup / completion, excluding measured children | 247,065,571 | 0.8259% | 443 |
+| Frame preparation, excluding measured children | 224,732,255 | 0.7512% | 443 |
+| Viewport relayout coordination | 188,535,731 | 0.6302% | 10 |
+| Normal flow layout | 170,208,736 | 0.5690% | 13 |
+| Layout tree construction | 144,567,280 | 0.4833% | 11 |
+| Process startup before/between instrumented roots | 136,394,595 | 0.4559% | — |
+| Paint command recording | 118,085,931 | 0.3947% | 20 |
+| Apply JavaScript document state | 106,809,575 | 0.3570% | 882 |
+| JavaScript runtime setup, excluding measured children | 85,459,284 | 0.2857% | 1 |
+| Browser chrome | 63,350,800 | 0.2118% | 449 |
+| HTML rendering opportunity scheduling | 47,045,927 | 0.1573% | 443 |
+| Animation driver | 40,105,473 | 0.1341% | 443 |
+| Other layout geometry | 33,889,771 | 0.1133% | 13 |
+| PNG encoding | 18,025,983 | 0.0603% | 1 |
+| Separately traced style computation / interpolation | 7,939,932 | 0.0265% | 29 |
+| Document snapshot | 5,845,115 | 0.0195% | 1 |
+| Relative-position offsets | 1,454,731 | 0.0049% | 13 |
+| Snapshot pixel conversion | 47,142 | 0.0002% | 1 |
+| **Total** | **29,914,657,752** | **100%** | |
+
+Every row is additive: **29,221,290,067 root-process instructions plus
+693,367,685 coalition/endpoint remainder equals 29,914,657,752**. The
+[full CSV](performance/chatgpt-load-stages-final-traced-20261106.csv) and
+[JSON](performance/chatgpt-load-stages-final-traced-20261106.json) retain exact
+counts, shares, calls and overlapping inclusive counts. Never add the inclusive
+column. Scope calls are entries rather than distinct frames, modules or DOM
+objects. The open browser-main scope is clipped at the encoded-PNG endpoint.
+
+The 4,044,932,744 browser-main residual is outside finer measured scopes:
+startup, native event-loop/platform work and concurrent process activity. It is
+not attributed to JavaScript or a specific native subsystem. The additional
+136,394,595 instructions precede/between instrumented root scopes. The
+693,367,685 remainder includes owned helpers and differences between process and
+coalition endpoint reads; it is not a separately measured helper total. Thus all
+instructions reconcile, but this table does not pretend every instruction has
+been identified down to a function. Process counters include other threads active
+during a main-thread scope and the tracer's own work.
+
+HTML decoding/parsing and navigation-document setup use the compact embedder's
+entry point rather than the standalone HTML parser scopes; their unseparated
+cost is inside document installation, with measured CSS/style/layout children
+subtracted. Native replay includes retained-raster reuse and frame graphics
+handling; 443 replay entries do not mean 443 complete rerasterizations. Only 20
+paint-command-recording entries and 13 geometry-layout entries execute in this
+capture. These are workload counts, not displayed FPS.
+
+### Diagnostic validation and limits
+
+The final canonical executable SHA-256 is
+`cecb4831bb22703167e25ea23d1f2bcccfe5c34f7ba2a17776f74286eead16ac`, using 33
+parallel C units. Both receipt heads are
+`b54c3d910de4a4424bec106496c4b29ce577b297`, aggregate build-input hashes match,
+and all 18 owned implementation source blobs match that completed head exactly.
+Source snapshots, receipt, helper/main disassembly and branch events are retained.
+A nonblocking shared publication lease pins the bundle for all four final captures
+and is released afterward. No separate production build or app copy is made.
+
+The initial tracer misses asynchronous module completion entered directly from a
+network callback. Its complete diagnostic is retained, including its larger
+unattributed browser-main row; it cannot establish that JavaScript is small.
+Tracing `ModuleHost.supply` captures source transformation, JavaScriptCore module
+compilation/evaluation, drained jobs and native bindings, with nested scopes
+subtracted. The final diagnostic proves that path executes 288 times. The
+5,309,660,307 module-exclusive instructions are combined with 3,761,783,550
+other JavaScript-exclusive instructions for the 30.3244% headline.
+
+| Attempt | Traced Vox instructions | Untraced Vox instructions | Qualification |
+| --- | ---: | ---: | --- |
+| Initial scopes | 29,881,013,517 | 28,719,717,898 | Async module path not yet isolated; retained |
+| Final module-aware scopes | 29,914,657,752 | 27,177,417,699 | Detailed additive table above |
+
+All eight captures across both attempts (four Vox and four Brave) pass bootstrap,
+complete content/button identity, unchanged per-engine pixels and normal browser
+exits; executable/native-library/fixture/tool identities remain stable within each
+attempt. Per-engine stability does not imply cross-browser pixel equality. A fresh
+process is launched each time. Generic driver summaries mix traced/untraced Vox
+variants and return one for the unmet Brave threshold; they are retained raw and
+are not performance acceptance results. The custom diagnostic controllers and
+memory guards exit zero because all four captures in each attempt are valid.
+
+The two traced and two untraced observations use different instrumentation and
+completed builds; their differences are not optimization savings or a calibrated
+tracer-overhead estimate. One-minute host load spans roughly 10.28–14.25 across the
+attempts on 18 CPUs. Tracing changes scheduling/frame opportunities and contributes
+instructions. No values are normalized by frame count or rescaled to 29B.
+These runs explain a frozen loading workload; they do not establish live-site
+network time, pure VM cost, displayed FPS, or the 5%-below-Brave target.
+
+All 24 final stage/native check jobs pass with **152 authenticated test-function
+executions**, across ordinary GC, no GC, poisoned preallocation and address/
+undefined-behavior sanitizers, with tracing on and off. The module addition passes
+all 12 jobs and **48 authenticated test-function executions** in the same modes.
+All **22 parser tests** pass, covering nesting, clipping, PID ownership, invalid
+counters, capture transfers and exact additive reconciliation. An earlier broader
+processmetrics selection fails the existing inherited shared-coalition monotonicity
+assertion (2,156,917,076,108,014 then 2,156,917,073,946,191). The final focused selection
+excludes that unrelated assertion, retains its failure/source/logs, and makes no
+whole-processmetrics-suite pass claim. Browser captures use their audited exclusive
+coalition instead of that inherited shared-coalition test.
+
+The final capture guard exits zero over 39.42 seconds, peaking at 1,362,313,216
+sampled RSS bytes under 12 GiB. It adopts 14 process identities without error.
+The independent finalizer exits zero, authenticating five indexed archives and
+all eight captures, exact historical/final totals, actual compiled test runners
+and source groups. The original 119,553,554-byte focused container is replaced by
+two smaller archives only after verifying an identical union of every indexed
+payload path, length and SHA-256 value. All earlier failures and superseded
+profiles remain retained. Finalization guards and full provenance are included.
+
+See the [verification receipt](performance/chatgpt-load-stages-verification-20261106.json),
+[focused receipt](performance/chatgpt-load-stages-focused-20261106.json),
+[initial production diagnostic](performance/chatgpt-load-stages-production-r1-diagnostic-20261106.json)
+and [final production diagnostic](performance/chatgpt-load-stages-production-r2-diagnostic-20261106.json).
+**Instruction optimization credit is zero; broad-check carry remains zero.** This
+is diagnostic tooling and a CPU budget table; the overall Brave target remains unmet.

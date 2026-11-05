@@ -1,0 +1,248 @@
+{
+  "pid": 13466,
+  "process_instructions": 29221290067,
+  "coalition_instructions": 29914657752,
+  "coalition": {
+    "label": "capture_document_encoded",
+    "coalition_id": 43151,
+    "instructions": 29914657752,
+    "tasks_started": 3,
+    "tasks_exited": 1
+  },
+  "rows": [
+    {
+      "stage": "native_document_replay",
+      "calls": 443,
+      "partial_calls": 0,
+      "exclusive": 6391481365,
+      "inclusive": 6391481365,
+      "percent": 21.36571782965722
+    },
+    {
+      "stage": "javascript_module_completion",
+      "calls": 288,
+      "partial_calls": 0,
+      "exclusive": 5309660307,
+      "inclusive": 8182952902,
+      "percent": 17.74936003285885
+    },
+    {
+      "stage": "style_update",
+      "calls": 882,
+      "partial_calls": 0,
+      "exclusive": 4352914044,
+      "inclusive": 4365741130,
+      "percent": 14.551107621176037
+    },
+    {
+      "stage": "browser_main",
+      "calls": 1,
+      "partial_calls": 1,
+      "exclusive": 4044932744,
+      "inclusive": 29065823402,
+      "percent": 13.521574532236018
+    },
+    {
+      "stage": "javascript_execution_and_bindings",
+      "calls": 1883,
+      "partial_calls": 0,
+      "exclusive": 3761783550,
+      "inclusive": 5136093896,
+      "percent": 12.575051271474095
+    },
+    {
+      "stage": "absolute_positioned_layout",
+      "calls": 13,
+      "partial_calls": 0,
+      "exclusive": 2219264679,
+      "inclusive": 2219264679,
+      "percent": 7.41865308103559
+    },
+    {
+      "stage": "coalition_endpoint_remainder",
+      "calls": 0,
+      "partial_calls": 0,
+      "exclusive": 693367685,
+      "inclusive": null,
+      "percent": 2.3178192134043174
+    },
+    {
+      "stage": "css_parsing",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 595660990,
+      "inclusive": 595660990,
+      "percent": 1.9912010858963478
+    },
+    {
+      "stage": "background_resource_completion",
+      "calls": 443,
+      "partial_calls": 0,
+      "exclusive": 324871080,
+      "inclusive": 4610695407,
+      "percent": 1.0859929693772952
+    },
+    {
+      "stage": "document_install",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 301653948,
+      "inclusive": 2938811592,
+      "percent": 1.0083817455001047
+    },
+    {
+      "stage": "document_layout",
+      "calls": 870,
+      "partial_calls": 0,
+      "exclusive": 279503528,
+      "inclusive": 5015884896,
+      "percent": 0.9343363722130943
+    },
+    {
+      "stage": "frame",
+      "calls": 443,
+      "partial_calls": 0,
+      "exclusive": 247065571,
+      "inclusive": 14001462753,
+      "percent": 0.8259013793446525
+    },
+    {
+      "stage": "frame_preparation",
+      "calls": 443,
+      "partial_calls": 0,
+      "exclusive": 224732255,
+      "inclusive": 7301260681,
+      "percent": 0.7512446134703817
+    },
+    {
+      "stage": "viewport_relayout",
+      "calls": 10,
+      "partial_calls": 0,
+      "exclusive": 188535731,
+      "inclusive": 3563193831,
+      "percent": 0.630245321751659
+    },
+    {
+      "stage": "flow_layout",
+      "calls": 13,
+      "partial_calls": 0,
+      "exclusive": 170208736,
+      "inclusive": 170208736,
+      "percent": 0.5689810574169794
+    },
+    {
+      "stage": "layout_tree_construction",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 144567280,
+      "inclusive": 144567280,
+      "percent": 0.4832656993721905
+    },
+    {
+      "stage": "unscoped_process",
+      "calls": 0,
+      "partial_calls": 0,
+      "exclusive": 136394595,
+      "inclusive": null,
+      "percent": 0.4559456976935699
+    },
+    {
+      "stage": "paint_command_recording",
+      "calls": 20,
+      "partial_calls": 0,
+      "exclusive": 118085931,
+      "inclusive": 118085931,
+      "percent": 0.39474271101131064
+    },
+    {
+      "stage": "script_state_replay",
+      "calls": 882,
+      "partial_calls": 0,
+      "exclusive": 106809575,
+      "inclusive": 1774392512,
+      "percent": 0.3570476248983963
+    },
+    {
+      "stage": "script_runtime_setup",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 85459284,
+      "inclusive": 1117464719,
+      "percent": 0.2856769571240923
+    },
+    {
+      "stage": "browser_chrome",
+      "calls": 449,
+      "partial_calls": 0,
+      "exclusive": 63350800,
+      "inclusive": 63350800,
+      "percent": 0.21177176929515285
+    },
+    {
+      "stage": "html_rendering_opportunity",
+      "calls": 443,
+      "partial_calls": 0,
+      "exclusive": 47045927,
+      "inclusive": 47045927,
+      "percent": 0.15726714104511075
+    },
+    {
+      "stage": "animation_driver",
+      "calls": 443,
+      "partial_calls": 0,
+      "exclusive": 40105473,
+      "inclusive": 40105473,
+      "percent": 0.13406629396359607
+    },
+    {
+      "stage": "layout_geometry",
+      "calls": 13,
+      "partial_calls": 0,
+      "exclusive": 33889771,
+      "inclusive": 2424817917,
+      "percent": 0.1132881789287201
+    },
+    {
+      "stage": "png_encoding",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 18025983,
+      "inclusive": null,
+      "percent": 0.060258028520466154
+    },
+    {
+      "stage": "style_computation",
+      "calls": 29,
+      "partial_calls": 0,
+      "exclusive": 7939932,
+      "inclusive": 7939932,
+      "percent": 0.026541944975015337
+    },
+    {
+      "stage": "capture_snapshot",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 5845115,
+      "inclusive": null,
+      "percent": 0.019539300928853896
+    },
+    {
+      "stage": "relative_positioned_layout",
+      "calls": 13,
+      "partial_calls": 0,
+      "exclusive": 1454731,
+      "inclusive": 1454731,
+      "percent": 0.0048629371328934605
+    },
+    {
+      "stage": "capture_conversion",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 47142,
+      "inclusive": null,
+      "percent": 0.00015758829798695668
+    }
+  ],
+  "complete": true,
+  "qualification": "Exclusive process-interval attribution with measured children subtracted; concurrent threads and tracing overhead remain included. Open scopes are clipped at encoded PNG and marked partial. Inclusive counts overlap and are non-additive. Existing native capture checkpoints split snapshot/conversion/encoding out of parent self work; child scopes entered during capture retain their own attribution. The coalition endpoint remainder includes owned helpers and process/coalition boundary differences; it is not a separately measured helper stage. No scaling to a different run."
+}
