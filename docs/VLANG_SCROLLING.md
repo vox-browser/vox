@@ -1701,3 +1701,12 @@ the compositor offsets them. Presenting the ring through Core Animation
 (two wrapped sublayers, or layer-anchored tiles) would remove that copy and
 the per-frame full-canvas upload with it. Evidence:
 `docs/performance/raw/vlang-large-window-leaves-20261105.tar.gz`.
+
+The 119 FPS result above and these numbers measure different workloads. That
+cohort used a 1024×768 viewport, 1200 delta-1 inputs at 120 Hz reversing every
+120 (the top 120 px of the page) and a host at load 4. On bundle `e9b0f545…`,
+which contains all five fixes, alternating runs at load 12–33 measured 97.0 and
+111.1 FPS with that protocol, and 54.3 and 46.7 FPS (p95 44 ms) with the
+1708×953, delta-8, reverse-every-150 protocol. The larger window and longer
+scroll range reach the code panels, sponsor logos, mascot and video that the
+original protocol never scrolls to.
