@@ -1,0 +1,1919 @@
+{
+  "complete": true,
+  "implementation_commit": null,
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "browserjs/querywire/document_reply.v": "a1995b6c574270c5a074c12ad72ecee90b71ff6685e0446cb85c66bb790c60e3",
+      "browserjs/querywire/document_reply_test.v": "b018e8c6d28523448a6375ad2fc8e0f7e72792acffef46ff2d982b5703e618d0",
+      "main_compact_document.v": "20ca0a4445740426d70caea23a966001d6dc076d64f467f6b761f2679804bd85",
+      "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550",
+      "main_compact_identity_reply.v": "d1e5e30b26e496d61b57414eeab90e88b8d044cc077d80e637c675374d757814",
+      "main_compact_document_reply_test.v": "651cef3675ff4ab6a01e46c6a7ca52b3cbd958d2dabc6ac555c73f1a2b9aee54"
+    },
+    "source_after": {
+      "browserjs/querywire/document_reply.v": "a1995b6c574270c5a074c12ad72ecee90b71ff6685e0446cb85c66bb790c60e3",
+      "browserjs/querywire/document_reply_test.v": "b018e8c6d28523448a6375ad2fc8e0f7e72792acffef46ff2d982b5703e618d0",
+      "main_compact_document.v": "20ca0a4445740426d70caea23a966001d6dc076d64f467f6b761f2679804bd85",
+      "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550",
+      "main_compact_identity_reply.v": "d1e5e30b26e496d61b57414eeab90e88b8d044cc077d80e637c675374d757814",
+      "main_compact_document_reply_test.v": "651cef3675ff4ab6a01e46c6a7ca52b3cbd958d2dabc6ac555c73f1a2b9aee54"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-querywire-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/compile-querywire-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/compile-querywire-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/querywire/identity_reply_test.v,/Users/alex/code/vox2/browserjs/querywire/compact_envelope_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-prealloc",
+          "/Users/alex/code/vox2/browserjs/querywire/document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793913848.344568,
+          "cpu_count": 18,
+          "load": [
+            6.7197265625,
+            7.60009765625,
+            6.81201171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913849.153928,
+          "load": [
+            6.7197265625,
+            7.60009765625,
+            6.81201171875
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793913849.160713,
+          "cpu_count": 18,
+          "load": [
+            6.7197265625,
+            7.60009765625,
+            6.81201171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913849.479313,
+          "load": [
+            6.7197265625,
+            7.60009765625,
+            6.81201171875
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793913849.4862468,
+          "cpu_count": 18,
+          "load": [
+            6.7197265625,
+            7.60009765625,
+            6.81201171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913849.5641851,
+          "load": [
+            6.7197265625,
+            7.60009765625,
+            6.81201171875
+          ]
+        }
+      },
+      {
+        "label": "compile-native-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/compile-native-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/compile-native-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v,/Users/alex/code/vox2/main_compact_element_serialization_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_last_child_test.v,/Users/alex/code/vox2/main_compact_shadow_root_test.v,/Users/alex/code/vox2/main_compact_template_test.v,/Users/alex/code/vox2/main_compact_hit_testing_test.v,/Users/alex/code/vox2/main_compact_form_controls_test.v,/Users/alex/code/vox2/main_compact_node_children_test.v,/Users/alex/code/vox2/main_compact_create_comment_test.v,/Users/alex/code/vox2/main_compact_child_node_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/native-prealloc",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793913849.571136,
+          "cpu_count": 18,
+          "load": [
+            6.7197265625,
+            7.60009765625,
+            6.81201171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913868.5606809,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-native-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-native-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793913868.5678341,
+          "cpu_count": 18,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913869.743784,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-native-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-native-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793913869.7508428,
+          "cpu_count": 18,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913870.703973,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        }
+      },
+      {
+        "label": "compile-querywire-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/compile-querywire-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/compile-querywire-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/querywire/identity_reply_test.v,/Users/alex/code/vox2/browserjs/querywire/compact_envelope_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-default",
+          "/Users/alex/code/vox2/browserjs/querywire/document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793913870.711127,
+          "cpu_count": 18,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913871.668528,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793913871.6755772,
+          "cpu_count": 18,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913872.0144992,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/run-querywire-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793913872.022,
+          "cpu_count": 18,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793913872.24895,
+          "load": [
+            6.06982421875,
+            7.39697265625,
+            6.75732421875
+          ]
+        }
+      },
+      {
+        "label": "compile-native-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-native-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-native-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v,/Users/alex/code/vox2/main_compact_element_serialization_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_last_child_test.v,/Users/alex/code/vox2/main_compact_shadow_root_test.v,/Users/alex/code/vox2/main_compact_template_test.v,/Users/alex/code/vox2/main_compact_hit_testing_test.v,/Users/alex/code/vox2/main_compact_form_controls_test.v,/Users/alex/code/vox2/main_compact_node_children_test.v,/Users/alex/code/vox2/main_compact_create_comment_test.v,/Users/alex/code/vox2/main_compact_child_node_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-default",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793914111.430333,
+          "cpu_count": 18,
+          "load": [
+            4.69384765625,
+            6.3212890625,
+            6.43115234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914129.978844,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914129.985674,
+          "cpu_count": 18,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914130.684553,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914130.691384,
+          "cpu_count": 18,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914131.1318772,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        }
+      },
+      {
+        "label": "compile-querywire-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-querywire-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-querywire-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/querywire/identity_reply_test.v,/Users/alex/code/vox2/browserjs/querywire/compact_envelope_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-none",
+          "/Users/alex/code/vox2/browserjs/querywire/document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793914131.138749,
+          "cpu_count": 18,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914131.941299,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914131.948129,
+          "cpu_count": 18,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914132.268713,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914132.275609,
+          "cpu_count": 18,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914132.347189,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        }
+      },
+      {
+        "label": "compile-native-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-native-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-native-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v,/Users/alex/code/vox2/main_compact_element_serialization_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_last_child_test.v,/Users/alex/code/vox2/main_compact_shadow_root_test.v,/Users/alex/code/vox2/main_compact_template_test.v,/Users/alex/code/vox2/main_compact_hit_testing_test.v,/Users/alex/code/vox2/main_compact_form_controls_test.v,/Users/alex/code/vox2/main_compact_node_children_test.v,/Users/alex/code/vox2/main_compact_create_comment_test.v,/Users/alex/code/vox2/main_compact_child_node_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-none",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793914132.35394,
+          "cpu_count": 18,
+          "load": [
+            4.5224609375,
+            6.1845703125,
+            6.37890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914149.3174531,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914149.324037,
+          "cpu_count": 18,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914150.152025,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914150.158729,
+          "cpu_count": 18,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914150.477899,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        }
+      },
+      {
+        "label": "compile-querywire-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-querywire-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-querywire-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/querywire/identity_reply_test.v,/Users/alex/code/vox2/browserjs/querywire/compact_envelope_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-sanitized",
+          "/Users/alex/code/vox2/browserjs/querywire/document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793914150.4846022,
+          "cpu_count": 18,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914151.7555919,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914151.762395,
+          "cpu_count": 18,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914152.329288,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        }
+      },
+      {
+        "label": "run-querywire-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-querywire-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914152.335917,
+          "cpu_count": 18,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914152.531293,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        }
+      },
+      {
+        "label": "compile-native-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-native-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/compile-native-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v,/Users/alex/code/vox2/main_compact_element_serialization_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_last_child_test.v,/Users/alex/code/vox2/main_compact_shadow_root_test.v,/Users/alex/code/vox2/main_compact_template_test.v,/Users/alex/code/vox2/main_compact_hit_testing_test.v,/Users/alex/code/vox2/main_compact_form_controls_test.v,/Users/alex/code/vox2/main_compact_node_children_test.v,/Users/alex/code/vox2/main_compact_create_comment_test.v,/Users/alex/code/vox2/main_compact_child_node_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-sanitized",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793914152.538162,
+          "cpu_count": 18,
+          "load": [
+            3.95458984375,
+            5.94482421875,
+            6.2880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914188.505867,
+          "load": [
+            3.494140625,
+            5.58642578125,
+            6.140625
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914188.512527,
+          "cpu_count": 18,
+          "load": [
+            3.494140625,
+            5.58642578125,
+            6.140625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914190.693519,
+          "load": [
+            3.494140625,
+            5.58642578125,
+            6.140625
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/run-native-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793914190.700345,
+          "cpu_count": 18,
+          "load": [
+            3.494140625,
+            5.58642578125,
+            6.140625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793914192.075572,
+          "load": [
+            3.494140625,
+            5.58642578125,
+            6.140625
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-document-reply-20261106-r3/component": "69d75da61d030dc8c936f80c12a4bcc5fa52412552ed710e642e77b97d8cc4b9",
+      "Build/chatgpt-document-reply-20261106-r3/component.py": "90f7fd22585f9b20410e8fe7fc3b2046cb82d36477624628ba81ff373e03319e",
+      "Build/chatgpt-document-reply-20261106-r3/cases.json": "1cfcea7f37979c05f4c1b833856a47a75f3e2b4ccf54f45d2ed6bc8eafda988b",
+      "tools/document_reply_benchmark.v": "9dd024c0cd61a3dbf84244ab7f5f3a1b605be85224b853e869aa90f9a6a2d410",
+      "browserjs/querywire/document_reply.v": "a1995b6c574270c5a074c12ad72ecee90b71ff6685e0446cb85c66bb790c60e3",
+      "browserjs/querywire/document_reply_test.v": "b018e8c6d28523448a6375ad2fc8e0f7e72792acffef46ff2d982b5703e618d0",
+      "main_compact_document.v": "20ca0a4445740426d70caea23a966001d6dc076d64f467f6b761f2679804bd85",
+      "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550",
+      "main_compact_identity_reply.v": "d1e5e30b26e496d61b57414eeab90e88b8d044cc077d80e637c675374d757814",
+      "main_compact_document_reply_test.v": "651cef3675ff4ab6a01e46c6a7ca52b3cbd958d2dabc6ac555c73f1a2b9aee54"
+    },
+    "inputs_after": {
+      "Build/chatgpt-document-reply-20261106-r3/component": "69d75da61d030dc8c936f80c12a4bcc5fa52412552ed710e642e77b97d8cc4b9",
+      "Build/chatgpt-document-reply-20261106-r3/component.py": "90f7fd22585f9b20410e8fe7fc3b2046cb82d36477624628ba81ff373e03319e",
+      "Build/chatgpt-document-reply-20261106-r3/cases.json": "1cfcea7f37979c05f4c1b833856a47a75f3e2b4ccf54f45d2ed6bc8eafda988b",
+      "tools/document_reply_benchmark.v": "9dd024c0cd61a3dbf84244ab7f5f3a1b605be85224b853e869aa90f9a6a2d410",
+      "browserjs/querywire/document_reply.v": "a1995b6c574270c5a074c12ad72ecee90b71ff6685e0446cb85c66bb790c60e3",
+      "browserjs/querywire/document_reply_test.v": "b018e8c6d28523448a6375ad2fc8e0f7e72792acffef46ff2d982b5703e618d0",
+      "main_compact_document.v": "20ca0a4445740426d70caea23a966001d6dc076d64f467f6b761f2679804bd85",
+      "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550",
+      "main_compact_identity_reply.v": "d1e5e30b26e496d61b57414eeab90e88b8d044cc077d80e637c675374d757814",
+      "main_compact_document_reply_test.v": "651cef3675ff4ab6a01e46c6a7ca52b3cbd958d2dabc6ac555c73f1a2b9aee54"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793914407.601366,
+          "cpu_count": 18,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793914407.919245,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 8960000,
+            "instructions": 711529040,
+            "iterations": 128000,
+            "scene": "root-document"
+          },
+          {
+            "checksum": 5319862,
+            "instructions": 365245174,
+            "iterations": 64000,
+            "scene": "foreign-documents"
+          },
+          {
+            "checksum": 2656001,
+            "instructions": 190659828,
+            "iterations": 32000,
+            "scene": "escaped-keys"
+          },
+          {
+            "checksum": 13530859,
+            "instructions": 85823775,
+            "iterations": 8000,
+            "scene": "large-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793914407.920085,
+          "cpu_count": 18,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793914407.990466,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 8960000,
+            "instructions": 6395849,
+            "iterations": 128000,
+            "scene": "root-document"
+          },
+          {
+            "checksum": 5319862,
+            "instructions": 38422179,
+            "iterations": 64000,
+            "scene": "foreign-documents"
+          },
+          {
+            "checksum": 2656001,
+            "instructions": 27708333,
+            "iterations": 32000,
+            "scene": "escaped-keys"
+          },
+          {
+            "checksum": 13530859,
+            "instructions": 85954541,
+            "iterations": 8000,
+            "scene": "large-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793914407.991286,
+          "cpu_count": 18,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793914408.061515,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 8960000,
+            "instructions": 6395224,
+            "iterations": 128000,
+            "scene": "root-document"
+          },
+          {
+            "checksum": 5319862,
+            "instructions": 38422139,
+            "iterations": 64000,
+            "scene": "foreign-documents"
+          },
+          {
+            "checksum": 2656001,
+            "instructions": 27708333,
+            "iterations": 32000,
+            "scene": "escaped-keys"
+          },
+          {
+            "checksum": 13530859,
+            "instructions": 85914908,
+            "iterations": 8000,
+            "scene": "large-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793914408.062377,
+          "cpu_count": 18,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793914408.260154,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 8960000,
+            "instructions": 711427396,
+            "iterations": 128000,
+            "scene": "root-document"
+          },
+          {
+            "checksum": 5319862,
+            "instructions": 365191903,
+            "iterations": 64000,
+            "scene": "foreign-documents"
+          },
+          {
+            "checksum": 2656001,
+            "instructions": 190628339,
+            "iterations": 32000,
+            "scene": "escaped-keys"
+          },
+          {
+            "checksum": 13530859,
+            "instructions": 85818325,
+            "iterations": 8000,
+            "scene": "large-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793914408.2610402,
+          "cpu_count": 18,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793914408.3320131,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 8960000,
+            "instructions": 7384560,
+            "iterations": 128000,
+            "scene": "root-document"
+          },
+          {
+            "checksum": 5319862,
+            "instructions": 38849656,
+            "iterations": 64000,
+            "scene": "foreign-documents"
+          },
+          {
+            "checksum": 2656001,
+            "instructions": 27922093,
+            "iterations": 32000,
+            "scene": "escaped-keys"
+          },
+          {
+            "checksum": 13530859,
+            "instructions": 85947059,
+            "iterations": 8000,
+            "scene": "large-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_DOCUMENT_REPLY_MAP": "1",
+          "VOX_DOCUMENT_REPLY_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793914408.3329248,
+          "cpu_count": 18,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793914408.531447,
+          "load": [
+            1.72216796875,
+            3.81396484375,
+            5.24951171875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 8960000,
+            "instructions": 711546460,
+            "iterations": 128000,
+            "scene": "root-document"
+          },
+          {
+            "checksum": 5319862,
+            "instructions": 365222539,
+            "iterations": 64000,
+            "scene": "foreign-documents"
+          },
+          {
+            "checksum": 2656001,
+            "instructions": 190668623,
+            "iterations": 32000,
+            "scene": "escaped-keys"
+          },
+          {
+            "checksum": 13530859,
+            "instructions": 85837175,
+            "iterations": 8000,
+            "scene": "large-fallback"
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "root-document": {
+        "control": [
+          711529040,
+          711427396
+        ],
+        "candidate": [
+          6395849,
+          6395224
+        ],
+        "control_median": 711478218.0,
+        "candidate_median": 6395536.5,
+        "reduction_percent": 99.10109173574166,
+        "conservative_component_reduction": 705031547,
+        "checksum": 8960000,
+        "iterations": 128000
+      },
+      "foreign-documents": {
+        "control": [
+          365245174,
+          365191903
+        ],
+        "candidate": [
+          38422179,
+          38422139
+        ],
+        "control_median": 365218538.5,
+        "candidate_median": 38422159.0,
+        "reduction_percent": 89.47967998617901,
+        "conservative_component_reduction": 326769724,
+        "checksum": 5319862,
+        "iterations": 64000
+      },
+      "escaped-keys": {
+        "control": [
+          190659828,
+          190628339
+        ],
+        "candidate": [
+          27708333,
+          27708333
+        ],
+        "control_median": 190644083.5,
+        "candidate_median": 27708333.0,
+        "reduction_percent": 85.46593605670432,
+        "conservative_component_reduction": 162920006,
+        "checksum": 2656001,
+        "iterations": 32000
+      },
+      "large-fallback": {
+        "control": [
+          85823775,
+          85818325
+        ],
+        "candidate": [
+          85954541,
+          85914908
+        ],
+        "control_median": 85821050.0,
+        "candidate_median": 85934724.5,
+        "reduction_percent": -0.13245526592834742,
+        "conservative_component_reduction": -136216,
+        "checksum": 13530859,
+        "iterations": 8000
+      }
+    },
+    "qualification": "Same-executable unprofiled current-process retired instructions include document identity encoding, exact-byte comparisons and all 100-reply scratch batch retirements. Input keys are loaded from a pinned JSON file; compilation cannot specialize the benchmark to literal root keys. Input parsing, reference serialization, startup and teardown are excluded. Native document lookup/registration, JSON request decoding, JavaScriptCore and the whole page are outside this encoder component. Canonical source and explicit runtime overlay use production V conditions, C O3/LTO single-unit preallocation, without poisoning/profiling. Control uses the original map encoder. Independent diagnostics follow all four matched observations. Every observation and fallback regression is retained. No browser, Brave, live-site or scrolling gain is established."
+  },
+  "runner": {
+    "complete": true,
+    "runners": {
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-prealloc.c": {
+        "sha256": "95c3717998f3482b07c27c31f544a872165b4cdc6c702b8d7040598bd6e4f542",
+        "tests": [
+          "test_document_reply_preserves_exact_object_fields_and_arbitrary_key_bytes",
+          "test_document_reply_matches_random_multibyte_and_invalid_sequences",
+          "test_document_reply_owns_escaped_output_after_input_retirement",
+          "test_root_document_reply_uses_no_current_arena_storage",
+          "test_identity_reply_preserves_json_escaping_and_arbitrary_byte_strings",
+          "test_identity_reply_matches_randomized_multibyte_and_invalid_keys",
+          "test_identity_reply_owns_output_after_input_arena_retirement",
+          "test_compact_envelope_matches_general_json_for_printable_ascii",
+          "test_compact_envelope_returns_owned_strings",
+          "test_compact_envelope_defers_other_valid_json_to_the_general_decoder",
+          "test_compact_envelope_never_accepts_partial_or_malformed_json"
+        ]
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/native-prealloc.c": {
+        "sha256": "15a8ced8696739f54281b5240b9613c0bdf2cc48421896a94db28852d8c602ff",
+        "tests": [
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries",
+          "test_native_collection_serialization_retires_intermediate_json_graphs",
+          "test_native_collection_serialization_preserves_models_and_lazy_wrappers",
+          "test_native_tag_collection_serialization_keeps_live_members_after_replay",
+          "test_native_collection_reply_bytes_retire_after_the_javascript_copy",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_compact_created_child_clones_retain_native_subtrees_and_parent_identity",
+          "test_compact_last_child_preserves_character_data_and_native_mutations",
+          "test_compact_shadow_roots_keep_native_identity_closed_access_and_tree_scopes",
+          "test_compact_shadow_root_markup_and_unsafe_element_markup_use_native_parsing",
+          "test_compact_shadow_root_brands_options_and_native_errors",
+          "test_compact_template_content_clones_the_inert_native_subtree_and_adopts_on_insertion",
+          "test_compact_script_created_template_content_is_live_readonly_and_separate_from_meta_content",
+          "test_document_hit_stack_deduplicates_non_adjacent_native_element_identities",
+          "test_compact_document_hit_testing_tracks_paint_order_and_live_native_elements",
+          "test_compact_document_hit_testing_uses_webidl_receiver_and_double_conversions",
+          "test_compact_form_controls_follow_native_association_and_tree_order",
+          "test_compact_radio_node_list_is_live_and_uses_native_checked_values",
+          "test_compact_detached_form_collection_and_native_receiver_checks",
+          "test_compact_element_insert_before_preserves_text_comment_anchors_and_live_content",
+          "test_compact_child_nodes_remain_live_and_include_text_comments_and_fragment_children",
+          "test_compact_fragment_text_replacement_cloning_and_queries_use_the_native_tree",
+          "test_jquery_comment_labels_and_text_fragment_insertion_finish_without_errors",
+          "test_compact_create_comment_preserves_native_anchors_data_and_identity",
+          "test_compact_child_node_mutations_preserve_native_order_identity_and_live_lists",
+          "test_compact_child_node_character_data_doctype_and_cross_document_adoption",
+          "test_compact_child_node_conversion_branding_noop_and_hierarchy_errors",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations"
+        ]
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r2/querywire-default.c": {
+        "sha256": "54660ee45c134443920efc163b5ca9fa2955219ee5d885ed60797ee57302dc41",
+        "tests": [
+          "test_document_reply_preserves_exact_object_fields_and_arbitrary_key_bytes",
+          "test_document_reply_matches_random_multibyte_and_invalid_sequences",
+          "test_document_reply_owns_escaped_output_after_input_retirement",
+          "test_root_document_reply_uses_no_current_arena_storage",
+          "test_identity_reply_preserves_json_escaping_and_arbitrary_byte_strings",
+          "test_identity_reply_matches_randomized_multibyte_and_invalid_keys",
+          "test_identity_reply_owns_output_after_input_arena_retirement",
+          "test_compact_envelope_matches_general_json_for_printable_ascii",
+          "test_compact_envelope_returns_owned_strings",
+          "test_compact_envelope_defers_other_valid_json_to_the_general_decoder",
+          "test_compact_envelope_never_accepts_partial_or_malformed_json"
+        ]
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-default.c": {
+        "sha256": "bb05ad6c6d2e3d24647b6fa8ec7a5bfa758032cec8f128802c0b878887c8718d",
+        "tests": [
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries",
+          "test_native_collection_serialization_retires_intermediate_json_graphs",
+          "test_native_collection_serialization_preserves_models_and_lazy_wrappers",
+          "test_native_tag_collection_serialization_keeps_live_members_after_replay",
+          "test_native_collection_reply_bytes_retire_after_the_javascript_copy",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_compact_created_child_clones_retain_native_subtrees_and_parent_identity",
+          "test_compact_last_child_preserves_character_data_and_native_mutations",
+          "test_compact_shadow_roots_keep_native_identity_closed_access_and_tree_scopes",
+          "test_compact_shadow_root_markup_and_unsafe_element_markup_use_native_parsing",
+          "test_compact_shadow_root_brands_options_and_native_errors",
+          "test_compact_template_content_clones_the_inert_native_subtree_and_adopts_on_insertion",
+          "test_compact_script_created_template_content_is_live_readonly_and_separate_from_meta_content",
+          "test_document_hit_stack_deduplicates_non_adjacent_native_element_identities",
+          "test_compact_document_hit_testing_tracks_paint_order_and_live_native_elements",
+          "test_compact_document_hit_testing_uses_webidl_receiver_and_double_conversions",
+          "test_compact_form_controls_follow_native_association_and_tree_order",
+          "test_compact_radio_node_list_is_live_and_uses_native_checked_values",
+          "test_compact_detached_form_collection_and_native_receiver_checks",
+          "test_compact_element_insert_before_preserves_text_comment_anchors_and_live_content",
+          "test_compact_child_nodes_remain_live_and_include_text_comments_and_fragment_children",
+          "test_compact_fragment_text_replacement_cloning_and_queries_use_the_native_tree",
+          "test_jquery_comment_labels_and_text_fragment_insertion_finish_without_errors",
+          "test_compact_create_comment_preserves_native_anchors_data_and_identity",
+          "test_compact_child_node_mutations_preserve_native_order_identity_and_live_lists",
+          "test_compact_child_node_character_data_doctype_and_cross_document_adoption",
+          "test_compact_child_node_conversion_branding_noop_and_hierarchy_errors",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations"
+        ]
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-none.c": {
+        "sha256": "5be21a06efe587c95ff8a8d51d005ccba62dcea1457629a3e0a4306dbd59814e",
+        "tests": [
+          "test_document_reply_preserves_exact_object_fields_and_arbitrary_key_bytes",
+          "test_document_reply_matches_random_multibyte_and_invalid_sequences",
+          "test_document_reply_owns_escaped_output_after_input_retirement",
+          "test_root_document_reply_uses_no_current_arena_storage",
+          "test_identity_reply_preserves_json_escaping_and_arbitrary_byte_strings",
+          "test_identity_reply_matches_randomized_multibyte_and_invalid_keys",
+          "test_identity_reply_owns_output_after_input_arena_retirement",
+          "test_compact_envelope_matches_general_json_for_printable_ascii",
+          "test_compact_envelope_returns_owned_strings",
+          "test_compact_envelope_defers_other_valid_json_to_the_general_decoder",
+          "test_compact_envelope_never_accepts_partial_or_malformed_json"
+        ]
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-none.c": {
+        "sha256": "82a8ec049856fb64bb4d33f6469bdfd2a0fd838a06a31e8efd8a233f925fd224",
+        "tests": [
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries",
+          "test_native_collection_serialization_retires_intermediate_json_graphs",
+          "test_native_collection_serialization_preserves_models_and_lazy_wrappers",
+          "test_native_tag_collection_serialization_keeps_live_members_after_replay",
+          "test_native_collection_reply_bytes_retire_after_the_javascript_copy",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_compact_created_child_clones_retain_native_subtrees_and_parent_identity",
+          "test_compact_last_child_preserves_character_data_and_native_mutations",
+          "test_compact_shadow_roots_keep_native_identity_closed_access_and_tree_scopes",
+          "test_compact_shadow_root_markup_and_unsafe_element_markup_use_native_parsing",
+          "test_compact_shadow_root_brands_options_and_native_errors",
+          "test_compact_template_content_clones_the_inert_native_subtree_and_adopts_on_insertion",
+          "test_compact_script_created_template_content_is_live_readonly_and_separate_from_meta_content",
+          "test_document_hit_stack_deduplicates_non_adjacent_native_element_identities",
+          "test_compact_document_hit_testing_tracks_paint_order_and_live_native_elements",
+          "test_compact_document_hit_testing_uses_webidl_receiver_and_double_conversions",
+          "test_compact_form_controls_follow_native_association_and_tree_order",
+          "test_compact_radio_node_list_is_live_and_uses_native_checked_values",
+          "test_compact_detached_form_collection_and_native_receiver_checks",
+          "test_compact_element_insert_before_preserves_text_comment_anchors_and_live_content",
+          "test_compact_child_nodes_remain_live_and_include_text_comments_and_fragment_children",
+          "test_compact_fragment_text_replacement_cloning_and_queries_use_the_native_tree",
+          "test_jquery_comment_labels_and_text_fragment_insertion_finish_without_errors",
+          "test_compact_create_comment_preserves_native_anchors_data_and_identity",
+          "test_compact_child_node_mutations_preserve_native_order_identity_and_live_lists",
+          "test_compact_child_node_character_data_doctype_and_cross_document_adoption",
+          "test_compact_child_node_conversion_branding_noop_and_hierarchy_errors",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations"
+        ]
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/querywire-sanitized.c": {
+        "sha256": "95c3717998f3482b07c27c31f544a872165b4cdc6c702b8d7040598bd6e4f542",
+        "tests": [
+          "test_document_reply_preserves_exact_object_fields_and_arbitrary_key_bytes",
+          "test_document_reply_matches_random_multibyte_and_invalid_sequences",
+          "test_document_reply_owns_escaped_output_after_input_retirement",
+          "test_root_document_reply_uses_no_current_arena_storage",
+          "test_identity_reply_preserves_json_escaping_and_arbitrary_byte_strings",
+          "test_identity_reply_matches_randomized_multibyte_and_invalid_keys",
+          "test_identity_reply_owns_output_after_input_arena_retirement",
+          "test_compact_envelope_matches_general_json_for_printable_ascii",
+          "test_compact_envelope_returns_owned_strings",
+          "test_compact_envelope_defers_other_valid_json_to_the_general_decoder",
+          "test_compact_envelope_never_accepts_partial_or_malformed_json"
+        ]
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-document-reply-20261106-r3/native-sanitized.c": {
+        "sha256": "5861f81c617d01666b8863ff67b15d6a519cc9fb9a7ce21c17e845bed38515a6",
+        "tests": [
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries",
+          "test_native_collection_serialization_retires_intermediate_json_graphs",
+          "test_native_collection_serialization_preserves_models_and_lazy_wrappers",
+          "test_native_tag_collection_serialization_keeps_live_members_after_replay",
+          "test_native_collection_reply_bytes_retire_after_the_javascript_copy",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_compact_created_child_clones_retain_native_subtrees_and_parent_identity",
+          "test_compact_last_child_preserves_character_data_and_native_mutations",
+          "test_compact_shadow_roots_keep_native_identity_closed_access_and_tree_scopes",
+          "test_compact_shadow_root_markup_and_unsafe_element_markup_use_native_parsing",
+          "test_compact_shadow_root_brands_options_and_native_errors",
+          "test_compact_template_content_clones_the_inert_native_subtree_and_adopts_on_insertion",
+          "test_compact_script_created_template_content_is_live_readonly_and_separate_from_meta_content",
+          "test_document_hit_stack_deduplicates_non_adjacent_native_element_identities",
+          "test_compact_document_hit_testing_tracks_paint_order_and_live_native_elements",
+          "test_compact_document_hit_testing_uses_webidl_receiver_and_double_conversions",
+          "test_compact_form_controls_follow_native_association_and_tree_order",
+          "test_compact_radio_node_list_is_live_and_uses_native_checked_values",
+          "test_compact_detached_form_collection_and_native_receiver_checks",
+          "test_compact_element_insert_before_preserves_text_comment_anchors_and_live_content",
+          "test_compact_child_nodes_remain_live_and_include_text_comments_and_fragment_children",
+          "test_compact_fragment_text_replacement_cloning_and_queries_use_the_native_tree",
+          "test_jquery_comment_labels_and_text_fragment_insertion_finish_without_errors",
+          "test_compact_create_comment_preserves_native_anchors_data_and_identity",
+          "test_compact_child_node_mutations_preserve_native_order_identity_and_live_lists",
+          "test_compact_child_node_character_data_doctype_and_cross_document_adoption",
+          "test_compact_child_node_conversion_branding_noop_and_hierarchy_errors",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations"
+        ]
+      }
+    },
+    "total_test_calls": 408
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-document-reply-initial-20261106-evidence.zip",
+    "sha256": "2ecb1cebe0aa62d6aff52b248586710b80cdd9417dac4e0a819e49d1667ab6c5",
+    "bytes": 19971013
+  },
+  "removed_verified_generated_c": [
+    {
+      "path": "Build/chatgpt-document-reply-20261106-r3/native-none.c",
+      "sha256": "82a8ec049856fb64bb4d33f6469bdfd2a0fd838a06a31e8efd8a233f925fd224",
+      "bytes": 43822607
+    },
+    {
+      "path": "Build/chatgpt-document-reply-20261106-r3/native-sanitized.c",
+      "sha256": "5861f81c617d01666b8863ff67b15d6a519cc9fb9a7ce21c17e845bed38515a6",
+      "bytes": 44120024
+    },
+    {
+      "path": "Build/chatgpt-document-reply-20261106-r3/component.c",
+      "sha256": "ad890f1c9e54eccba9298c51832855263fec1dd0eb17daff60f83a78feaa3b86",
+      "bytes": 1243649
+    },
+    {
+      "path": "Build/chatgpt-document-reply-20261106-r3/native-default.c",
+      "sha256": "bb05ad6c6d2e3d24647b6fa8ec7a5bfa758032cec8f128802c0b878887c8718d",
+      "bytes": 43913672
+    },
+    {
+      "path": "Build/chatgpt-document-reply-20261106-r3/querywire-none.c",
+      "sha256": "5be21a06efe587c95ff8a8d51d005ccba62dcea1457629a3e0a4306dbd59814e",
+      "bytes": 1399723
+    },
+    {
+      "path": "Build/chatgpt-document-reply-20261106-r3/querywire-sanitized.c",
+      "sha256": "95c3717998f3482b07c27c31f544a872165b4cdc6c702b8d7040598bd6e4f542",
+      "bytes": 1437807
+    }
+  ],
+  "qualification": "Initial document encoder: all 408 focused calls pass across 24 final jobs. Ordinary reply components improve, but oversized-key fallback regresses about 0.13%. Sources, generated C and all observations are retained before reordering the pure fallback predicate. No page credit."
+}

@@ -4266,3 +4266,116 @@ preserve all focused/component evidence, the initial regression, failed attempts
 12 valid captures, original PNGs, commands, counters, audits, source/control proofs
 and exact comparison arithmetic. No whole-page, Brave, live-site, isolated rendering
 or scrolling improvement is claimed.
+
+
+## Fixed document reply encoding (2026-11-06)
+
+Implementation `fde9a1f40` avoids rebuilding a four-entry JSON map for each
+Document identity reply. The root document returns its static envelope; ordinary
+bridge keys use the existing JSON string encoder inside the same fixed envelope.
+The original map encoder remains available for keys over 256 bytes and through
+`VOX_RETAIN_DOCUMENT_REPLY_MAP`. Output preserves the original exact bytes,
+including sorted field order. Document lookup and foreign-document registration
+still run on every request; no owner or document identity is cached. This applies
+to ownerDocument, detached document creation and generic document-node replies.
+
+All 24 final focused jobs pass: eight compilations and sixteen executions, with
+408 authenticated test-function calls across ordinary GC, no GC, poisoned
+preallocation and address/undefined-behavior sanitizers, in both control and
+candidate modes. Coverage includes every single-byte key, Unicode/control/invalid
+byte sequences, randomized keys, 255/256/257-byte boundaries, large fallback,
+input/reply arena retirement, root allocation behavior, foreign registration,
+native adoption and actual JavaScriptCore ownerDocument identity after adoption.
+Existing document, identity, fragment, template, shadow-root, child, form-control,
+hit-testing and parent-cache checks are included. Preallocation-specific ownership
+assertions remain conditional; this is a selected test pass, not a full repository
+suite claim.
+
+The first focused attempt rejected the prototype's different JSON field order.
+That failure and its source are retained. A later native compilation exhausted disk
+space before execution; its successful preceding jobs and failed generated source
+are retained separately. The final run uses the explicit preallocation runtime
+module overlay in every mode. Completed generated outputs were removed only after
+archive hash verification. Cleanup receipts also retain the initial incomplete
+receipt assertion and report-name collision; neither represents a passing check.
+
+Tool `ddbcf74c2` reads keys from a pinned runtime manifest, preventing compile-time
+specialization of a literal root key. The component interval includes encoding,
+exact output comparison, checksum and scratch-workspace retirement every 100
+replies. Native lookup/registration, request decoding, JavaScriptCore, input/oracle
+setup and startup/teardown are excluded. It uses production V conditions with
+single-unit C O3/LTO, distinct from the parallel production browser. Two control
+and two candidate executions alternate, with separate branch diagnostics:
+
+| Encoder scene | Calls per execution | Control median instructions | Candidate median instructions | Observed change |
+| --- | ---: | ---: | ---: | ---: |
+| Root document | 128,000 | 711,792,747 | 6,446,103 | 99.0944% fewer |
+| Foreign document keys | 64,000 | 365,362,381.5 | 38,449,909 | 89.4762% fewer |
+| Escaped keys | 32,000 | 190,717,888.5 | 27,719,200.5 | 85.4659% fewer |
+| Oversized fallback | 8,000 | 85,834,967.5 | 85,910,807 | 0.0884% more |
+
+The first component cohort's oversized fallback regressed 0.1325%; the final
+length-first guard reduces that observed regression but does not erase it.
+Encoder-only reductions supply no page-level credit. The
+[focused/component receipt](performance/chatgpt-document-reply-20261106.json) and
+[initial component receipt](performance/chatgpt-document-reply-initial-20261106.json)
+retain all observations, failed attempts, runner authentication, source snapshots,
+commands, guards and cleanup evidence.
+
+### Production comparison and required broad checkpoint
+
+The latest completed parallel production bundle has executable SHA-256
+`90def6833d5d2a238dd36a10a7eb8030e8cab0a2470d51d7a034682862224075`, receipt
+source head `781b3aefabc1c9be49f249ef9750492eb4b426bf`, and 33 C units. Stable
+aggregate build-input hashes, exact owned-source Git blobs and available function
+disassembly establish identity. A nonblocking shared publication lease pins the
+canonical bundle and libraries through diagnostics, matched captures and broad
+checks. No manual production build, app copy or new download was requested.
+
+The original SOCKS capture, author scripts, references and tolerances remain
+unchanged. Each browser starts fresh with private profiles/caches, a 1024×768
+logical viewport, backing scale two and an unfocused five-second settle. The
+observed exclusive-coalition scope runs from creation through encoded document
+PNG, with the existing engine-specific audit/delivery/teardown boundaries recorded
+in the raw receipts. OS filesystem/shader caches remain warm; GPU execution and
+services outside the owned coalition are excluded. These are frozen-page workflow
+counts, not isolated rendering or scrolling measurements.
+
+All four diagnostic and eight unprofiled captures pass complete bootstrap,
+content/button identity, normal exits and unchanged per-engine pixel references.
+The candidate-only document-encoder marker verifies execution separately. Vox
+control order is control/candidate/candidate/control across four alternating
+Vox/Brave pairs:
+
+| Vox variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Control 1 | 30,196,324,014 |
+| Candidate 1 | 29,986,944,196 |
+| Candidate 2 | 29,290,709,194 |
+| Control 2 | 30,437,510,317 |
+
+The control median is **30,316,917,165.5**, the candidate median
+**29,638,826,695**, an observed **2.2367% reduction**. The conservative separation
+`min(control) - max(candidate)` is **209,379,818 instructions**. This exceeds the
+5,000,000-instruction broad-check threshold. All **47 required jobs pass**: 20
+screenshot comparisons including live image replacement and SVG paint-server
+mutations, 22 native compile/runtime jobs, four LibJS AST compile/runtime jobs
+with all 100 fixtures exact in both modes, and one pixel-diff control. The credited
+conservative page saving is 209,379,818 and the cadence resets to zero.
+
+Controls complete 476 and 466 frame checkpoints; candidates complete 478 and 484.
+Counts are not normalized by frames. One-minute host load spans about 4.69–5.54
+on 18 CPUs during the matched cohort. The highest Vox upper bound divided by the
+lowest Brave lower bound is about 1.7468, far above 0.95; the exact requested gate
+fails: `608750206340 > 331061504794`. Four pairs also remain below seven-pair
+acceptance. The **5%-below-Brave target remains unmet**.
+
+The controller and outer guard exit zero over 275.43 seconds including the broad
+checkpoint, peak at 1,710,751,744 sampled RSS bytes and adopt 43 process identities
+without an adoption error. The publication lease is released. Finalization and
+independent verification exit zero and authenticate eight archives. The
+[production receipt](performance/chatgpt-document-reply-production-20261106.json)
+and [verification receipt](performance/chatgpt-document-reply-production-verification-20261106.json)
+preserve exact counts, source/control proofs, all 12 captures and original PNGs,
+commands, guards, audits, raw failed attempts and the required broad checkpoint.
+No live-site, cross-browser pixel equality or Brave advantage is claimed.

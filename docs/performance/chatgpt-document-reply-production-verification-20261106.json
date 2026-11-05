@@ -1,0 +1,102 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-document-reply-production-20261106-evidence.zip",
+      "sha256": "18953c360cab7f787ba5e1dab5b6a908f1f0b6ee3e6dfeb15cdbdcd131dfd4c4",
+      "bytes": 1621864
+    },
+    {
+      "path": "docs/performance/chatgpt-document-reply-20261106-evidence.zip",
+      "sha256": "d42d6bcca007bb6d9da18b24f63affc977cb2403813bab4ddc8674e329b80e53",
+      "bytes": 33986047
+    },
+    {
+      "path": "docs/performance/chatgpt-document-reply-development-20261106.zip",
+      "sha256": "04e10f750fbf123e0deb04a106c33d8273eb5f58b231dae515f0df1912ff3469",
+      "bytes": 286109
+    },
+    {
+      "path": "docs/performance/chatgpt-document-reply-initial-20261106-evidence.zip",
+      "sha256": "2ecb1cebe0aa62d6aff52b248586710b80cdd9417dac4e0a819e49d1667ab6c5",
+      "bytes": 19971013
+    },
+    {
+      "path": "docs/performance/chatgpt-document-reply-retirement-20261106.zip",
+      "sha256": "121e1fa69632ebf30036a47237de09f8e29c059c09c885e290d22774f64e88ee",
+      "bytes": 93896138
+    },
+    {
+      "path": "docs/performance/chatgpt-document-reply-production-r1-broad-20261106-evidence.zip",
+      "sha256": "beeb728e289997a58d903c46441b7b615524b43e514e78811c0bc5227d46be41",
+      "bytes": 371649
+    },
+    {
+      "path": "docs/performance/chatgpt-document-reply-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "28d884956fa47d48a310118a989541feff05b8ab3da26f2121e2baf20183f470",
+      "bytes": 1388667
+    },
+    {
+      "path": "docs/performance/chatgpt-document-reply-production-r1-matched-20261106-evidence.zip",
+      "sha256": "cbb613305375866e43e9dd919220114ea3f7ca7d5e36c11eb64de5506faccf88",
+      "bytes": 2774842
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "90def6833d5d2a238dd36a10a7eb8030e8cab0a2470d51d7a034682862224075",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available document query/reply function disassembly",
+      "proof_sha256": "b621d179fc1b84e225f23ae6fbbb382906f3d9cfd2c5d616750f65482cb15168",
+      "source_hashes": {
+        "browserjs/querywire/document_reply.v": "1e859bf774fc6d5bab2adf8baca175595aa3c14f03f88024e24d44f6f87dcd5e",
+        "main_compact_document.v": "20ca0a4445740426d70caea23a966001d6dc076d64f467f6b761f2679804bd85",
+        "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550",
+        "main_compact_identity_reply.v": "d1e5e30b26e496d61b57414eeab90e88b8d044cc077d80e637c675374d757814"
+      },
+      "qualification": "The document identity encoder emits the original exact JSON bytes from a fixed metadata envelope, preserving sorted field order and the original map path for large keys. Root replies are static strings; ordinary keys use the existing string encoder. Each native request still resolves its current document and registers foreign node identities. No owner or document identity is cached, and JavaScript lookup/replay behavior is unchanged. Control retains map serialization. A separate execution marker proves consumption; no source-proof timing credit."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-document-reply-production-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 724877312,
+    "elapsed_seconds": 1.5769261250000002,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "browserjs/querywire/document_reply.v": "1e859bf774fc6d5bab2adf8baca175595aa3c14f03f88024e24d44f6f87dcd5e",
+    "browserjs/querywire/document_reply_test.v": "b018e8c6d28523448a6375ad2fc8e0f7e72792acffef46ff2d982b5703e618d0",
+    "main_compact_document.v": "20ca0a4445740426d70caea23a966001d6dc076d64f467f6b761f2679804bd85",
+    "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550",
+    "main_compact_identity_reply.v": "d1e5e30b26e496d61b57414eeab90e88b8d044cc077d80e637c675374d757814",
+    "main_compact_document_reply_test.v": "651cef3675ff4ab6a01e46c6a7ca52b3cbd958d2dabc6ac555c73f1a2b9aee54"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 408,
+  "page_instruction_credit": 209379818,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 30437510317,
+    "min_brave_lower": 17424289726,
+    "numerator": 608750206340,
+    "denominator": 331061504794,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Raw control/candidate arithmetic and the required broad-check cadence are verified independently. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. Initial/refined encoder observations, including oversized-key point regressions and rejected field-order/build attempts, remain retained. Positive conservative page separation receives credit only with all 47 broad jobs passed. The 5%-below-Brave target remains unmet."
+}
