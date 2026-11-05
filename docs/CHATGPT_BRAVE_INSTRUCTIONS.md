@@ -3768,3 +3768,58 @@ authenticates raw stack reports, commands, browser/guard exits, executable and
 library identities, original audit and PNG in a verified content-addressed
 archive. No app copy or manual production build is used. Whole-page credit and
 the broad cadence remain zero; the 5%-below-Brave target remains unmet.
+
+### Direct folding of calculation terms (2026-11-05)
+
+`3eac0d2ac` folds the validated CSS calculation term sequence directly into
+products and sum children. It removes the temporary operands, operators,
+sum-operands and sum-operators arrays. A single operand returns its existing
+node. Products retain one invert node per divided operand; subtraction retains
+one negate node around the entire following product. The parser still consumes
+and validates the complete alternating sequence before folding, and the exact
+unsimplified tree is unchanged. This adds no retained cache or owner.
+
+All 12 focused compile/runtime jobs pass. Generated runners authenticate 68
+selected test calls per candidate/control execution under ordinary GC, no-GC,
+poisoned preallocation and ASan/UBSan: 544 function executions. Four new tests
+cover all 1,365 operator sequences for one through six operands against the
+original fold, exact unsimplified trees and serialization, signed zero/nonfinite
+leaf bits, nested operands, unchanged input, invalid grammar, nonassociative
+numeric results and output survival after the input workspace is poisoned.
+Existing calculation resolution, NumericType, Typed OM, syntax contexts,
+keyframe substitution, scalar values and arena ownership cases also pass.
+
+Two separate component workloads retain every observation. The first retires
+and poisons a workspace for each calculation. Its original result calls it
+unprofiled because it has no function profiler, but poisoning is diagnostic
+instrumentation and its 0.4–2.7% point reductions receive no unprofiled credit.
+That scope is retained explicitly and is not pooled with the next workload.
+
+The second workload disables poisoning and parses 100 calculations per
+workspace, retaining all 100 retirements per 10,000-calculation scene inside the
+counter interval. Immutable component input is prepared before measurement;
+parsing, exact unsimplified AST comparisons and serialized-output checks are
+included. Each variant has two observations in control/candidate/candidate/
+control order, followed by separate path diagnostics. C O3, production source
+conditions and the explicit runtime overlay are used in a single-C-unit
+component executable, which differs from the parallel production browser.
+
+| Batched component median | Control instructions | Candidate instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| singleton | 23,555,525.0 | 17,025,499.5 | 27.7218% |
+| nested-length | 117,911,683.0 | 96,374,763.0 | 18.2653% |
+| mixed-precedence | 174,443,846.5 | 143,892,579.5 | 17.5135% |
+| division-chain | 73,605,921.5 | 62,683,048.5 | 14.8397% |
+| long-sum | 260,570,413.0 | 218,908,276.0 | 15.9888% |
+| function | 83,070,520.0 | 63,323,048.5 | 23.7719% |
+| invalid-tail | 15,620,385.0 | 15,640,050.5 | -0.1259% |
+
+Invalid-tail rejection never reaches the changed fold. Its observed median is
+0.1259% higher and is retained without attributing that difference to a branch
+that cannot execute. Valid calculations show 14.8–27.7% lower component medians.
+The [focused/component receipt](performance/chatgpt-calc-fold-20261105.json)
+authenticates both complete workloads, commands, every guard, generated runner,
+source and raw count. Its verified content-addressed archive preserves
+385,535,771 generated C bytes before deleting redundant Build outputs.
+Whole-page credit and the broad cadence remain zero pending the production
+comparison. The 5%-below-Brave goal remains unmet.
