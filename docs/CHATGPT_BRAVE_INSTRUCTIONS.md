@@ -1961,3 +1961,30 @@ It receives no timing or instruction acceptance credit.
 The requested **5% advantage over Brave remains unmet**. These frozen-page
 results establish neither live-site performance nor isolated rendering time or
 scrolling FPS, and no qualifying catalog entry is added.
+
+## November 5: production stack and frame-stage diagnostics
+
+Two fresh production launches collect native stack samples; a third enables
+the existing frame-stage instruction checkpoints. All three pass bootstrap,
+full content, exact pixels and stable input identities. `xctrace` is unavailable
+on this host, so these runs use `/usr/bin/sample`. The first sampler recipe
+performs symbol lookup before collection; the second defers it. Their requested
+windows and actual command durations are retained. Waiting threads dominate
+the reports, and neither recipe establishes production instruction costs.
+
+The checkpoint capture records 1,724 ordered cumulative readings with no
+decreases. Its 312 context-ready/document-replayed intervals total
+6,049,734,466 current-process instructions. Eight frame-complete/build-boxes
+gaps total 8,016,038,231, but include intervening style and other work before
+the box marker; they do not isolate tree construction. Frame-complete/prepared
+gaps total another 5,110,390,928. These are leads for a finer profile, with
+concurrent process threads included and no optimization credit. The
+[production diagnostic receipt](performance/chatgpt-production-diagnostics-20261105.json)
+retains every command, sample, checkpoint, PNG, identity, guard and host condition.
+
+Tooling commit `c19ede019` adds `--optimization production` to the sealed C
+profiler. It preserves the completed receipt's optimization and inlining flags;
+the original `O1` mode remains the default. All eleven tooling tests pass,
+including exact compiler-option preservation, CLI forwarding, invalid-mode
+rejection and real recursive/partial callback execution under C `-O3`. Profiles
+remain diagnostic because their callbacks and counters add work.

@@ -1,0 +1,511 @@
+{
+  "version": 1,
+  "complete": true,
+  "jobs": [
+    {
+      "path": "Build/chatgpt-production-samples-20261105-r1",
+      "production": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+          "mode": "single",
+          "requested": "parallel"
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "fc1b35e2a33b03af8106ca59b65b3f4961ed02cad05a2abff8fa1953c6135c1a",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-085357-ec81582c/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "87b9190712a8928daf38cad6df37575a71624ea729a1cec90a974b15ff4f987c",
+          "dirty": true,
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "repository_sha256": "399aa1ca27a2349718ede4b4f48c53a9fcea5cd945803bbd602ec845651a74b8"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "26721faae931243090c35ffe750699bedf5586e63dcdf7c0620b46baeec30897",
+          "dirty": true,
+          "head": "683a4fb69f2dbd60a5d2f6f9bcd76533a8471463",
+          "repository_sha256": "b8e6bb9dcb5e604367a418eb899e61737c44bf4e3cc55e1aaa82cc06dcebb62c"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "id": "b91afb3349de4064a875828f7bc230fe"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "87b9190712a8928daf38cad6df37575a71624ea729a1cec90a974b15ff4f987c",
+          "dirty": true,
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "repository_sha256": "e5c21cde8f27443b35a7dbdf19edcfb12cc6c5dccbbf34e7606fc6a54b8e3711"
+        }
+      },
+      "scope": "Two native /usr/bin/sample stack windows in one fresh canonical production process. First requested immediately after launch, second ten seconds after launch, five-second durations and five-millisecond requested intervals. Actual sampler commands/timestamps retained; symbol loading can delay observations. Thirty-second diagnostic settle, original scripts and saved SOCKS fixture, 1024x768 viewport, scale 2, unchanged pixels/content. Sampling includes waiting threads and cannot establish production instruction costs or optimization acceptance.",
+      "observations": [
+        {
+          "label": "startup",
+          "command": [
+            "/usr/bin/sample",
+            "56159",
+            "5",
+            "5",
+            "-mayDie",
+            "-file",
+            "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r1/startup.txt"
+          ],
+          "started_unix": 1793858577.604765,
+          "host_load": [
+            70.9501953125,
+            32.16162109375,
+            32.50830078125
+          ],
+          "exit": 0,
+          "finished_unix": 1793858605.615608
+        },
+        {
+          "label": "settled",
+          "command": [
+            "/usr/bin/sample",
+            "56159",
+            "5",
+            "5",
+            "-mayDie",
+            "-file",
+            "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r1/settled.txt"
+          ],
+          "started_unix": 1793858587.512044,
+          "host_load": [
+            73.64794921875,
+            34.0029296875,
+            33.15625
+          ],
+          "exit": 0,
+          "finished_unix": 1793858605.653516
+        }
+      ],
+      "identity": {
+        "pid": 56159,
+        "start_ticks": 3094685294737
+      },
+      "host_before": {
+        "unix": 1793858577.510825,
+        "cpu_count": 18,
+        "load": [
+          70.9501953125,
+          32.16162109375,
+          32.50830078125
+        ]
+      },
+      "host_after": {
+        "unix": 1793858612.7435122,
+        "load": [
+          77.56005859375,
+          38.16259765625,
+          34.68359375
+        ]
+      },
+      "content": {
+        "title": "ChatGPT: Chat, Work, Create & Code with AI",
+        "counts": {
+          "headings": 1,
+          "editors": 1,
+          "buttons": 52,
+          "links": 27,
+          "images": 2,
+          "bootstrap": 1,
+          "performance_policy": 0
+        }
+      },
+      "pixels": {
+        "exact": true,
+        "different_pixels": 0,
+        "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r1/document.png",
+        "diff": "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r1/document.diff.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r1/document.diff.png\n"
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-production-samples-20261105-r1/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {
+          "56159": "Thu Nov  5 09:02:57 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 2284470272,
+        "elapsed_seconds": 37.453258584000004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/chatgpt-production-samples-20261105-r2",
+      "production": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+          "mode": "single",
+          "requested": "parallel"
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "fc1b35e2a33b03af8106ca59b65b3f4961ed02cad05a2abff8fa1953c6135c1a",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-085357-ec81582c/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "87b9190712a8928daf38cad6df37575a71624ea729a1cec90a974b15ff4f987c",
+          "dirty": true,
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "repository_sha256": "399aa1ca27a2349718ede4b4f48c53a9fcea5cd945803bbd602ec845651a74b8"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "26721faae931243090c35ffe750699bedf5586e63dcdf7c0620b46baeec30897",
+          "dirty": true,
+          "head": "683a4fb69f2dbd60a5d2f6f9bcd76533a8471463",
+          "repository_sha256": "b8e6bb9dcb5e604367a418eb899e61737c44bf4e3cc55e1aaa82cc06dcebb62c"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "id": "b91afb3349de4064a875828f7bc230fe"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "87b9190712a8928daf38cad6df37575a71624ea729a1cec90a974b15ff4f987c",
+          "dirty": true,
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "repository_sha256": "e5c21cde8f27443b35a7dbdf19edcfb12cc6c5dccbbf34e7606fc6a54b8e3711"
+        }
+      },
+      "scope": "Two native /usr/bin/sample stack windows in one fresh canonical production process. First requested immediately after launch, second ten seconds after launch, five-second durations and five-millisecond requested intervals. Default sampler mode defers symbol lookup until after sampling; requested command windows and actual command completion timestamps retained. Both reports include waiting threads. Thirty-second diagnostic settle, original scripts and saved SOCKS fixture, 1024x768 viewport, scale 2, unchanged pixels/content. Sampling includes waiting threads and cannot establish production instruction costs or optimization acceptance.",
+      "observations": [
+        {
+          "label": "startup",
+          "command": [
+            "/usr/bin/sample",
+            "65891",
+            "5",
+            "5",
+            "-file",
+            "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r2/startup.txt"
+          ],
+          "started_unix": 1793858696.144618,
+          "host_load": [
+            94.58740234375,
+            53.57421875,
+            40.92578125
+          ],
+          "exit": 0,
+          "finished_unix": 1793858706.758805
+        },
+        {
+          "label": "settled",
+          "command": [
+            "/usr/bin/sample",
+            "65891",
+            "5",
+            "5",
+            "-file",
+            "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r2/settled.txt"
+          ],
+          "started_unix": 1793858706.0954711,
+          "host_load": [
+            98.38818359375,
+            55.7431640625,
+            41.84326171875
+          ],
+          "exit": 0,
+          "finished_unix": 1793858716.88009
+        }
+      ],
+      "identity": {
+        "pid": 65891,
+        "start_ticks": 3097531234362
+      },
+      "host_before": {
+        "unix": 1793858696.092139,
+        "cpu_count": 18,
+        "load": [
+          94.58740234375,
+          53.57421875,
+          40.92578125
+        ]
+      },
+      "host_after": {
+        "unix": 1793858730.837822,
+        "load": [
+          98.30517578125,
+          59.3037109375,
+          43.53759765625
+        ]
+      },
+      "content": {
+        "title": "ChatGPT: Chat, Work, Create & Code with AI",
+        "counts": {
+          "headings": 1,
+          "editors": 1,
+          "buttons": 52,
+          "links": 27,
+          "images": 2,
+          "bootstrap": 1,
+          "performance_policy": 0
+        }
+      },
+      "pixels": {
+        "exact": true,
+        "different_pixels": 0,
+        "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r2/document.png",
+        "diff": "/Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r2/document.diff.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-production-samples-20261105-r2/document.diff.png\n"
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-production-samples-20261105-r2/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {
+          "65891": "Thu Nov  5 09:04:56 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1737146368,
+        "elapsed_seconds": 36.78060525,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/chatgpt-frame-parts-20261105-r1",
+      "production": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+          "mode": "single",
+          "requested": "parallel"
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "fc1b35e2a33b03af8106ca59b65b3f4961ed02cad05a2abff8fa1953c6135c1a",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-085357-ec81582c/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "87b9190712a8928daf38cad6df37575a71624ea729a1cec90a974b15ff4f987c",
+          "dirty": true,
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "repository_sha256": "399aa1ca27a2349718ede4b4f48c53a9fcea5cd945803bbd602ec845651a74b8"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "26721faae931243090c35ffe750699bedf5586e63dcdf7c0620b46baeec30897",
+          "dirty": true,
+          "head": "683a4fb69f2dbd60a5d2f6f9bcd76533a8471463",
+          "repository_sha256": "b8e6bb9dcb5e604367a418eb899e61737c44bf4e3cc55e1aaa82cc06dcebb62c"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "id": "b91afb3349de4064a875828f7bc230fe"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "87b9190712a8928daf38cad6df37575a71624ea729a1cec90a974b15ff4f987c",
+          "dirty": true,
+          "head": "c2deb6773d4abccc969fba35ec0307afcd8efddd",
+          "repository_sha256": "e5c21cde8f27443b35a7dbdf19edcfb12cc6c5dccbbf34e7606fc6a54b8e3711"
+        }
+      },
+      "scope": "Native production instruction-checkpoint diagnostic with VOX_DIAGNOSTIC_FRAME_PARTS enabled; no sampling or compiler instrumentation. Cumulative current-process counters include concurrent process threads. Original frozen fixture and author scripts, unchanged pixels/content, five-second settle, 1024x768 viewport and scale 2. Added diagnostic checkpoints cannot supply unprofiled optimization or Brave acceptance credit.",
+      "observations": [],
+      "identity": {
+        "pid": 74357,
+        "start_ticks": 3101310475502
+      },
+      "host_before": {
+        "unix": 1793858853.5627468,
+        "cpu_count": 18,
+        "load": [
+          86.36279296875,
+          68.08056640625,
+          49.20654296875
+        ]
+      },
+      "host_after": {
+        "unix": 1793858864.536062,
+        "load": [
+          88.85595703125,
+          69.22705078125,
+          49.83447265625
+        ]
+      },
+      "content": {
+        "title": "ChatGPT: Chat, Work, Create & Code with AI",
+        "counts": {
+          "headings": 1,
+          "editors": 1,
+          "buttons": 52,
+          "links": 27,
+          "images": 2,
+          "bootstrap": 1,
+          "performance_policy": 0
+        }
+      },
+      "pixels": {
+        "exact": true,
+        "different_pixels": 0,
+        "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-frame-parts-20261105-r1/document.png",
+        "diff": "/Users/alex/code/vox2/Build/chatgpt-frame-parts-20261105-r1/document.diff.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-frame-parts-20261105-r1/document.diff.png\n"
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-frame-parts-20261105-r1/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {
+          "74357": "Thu Nov  5 09:07:33 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1690959872,
+        "elapsed_seconds": 13.156882750000001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "top_phase_intervals": [
+    {
+      "previous": "frame_complete",
+      "label": "build_boxes",
+      "count": 8,
+      "instructions": 8016038231
+    },
+    {
+      "previous": "frame_context_ready",
+      "label": "frame_document_replayed",
+      "count": 312,
+      "instructions": 6049734466
+    },
+    {
+      "previous": "frame_complete",
+      "label": "frame_prepared",
+      "count": 292,
+      "instructions": 5110390928
+    },
+    {
+      "previous": "formatting_contexts",
+      "label": "absolute_descendants",
+      "count": 13,
+      "instructions": 2069382112
+    },
+    {
+      "previous": "attach_layout",
+      "label": "build_boxes",
+      "count": 1,
+      "instructions": 1293290016
+    },
+    {
+      "previous": "layout_tree",
+      "label": "build_boxes",
+      "count": 1,
+      "instructions": 1101045757
+    },
+    {
+      "previous": "unsized_script_images",
+      "label": "build_boxes",
+      "count": 1,
+      "instructions": 980880695
+    },
+    {
+      "previous": "javascript_adblock_scriptlets",
+      "label": "javascript_readiness_events",
+      "count": 1,
+      "instructions": 861640899
+    },
+    {
+      "previous": "startup_filter_worker",
+      "label": "frame_prepared",
+      "count": 1,
+      "instructions": 470739197
+    },
+    {
+      "previous": "attach_layout",
+      "label": "layout_tree",
+      "count": 10,
+      "instructions": 392199415
+    },
+    {
+      "previous": "parse_document",
+      "label": "preload_resources",
+      "count": 1,
+      "instructions": 357740243
+    },
+    {
+      "previous": "frame_complete",
+      "label": "paint_commands",
+      "count": 4,
+      "instructions": 350478273
+    },
+    {
+      "previous": "process_creation",
+      "label": "startup",
+      "count": 1,
+      "instructions": 258403577
+    },
+    {
+      "previous": "frame_complete",
+      "label": "layout_tree",
+      "count": 3,
+      "instructions": 242840087
+    },
+    {
+      "previous": "frame_complete",
+      "label": "parse_document",
+      "count": 1,
+      "instructions": 217546179
+    },
+    {
+      "previous": "main_resource_cache",
+      "label": "frame_prepared",
+      "count": 1,
+      "instructions": 198376402
+    },
+    {
+      "previous": "frame_complete",
+      "label": "build_tree_total",
+      "count": 2,
+      "instructions": 184829380
+    },
+    {
+      "previous": "build_tree_total",
+      "label": "formatting_contexts",
+      "count": 13,
+      "instructions": 138605337
+    },
+    {
+      "previous": "frame_complete",
+      "label": "main_resource_fetch",
+      "count": 1,
+      "instructions": 112430238
+    },
+    {
+      "previous": "install_video_frames",
+      "label": "javascript_native_bindings",
+      "count": 1,
+      "instructions": 80501107
+    }
+  ],
+  "qualification": "Production stack sampling and separately enabled frame-stage checkpoints are diagnostic only. Both sampler attempts and the frame-stage capture pass bootstrap, full content and unchanged pixels with stable inputs. Native samples include waiting threads; recursive stacks overlap and requested command timing is not a proven sampling boundary. The first attempt uses mayDie, whose symbol preflight can delay collection; the second uses default post-sampling symbol resolution. Neither supplies retired-instruction cost attribution. Frame intervals are adjacent cumulative current-process counter differences, including concurrent process threads. Labels such as build_boxes include work performed before that marker and do not isolate function costs. No instruction acceptance or optimization credit.",
+  "unavailable_tool": "xcrun xctrace list templates exited 72 because xctrace is unavailable; native /usr/bin/sample fallback used.",
+  "acceptance": false,
+  "instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "evidence": {
+    "path": "docs/performance/chatgpt-production-diagnostics-20261105-evidence.zip",
+    "sha256": "887cace4f54007745e0f4f538d20c798cad4ca34a03980cffb47265bea2088b3",
+    "bytes": 630924,
+    "entries": 57
+  }
+}
