@@ -194,3 +194,31 @@ console.log("native class collection ready");
 	second.set_attribute_value('class', 'tracked')
 	assert runtime.evaluate_host('heldDocumentClasses.length===1&&heldDocumentClasses[0]===second&&heldDocumentClasses.first===undefined&&heldElementClasses.item(0)===second&&heldElementClasses.namedItem("second")===second')! == 'true'
 }
+
+fn test_compact_class_collection_wraps_only_requested_elements_with_stable_identity() {
+	$if !darwin {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><p class="rank">1.</p><p class="rank">2.</p><p class="rank" id="third">3.</p><p class="rank">4.</p>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [
+		r'
+const ranks=document.getElementsByClassName("rank");
+const last=ranks[3],first=ranks.item(0);
+if(last.textContent!=="4."||first.textContent!=="1."||ranks.length!==4)throw new Error("out-of-order access");
+if(ranks[2]!==third||ranks.namedItem("third")!==third||ranks.third!==third)throw new Error("named and indexed identity");
+const iterated=Array.from(ranks);
+if(iterated.length!==4||iterated[0]!==first||iterated[3]!==last||iterated[2]!==third)throw new Error("iteration identity");
+if(!(1 in ranks)||(4 in ranks)||Object.getOwnPropertyDescriptor(ranks,"3").value!==last)throw new Error("index descriptors");
+first.remove();
+if(ranks.length!==3||ranks[0]!==iterated[1]||ranks[2]!==last||ranks[3]!==undefined)throw new Error("live after removal");
+console.log("lazy class collection passed");
+',
+	], runtime, mut messages)
+	assert messages == ['lazy class collection passed']
+}

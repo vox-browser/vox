@@ -105,9 +105,9 @@ function __compactChildNodes(receiver,state){
  return list;
 }
 const __compactArrayQuery=__queryElements;
-__queryElements=function(key,action,selector){
- const result=__compactArrayQuery(key,action,selector);
- return action==="querySelectorAll"?__compactNodeList(()=>result):result;
+__queryElements=function(key,action,selector,raw){
+ const result=__compactArrayQuery(key,action,selector,raw);
+ return !raw&&action==="querySelectorAll"?__compactNodeList(()=>result):result;
 };
 Object.defineProperty(Element.prototype,"childNodes",{get:function(){return __compactChildNodes(this,__compactNodeState(this));},enumerable:true,configurable:true});
 Object.defineProperty(document,"childNodes",{get:function(){if(this!==document)throw new TypeError("Illegal Document receiver");return __compactChildNodes(this,{bridgeKey:""});},enumerable:true,configurable:true});

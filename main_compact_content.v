@@ -422,7 +422,14 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 fn compact_class_collection_bootstrap() string {
 	return r'
 function __classCollection(key, classNames, reader, namedReader) {
- const read=reader||(()=>__queryElements(key,"getElementsByClassName",classNames));
+ // Length, indexed and iterated reads wrap only the elements they return;
+ // getElementsByClassName(name)[0] no longer builds a facade for every match.
+ // A reply carries the full state of an element once; retain every state
+ // it introduces so later replies may refer to it by key alone.
+ const states=reader?null:(()=>{const list=__queryElements(key,"getElementsByClassName",classNames,true);for(const value of list)if(value!==null&&!__state.elements[value.bridgeKey])__state.elements[value.bridgeKey]=value;return list;});
+ const read=reader||(()=>states().map(__queryElement));
+ const count=()=>states?states().length:read().length;
+ const at=index=>{if(!states)return read()[index];const state=states()[index];return state===undefined?undefined:__queryElement(state);};
  function named(elements,name) {
   if(namedReader)return namedReader(name);
   if(name==="")return null;
@@ -434,21 +441,21 @@ function __classCollection(key, classNames, reader, namedReader) {
  }
  function isIndex(property){return typeof property==="string"&&/^(0|[1-9][0-9]*)$/.test(property)&&Number(property)<4294967295;}
  const target={
-  item(index){if(arguments.length===0)throw new TypeError("item requires an index");index=(+index)>>>0;return read()[index]||null;},
+  item(index){if(arguments.length===0)throw new TypeError("item requires an index");index=(+index)>>>0;return at(index)||null;},
   namedItem(name){if(arguments.length===0)throw new TypeError("namedItem requires a name");if(typeof name==="symbol")throw new TypeError("Cannot convert a Symbol to a string");name=String(name);return named(read(),name);},
-  *[Symbol.iterator](){let index=0;for(;;){const elements=read();if(index>=elements.length)return;yield elements[index++];}}
+  *[Symbol.iterator](){let index=0;for(;;){if(!states){const elements=read();if(index>=elements.length)return;yield elements[index++];continue;}const list=states();if(index>=list.length)return;yield __queryElement(list[index++]);}}
  };
  Object.setPrototypeOf(target,HTMLCollection.prototype);
  for(const method of ["item","namedItem",Symbol.iterator])Object.defineProperty(target,method,{enumerable:false});
  Object.defineProperty(target,Symbol.toStringTag,{value:"HTMLCollection",configurable:true});
  return new Proxy(target,{
   get(target,property,receiver){
-   if(property==="length")return read().length;
+   if(property==="length")return count();
    if(Reflect.has(target,property))return Reflect.get(target,property,receiver);
-   if(isIndex(property))return read()[Number(property)];
+   if(isIndex(property))return at(Number(property));
    if(typeof property==="string")return named(read(),property)||undefined;
   },
-  has(target,property){return property==="length"||Reflect.has(target,property)||(isIndex(property)?Number(property)<read().length:typeof property==="string"&&named(read(),property)!==null);},
+  has(target,property){return property==="length"||Reflect.has(target,property)||(isIndex(property)?Number(property)<count():typeof property==="string"&&named(read(),property)!==null);},
   ownKeys(target){
    const elements=read(),keys=Reflect.ownKeys(target);
    for(let index=0;index<elements.length;index++)keys.push(String(index));
@@ -457,8 +464,8 @@ function __classCollection(key, classNames, reader, namedReader) {
   },
   getOwnPropertyDescriptor(target,property){
    const own=Reflect.getOwnPropertyDescriptor(target,property);if(own)return own;
-   if(property==="length")return{value:read().length,writable:false,enumerable:false,configurable:true};
-   if(isIndex(property)){const element=read()[Number(property)];if(element)return{value:element,writable:false,enumerable:true,configurable:true};}
+   if(property==="length")return{value:count(),writable:false,enumerable:false,configurable:true};
+   if(isIndex(property)){const element=at(Number(property));if(element)return{value:element,writable:false,enumerable:true,configurable:true};}
    else if(typeof property==="string"){const element=named(read(),property);if(element)return{value:element,writable:false,enumerable:false,configurable:true};}
   }
  });
