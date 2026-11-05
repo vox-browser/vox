@@ -10950,7 +10950,6 @@ pub mut:
 	size_query_matches_ map[u64]RecordedSizeQueryMatches
 	materializing_hidden_styles_ bool
 	matching_rule_candidates_                            &MatchingRuleCandidateScratch = unsafe { nil }
-	short_attribute_matches_ &ShortAttributeMatchMemo = unsafe { nil }
 	matching_rule_sets_ &MatchingRuleSetWorkspacePool = unsafe { nil }
 	initial_layout_snapshots_ &InitialLayoutSnapshotPool = unsafe { nil }
 	cascade_scratch_ &CascadeScratchPool = unsafe { nil }

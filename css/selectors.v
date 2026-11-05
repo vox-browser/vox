@@ -42,7 +42,6 @@ pub mut:
 	inside_has_argument_match                         bool
 	attempted_pseudo_class_matches                    PseudoClassBitmap
 	has_result_cache                                  &HasResultCache = &HasResultCache{}
-	short_attribute_match_owner &StyleComputer = unsafe { nil }
 }
 
 pub enum PseudoClass {
@@ -1728,7 +1727,7 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 			return element.has_class(component.name().name)
 		}
 		.attribute {
-			return matches_attribute_with_memo(component.attribute(), context.style_sheet_for_rule, element, context.short_attribute_match_owner)
+			return matches_attribute(component.attribute(), context.style_sheet_for_rule, element)
 		}
 		.pseudo_class {
 			return matches_pseudo_class(component.pseudo_class(), element, shadow_host, mut context, scope, selector_kind)
@@ -2280,7 +2279,7 @@ fn fast_matches_simple_selector(simple_selector &SimpleSelector, element &dom.El
 			return simple_selector.name().name == id
 		}
 		.attribute {
-			return matches_attribute_with_memo(simple_selector.attribute(), context.style_sheet_for_rule, element, context.short_attribute_match_owner)
+			return matches_attribute(simple_selector.attribute(), context.style_sheet_for_rule, element)
 		}
 		.pseudo_class {
 			return matches_pseudo_class(simple_selector.pseudo_class(), element, shadow_host, mut context, none, .normal)
@@ -3597,10 +3596,6 @@ enum SelectorCaseSensitivity {
 }
 
 fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyleSheet, element &dom.Element) bool {
-	return matches_attribute_with_memo(attribute, style_sheet_for_rule, element, unsafe { nil })
-}
-
-fn matches_attribute_with_memo(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyleSheet, element &dom.Element, owner &StyleComputer) bool {
 	attribute_name := attribute.qualified_name.name.name
 
 	case_sensitivity := match attribute.case_type {
@@ -3623,12 +3618,12 @@ fn matches_attribute_with_memo(attribute SelectorAttribute, style_sheet_for_rule
 	}
 
 	return matches_attribute_in_namespace(attribute, style_sheet_for_rule, element,
-		case_sensitivity, owner)
+		case_sensitivity)
 }
 
 fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 	style_sheet_for_rule ?&CSSStyleSheet, element &dom.Element,
-	case_sensitivity SelectorCaseSensitivity, owner &StyleComputer) bool {
+	case_sensitivity SelectorCaseSensitivity) bool {
 	qualified_name := attribute_selector.qualified_name
 	attribute_name := qualified_name.name.name
 
@@ -3637,7 +3632,7 @@ fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 			// "In keeping with the Namespaces in the XML recommendation, default namespaces do not apply to attributes,
 			//  therefore attribute selectors without a namespace component apply only to attributes that have no namespace (equivalent to "|attr")"
 			if attribute := element.get_attribute_node(attribute_name) {
-				return matches_single_attribute_with_memo(attribute_selector, attribute, case_sensitivity, owner)
+				return matches_single_attribute(attribute_selector, attribute, case_sensitivity)
 			}
 		}
 		.any {
@@ -3658,7 +3653,7 @@ fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 					} else {
 						attr.local_name_ == attribute_name
 					}
-					if is_match && matches_single_attribute_with_memo(attribute_selector, attr, case_sensitivity, owner) {
+					if is_match && matches_single_attribute(attribute_selector, attr, case_sensitivity) {
 						return true
 					}
 				}
@@ -3670,7 +3665,7 @@ fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
 				return false
 			}
 			if attribute := element.get_attribute_node_ns(selector_namespace, attribute_name) {
-				return matches_single_attribute_with_memo(attribute_selector, attribute, case_sensitivity, owner)
+				return matches_single_attribute(attribute_selector, attribute, case_sensitivity)
 			}
 		}
 	}
