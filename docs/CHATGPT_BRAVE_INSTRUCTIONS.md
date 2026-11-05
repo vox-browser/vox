@@ -1812,4 +1812,58 @@ links source proofs, complete component counts, the initial failure, all focused
 checks, compiler/fixture identities, memory guards and verified durable archives.
 The original single SOCKS capture, scripts, pixel references and five-second
 acceptance workload remain unchanged. The requested 5% Brave advantage remains
-unmet, with whole-page validation of this feature pending.
+unmet. The subsequent whole-page validation is recorded below.
+
+## November 5: packed lookup production validation and selected instruction scopes
+
+The latest completed single-C-unit bundle, executable
+`557eb0c8a7012096e4002361f9b66f873bd6ac15c97d5e151f127f4e876f4dcf`,
+contains the packed lookup. Sealed source proofs and separate execution markers
+confirm both the candidate and original iteration control. All 12 production
+captures pass bootstrap, complete content identity and the unchanged pixel
+reference. Per-capture executable, dependency, tool and fixture identities stay
+stable. No separate build or app copy was needed.
+
+The unprofiled four-pair diagnostic retains control/candidate/candidate/control
+Vox order and alternating Brave captures. Control counts are 30,411,172,659 and
+30,449,275,864; candidate counts are 30,598,811,866 and 30,123,102,072. Their
+medians are **30,430,224,261.5 versus 30,360,956,969**, an observed 0.228%
+reduction. The ranges overlap: conservative separation is **−187,639,207**.
+There is **zero whole-page savings credit** and no new broad-check checkpoint.
+The candidate completes 193/168 frame checkpoints versus the controls' 240/213;
+all four record 11 box-build checkpoints. Host load ranges roughly 62–81 on 18
+CPUs. These differences prevent attributing the median change to the lookup.
+Every browser and kernel exit is zero; the underlying driver's exit 1 records
+the unmet target. Four pairs also remain below seven-pair acceptance.
+
+The [production receipt](performance/chatgpt-length-unit-production-20261105.json)
+preserves every observation, source proof, content/pixel check, ownership audit,
+raw counter interval, host condition and verified evidence archive. The memory
+guard adopts 46 processes without errors and peaks at 1,904,001,024 bytes under
+12 GiB. Original scripts, the saved SOCKS fixture, private profiles/caches,
+five-second settle, 1024×768 viewport, scale 2 and launch-through-encoded-PNG
+coalition boundary remain unchanged. OS filesystem/shader caches are retained.
+The requested 5% advantage over Brave remains unmet.
+
+Tooling commit `c072bc10f` adds selected current-process instruction scopes to
+the sealed-source diagnostic profiler. All nine focused tooling tests pass,
+including real recursive/partial scopes, background-thread exclusion, strict
+counter validation and the optional no-inline compiler mode. The separately
+instrumented browser builds from the same completed production receipt in
+96.36 seconds, peaking at 3,852,615,680 bytes under 12 GiB. Its thirty-second
+diagnostic passes bootstrap, full content and exact pixels with stable inputs,
+zero profiler faults and one partial root frame. Runtime peak is 1,729,249,280
+bytes under 3 GiB.
+
+The [selected-scope profile](performance/chatgpt-targeted-profile-20261105.json)
+records 352,666,095,950 process instructions while its gate is active. Selected
+self scopes include animation-style updates (94,996,573,420), retained layout
+contexts (69,812,481,469), module delivery (59,093,683,054) and drawing
+(35,068,195,619); the native effect-layer completion scope records
+3,689,908,341. These are leads for component experiments. C `-O1`, disabled
+optional inlining and callback overhead change the workload substantially.
+Scopes include concurrent process threads, and self subtracts only selected
+children. Recursive inclusive totals overlap and cannot be summed. Module
+initialization is excluded and the standalone adblock worker differs from the
+production helper. This profile establishes neither production function costs
+nor an unprofiled saving; it receives no acceptance or instruction credit.
