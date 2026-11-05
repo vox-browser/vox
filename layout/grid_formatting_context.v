@@ -1310,7 +1310,7 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placemen
 			grid_lines_for_definition(item, child_rows_template, CSSPixels.new(0), CSSPixels.new(0),
 				false, child_areas, false)
 		}
-		child_result := place_grid_items_in_state(mut state, item, child_column_lines, child_row_lines,
+		child_result := place_grid_items(item, child_column_lines, child_row_lines,
 			child_columns_subgridded, child_rows_subgridded)
 		mut child_placements := child_result.placements.clone()
 		mut edge_start := if columns { placement.inline_start_extra } else { placement.block_start_extra }
@@ -2704,7 +2704,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	}
 	explicit_column_count := if column_lines.len > 0 { column_lines.len - 1 } else { 0 }
 	explicit_row_count := if row_lines.len > 0 { row_lines.len - 1 } else { 0 }
-	placement_result := place_grid_items_in_state(mut state, container, column_lines, row_lines, subgridded_columns,
+	placement_result := place_grid_items(container, column_lines, row_lines, subgridded_columns,
 		subgridded_rows)
 	placements := placement_result.placements
 	column_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
