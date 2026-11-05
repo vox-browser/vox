@@ -83,6 +83,7 @@ public:
         active_ = memory_.BeginAccess(texture_, &descriptor) == wgpu::Status::Success;
         return active_;
     }
+    bool resume_initialized() { return active_ || begin(true); }
     bool end_and_wait() {
         if (!active_) return false;
         wgpu::SharedTextureMemoryEndAccessState state;

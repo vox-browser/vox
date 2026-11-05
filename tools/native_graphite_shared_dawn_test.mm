@@ -141,6 +141,7 @@ static void check_retired_texture_views() {
 int main(int argc, char** argv) { @autoreleasepool {
     if (argc > 1 && !std::strcmp(argv[1], "--recorder-reuse")) {
         setenv("VOX_DAWN_REGION_RECORDER_DIAGNOSTICS", "1", 1);
+        setenv("VOX_REUSE_DAWN_REGION_TARGET", "1", 1);
         unsigned cases = 0;
         for (float phase : {0.f, .25f, .5f, .75f}) for (bool image : {false, true})
             for (bool tagged : {false, true}) for (bool cropped : {false, true}) {
@@ -149,7 +150,7 @@ int main(int argc, char** argv) { @autoreleasepool {
                 assert(!regional_recorder);
                 setenv("VOX_REUSE_DAWN_REGION_RECORDER", "1", 1);
                 assert(draw(true, false, false, phase, image, tagged, cropped) == expected);
-                auto* retained = regional_recorder.get(); assert(retained);
+                auto* retained = regional_recorder.get(); assert(retained && regional_surface);
                 assert(draw(true, false, false, phase, image, tagged, cropped) == expected);
                 assert(regional_recorder.get() == retained);
                 ++cases;
@@ -160,16 +161,16 @@ int main(int argc, char** argv) { @autoreleasepool {
         test_fail_dawn_region_after_draw = true;
         assert(!vox_graphite_draw_picture_pixels(pixels.data(), 193, 137, 193 * 4,
             bytes->data(), bytes->size(), identity));
-        assert(!regional_recorder && pixels == saved);
+        assert(!regional_recorder && !regional_surface && pixels == saved);
         test_fail_dawn_region_after_draw = false;
         assert(vox_graphite_draw_picture_pixels(pixels.data(), 193, 137, 193 * 4,
             bytes->data(), bytes->size(), identity) && regional_recorder);
         vox_graphite_picture_release_unused_graphics_memory();
-        assert(!regional_recorder);
+        assert(!regional_recorder && !regional_surface);
         assert(vox_graphite_draw_picture_pixels(pixels.data(), 193, 137, 193 * 4,
             bytes->data(), bytes->size(), identity) && regional_recorder);
         assert(vox_graphite_picture_retire_graphics_context());
-        assert(!regional_recorder && !gpu_context);
+        assert(!regional_recorder && !regional_surface && !gpu_context);
         assert(vox_graphite_draw_picture_pixels(pixels.data(), 193, 137, 193 * 4,
             bytes->data(), bytes->size(), identity) && regional_recorder);
         std::printf("%u exact cold/reused Dawn recorder cases; failure discard, purge and context retirement passed\n", cases);

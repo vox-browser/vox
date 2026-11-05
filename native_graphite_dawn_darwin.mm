@@ -36,6 +36,7 @@ std::mutex gpu_mutex;
 VoxPictureTypefaceCache typeface_cache;
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 std::unique_ptr<skgpu::graphite::Recorder> regional_recorder;
+std::unique_ptr<VoxDawnSharedSurface> regional_surface;
 bool gpu_context_attempted = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
@@ -187,12 +188,15 @@ sk_sp<SkTypeface> decode_picture_typeface(SkStream& stream, void*)
 // this recorder. Retain its glyph atlas between regions, and discard failed
 // recordings rather than allowing their pending tasks into the next draw.
 class RegionalRecorderLease {
-    bool reuse_, complete_ = false;
+    bool reuse_, reuse_target_, complete_ = false;
 public:
     std::unique_ptr<skgpu::graphite::Recorder> recorder;
+    VoxDawnSharedSurface target;
     explicit RegionalRecorderLease(skgpu::graphite::Context* gpu)
-        : reuse_(pthread_main_np() && std::getenv("VOX_REUSE_DAWN_REGION_RECORDER")) {
+        : reuse_(pthread_main_np() && std::getenv("VOX_REUSE_DAWN_REGION_RECORDER")),
+          reuse_target_(reuse_ && std::getenv("VOX_REUSE_DAWN_REGION_TARGET")) {
         bool reused = reuse_ && regional_recorder;
+        if (pthread_main_np() && (!reuse_target_ || !regional_recorder)) regional_surface.reset();
         if (reuse_) recorder = std::move(regional_recorder);
         else if (pthread_main_np()) regional_recorder.reset();
         if (!recorder) {
@@ -204,9 +208,30 @@ public:
         if (reuse_ && std::getenv("VOX_DAWN_REGION_RECORDER_DIAGNOSTICS"))
             std::fprintf(stderr, "Vox Dawn region recorder: reused=%d ready=%d\n", reused, bool(recorder));
     }
+    VoxDawnSharedSurface& acquire_target(SkImageInfo const& info) {
+        bool reused = false;
+        if (reuse_target_ && regional_surface) {
+            auto& saved = *regional_surface;
+            bool shared = !std::getenv("VOX_DISABLE_SHARED_DAWN_PIXELS");
+            if (saved.surface && saved.surface->width() == info.width() && saved.surface->height() == info.height()
+                && bool(saved.pixels) == shared && (!saved.pixels || saved.pixels->resume_initialized())) {
+                target = std::move(saved);
+                reused = true;
+            }
+            regional_surface.reset();
+        }
+        if (!target.surface) target = VoxDawnSharedSurface::Make(recorder.get(), info);
+        if (reuse_target_ && std::getenv("VOX_DAWN_REGION_RECORDER_DIAGNOSTICS"))
+            std::fprintf(stderr, "Vox Dawn region target: reused=%d size=%dx%d\n", reused, info.width(), info.height());
+        return target;
+    }
     void complete() { complete_ = true; }
     ~RegionalRecorderLease() {
-        if (reuse_ && complete_) regional_recorder = std::move(recorder);
+        if (reuse_ && complete_) {
+            if (reuse_target_ && target.surface)
+                regional_surface = std::make_unique<VoxDawnSharedSurface>(std::move(target));
+            regional_recorder = std::move(recorder);
+        } else if (reuse_) regional_surface.reset();
     }
 };
 #ifdef VOX_TEST_DAWN_REGION_FAILURE
@@ -243,10 +268,11 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
     if (!recorder) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto shared = VoxDawnSharedSurface::Make(recorder, info);
+    auto& shared = lease.acquire_target(info);
     auto surface = shared.surface;
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
+    canvas->resetMatrix();
     canvas->clear(SK_ColorTRANSPARENT);
     SkMatrix transform;
     transform.set9(matrix);
@@ -442,6 +468,7 @@ int vox_graphite_draw_picture_regions_with_backdrop_pixels(VoxGraphitePictureReg
 
 static int retire_graphics_context_locked()
 {
+    regional_surface.reset();
     regional_recorder.reset();
     if (!gpu_context) return 0;
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
@@ -474,6 +501,7 @@ void vox_graphite_picture_release_unused_graphics_memory()
 {
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
+    regional_surface.reset();
     regional_recorder.reset();
     if (gpu_context) gpu_context->freeGpuResources();
     typeface_cache.clear();
