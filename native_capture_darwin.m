@@ -4216,9 +4216,40 @@ static void native_free_svg_filter_graph(NativeCSSFilterLayer *layer) {
 	layer->graph_node_count = 0;
 }
 
+// Fresh page rasters are not reusable CGImage resources. Core Image's CGImage
+// import retains IOSurface mappings for each new image, even after its context
+// clears its caches. Import owned, immutable bitmap bytes instead, preserving
+// the native premultiplied format and color space. Other formats keep their
+// ordinary Core Image decoder.
+static CIImage *native_css_filter_source_image(CGImageRef image) {
+	CIFormat format = 0;
+	CGBitmapInfo order = CGImageGetBitmapInfo(image) & kCGBitmapByteOrderMask;
+	CGImageAlphaInfo alpha = CGImageGetAlphaInfo(image);
+	if (CGImageGetBitsPerComponent(image) == 8 && CGImageGetBitsPerPixel(image) == 32) {
+		if (alpha == kCGImageAlphaPremultipliedLast && order == kCGBitmapByteOrder32Big)
+			format = kCIFormatRGBA8;
+		else if (alpha == kCGImageAlphaPremultipliedFirst && order == kCGBitmapByteOrder32Little)
+			format = kCIFormatBGRA8;
+	}
+	size_t width = CGImageGetWidth(image), height = CGImageGetHeight(image);
+	size_t pitch = CGImageGetBytesPerRow(image);
+	if (format && !CGImageGetDecode(image) && height && pitch && height <= SIZE_MAX / pitch) {
+		CFDataRef bytes = CGDataProviderCopyData(CGImageGetDataProvider(image));
+		if (bytes && (size_t)CFDataGetLength(bytes) == height * pitch) {
+			CIImage *source = [CIImage imageWithBitmapData:(__bridge NSData *)bytes
+				bytesPerRow:pitch size:CGSizeMake(width, height) format:format
+				colorSpace:CGImageGetColorSpace(image)];
+			CFRelease(bytes);
+			return source;
+		}
+		if (bytes) CFRelease(bytes);
+	}
+	return [CIImage imageWithCGImage:image];
+}
+
 static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
 	CGImageRef source_image) {
-	CIImage *output = [CIImage imageWithCGImage:source_image];
+	CIImage *output = native_css_filter_source_image(source_image);
 	for (NSInteger index = (NSInteger)layer->operation_count - 1;
 		index >= 0; --index) {
 		NativeCSSFilterOperation operation = layer->operations[index];
