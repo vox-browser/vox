@@ -59,7 +59,7 @@ fn (mut binding CompactElementQueryBinding) document_state(document &dom.Documen
 fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, action string, value string) !string {
 	if action == 'documentNode' && value == 'activeElement' {
 		active := if shadow := root.as_shadow_root() { shadow.active_element() } else if root.is_document() { root.document().active_element() } else { return error('TypeError: Illegal DocumentOrShadowRoot receiver') }
-		return if element := active { json2.encode(binding.element_state(element)) } else { 'null' }
+		return if element := active { binding.encode_element_state(element) } else { 'null' }
 	}
 	if action == 'ownerDocument' {
 		return if root.is_document() {
@@ -76,7 +76,7 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 	mut document := root.as_document() or { return error('TypeError: Invalid Document receiver') }
 	if action == 'documentCurrentScript' {
 		return if script := document.current_script() {
-			json2.encode(binding.element_state(unsafe { &dom.Element(script) }))
+			binding.encode_element_state(unsafe { &dom.Element(script) })
 		} else { 'null' }
 	}
 	if action == 'createHTMLDocument' {
@@ -111,7 +111,7 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 	}
 	if action == 'documentElementById' {
 		return if element := document.get_element_by_id(value) {
-			json2.encode(binding.element_state(element))
+			binding.encode_element_state(element)
 		} else {
 			'null'
 		}
@@ -136,15 +136,15 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 			}
 			else { return error('Invalid Document node property') }
 		}
-		return if found := node { json2.encode(binding.node_state(found)) } else { 'null' }
+		return if found := node { binding.encode_node_state(found) } else { 'null' }
 	}
 	if action == 'documentCreateElement' {
-		return json2.encode(binding.element_state(document.create_element(value)!))
+		return binding.encode_element_state(document.create_element(value)!)
 	}
 	if action == 'documentCreateElementNS' {
 		request := json2.decode[map[string]json2.Any](value)!
 		name := json_string_property(request, 'name') or { return error('Missing qualified name') }
-		return json2.encode(binding.element_state(document.create_element_ns(json_string_property(request, 'namespace'), name)!))
+		return binding.encode_element_state(document.create_element_ns(json_string_property(request, 'namespace'), name)!)
 	}
 	return error('Invalid Document action')
 }

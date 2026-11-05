@@ -1,10 +1,9 @@
 module main
 
 import dom
-import x.json2
 
 fn (mut binding CompactElementQueryBinding) create_comment_query(root &dom.Node, data string) string {
-	return json2.encode(binding.node_state(root.document().create_comment(data).as_node()))
+	return binding.encode_node_state(root.document().create_comment(data).as_node())
 }
 
 fn compact_create_comment_bootstrap() string {

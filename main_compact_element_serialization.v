@@ -1,6 +1,7 @@
 module main
 
 import dom
+import browserjs.querywire
 import html
 import platform
 import strings
@@ -39,14 +40,11 @@ fn (mut binding CompactElementQueryBinding) encode_element_states_with_envelope(
 				}
 				retained.finish()
 				work := platform.begin_thread_scratch('compact collection element')
-				state := if materialized {
-					json2.Any({
-						'bridgeKey': json2.Any(key)
-					})
+				encoded := if materialized {
+					querywire.encode_identity_reply(key)
 				} else {
-					binding.initial_element_state(element, key)
+					json2.encode(binding.initial_element_state(element, key))
 				}
-				encoded := json2.encode(state)
 				work.leave()
 				output.write_string(encoded)
 				work.finish()

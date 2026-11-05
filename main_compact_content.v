@@ -240,7 +240,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	if action == 'state' {
 		node := binding.node_for_key(key) or { return 'null' }
-		return json2.encode(binding.node_state(node))
+		return binding.encode_node_state(node)
 	}
 	if action == 'snapshotStates' {
 		return binding.encode_element_states(css.query_selector_all(binding.document.as_node(), '*'))
@@ -300,7 +300,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
 		if !element.is_html_element() { return 'null' }
 		parent := html.html_element_offset_parent(unsafe { &dom.HTMLElement(element) }) or { return 'null' }
-		return json2.encode(binding.element_state(parent))
+		return binding.encode_element_state(parent)
 	}
 	if action in ['nodeValue', 'setNodeValue'] {
 		return binding.node_value_query(root, action, selector)
@@ -330,7 +330,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 			'last' { parent.last_element_child() }
 			else { return error('Invalid element relation') }
 		}
-		return if element := found { json2.encode(binding.element_state(element)) } else { 'null' }
+		return if element := found { binding.encode_element_state(element) } else { 'null' }
 	}
 	if action in ['selectedIndex', 'setSelectedIndex', 'selectValue', 'setSelectValue'] {
 		// HTMLSelectElement value and selectedIndex over the live options.
@@ -364,11 +364,11 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		// key, so later attribute writes, queries and insertion reach it.
 		working_copy := root.clone_node_binding(selector == 'deep')!
 		copy_compact_script_started_state(root, working_copy)
-		return json2.encode(binding.node_state(working_copy))
+		return binding.encode_node_state(working_copy)
 	}
 	if action == 'getElementById' {
 		return if element := binding.document.get_element_by_id(selector) {
-			json2.encode(binding.element_state(element))
+			binding.encode_element_state(element)
 		} else {
 			'null'
 		}
@@ -390,7 +390,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'matches' { return json2.encode(matched) }
 	if action == 'closest' {
 		return if element := validation_element.closest(selector) {
-			json2.encode(binding.element_state(element))
+			binding.encode_element_state(element)
 		} else {
 			'null'
 		}
@@ -398,7 +398,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'querySelector' {
 		parent := unsafe { &dom.ParentNode(root) }
 		return if element := parent.query_selector(selector) {
-			json2.encode(binding.element_state(element))
+			binding.encode_element_state(element)
 		} else {
 			'null'
 		}

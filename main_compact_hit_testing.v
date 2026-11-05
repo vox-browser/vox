@@ -12,7 +12,7 @@ fn (mut binding CompactElementQueryBinding) hit_test_query(action string, input 
 	mut document := unsafe { &dom.Document(binding.document) }
 	if action == 'elementFromPoint' {
 		element := document.element_from_point(point[0], point[1]) or { return 'null' }
-		return json2.encode(binding.element_state(element))
+		return binding.encode_element_state(element)
 	}
 	mut states := []json2.Any{}
 	for element in document.elements_from_point(point[0], point[1]) {

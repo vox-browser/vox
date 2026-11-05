@@ -37,7 +37,7 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 		}
 		if control.form() == none { control.reset_form_owner() }
 		return if owner := control.form() {
-			json2.encode(binding.element_state(unsafe { &dom.Element(owner) }))
+			binding.encode_element_state(unsafe { &dom.Element(owner) })
 		} else { 'null' }
 	}
 	if query.op in ['radioItems', 'radioValue', 'setRadioValue'] {

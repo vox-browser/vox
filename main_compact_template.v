@@ -40,7 +40,7 @@ fn (mut binding CompactElementQueryBinding) template_content_query(key string, s
 	if voidptr(owner) != voidptr(binding.document) {
 		binding.template_documents[voidptr(owner)] = owner
 	}
-	return json2.encode(binding.node_state(content))
+	return binding.encode_node_state(content)
 }
 
 fn compact_template_bootstrap() string {

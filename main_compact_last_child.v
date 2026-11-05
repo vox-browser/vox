@@ -38,7 +38,7 @@ fn (mut binding CompactElementQueryBinding) node_relation_query(root &dom.Node, 
 		'previous' { root.previous_sibling() }
 		else { root.parent() }
 	}
-	return if found := node { json2.encode(binding.node_state(found)) } else { 'null' }
+	return if found := node { binding.encode_node_state(found) } else { 'null' }
 }
 
 // Only connected owners in this realm's document can use its mutation clock.

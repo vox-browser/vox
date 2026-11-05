@@ -6,10 +6,10 @@ import x.json2
 
 fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, action string, value string) !string {
 	if action == 'createText' {
-		return json2.encode(binding.node_state(root.document().create_text_node(value).as_node()))
+		return binding.encode_node_state(root.document().create_text_node(value).as_node())
 	}
 	if action == 'createFragment' {
-		return json2.encode(binding.node_state(root.document().create_document_fragment().as_node()))
+		return binding.encode_node_state(root.document().create_document_fragment().as_node())
 	}
 	if action in ['childNodes', 'childElements'] {
 		mut nodes := []json2.Any{cap: root.children.len}
@@ -52,7 +52,7 @@ fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, acti
 			parent.append_child(child)!
 		}
 		if connected || was_connected { binding.note_node_tree_mutation() }
-		return json2.encode(binding.node_state(child))
+		return binding.encode_node_state(child)
 	}
 	if connected { binding.note_node_tree_mutation() }
 	return json2.encode(root.text_content() or { '' })

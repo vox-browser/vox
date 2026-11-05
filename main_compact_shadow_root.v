@@ -44,25 +44,25 @@ fn (mut binding CompactElementQueryBinding) attach_shadow_query(key string, inpu
 		slot_assignment: if slot == 'manual' { .manual } else { .named }
 	})!
 	binding.note_node_tree_mutation()
-	return json2.encode(binding.node_state(root.as_node()))
+	return binding.encode_node_state(root.as_node())
 }
 
 fn (mut binding CompactElementQueryBinding) shadow_query(root &dom.Node, action string, value string) !string {
 	if action == 'getRootNode' {
 		options := json2.decode[map[string]json2.Any](value)!
 		found := if json_bool_property(options, 'composed') { root.shadow_including_root() } else { root.root() }
-		return json2.encode(binding.node_state(found))
+		return binding.encode_node_state(found)
 	}
 	if action == 'shadowRoot' {
 		host := root.as_element() or { return error('TypeError: Invalid shadow host') }
 		return if shadow := host.shadow_root_for_bindings() {
-			json2.encode(binding.node_state(shadow.as_node()))
+			binding.encode_node_state(shadow.as_node())
 		} else { 'null' }
 	}
 	shadow := root.as_shadow_root() or { return error('TypeError: Illegal ShadowRoot receiver') }
 	if action == 'shadowHost' {
 		return if host := shadow.host() {
-			json2.encode(binding.element_state(host))
+			binding.encode_element_state(host)
 		} else { 'null' }
 	}
 	if action == 'shadowElementById' {
@@ -74,7 +74,7 @@ fn (mut binding CompactElementQueryBinding) shadow_query(root &dom.Node, action 
 			node := current or { break }
 			if element := node.as_element() {
 				if element.get_attribute_value('id') == value {
-					return json2.encode(binding.element_state(element))
+					return binding.encode_element_state(element)
 				}
 			}
 			current = node.next_in_pre_order(root)
