@@ -8,6 +8,23 @@ import painting
 // Rejection reasons print with -d vox_scroll_raster_diagnostics, or at run
 // time in any build with VOX_SCROLL_RASTER_DAMAGE_DIAGNOSTICS set.
 const scroll_raster_reject_diagnostics = os.getenv('VOX_SCROLL_RASTER_DAMAGE_DIAGNOSTICS') != ''
+const scrollbar_paint_diagnostics = os.getenv('VOX_SCROLLBAR_PAINT_DIAGNOSTICS') != ''
+
+// VOX_SCROLLBAR_PAINT_DIAGNOSTICS: the element that owns each painted scrollbar,
+// with its padding box and scrollable overflow in paint-tree units.
+fn (b &BlockBox) report_painted_scrollbar(overlay CompatibilityOverlayData, padding painting.Rect) {
+	mut name := 'node${b.node_id}'
+	if b.node_id != 0 {
+		if node := dom.Node.from_unique_id(dom.UniqueNodeID(b.node_id)) {
+			if element := node.as_element() {
+				name = '${element.local_name()}#${element.get_attribute('id') or { '' }}.${element.get_attribute('class') or { '' }}'
+			} else {
+				name = node.node_name()
+			}
+		}
+	}
+	eprintln('VOX_SCROLLBAR_PAINT box=${name} viewport=${b.is_viewport_scroller} padding=${padding.x},${padding.y},${padding.width}x${padding.height} overflow=${overlay.scrollable_overflow.x},${overlay.scrollable_overflow.y},${overlay.scrollable_overflow.width}x${overlay.scrollable_overflow.height} vertical=${overlay.can_scroll_vertically} horizontal=${overlay.can_scroll_horizontally} width=${overlay.scrollbar_width}')
+}
 
 @[inline]
 fn reject_scroll_raster(reason string) bool {
@@ -19,6 +36,18 @@ fn reject_scroll_raster(reason string) bool {
 		}
 	}
 	return false
+}
+
+// A rejected scrollbar's command and position, built only when rejection
+// reasons print: the eligibility check runs on every scrolled frame.
+fn scroll_raster_scrollbar_reason(reason string, index int, count int, kind string,
+	bounds LayoutRect, width f64, height f64) string {
+	mut detailed := scroll_raster_reject_diagnostics
+	$if vox_scroll_raster_diagnostics ? {
+		detailed = true
+	}
+	if !detailed { return reason }
+	return '${reason}:${index}/${count}:${kind}:${bounds.x},${bounds.y},${bounds.width}x${bounds.height}:viewport=${width}x${height}'
 }
 
 // Shadow commands keep their own blur radius; every other blurred or
@@ -107,9 +136,13 @@ pub fn viewport_scroll_raster_reusable(document &dom.Document, commands []PaintC
 			bounds := compatibility_affine_map_rect(command.transform,
 				LayoutRect{command.x, command.y, command.width, command.height})
 			if command.scrollbar_axis == 'vertical' {
-				if bounds.x < width - 30 || bounds.x + bounds.width > width + 1 { return reject_scroll_raster('nonviewport-vertical-scrollbar') }
+				if bounds.x < width - 30 || bounds.x + bounds.width > width + 1 {
+					return reject_scroll_raster(scroll_raster_scrollbar_reason('nonviewport-vertical-scrollbar',
+						index, commands.len, command.kind, bounds, width, height))
+				}
 			} else if command.scrollbar_axis != 'horizontal' || bounds.y < height - 30 || bounds.y + bounds.height > height + 1 {
-				return reject_scroll_raster('nonviewport-horizontal-scrollbar')
+				return reject_scroll_raster(scroll_raster_scrollbar_reason('nonviewport-horizontal-scrollbar',
+					index, commands.len, command.kind, bounds, width, height))
 			}
 			continue
 		}

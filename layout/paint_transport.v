@@ -1664,6 +1664,9 @@ fn (b &BlockBox) append_overlay_commands(mut commands []PaintCommand, metrics pa
 	padding_rect := b.compatibility_absolute_padding_rect()
 	paint_scrollbars := !b.is_viewport_scroller || painting.should_paint_viewport_scrollbars()
 	if paint_scrollbars && overlay.scrollbar_width != .none_ {
+		if scrollbar_paint_diagnostics && (overlay.can_scroll_vertically || overlay.can_scroll_horizontally) {
+			b.report_painted_scrollbar(overlay, padding_rect)
+		}
 		// PaintableBox::paint visits vertical before horizontal.
 		if overlay.can_scroll_vertically {
 			input := b.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, b.vertical_scrollbar.is_enlarged())
