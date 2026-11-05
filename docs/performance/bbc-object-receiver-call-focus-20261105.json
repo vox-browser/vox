@@ -1,0 +1,74 @@
+{
+  "status": "DirectJSCcallswithobjectreceivers pass126focusedexecutions/6newcaseexecutions/334instructiontooltests.NativeBBCeligibility+unprofiledmatchedinstructions pending;no saving/target/catalogcredit.",
+  "implementation_commit": "411e0574a",
+  "control_commit": "8c5ddafec",
+  "focused": {
+    "passed": true,
+    "cases_per_arm": 21,
+    "executions": 126,
+    "new_case_executions": 6,
+    "inputs": {
+      "/Users/alex/code/vox2/browserjs/object_receiver_call_test.v": "ac845763299644f3328959e55f36c3b31afb96af1e2ab43e89abc656779d728f",
+      "/Users/alex/code/vox2/browserjs/native_callback_call_test.v": "eb68266c03e9e6bce13e32721826f97e569eb5e11751dcd874f3a23d26a40e37",
+      "/Users/alex/code/vox2/browserjs/host_value_function_test.v": "14099b04df0a5e4a66bd818dc5c87205693f5389dbeb93713325229bec8d6f73",
+      "/Users/alex/code/vox2/browserjs/native_forwarding_test.v": "90ea8610b38b0306dbfa4b7c172a2242f9fdf1f0057b1ee088615cdcd7c742be",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_test.v": "5090f7912eac597840cb4f9b0720042a2f39e925f9a6a9d0f4e9094076078dbf",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_order_test.v": "7bb3a225bae0707116294749abaf7e6f4a6af1c27b6d90c160211fae015984cb",
+      "/Users/alex/code/vox2/browserjs/object_receiver_call_jsc.c.v": "3ac915957615543a7471fa615597d2a4981ccdc7ba5b7fdc7ae7a91139b0215d",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "a90987db51c923fe08383fd257a3e77a8be8b64435224dafee8380175657cd10",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1",
+      "/Users/alex/code/vox2/browserjs/host_function_darwin.h": "a40f9e479f5dd45ce0bc6aba77de53a7fe4982f676244a62886fc76ccf63fa57",
+      "/Users/alex/code/vox2/browserjs/jsc_abi.h": "b5c14c9e2223ebc86095d03e64408a298be66bb236126cbd0654be0b2faa0302",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605"
+    },
+    "inputs_unchanged": true,
+    "actual_native_calls_verified": true,
+    "scope": "Botharms/all3GCmodes;strict/sloppy/proxy/boxed/object/undefined/primitive receiveridentity,arity0..100,actualexceptions/reentry/PromiseFIFO/WebIDLrealm/inspectorforwarding unchanged. One new proxyandboxedreceiver case assertsnoauthorcoercionorcall/applypropertylookups. CandidateusesdirectexistingtypedABI onlywithobjectreceiver/callableobject.No nativeBBC/performancecredit yet."
+  },
+  "committed_sources": {
+    "browserjs/object_receiver_call_test.v": "ac845763299644f3328959e55f36c3b31afb96af1e2ab43e89abc656779d728f",
+    "browserjs/native_callback_call_test.v": "eb68266c03e9e6bce13e32721826f97e569eb5e11751dcd874f3a23d26a40e37",
+    "browserjs/host_value_function_test.v": "14099b04df0a5e4a66bd818dc5c87205693f5389dbeb93713325229bec8d6f73",
+    "browserjs/native_forwarding_test.v": "90ea8610b38b0306dbfa4b7c172a2242f9fdf1f0057b1ee088615cdcd7c742be",
+    "browserjs/microtask_binding_test.v": "5090f7912eac597840cb4f9b0720042a2f39e925f9a6a9d0f4e9094076078dbf",
+    "browserjs/webidl_callback_order_test.v": "7bb3a225bae0707116294749abaf7e6f4a6af1c27b6d90c160211fae015984cb",
+    "browserjs/object_receiver_call_jsc.c.v": "3ac915957615543a7471fa615597d2a4981ccdc7ba5b7fdc7ae7a91139b0215d",
+    "browserjs/runtime.v": "a90987db51c923fe08383fd257a3e77a8be8b64435224dafee8380175657cd10",
+    "browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1",
+    "browserjs/host_function_darwin.h": "a40f9e479f5dd45ce0bc6aba77de53a7fe4982f676244a62886fc76ccf63fa57",
+    "browserjs/jsc_abi.h": "b5c14c9e2223ebc86095d03e64408a298be66bb236126cbd0654be0b2faa0302",
+    "browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+    "browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605"
+  },
+  "tool_guard": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "*instructions_test.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 61652992,
+    "elapsed_seconds": 3.0779314159999998,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "implementation": "ExistingtypedJSObjectCallAsFunctionABI withverifiedobjectreceiver andcallableobject target;retainHTMLpreparation/cleanup/actualexceptions.Primitives/noncallablesretaincapturedReflect.apply path.No privateFunction.call builtin/newpackinghelper. NewProxy/boxedreceivercase checksnoauthorcoercion/propertyaccess;existingcallback/realm/forwarding/Promise tests retained.",
+  "scope": "21casesx2armsx3memorymodes. Independentfreshv-profilelead exists,but15113callengine2.14sselectedselfincludesJSC/nativebodies;arraypreparationonly~9ms. No assumptionthischange removeswholeJSexecutioncost.PriorcapturedFunction.call experiment remainsrolledback,notreintroduced.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-object-receiver-call-focus-20261105.tar.gz",
+    "bytes": 12700818,
+    "sha256": "45928100ff6626c0797431abfa63cbff66b2dabaacfdddc03b12bae2510b4652",
+    "members": 50,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793888326.760593
+}

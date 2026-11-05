@@ -6536,3 +6536,60 @@ triples and a conditional 615-case broad inventory are prepared under
 and focused evidence are committed. Native and matched instruction credit remain
 pending; the 10% target is unmet and BBC homepage remains outside the catalog.
 [Build receipts, identities and pending-validation checkpoint](performance/bbc-definite-image-production-pending-20261105.json).
+
+
+## Fresh detailed V profile and object-receiver candidate (2026-11-05)
+
+A fresh \`v -profile - -profile-no-inline -profile-fns main__main\` diagnostic
+passes the original exact PNG and complete content audit, all 72 exact external
+author-script witnesses before PNG, loaded-image pinning and normal exits.
+Current canonical sources remain unchanged during generation and sealing.
+The bounded preallocation/C-O0 diagnostic retains 46 prospectively selected
+generated V timers and a main-thread TLS scope gate; the original generated C,
+transformed C, frozen inputs, selection proof and raw output are preserved.
+Forty-five scopes execute. V omits the zero-call
+\`complete_script_inserted_images\` scope from its printed rows; an initial
+postprocessor incorrectly required it and its failure remains retained.
+
+| Selected scope | Calls | Selected self elapsed |
+| --- | ---: | ---: |
+| Engine function calls | 15,113 | 2,138.668 ms |
+| Uncached inline layout | 41,216 | 1,592.068 ms |
+| Uncached grid layout | 20,029 | 1,185.895 ms |
+| CSS rule matching | 75,332 | 1,064.593 ms |
+| Frame drawing | 175 | 1,012.588 ms |
+
+These are instrumented elapsed times, including unselected callees/native waits
+and possible post-PNG work. Recursive inclusive intervals overlap. Recorded
+host load is high, and main's outer timer remains unfinished at exit; these
+figures establish neither CPU instruction shares nor a production speedup.
+The call wrapper's own argument preparation is only 9.418 ms across 12,598
+calls, so its parent engine time cannot be attributed to argument arrays.
+Native function metadata is negligible: 378 calls / 0.620 ms selected self.
+There are 24,173 intrinsic width probes versus 2,154 height probes; cache input
+validation and key construction are much smaller than uncached layout.
+
+[Profile, toolchain, scope qualifications and verified raw evidence](performance/bbc-v-profile-detailed-20261105.json)
+retain both successful generation/compile/capture guards and all raw timings.
+A supplemental archive preserves two compiler inputs omitted by the primary
+packaging filter; together the archives cover every unique sealed input hash.
+Actual capture tool identities come from the before/after manifests; a separate
+toolchain observation taken later is explicitly distinguished. The native
+library lease releases after capture. No profile instruction credit is assigned.
+
+The earlier captured-\`Function.call\` experiment remains rolled back.
+\`411e0574a\` instead invokes JSC's existing typed call ABI for verified callable
+targets with object receivers. Primitive and noncallable targets retain their
+existing captured-\`Reflect.apply\` behavior; HTML realm preparation, actual
+exceptions and Promise ordering stay covered. \`8c5ddafec\` supplies the isolated
+comparison control.
+
+All **126 focused executions** pass: 21 cases in both arms across three memory
+modes, including six executions of the new proxy/boxed-receiver case. The
+checks retain strict/sloppy receiver identity, argument counts 0–100, poisoned
+call/apply properties, proxies, bound functions, exceptions, reentry, Promise
+FIFO, WebIDL realm state and inspector-forwarding behavior. Every actual test
+call and unchanged checked input is verified. All **334 instruction-tool
+tests** pass. [Focused evidence](performance/bbc-object-receiver-call-focus-20261105.json).
+Native eligibility and matched instructions remain pending at this checkpoint;
+the 10% goal and BBC homepage catalog entry remain open.
