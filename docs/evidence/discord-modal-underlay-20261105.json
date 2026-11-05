@@ -65,7 +65,28 @@
   },
   "additional_checks": {
     "corner_shape_failure": "Expanded and standalone main_chromium_corner_shapes_test.v fail at line 138: complete outer-shadow eligibility accepts a case the test expects rejected. The eligibility implementation is unchanged by these commits. Logs retained in frame-messaging/rounded-underlay-batch-default-r1 and rounded-underlay-corners-alone-default-r1.",
-    "libweb_control": "reftest-baseline-r1 passed before the fix because compare_screenshots.sh selected the LibWeb font/rendering test policy. It did not exercise the affected Chromium path; the corrected browser-policy baseline is retained separately."
+    "libweb_control": "reftest-baseline-r1 passed before the fix because compare_screenshots.sh selected the LibWeb font/rendering test policy. It did not exercise the affected Chromium path; the corrected browser-policy baseline is retained separately.",
+    "corner_shape_failure_resolution": {
+      "commit": "25f3ca872",
+      "behavior": "Contoured compositor shadows use the root recorder validation for missing content geometry and invalid blur. Ordinary complete shadows remain eligible in isolated compositor pictures; the earlier test expectation is corrected.",
+      "baseline_regression": "contoured-shadow-baseline-default-r1 failed on missing shadow payload before the fix.",
+      "checks": {
+        "default-r1": {
+          "cases": 42,
+          "focused_sources_unchanged": true,
+          "compiler_exit": 0,
+          "runtime_exit": 0,
+          "raw": "Build/discord-resume-20261105/frame-messaging/shadow-validation-batch-default-r1"
+        },
+        "prealloc-r1": {
+          "cases": 42,
+          "focused_sources_unchanged": true,
+          "compiler_exit": 0,
+          "runtime_exit": 0,
+          "raw": "Build/discord-resume-20261105/frame-messaging/shadow-validation-batch-prealloc-r1"
+        }
+      }
+    }
   },
   "authentication": "Normal test-account sign-in reaches hCaptcha; authenticated channel behavior remains unverified.",
   "live_validation": {
@@ -74,7 +95,9 @@
     "submitted_with_native_input": true,
     "modal_background_verified": true,
     "authenticated": false,
-    "human_verification_required": true
+    "human_verification_required": true,
+    "frame_context_check": "Build/discord-resume-20261105/auth-r32/frame-context-check.json",
+    "uncaught_errors_in_all_four_contexts": 0
   },
   "native_control_follow_up": "The compatibility check runs after native control geometry resolution, retaining the common border/background frame at both device scales.",
   "native_control_follow_up_commit": "36686a18ab781d615ced0f9621437d27150acf21"
