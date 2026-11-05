@@ -281,9 +281,18 @@ fn chromium_border_has_diagonal_path(command layout.PaintCommand) bool {
 			y = start_y
 			continue
 		}
-		if kind > 1 { return true }
 		next_x := data[index + 1]
 		next_y := data[index + 2]
+		if kind == 4 {
+			// SVG omits an arc whose endpoints coincide, and a zero radius
+			// makes it a straight segment. Square CSS borders retain these
+			// arc records, but they do not require a multisampled path pass.
+			if !has_point { return true }
+			if next_x == x && next_y == y { continue }
+			if data[index + 7] != 0 && data[index + 8] != 0 { return true }
+		} else if kind > 1 {
+			return true
+		}
 		if kind == 0 {
 			start_x = next_x
 			start_y = next_y
