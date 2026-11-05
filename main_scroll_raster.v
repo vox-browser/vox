@@ -17,6 +17,23 @@ fn C.native_invalidate_video_backdrop(x f64, y f64, width f64, height f64)
 
 // Same-binary control: repaint everything beneath a video for each new frame.
 const disable_video_backdrops = os.getenv('VOX_DISABLE_VIDEO_BACKDROPS') != ''
+const bound_pointwise_filter_outputs = os.getenv('VOX_BOUND_POINTWISE_FILTER_OUTPUTS') != ''
+
+fn C.native_bound_pointwise_filter_output(f64, f64, f64, f64)
+
+fn (app &BrowserApp) bound_pointwise_filter_output(index int) {
+	$if macos {
+		if !bound_pointwise_filter_outputs || app.page_zoom != 1
+			|| !app.scroll_raster_keys.valid || app.scroll_raster_keys.scroll != app.scroll_y
+			|| app.scroll_raster_keys.keys.len != app.paint_commands.len
+			|| index < 0 || index >= app.paint_commands.len
+			|| !layout.scroll_raster_filter_is_pointwise(&app.paint_commands[index]) { return }
+		key := &app.scroll_raster_keys.keys[index]
+		if key.group_end <= index || !key.has_ink || !scroll_raster_rect_valid(key.ink) { return }
+		C.native_bound_pointwise_filter_output(key.ink.x, key.ink.y + app.page_top(),
+			key.ink.width, key.ink.height)
+	}
+}
 
 struct ScrollRasterDamage {
 mut:

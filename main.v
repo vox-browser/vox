@@ -7726,6 +7726,9 @@ fn (mut app BrowserApp) draw() {
 					app.draw_command(*command, 0, page_y, window.height)
 				}
 				$if macos {
+					if app.ctx.native_rendering && command.kind == 'begin_css_filter_layer' {
+						app.bound_pointwise_filter_output(command_index)
+					}
 					if app.ctx.native_rendering && app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
 						&& command.kind == 'begin_css_filter_layer'

@@ -2712,6 +2712,8 @@ typedef struct {
 	int active;
 	int copies_to_fresh_frame;
 	int borrows_fresh_frame;
+	CGRect pointwise_output_bounds;
+	int has_pointwise_output_bounds;
 	int gradient_blur_recording;
 	// The blur's cached output stands in for its input leaves' raster.
 	int gradient_blur_deferred;
@@ -4472,6 +4474,10 @@ static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
 		|| !isfinite(CGRectGetMinX(clip)) || !isfinite(CGRectGetMaxX(clip))
 		|| !isfinite(CGRectGetMinY(clip)) || !isfinite(CGRectGetMaxY(clip)))
 		return source_rect;
+	if (layer->has_pointwise_output_bounds) {
+		clip = CGRectIntersection(clip, layer->pointwise_output_bounds);
+		if (CGRectIsNull(clip) || CGRectIsEmpty(clip)) return source_rect;
+	}
 	CGFloat left = floor(CGRectGetMinX(clip) * layer->scale) - 2;
 	CGFloat bottom = floor(CGRectGetMinY(clip) * layer->scale) - 2;
 	CGFloat right = ceil(CGRectGetMaxX(clip) * layer->scale) + 2;
@@ -4486,7 +4492,53 @@ static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
 	return pixels;
 }
 
+// The current scroll-damage plan bounds the complete filtered group's output.
+// Pointwise filters cannot move ink outside that bound. Keep an additional
+// CSS-pixel fringe here, then the usual device-pixel crop guard above.
+void native_bound_pointwise_filter_output(double x, double y, double width, double height) {
+	if (!getenv("VOX_BOUND_POINTWISE_FILTER_OUTPUTS") || native_css_filter_overflow_depth
+		|| !native_css_filter_stack_depth) return;
+	NativeCSSFilterLayer *layer = &native_css_filter_stack[native_css_filter_stack_depth - 1];
+	if (!layer->active || !isfinite(x) || !isfinite(y) || !isfinite(width) || !isfinite(height)
+		|| width <= 0 || height <= 0 || fabs(x) > 1000000 || fabs(y) > 1000000
+		|| width > 1000000 || height > 1000000
+		|| !native_css_filter_has_pointwise_device_mapping(layer,
+			CGRectMake(0, 0, layer->canvas_width * layer->scale, layer->canvas_height * layer->scale))) return;
+	for (size_t index = 0; index < layer->operation_count; ++index)
+		if (!isfinite(layer->operations[index].first) || !isfinite(layer->operations[index].second)) return;
+	layer->pointwise_output_bounds = CGRectInset(
+		CGRectMake(x, layer->canvas_height - y - height, width, height), -3, -3);
+	layer->has_pointwise_output_bounds = 1;
+}
+
 #include "native_opacity_group_darwin.h"
+
+// Diagnostic only: verify retained geometry against the completed input's
+// actual alpha coverage. This scan is excluded from unprofiled timing arms.
+static void native_verify_pointwise_filter_output_bounds(NativeCSSFilterLayer *layer) {
+	if (!layer->has_pointwise_output_bounds || !getenv("VOX_BOUNDED_POINTWISE_FILTER_VERIFY")) return;
+	size_t width = CGBitmapContextGetWidth(layer->context), height = CGBitmapContextGetHeight(layer->context);
+	size_t pitch = CGBitmapContextGetBytesPerRow(layer->context);
+	const uint8_t *pixels = CGBitmapContextGetData(layer->context);
+	BOOL valid = pixels && width && height && width <= SIZE_MAX / 4 && pitch >= width * 4
+		&& CGBitmapContextGetBitsPerComponent(layer->context) == 8
+		&& CGBitmapContextGetBitsPerPixel(layer->context) == 32;
+	if (valid) {
+		CGContextFlush(layer->context);
+		CGRect whole = CGRectMake(0, 0, width, height);
+		CGRect bounded = native_css_filter_output_rect(layer, whole);
+		NativeCSSFilterLayer reference = *layer;
+		reference.has_pointwise_output_bounds = 0;
+		CGRect original = native_css_filter_output_rect(&reference, whole);
+		int left, top, right, bottom;
+		int found = native_opacity_layer_ink_bounds(pixels, pitch, original.origin.x,
+			height - CGRectGetMaxY(original), CGRectGetMaxX(original), height - original.origin.y,
+			&left, &top, &right, &bottom);
+		valid = !found || CGRectContainsRect(bounded, CGRectMake(left, height - bottom, right - left, bottom - top));
+	}
+	fprintf(stderr, "VOX_BOUNDED_POINTWISE_VERIFY valid=%d\n", valid);
+	if (!valid) layer->has_pointwise_output_bounds = 0;
+}
 
 #ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
 static unsigned native_test_empty_pointwise_filters;
@@ -4655,7 +4707,7 @@ static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *la
         || getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")
         || getenv("VOX_SOFTWARE_POINTWISE_FILTERS") || getenv("VOX_SPARSE_CSS_FILTER_INPUTS"))
         && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
-    if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
+    if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight && !layer->has_pointwise_output_bounds) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
         || !context || CGBitmapContextGetBitsPerComponent(context) != 8
         || CGBitmapContextGetBitsPerPixel(context) != 32) return NULL;
     CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
@@ -4667,6 +4719,9 @@ static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *la
         || source_pitch > 64 * 1024 * 1024 / height) return NULL;
     CGRect whole = CGRectMake(0, 0, width, height);
     CGRect rect = native_css_filter_output_rect(layer, whole);
+    if (layer->has_pointwise_output_bounds && getenv("VOX_BOUNDED_POINTWISE_FILTER_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_BOUNDED_POINTWISE_FILTER source=%.0fx%.0f output=%.0fx%.0f\n",
+            whole.size.width, whole.size.height, rect.size.width, rect.size.height);
     if (tight && !native_css_filter_has_pointwise_device_mapping(layer, whole)) return NULL;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     if (getenv("VOX_SPARSE_CSS_FILTER_INPUTS")
@@ -4939,6 +4994,14 @@ void native_end_css_filter_layer(void) {
 #endif
     CGRect identity_rect = CGRectNull;
     CGRect compact_rect = CGRectNull;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    // Deferred GPU/recorded inputs must complete through their ordinary path.
+    // Never compact an unfinished bitmap or trust a backend lacking the query.
+    if (layer.has_pointwise_output_bounds && (!ladybird_v_skia_bitmap_pixels_are_current
+        || !ladybird_v_skia_bitmap_pixels_are_current(layer.context)))
+        layer.has_pointwise_output_bounds = 0;
+#endif
+    native_verify_pointwise_filter_output_bounds(&layer);
     CGImageRef compact_input = native_compact_css_filter_input(&layer, layer.context, &compact_rect);
     CGImageRef grayscale_image = native_css_filter_grayscale_rows(&layer, layer.context, &identity_rect);
     BOOL grayscale_identity = !grayscale_image
