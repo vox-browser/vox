@@ -100,6 +100,13 @@ fn percent_encode_code_point(code_point u32) string {
 // https://url.spec.whatwg.org/#string-percent-encode-after-encoding — percent-encode every code point of
 // input that is in `set`. With space_as_plus, a space is written as '+' instead.
 pub fn percent_encode(input string, set PercentEncodeSet, space_as_plus bool) string {
+	if !retain_rune_percent_encoding {
+		return percent_encode_bytes(input, set, space_as_plus)
+	}
+	return percent_encode_runes(input, set, space_as_plus)
+}
+
+fn percent_encode_runes(input string, set PercentEncodeSet, space_as_plus bool) string {
 	mut builder := ''
 	for code_point in input.runes() {
 		cp := u32(code_point)
