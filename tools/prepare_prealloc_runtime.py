@@ -103,12 +103,19 @@ def prepare(compiler, output_root=None):
                 "vlib": str(vlib.resolve()), "sha256": digest.hexdigest(),
                 "owned_files": {name: hashlib.sha256(data).hexdigest() for name, data in owned.items()}}
     root.parent.mkdir(parents=True, exist_ok=True)
+    # The runtime is determined by the compiler's bytes, not its path: the same
+    # binary installed at another path (e.g. as the shared ~/code/v/v) reuses it.
+    # The manifest keeps the path of the compiler that first staged it.
+    def same_runtime(recorded):
+        return ({k: v for k, v in recorded.items() if k != "compiler"}
+                == {k: v for k, v in identity.items() if k != "compiler"})
+
     # Publish a complete immutable view. Concurrent builds sharing this input
     # identity must never overwrite an executable another process is running.
     with (root.parent / (root.name + ".lock")).open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         staged_compiler = root / "compiler/v"
-        if (manifest.is_file() and json.loads(manifest.read_text()) == identity
+        if (manifest.is_file() and same_runtime(json.loads(manifest.read_text()))
                 and staged_compiler.is_file()
                 and (root / "compiler/vlib/builtin").resolve() == root / "builtin"
                 and hashlib.sha256(staged_compiler.read_bytes()).hexdigest() == compiler_hash

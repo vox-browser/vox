@@ -108,6 +108,27 @@ class PreallocAllocatorCompatibilityTest(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'modified staged V runtime'):
                     prepare(compiler, base / 'output')
 
+    def test_the_same_compiler_installed_at_another_path_reuses_its_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            vlib = base / 'v-source/vlib'
+            closure = vlib / 'builtin/closure'
+            closure.mkdir(parents=True)
+            (vlib / 'builtin/allocation.c.v').write_text(UNBOUNDED)
+            (vlib / 'builtin/prealloc.c.v').write_text(PREALLOC)
+            (closure / 'closure.c.v').write_text('module closure\nfn closure_init_body() {\n}\n')
+            built = base / 'v-source/v'
+            built.write_bytes(b'compiler identity')
+            installed = base / 'shared/v'
+            installed.parent.mkdir()
+            installed.write_bytes(built.read_bytes())
+            with patch('prepare_prealloc_runtime.compiler_vlib', return_value=vlib):
+                staged = prepare(built, base / 'output')
+                self.assertEqual(prepare(installed, base / 'output'), staged)
+                self.assertEqual((staged / 'compiler/v').read_bytes(), b'compiler identity')
+                installed.write_bytes(b'another compiler')
+                self.assertNotEqual(prepare(installed, base / 'output'), staged)
+
 
 if __name__ == "__main__":
     unittest.main()
