@@ -32,6 +32,7 @@ fn test_matching_query_reuses_context_for_rejected_candidates() {
 	assert attempted.get(.hover)
 	assert computer.matching_rule_candidates_.buffers[0].context.subject == none
 	assert computer.matching_rule_candidates_.buffers[0].context.has_result_cache == unsafe { nil }
+	assert computer.matching_rule_candidates_.buffers[0].context.short_attribute_match_owner == unsafe { nil }
 	before := platform.thread_arena_usage().used
 	for _ in 0 .. 4 {
 		assert style_computer_collect_matching_rules_in_scope(computer, abstract, .author, mut attempted, none, scope).len == 0

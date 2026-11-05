@@ -2463,6 +2463,7 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 			rule_shadow_root: rule_shadow_root_for_context
 			collect_per_element_selector_involvement_metadata: true
 			has_result_cache: style_scope_has_result_cache_boundary(style_computer)
+			short_attribute_match_owner: style_computer
 		}
 		mut selector_scope := ?&dom.ParentNode(none)
 		mut resolved_scope_root := ?&dom.Element(none)
