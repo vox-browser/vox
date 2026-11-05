@@ -1,0 +1,592 @@
+{
+  "status": "All21 captures valid, target fails. Previous-pass measurement history regresses59,721,041 median-point instructions (0.226862%),1 improvement/6 regressions. No saving or catalog credit.",
+  "implementation_commit": "05e1743ff",
+  "control_commit": "f5e0ace39",
+  "statistics": {
+    "valid_capture_cohort": true,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 26716349130,
+            "upper": 26716349130
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26324861392,
+            "upper": 26324861392
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17335037547,
+            "upper": 17371493400
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 26384582433,
+            "upper": 26384582433
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 24873886134,
+            "upper": 24873886134
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17428409664,
+            "upper": 17468262230
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 27379453738,
+            "upper": 27379453738
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27077382673,
+            "upper": 27077382673
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17507646999,
+            "upper": 17508064259
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 26005384554,
+            "upper": 26005384554
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25431676644,
+            "upper": 25431676644
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17504405369,
+            "upper": 17526912368
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 26115763742,
+            "upper": 26115763742
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26812935374,
+            "upper": 26812935374
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17358807297,
+            "upper": 17389483932
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 28084476170,
+            "upper": 28084476170
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27517490075,
+            "upper": 27517490075
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17392400043,
+            "upper": 17429590064
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 26262282007,
+            "upper": 26262282007
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25712358803,
+            "upper": 25712358803
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17471879724,
+            "upper": 17510865590
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [],
+    "attempts_retained": 21,
+    "capture_audits_passed": 21,
+    "median_vox": 26384582433,
+    "median_control": 26324861392,
+    "median_brave_lower": 17428409664,
+    "point_reduction": -59721041,
+    "point_fraction": -0.0022686174909224382,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": -59721041,
+    "paired_control_minus_vox": [
+      -391487738,
+      -1510696299,
+      -302071065,
+      -573707910,
+      697171632,
+      -566986095,
+      -549923204
+    ],
+    "improvements": 1,
+    "regressions": 6,
+    "worst_vox_over_best_control": 1.129074725947686,
+    "strict_left": 280844761700,
+    "strict_right": 156015337923,
+    "conservative_brave_ratio": 1.6200989524167657,
+    "target_met": false,
+    "broad_trigger": false,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 117,
+      "acceptance_browser_attempts": 2524,
+      "last_measured_id": 122,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113,
+        118
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793915325.2340841
+  },
+  "median_paired_control_minus_vox": -549923204,
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "previous_measurement_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "previous_measurement_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "193fbf989f12b23e2da77898add27fd2ada40448ad3b90e68bc3263b91c2930e",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "e701d25c071e1f96fcd4b90c4a2a0ac822b4578d0a51151138110c2ddada6905",
+        "dirty": true,
+        "head": "fa54dc8cc29b217ac1167d56bff9a47b5c147aa6",
+        "repository_sha256": "4292e08595705fc48dbc30bfa585818eb6e6887de6515f55a21819765076e0cf"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "fa54dc8cc29b217ac1167d56bff9a47b5c147aa6",
+        "id": "47cab1425c9b43d184c2ee65c6435ef7"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "e701d25c071e1f96fcd4b90c4a2a0ac822b4578d0a51151138110c2ddada6905",
+        "dirty": true,
+        "head": "fa54dc8cc29b217ac1167d56bff9a47b5c147aa6",
+        "repository_sha256": "4292e08595705fc48dbc30bfa585818eb6e6887de6515f55a21819765076e0cf"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; cross-pass measurement reuse disabled only in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793914944.6904151
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/previous-measurement-disabled arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793914955.323414
+  },
+  "source_proof": {
+    "checked": {
+      "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+      "layout/previous_measurement_layout_test.v": "65416f318eb35b9015da057c2d707a9f6f2f7183e0ee3ba73d7320d127bc6621",
+      "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+      "layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+      "layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+      "layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+      "layout/previous_measurement_layout.v": "ca2d71915eab4f402339b88f4cea926bbd8a739e175af1e506bbec0caeccd3b3",
+      "layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+      "layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+      "layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+    },
+    "build_head": "fa54dc8cc29b217ac1167d56bff9a47b5c147aa6",
+    "committed_sources_match": true,
+    "generated_c_preserved": false,
+    "qualification": "Final focused source hashes match production build HEAD and current checked files. For parallel receipt,unchanged complete generation input fingerprints are required by canonical driver;no sealedgeneratedC claim."
+  },
+  "lease": {
+    "requested_unix": 1793915126.240382,
+    "purpose": "Pin canonical executable/libraries through matched cohort122. Reuse only current-hash validated native/SVG diagnostics; no source, workload, reference, endpoint, counter or threshold changes.",
+    "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+    "helper_sha256": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+    "acquired_unix": 1793915126.2405849,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "193fbf989f12b23e2da77898add27fd2ada40448ad3b90e68bc3263b91c2930e",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "e701d25c071e1f96fcd4b90c4a2a0ac822b4578d0a51151138110c2ddada6905",
+        "dirty": true,
+        "head": "fa54dc8cc29b217ac1167d56bff9a47b5c147aa6",
+        "repository_sha256": "4292e08595705fc48dbc30bfa585818eb6e6887de6515f55a21819765076e0cf"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "fa54dc8cc29b217ac1167d56bff9a47b5c147aa6",
+        "id": "47cab1425c9b43d184c2ee65c6435ef7"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "e701d25c071e1f96fcd4b90c4a2a0ac822b4578d0a51151138110c2ddada6905",
+        "dirty": true,
+        "head": "fa54dc8cc29b217ac1167d56bff9a47b5c147aa6",
+        "repository_sha256": "4292e08595705fc48dbc30bfa585818eb6e6887de6515f55a21819765076e0cf"
+      }
+    },
+    "native_svg_reused_for_identical_executable": true,
+    "cohort_exit": 1,
+    "cohort_finished_unix": 1793915252.3398452,
+    "released_unix": 1793915252.340162
+  },
+  "native_preparation_failure": {
+    "reason": "Wrapper adaptation produced the unknown --control-disable-previous-measurement-lexer flag. Canonical driver rejected arguments before any native browser launch. Retain scripts, source proof, guard and logs; refined wrapper uses the tested --control-disable-previous-measurement-reuse flag and exact new diagnostic marker.",
+    "exit": 2,
+    "browser_launched": false,
+    "performance_credit": 0,
+    "unix": 1793914931.464912
+  },
+  "focus": "docs/performance/bbc-previous-measurement-focus-20261106.json",
+  "scope": "Unchanged exclusive-coalition creation through encoded document PNG, startup/native window/target included; Vox before file write, Brave including CDP delivery; audits/teardown afterward. Fixed609 original-origin HTTPS responses, original author scripts,1024x768 CSS,DPR2,readiness/visible images/two-second settlement, fresh private profiles/caches, retained OS caches, original per-engine pixels and three historical rendering policies. Exited tasks/allowed owned services included; GPU/outside work excluded.",
+  "qualifications": "Pinned parallel33-unit193fbf989f12, buildHEADfa54dc8cc, complete production metadata without sealed generated C. Same app/control disables only previous-pass measurements. Candidate-only marker beforePNG; exact original pixels/content/72external source witnesses/native image pins/ownership/normal exits and SVG guard pass. Known performance.measure module error and scripting/DOM/font/paint limitations,82.7154%cross-browser pixel difference remain. Source evaluation does not prove full asynchronous script conformance. No live/render-only/FPS claim. All prior cohorts/preflights retained. Negative matched point triggers no new broad checks; five known baseline failures and existing cadence remain open.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-previous-measurement-cohort122-20261106.tar.gz",
+    "bytes": 38861697,
+    "sha256": "44f8d9258d2127269caa012c454996bab3add51f75f5599f01a30ed9d393990f",
+    "members": 378,
+    "all_members_verified": true
+  },
+  "unix": 1793915800.7718809,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-previous-measurements-20261106-0015/archive-cohort122.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 30556160,
+    "elapsed_seconds": 1.2519235420000001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

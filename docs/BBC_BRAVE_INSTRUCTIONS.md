@@ -1,45 +1,60 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 121**, on pinned parallel production `ddb9839bcc78`:
+Current result — **cohort 122**, on pinned parallel production `193fbf989f12`:
 all 21 capture audits pass, with normal native exits and unchanged input
-identities. Launch-to-PNG medians are **25,653,662,719 Vox**,
-**26,874,622,145 full-module-lexer control**, and **17,463,668,508 Brave lower
-bound** instructions. The strict 10% target fails
-`264244666700 > 156805122411` (conservative ratio **1.51666**).
-The keyword-free module bypass's median point and paired reduction are both
-**1,220,959,426** instructions (point **4.5432%**), with seven improvements and
-no regressions. Conservative control ratio **1.00795** still fails; no robust
-conservative saving or catalog entry is credited. History is **116 measured
-cohorts / 2,503 acceptance browser attempts**; 104, 110, 111, 113 and 118 are
-preflight-only. Cohort 120 and every earlier failing result remain preserved.
-[Complete current evidence](performance/bbc-keyword-free-module-cohort121-20261105.json).
+identities. Launch-to-PNG medians are **26,384,582,433 Vox**,
+**26,324,861,392 previous-measurement-disabled control**, and **17,428,409,664
+Brave lower bound** instructions. The strict 10% target fails
+`280844761700 > 156015337923` (conservative ratio **1.62010**).
+Previous-pass measurement reuse regresses **59,721,041** instructions at the
+median point (**0.226862%**), with one paired improvement and six regressions;
+conservative control ratio is **1.12907**. No saving or catalog credit is
+claimed. History is **117 measured cohorts / 2,524 acceptance browser attempts**;
+104, 110, 111, 113 and 118 are preflight-only. Every earlier result remains
+preserved. [Complete cohort evidence](performance/bbc-previous-measurement-cohort122-20261106.json).
+
+The extension and isolated control (`05e1743ff`, `f5e0ace39`) pass **258 focused
+executions**: 43 cases in both arms across three GC modes, including nine new
+cases, with all native test-main calls verified. All **341 instruction-tool
+tests** pass. Earlier compiler, fixture, storage, retained-map growth and
+count-auditor failures are preserved; only the final corrected matrix supplies
+focused credit. The final count is 258, correcting the rejected 252-count
+auditor after the engine commit; no runtime case failed in that final matrix.
+[Focused evidence](performance/bbc-previous-measurement-focus-20261106.json).
+
+Fresh native captures confirm candidate-only previous-pass geometry reuse before
+PNG, exact original pixels/content, all 72 external author-source evaluations,
+actual native-library pins, helper ownership and normal exits. The SVG
+source-switch guard is exact in both arms. The initial native wrapper's invalid
+CLI flag is retained as a preparation rejection before any browser launched;
+it supplies no measurement. Seven complete alternating triples run under a
+publication lease, retaining every first launch and regression. The only
+control difference disables previous-pass measurement history. The parallel
+build has complete input/compiler/runtime metadata, without sealed generated C.
+
+The negative point difference triggers no new broad check. The last triggered
+broader checks (cohort 121) retain **708 unique cases per default/no-GC mode:
+703 passes and the same five baseline failures**; there is no full-suite pass or
+cadence reset. Known DOM/script/font/paint limitations and the 82.7154%
+cross-browser pixel difference remain. Both arms retain the known unsupported
+`performance.measure` module error; 72 exact external source evaluations do not
+establish complete asynchronous script conformance. No live-site, isolated
+rendering or FPS result is claimed. BBC homepage still has no qualifying
+instruction entry in `OPTIMIZED_SITES.md`.
+
+Cohort 121's keyword-free module bypass result remains separately recorded:
+25.654B Vox / 26.875B full-lexer control / 17.464B Brave lower median;
+1.221B point reduction with seven improvements, but conservative control and
+Brave gates both fail. [Retained cohort 121](performance/bbc-keyword-free-module-cohort121-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
 
-The fresh optimized `v -profile` investigation below does not replace cohort
-121. Its separate main-thread counter, caller groups, allocation counters and
-JSC samples supply diagnostic evidence only.
-[Profiles and complete verified compiler inputs](performance/bbc-v-profile-thread-instructions-20261105.json).
-
-Fresh native captures confirm candidate-only keyword-free module bypass before
-PNG and pass original pixels/content, all 72 external author scripts, actual
-native-library pins, helper ownership and exits. The SVG source-switch guard
-is exact in both arms. Seven complete alternating triples run under the
-publication lease; no capture is retried, excluded or combined across builds.
-Earlier classic-call/named-import filters are common to both arms. Author-script
-policy, metadata rewrite and native Module parsing/evaluation stay identical;
-only the tested keyword-free specifier-lexer bypass differs. An inherited
-phrase in the original protocol is clarified separately without changing its
-command, workload, scope, endpoints, counters, references, thresholds or trials.
-
-Triggered broader checks cover **708 unique cases per default/no-GC mode:
-703 passes and the same five baseline failures**. Fresh layout 555/main 74/CSS
-64 cases combine with 15 current browser-JS focused cases; main and browser-JS
-checks include candidate and control. There are 1,534 fresh and 60 carried
-executions, with 1,580 passes and 14 baseline failures. There is no full-suite
-pass or cadence reset. The parallel build retains complete input/compiler/
-runtime metadata but has no sealed generated C receipt. Known rendering and
-scripting limitations remain. BBC homepage still has no qualifying instruction
-entry in `OPTIMIZED_SITES.md`.
+The fresh optimized `v -profile` investigations supply diagnostic evidence only.
+The main-thread counter and callback groups identify expensive asynchronous
+script callbacks and repeated layout. Further geometry, private-helper and JSC
+sampling diagnostics do not establish production instruction shares or savings.
+[Profiles and verified compiler inputs](performance/bbc-v-profile-thread-instructions-20261105.json),
+[geometry scopes](performance/bbc-v-profile-client-geometry-20261105.json),
+[private helpers and JIT revisit](performance/bbc-javascript-helper-and-jit-diagnostics-20261106.json).
 
 Measurement recency (`f0a747f84`, FIFO control `b90dfdbb9`) keeps recently reused
 disposable grid/flex/inline geometry in the existing four-entry caches. Keys,

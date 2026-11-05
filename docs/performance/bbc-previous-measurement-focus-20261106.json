@@ -1,0 +1,555 @@
+{
+  "passed": true,
+  "implementation": "05e1743ff",
+  "tooling": "f5e0ace39",
+  "cases_per_run": 43,
+  "new_cases": 9,
+  "modes": 3,
+  "arms": 2,
+  "executions": 258,
+  "new_executions": 54,
+  "tool_tests": 341,
+  "inputs": {
+    "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+    "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+    "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "65416f318eb35b9015da057c2d707a9f6f2f7183e0ee3ba73d7320d127bc6621",
+    "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+    "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+    "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+    "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+    "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+    "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "ca2d71915eab4f402339b88f4cea926bbd8a739e175af1e506bbec0caeccd3b3",
+    "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+    "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+    "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+    "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+  },
+  "tooling_inputs": {
+    "/Users/alex/code/vox2/tools/bbc_browser_instructions.py": "e37bceed33b73ff2c217aaea53c7856d6259afc3e6e85e3cae923225727a8008",
+    "/Users/alex/code/vox2/tools/bbc_browser_instructions_test.py": "c9039c7f6adc0eb769616877cc74569741f5ec1ab69716e7a5a4a087d5c4b286"
+  },
+  "all_feature_files_match_implementation_commit": true,
+  "all_test_functions_called": [
+    {
+      "mode": "default",
+      "calls": [
+        "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+        "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+        "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+        "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+        "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+        "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+        "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+        "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+        "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+        "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+        "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+        "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+        "test_grid_measurement_revalidates_svg_attributes_before_replay",
+        "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+        "test_grid_measurement_preserves_unused_height_proof_rejections",
+        "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+        "test_flex_measurement_keeps_a_recently_reused_question_across_eviction",
+        "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+        "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+        "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+        "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+        "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+        "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+        "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+        "test_flex_measurement_revalidates_svg_attributes_before_replay",
+        "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+        "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+        "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+        "test_flex_measurement_reuses_unused_root_and_immediate_containing_heights",
+        "test_flex_measurement_preserves_unused_height_proof_rejections",
+        "test_previous_measurements_survive_pool_and_scratch_release_with_exact_geometry",
+        "test_previous_measurements_keep_geometry_keys_and_drop_unvisited_entries",
+        "test_previous_measurements_reject_style_font_environment_and_rebuilt_roots",
+        "test_previous_measurements_reject_changed_root_location_and_item_role",
+        "test_previous_measurements_keep_svg_path_ownership_and_attribute_guards",
+        "test_previous_measurement_membership_checks_precede_saved_node_dereferences",
+        "test_previous_measurement_bookkeeping_grows_outside_released_probe_scratch",
+        "test_previous_measurements_reject_changed_text_and_actual_child_slots",
+        "test_previous_measurements_preserve_pending_absolute_and_live_image_guards",
+        "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+        "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+        "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+        "test_image_measurements_promote_nested_absolute_geometry_into_final_layout"
+      ],
+      "all_called": true
+    },
+    {
+      "mode": "none",
+      "calls": [
+        "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+        "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+        "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+        "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+        "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+        "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+        "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+        "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+        "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+        "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+        "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+        "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+        "test_grid_measurement_revalidates_svg_attributes_before_replay",
+        "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+        "test_grid_measurement_preserves_unused_height_proof_rejections",
+        "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+        "test_flex_measurement_keeps_a_recently_reused_question_across_eviction",
+        "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+        "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+        "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+        "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+        "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+        "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+        "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+        "test_flex_measurement_revalidates_svg_attributes_before_replay",
+        "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+        "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+        "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+        "test_flex_measurement_reuses_unused_root_and_immediate_containing_heights",
+        "test_flex_measurement_preserves_unused_height_proof_rejections",
+        "test_previous_measurements_survive_pool_and_scratch_release_with_exact_geometry",
+        "test_previous_measurements_keep_geometry_keys_and_drop_unvisited_entries",
+        "test_previous_measurements_reject_style_font_environment_and_rebuilt_roots",
+        "test_previous_measurements_reject_changed_root_location_and_item_role",
+        "test_previous_measurements_keep_svg_path_ownership_and_attribute_guards",
+        "test_previous_measurement_membership_checks_precede_saved_node_dereferences",
+        "test_previous_measurement_bookkeeping_grows_outside_released_probe_scratch",
+        "test_previous_measurements_reject_changed_text_and_actual_child_slots",
+        "test_previous_measurements_preserve_pending_absolute_and_live_image_guards",
+        "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+        "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+        "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+        "test_image_measurements_promote_nested_absolute_geometry_into_final_layout"
+      ],
+      "all_called": true
+    },
+    {
+      "mode": "prealloc",
+      "calls": [
+        "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+        "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+        "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+        "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+        "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+        "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+        "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+        "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+        "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+        "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+        "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+        "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+        "test_grid_measurement_revalidates_svg_attributes_before_replay",
+        "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+        "test_grid_measurement_preserves_unused_height_proof_rejections",
+        "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+        "test_flex_measurement_keeps_a_recently_reused_question_across_eviction",
+        "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+        "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+        "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+        "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+        "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+        "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+        "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+        "test_flex_measurement_revalidates_svg_attributes_before_replay",
+        "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+        "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+        "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+        "test_flex_measurement_reuses_unused_root_and_immediate_containing_heights",
+        "test_flex_measurement_preserves_unused_height_proof_rejections",
+        "test_previous_measurements_survive_pool_and_scratch_release_with_exact_geometry",
+        "test_previous_measurements_keep_geometry_keys_and_drop_unvisited_entries",
+        "test_previous_measurements_reject_style_font_environment_and_rebuilt_roots",
+        "test_previous_measurements_reject_changed_root_location_and_item_role",
+        "test_previous_measurements_keep_svg_path_ownership_and_attribute_guards",
+        "test_previous_measurement_membership_checks_precede_saved_node_dereferences",
+        "test_previous_measurement_bookkeeping_grows_outside_released_probe_scratch",
+        "test_previous_measurements_reject_changed_text_and_actual_child_slots",
+        "test_previous_measurements_preserve_pending_absolute_and_live_image_guards",
+        "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+        "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+        "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+        "test_image_measurements_promote_nested_absolute_geometry_into_final_layout"
+      ],
+      "all_called": true
+    }
+  ],
+  "attempts": {
+    "focused-results.json": {
+      "cases": 34,
+      "unchanged": true,
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 1
+        },
+        {
+          "name": "none-compile",
+          "exit": 1
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 1
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "670483bfd1f51e223d3cb7be9df75f8b4ec0b8c35c5cc81dac0f6c67b183fd17",
+        "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd61b7c1990fa85048cddee3c34c7e4c6d697d698878c08bbe5b8f6f1ff62e1b",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "1a8f8bc8393e2d01fc08353e0e6fbfc80fa4fef4f002ea266ddf28925b75b73d",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+        "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+      }
+    },
+    "ownership-stress/focused-results.json": {
+      "cases": 41,
+      "unchanged": true,
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 1
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 1
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 1
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "434986eb39c0b649a75809f5c6631a5ac169496c945c133845c2d23d6fcf90d4",
+        "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+        "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "2ddd699453388a7e1951b4c3c2d4393645b723efd55126671f83a761d2a98ae0",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+        "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+      }
+    },
+    "diagnose-growth/focused-results.json": {
+      "cases": 41,
+      "unchanged": true,
+      "results": [
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 1
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "f28c3a590eee8b539b9a4fe8fe75515618cb2d140a4702b10dd09845d39c3552",
+        "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+        "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "2ddd699453388a7e1951b4c3c2d4393645b723efd55126671f83a761d2a98ae0",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+        "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+      }
+    },
+    "retained-hit-map/focused-results.json": {
+      "cases": 41,
+      "unchanged": true,
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "f28c3a590eee8b539b9a4fe8fe75515618cb2d140a4702b10dd09845d39c3552",
+        "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+        "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "0d463cb1af18a1bde7d84c6adbb91b38509a671267877e71cca820f4eff5ace7",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+        "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+      }
+    },
+    "image-transitions/focused-results.json": {
+      "cases": 41,
+      "unchanged": true,
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 1
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "d965234fe00128b8c883cabdea2f0d331ad55d87900555f159efd3307b73698a",
+        "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+        "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "2ddd699453388a7e1951b4c3c2d4393645b723efd55126671f83a761d2a98ae0",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+        "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+      }
+    },
+    "location-and-svg/focused-results.json": {
+      "cases": 43,
+      "unchanged": true,
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "65416f318eb35b9015da057c2d707a9f6f2f7183e0ee3ba73d7320d127bc6621",
+        "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+        "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "ca2d71915eab4f402339b88f4cea926bbd8a739e175af1e506bbec0caeccd3b3",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+        "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+      }
+    },
+    "refined/focused-results.json": {
+      "cases": 34,
+      "unchanged": true,
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout_test.v": "0fa63b063ca1f37c0cb4b22fdd942b1c70cceb08a3521be33093735239781d55",
+        "/Users/alex/code/vox2/layout/layout_state.v": "ec465a03b71ebcd6d0156b6aca3587a93ec84cb80ad44dce3a7482ffc24462ab",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "bd1ffb5338f7ae1289c768cfdc75eaf0b88a03f25e99bcb8f200aea1808b15e8",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "01505bfe6bbb7dd386e1a00764f949476d399d0a22a8782cee9046b3853e7546",
+        "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "f221f71a36dfe340ee0595904f9526dcf289ba0d0b4e1d1f65433c265af476d9",
+        "/Users/alex/code/vox2/layout/previous_measurement_layout.v": "1a8f8bc8393e2d01fc08353e0e6fbfc80fa4fef4f002ea266ddf28925b75b73d",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+        "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164"
+      }
+    }
+  },
+  "count_audit_refinement": {
+    "reason": "Final summary auditor assumed42cases but the recorded matrix has43. That assertion failed; the subsequent Git command still committed. All actual focused checks had passed and every compiled feature input remains byte-identical to the commit. Corrected auditor verifies43cases/258executions; no compile, test, source, workload or threshold changed.",
+    "incorrect_cases": 42,
+    "actual_cases": 43,
+    "audit_exit": 1,
+    "feature_commit": "05e1743ff",
+    "performance_credit": 0
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-previous-measurement-focus-20261106.tar.gz",
+    "bytes": 67717638,
+    "sha256": "6496cb3eac8723e5e239d65440ae0197c55ee6c37921d4a36d33f4ba08b4241c",
+    "members": 238,
+    "all_members_verified": true
+  },
+  "qualification": "Final43-case candidate/control matrix only, in default/noGC/production-bounded-preallocation modes. All actual compiler/runtime exits zero, unchanged feature inputs and disassembled native main calls verified. Earlier compile/fixture/storage/map-growth failures and intermediate passes retained but not carried as final credit. Maps grow in retained storage even when updating an existing key. Same complete root/topology, live-node membership and full existing geometry/style/font/image/SVG validation required; pending/absolute-image inputs stay within-pass only. No BBC saving or catalog credit from focused checks. Generated C retained; focused compilation is not claimed sealed.",
+  "unix": 1793915037.248644,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-previous-measurements-20261106-0015/archive-focus.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 20201472,
+    "elapsed_seconds": 3.765366792,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
