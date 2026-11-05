@@ -419,6 +419,19 @@ void shared_recording_speculative_content(CGContextRef destination, SkRect bound
         shared_recording_content(destination, bounds, page_y, scroll_y);
 }
 
+// A bitmap can be the only drawing in an ordinary compositor picture. It
+// must supply the ink, tile grid and page/scroll offsets just as a glyph or
+// vector does; otherwise finishing that picture silently discards it.
+// Speculative pictures retain their existing explicit eligibility gate.
+void shared_recording_image_content(CGContextRef destination, SkRect bounds,
+    float page_y, float scroll_y)
+{
+    if (s_shared_root_recording && s_shared_root_recording->speculative)
+        shared_recording_speculative_content(destination, bounds, page_y, scroll_y);
+    else
+        shared_recording_content(destination, bounds, page_y, scroll_y);
+}
+
 sk_sp<SkData> serialize_shared_picture_image(SkImage* image, void*)
 {
     auto bytes = vox_encode_picture_image(image);

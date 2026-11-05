@@ -234,6 +234,7 @@ void shared_recording_clip(CGContextRef, SkCanvas*);
 void shared_recording_block(SkRect);
 void shared_recording_content(CGContextRef, SkRect, float, float);
 void shared_recording_speculative_content(CGContextRef, SkRect, float, float);
+void shared_recording_image_content(CGContextRef, SkRect, float, float);
 bool shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
 void finish_shared_recording();
 void finish_shared_recording_before_isolated_input(CGContextRef);
@@ -2327,8 +2328,14 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
             return draw(reinterpret_cast<uint8_t*>(target.data()), raster_width, raster_height,
                 raster_width * 4, has_background, descriptors.data(), static_cast<int>(descriptors.size())) != 0;
         })) return 0;
-    for (auto const& descriptor : descriptors)
-        shared_recording_image(destination, matrix, descriptor);
+    for (auto const& descriptor : descriptors) {
+        if (shared_recording_image(destination, matrix, descriptor)) {
+            auto bounds = matrix.mapRect(SkRect::MakeXYWH(descriptor.destination[0],
+                descriptor.destination[1], descriptor.destination[2], descriptor.destination[3]));
+            if (bounds.intersect(device_clip))
+                shared_recording_image_content(destination, bounds.makeOutset(2, 2), page_y, scroll_y);
+        }
+    }
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
@@ -2514,7 +2521,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         retain_compatible_image_decode(descriptor, matrix, destination_scale);
         if (shared_recording_image(destination, matrix, descriptor)) {
             auto ink = device_bounds.makeOutset(2, 2);
-            shared_recording_speculative_content(destination, ink, page_y, scroll_y);
+            shared_recording_image_content(destination, ink, page_y, scroll_y);
             if (shared_recording_defers_leaf_raster(destination, ink)) return 1;
         }
         if (gpu_canvas_draw_image(destination, matrix, descriptor, device_bounds, region,
