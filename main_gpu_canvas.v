@@ -4,7 +4,7 @@ import layout
 import browsersettings
 import os
 
-const gpu_scrollbar_batch_enabled = os.getenv('VOX_GPU_SCROLLBAR_BATCH') != ''
+const gpu_scrollbar_batch_enabled = os.getenv('VOX_DISABLE_GPU_SCROLLBAR_BATCH') == ''
 
 $if macos {
 	fn C.native_gpu_canvas_begin() int
