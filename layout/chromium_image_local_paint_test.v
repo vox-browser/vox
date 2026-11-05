@@ -1,5 +1,6 @@
 module layout
 
+import math
 import html
 import dom
 import os
@@ -34,6 +35,12 @@ fn test_rotated_replaced_images_snap_their_size_inside_the_transform_fragment() 
 		result := paintable.paint('image',painting.IntRect{0,0,500,500},converter) or { panic('missing image paint') }
 		assert result.bitmap.destination.width == 311
 		assert result.bitmap.destination.height == 311
+		if seen == 2 {
+			// Chromium's LayerTree snapshot records the rotation at (119.085510,
+			// 40.229843) inside a picture translated to (13,17).
+			assert math.abs(command.transform[4] - 132.08551025390625) < 0.00001
+			assert math.abs(command.transform[5] - 57.22984313964844) < 0.00001
+		}
 	}
 	assert seen == 2
 }

@@ -3949,6 +3949,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		}
 		replaced_image_paintable = &painting.ImagePaintable{
 			paint_offset_adjustment: chromium_contained_image_paint_adjustment(node, state)
+			transform_fragment_adjustment: chromium_image_transform_fragment_adjustment(node, state)
 			image_rect: painting.Rect{
 				x: paint_position.x().to_double()
 				y: paint_position.y().to_double()

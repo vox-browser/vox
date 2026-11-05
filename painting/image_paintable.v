@@ -24,6 +24,9 @@ pub:
 	// Paint containment starts a pixel-snapped fragment before its children
 	// are snapped. Layout and object-fit sizes remain in their original space.
 	paint_offset_adjustment Point
+	// Retained ancestor fragment rounding for a static transformed HTML image.
+	// None keeps unsupported ancestor transforms on the ordinary paint path.
+	transform_fragment_adjustment ?Point
 }
 
 pub struct ImagePaintResult {
