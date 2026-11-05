@@ -13,6 +13,10 @@ repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
     exec python3 "$repo_dir/tools/rebuild_browser.py" --build
 fi
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v1 ]; then
+    python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
+    exit 75
+fi
 build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/linux"}
 cache_dir="$repo_dir/Build/linux"
 v_compiler=${V_BIN:-}

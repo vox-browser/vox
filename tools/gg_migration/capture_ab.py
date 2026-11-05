@@ -29,6 +29,9 @@ from pathlib import Path
 
 from PIL import Image, ImageChops
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from browser_bundle_lease import canonical_bundle_lease
+
 OUTCOMES = ('equal', 'equal_to_repeat', 'different', 'unstable', 'failed')
 
 
@@ -180,6 +183,13 @@ def main():
 
 
 def run_captures(args, ignore):
+    # Compilation can continue while this holds a shared publication lease.
+    # The publisher waits before replacing the app; all hash checks remain.
+    with canonical_bundle_lease(args.bundle):
+        return run_leased_captures(args, ignore)
+
+
+def run_leased_captures(args, ignore):
     browser = args.bundle / 'Contents/MacOS/Vox'
     candidate = dict(item.split('=', 1) for item in args.candidate_env)
     # Diagnostics prove the requested adapters were registered in this binary.

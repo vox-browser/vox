@@ -14,11 +14,14 @@ import subprocess
 import sys
 import tempfile
 import uuid
+from browser_bundle_lease import publication_lease
 
 ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
 # Keep the memory guard's default aggregate RSS budget.
 PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
+BUILD_PROTOCOL = 'bundle-lease-v1'
+WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v1.lock'
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
@@ -167,6 +170,11 @@ def exchange_directories(source, target):
 
 
 def publish(root, stage):
+    with publication_lease(root):
+        publish_unlocked(root, stage)
+
+
+def publish_unlocked(root, stage):
     platform = 'v' if sys.platform == 'darwin' else 'linux'
     target = root / 'Build' / platform
     target.mkdir(parents=True, exist_ok=True)
@@ -184,7 +192,7 @@ def publish(root, stage):
 def run_build(root, stage, receipt, environment):
     environment = {k: v for k, v in environment.items() if not k.startswith('GIT_')}
     environment.update(VOX_BUILD_SUPERVISED='1', VOX_BUILD_OUTPUT_DIR=str(stage),
-                       VOX_BUILD_COMPILE_PROTOCOL='c-mode-v2',
+                       VOX_BUILD_COMPILE_PROTOCOL=BUILD_PROTOCOL,
                        VOX_BUILD_RECEIPT_DIR=str(receipt))
     guard = root / 'tools/run_memory_bounded.py'
     # sh reads a script file incrementally. Editing that file while the compiler
@@ -304,7 +312,7 @@ def worker_after_current(root):
     # Multiple stale entries can request an upgrade while editors are active.
     # One waiter owns the handoff. It neither interrupts the running compiler
     # nor enqueues another production request.
-    with lock(state / 'upgrade.lock', nonblocking=True) as upgrade_lock:
+    with lock(state / WORKER_UPGRADE_LOCK, nonblocking=True) as upgrade_lock:
         if upgrade_lock is None:
             return 0
         with lock(state / 'build.lock'):

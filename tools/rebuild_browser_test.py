@@ -84,7 +84,7 @@ class ProductionBuildTests(unittest.TestCase):
             with patch.object(build, 'build_pending', side_effect=successor), \
                     patch.object(build, 'enqueue', side_effect=AssertionError('no new request')):
                 self.assertEqual(build.worker_after_current(root), 17)
-            with build.lock(state / 'upgrade.lock'), patch.object(build, 'build_pending') as compiler:
+            with build.lock(state / build.WORKER_UPGRADE_LOCK), patch.object(build, 'build_pending') as compiler:
                 self.assertEqual(build.worker_after_current(root), 0)
                 compiler.assert_not_called()
 
