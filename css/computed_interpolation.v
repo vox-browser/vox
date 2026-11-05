@@ -15833,7 +15833,8 @@ pub fn (mut s StyleComputer) set_animation_time_ms(time_ms f64) {
 		if !has_targets && s.css_transition_storage_ != unsafe { nil } {
 			for _, bucket in s.css_transition_storage_.associated_transitions {
 				for entry in bucket.entries {
-					if s.animation_target_needs_rendering(entry.abstract_element) {
+					if entry.transition.needs_style_sample_at(s.animation_time_ms_)
+						&& s.animation_target_needs_rendering(entry.abstract_element) {
 						has_targets = true
 						break
 					}

@@ -20,3 +20,11 @@ fn (s &StyleComputer) animation_target_needs_rendering(target dom.AbstractElemen
 	}
 	return false
 }
+
+// Completed transitions remain registered for later before/after-change
+// comparisons. Their final value is already installed; a forward clock tick
+// cannot change it. A clock rewind or an unsampled final phase still can.
+fn (transition &CSSTransition) needs_style_sample_at(timeline_time f64) bool {
+	return transition.play_state_ != .idle
+		&& (transition.current_phase_ != .after || timeline_time < transition.end_time_)
+}
