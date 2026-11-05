@@ -51,7 +51,11 @@ fn (mut t H2PooledTransport) read(mut buf []u8) !int {
         }
     }
     n := t.conn.read(mut buf) or {
+        // mbedTLS reports its short read deadline as MBEDTLS_ERR_SSL_TIMEOUT,
+        // not net.err_timed_out_code. Any benign timeout must enter the idle
+        // wait; otherwise an idle connection polls TLS every 5 ms forever.
         t.vox_wait_before_read = err.code() == net.err_timed_out_code
+            || is_transport_timeout_error(err)
         t.io_mu.unlock()
         return err
     }
@@ -72,3 +76,36 @@ fn (mut t H2PooledTransport) read(mut buf []u8) !int {
     source = source.replace('t.closed = true\n\tt.conn.shutdown()',
                             't.closed = true\n\tC.vox_h2_wake_close(t.vox_wake)\n\tt.vox_wake = unsafe { nil }\n\tt.conn.shutdown()', 1)
     return source
+
+
+def patch_h2_mux_read_chunk(source):
+    """Reuse one receive chunk per connection instead of one per read attempt.
+
+    The reader thread lives as long as its pooled connection. Each idle wake
+    used to allocate a fresh 16 KiB chunk, which a prealloc build never frees.
+    """
+    field = '\tidle_since          time.Time\n'
+    if source.count(field) != 1:
+        raise RuntimeError('Unsupported V HTTP/2 connection layout')
+    source = source.replace(field, field + '\tvox_read_chunk      []u8\n', 1)
+    old = """	for c.rbuf.len < n {
+		mut tmp := []u8{len: h2_conn_read_chunk}
+		got := c.transport.read(mut tmp)!
+		if got <= 0 {
+			return error('connection closed by peer')
+		}
+		c.rbuf << tmp[..got]
+	}"""
+    if source.count(old) != 1:
+        raise RuntimeError('Unsupported V HTTP/2 frame reader')
+    new = """	if c.vox_read_chunk.len != h2_conn_read_chunk {
+		c.vox_read_chunk = []u8{len: h2_conn_read_chunk}
+	}
+	for c.rbuf.len < n {
+		got := c.transport.read(mut c.vox_read_chunk)!
+		if got <= 0 {
+			return error('connection closed by peer')
+		}
+		c.rbuf << c.vox_read_chunk[..got]
+	}"""
+    return source.replace(old, new, 1)

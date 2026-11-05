@@ -14,7 +14,7 @@ from http_tls_dial import patch_transport_tls, tls_dial_helper
 from http_proxy_pool import patch_pooled_proxy_request, patch_pooled_proxy_transport
 from http_h2_fairness import patch_h2_pooled_transport
 from http_h2_receive_credit import patch_h2_mux_receive_credit
-from http_h2_wakeup import patch_h2_wakeup
+from http_h2_wakeup import patch_h2_mux_read_chunk, patch_h2_wakeup
 from http_receive_buffer import patch_receive_buffer, receive_buffer_helper
 
 
@@ -271,7 +271,7 @@ def main():
     h2_pooled_text = (original / 'h2_pooled_transport.v').read_text()
     patched_h2_pooled = patch_h2_wakeup(patch_h2_pooled_transport(h2_pooled_text))
     h2_mux_text = (original / 'h2_mux_conn.v').read_text()
-    patched_h2_mux = patch_h2_mux_receive_credit(h2_mux_text)
+    patched_h2_mux = patch_h2_mux_read_chunk(patch_h2_mux_receive_credit(h2_mux_text))
     modules = staged_modules(work, vlib)
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
