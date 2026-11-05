@@ -88,7 +88,7 @@ fn test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes() 
 	}
 }
 
-fn test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path() {
+fn test_retained_formatting_trees_rebuild_ineligible_content_and_retain_closed_svg() {
 	for contents in [
 		'<img width="20" height="10" alt="image">',
 		'<svg width="20" height="10"><rect width="20" height="10"/></svg>',
@@ -102,7 +102,9 @@ fn test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on
 		mut changed := document.get_element_by_id('changed')?
 		changed.set_inner_html('<p>Changed sibling</p>')!
 		document.update_layout(.debugging)
-		assert voidptr(formatting_tree_handle(document, 'stable')) != voidptr(before)
+		expected_reuse := contents.starts_with('<svg') && !disable_retained_flow_svg_trees
+			&& !disable_retained_formatting_trees
+		assert (voidptr(formatting_tree_handle(document, 'stable')) == voidptr(before)) == expected_reuse
 		formatting_tree_full_paint_check(mut document)
 	}
 }
