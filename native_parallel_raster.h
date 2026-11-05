@@ -56,6 +56,10 @@ public:
     void run(size_t count, size_t minimum_per_lane, Function&& function, char const* label = "pixels")
     {
         auto lanes = std::min(capacity(), count / std::max(size_t(1), minimum_per_lane));
+        // Interactive frames share memory bandwidth with GPU submissions and
+        // video decoding. Keep surplus workers asleep in this diagnostic arm;
+        // range ownership, rounding and the completion barrier stay unchanged.
+        if (std::getenv("VOX_LIMIT_PARALLEL_RASTER_LANES")) lanes = std::min(lanes, size_t(4));
         auto disabled = std::getenv("VOX_DISABLE_PARALLEL_RASTER");
         if (lanes < 2 || inside_parallel_range || (disabled && *disabled)) {
             if (count) function(0, count);

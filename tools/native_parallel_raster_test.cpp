@@ -7,8 +7,9 @@
 #include <stdexcept>
 #include <string>
 
-static void check_workers(vox_raster::ParallelRanges& pool)
+static void check_workers(vox_raster::ParallelRanges& pool, size_t expected = 0)
 {
+    if (!expected) expected = pool.capacity();
     std::mutex mutex;
     std::condition_variable ready;
     std::set<std::thread::id> threads;
@@ -18,9 +19,9 @@ static void check_workers(vox_raster::ParallelRanges& pool)
         threads.insert(std::this_thread::get_id());
         ready.notify_all();
         // Every configured lane must actually enter the job simultaneously.
-        ready.wait(lock, [&] { return threads.size() == pool.capacity(); });
+        ready.wait(lock, [&] { return threads.size() == expected; });
     });
-    assert(threads.size() == pool.capacity());
+    assert(threads.size() == expected);
     std::printf("worker participation: %zu distinct threads, %u logical CPUs\n",
         threads.size(), std::thread::hardware_concurrency());
 }
@@ -75,6 +76,10 @@ static void check_scheduler()
     setenv("VOX_DISABLE_PARALLEL_RASTER", "1", 1);
     pool.run(1000, 1, [](size_t a, size_t b) { assert(a == 0 && b == 1000); });
     unsetenv("VOX_DISABLE_PARALLEL_RASTER");
+    setenv("VOX_LIMIT_PARALLEL_RASTER_LANES", "1", 1);
+    check_workers(vox_raster::shared_pool(), std::min(size_t(4), vox_raster::shared_pool().capacity()));
+    check_workers(pool);
+    unsetenv("VOX_LIMIT_PARALLEL_RASTER_LANES");
 }
 
 static std::vector<uint8_t> pattern(size_t bytes)
@@ -194,9 +199,14 @@ static void tune_ranges()
 int main(int argc, char** argv)
 {
     unsetenv("VOX_DISABLE_PARALLEL_RASTER");
+    unsetenv("VOX_LIMIT_PARALLEL_RASTER_LANES");
     check_scheduler();
     check_pixels();
     check_composites();
+    setenv("VOX_LIMIT_PARALLEL_RASTER_LANES", "1", 1);
+    check_pixels();
+    check_composites();
+    unsetenv("VOX_LIMIT_PARALLEL_RASTER_LANES");
     std::puts("parallel raster scheduling, pixels and compositing: PASS");
     if (argc > 1 && std::string(argv[1]) == "--benchmark") benchmark();
     if (argc > 1 && std::string(argv[1]) == "--tune") tune_ranges();
