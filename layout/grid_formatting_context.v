@@ -2948,7 +2948,45 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			maximum_row_span = placement.row_span
 		}
 	}
+	chromium_rows := container.document().font_rendering_policy() == .chromium
+	if chromium_rows {
+		for span in 1 .. maximum_row_span + 1 {
+			mut group := []ChromiumGridSpanningContribution{}
+			for placement in row_sizing_placements {
+				if placement.row_span != span
+					|| grid_track_range_crosses_flexible_track(rows, placement.row, placement.row_span)
+					|| !grid_track_range_crosses_intrinsic_sizing_track(rows, placement.row, placement.row_span) {
+					continue
+				}
+				styled := placement.item.as_node_with_style() or { continue }
+				item_state := state.get(styled)
+				spanned_track_size := grid_track_range_size(rows, placement.row, placement.row_span, row_gap)
+				minimum_contribution := grid_item_minimum_outer_block_contribution(mut state,
+					placement.item, item_state, rows, placement.row, placement.row_span,
+					container_state.has_definite_height(), row_basis, row_gap).plus(placement.sizing_extra(false))
+				min_content_contribution := grid_item_outer_block_content_contribution(mut state,
+					placement.item, item_state, .min_content, container_state.has_definite_height(),
+					row_basis, spanned_track_size).plus(placement.sizing_extra(false))
+				max_content_contribution := grid_item_outer_block_content_contribution(mut state,
+					placement.item, item_state, .max_content, container_state.has_definite_height(),
+					row_basis, spanned_track_size).plus(placement.sizing_extra(false))
+				group << ChromiumGridSpanningContribution{
+					start: placement.row
+					span: placement.row_span
+					minimum: if available_space.height.is_intrinsic_sizing_constraint() {
+						grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
+					} else {
+						minimum_contribution
+					}
+					min_content: min_content_contribution
+					max_content: max_content_contribution
+				}
+			}
+			chromium_grid_resolve_spanning_group(mut rows, group, row_gap)
+		}
+	}
 	for span in 1 .. maximum_row_span + 1 {
+		if chromium_rows { break }
 		for placement in row_sizing_placements {
 			if placement.row_span != span
 				|| grid_track_range_crosses_flexible_track(rows, placement.row, placement.row_span)
