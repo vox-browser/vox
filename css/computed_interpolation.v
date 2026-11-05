@@ -11378,6 +11378,13 @@ pub fn (mut s StyleComputer) set_viewport_rect(viewport_rect CSSPixelRect) {
 }
 
 fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractElement, keyframe ResolvedKeyFrame, computed_properties &ComputedProperties) map[PropertyID]&dom.StyleValue {
+	mut result := map[PropertyID]&dom.StyleValue{}
+	// Native recascades retain resolved values, but use the lookup tables only
+	// synchronously. Animation-frame samples already have their bounded owner.
+	retire_lookup := !s.sampling_animation_frame_ && s.document_.native_storage() != unsafe { nil }
+		&& voidptr(platform.current_retained_arena()) == voidptr(s.document_.native_storage())
+	workspace := if retire_lookup { platform.begin_thread_scratch('keyframe property lookup') } else { platform.ThreadScratchScope{} }
+	defer { workspace.finish() }
 	mut property_ids := map[PropertyID]bool{}
 	for property_id, _ in keyframe.properties {
 		property_ids[property_id] = true
@@ -11395,12 +11402,14 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 		mut value := keyframe.properties[property_id] or {
 			computed_properties.property(property_id, .no) or { continue }
 		}
+		mut owned := if retire_lookup { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
 		if typed := typed_style_value_logic_from_dom(value) {
 			if typed is UnresolvedStyleValue && typed.substitution_functions_presence.has_any() {
 				value = resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
 			}
 		}
 		value = with_keyword_values_resolved_boundary(abstract_element.element(), property_id, value)
+		owned.finish()
 		physical_property_id := map_logical_alias_to_physical_property(property_id, mapping_context)
 		specified_values[physical_property_id] = value
 	}
@@ -11411,8 +11420,8 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 		properties: computed_properties
 		specified_values: &specified_values
 	}
-	mut result := map[PropertyID]&dom.StyleValue{}
 	for property_id, value in specified_values {
+		mut owned := if retire_lookup { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
 		mut computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := compute_value_of_property_from_source(property_id, value,
@@ -11425,6 +11434,7 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 			}
 		}
 		result[property_id] = computed_value
+		owned.finish()
 	}
 	return result
 }
