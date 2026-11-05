@@ -1,0 +1,81 @@
+{
+  "started_unix": 1793890591.5553658,
+  "scope": "Latest completed canonical bundle pinned with a nonblocking shared publication lease across diagnostic and matched captures. No copied bundle or build queued. Per-capture input fingerprints also reject changes.",
+  "rows": [
+    {
+      "phase": "diagnostic",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-production-20261105-r1/diagnostic/page.py"
+      ],
+      "exit": 0
+    },
+    {
+      "phase": "matched",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-production-20261105-r1/matched/page.py"
+      ],
+      "exit": 0
+    }
+  ],
+  "status": "complete",
+  "production_before": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "9a2431f805058be888099948b5299edebb507a36db306d4eb2703eeef9ded69e",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "7aa7d0b0dd66b56f90401632726f1b2c511eb7dc58dd9e1f59e8a877a68540ad",
+      "dirty": true,
+      "head": "8fd13f0fb664cabdd4534568791597845f236b30",
+      "repository_sha256": "a45c975a9a16a95caf6c8989bc706561658224ef3976c6c92bdc12e330e1b158"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "6dd32467963c5f40044c69107dd0e1eefa74b370",
+      "id": "8b43e61daabe47b5a4f64a8b59472493"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7aa7d0b0dd66b56f90401632726f1b2c511eb7dc58dd9e1f59e8a877a68540ad",
+      "dirty": true,
+      "head": "8fd13f0fb664cabdd4534568791597845f236b30",
+      "repository_sha256": "dcf15eb205185560a8467c6587e1217d30a981fd0f1380e77c8e5a0c5758ad69"
+    }
+  },
+  "observed_conservative_page_reduction": -117726721,
+  "finished_unix": 1793890706.8989608,
+  "production_after": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "9a2431f805058be888099948b5299edebb507a36db306d4eb2703eeef9ded69e",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "7aa7d0b0dd66b56f90401632726f1b2c511eb7dc58dd9e1f59e8a877a68540ad",
+      "dirty": true,
+      "head": "8fd13f0fb664cabdd4534568791597845f236b30",
+      "repository_sha256": "a45c975a9a16a95caf6c8989bc706561658224ef3976c6c92bdc12e330e1b158"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "6dd32467963c5f40044c69107dd0e1eefa74b370",
+      "id": "8b43e61daabe47b5a4f64a8b59472493"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7aa7d0b0dd66b56f90401632726f1b2c511eb7dc58dd9e1f59e8a877a68540ad",
+      "dirty": true,
+      "head": "8fd13f0fb664cabdd4534568791597845f236b30",
+      "repository_sha256": "dcf15eb205185560a8467c6587e1217d30a981fd0f1380e77c8e5a0c5758ad69"
+    }
+  }
+}

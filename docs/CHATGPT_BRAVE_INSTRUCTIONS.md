@@ -2703,3 +2703,57 @@ The [focused/component receipt](performance/chatgpt-media-feature-lookup-2026110
 links source/executable hashes, generated test calls, counters, checksums,
 commands, memory guards and verified archives. The production comparison
 below uses the existing original-script SOCKS capture and unchanged references.
+
+
+## November 5: media-feature lookup production comparison
+
+The completed 33-unit parallel bundle supplies final source proof for the
+lookup, original name chain and enum definition. Its before/after aggregate
+build-input hashes match; the three owned/dependency blobs match the recorded
+Git head. Available feature/caller disassembly is retained, without a sealed-C
+claim. A nonblocking shared publication lease pins canonical executable
+`9a2431f805058be888099948b5299edebb507a36db306d4eb2703eeef9ded69e`.
+No app is copied or separate production build requested.
+
+All **12 fresh captures pass bootstrap, complete content and exact unchanged
+pixels**. The separate diagnostic marker confirms entry into the candidate
+lookup only when enabled; individual name/enum branch counts are not collected.
+Matched captures disable diagnostics and retain the original chain as control.
+
+| Unprofiled frozen-page variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Name-chain control 1 | 29,772,715,411 |
+| Dispatch candidate 1 | 29,718,826,655 |
+| Dispatch candidate 2 | 29,890,442,132 |
+| Name-chain control 2 | 29,792,562,184 |
+| Control median | 29,782,638,797.5 |
+| Candidate median | 29,804,634,393.5 |
+
+The candidate median is **0.074% higher**. The ranges overlap, with conservative
+separation **−117,726,721 instructions**. Therefore **no whole-page saving is
+credited**, no broad checkpoint is triggered and the cadence stays at zero.
+Both candidates are retained, including the one that regresses against both
+controls. Component gains and their early-name regression remain separate.
+
+Control frame checkpoints are 472/466 versus 458/452 for candidates. One-minute
+host load ranges from 10.85 to 15.66 on 18 CPUs. The four Brave reference
+intervals span 16,187,500,778 to 19,233,554,705 observed instructions. Variation,
+only two observations per variant and four total pairs limit attribution and
+fall short of seven-pair acceptance. **The requested 5% advantage over Brave
+remains unmet**.
+
+The original frozen SOCKS capture, author scripts and pixel/content references,
+fresh private profiles/caches, five-second unfocused settle, 1024×768 viewport,
+scale 2 and exclusive-coalition creation-through-encoded-document-PNG scope
+remain unchanged. OS filesystem/shader caches are retained; GPU and services
+outside the coalition are excluded. This establishes no live-site,
+isolated-rendering or scrolling improvement. The outer guard exits zero,
+adopts 43 process identities without error and peaks at 1,763,131,392 sampled
+RSS bytes under 12 GiB. Both phase controllers exit zero; their comparison
+driver's separate exit one records the unmet Brave gate.
+
+The [completed production receipt](performance/chatgpt-media-feature-lookup-production-20261105.json)
+links raw counters, audits, PNGs, source proof, host conditions, commands,
+actual exits and five verified archives. Every component and page observation
+is retained. The publication lease is released; **no 5%-below-Brave acceptance
+is claimed**.
