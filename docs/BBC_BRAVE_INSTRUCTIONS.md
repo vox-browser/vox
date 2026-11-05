@@ -6690,3 +6690,25 @@ History remains **109 measured cohorts / 2,356 acceptance browser attempts**,
 last measured ID 112; ID 113 is also preflight-only. A fresh expanded
 `v -profile` diagnostic is pending. The 10% target and catalog entry stay open.
 [Native no-hit qualification, retained attempts and rollback checks](performance/bbc-intrinsic-width-preflight113-20261105.json).
+
+## Expanded `v -profile` diagnostic (2026-11-05)
+
+A fresh diagnostic selects 5,514 V profiler scopes before execution: generated
+main/DOM/CSS/layout/browser-JS bodies of at least 2,200 characters plus the prior
+coarse scopes still present. Of these, 2,949 execute. Thread-local main-entry
+profiling excludes global initialization and background-thread rows. Complete
+source inputs remain unchanged through generation; sealed compiler inputs and
+runtime images are verified. Generation, C compilation and capture guards exit
+0, with peaks of 6.56, 2.12 and 1.50 GB respectively. Original pixels/content and
+all 72 exact external author-script witnesses pass before PNG.
+
+The run records 2,993,967 simple-selector checks, 1,222,999 attribute matches and
+1,952,787 candidate-rule additions. These counts motivate checking attribute
+name buckets that admit rules for unrelated values. Selected self elapsed is
+209.440 ms for simple-selector checks, 112.388 ms for bucket candidate traversal
+and 90.314 ms for attribute namespace matching. Instrumentation, unselected
+callees/native work, waits and recorded host contention remain included;
+recursive inclusive scopes overlap. Neither these times nor comparisons with
+the earlier instrumentation establish instruction shares or an optimization.
+The profile precedes and cannot validate the exact-value index experiment.
+[Expanded profile and complete verified sealed-input archive](performance/bbc-v-profile-expanded-20261105.json).
