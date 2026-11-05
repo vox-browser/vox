@@ -68,12 +68,16 @@ fn test_rounded_underlay_projection_does_not_retain_per_draw_storage() {
 	background := layout.PaintCommand{x: -1, y: -9.5, width: 400, height: 432,
 		transform: [f64(1), 0, 0, 1, 441, 188]!}
 	consumer := layout.PaintCommand{}
+	mut app := BrowserApp{rounded_rect_underlay: background}
 	before := platform.thread_arena_usage().used
 	mut sum := f64(0)
+	mut compatible := true
 	for _ in 0 .. 256 {
+		compatible = app.rounded_underlay_shares_paint_space(&consumer) && compatible
 		rect := rounded_underlay_rect(&background, &consumer, 12)
 		sum += rect[0]
 	}
+	assert compatible
 	assert sum == 440 * 256
 	$if prealloc { assert platform.thread_arena_usage().used - before < 4096 }
 }

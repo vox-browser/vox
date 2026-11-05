@@ -5763,10 +5763,8 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 		}
 	}
-	if pending := app.rounded_rect_underlay {
-		if !rounded_underlay_offset(&pending, source_command).valid {
-			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
-		}
+	if !app.rounded_underlay_shares_paint_space(source_command) {
+		app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 	}
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)

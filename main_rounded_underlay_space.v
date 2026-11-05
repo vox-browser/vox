@@ -9,6 +9,15 @@ struct RoundedUnderlayOffset {
 	y f64
 }
 
+fn (mut app BrowserApp) rounded_underlay_shares_paint_space(consumer &layout.PaintCommand) bool {
+	// Borrow the optional payload. A copied PaintCommand passed by address can
+	// be heap-boxed on every draw by the compiler because it has inline arrays.
+	if mut background := app.rounded_rect_underlay {
+		return rounded_underlay_offset(background, consumer).valid
+	}
+	return true
+}
+
 // The native combined draw uses the consumer's matrix for both shapes. A
 // background can have a local paint offset while its border stays in page
 // coordinates, even for an identity CSS transform. Preserve their device
