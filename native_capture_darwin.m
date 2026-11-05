@@ -4403,11 +4403,21 @@ void native_end_css_filter_layer(void) {
 			filtered_image = CGImageRetain(source_image);
 		} else {
 			native_initialize_css_filter_renderer();
-			CIImage *output = native_apply_css_filter_layer(&layer, source_image);
 			filtered_rect = native_css_filter_output_rect(&layer, source_rect);
+			// The crop's pixels depend on no others, so Core Image reads and
+			// filters only them rather than the complete layer.
+			CGImageRef cropped_source = CGRectEqualToRect(filtered_rect, source_rect) ? NULL
+				: CGImageCreateWithImageInRect(source_image, CGRectMake(filtered_rect.origin.x,
+					source_rect.size.height - CGRectGetMaxY(filtered_rect),
+					filtered_rect.size.width, filtered_rect.size.height));
+			if (cropped_source == NULL) filtered_rect = source_rect;
+			CIImage *output = native_apply_css_filter_layer(&layer,
+				cropped_source ? cropped_source : source_image);
 			filtered_image = [native_css_filter_ci_context createCGImage:output
-				fromRect:filtered_rect format:kCIFormatRGBA8
-				colorSpace:native_css_filter_color_space];
+				fromRect:cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
+					filtered_rect.size.height) : source_rect
+				format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+			if (cropped_source) CGImageRelease(cropped_source);
 		}
 		if (filtered_image != NULL && layer.destination != NULL) {
 			CGRect target = CGRectEqualToRect(filtered_rect, source_rect)
