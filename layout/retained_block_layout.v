@@ -53,10 +53,10 @@ mut:
 // run through the complete algorithm.
 fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
-	return collect_retained_block_inputs_in_svg(node, false, false, mut inputs, mut rejected)
+	return collect_retained_block_inputs_in_svg(node, false, false, false, mut inputs, mut rejected)
 }
 
-fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurement_images bool, mut inputs []RetainedInlineInput,
+fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurement_images bool, markerless_items bool, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
 	key := u64(voidptr(node))
 	if !in_simple_svg && !disable_retained_block_rejection_cache && rejected[key] {
@@ -79,7 +79,7 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 		|| (node.is_replaced_box() && image == none && simple_svg == none && measurement_image == none)
 		|| node.is_floating() || (!retained_layout_position_is_unshifted(node)
 			&& !(measurement_image != none && node.is_absolutely_positioned() && !node.is_fixed_position()))
-		|| node.is_list_item_box()
+		|| (node.is_list_item_box() && !(markerless_items && measurement_list_item_has_no_marker(node)))
 		|| node.is_list_item_marker_box() || node.is_fieldset_box()
 		|| node.has_layout_containment() || node.has_paint_containment()
 		|| computed.writing_mode() != .horizontal_tb || computed.has_animated_properties()
@@ -123,7 +123,7 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 		simple_svg: simple_svg
 	}
 	for child in node.children() {
-		if !collect_retained_block_inputs_in_svg(child, inside_svg, measurement_images, mut inputs, mut rejected) { return false }
+		if !collect_retained_block_inputs_in_svg(child, inside_svg, measurement_images, markerless_items, mut inputs, mut rejected) { return false }
 	}
 	accepted = true
 	return true
