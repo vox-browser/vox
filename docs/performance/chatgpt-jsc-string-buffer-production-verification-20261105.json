@@ -1,0 +1,1213 @@
+{
+  "complete": true,
+  "production_validation_status": "rejected",
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-jsc-string-buffer-production-20261105-evidence.zip",
+      "sha256": "db0b70855879b1abe1b297a35cb3927d77439f321d6e3cf0c26ce24bf44e3af8",
+      "bytes": 1374364
+    },
+    {
+      "path": "docs/performance/chatgpt-jsc-string-buffer-20261105-evidence.zip",
+      "sha256": "1aa22949d569fb73c6f2d81ba648683c55da41a5aeccc9c98e1741f7ce009a35",
+      "bytes": 39182842
+    },
+    {
+      "path": "docs/performance/chatgpt-jsc-string-buffer-production-r3-diagnostic-20261105-evidence.zip",
+      "sha256": "ae072a465b234292f43917c3a3a247d22b3081081c045cf060544f5c775d7bd9",
+      "bytes": 1396207
+    },
+    {
+      "path": "docs/performance/chatgpt-jsc-string-buffer-production-r3-matched-20261105-evidence.zip",
+      "sha256": "9938bad3590d77f30142883d86817a2b1c8958a58a2624fa41a40f0415a3cca6",
+      "bytes": 2067127
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "55161b147ee98fa38d061a01f8a95bdb7ec999e02211f41f129783c89208b14a",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and enclosing-function disassembly joined to Mach-O import stub addresses. ThinLTO inlines the conversion helper.",
+      "proof_sha256": "e6a0811af7c3db8f622496d444dd4714b8cfacaa52f3e4c45115a1cad9f68128",
+      "source_hashes": {
+        "browserjs/runtime_jsc.c.v": "a94aa5a1841af483238b250c50ddeebe899811478d42648d441755a338131e89",
+        "browserjs/jsc_string_buffer.v": "80bfc3f07bda5691a91c1575e2be6d6d8e16fd48e19398b8b87b878b7946eb0a"
+      },
+      "qualification": "JSC-to-V conversion uses a fixed 256-byte stack buffer only when the public JSC maximum UTF8 capacity fits. It copies the exact returned bytes into caller-owned storage before returning. Longer strings use the original heap conversion. ToString, errors, code points and embedded NUL behavior are unchanged. Separate diagnostics establish execution; no source-proof timing credit."
+    }
+  ],
+  "focused_test_function_executions": 240,
+  "valid_render_captures": 9,
+  "capture_attempts": 10,
+  "failed_capture": {
+    "engine": "brave",
+    "exit": 1,
+    "instruction_scope": "launch",
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "membership_attempts": [
+      {
+        "before_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 3804769506,
+          "cycles": 1798100438,
+          "tasks_started": 9,
+          "tasks_exited": 3,
+          "sample_started": 50.771784375,
+          "sample_completed": 50.771806916
+        },
+        "after_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 3882108633,
+          "cycles": 1851779323,
+          "tasks_started": 9,
+          "tasks_exited": 4,
+          "sample_started": 50.801238708,
+          "sample_completed": 50.801261875
+        },
+        "members": [
+          {
+            "pid": 3666,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3670,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3673,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,6324107458072464473,6719526995086268544,262144 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=28",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3674,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,17266170109446283652,3610703560992090090,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=28",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3676,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --shared-files --metrics-shmem-handle=1752395122,r,11119879921588785305,10375857064253260596,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=52",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          }
+        ],
+        "stable": false,
+        "all_owned": true,
+        "exact_live_count": true,
+        "root_present": true,
+        "vanished_during_scan": [
+          3677,
+          13746,
+          35602,
+          40213,
+          40363,
+          80313,
+          94931
+        ]
+      },
+      {
+        "before_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 3882108633,
+          "cycles": 1851779323,
+          "tasks_started": 9,
+          "tasks_exited": 4,
+          "sample_started": 50.814772541,
+          "sample_completed": 50.814809875
+        },
+        "after_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 3882108633,
+          "cycles": 1851779323,
+          "tasks_started": 9,
+          "tasks_exited": 4,
+          "sample_started": 50.840424291,
+          "sample_completed": 50.840447041
+        },
+        "members": [
+          {
+            "pid": 3666,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3670,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3673,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,6324107458072464473,6719526995086268544,262144 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=28",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3674,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,17266170109446283652,3610703560992090090,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=28",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3676,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --shared-files --metrics-shmem-handle=1752395122,r,11119879921588785305,10375857064253260596,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=52",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          }
+        ],
+        "stable": true,
+        "all_owned": true,
+        "exact_live_count": true,
+        "root_present": true,
+        "vanished_during_scan": [
+          13746,
+          35602,
+          40213,
+          40363,
+          80313,
+          94931
+        ],
+        "preexisting_app_pids": [
+          45688,
+          45710,
+          45794,
+          50848,
+          51532,
+          51565,
+          51572,
+          52460,
+          60296,
+          79710,
+          92579
+        ],
+        "preexisting_descendants": [],
+        "concurrent_capture_roots": [],
+        "concurrent_capture_tasks": [],
+        "private_app_pids": [
+          3666,
+          3670,
+          3673,
+          3674,
+          3676
+        ],
+        "observed_app_processes": [
+          {
+            "pid": 3666,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+          },
+          {
+            "pid": 3670,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5"
+          },
+          {
+            "pid": 3673,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,6324107458072464473,6719526995086268544,262144 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=28"
+          },
+          {
+            "pid": 3674,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,17266170109446283652,3610703560992090090,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=28"
+          },
+          {
+            "pid": 3676,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --shared-files --metrics-shmem-handle=1752395122,r,11119879921588785305,10375857064253260596,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=52"
+          },
+          {
+            "pid": 45688,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+          },
+          {
+            "pid": 45710,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5"
+          },
+          {
+            "pid": 45794,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,14690788106825999241,15001638280990635780,262144 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=23"
+          },
+          {
+            "pid": 50848,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --start-stack-profiler --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=193 --launch-time-ticks=148019315553 --shared-files --metrics-shmem-handle=1752395122,r,12950687961868569942,13679400272273701935,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709167160948351 --seatbelt-client=134"
+          },
+          {
+            "pid": 51532,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --extension-process --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=114118410885 --shared-files --metrics-shmem-handle=1752395122,r,3893188147669232710,10818223652054717746,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190708992871164437 --seatbelt-client=102"
+          },
+          {
+            "pid": 51565,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --shared-files --metrics-shmem-handle=1752395122,r,7860313129273670913,15242601443738627259,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709020982419907 --seatbelt-client=109"
+          },
+          {
+            "pid": 51572,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,12291696240510907136,17243336701125432318,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709022856503605 --seatbelt-client=116"
+          },
+          {
+            "pid": 52460,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=195 --launch-time-ticks=148039331268 --shared-files --metrics-shmem-handle=1752395122,r,3220056692415089526,17595873399917872675,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709169035032049 --seatbelt-client=134"
+          },
+          {
+            "pid": 60296,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=audio.mojom.AudioService --lang=en-US --service-sandbox-type=audio --message-loop-type-ui --shared-files --metrics-shmem-handle=1752395122,r,14973489045149148869,3442993427571652657,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709047219591679 --seatbelt-client=181"
+          },
+          {
+            "pid": 79710,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=180 --launch-time-ticks=144787757173 --shared-files --metrics-shmem-handle=1752395122,r,2753010319926367744,8166250021906589672,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709154979404314 --seatbelt-client=189"
+          },
+          {
+            "pid": 92579,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=184 --launch-time-ticks=146654665345 --shared-files --metrics-shmem-handle=1752395122,r,4482226594681990946,15188251821655687326,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709158727571710 --seatbelt-client=190"
+          }
+        ],
+        "cdp_processes": [
+          {
+            "type": "browser",
+            "id": 3666,
+            "cpuTime": 0.265862
+          },
+          {
+            "type": "GPU",
+            "id": 3673,
+            "cpuTime": 0.052101
+          },
+          {
+            "type": "network.mojom.NetworkService",
+            "id": 3674,
+            "cpuTime": 0.054998
+          },
+          {
+            "type": "storage.mojom.StorageService",
+            "id": 3676,
+            "cpuTime": 0.030012
+          }
+        ],
+        "after_ownership_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 3882551023,
+          "cycles": 1852513124,
+          "tasks_started": 9,
+          "tasks_exited": 4,
+          "sample_started": 50.8678055,
+          "sample_completed": 50.867818958
+        },
+        "ownership_stable": true
+      },
+      {
+        "before_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 18565312807,
+          "cycles": 9237608922,
+          "tasks_started": 14,
+          "tasks_exited": 6,
+          "sample_started": 56.978648208,
+          "sample_completed": 56.978668583
+        },
+        "after_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 18659381232,
+          "cycles": 9282813390,
+          "tasks_started": 14,
+          "tasks_exited": 6,
+          "sample_started": 57.006699583,
+          "sample_completed": 57.006734583
+        },
+        "members": [
+          {
+            "pid": 3666,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3670,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3673,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,6324107458072464473,6719526995086268544,262144 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=28",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3674,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,17266170109446283652,3610703560992090090,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=28",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3676,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --shared-files --metrics-shmem-handle=1752395122,r,11119879921588785305,10375857064253260596,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=52",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3688,
+            "parent": 1,
+            "uid": 501,
+            "command": "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService",
+            "executable": "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3689,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --enable-automation --force-device-scale-factor=2 --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=171253362285 --shared-files --metrics-shmem-handle=1752395122,r,15969201217896373594,13226698340421663035,1572864 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708992871164437 --seatbelt-client=106",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          },
+          {
+            "pid": 3692,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --enable-automation --force-device-scale-factor=2 --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=8 --launch-time-ticks=171253435334 --shared-files --metrics-shmem-handle=1752395122,r,7558120925341336018,13846731695423396363,1572864 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708993808206286 --seatbelt-client=112",
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "accepted": true,
+            "code_sign_clone_identity": null
+          }
+        ],
+        "stable": true,
+        "all_owned": true,
+        "exact_live_count": true,
+        "root_present": true,
+        "vanished_during_scan": [
+          13746,
+          35602,
+          40213,
+          40363,
+          80313,
+          94931
+        ],
+        "preexisting_app_pids": [
+          45688,
+          45710,
+          45794,
+          50848,
+          51532,
+          51565,
+          51572,
+          52460,
+          60296,
+          79710,
+          92579
+        ],
+        "preexisting_descendants": [],
+        "concurrent_capture_roots": [
+          {
+            "pid": 3716,
+            "parent": 3714,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --headless=new --no-first-run --no-default-browser-check --disable-sync --disable-background-networking --remote-debugging-port=0 --remote-allow-origins=* --force-color-profile=srgb --lang=en-US --hide-scrollbars --proxy-server=socks5://127.0.0.1:54996 --ignore-certificate-errors-spki-list=rtnCwAQX41xoO304K6Jzjb6azcfO8nJmBSHZikmmfy0= --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --load-extension=/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium about:blank",
+            "start_ticks": 4110099242006,
+            "resource_coalition": 36485,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "private_marker": [
+              "--user-data-dir",
+              "/private/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp"
+            ]
+          }
+        ],
+        "concurrent_capture_tasks": [
+          {
+            "pid": 3716,
+            "parent": 3714,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --headless=new --no-first-run --no-default-browser-check --disable-sync --disable-background-networking --remote-debugging-port=0 --remote-allow-origins=* --force-color-profile=srgb --lang=en-US --hide-scrollbars --proxy-server=socks5://127.0.0.1:54996 --ignore-certificate-errors-spki-list=rtnCwAQX41xoO304K6Jzjb6azcfO8nJmBSHZikmmfy0= --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --load-extension=/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium about:blank",
+            "start_ticks": 4110099242006,
+            "resource_coalition": 36485,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "independent_root_pids": [
+              3716
+            ]
+          },
+          {
+            "pid": 3723,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --headless=new --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=31",
+            "start_ticks": 4110101951695,
+            "resource_coalition": 36485,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "independent_root_pids": [
+              3716
+            ]
+          },
+          {
+            "pid": 3724,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --ignore-certificate-errors-spki-list=rtnCwAQX41xoO304K6Jzjb6azcfO8nJmBSHZikmmfy0= --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --start-stack-profiler --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=27",
+            "start_ticks": 4110101976803,
+            "resource_coalition": 36485,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "independent_root_pids": [
+              3716
+            ]
+          },
+          {
+            "pid": 3725,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --ignore-certificate-errors-spki-list=rtnCwAQX41xoO304K6Jzjb6azcfO8nJmBSHZikmmfy0= --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=44",
+            "start_ticks": 4110102526673,
+            "resource_coalition": 36485,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "independent_root_pids": [
+              3716
+            ]
+          },
+          {
+            "pid": 3734,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --start-stack-profiler --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=8 --launch-time-ticks=171254464272 --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708993808206286 --seatbelt-client=105",
+            "start_ticks": 4110107281004,
+            "resource_coalition": 36485,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "independent_root_pids": [
+              3716
+            ]
+          },
+          {
+            "pid": 3736,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --extension-process --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=9 --launch-time-ticks=171254491572 --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708994745248135 --seatbelt-client=104",
+            "start_ticks": 4110107798462,
+            "resource_coalition": 36485,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "independent_root_pids": [
+              3716
+            ]
+          }
+        ],
+        "private_app_pids": [
+          3666,
+          3670,
+          3673,
+          3674,
+          3676,
+          3689,
+          3692,
+          3735
+        ],
+        "observed_app_processes": [
+          {
+            "pid": 3666,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+          },
+          {
+            "pid": 3670,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5"
+          },
+          {
+            "pid": 3673,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,6324107458072464473,6719526995086268544,262144 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=28"
+          },
+          {
+            "pid": 3674,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,17266170109446283652,3610703560992090090,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=28"
+          },
+          {
+            "pid": 3676,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --shared-files --metrics-shmem-handle=1752395122,r,11119879921588785305,10375857064253260596,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=52"
+          },
+          {
+            "pid": 3689,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --enable-automation --force-device-scale-factor=2 --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=171253362285 --shared-files --metrics-shmem-handle=1752395122,r,15969201217896373594,13226698340421663035,1572864 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708992871164437 --seatbelt-client=106"
+          },
+          {
+            "pid": 3692,
+            "parent": 3666,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --enable-automation --force-device-scale-factor=2 --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=8 --launch-time-ticks=171253435334 --shared-files --metrics-shmem-handle=1752395122,r,7558120925341336018,13846731695423396363,1572864 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708993808206286 --seatbelt-client=112"
+          },
+          {
+            "pid": 3716,
+            "parent": 3714,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --headless=new --no-first-run --no-default-browser-check --disable-sync --disable-background-networking --remote-debugging-port=0 --remote-allow-origins=* --force-color-profile=srgb --lang=en-US --hide-scrollbars --proxy-server=socks5://127.0.0.1:54996 --ignore-certificate-errors-spki-list=rtnCwAQX41xoO304K6Jzjb6azcfO8nJmBSHZikmmfy0= --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --load-extension=/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium about:blank"
+          },
+          {
+            "pid": 3723,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --headless=new --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=31"
+          },
+          {
+            "pid": 3724,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --ignore-certificate-errors-spki-list=rtnCwAQX41xoO304K6Jzjb6azcfO8nJmBSHZikmmfy0= --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --start-stack-profiler --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=27"
+          },
+          {
+            "pid": 3725,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --ignore-certificate-errors-spki-list=rtnCwAQX41xoO304K6Jzjb6azcfO8nJmBSHZikmmfy0= --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=44"
+          },
+          {
+            "pid": 3734,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --start-stack-profiler --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=8 --launch-time-ticks=171254464272 --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708993808206286 --seatbelt-client=105"
+          },
+          {
+            "pid": 3735,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=171254470343 --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708992871164437 --seatbelt-client=104"
+          },
+          {
+            "pid": 3736,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --extension-process --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=9 --launch-time-ticks=171254491572 --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708994745248135 --seatbelt-client=104"
+          },
+          {
+            "pid": 45688,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+          },
+          {
+            "pid": 45710,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5"
+          },
+          {
+            "pid": 45794,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,14690788106825999241,15001638280990635780,262144 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=23"
+          },
+          {
+            "pid": 50848,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --start-stack-profiler --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=193 --launch-time-ticks=148019315553 --shared-files --metrics-shmem-handle=1752395122,r,12950687961868569942,13679400272273701935,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709167160948351 --seatbelt-client=134"
+          },
+          {
+            "pid": 51532,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --extension-process --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=114118410885 --shared-files --metrics-shmem-handle=1752395122,r,3893188147669232710,10818223652054717746,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190708992871164437 --seatbelt-client=102"
+          },
+          {
+            "pid": 51565,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --shared-files --metrics-shmem-handle=1752395122,r,7860313129273670913,15242601443738627259,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709020982419907 --seatbelt-client=109"
+          },
+          {
+            "pid": 51572,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,12291696240510907136,17243336701125432318,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709022856503605 --seatbelt-client=116"
+          },
+          {
+            "pid": 52460,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=195 --launch-time-ticks=148039331268 --shared-files --metrics-shmem-handle=1752395122,r,3220056692415089526,17595873399917872675,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709169035032049 --seatbelt-client=134"
+          },
+          {
+            "pid": 60296,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=audio.mojom.AudioService --lang=en-US --service-sandbox-type=audio --message-loop-type-ui --shared-files --metrics-shmem-handle=1752395122,r,14973489045149148869,3442993427571652657,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709047219591679 --seatbelt-client=181"
+          },
+          {
+            "pid": 79710,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=180 --launch-time-ticks=144787757173 --shared-files --metrics-shmem-handle=1752395122,r,2753010319926367744,8166250021906589672,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709154979404314 --seatbelt-client=189"
+          },
+          {
+            "pid": 92579,
+            "parent": 45688,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=184 --launch-time-ticks=146654665345 --shared-files --metrics-shmem-handle=1752395122,r,4482226594681990946,15188251821655687326,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709158727571710 --seatbelt-client=190"
+          }
+        ],
+        "cdp_processes": [
+          {
+            "type": "browser",
+            "id": 3666,
+            "cpuTime": 1.382327
+          },
+          {
+            "type": "renderer",
+            "id": 3692,
+            "cpuTime": 0.042093
+          },
+          {
+            "type": "renderer",
+            "id": 3689,
+            "cpuTime": 0.486782
+          },
+          {
+            "type": "GPU",
+            "id": 3673,
+            "cpuTime": 0.273085
+          },
+          {
+            "type": "network.mojom.NetworkService",
+            "id": 3674,
+            "cpuTime": 0.307263
+          },
+          {
+            "type": "storage.mojom.StorageService",
+            "id": 3676,
+            "cpuTime": 0.032837
+          }
+        ],
+        "after_ownership_snapshot": {
+          "coalition_id": 42521,
+          "instructions": 18874815661,
+          "cycles": 9391947670,
+          "tasks_started": 14,
+          "tasks_exited": 6,
+          "sample_started": 57.072131583,
+          "sample_completed": 57.07215875
+        },
+        "ownership_stable": true,
+        "unaccounted_private_processes": [
+          {
+            "pid": 3735,
+            "parent": 3716,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/var/folders/5s/gdmd5zq90y52hchygpfzp2m00000gn/T/vox-adblock-parity-J4IpUp --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --force-color-profile=srgb --remote-debugging-port=0 --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=171254470343 --shared-files --field-trial-handle=1718379636,r,7698281256360246589,11569627587190322235,262144 --disable-features=PaintHolding --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16533503632177921520,5951399175969565006,4 --trace-process-track-uuid=3190708992871164437 --seatbelt-client=104",
+            "identity_stable": false,
+            "identity_error": "[Errno 3] No such process: '3735'"
+          }
+        ]
+      }
+    ],
+    "viewport_css_pixels": [
+      1024,
+      768
+    ],
+    "device_scale": 2,
+    "started_unix": 1793908111.868372,
+    "host_before": {
+      "cpu_count": 18,
+      "load_average": [
+        17.30078125,
+        10.88427734375,
+        8.2666015625
+      ]
+    },
+    "command": [
+      "/usr/bin/open",
+      "-n",
+      "-g",
+      "-a",
+      "/Applications/Brave Browser.app",
+      "--stdout",
+      "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/stdout.log",
+      "--stderr",
+      "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/browser.log",
+      "--args",
+      "--no-startup-window",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--enable-automation",
+      "--disable-background-networking",
+      "--disable-sync",
+      "--proxy-server=socks5://127.0.0.1:53128",
+      "--hide-scrollbars",
+      "--force-color-profile=srgb",
+      "--lang=en-US",
+      "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+      "--remote-debugging-port=0",
+      "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile",
+      "--ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg=",
+      "--force-device-scale-factor=2",
+      "--disable-backgrounding-occluded-windows"
+    ],
+    "version": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.48",
+      "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.19"
+    },
+    "root": {
+      "pid": 3666,
+      "parent": 1,
+      "uid": 501,
+      "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+    },
+    "root_start_ticks": 4110069871727,
+    "resource_coalition": 42521,
+    "membership_before": {
+      "before_snapshot": {
+        "coalition_id": 42521,
+        "instructions": 3882108633,
+        "cycles": 1851779323,
+        "tasks_started": 9,
+        "tasks_exited": 4,
+        "sample_started": 50.814772541,
+        "sample_completed": 50.814809875
+      },
+      "after_snapshot": {
+        "coalition_id": 42521,
+        "instructions": 3882108633,
+        "cycles": 1851779323,
+        "tasks_started": 9,
+        "tasks_exited": 4,
+        "sample_started": 50.840424291,
+        "sample_completed": 50.840447041
+      },
+      "members": [
+        {
+          "pid": 3666,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "accepted": true,
+          "code_sign_clone_identity": null
+        },
+        {
+          "pid": 3670,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler",
+          "accepted": true,
+          "code_sign_clone_identity": null
+        },
+        {
+          "pid": 3673,
+          "parent": 3666,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,6324107458072464473,6719526995086268544,262144 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=28",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+          "accepted": true,
+          "code_sign_clone_identity": null
+        },
+        {
+          "pid": 3674,
+          "parent": 3666,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,17266170109446283652,3610703560992090090,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=28",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+          "accepted": true,
+          "code_sign_clone_identity": null
+        },
+        {
+          "pid": 3676,
+          "parent": 3666,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --shared-files --metrics-shmem-handle=1752395122,r,11119879921588785305,10375857064253260596,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=52",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+          "accepted": true,
+          "code_sign_clone_identity": null
+        }
+      ],
+      "stable": true,
+      "all_owned": true,
+      "exact_live_count": true,
+      "root_present": true,
+      "vanished_during_scan": [
+        13746,
+        35602,
+        40213,
+        40363,
+        80313,
+        94931
+      ],
+      "preexisting_app_pids": [
+        45688,
+        45710,
+        45794,
+        50848,
+        51532,
+        51565,
+        51572,
+        52460,
+        60296,
+        79710,
+        92579
+      ],
+      "preexisting_descendants": [],
+      "concurrent_capture_roots": [],
+      "concurrent_capture_tasks": [],
+      "private_app_pids": [
+        3666,
+        3670,
+        3673,
+        3674,
+        3676
+      ],
+      "observed_app_processes": [
+        {
+          "pid": 3666,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:53128 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+        },
+        {
+          "pid": 3670,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5"
+        },
+        {
+          "pid": 3673,
+          "parent": 3666,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,6324107458072464473,6719526995086268544,262144 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=28"
+        },
+        {
+          "pid": 3674,
+          "parent": 3666,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,17266170109446283652,3610703560992090090,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708989122997041 --seatbelt-client=28"
+        },
+        {
+          "pid": 3676,
+          "parent": 3666,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --ignore-certificate-errors-spki-list=wMxiIZDuyyMGpnJ2T4Dt0v33bMaHtBqwTRXzM3vHUcg= --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-production-20261105-r3/matched/matched/pair-3-brave/profile --shared-files --metrics-shmem-handle=1752395122,r,11119879921588785305,10375857064253260596,524288 --field-trial-handle=1718379636,r,8612666967605948193,13122581807932867732,262144 --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16068132815781092607,3066118016006740566,4 --trace-process-track-uuid=3190708990060038890 --seatbelt-client=52"
+        },
+        {
+          "pid": 45688,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 45710,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5"
+        },
+        {
+          "pid": 45794,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=gpu-process --gpu-recent-crash-count=0 --start-stack-profiler --gpu-preferences=WAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --metrics-shmem-handle=1752395122,r,14690788106825999241,15001638280990635780,262144 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190708988185955192 --seatbelt-client=23"
+        },
+        {
+          "pid": 50848,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --start-stack-profiler --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=193 --launch-time-ticks=148019315553 --shared-files --metrics-shmem-handle=1752395122,r,12950687961868569942,13679400272273701935,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709167160948351 --seatbelt-client=134"
+        },
+        {
+          "pid": 51532,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --extension-process --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=114118410885 --shared-files --metrics-shmem-handle=1752395122,r,3893188147669232710,10818223652054717746,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190708992871164437 --seatbelt-client=102"
+        },
+        {
+          "pid": 51565,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --shared-files --metrics-shmem-handle=1752395122,r,7860313129273670913,15242601443738627259,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709020982419907 --seatbelt-client=109"
+        },
+        {
+          "pid": 51572,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --start-stack-profiler --shared-files --metrics-shmem-handle=1752395122,r,12291696240510907136,17243336701125432318,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709022856503605 --seatbelt-client=116"
+        },
+        {
+          "pid": 52460,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=195 --launch-time-ticks=148039331268 --shared-files --metrics-shmem-handle=1752395122,r,3220056692415089526,17595873399917872675,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709169035032049 --seatbelt-client=134"
+        },
+        {
+          "pid": 60296,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=utility --utility-sub-type=audio.mojom.AudioService --lang=en-US --service-sandbox-type=audio --message-loop-type-ui --shared-files --metrics-shmem-handle=1752395122,r,14973489045149148869,3442993427571652657,524288 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709047219591679 --seatbelt-client=181"
+        },
+        {
+          "pid": 79710,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=180 --launch-time-ticks=144787757173 --shared-files --metrics-shmem-handle=1752395122,r,2753010319926367744,8166250021906589672,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709154979404314 --seatbelt-client=189"
+        },
+        {
+          "pid": 92579,
+          "parent": 45688,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer) --type=renderer --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=184 --launch-time-ticks=146654665345 --shared-files --metrics-shmem-handle=1752395122,r,4482226594681990946,15188251821655687326,1572864 --field-trial-handle=1718379636,r,13811375641575871618,6243788704118928881,262144 --variations-seed-version=main@8113371c5133dec2488b6b823e9cd0ed3a3e0549 --pseudonymization-salt-handle=1935764596,r,3541251005827213536,6146962193209994911,4 --trace-process-track-uuid=3190709158727571710 --seatbelt-client=190"
+        }
+      ],
+      "cdp_processes": [
+        {
+          "type": "browser",
+          "id": 3666,
+          "cpuTime": 0.265862
+        },
+        {
+          "type": "GPU",
+          "id": 3673,
+          "cpuTime": 0.052101
+        },
+        {
+          "type": "network.mojom.NetworkService",
+          "id": 3674,
+          "cpuTime": 0.054998
+        },
+        {
+          "type": "storage.mojom.StorageService",
+          "id": 3676,
+          "cpuTime": 0.030012
+        }
+      ],
+      "after_ownership_snapshot": {
+        "coalition_id": 42521,
+        "instructions": 3882551023,
+        "cycles": 1852513124,
+        "tasks_started": 9,
+        "tasks_exited": 4,
+        "sample_started": 50.8678055,
+        "sample_completed": 50.867818958
+      },
+      "ownership_stable": true
+    },
+    "test_display": {
+      "pointer": [
+        1102.1875,
+        748.0078125
+      ],
+      "bounds": [
+        0.0,
+        0.0,
+        1728.0,
+        1117.0
+      ],
+      "position": [
+        624,
+        30
+      ]
+    },
+    "native_viewport": {
+      "width": 1024,
+      "height": 768,
+      "scale": 2,
+      "emulated": true
+    },
+    "navigation": {
+      "frameId": "2E0049638E0BF7D1B4AC0E96A5C92291",
+      "loaderId": "2BF230E4E878F9F3262987731D393EF4",
+      "isDownload": false
+    },
+    "instruction_interval": {
+      "lower": 11992048359,
+      "upper": 12069423992
+    },
+    "boundary_brackets": [
+      {
+        "coalition_id": 42521,
+        "instructions": 6475121968,
+        "cycles": 2938703125,
+        "tasks_started": 13,
+        "tasks_exited": 5,
+        "sample_started": 51.016274916,
+        "sample_completed": 51.016313
+      },
+      {
+        "coalition_id": 42521,
+        "instructions": 6516904380,
+        "cycles": 2965655256,
+        "tasks_started": 13,
+        "tasks_exited": 5,
+        "sample_started": 51.019476791,
+        "sample_completed": 51.019503041
+      },
+      {
+        "coalition_id": 42521,
+        "instructions": 18508952739,
+        "cycles": 9215321124,
+        "tasks_started": 14,
+        "tasks_exited": 6,
+        "sample_started": 56.973420833,
+        "sample_completed": 56.973433541
+      },
+      {
+        "coalition_id": 42521,
+        "instructions": 18544545960,
+        "cycles": 9227835174,
+        "tasks_started": 14,
+        "tasks_exited": 6,
+        "sample_started": 56.975565875,
+        "sample_completed": 56.975586208
+      }
+    ],
+    "error": "A private browser helper is outside its resource coalition",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py\", line 933, in run_browser\n    result['membership_after'] = membership(api, cid, app, root['pid'], deadline,\n  File \"/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py\", line 727, in membership\n    require(owned <= members, 'A private browser helper is outside its resource coalition')\n  File \"/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py\", line 83, in require\n    raise RuntimeError(message)\nRuntimeError: A private browser helper is outside its resource coalition\n",
+    "finished_unix": 1793908118.4812002,
+    "host_after": {
+      "cpu_count": 18,
+      "load_average": [
+        15.9951171875,
+        10.7197265625,
+        8.2236328125
+      ]
+    },
+    "cleanup_kernel_exit_status": 0,
+    "variant": "reference"
+  },
+  "partial_vox_observations": [
+    {
+      "variant": "control",
+      "instructions": {
+        "lower": 30009849443,
+        "upper": 30009849443
+      }
+    },
+    {
+      "variant": "candidate",
+      "instructions": {
+        "lower": 29968283759,
+        "upper": 29968283759
+      }
+    },
+    {
+      "variant": "candidate",
+      "instructions": {
+        "lower": 30502945091,
+        "upper": 30502945091
+      }
+    }
+  ],
+  "source_hashes": {
+    "browserjs/runtime_jsc.c.v": "a94aa5a1841af483238b250c50ddeebe899811478d42648d441755a338131e89",
+    "browserjs/jsc_string_buffer.v": "80bfc3f07bda5691a91c1575e2be6d6d8e16fd48e19398b8b87b878b7946eb0a",
+    "browserjs/jsc_string_buffer_test.v": "f16ecdb2e9e2a797d38e3a94f58c8a6c148b39b3cde43c29423a5c996416beea"
+  },
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-jsc-string-buffer-production-20261105-r3/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 393871360,
+    "elapsed_seconds": 0.814707,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "brave_target_evaluated": false,
+  "verification_source": {
+    "path": "Build/chatgpt-jsc-string-buffer-production-20261105-r3/verify_final.py",
+    "sha256": "482953c1dfefad442b66967e712ea6fdd668f1270c91fa18d56dcf3a387d91c4",
+    "text": "import hashlib,json,statistics,zipfile\nfrom pathlib import Path\nroot=Path.cwd();out=Path(__file__).resolve().parent;perf=root/'docs/performance'\nload=lambda p:json.loads(p.read_text())\nsha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()\nreport=load(perf/'chatgpt-jsc-string-buffer-production-20261105.json')\nassert report['status']=='rejected' and not report['complete']\nassert report['diagnostic_valid'] and not report['matched_valid']\nassert report['browser_captures']==10 and report['valid_render_captures']==9\nassert report['page_instruction_credit']==report['broad_cadence_after']==0 and not report['broad_required']\nfocus=load(perf/'chatgpt-jsc-string-buffer-20261105.json')\nassert focus['checks']['complete'] and focus['checks']['passed'] and focus['runner']['total_test_calls']==240\nassert all(sha(root/p)==h for p,h in focus['checks']['source_after'].items())\ndiagnostic=load(perf/'chatgpt-jsc-string-buffer-production-r3-diagnostic-20261105.json')\nmatched=load(perf/'chatgpt-jsc-string-buffer-production-r3-matched-20261105.json')\nassert diagnostic['complete'] and diagnostic['identity_stable'] and len(diagnostic['observations'])==4\nassert sorted((r['variant'],r['paths']['jsc_string_buffer'])for r in diagnostic['observations']if r['engine']=='vox')==[('candidate',True),('control',False)]\nassert not matched['complete'] and matched['identity_stable'] and len(matched['observations'])==6\nassert report['production']==diagnostic['production']==matched['production']\nvalid=[r for d in [diagnostic,matched] for r in d['observations'] if r.get('exit')==r.get('kernel_exit_status')==0 and r.get('content_exact') and r.get('pixels_exact')]\nfailed=[r for r in matched['observations'] if r['exit']!=0]\nassert len(valid)==9 and len(failed)==1 and failed[0]['engine']=='brave'\nassert failed[0]['error']=='A private browser helper is outside its resource coalition'\nassert all(r['launch_instruction_interval'] is not None for r in valid)\nassert failed[0].get('launch_instruction_interval') is None\nassert report['guard']['reason']=='completed' and report['guard']['child_exit_code']==1\nassert report['guard']['adoption_error'] is None and report['guard']['adopted_processes']\nfinalization_guard=load(out/'finalize-guard.json');assert finalization_guard['child_exit_code']==0\narchives=[]\nfor entry in report['evidence']:\n p=root/entry['path'];assert sha(p)==entry['sha256'] and p.stat().st_size==entry['bytes']\n with zipfile.ZipFile(p) as z:\n  assert z.testzip() is None\n  index=json.loads(z.read('index.json'))\n  for name,e in index['entries'].items():\n   b=z.read('blobs/'+e['sha256']);assert len(b)==e['bytes'] and hashlib.sha256(b).hexdigest()==e['sha256'],name\n  for name in z.namelist():\n   if name.startswith('blobs/'):assert hashlib.sha256(z.read(name)).hexdigest()==name[6:]\n archives.append(entry)\nproofs=[]\nwith zipfile.ZipFile(root/diagnostic['evidence']['path']) as z:\n for name,e in json.loads(z.read('index.json'))['entries'].items():\n  if name.endswith('jsc-string-buffer-source-proof.json'):\n   proof=json.loads(z.read('blobs/'+e['sha256']));assert proof['executable_sha256']==report['production']['executable_sha256'];proofs.append(proof)\nassert len(proofs)==1\nassert len(report['rejected_preflights'])==2 and all(r['guard']['child_exit_code']==1 and r['launched_browsers']==0 for r in report['rejected_preflights'])\npartial_vox=[dict(variant=r['variant'],instructions=r['launch_instruction_interval']) for r in matched['observations'] if r['engine']=='vox']\nresult=dict(complete=True,production_validation_status='rejected',archives=archives,source_proofs=proofs,\n focused_test_function_executions=240,valid_render_captures=9,capture_attempts=10,failed_capture=failed[0],\n partial_vox_observations=partial_vox,source_hashes=focus['checks']['source_after'],finalization_guard=finalization_guard,\n page_instruction_credit=0,broad_cadence_after=0,acceptance=False,brave_target_evaluated=False,\n verification_source=dict(path=str(Path(__file__).relative_to(root)),sha256=sha(Path(__file__)),text=Path(__file__).read_text()),\n qualification='All four production path diagnostics pass exact pixels and complete content. Three unprofiled Vox samples and two Brave samples also pass. The third Brave ownership audit rejects an unaccounted renderer that exits before identity rechecking. The incomplete cohort is retained without replacing or excluding any sample and receives no median, conservative gain, broad-check trigger or Brave acceptance credit. Rejected source preflights launch no browser. The 5%-below-Brave goal remains unmet.')\n(perf/'chatgpt-jsc-string-buffer-production-verification-20261105.json').write_text(json.dumps(result,indent=2)+'\\n')\nprint(json.dumps(dict(complete=True,production_validation='rejected',archives_verified=len(archives),valid_captures=9,attempts=10,focused_calls=240,page_credit=0)))\n"
+  },
+  "qualification": "All four production path diagnostics pass exact pixels and complete content. Three unprofiled Vox samples and two Brave samples also pass. The third Brave ownership audit rejects an unaccounted renderer that exits before identity rechecking. The incomplete cohort is retained without replacing or excluding any sample and receives no median, conservative gain, broad-check trigger or Brave acceptance credit. Rejected source preflights launch no browser. The 5%-below-Brave goal remains unmet."
+}

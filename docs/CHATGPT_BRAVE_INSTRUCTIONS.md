@@ -3681,3 +3681,57 @@ runners. Its content-addressed archive is fully verified before removing
 294,114,785 bytes of redundant generated C from Build. Whole-page credit and
 the broad cadence remain zero pending the production comparison below. The
 5%-below-Brave target remains unmet.
+
+### JSC stack conversion: production path and rejected comparison (2026-11-05)
+
+The completed 33-unit production executable has SHA-256
+`55161b147ee98fa38d061a01f8a95bdb7ec999e02211f41f129783c89208b14a`.
+A nonblocking shared publication lease keeps its executable and native inputs
+stable through the separate path diagnostic and attempted four-pair comparison.
+The source receipt matches the exact final owned blobs at `a91326b15`.
+ThinLTO inlines the conversion helper, so its enclosing function disassembly is
+joined to Mach-O import stub addresses for both JSC string conversion APIs.
+The two rejected source preflights are retained: the first required an absent
+inlined symbol; the second expected imported function names in an objdump view
+that printed numeric stub addresses. Neither attempt launches a browser.
+
+All four diagnostic captures pass bootstrap, complete content/button identity,
+unchanged pixels and normal exits. The stack-copy marker appears only in the
+candidate Vox process. This establishes that the final production code executes
+on the original frozen page. The subsequent unprofiled cohort is incomplete:
+
+| Attempted pair | Variant | Observed Vox instructions | Observed Brave interval |
+| --- | --- | ---: | ---: |
+| 1 | Control | 30,009,849,443 | 19,245,343,734–19,264,343,483 |
+| 2 | Candidate | 29,968,283,759 | 19,137,299,578–19,199,059,460 |
+| 3 | Candidate | 30,502,945,091 | Rejected ownership audit |
+| 4 | Control | Not launched | Not launched |
+
+The third Brave capture rejects with `A private browser helper is outside its
+resource coalition`. Its raw ownership receipt identifies renderer PID 3735
+with another private profile and parent 3716; it exits before identity
+rechecking. That suggests concurrent benchmark churn, but its final identity
+cannot be established. The original ownership gate remains unchanged and the
+sample is neither replaced nor excluded to obtain a result. Three Vox and two
+Brave observations before rejection pass all render/content/exit checks, in
+addition to the four path diagnostics: nine valid captures over ten attempts.
+The partial Vox samples also overlap. No complete-cohort median, conservative
+saving, Brave ratio or acceptance result is assigned.
+
+Scope remains exclusive-coalition creation through encoded document PNG,
+including startup and window/target setup, original SOCKS replay and author
+scripts, fresh private profiles/caches, 1024×768 viewport, scale 2, an unfocused
+five-second settle, retained OS filesystem/shader caches, and excluded GPU and
+outside-coalition services. All inputs remain pinned; the controller/guard exit
+1 for the ownership rejection after 99.50 seconds, peaking at 1,707,638,784
+sampled RSS bytes with 38 adopted identities and no adoption error. The
+publication lease is released. No manual production build or app copy is used.
+
+The [production receipt](performance/chatgpt-jsc-string-buffer-production-20261105.json)
+and [verification receipt](performance/chatgpt-jsc-string-buffer-production-verification-20261105.json)
+authenticate four archives, every raw attempt, source proof, command, actual
+exit, counter, original PNG and content audit. Finalization and independent
+verification exit zero; production comparison status remains rejected.
+Whole-page credit and the broad cadence stay at zero, so no broad checkpoint
+is due. The 5%-below-Brave goal remains unmet. The component gain is not a
+live-site, isolated rendering or scrolling claim.
