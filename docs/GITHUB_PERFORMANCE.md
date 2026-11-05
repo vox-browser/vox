@@ -20962,3 +20962,79 @@ preserved.
 
 See [the structured checkpoint](performance/github-failed-stylesheets-20261105.json)
 and [raw checks, failures, fixed counters, PNGs and complete generated C](performance/raw/github-failed-stylesheets-20261105.tar.gz).
+
+
+## Stylesheet completion: installed validation, November 5, 2026
+
+The two pending final-code checks for `b7f43d21b` have now run on a completed
+shared production bundle. The original API fixture passes at exactly 640×480
+and remains pixel-exact against its pre-feature baseline. The fixed GitHub N=1
+capture passes the unchanged strict content and viewport gate and is byte-identical
+to the preceding GitHub capture. Historical visual acceptance remains open.
+
+Receipt `20261105-083546-274127d5` publishes executable SHA-256
+`e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24`.
+The sheet-identity completion helper and both callers, including the final
+per-owner navigation ordering, match the tested generated C exactly after
+resolving every string constant. No code, assertions, symbols or branches are
+ignored. The completed native/compiler, 12 GiB build guard and 3 GiB startup
+check exits are zero, as is a separate deep/strict signature verification.
+All 131 sealed compiler inputs and 35 surviving live inputs match; 12 removed
+publication-staging paths are listed without full historical-live revalidation
+credit. Each observation pins the executable and native runtime hashes throughout
+its fresh process. Another shared build remains independent; no production build,
+app copy or source-tree copy was requested for this continuation.
+
+The resumed API observation uses the exact previously declared fixture bytes,
+one successful sheet and a shared failed request for two script-created links.
+Browser/controller/3 GiB guard exits are zero, native exceptions are zero, and
+the sole stylesheet diagnostic is the expected missing resource's HTTP 404.
+Its 640×480 PNG remains byte-identical to the void-helper baseline, SHA-256
+`5d95a4141fffd5a18b33724ab99c03337c033404d38118f80de9c1b793ca317d`.
+The earlier partial-component capture and failed preparatory attempts remain
+unchanged; this is the first final-code observation of that declared fixture.
+
+A separately declared targeted fixture exercises the navigation-owner correction
+directly in the installed browser. Two parser-created stylesheet links share a
+single failed response. Both listeners run, each owner retains a null sheet,
+computed color stays unchanged and the server records exactly **one** stylesheet
+request. The fresh 640×480 capture has browser/controller/3 GiB guard exits zero,
+zero native exceptions and the two expected per-link HTTP-404 diagnostics.
+This independent correctness check neither extends nor replaces the resumed API
+or GitHub observation and provides no instruction-saving credit.
+
+The one declared ordinary GitHub capture keeps all 193 archived responses,
+33 repository rows, 66 exact filename/href links, 21 image sources, known-image
+decoding and the 1024×768 document viewport. Browser/controller/12 GiB guard exits
+are zero; the reference and tolerance remain unchanged. The PNG SHA-256 is
+`9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81`,
+byte-identical to the preceding capture. Against the original historical
+`65060cbf…` PNG, the same **4,544 pixels** still differ in the three header
+controls: bounds `(761,16)` through `(1008,52)`, maximum channel error 77 and RGB
+MAE 0.2100037469. The preceding capture is a separate stability comparison and
+is not substituted for the historical acceptance reference.
+
+The GitHub observation retains one native IndexedDB `createIndex` exception and
+four unarchived CSS module HTTP 404s. Full hydration remains incomplete. Its
+inclusive main-task counts are 10,427,034,182 retired instructions at
+`navigation_to_first_document_paint` and 35,032,362,956 at
+`navigation_to_first_native_layer_submission`, reported separately. These are
+single diagnostic counts on a build containing concurrent engine changes, not
+a matching before/after cohort or an attributed page saving. Other processes
+and outside services are excluded, and host contention remains recorded.
+
+The original 16 focused executions and six local C-O0 report-ablation primaries
+are preserved without rerunning them. Current V/preallocation/native C-O3
+single-unit production (parallel requested, unsupported-header fallback recorded)
+remains distinct from the C-O0/Boehm mechanism experiment and historical
+old-compiler/Boehm/C-O2 cohorts. No matching-page savings accumulator, broad
+baseline, historical observation, fixture, pixel reference or tolerance changes.
+No broad suites are rerun. Final-code browser checks are executed; historical
+visual acceptance, full hydration and Chrome parity remain open. Concurrent
+working-tree changes, newer bundles and the user's GUI browser are preserved.
+
+See [the completion audit](performance/github-failed-stylesheets-completion-20261105.json)
+and [raw captures, counters, receipts and complete compiler inputs](performance/raw/github-failed-stylesheets-completion-20261105.tar.gz).
+The [original checkpoint](performance/github-failed-stylesheets-20261105.json)
+and [its local evidence](performance/raw/github-failed-stylesheets-20261105.tar.gz)
+remain unchanged.

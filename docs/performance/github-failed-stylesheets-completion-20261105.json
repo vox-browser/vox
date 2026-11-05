@@ -1,0 +1,4770 @@
+{
+  "exit": 0,
+  "completed_unix": 1793858477.822112,
+  "feature_commit": "b7f43d21b02a9a2b2d28e819739bc94285c705f7",
+  "prior_checkpoint": {
+    "path": "docs/performance/github-failed-stylesheets-20261105.json",
+    "sha256": "70f87f42921db5d076d0bd4cac7c3baffea02d46ba74cfba8ee750ac5e0d19b8",
+    "archive": "docs/performance/raw/github-failed-stylesheets-20261105.tar.gz",
+    "archive_sha256": "d0f7f3009d9de86fc49e8ddcdaaad9eb1476c3e711684a298db5aef2a21a0f50"
+  },
+  "continuation": {
+    "started_unix": 1793857549.316105,
+    "head": "6930ae8be462118a9fd7b35adcb901fd49869a37",
+    "feature_commit": "b7f43d21b02a9a2b2d28e819739bc94285c705f7",
+    "prior_checkpoint_archive_sha256": "d0f7f3009d9de86fc49e8ddcdaaad9eb1476c3e711684a298db5aef2a21a0f50",
+    "prior_final_api_observations": 0,
+    "prior_final_github_observations": 0,
+    "prior_plans": {
+      "candidate-integration-plan.json": "0458b6e366248672179d88723054483f8e993ea4927b42c9b0875b0d0df48f44",
+      "github-plan.json": "d49a5803cd473fed88841c7a6bd8d34bdd043036dd1d8ef6611b69d39252fd0a"
+    },
+    "new_build_requested": false,
+    "repeat_focused_tests": false,
+    "repeat_local_cohort": false
+  },
+  "resumed_plan": {
+    "created_unix": 1793857620.622655,
+    "api_observations": 1,
+    "github_observations": 1,
+    "retries": 0,
+    "extensions": 0,
+    "scope": "Continue the two previously unlaunched final-code checks. Preserve the prior baseline, fixture and strict GitHub contract, all earlier attempts and six completed local primaries. This is correctness and a single ordinary page diagnostic, with zero page-saving credit.",
+    "original_plan_sha256": {
+      "candidate-integration-plan.json": "0458b6e366248672179d88723054483f8e993ea4927b42c9b0875b0d0df48f44",
+      "github-plan.json": "d49a5803cd473fed88841c7a6bd8d34bdd043036dd1d8ef6611b69d39252fd0a"
+    },
+    "controller_sha256": {
+      "run-candidate-integration.py": "ed5b6e694c8b2bb1944521793f7d6c56c7d3913eb5e9ec773354a51b08520d9b",
+      "run-github.py": "1c47e386b8bb404b55cdf41061bd1734658a8af52a6f4e6d0def66ebffd88696"
+    },
+    "fixture_sha256": "c34b5c1d8a410debba329563ca9f04cd537d7145ca559f8342f8b57e5b89cfe8",
+    "expected_api_viewport": [
+      640,
+      480
+    ],
+    "expected_github_viewport": [
+      1024,
+      768
+    ],
+    "github_manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+    "production": {
+      "checked_unix": 1793857549.482104,
+      "executable_sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24",
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/result.json",
+      "available": true,
+      "browser_observations": 0
+    },
+    "whole_page_instruction_credit": 0,
+    "broad_baseline_reset": false,
+    "new_build_requested": false
+  },
+  "production_functions": {
+    "exit": 0,
+    "executable_sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24",
+    "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/result.json",
+    "paths": [
+      "/Users/alex/code/vox2/Build/github-failed-stylesheet-20261105-session4076/owners-boehm-tests.c",
+      "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/generated/Vox.c"
+    ],
+    "complete_generated_c_sha256": [
+      "be24295190715a3b1896b0745f0b6f79f9825769191ff467466664d68f5fe0e6",
+      "79564b4af7a0a81955dc33db99a2f71403e20941e166ebcb94beb557213f4a64"
+    ],
+    "functions": [
+      {
+        "function": "complete_browser_link_stylesheet",
+        "match": true,
+        "normalized_sha256": [
+          "efeb5b12599cb836ebb2d97f11451d17b8b11a5985aa3d111783751144013fa3",
+          "efeb5b12599cb836ebb2d97f11451d17b8b11a5985aa3d111783751144013fa3"
+        ]
+      },
+      {
+        "function": "BrowserApp__request_script_inserted_stylesheets",
+        "match": true,
+        "normalized_sha256": [
+          "7c61525a665a45fc56092bcaa1bddb8b1cf86fbeffa875a11f3872a028a088bb",
+          "7c61525a665a45fc56092bcaa1bddb8b1cf86fbeffa875a11f3872a028a088bb"
+        ]
+      },
+      {
+        "function": "BrowserApp__install_script_inserted_stylesheet",
+        "match": true,
+        "normalized_sha256": [
+          "5f4c77e06820e4f5331db1dee99ef2ed97f8b0fa40b7c5f58b028be132481af3",
+          "5f4c77e06820e4f5331db1dee99ef2ed97f8b0fa40b7c5f58b028be132481af3"
+        ]
+      }
+    ],
+    "normalization": "Resolve every C string constant exactly. No code, assertions, symbols or branches ignored.",
+    "scope": "Final tested sheet-identity helper and both callers, including per-owner navigation completion, versus current completed production. Not whole-program performance isolation."
+  },
+  "build": {
+    "exit": 0,
+    "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/result.json",
+    "record": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel"
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+        "dirty": true,
+        "head": "aee2979ffd90632c413742557edf2161fa7e35a5",
+        "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "0d153462c5aa62f4181f37435ccb33819f82e84f7027034404bf1d473e1f2982",
+        "dirty": true,
+        "head": "6930ae8be462118a9fd7b35adcb901fd49869a37",
+        "repository_sha256": "0e17bf5af805279f3ba21f6e2f5cac2fc4195706de4a57fe8b37dc07d2145b5a"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "7c32cd7468542b8ee330ab83b66854273ebed22d",
+        "id": "5135795dc0d94ffc9dde1e686a76cf78"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+        "dirty": true,
+        "head": "b7abaa7083013e740269a03c102776c05e7b6843",
+        "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+      }
+    },
+    "compiler_exit": 0,
+    "sealed_inputs_verified": 131,
+    "available_live_inputs_verified": 35,
+    "unavailable_published_staging_inputs": [
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/Info.plist",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/MacOS/VoxAdblockWorker",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/Resources/Vox.icns",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/Resources/adblock.engine.js.gz",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/Resources/adblock.snapshot.bin",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/Resources/libdeflate-LICENSE.txt",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/libLadybirdVSkiaText.dylib",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/libVoxAVIF.dylib",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/libVoxGraphite.dylib",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/libVoxGraphiteDawn.dylib",
+      "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/libVoxJPEGXL.dylib"
+    ],
+    "full_live_revalidation": false,
+    "scope": "All sealed compiler inputs and remaining live inputs rechecked. Removed publication staging paths are listed without full historical-live revalidation credit. Runtime fingerprints were verified during each browser observation.",
+    "memory": {
+      "command": [
+        "sh",
+        "-c",
+        "exec sh -c \"$(cat)\" \"$0\"",
+        "/Users/alex/code/vox2/build-prod-browser.sh"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 9503031296,
+      "elapsed_seconds": 449.19933575,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "smoke_memory": {
+      "command": [
+        "/Users/alex/code/vox2/Build/.production-output-d8kefxsr/Vox.app/Contents/MacOS/Vox",
+        "--headless-smoke"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 24821760,
+      "elapsed_seconds": 0.67961625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "checked_unix": 1793857916.40866
+  },
+  "signing": {
+    "command": [
+      "codesign",
+      "--verify",
+      "--deep",
+      "--strict",
+      "Build/v/Vox.app"
+    ],
+    "actual_exit": 0,
+    "executable_sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24",
+    "identity_unchanged": true,
+    "stdout": "",
+    "stderr": ""
+  },
+  "api": {
+    "terminal": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--lock",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/candidate-integration.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/candidate-integration-guard.json",
+        "--limit-gib",
+        "3",
+        "--timeout",
+        "240",
+        "--",
+        "python3",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/run-candidate-integration.py",
+        "--run"
+      ],
+      "actual_exit": 0
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/run-candidate-integration.py",
+        "--run"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 356909056,
+      "elapsed_seconds": 2.4310099590000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "result": {
+      "actual_browser_exit": 0,
+      "build_requested": false,
+      "exit": 0,
+      "javascript_diagnostics": [
+        "Stylesheet http://127.0.0.1:49884/missing.css: HTTP 404"
+      ],
+      "native_reported_error_count": 0,
+      "new_instruction_credit": 0,
+      "pid": 1331,
+      "requests": [
+        {
+          "path": "/integration.html",
+          "unix": 1793857622.019841
+        },
+        {
+          "path": "/good.css",
+          "unix": 1793857622.0818639
+        },
+        {
+          "path": "/favicon.ico",
+          "unix": 1793857622.1034722
+        },
+        {
+          "path": "/missing.css",
+          "unix": 1793857622.111862
+        }
+      ],
+      "text": [
+        "PASS: failed stylesheet completion"
+      ],
+      "viewport": [
+        640,
+        480
+      ]
+    },
+    "plan": {
+      "build_requested": false,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--enable-javascript",
+        "--window-width",
+        "640",
+        "--window-height",
+        "564",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/candidate-integration-01/document.png",
+        "http://127.0.0.1:49884/integration.html"
+      ],
+      "expected_viewport": [
+        640,
+        480
+      ],
+      "feature_commit": "b7f43d21b02a9a2b2d28e819739bc94285c705f7",
+      "fixture_policy": "Loopback HTTP serves the pinned API fixture; private settings contain only allow_any_site=true, without a replay proxy.",
+      "fixture_url": "http://127.0.0.1:49884/integration.html",
+      "fresh_process": true,
+      "new_instruction_credit": 0,
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/result.json",
+      "runtime_pins": {
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 32885632,
+          "sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 293408,
+          "sha256": "968a22c6e4843fe50d6c87a3ce8ab3b37fa7d2f707f1b94e9222a5b39fe29705"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 1008752,
+          "sha256": "4f3b614ee8a2431d5330082d565fab74a20c9b0dd3bb0142c6d79b945f29b88a"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": {
+          "bytes": 34352,
+          "sha256": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4422448,
+          "sha256": "8942c6b2b69dcb8b3dc555146b384b1acedb2e14c691b408ee4dcf988ec972c1"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13041776,
+          "sha256": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        }
+      },
+      "source_sha256": "c34b5c1d8a410debba329563ca9f04cd537d7145ca559f8342f8b57e5b89cfe8"
+    },
+    "audit": {
+      "active_element": {
+        "focus_visible": false,
+        "id": "",
+        "tag": "BODY"
+      },
+      "font_faces": [],
+      "font_set_present": true,
+      "fonts_status": "loaded",
+      "fully_active": true,
+      "javascript_diagnostics": [
+        "Stylesheet http://127.0.0.1:49884/missing.css: HTTP 404"
+      ],
+      "native_reported_error_count": 0,
+      "native_reported_error_information": [],
+      "native_reported_errors": [],
+      "note": "Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.",
+      "paint_commands": 2,
+      "paint_geometry": [],
+      "ready": "complete",
+      "selections": [
+        {
+          "count": 1,
+          "elements": [
+            {
+              "attributes": {
+                "id": "result"
+              },
+              "layout": [],
+              "rect": {
+                "height": 18,
+                "width": 624,
+                "x": 8,
+                "y": 50
+              },
+              "tag": "p",
+              "text": "PASS: failed stylesheet completion",
+              "text_sha256": "c0272bf814698d545c8f8316c49a70f1235a4f615c8a32d83868dab2d2bd87ae",
+              "text_utf8_bytes": 34
+            }
+          ],
+          "name": "result",
+          "selector": "#result"
+        }
+      ],
+      "title": "Failed stylesheet completion",
+      "url": "http://127.0.0.1:49884/integration.html",
+      "viewport_height": 480,
+      "viewport_width": 640,
+      "visibility": "visible"
+    }
+  },
+  "api_pixels": {
+    "exit": 0,
+    "dimensions": [
+      640,
+      480
+    ],
+    "differing_pixels": 0,
+    "sha256": [
+      "5d95a4141fffd5a18b33724ab99c03337c033404d38118f80de9c1b793ca317d",
+      "5d95a4141fffd5a18b33724ab99c03337c033404d38118f80de9c1b793ca317d"
+    ],
+    "scope": "Pre-feature void-helper baseline versus fresh completed final-code bundle. Same fixture, unchanged zero-difference tolerance; no performance credit."
+  },
+  "navigation_owners": {
+    "terminal": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--lock",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/navigation-owners.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/navigation-owners-guard.json",
+        "--limit-gib",
+        "3",
+        "--timeout",
+        "240",
+        "--",
+        "python3",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/run-navigation-owners.py",
+        "--run"
+      ],
+      "actual_exit": 0
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/run-navigation-owners.py",
+        "--run"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 355401728,
+      "elapsed_seconds": 1.925547458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "result": {
+      "actual_browser_exit": 0,
+      "build_requested": false,
+      "exit": 0,
+      "javascript_diagnostics": [
+        "Stylesheet /missing.css: HTTP 404",
+        "Stylesheet /missing.css: HTTP 404"
+      ],
+      "native_reported_error_count": 0,
+      "new_instruction_credit": 0,
+      "pid": 31415,
+      "requests": [
+        {
+          "path": "/integration.html",
+          "unix": 1793858168.261162
+        },
+        {
+          "path": "/missing.css",
+          "unix": 1793858168.273804
+        },
+        {
+          "path": "/favicon.ico",
+          "unix": 1793858168.316874
+        }
+      ],
+      "text": [
+        "PASS: cached navigation stylesheet owners"
+      ],
+      "viewport": [
+        640,
+        480
+      ]
+    },
+    "plan": {
+      "build_requested": false,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--enable-javascript",
+        "--window-width",
+        "640",
+        "--window-height",
+        "564",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/navigation-owners-01/document.png",
+        "http://127.0.0.1:51217/integration.html"
+      ],
+      "expected_viewport": [
+        640,
+        480
+      ],
+      "feature_commit": "b7f43d21b02a9a2b2d28e819739bc94285c705f7",
+      "fixture_policy": "Loopback HTTP serves the pinned API fixture; private settings contain only allow_any_site=true, without a replay proxy.",
+      "fixture_url": "http://127.0.0.1:51217/integration.html",
+      "fresh_process": true,
+      "new_instruction_credit": 0,
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/result.json",
+      "runtime_pins": {
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 32885632,
+          "sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 293408,
+          "sha256": "968a22c6e4843fe50d6c87a3ce8ab3b37fa7d2f707f1b94e9222a5b39fe29705"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 1008752,
+          "sha256": "4f3b614ee8a2431d5330082d565fab74a20c9b0dd3bb0142c6d79b945f29b88a"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": {
+          "bytes": 34352,
+          "sha256": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4422448,
+          "sha256": "8942c6b2b69dcb8b3dc555146b384b1acedb2e14c691b408ee4dcf988ec972c1"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13041776,
+          "sha256": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        }
+      },
+      "source_sha256": "0799bf1cce23f9dff8f5d635cf3b34a3d8d05224ee27a8fa725668aba6455308"
+    },
+    "audit": {
+      "active_element": {
+        "focus_visible": false,
+        "id": "",
+        "tag": "BODY"
+      },
+      "font_faces": [],
+      "font_set_present": true,
+      "fonts_status": "loaded",
+      "fully_active": true,
+      "javascript_diagnostics": [
+        "Stylesheet /missing.css: HTTP 404",
+        "Stylesheet /missing.css: HTTP 404"
+      ],
+      "native_reported_error_count": 0,
+      "native_reported_error_information": [],
+      "native_reported_errors": [],
+      "note": "Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.",
+      "paint_commands": 2,
+      "paint_geometry": [],
+      "ready": "complete",
+      "selections": [
+        {
+          "count": 1,
+          "elements": [
+            {
+              "attributes": {
+                "id": "result"
+              },
+              "layout": [],
+              "rect": {
+                "height": 18,
+                "width": 624,
+                "x": 8,
+                "y": 50
+              },
+              "tag": "p",
+              "text": "PASS: cached navigation stylesheet owners",
+              "text_sha256": "74e0a37ca63a216aa3667781dcc0d56ce41eb4321fb6e409d82e7a6a5a889acf",
+              "text_utf8_bytes": 41
+            }
+          ],
+          "name": "result",
+          "selector": "#result"
+        }
+      ],
+      "title": "Cached stylesheet owners",
+      "url": "http://127.0.0.1:51217/integration.html",
+      "viewport_height": 480,
+      "viewport_width": 640,
+      "visibility": "visible"
+    }
+  },
+  "github": {
+    "terminal": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+        "--lock",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-guard.json",
+        "--limit-gib",
+        "12",
+        "--timeout",
+        "240",
+        "--",
+        "python3",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/run-github.py"
+      ],
+      "actual_exit": 0
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/run-github.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2335129600,
+      "elapsed_seconds": 7.154646958000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "result": {
+      "actual_browser_exit": 0,
+      "broad_baseline_reset": false,
+      "browser_observations": 1,
+      "browser_pid": 8215,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/document.png",
+        "https://github.com/vlang/v"
+      ],
+      "commands": [
+        {
+          "actual_exit": 0,
+          "command": [
+            "clang",
+            "-dynamiclib",
+            "-O2",
+            "/Users/alex/code/vox2/tools/pikabu_instruction_network_deny.c",
+            "-o",
+            "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/network-deny.dylib"
+          ]
+        },
+        {
+          "actual_exit": 0,
+          "command": [
+            "clang",
+            "-O2",
+            "/Users/alex/code/vox2/tools/pikabu_instruction_network_deny_test.c",
+            "-o",
+            "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/network-deny-check"
+          ]
+        },
+        {
+          "actual_exit": 0,
+          "command": [
+            "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/network-deny-check"
+          ]
+        }
+      ],
+      "comparison_eligible": false,
+      "content_gate": {
+        "failures": [],
+        "passed": true
+      },
+      "controlled_environment": {
+        "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/network-deny.dylib",
+        "GC_MARKERS": "1",
+        "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/cache",
+        "LADYBIRD_SCREENSHOT_DELAY_SECONDS": ".5",
+        "LADYBIRD_SCREENSHOT_SCALE": "1",
+        "NO_PROXY": "",
+        "SSL_CERT_FILE": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/replay/cert.pem",
+        "VOX_CAPTURE_AUDIT_CONFIG": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/audit-config.json",
+        "VOX_CAPTURE_AUDIT_PATH": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/audit.json",
+        "VOX_CAPTURE_DOCUMENT_ONLY": "1",
+        "VOX_COOKIE_FILE": "",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/profile",
+        "VOX_PROFILE_INSTRUCTIONS": "1",
+        "VOX_PROXY": "socks5h://127.0.0.1:50094",
+        "VOX_TEST_WINDOW": "1"
+      },
+      "exit": 0,
+      "historical_replacements": 0,
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          18.63623046875,
+          22.88427734375,
+          46.1279296875
+        ],
+        "unix": 1793857723.406125
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          19.376953125,
+          23.169921875,
+          46.50244140625
+        ],
+        "unix": 1793857717.605997
+      },
+      "native": {
+        "phase_note": "adjacent cumulative checkpoint deltas; nested scopes overlap and must not be summed",
+        "phases": [
+          {
+            "cumulative_instructions": 280088337,
+            "instructions": 280088337,
+            "label": "startup"
+          },
+          {
+            "cumulative_instructions": 286355277,
+            "instructions": 6266940,
+            "label": "startup_page_model"
+          },
+          {
+            "cumulative_instructions": 286485090,
+            "instructions": 129813,
+            "label": "startup_browser_state"
+          },
+          {
+            "cumulative_instructions": 287633160,
+            "instructions": 1148070,
+            "label": "startup_input_bridge"
+          },
+          {
+            "cumulative_instructions": 288258139,
+            "instructions": 624979,
+            "label": "startup_context"
+          },
+          {
+            "cumulative_instructions": 288470166,
+            "instructions": 212027,
+            "label": "navigation_started"
+          },
+          {
+            "cumulative_instructions": 289085487,
+            "instructions": 615321,
+            "label": "startup_navigation"
+          },
+          {
+            "cumulative_instructions": 337550686,
+            "instructions": 48465199,
+            "label": "startup_filter_worker"
+          },
+          {
+            "cumulative_instructions": 885128056,
+            "instructions": 547577370,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 887557081,
+            "instructions": 2429025,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 993094719,
+            "instructions": 105537638,
+            "label": "main_resource_fetch"
+          },
+          {
+            "cumulative_instructions": 993558019,
+            "instructions": 463300,
+            "label": "main_resource_cache"
+          },
+          {
+            "cumulative_instructions": 1247098806,
+            "instructions": 253540787,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 1247224116,
+            "instructions": 125310,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 1430628744,
+            "instructions": 183404628,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 1430753080,
+            "instructions": 124336,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 1662777846,
+            "instructions": 232024766,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 1662901369,
+            "instructions": 123523,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 1698180223,
+            "instructions": 35278854,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 1698691832,
+            "instructions": 511609,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 1749464730,
+            "instructions": 50772898,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 1750297132,
+            "instructions": 832402,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 1911220810,
+            "instructions": 160923678,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 1911343015,
+            "instructions": 122205,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 2081104258,
+            "instructions": 169761243,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 2081502384,
+            "instructions": 398126,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 2394883228,
+            "instructions": 313380844,
+            "label": "parse_document"
+          },
+          {
+            "cumulative_instructions": 4044849110,
+            "instructions": 1649965882,
+            "label": "preload_resources"
+          },
+          {
+            "cumulative_instructions": 4045074128,
+            "instructions": 225018,
+            "label": "install_styles"
+          },
+          {
+            "cumulative_instructions": 4052969162,
+            "instructions": 7895034,
+            "label": "install_video_frames"
+          },
+          {
+            "cumulative_instructions": 4345789581,
+            "instructions": 292820419,
+            "label": "javascript_native_bindings"
+          },
+          {
+            "cumulative_instructions": 4400434956,
+            "instructions": 54645375,
+            "label": "javascript_initial_state"
+          },
+          {
+            "cumulative_instructions": 4400738330,
+            "instructions": 303374,
+            "label": "javascript_bootstrap_source"
+          },
+          {
+            "cumulative_instructions": 4456367497,
+            "instructions": 55629167,
+            "label": "javascript_bootstrap_evaluated"
+          },
+          {
+            "cumulative_instructions": 4506513773,
+            "instructions": 50146276,
+            "label": "javascript_document_bindings"
+          },
+          {
+            "cumulative_instructions": 4526761206,
+            "instructions": 20247433,
+            "label": "javascript_adblock_scriptlets"
+          },
+          {
+            "cumulative_instructions": 4567993594,
+            "instructions": 41232388,
+            "label": "javascript_readiness_events"
+          },
+          {
+            "cumulative_instructions": 4568329082,
+            "instructions": 335488,
+            "label": "javascript_finalized"
+          },
+          {
+            "cumulative_instructions": 4569427194,
+            "instructions": 1098112,
+            "label": "run_javascript"
+          },
+          {
+            "cumulative_instructions": 4574658756,
+            "instructions": 5231562,
+            "label": "cookie_blocker"
+          },
+          {
+            "cumulative_instructions": 4577669649,
+            "instructions": 3010893,
+            "label": "script_inserted_stylesheets"
+          },
+          {
+            "cumulative_instructions": 4578325761,
+            "instructions": 656112,
+            "label": "unsized_script_images"
+          },
+          {
+            "cumulative_instructions": 7260149558,
+            "instructions": 2681823797,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 7264138221,
+            "instructions": 3988663,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 7264236325,
+            "instructions": 98104,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 9159526085,
+            "instructions": 1895289760,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 9233107547,
+            "instructions": 73581462,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 9233323449,
+            "instructions": 215902,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 9237553297,
+            "instructions": 4229848,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 9256655849,
+            "instructions": 19102552,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 9392053929,
+            "instructions": 135398080,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 9395753405,
+            "instructions": 3699476,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 9395851046,
+            "instructions": 97641,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 10481404208,
+            "instructions": 1085553162,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 10523219015,
+            "instructions": 41814807,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 10523435129,
+            "instructions": 216114,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 10527641913,
+            "instructions": 4206784,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 10546079888,
+            "instructions": 18437975,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 10612029021,
+            "instructions": 65949133,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 10612128092,
+            "instructions": 99071,
+            "label": "relayout"
+          },
+          {
+            "cumulative_instructions": 10612772532,
+            "instructions": 644440,
+            "label": "script_inserted_images"
+          },
+          {
+            "cumulative_instructions": 10612870294,
+            "instructions": 97762,
+            "label": "install_total"
+          },
+          {
+            "cumulative_instructions": 10709470407,
+            "instructions": 96600113,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 10709732083,
+            "instructions": 261676,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 10715351881,
+            "instructions": 5619798,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 11065429502,
+            "instructions": 350077621,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 11086922104,
+            "instructions": 21492602,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 11087374075,
+            "instructions": 451971,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 12860366734,
+            "instructions": 1772992659,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 12924104480,
+            "instructions": 63737746,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 12924320156,
+            "instructions": 215676,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 12928514923,
+            "instructions": 4194767,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 12947398574,
+            "instructions": 18883651,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 13028491261,
+            "instructions": 81092687,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 13044271999,
+            "instructions": 15780738,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 13044493899,
+            "instructions": 221900,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 13044591650,
+            "instructions": 97751,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 13044854798,
+            "instructions": 263148,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 13044952471,
+            "instructions": 97673,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 13045049768,
+            "instructions": 97297,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 13045158337,
+            "instructions": 108569,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 13045279277,
+            "instructions": 120940,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 13058028314,
+            "instructions": 12749037,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 13058128890,
+            "instructions": 100576,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 13058571760,
+            "instructions": 442870,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 13586830253,
+            "instructions": 528258493,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 14579930440,
+            "instructions": 993100187,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 14594123956,
+            "instructions": 14193516,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 14594339579,
+            "instructions": 215623,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 14598540994,
+            "instructions": 4201415,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 14616751968,
+            "instructions": 18210974,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 14700841263,
+            "instructions": 84089295,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 14700939580,
+            "instructions": 98317,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 14701089772,
+            "instructions": 150192,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 14708481304,
+            "instructions": 7391532,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 14708623142,
+            "instructions": 141838,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 14823830501,
+            "instructions": 115207359,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 14827577791,
+            "instructions": 3747290,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 14827675489,
+            "instructions": 97698,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 15892369001,
+            "instructions": 1064693512,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 15934037359,
+            "instructions": 41668358,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 15934253712,
+            "instructions": 216353,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 15938493263,
+            "instructions": 4239551,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 15957135241,
+            "instructions": 18641978,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 16044718641,
+            "instructions": 87583400,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 16044816838,
+            "instructions": 98197,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 16044954275,
+            "instructions": 137437,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 16175692236,
+            "instructions": 130737961,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 16179831603,
+            "instructions": 4139367,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 16179929862,
+            "instructions": 98259,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 16180253005,
+            "instructions": 323143,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17419447747,
+            "instructions": 1239194742,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17419664685,
+            "instructions": 216938,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17494019664,
+            "instructions": 74354979,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17494196982,
+            "instructions": 177318,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17553467233,
+            "instructions": 59270251,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17553614965,
+            "instructions": 147732,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17592038951,
+            "instructions": 38423986,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17592183925,
+            "instructions": 144974,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17595961224,
+            "instructions": 3777299,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17596109113,
+            "instructions": 147889,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17597903202,
+            "instructions": 1794089,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17598134527,
+            "instructions": 231325,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17599489667,
+            "instructions": 1355140,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17599645227,
+            "instructions": 155560,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17643697725,
+            "instructions": 44052498,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17643843909,
+            "instructions": 146184,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17645185994,
+            "instructions": 1342085,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17645332341,
+            "instructions": 146347,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17647182919,
+            "instructions": 1850578,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17647331364,
+            "instructions": 148445,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17651587319,
+            "instructions": 4255955,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17651735216,
+            "instructions": 147897,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17653060206,
+            "instructions": 1324990,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17653211920,
+            "instructions": 151714,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17654576065,
+            "instructions": 1364145,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17654716266,
+            "instructions": 140201,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17656007995,
+            "instructions": 1291729,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17656186436,
+            "instructions": 178441,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17657516957,
+            "instructions": 1330521,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17657670866,
+            "instructions": 153909,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17667076266,
+            "instructions": 9405400,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17667242896,
+            "instructions": 166630,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17683953461,
+            "instructions": 16710565,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17684099629,
+            "instructions": 146168,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17712572311,
+            "instructions": 28472682,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17712733355,
+            "instructions": 161044,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 17747857040,
+            "instructions": 35123685,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 17748016281,
+            "instructions": 159241,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 18097504627,
+            "instructions": 349488346,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 18101211362,
+            "instructions": 3706735,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 18101311409,
+            "instructions": 100047,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 19167102521,
+            "instructions": 1065791112,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 19208736681,
+            "instructions": 41634160,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 19208954077,
+            "instructions": 217396,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 19213185732,
+            "instructions": 4231655,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 19231849344,
+            "instructions": 18663612,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 19313362809,
+            "instructions": 81513465,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 19378012437,
+            "instructions": 64649628,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 19379270599,
+            "instructions": 1258162,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 19379429147,
+            "instructions": 158548,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 22348499833,
+            "instructions": 2969070686,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 23116677294,
+            "instructions": 768177461,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 23116778266,
+            "instructions": 100972,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 23119615994,
+            "instructions": 2837728,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 23386332040,
+            "instructions": 266716046,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 23394422099,
+            "instructions": 8090059,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 23394522216,
+            "instructions": 100117,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 23394661906,
+            "instructions": 139690,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 25465277915,
+            "instructions": 2070616009,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 25469091191,
+            "instructions": 3813276,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 25469191649,
+            "instructions": 100458,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 27230031210,
+            "instructions": 1760839561,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 27293918355,
+            "instructions": 63887145,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 27294149141,
+            "instructions": 230786,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 27298648216,
+            "instructions": 4499075,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 27318744120,
+            "instructions": 20095904,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 27420289870,
+            "instructions": 101545750,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 27447967832,
+            "instructions": 27677962,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 27448067673,
+            "instructions": 99841,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 27448213181,
+            "instructions": 145508,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 27925906914,
+            "instructions": 477693733,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 27931967797,
+            "instructions": 6060883,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 27932068222,
+            "instructions": 100425,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 29121293556,
+            "instructions": 1189225334,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 29162951545,
+            "instructions": 41657989,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 29163182505,
+            "instructions": 230960,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 29167648199,
+            "instructions": 4465694,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 29187383555,
+            "instructions": 19735356,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 29375301533,
+            "instructions": 187917978,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 29378959683,
+            "instructions": 3658150,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 29379059159,
+            "instructions": 99476,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 30521010164,
+            "instructions": 1141951005,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 30562953204,
+            "instructions": 41943040,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 30563197786,
+            "instructions": 244582,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 30567658053,
+            "instructions": 4460267,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 30587624045,
+            "instructions": 19965992,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 30659670140,
+            "instructions": 72046095,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 30705940649,
+            "instructions": 46270509,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 30706040940,
+            "instructions": 100291,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 30706400792,
+            "instructions": 359852,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31097329583,
+            "instructions": 390928791,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 31105125751,
+            "instructions": 7796168,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 31105225843,
+            "instructions": 100092,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31105365406,
+            "instructions": 139563,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31363577988,
+            "instructions": 258212582,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31363707618,
+            "instructions": 129630,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31384327148,
+            "instructions": 20619530,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31384473752,
+            "instructions": 146604,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31386568923,
+            "instructions": 2095171,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31386709300,
+            "instructions": 140377,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31390293171,
+            "instructions": 3583871,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31390421910,
+            "instructions": 128739,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31392277468,
+            "instructions": 1855558,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31392451233,
+            "instructions": 173765,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31393664394,
+            "instructions": 1213161,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31393804886,
+            "instructions": 140492,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31395343131,
+            "instructions": 1538245,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31395492248,
+            "instructions": 149117,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31396677965,
+            "instructions": 1185717,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31396848466,
+            "instructions": 170501,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31408014662,
+            "instructions": 11166196,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31408161185,
+            "instructions": 146523,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31418142851,
+            "instructions": 9981666,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31418283784,
+            "instructions": 140933,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31420112871,
+            "instructions": 1829087,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31420259957,
+            "instructions": 147086,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31424353244,
+            "instructions": 4093287,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31424508908,
+            "instructions": 155664,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31425876438,
+            "instructions": 1367530,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31426027486,
+            "instructions": 151048,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31452149178,
+            "instructions": 26121692,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31452300962,
+            "instructions": 151784,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31474135534,
+            "instructions": 21834572,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31474264055,
+            "instructions": 128521,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31501023759,
+            "instructions": 26759704,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31501182908,
+            "instructions": 159149,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31540897979,
+            "instructions": 39715071,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31541038460,
+            "instructions": 140481,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31577170209,
+            "instructions": 36131749,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31577319040,
+            "instructions": 148831,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31603400584,
+            "instructions": 26081544,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31603551763,
+            "instructions": 151179,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31617830564,
+            "instructions": 14278801,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31617972806,
+            "instructions": 142242,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31671993650,
+            "instructions": 54020844,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31672142577,
+            "instructions": 148927,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31705781651,
+            "instructions": 33639074,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31705935264,
+            "instructions": 153613,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 31755260560,
+            "instructions": 49325296,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 31755414519,
+            "instructions": 153959,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 32213311249,
+            "instructions": 457896730,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 32223758848,
+            "instructions": 10447599,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 32223858856,
+            "instructions": 100008,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 32224001476,
+            "instructions": 142620,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 32224979974,
+            "instructions": 978498,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 32225122985,
+            "instructions": 143011,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 32396127531,
+            "instructions": 171004546,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 32396274196,
+            "instructions": 146665,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 32574714689,
+            "instructions": 178440493,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 32578361391,
+            "instructions": 3646702,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 32578460950,
+            "instructions": 99559,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 33734591927,
+            "instructions": 1156130977,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 33776290243,
+            "instructions": 41698316,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 33776585328,
+            "instructions": 295085,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 33781995511,
+            "instructions": 5410183,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 33801695976,
+            "instructions": 19700465,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 33870659241,
+            "instructions": 68963265,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 33899619346,
+            "instructions": 28960105,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 33899719774,
+            "instructions": 100428,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 35320508526,
+            "instructions": 1420788752,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 35323884360,
+            "instructions": 3375834,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 35324062810,
+            "instructions": 178450,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 35435198072,
+            "instructions": 111135262,
+            "label": "    build_boxes"
+          },
+          {
+            "cumulative_instructions": 35439141986,
+            "instructions": 3943914,
+            "label": "    tree_fixups"
+          },
+          {
+            "cumulative_instructions": 35439244164,
+            "instructions": 102178,
+            "label": "    build_tree_total"
+          },
+          {
+            "cumulative_instructions": 36639521582,
+            "instructions": 1200277418,
+            "label": "      formatting_contexts"
+          },
+          {
+            "cumulative_instructions": 36685948255,
+            "instructions": 46426673,
+            "label": "      absolute_descendants"
+          },
+          {
+            "cumulative_instructions": 36686180663,
+            "instructions": 232408,
+            "label": "      relative_insets"
+          },
+          {
+            "cumulative_instructions": 36690641562,
+            "instructions": 4460899,
+            "label": "      scrollable_overflow"
+          },
+          {
+            "cumulative_instructions": 36710357706,
+            "instructions": 19716144,
+            "label": "    attach_layout"
+          },
+          {
+            "cumulative_instructions": 36779459732,
+            "instructions": 69102026,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 36822633192,
+            "instructions": 43173460,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 36822734827,
+            "instructions": 101635,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37067123288,
+            "instructions": 244388461,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37076979407,
+            "instructions": 9856119,
+            "label": "  layout_tree"
+          },
+          {
+            "cumulative_instructions": 37084771023,
+            "instructions": 7791616,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 37084872583,
+            "instructions": 101560,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37299310384,
+            "instructions": 214437801,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37301578151,
+            "instructions": 2267767,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37301726884,
+            "instructions": 148733,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37319410379,
+            "instructions": 17683495,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37319574835,
+            "instructions": 164456,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37479252049,
+            "instructions": 159677214,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37479422447,
+            "instructions": 170398,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37492811216,
+            "instructions": 13388769,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37492973402,
+            "instructions": 162186,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37495465689,
+            "instructions": 2492287,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37495621509,
+            "instructions": 155820,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37496762623,
+            "instructions": 1141114,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37496927582,
+            "instructions": 164959,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37498093377,
+            "instructions": 1165795,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37498255450,
+            "instructions": 162073,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37507719455,
+            "instructions": 9464005,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37507878282,
+            "instructions": 158827,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37588920728,
+            "instructions": 81042446,
+            "label": "  paint_commands"
+          },
+          {
+            "cumulative_instructions": 37589021895,
+            "instructions": 101167,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37805851108,
+            "instructions": 216829213,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37807059002,
+            "instructions": 1207894,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37807237148,
+            "instructions": 178146,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37883727333,
+            "instructions": 76490185,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37883886242,
+            "instructions": 158909,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37884813593,
+            "instructions": 927351,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37884976214,
+            "instructions": 162621,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37886121006,
+            "instructions": 1144792,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37886283119,
+            "instructions": 162113,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37887381994,
+            "instructions": 1098875,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37887633585,
+            "instructions": 251591,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37888792695,
+            "instructions": 1159110,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37888948622,
+            "instructions": 155927,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37890067900,
+            "instructions": 1119278,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37890235768,
+            "instructions": 167868,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37891385088,
+            "instructions": 1149320,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37891547237,
+            "instructions": 162149,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37892648870,
+            "instructions": 1101633,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37892830893,
+            "instructions": 182023,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37893989920,
+            "instructions": 1159027,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37894152391,
+            "instructions": 162471,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37895255634,
+            "instructions": 1103243,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37895466605,
+            "instructions": 210971,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37896612056,
+            "instructions": 1145451,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37896767827,
+            "instructions": 155771,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37897184671,
+            "instructions": 416844,
+            "label": "capture_started"
+          },
+          {
+            "cumulative_instructions": 37897667954,
+            "instructions": 483283,
+            "label": "frame_prepared"
+          },
+          {
+            "cumulative_instructions": 37897842255,
+            "instructions": 174301,
+            "label": "frame_complete"
+          },
+          {
+            "cumulative_instructions": 37899644204,
+            "instructions": 1801949,
+            "label": "capture_cached"
+          },
+          {
+            "cumulative_instructions": 37899703245,
+            "instructions": 59041,
+            "label": "capture_converted"
+          },
+          {
+            "cumulative_instructions": 37906924255,
+            "instructions": 7221010,
+            "label": "capture_document_encoded"
+          }
+        ],
+        "scopes": {
+          "document_install_to_first_native_layer_submission": [
+            33140960154
+          ],
+          "document_install_to_first_paint": [
+            8535631380
+          ],
+          "install_total": [
+            8433094256
+          ],
+          "navigation_to_first_document_paint": [
+            10427034182
+          ],
+          "navigation_to_first_native_layer_submission": [
+            35032362956
+          ]
+        },
+        "unavailable": []
+      },
+      "new_instruction_credit": 0,
+      "png": {
+        "bytes": 219994,
+        "dimensions": [
+          1024,
+          768
+        ],
+        "path": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/document.png",
+        "sha256": "9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81"
+      },
+      "replay": {
+        "archive": "/Users/alex/code/vox2/Build/github-lazy-match-memo-resume-20261105-session4076/archive-resumed",
+        "ca": "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/github-after-failed-stylesheet-01/replay/cert.pem",
+        "certificate_sha256": "5e1c57dfb8868b48dc3a5117385ab0b4d45a2a4fd3819960355d2668a72a05bd",
+        "forwarding": false,
+        "manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+        "proxy": "socks5h://127.0.0.1:50094",
+        "url": "https://github.com/vlang/v"
+      }
+    },
+    "plan": {
+      "archive_manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+      "author_javascript": true,
+      "browser_build_requested": false,
+      "browser_copy": false,
+      "endpoints": [
+        "navigation_to_first_document_paint",
+        "navigation_to_first_native_layer_submission"
+      ],
+      "feature_commit": "b7f43d21b02a9a2b2d28e819739bc94285c705f7",
+      "filesystem_shader_caches": "retained",
+      "fresh_cache": true,
+      "fresh_profile": true,
+      "host": {
+        "cpu_count": 18,
+        "load_average": [
+          19.376953125,
+          23.169921875,
+          46.50244140625
+        ]
+      },
+      "observations": 1,
+      "production": {
+        "bytes": 1772,
+        "configuration_note": "Compiler/GC/preallocation/native options remain those of this pinned build receipt; setting GC_MARKERS cannot enable GC in a GC-none binary.",
+        "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/result.json",
+        "sha256": "a2fea5cfbde277b5ea7626e65ca8e404c396fa5be5ce5824fae0e7529ec36a62"
+      },
+      "replacements": 0,
+      "retries": 0,
+      "runtime_pins": {
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 32885632,
+          "sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 293408,
+          "sha256": "968a22c6e4843fe50d6c87a3ce8ab3b37fa7d2f707f1b94e9222a5b39fe29705"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 1008752,
+          "sha256": "4f3b614ee8a2431d5330082d565fab74a20c9b0dd3bb0142c6d79b945f29b88a"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": {
+          "bytes": 34352,
+          "sha256": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4422448,
+          "sha256": "8942c6b2b69dcb8b3dc555146b384b1acedb2e14c691b408ee4dcf988ec972c1"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13041776,
+          "sha256": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        }
+      },
+      "scope": "One separate ordinary N=1 cached GitHub correctness diagnostic after stylesheet completion reporting and per-owner navigation response delivery. Inclusive main-task legacy paint and native submission counts remain separate; no paired saving, page credit, hydration or Chrome parity claim. Concurrent engine changes are not isolated.",
+      "settle_seconds": 0.5,
+      "source_contract": {
+        "about_text_sha256": "4a6b44f60eebe8011c894b058ee856d6be5728c432eaf82360861971ad59817e",
+        "decoded_images": {
+          "https://avatars.githubusercontent.com/u/46413578?s=60&v=4": [
+            60,
+            60
+          ],
+          "https://raw.githubusercontent.com/vlang/v-logo/master/dist/v-logo.svg?sanitize=true": [
+            500,
+            500
+          ]
+        },
+        "document_bytes": 432422,
+        "document_sha256": "6354faa8a7ae959043041c95cfc62fc2943f32bf89cde910795feb2dd1184f79",
+        "file_links": 66,
+        "file_links_sha256": "f5167b492805aedac03f54c7876d1622c37fbdbe758d5d75632c3203d557a3ab",
+        "first_link": {
+          "attributes": {
+            "aria-label": ".github, (Directory)",
+            "class": "Link--primary",
+            "data-discover": "true",
+            "href": "/vlang/v/tree/master/.github",
+            "title": ".github"
+          },
+          "text": ".github"
+        },
+        "images": [
+          "https://avatars.githubusercontent.com/u/46413578?s=60&v=4",
+          "https://camo.githubusercontent.com/27e2e9271c5ebc9b9565fd41e66e412f06b4614f9a36881e4a8037b3b95a15c2/68747470733a2f2f696d672e736869656c64732e696f2f646973636f72642f3539323130333634353833353832313036383f6c6162656c3d446973636f7264266c6f676f3d646973636f7264266c6f676f436f6c6f723d7768697465",
+          "https://camo.githubusercontent.com/7b94ea1b7abd4392cf43fdd60f6d40230ab91be950844e4d586b6d19296073d2/68747470733a2f2f696d672e736869656c64732e696f2f656e64706f696e742e7376673f75726c3d6874747073253341253246253246736869656c6473696f2d70617472656f6e2e76657263656c2e617070253246617069253346757365726e616d65253344766c616e6725323674797065253344706174726f6e73267374796c653d666c6174",
+          "https://camo.githubusercontent.com/8a2a9f522e9dcb5fdd15e23f3fa20bbf01ac2d5ca99535ef5c80a350267022ed/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f73706f6e736f72732f6d65647665646e696b6f763f7374796c653d666c6174266c6f676f3d676974687562266c6f676f436f6c6f723d7768697465",
+          "https://camo.githubusercontent.com/ac261ea60863a0a48d3e5ed81cb1964aa813fb12d9d7e83bd04b4acde4285786/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f666f6c6c6f772d253430765f5f6c616e67756167652d3144413146323f6c6f676f3d78267374796c653d666c6174266c6f676f436f6c6f723d7768697465",
+          "https://camo.githubusercontent.com/fe385b348ac2d3e50e11ab90d7325b4b42feb434e9cfb456c14adfaeb26bdb81/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6d6f64756c65732d7265666572656e63652d3032376439633f6c6f676f3d76266c6f676f436f6c6f723d7768697465266c6f676f57696474683d3130",
+          "https://github.com/vlang/vinix/raw/main/screenshot0.png?raw=true",
+          "https://github.com/vlang/vinix/raw/main/screenshot1.png?raw=true",
+          "https://github.githubassets.com/assets/changelog-dark-b1c25ae971bd641b.png",
+          "https://github.githubassets.com/assets/changelog-fd687bff072883b0.png",
+          "https://github.githubassets.com/assets/copilot-dark-2b28403b6080e898.png",
+          "https://github.githubassets.com/assets/copilot-e2b89335a66dba00.png",
+          "https://github.githubassets.com/assets/platform-4ce65ae0bf273ce2.png",
+          "https://github.githubassets.com/assets/platform-dark-ac89fbf373737ed3.png",
+          "https://github.githubassets.com/assets/universe-a98cd54821b27569.png",
+          "https://github.githubassets.com/assets/universe-a98cd54821b27569.png",
+          "https://raw.githubusercontent.com/vlang/ui/master/examples/screenshot.png",
+          "https://raw.githubusercontent.com/vlang/v-logo/master/dist/v-logo.svg?sanitize=true",
+          "https://raw.githubusercontent.com/vlang/v/master/examples/tetris/screenshot.png",
+          "https://user-images.githubusercontent.com/687996/85933714-b195fe80-b8da-11ea-9ddd-09cadc2103e4.png",
+          "https://user-images.githubusercontent.com/768942/107622846-c13f3900-6c58-11eb-8a66-55db12979b73.png"
+        ],
+        "rows": 33
+      },
+      "started_unix": 1793857716.991634,
+      "timeout_seconds": 180,
+      "tools": {
+        "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/run-github.py": {
+          "bytes": 11559,
+          "sha256": "1c47e386b8bb404b55cdf41061bd1734658a8af52a6f4e6d0def66ebffd88696"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 52188,
+          "sha256": "1198171e4bd347bc72071280afc22ed21024d4c76b5c0dd2241a8f036365b241"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 20223,
+          "sha256": "05d2b13aba6e42c66fea166cf2035263579a47828b7627ad112720755d328524"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_instruction_network_deny.c": {
+          "bytes": 2329,
+          "sha256": "66f0896a31991c3ae467841b4b0a78bc86fb1210ab57c6ce9b8a8e6b1aca5e35"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_instruction_network_deny_test.c": {
+          "bytes": 2839,
+          "sha256": "a98a663f35f457e5b11e8ce8eda64d2d45d7e2469fc78d3fb5ed5b4ebb438656"
+        }
+      },
+      "url": "https://github.com/vlang/v",
+      "viewport": [
+        1024,
+        768
+      ],
+      "window": [
+        1024,
+        852
+      ]
+    },
+    "audit": {
+      "active_element": {
+        "focus_visible": false,
+        "id": "",
+        "tag": "BODY"
+      },
+      "font_faces": [
+        {
+          "declared_sources": [
+            "Arial",
+            "Helvetica"
+          ],
+          "family": "Noto Sans Backtick Fix",
+          "parsed_font_present": false,
+          "source_path": "",
+          "status": "unloaded",
+          "style": "auto",
+          "weight": "auto"
+        }
+      ],
+      "font_set_present": true,
+      "fonts_status": "loaded",
+      "fully_active": true,
+      "javascript_diagnostics": [
+        "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404"
+      ],
+      "native_reported_error_count": 1,
+      "native_reported_error_information": [
+        {
+          "colno": 0,
+          "filename": "",
+          "lineno": 0,
+          "message": "Uncaught exception: TypeError: e.result.createObjectStore(t).createIndex is not a function. (In 'e.result.createObjectStore(t).createIndex(o,\"state.expiresAt\")', 'e.result.createObjectStore(t).createIndex' is undefined)"
+        }
+      ],
+      "native_reported_errors": [],
+      "note": "Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.",
+      "paint_commands": 832,
+      "paint_geometry": [],
+      "ready": "complete",
+      "selections": [
+        {
+          "count": 33,
+          "elements": [
+            {
+              "attributes": {},
+              "layout": [],
+              "rect": {
+                "height": 40,
+                "width": 646,
+                "x": 33,
+                "y": 363
+              },
+              "tag": "tr",
+              "text": ".github.github\u00a0\u00a0",
+              "text_sha256": "ab1a5c5c0970bc5f6452b218032285b57c9e679141f51605ffa547357a95251c",
+              "text_utf8_bytes": 18
+            }
+          ],
+          "name": "rows",
+          "selector": "tr.react-directory-row"
+        },
+        {
+          "count": 66,
+          "elements": [
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/.github"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": ".github",
+              "text_sha256": "bdcc6a2a85f645f62724fe8dafbf0581cb0c1d65f6a76cb2985a9172e31a473c",
+              "text_utf8_bytes": 7
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/.github"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 44.921875,
+                "x": 75,
+                "y": 374.5
+              },
+              "tag": "a",
+              "text": ".github",
+              "text_sha256": "bdcc6a2a85f645f62724fe8dafbf0581cb0c1d65f6a76cb2985a9172e31a473c",
+              "text_utf8_bytes": 7
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/bench"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "bench",
+              "text_sha256": "1b32c28cb38c05480eccc1bd60ff97029b57a05c96718b96dad7e9d84894f549",
+              "text_utf8_bytes": 5
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/bench"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 40.09375,
+                "x": 75,
+                "y": 415.5
+              },
+              "tag": "a",
+              "text": "bench",
+              "text_sha256": "1b32c28cb38c05480eccc1bd60ff97029b57a05c96718b96dad7e9d84894f549",
+              "text_utf8_bytes": 5
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/changelogs0.x"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "changelogs0.x",
+              "text_sha256": "98e45a9f9f22e19852bb5728e4812002121b29e532fc7817717fb304c7bff8c1",
+              "text_utf8_bytes": 13
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/changelogs0.x"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 93.984375,
+                "x": 75,
+                "y": 456.5
+              },
+              "tag": "a",
+              "text": "changelogs0.x",
+              "text_sha256": "98e45a9f9f22e19852bb5728e4812002121b29e532fc7817717fb304c7bff8c1",
+              "text_utf8_bytes": 13
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/ci"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "ci",
+              "text_sha256": "1b158839f8aa339e89bb50b1603e90ec68e0fd5565fe10a7cb32729fddf7070a",
+              "text_utf8_bytes": 2
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/ci"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 11,
+                "x": 75,
+                "y": 497.5
+              },
+              "tag": "a",
+              "text": "ci",
+              "text_sha256": "1b158839f8aa339e89bb50b1603e90ec68e0fd5565fe10a7cb32729fddf7070a",
+              "text_utf8_bytes": 2
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/cmd"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "cmd",
+              "text_sha256": "04dc5b2136328a0dcb189df97734c7c72e5e1227fa0c03469a6ce608f32f1b66",
+              "text_utf8_bytes": 3
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/cmd"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 28.171875,
+                "x": 75,
+                "y": 538.5
+              },
+              "tag": "a",
+              "text": "cmd",
+              "text_sha256": "04dc5b2136328a0dcb189df97734c7c72e5e1227fa0c03469a6ce608f32f1b66",
+              "text_utf8_bytes": 3
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/doc"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "doc",
+              "text_sha256": "139d544b821b13ebea14f1b0fe18577222e415c2966e3a3511c4196055232202",
+              "text_utf8_bytes": 3
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/doc"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 24.265625,
+                "x": 75,
+                "y": 579.5
+              },
+              "tag": "a",
+              "text": "doc",
+              "text_sha256": "139d544b821b13ebea14f1b0fe18577222e415c2966e3a3511c4196055232202",
+              "text_utf8_bytes": 3
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/docs"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "docs",
+              "text_sha256": "46b42b4229cd7a39c564e780bb665a8bde4fdf722007e8473f167fe53ed4b995",
+              "text_utf8_bytes": 4
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/docs"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 31.4375,
+                "x": 75,
+                "y": 620.5
+              },
+              "tag": "a",
+              "text": "docs",
+              "text_sha256": "46b42b4229cd7a39c564e780bb665a8bde4fdf722007e8473f167fe53ed4b995",
+              "text_utf8_bytes": 4
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/editors/vim"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "editors/vim",
+              "text_sha256": "0ba7c8af27f2676becfaaacce4d2b52da4ff3b4bab9452ab399e7c342188d6de",
+              "text_utf8_bytes": 11
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/editors/vim"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 71.6875,
+                "x": 75,
+                "y": 661.5
+              },
+              "tag": "a",
+              "text": "editors/vim",
+              "text_sha256": "0ba7c8af27f2676becfaaacce4d2b52da4ff3b4bab9452ab399e7c342188d6de",
+              "text_utf8_bytes": 11
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/examples"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "examples",
+              "text_sha256": "c590b3c924c35c2f241746522284e4709df490d73a38aaa7d6de4ed1eac2f546",
+              "text_utf8_bytes": 8
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/examples"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 61.1875,
+                "x": 75,
+                "y": 702.5
+              },
+              "tag": "a",
+              "text": "examples",
+              "text_sha256": "c590b3c924c35c2f241746522284e4709df490d73a38aaa7d6de4ed1eac2f546",
+              "text_utf8_bytes": 8
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/thirdparty"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "thirdparty",
+              "text_sha256": "942f15475b50e522db94c540240946909b6f671fca0f69c54301372fd401de2e",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/thirdparty"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 63.4375,
+                "x": 75,
+                "y": 743.5
+              },
+              "tag": "a",
+              "text": "thirdparty",
+              "text_sha256": "942f15475b50e522db94c540240946909b6f671fca0f69c54301372fd401de2e",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/tutorials"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "tutorials",
+              "text_sha256": "5d8ac3ca438dc7134110bc995102decafa143ef76b4923f5fab31a91abe03802",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/tutorials"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 52.546875,
+                "x": 75,
+                "y": 784.5
+              },
+              "tag": "a",
+              "text": "tutorials",
+              "text_sha256": "5d8ac3ca438dc7134110bc995102decafa143ef76b4923f5fab31a91abe03802",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/vlib"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "vlib",
+              "text_sha256": "e0db0063fc181a4d846be0ed333cf32de7d9ba58265c844450bcecfc8ec07a2d",
+              "text_utf8_bytes": 4
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/tree/master/vlib"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 22.59375,
+                "x": 75,
+                "y": 825.5
+              },
+              "tag": "a",
+              "text": "vlib",
+              "text_sha256": "e0db0063fc181a4d846be0ed333cf32de7d9ba58265c844450bcecfc8ec07a2d",
+              "text_utf8_bytes": 4
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.editorconfig"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": ".editorconfig",
+              "text_sha256": "0947e2727d6bad8cd0ac4122f5314bb5b04e337393075bc4b5ef143b17fcbd5b",
+              "text_utf8_bytes": 13
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.editorconfig"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 81.703125,
+                "x": 75,
+                "y": 866.5
+              },
+              "tag": "a",
+              "text": ".editorconfig",
+              "text_sha256": "0947e2727d6bad8cd0ac4122f5314bb5b04e337393075bc4b5ef143b17fcbd5b",
+              "text_utf8_bytes": 13
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.gitattributes"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": ".gitattributes",
+              "text_sha256": "618cd5b83d62060ba3d027e314a21ceaf75d36067ff820db126642944145393e",
+              "text_utf8_bytes": 14
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.gitattributes"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 82.625,
+                "x": 75,
+                "y": 907.5
+              },
+              "tag": "a",
+              "text": ".gitattributes",
+              "text_sha256": "618cd5b83d62060ba3d027e314a21ceaf75d36067ff820db126642944145393e",
+              "text_utf8_bytes": 14
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.gitignore"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": ".gitignore",
+              "text_sha256": "bc37d034bad564583790a46f19d807abfe519c5671395fd494d8cce506c42947",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.gitignore"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 61.015625,
+                "x": 75,
+                "y": 948.5
+              },
+              "tag": "a",
+              "text": ".gitignore",
+              "text_sha256": "bc37d034bad564583790a46f19d807abfe519c5671395fd494d8cce506c42947",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.gitly-ci.yml"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": ".gitly-ci.yml",
+              "text_sha256": "e48b239bbd002c0a5957683682117a66a56af3ffbaee0f5732902a3a9058a33d",
+              "text_utf8_bytes": 13
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/.gitly-ci.yml"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 74.375,
+                "x": 75,
+                "y": 989.5
+              },
+              "tag": "a",
+              "text": ".gitly-ci.yml",
+              "text_sha256": "e48b239bbd002c0a5957683682117a66a56af3ffbaee0f5732902a3a9058a33d",
+              "text_utf8_bytes": 13
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/AGENTS.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "AGENTS.md",
+              "text_sha256": "a54ff182c7e8acf56acfd6e4b9c3ff41e2c41a31c9b211b2deb9df75d9a478f9",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/AGENTS.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 79.515625,
+                "x": 75,
+                "y": 1030.5
+              },
+              "tag": "a",
+              "text": "AGENTS.md",
+              "text_sha256": "a54ff182c7e8acf56acfd6e4b9c3ff41e2c41a31c9b211b2deb9df75d9a478f9",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/CHANGELOG.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "CHANGELOG.md",
+              "text_sha256": "06572a96a58dc510037d5efa622f9bec8519bc1beab13c9f251e97e657a9d4ed",
+              "text_utf8_bytes": 12
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/CHANGELOG.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 110.96875,
+                "x": 75,
+                "y": 1071.5
+              },
+              "tag": "a",
+              "text": "CHANGELOG.md",
+              "text_sha256": "06572a96a58dc510037d5efa622f9bec8519bc1beab13c9f251e97e657a9d4ed",
+              "text_utf8_bytes": 12
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/CODE_OF_CONDUCT.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "CODE_OF_CONDUCT.md",
+              "text_sha256": "ffdbe3a1e7ee93cacfc080b6c635ccf3a8f6b0f00f2fb884f78c6b5f9dac8fd2",
+              "text_utf8_bytes": 18
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/CODE_OF_CONDUCT.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 163.21875,
+                "x": 75,
+                "y": 1112.5
+              },
+              "tag": "a",
+              "text": "CODE_OF_CONDUCT.md",
+              "text_sha256": "ffdbe3a1e7ee93cacfc080b6c635ccf3a8f6b0f00f2fb884f78c6b5f9dac8fd2",
+              "text_utf8_bytes": 18
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/CONTRIBUTING.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "CONTRIBUTING.md",
+              "text_sha256": "eca12c0a30e25b4b46522ebf89465a03ba72a03f540796c979137931d8f92055",
+              "text_utf8_bytes": 15
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/CONTRIBUTING.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 128.65625,
+                "x": 75,
+                "y": 1153.5
+              },
+              "tag": "a",
+              "text": "CONTRIBUTING.md",
+              "text_sha256": "eca12c0a30e25b4b46522ebf89465a03ba72a03f540796c979137931d8f92055",
+              "text_utf8_bytes": 15
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Dockerfile"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "Dockerfile",
+              "text_sha256": "dd2c0eb6ea5cfc6c4bd4eac30934e2d5746747af48fef6da689e85b752f39557",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Dockerfile"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 65.84375,
+                "x": 75,
+                "y": 1194.5
+              },
+              "tag": "a",
+              "text": "Dockerfile",
+              "text_sha256": "dd2c0eb6ea5cfc6c4bd4eac30934e2d5746747af48fef6da689e85b752f39557",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Dockerfile.alpine"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "Dockerfile.alpine",
+              "text_sha256": "f865864730d7062c04cc13b1b85ba03ed5dbef3fa02fcb50b87d9117d0af1f4e",
+              "text_utf8_bytes": 17
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Dockerfile.alpine"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 108.390625,
+                "x": 75,
+                "y": 1235.5
+              },
+              "tag": "a",
+              "text": "Dockerfile.alpine",
+              "text_sha256": "f865864730d7062c04cc13b1b85ba03ed5dbef3fa02fcb50b87d9117d0af1f4e",
+              "text_utf8_bytes": 17
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Dockerfile.cross"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "Dockerfile.cross",
+              "text_sha256": "8fd8571a171b74d868c368572d9a8eaaf633cf00161ae3c56f5106f27787711f",
+              "text_utf8_bytes": 16
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Dockerfile.cross"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 104.578125,
+                "x": 75,
+                "y": 1276.5
+              },
+              "tag": "a",
+              "text": "Dockerfile.cross",
+              "text_sha256": "8fd8571a171b74d868c368572d9a8eaaf633cf00161ae3c56f5106f27787711f",
+              "text_utf8_bytes": 16
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/GNUmakefile"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "GNUmakefile",
+              "text_sha256": "e3445fc75aa9c3e4a60fbe5394dcce12693022018216a8fbe0000fe9952850a6",
+              "text_utf8_bytes": 11
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/GNUmakefile"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 84.75,
+                "x": 75,
+                "y": 1317.5
+              },
+              "tag": "a",
+              "text": "GNUmakefile",
+              "text_sha256": "e3445fc75aa9c3e4a60fbe5394dcce12693022018216a8fbe0000fe9952850a6",
+              "text_utf8_bytes": 11
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/LICENSE"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "LICENSE",
+              "text_sha256": "c693279643b8cd5d248172d9c22cb7cf4ed163a3c98c8a3f69c2717edd3eacb7",
+              "text_utf8_bytes": 7
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/LICENSE"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 56.65625,
+                "x": 75,
+                "y": 1358.5
+              },
+              "tag": "a",
+              "text": "LICENSE",
+              "text_sha256": "c693279643b8cd5d248172d9c22cb7cf4ed163a3c98c8a3f69c2717edd3eacb7",
+              "text_utf8_bytes": 7
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Makefile"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "Makefile",
+              "text_sha256": "76ed074a9305c04054cdebb9e9aad2d818052b07091de1f20cad0bbac34ffb52",
+              "text_utf8_bytes": 8
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/Makefile"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 54.09375,
+                "x": 75,
+                "y": 1399.5
+              },
+              "tag": "a",
+              "text": "Makefile",
+              "text_sha256": "76ed074a9305c04054cdebb9e9aad2d818052b07091de1f20cad0bbac34ffb52",
+              "text_utf8_bytes": 8
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/README.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "README.md",
+              "text_sha256": "b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/README.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 81.265625,
+                "x": 75,
+                "y": 1440.5
+              },
+              "tag": "a",
+              "text": "README.md",
+              "text_sha256": "b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/ROADMAP.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "ROADMAP.md",
+              "text_sha256": "683343bdf93f55ed3cada86151abb8051282e1936e58d4e0a04beca95dff6e51",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/ROADMAP.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 91.71875,
+                "x": 75,
+                "y": 1481.5
+              },
+              "tag": "a",
+              "text": "ROADMAP.md",
+              "text_sha256": "683343bdf93f55ed3cada86151abb8051282e1936e58d4e0a04beca95dff6e51",
+              "text_utf8_bytes": 10
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/SECURITY.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "SECURITY.md",
+              "text_sha256": "f6ed156e4bf5c791680662464b94ea5d753f219ee816b385f67870e2c0d7d4c7",
+              "text_utf8_bytes": 11
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/SECURITY.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 90.46875,
+                "x": 75,
+                "y": 1522.5
+              },
+              "tag": "a",
+              "text": "SECURITY.md",
+              "text_sha256": "f6ed156e4bf5c791680662464b94ea5d753f219ee816b385f67870e2c0d7d4c7",
+              "text_utf8_bytes": 11
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/TESTS.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "TESTS.md",
+              "text_sha256": "6129e4842294d2f7cbef7f74cda4f4457150fa9c642210659bffbdb51c092994",
+              "text_utf8_bytes": 8
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/TESTS.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 67.671875,
+                "x": 75,
+                "y": 1563.5
+              },
+              "tag": "a",
+              "text": "TESTS.md",
+              "text_sha256": "6129e4842294d2f7cbef7f74cda4f4457150fa9c642210659bffbdb51c092994",
+              "text_utf8_bytes": 8
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/makev.bat"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "makev.bat",
+              "text_sha256": "a88e99a66ab48dc1327a50fe18c0697266c46c247340a4b5d3793a5485cfc0b5",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/makev.bat"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 65.8125,
+                "x": 75,
+                "y": 1604.5
+              },
+              "tag": "a",
+              "text": "makev.bat",
+              "text_sha256": "a88e99a66ab48dc1327a50fe18c0697266c46c247340a4b5d3793a5485cfc0b5",
+              "text_utf8_bytes": 9
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/v.mod"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "v.mod",
+              "text_sha256": "b3ccc64c5354afb234353bedd086b2a80dd9ecc70edbf6f82376ce51c1a745ee",
+              "text_utf8_bytes": 5
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/v.mod"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 39.03125,
+                "x": 75,
+                "y": 1645.5
+              },
+              "tag": "a",
+              "text": "v.mod",
+              "text_sha256": "b3ccc64c5354afb234353bedd086b2a80dd9ecc70edbf6f82376ce51c1a745ee",
+              "text_utf8_bytes": 5
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/vself_speed.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "a",
+              "text": "vself_speed.md",
+              "text_sha256": "5f2c6fe169d02c2fbd57e4683b35fc24bc128944fb2583fc044ee9f6737bf82b",
+              "text_utf8_bytes": 14
+            },
+            {
+              "attributes": {
+                "href": "/vlang/v/blob/master/vself_speed.md"
+              },
+              "layout": [],
+              "rect": {
+                "height": 17,
+                "width": 102.375,
+                "x": 75,
+                "y": 1686.5
+              },
+              "tag": "a",
+              "text": "vself_speed.md",
+              "text_sha256": "5f2c6fe169d02c2fbd57e4683b35fc24bc128944fb2583fc044ee9f6737bf82b",
+              "text_utf8_bytes": 14
+            }
+          ],
+          "name": "fileLinks",
+          "selector": "tr.react-directory-row a[href*=\"/vlang/v/tree/\"], tr.react-directory-row a[href*=\"/vlang/v/blob/\"]"
+        },
+        {
+          "count": 1,
+          "elements": [
+            {
+              "attributes": {},
+              "layout": [],
+              "rect": {
+                "height": 144,
+                "width": 272,
+                "x": 720,
+                "y": 297
+              },
+              "tag": "p",
+              "text": "Simple, fast, safe, compiled language for developing maintainable software. Compiles itself in <1s with zero library dependencies. Supports automatic C => V translation. https://vlang.io",
+              "text_sha256": "4a6b44f60eebe8011c894b058ee856d6be5728c432eaf82360861971ad59817e",
+              "text_utf8_bytes": 186
+            }
+          ],
+          "name": "about",
+          "selector": "div[class*=\"HideWhenNarrow__\"] p[class*=\"description__\"]"
+        },
+        {
+          "count": 21,
+          "elements": [
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/platform-4ce65ae0bf273ce2.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/platform-4ce65ae0bf273ce2.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/platform-dark-ac89fbf373737ed3.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/platform-dark-ac89fbf373737ed3.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 127.96875,
+                "width": 204.765625,
+                "x": 16,
+                "y": 109
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/copilot-e2b89335a66dba00.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/copilot-e2b89335a66dba00.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/copilot-dark-2b28403b6080e898.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/copilot-dark-2b28403b6080e898.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 127.96875,
+                "width": 204.765625,
+                "x": 16,
+                "y": 268.96875
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/changelog-fd687bff072883b0.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/changelog-fd687bff072883b0.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/changelog-dark-b1c25ae971bd641b.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/changelog-dark-b1c25ae971bd641b.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 139.375,
+                "width": 223,
+                "x": 785,
+                "y": 109
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/universe-a98cd54821b27569.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/universe-a98cd54821b27569.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "",
+                "src": "https://github.githubassets.com/assets/universe-a98cd54821b27569.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.githubassets.com/assets/universe-a98cd54821b27569.png",
+                "model_present": true,
+                "natural_height": 300,
+                "natural_width": 480,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 139.375,
+                "width": 223,
+                "x": 785,
+                "y": 109
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "vlang",
+                "src": "https://avatars.githubusercontent.com/u/46413578?s=60&v=4"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://avatars.githubusercontent.com/u/46413578?s=60&v=4",
+                "model_present": true,
+                "natural_height": 60,
+                "natural_width": 60,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 24,
+                "width": 24,
+                "x": 32,
+                "y": 190
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "V logo",
+                "src": "https://raw.githubusercontent.com/vlang/v-logo/master/dist/v-logo.svg?sanitize=true"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://raw.githubusercontent.com/vlang/v-logo/master/dist/v-logo.svg?sanitize=true",
+                "model_present": true,
+                "natural_height": 500,
+                "natural_width": 500,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 80,
+                "width": 80,
+                "x": 316,
+                "y": 1813
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "Sponsor",
+                "src": "https://camo.githubusercontent.com/8a2a9f522e9dcb5fdd15e23f3fa20bbf01ac2d5ca99535ef5c80a350267022ed/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f73706f6e736f72732f6d65647665646e696b6f763f7374796c653d666c6174266c6f676f3d676974687562266c6f676f436f6c6f723d7768697465"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://camo.githubusercontent.com/8a2a9f522e9dcb5fdd15e23f3fa20bbf01ac2d5ca99535ef5c80a350267022ed/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f73706f6e736f72732f6d65647665646e696b6f763f7374796c653d666c6174266c6f676f3d676974687562266c6f676f436f6c6f723d7768697465",
+                "model_present": true,
+                "natural_height": 0,
+                "natural_width": 0,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 18,
+                "width": 60.484375,
+                "x": 225.140625,
+                "y": 2032.59375
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "Patreon",
+                "src": "https://camo.githubusercontent.com/7b94ea1b7abd4392cf43fdd60f6d40230ab91be950844e4d586b6d19296073d2/68747470733a2f2f696d672e736869656c64732e696f2f656e64706f696e742e7376673f75726c3d6874747073253341253246253246736869656c6473696f2d70617472656f6e2e76657263656c2e617070253246617069253346757365726e616d65253344766c616e6725323674797065253344706174726f6e73267374796c653d666c6174"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://camo.githubusercontent.com/7b94ea1b7abd4392cf43fdd60f6d40230ab91be950844e4d586b6d19296073d2/68747470733a2f2f696d672e736869656c64732e696f2f656e64706f696e742e7376673f75726c3d6874747073253341253246253246736869656c6473696f2d70617472656f6e2e76657263656c2e617070253246617069253346757365726e616d65253344766c616e6725323674797065253344706174726f6e73267374796c653d666c6174",
+                "model_present": true,
+                "natural_height": 0,
+                "natural_width": 0,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 18,
+                "width": 56.09375,
+                "x": 289.8125,
+                "y": 2032.59375
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "Discord",
+                "src": "https://camo.githubusercontent.com/27e2e9271c5ebc9b9565fd41e66e412f06b4614f9a36881e4a8037b3b95a15c2/68747470733a2f2f696d672e736869656c64732e696f2f646973636f72642f3539323130333634353833353832313036383f6c6162656c3d446973636f7264266c6f676f3d646973636f7264266c6f676f436f6c6f723d7768697465"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://camo.githubusercontent.com/27e2e9271c5ebc9b9565fd41e66e412f06b4614f9a36881e4a8037b3b95a15c2/68747470733a2f2f696d672e736869656c64732e696f2f646973636f72642f3539323130333634353833353832313036383f6c6162656c3d446973636f7264266c6f676f3d646973636f7264266c6f676f436f6c6f723d7768697465",
+                "model_present": true,
+                "natural_height": 0,
+                "natural_width": 0,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 18,
+                "width": 55.859375,
+                "x": 350.09375,
+                "y": 2032.59375
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "X",
+                "src": "https://camo.githubusercontent.com/ac261ea60863a0a48d3e5ed81cb1964aa813fb12d9d7e83bd04b4acde4285786/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f666f6c6c6f772d253430765f5f6c616e67756167652d3144413146323f6c6f676f3d78267374796c653d666c6174266c6f676f436f6c6f723d7768697465"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://camo.githubusercontent.com/ac261ea60863a0a48d3e5ed81cb1964aa813fb12d9d7e83bd04b4acde4285786/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f666f6c6c6f772d253430765f5f6c616e67756167652d3144413146323f6c6f676f3d78267374796c653d666c6174266c6f676f436f6c6f723d7768697465",
+                "model_present": true,
+                "natural_height": 0,
+                "natural_width": 0,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 18,
+                "width": 10.546875,
+                "x": 410.140625,
+                "y": 2032.59375
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "Modules",
+                "src": "https://camo.githubusercontent.com/fe385b348ac2d3e50e11ab90d7325b4b42feb434e9cfb456c14adfaeb26bdb81/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6d6f64756c65732d7265666572656e63652d3032376439633f6c6f676f3d76266c6f676f436f6c6f723d7768697465266c6f676f57696474683d3130"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://camo.githubusercontent.com/fe385b348ac2d3e50e11ab90d7325b4b42feb434e9cfb456c14adfaeb26bdb81/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6d6f64756c65732d7265666572656e63652d3032376439633f6c6f676f3d76266c6f676f436f6c6f723d7768697465266c6f676f57696474683d3130",
+                "model_present": true,
+                "natural_height": 0,
+                "natural_width": 0,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 18,
+                "width": 61.984375,
+                "x": 424.875,
+                "y": 2032.59375
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "tetris screenshot",
+                "src": "https://raw.githubusercontent.com/vlang/v/master/examples/tetris/screenshot.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://raw.githubusercontent.com/vlang/v/master/examples/tetris/screenshot.png",
+                "model_present": true,
+                "natural_height": 1068,
+                "natural_width": 624,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 513.453125,
+                "width": 300,
+                "x": 65,
+                "y": 11472.796875
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "V UI example screenshot",
+                "src": "https://raw.githubusercontent.com/vlang/ui/master/examples/screenshot.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://raw.githubusercontent.com/vlang/ui/master/examples/screenshot.png",
+                "model_present": true,
+                "natural_height": 1038,
+                "natural_width": 1624,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 371.984375,
+                "width": 582,
+                "x": 65,
+                "y": 13632
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "vab examples screenshot",
+                "src": "https://user-images.githubusercontent.com/768942/107622846-c13f3900-6c58-11eb-8a66-55db12979b73.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://user-images.githubusercontent.com/768942/107622846-c13f3900-6c58-11eb-8a66-55db12979b73.png",
+                "model_present": true,
+                "natural_height": 999,
+                "natural_width": 1644,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 353.65625,
+                "width": 582,
+                "x": 65,
+                "y": 14267.875
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "gitly screenshot",
+                "src": "https://user-images.githubusercontent.com/687996/85933714-b195fe80-b8da-11ea-9ddd-09cadc2103e4.png"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://user-images.githubusercontent.com/687996/85933714-b195fe80-b8da-11ea-9ddd-09cadc2103e4.png",
+                "model_present": true,
+                "natural_height": 2482,
+                "natural_width": 2606,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 554.296875,
+                "width": 582,
+                "x": 65,
+                "y": 14809.71875
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "vinix screenshot 1",
+                "src": "https://github.com/vlang/vinix/raw/main/screenshot0.png?raw=true"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.com/vlang/vinix/raw/main/screenshot0.png?raw=true",
+                "model_present": true,
+                "natural_height": 768,
+                "natural_width": 1024,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 436.5,
+                "width": 582,
+                "x": 65,
+                "y": 15552.203125
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            },
+            {
+              "attributes": {
+                "alt": "vinix screenshot 2",
+                "src": "https://github.com/vlang/vinix/raw/main/screenshot1.png?raw=true"
+              },
+              "image": {
+                "complete": true,
+                "current_src": "https://github.com/vlang/vinix/raw/main/screenshot1.png?raw=true",
+                "model_present": true,
+                "natural_height": 768,
+                "natural_width": 1024,
+                "paint_decoded": false,
+                "paint_height": 0,
+                "paint_width": 0
+              },
+              "layout": [],
+              "rect": {
+                "height": 436.5,
+                "width": 582,
+                "x": 65,
+                "y": 16010.703125
+              },
+              "tag": "img",
+              "text": "",
+              "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "text_utf8_bytes": 0
+            }
+          ],
+          "name": "images",
+          "selector": "img"
+        }
+      ],
+      "title": "GitHub - vlang/v: Simple, fast, safe, compiled language for developing maintainable software. Compiles itself in <1s with zero library dependencies. Supports automatic C => V translation. https://vlang.io \u00b7 GitHub",
+      "url": "https://github.com/vlang/v",
+      "viewport_height": 768,
+      "viewport_width": 1024,
+      "visibility": "visible"
+    }
+  },
+  "github_pixels": {
+    "exit": 0,
+    "comparisons": [
+      {
+        "reference": "historical",
+        "path": "Build/github-lazy-match-memo-resume-20261105-session4076/previous-github-document.png",
+        "dimensions": [
+          1024,
+          768
+        ],
+        "differing_pixels": 4544,
+        "max_channel_error": 77,
+        "mae": 0.21000374688042533,
+        "difference_bounds": [
+          761,
+          16,
+          1008,
+          52
+        ],
+        "reference_sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+        "current_sha256": "9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81",
+        "byte_identical": false
+      },
+      {
+        "reference": "preceding",
+        "path": "Build/github-lazy-match-memo-resume-20261105-session4076/github-after-lazy-memo-02/document.png",
+        "dimensions": [
+          1024,
+          768
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "mae": 0.0,
+        "difference_bounds": null,
+        "reference_sha256": "9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81",
+        "current_sha256": "9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81",
+        "byte_identical": true
+      }
+    ],
+    "historical_pixel_acceptance": false,
+    "references_replaced": false,
+    "tolerances_changed": false
+  },
+  "original_api_observations": 1,
+  "original_github_observations": 1,
+  "independent_navigation_owner_observations": 1,
+  "final_code_browser_checks_executed": true,
+  "final_production_validation_pending": false,
+  "historical_pixel_acceptance": false,
+  "historical_pixel_root_cause": "Unresolved; the same 4544 header-control differences exist in the preceding capture.",
+  "focused_tests_repeated": false,
+  "local_cohort_repeated": false,
+  "broad_suites_rerun": false,
+  "whole_page_instruction_credit": 0,
+  "matched_page_cohort": false,
+  "broad_baseline_reset": false,
+  "chrome_parity": false,
+  "new_production_build_requested": false,
+  "source_tree_copied": false,
+  "app_copied": false,
+  "user_gui_browser_stopped": false,
+  "limitations": [
+    "One ordinary GitHub diagnostic cannot isolate concurrent engine changes or establish a page saving. Both inclusive main-task scope counts remain separate; helper processes and outside services are excluded.",
+    "The GitHub capture retains one IndexedDB createIndex native exception and four unarchived CSS module 404s. Full hydration remains incomplete.",
+    "Current V/preallocation/native C-O3 single-unit production is separate from the C-O0/Boehm report-ablation and historical old-compiler/Boehm/C-O2 cohorts.",
+    "All 131 sealed inputs and 35 remaining live inputs match. Twelve removed publication staging paths prevent full historical-live revalidation; no such credit is claimed.",
+    "The unchanged historical GitHub reference still differs by 4544 pixels. Its reference and zero-difference tolerance are preserved; the preceding capture is reported separately, not substituted as acceptance."
+  ],
+  "durable_evidence": {
+    "exit": 0,
+    "archive": "docs/performance/raw/github-failed-stylesheets-completion-20261105.tar.gz",
+    "sha256": "bb8f3430036bbe01fdc16660c770862e178c5b1a695f493af086fcc22f5bb13a",
+    "bytes": 22768190,
+    "files": 207,
+    "read_back_verified": true,
+    "index": {
+      "run-guarded.py": "c87974d11f63be4ffcf9545284be78812146345fe9ec84de802b9b48b766a41e",
+      "completion-audit.json": "5db7cbeb6f54c6dfa5f39e9b9b9611aea29512db17b8f213924b70bd8b6a13f3",
+      "candidate-integration-terminal.json": "a791d06d71ad369f7bf6dc8947d36e0e2dbd456a1f00c1cf1d5d0b9b28b7ed89",
+      "run-github.py": "1c47e386b8bb404b55cdf41061bd1734658a8af52a6f4e6d0def66ebffd88696",
+      "run-navigation-owners.py": "f546f279fd53cce6359fae8ebdf366ecd922a49e67e4488d3244a8f86dc72b3f",
+      "focused-viewport-audit.json": "4b33701451c77c12345d9fbfccf7e4396f37f8f2f6466f737296ceb72ea1338d",
+      "candidate-availability.json": "94eba876170d3b5815bbb70a2f27a21f736b644f979c0a9c0e845159caecf51c",
+      "audit-production.py": "95a22c85dfc68ae3d3b10f35b16c96b4ec1c97a6e05dbe1b504a1f7a3168394e",
+      "run-candidate-integration.py": "ed5b6e694c8b2bb1944521793f7d6c56c7d3913eb5e9ec773354a51b08520d9b",
+      "github-guard.json": "6141ba58d057c846c4a4704a98c4e4dacc549af06ccc936dcbef249b91fa505b",
+      "navigation-owners-plan.json": "ea110c5f9abb0aae20234dc58488cdaac697abf30940a324005784d77a50b098",
+      "navigation-owners.html": "0799bf1cce23f9dff8f5d635cf3b34a3d8d05224ee27a8fa725668aba6455308",
+      "github-pixel-comparison.json": "9f93084a74852c1017e2d0390166af5330d869edd1f667e71fb83eb06065bf03",
+      "archive-completion.py": "e15c0aa3c50c7c4abe2df23001eec6671a77d30a6c67aa27ea999db40a5e160a",
+      "historical-diff.png": "ad7977ee19f3e0465e79b868558f9bbd3b9b326689c1c99bbcc15dc8ca94f715",
+      "production-availability.json": "fa31b3ab88e038ea32790f63db99620a8521852f1dcdafa33b0b65c14b564c22",
+      "candidate-integration-controller.log": "8e4bc3c5477a1bd7d356e22e72e258cbffdec2f760199a567ea384cebf32d255",
+      "github-controller.log": "3518d35ad762de8c3105f8b104a41f854f7e6875178e3c5a2bb46ada4017cf39",
+      "codesign-verification.json": "c032f1cb496874ed560ced954235a6653f9079d834766d35d60f038a5a97dfff",
+      "navigation-owners-terminal.json": "b0f0fc145533d3c31477e2e3d653570100dfd1c3315cb7f8a6e5e7427d23ddbc",
+      "production-function-audit.json": "c2c0050d4db6acb983908e18561447d875bb89166faab2557d32782bf076efe3",
+      "navigation-owners-guard.json": "0f81d914b44b5fe04f4ba0720930bc1e0355a6888fcd40f08c823e792bc93dc0",
+      "production-verified-functions.c.txt": "9b858b30f17c60481b41602d6c458dfa64263c07dbeab758c0941805b8c71440",
+      "navigation-owners-controller.log": "1e2418048b252848bd6332e19b82b3ce5c7cf8a809c59e8e47d5cf41b8095034",
+      "audit-completion.py": "7915b2f1d42c467466234cdad39e730a44c0e7171f587a8a6c1f48c5e348bc82",
+      "github-terminal.json": "5b9e6fbdb783196a3ccb035f16058ea171bb6cd757cbb55cdf8deaf9fe5c46bc",
+      "resumed-plan.json": "5055db656ed53168d8a47c1dcedf441c8a24530d1388f0996761b69b1b96843f",
+      "completed-build-audit.json": "4de700d164e25b66c8acec14a732e1815e96934fdd5bb491414d1baf7d199413",
+      "candidate-integration-guard.json": "ae3a24ffff2f2481ffd3427e5f30a974e3581317ba3e964445d9db1715ee0829",
+      "continuation.json": "7327b0bb91946d5197157e5b9f8b46979734f6df0662c77f36fec1137fa8b798",
+      "candidate-integration-01/document.png": "5d95a4141fffd5a18b33724ab99c03337c033404d38118f80de9c1b793ca317d",
+      "candidate-integration-01/browser.log": "9ef15a70404753acc617d9a967b76cf7d7d2ca3fef02ccf122fcb5b56adb65e1",
+      "candidate-integration-01/audit.json": "f2b7fd63dfde95efab3bbbaa6ae26a5b6d3ed6c1daddb846f00fdfccde65acaf",
+      "candidate-integration-01/plan.json": "bfad1dd1bc651d3ad0a7c628d484d08af8e12c372d449cb5d24cc83cff033dec",
+      "candidate-integration-01/result.json": "5cb1edbbe3feb854b2dc072b25ac494e1873557ebd20b1521e4d87a03dbf4bbb",
+      "candidate-integration-01/audit-config.json": "02edc79bd592077d50f954acf13affbaa8fd659fb47f0748e349278a5e1e7fc4",
+      "github-after-failed-stylesheet-01/document.png": "9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81",
+      "github-after-failed-stylesheet-01/browser.log": "0e2337a6d44832f68e76822f8029c540c6bc163bc801139c7aef85ea96325e05",
+      "github-after-failed-stylesheet-01/audit.json": "e7174a343d5383592c1270431c15088778915c6d90048afbc46d211bd85d23d8",
+      "github-after-failed-stylesheet-01/plan.json": "30b5700b82ea17c781651e5bada936227f3edf9dbee7e5cbbf438e6e8e771228",
+      "github-after-failed-stylesheet-01/result.json": "998efb43f0ff5cff7fccfa4e03994bcd20e605f8dbe572319df6f92b76b19197",
+      "github-after-failed-stylesheet-01/guard-check.log": "15040ea095b08cd5949b7508699c86afb27674f560ac1143df2782b4f4d85cc6",
+      "github-after-failed-stylesheet-01/source-contract.json": "f9d757d278a021247e5849f7640033bf5b77cdf2a970a01a2d7883b5bd36d170",
+      "github-after-failed-stylesheet-01/guard-build-0.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "github-after-failed-stylesheet-01/guard-build-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "github-after-failed-stylesheet-01/audit-config.json": "c0bb6f97b936f95af1b3108b9361507dca01ef4e17fb22f77f457237c4a243d6",
+      "github-after-failed-stylesheet-01/network-deny.dylib": "403adcad3a31c9a29b365aedbd1b66d3594f7c38dad2ce168cf3962a320f75b9",
+      "github-after-failed-stylesheet-01/replay/openssl.log": "7aa785a46d27fd6b96e1932bb455e5a62d344d7ad412184a6c7c0cb7ffbe4fb4",
+      "github-after-failed-stylesheet-01/replay/cert.pem": "5e1c57dfb8868b48dc3a5117385ab0b4d45a2a4fd3819960355d2668a72a05bd",
+      "github-after-failed-stylesheet-01/replay/requests.jsonl": "7406d1778a505c417d54c7f4dc8fc654211d9de92dbcf50672fcb75fe79d8eca",
+      "github-after-failed-stylesheet-01/replay/ready.json": "3274821f8e66901fa14734784e49d6c8743c2c933b94caef1dfca9a589b1a987",
+      "navigation-owners-01/document.png": "6871a8878c8794e6e5c73ffa22c922c5d4c7c52712b7e31978bebe1aab8bcd60",
+      "navigation-owners-01/browser.log": "d1e51cfb198101c1cc2be61692639c57429f8956b481ca0e31e44c00a724c2e8",
+      "navigation-owners-01/audit.json": "0a67b409ce9b2b44783d9b19127db9733dfd5801275eb32462af7afb1a1b11ac",
+      "navigation-owners-01/plan.json": "41308305a92060a91a95f8cbb1015bbbae24b8514e86be15232472a812870926",
+      "navigation-owners-01/result.json": "91411825b09aef573144195eb643bc58ac13581a9e11ffbc10708dc8263fc2ef",
+      "navigation-owners-01/audit-config.json": "02edc79bd592077d50f954acf13affbaa8fd659fb47f0748e349278a5e1e7fc4",
+      "production/result.json": "a2fea5cfbde277b5ea7626e65ca8e404c396fa5be5ce5824fae0e7529ec36a62",
+      "production/inputs-before.json": "586359dabdf31d770ce07100999bd32694612f3a23918e3e168cb98cc1c708f8",
+      "production/frozen-compile.json": "63dbc5d9e91204e7842794c6dbf148aa15fc5058238bd9b726badb566dd7b3d3",
+      "production/c-compile.json": "52e077e11a4d35c4b665656d206f1392584b58f58619f75b570b2b5d837bab41",
+      "production/build-script.json": "93d90c3b56130f53fb36b90ad96f03ce3bf39a7f87e1ec7182d2502c5e73ba1a",
+      "production/memory.json": "8a5e81cf191a9be52fae4d2311dbd370dc39d8a48636dcd0acb4c1df974ac664",
+      "production/smoke-memory.json": "a0a19fb02efe13757f653847e74f00c7365ac957f18958e049be4fded18e77f8",
+      "production/build.log": "9768b15583f14a9c71214132f948046e3941902d47b5d71500508343c5e375b9",
+      "production/smoke.log": "9bcbe411a627a1b72903249f818994870d6a3ef03c94e883d63a9a3dc4ecfed0",
+      "production/generated/Vox.c": "79564b4af7a0a81955dc33db99a2f71403e20941e166ebcb94beb557213f4a64",
+      "production/generated/Vox.flags": "3acd85627d4f43c0dc0820379a1ab75b37eddc1877fe8216c6989829aa56633d",
+      "production/preprocess-commands.json": "f8a4855d89c94efb63c4d0fe44a7e67e9ed58a7e235ad4184e2441477191bf5b",
+      "production/frozen-compiler-inputs/link-298-ssl_tls12_client_o_821205256db408d5.o": "317d6610a0c4f70ae98b3a3da86b1f26ce7ca17ce165de695b31197b0af22485",
+      "production/frozen-compiler-inputs/link-355-Hacl_Curve25519_joined_o_5b8b36798c3700de.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-292-ssl_msg_o_dddea1138464bc42.o": "7f7cef536b1ea7c9454fd085b0bcfba13fedd090d2674917bccad06bb7408d92",
+      "production/frozen-compiler-inputs/link-148-memory_buffer_alloc_o_cd3f60c12d75dbfa.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-70-chacha20_o_ff7035192e85a29f.o": "c4779d5f341ff784275f0c1ffb5551e08ef42f80c823e3f479979453704652f6",
+      "production/frozen-compiler-inputs/link-373-libharfbuzz.a": "1564a4eba00b716cbb84b37ba32fd0c749a4b0cb571d9dd8d298d313e2d5e446",
+      "production/frozen-compiler-inputs/link-25-free_memory_darwin_o_4544f1c3db579229.o": "d59e6e9efb99c29c4ff7d5b67c13000db4a9a09eddea70665863a687e2f22a8b",
+      "production/frozen-compiler-inputs/link-319-threading_o_bf82605c0ec65450.o": "d2d013809120e6bd14379ea3b257f607f279f12a3951d4caca6d41d1452a5ee8",
+      "production/frozen-compiler-inputs/link-109-ecp_o_3ec3ad5919cf8afd.o": "3e9d6397339fbcbc4282a8a141264a0097ac8368e930b4589f68ba637ce14f19",
+      "production/frozen-compiler-inputs/link-307-ssl_tls13_generic_o_f164c3fc0ad40562.o": "bf2d4b38a82b114a4087d3784a699df6cbf1f73084cc0ffea99c02274a04ff3a",
+      "production/frozen-compiler-inputs/link-262-rsa_o_13ca8638808e165d.o": "e585db68d79bc2f76c9e7914d4c549185d57b202bf4b94bf676d80beeea06f94",
+      "production/frozen-compiler-inputs/link-118-entropy_o_5215773830b573f1.o": "76c4ed44d462a62427661946c298cb7641334c807b5c69c09bbb22e54fb4a4b6",
+      "production/frozen-compiler-inputs/link-331-x509_o_1a9f1a0b14d5d6b0.o": "049fd47866576ce9c7013afd41aa5733320ed37f7848906bb4d34b8dbe4263e6",
+      "production/frozen-compiler-inputs/link-31-aesce_o_e5092cdbc46d5df.o": "285a7b2b045782e1c1b9689511e9ea41af36bb4d9b2a6786a542ff6d1a4176c0",
+      "production/frozen-compiler-inputs/link-214-psa_crypto_client_o_214a9d08670e0cbd.o": "7aba8183ac332729cf35b8cb3ee8384f1fe404cd274cbaf117a99f1d687f0956",
+      "production/frozen-compiler-inputs/link-55-bignum_mod_o_3c6bb41846cd9f26.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-343-x509_csr_o_97c1fd613b513799.o": "abdf52cb233065b3cf408a122b04272b14c2b2a0b3488b79a7f0a4d13093b78d",
+      "production/frozen-compiler-inputs/link-265-sha1_o_e0617aaf81ee1ba8.o": "0e9023d517fefba7ad7302c24ee54f431c3a20170eb9f1835d81000eb7f3e762",
+      "production/frozen-compiler-inputs/link-151-mps_reader_o_7c45975629b0d555.o": "d3e42e9182068bd398b7ba6204d8fc1df75aef0ca9124a20458269d6804bdecf",
+      "production/frozen-compiler-inputs/link-238-psa_crypto_rsa_o_3bde38621f782da5.o": "2342b69f48587266aa388a13d9301eec2c760d9ae12af60367f4fd794744aa0d",
+      "production/frozen-compiler-inputs/link-274-sha512_o_157b03687d28ffc6.o": "cc85c3230276f5b6895bd9fc84ff6ea3656e5ae785b980764662b1ab998b89e9",
+      "production/frozen-compiler-inputs/link-17-bitmap_export.o": "6c2e3be1044ad35616ada677eeede70b9a2054a0bc06d4293192508fbade42cd",
+      "production/frozen-compiler-inputs/link-14-stbi_o_3fa3e9a0aacf4b79.o": "f8ee09a831d72cb2740bf68f59be755827fa9a7a1bae35c59248273f0f8ebbd8",
+      "production/frozen-compiler-inputs/link-67-ccm_o_91d64c05f5e3b661.o": "6f7bd96381ba49002a7355852a4f4d4f8689b13561cd679a21ad456359f1e99f",
+      "production/frozen-compiler-inputs/link-244-psa_crypto_slot_management_o_533e6bb70209823d.o": "7f43f9151304f78b66017cb5e31751f81f085217b13636be9700f610427673e9",
+      "production/frozen-compiler-inputs/link-226-psa_crypto_hash_o_706f6b0d3c179571.o": "caab15f386a557746f1ef45026f788863b9fd05ad058f8ccbac906f5527017e7",
+      "production/frozen-compiler-inputs/link-337-x509_crl_o_60055c653a2ecee3.o": "e66a07dc59b7526312318424dd2af0232381e59975275774e32b0ef9210aae2d",
+      "production/frozen-compiler-inputs/link-19-font_typeface.o": "f8c1c4fc219ed84f30819446b55cbb7b847ca59db2d5cae0254c0374d490cbcf",
+      "production/frozen-compiler-inputs/link-352-x509write_csr_o_6c7a8883de97963b.o": "5b18e1446b944364e4d447389d5c7bbf0fda6b38863cf279d33bca9f245cc742",
+      "production/frozen-compiler-inputs/link-91-debug_o_6e0fac3ca79125b4.o": "7b42b9d9b82588310003d055d4f0613cb2f84e292572671382ce27e6d7eb667e",
+      "production/frozen-compiler-inputs/link-15-thread_helper_o_496ceb60f9885c34.o": "89255a387f320b6cbd90e40e170a1bf4754a71b7035a0475143f0de373d8d201",
+      "production/frozen-compiler-inputs/link-178-pkcs5_o_1c5a029b2b5445a4.o": "e90cb189be68a9ddf7fd4de7bef32fb9059b2606b79a5660df846cd68520d84b",
+      "production/frozen-compiler-inputs/link-346-x509write_o_b026d51be469eea8.o": "e798b6943ca4e2458066c9b2ea75672cd069e84890b02f14d42101dfbd277332",
+      "production/frozen-compiler-inputs/link-88-ctr_drbg_o_22724c773895a389.o": "39eeb00ea63d3926583d037373a6ce60d9e491ed854e1c1c7108ea11b707aa5f",
+      "production/frozen-compiler-inputs/1-module_loader_darwin.m.i": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+      "production/frozen-compiler-inputs/link-190-pk_wrap_o_d753c77972a09221.o": "98a7c113378292d3d1542f37fde783cffe508c133c06c2093227e081cbc17a81",
+      "production/frozen-compiler-inputs/link-259-rsa_alt_helpers_o_48a7ba936aff083f.o": "1fbb713ef0e6e6f74e1d7d25fa0a05b582bc52b6bbbea16da9a35f2b6511f17a",
+      "production/frozen-compiler-inputs/link-184-pk_ecc_o_67bbeaea8d93ebcc.o": "56c15739ce73eb7f7fd45e9da87c9f8a3649d0d682445ff5fd62eb1adcf1870a",
+      "production/frozen-compiler-inputs/link-103-ecdsa_o_3ebaac718ebfc25a.o": "1db1c067f9433d58ae2acd49ca0526f68845a391e58e6ab8af8eacc8de2388fd",
+      "production/frozen-compiler-inputs/link-157-net_sockets_o_407f167488bb1ed7.o": "01e4d95d4a949a50cea923be6336c905abbc64ef86256490717cf80c5ac631f3",
+      "production/frozen-compiler-inputs/link-166-padlock_o_f06c1f639143f2f7.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-202-poly1305_o_4fc6bdeb4f19d600.o": "e7510e83008edc0b2b6e2e9ec18ac056a695c05c0d1b6873dfef22e25d0bb703",
+      "production/frozen-compiler-inputs/link-217-psa_crypto_driver_wrappers_no_static_o_541d25115d0ed2cf.o": "18e17f76f118c895918f7325590d4370abc65d5a01b042fa8a5951b27f8d44a4",
+      "production/frozen-compiler-inputs/link-289-ssl_debug_helpers_generated_o_f648ab21299c9d81.o": "09c8edd680c261939ecb7a35a6cf4de7a44a0c3495e43d7b190f8aa926991fbc",
+      "production/frozen-compiler-inputs/link-199-platform_util_o_14439c4604023dd3.o": "eb734c84d62625fe02dafcd866f05c9ea13251b00f2e718e795ea3cad466aac9",
+      "production/frozen-compiler-inputs/link-220-psa_crypto_ecp_o_1ee6f1378c4d4e9f.o": "06f46462f6d726315a32b757356f6e5c2d4985c900dc03a110b6ad84d2d00b2f",
+      "production/frozen-compiler-inputs/link-301-ssl_tls12_server_o_dca4bb1562261efe.o": "207e1935b91806cd6eb999a984ea4ad36b335ba2e6a5b99e45836a71d0d0d24f",
+      "production/frozen-compiler-inputs/link-325-version_o_d46542e797932faf.o": "96c2b111e39c76f0b7b90e428ddaa277d342b38da31288ac5b1636394665289b",
+      "production/frozen-compiler-inputs/link-160-nist_kw_o_d9e17c8f9868978d.o": "418989f3302b03dcdc1c3a865688226357184294a20d8784172870640d5ed529",
+      "production/frozen-compiler-inputs/link-49-bignum_o_c736d1fc5f372ff.o": "5a9049c29beb5a1cb49da370e1b4448f813236a17b0ff02172a0f34c0d0ddb0f",
+      "production/frozen-compiler-inputs/link-16-woff2_o_43f7484539f8ac4b.o": "223742cc76899860503a59606ad045e1de4e90deba0fa6d880cf5d99e41af211",
+      "production/frozen-compiler-inputs/link-11-worker_transport_native_o_93b36eb2a63e9aa4.o": "aee513073a007f04382e8f7b8034565aa81399f9ea464018081f9333e8417098",
+      "production/frozen-compiler-inputs/link-322-timing_o_7632619ad673bdf9.o": "9fe568f92ccd6b4002fb499ce62862a7a573327ef64c5186b114d0f7d143be12",
+      "production/frozen-compiler-inputs/link-85-constant_time_o_e06c96cd553e8b6e.o": "2cf36acfdd828d8121739f882b5d132ffcec3674b063c754c03831e7dc063405",
+      "production/frozen-compiler-inputs/link-82-cmac_o_bb12db7506ee20f1.o": "f8aeb02f296a865ff38bbec996412498c1b7e6d4c5d3c077ab570c796c3f99b9",
+      "production/frozen-compiler-inputs/link-175-pkcs12_o_9f52e4e0ff1d699f.o": "2354a3c4391f9141163ae82048d244ca634995080efbcfc655d3ef21101fab98",
+      "production/frozen-compiler-inputs/link-229-psa_crypto_mac_o_6a288aa74f001665.o": "2809a9cefd170ffe18ebbff49eae7f8568979f60d5a16bc5af2a5566b433f46f",
+      "production/frozen-compiler-inputs/link-232-psa_crypto_pake_o_81d8f96819bf26da.o": "d9651be61a7a71fd210a6867fc8103cc7e51f2812daf3ff7d8e09e5e1a71be45",
+      "production/frozen-compiler-inputs/link-61-block_cipher_o_b00a644bcd86dbeb.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-76-cipher_o_f1711c7f32af09af.o": "02ec2a39d85812f9038d7500d2d3f88b225aad558f7934f6d68e24aad9ccad38",
+      "production/frozen-compiler-inputs/link-106-ecjpake_o_bcc5530c8594340d.o": "45aa1baf0502b66f00d6fb93882121c4b1993855244e277562fce3ac23760956",
+      "production/frozen-compiler-inputs/link-241-psa_crypto_se_o_474c315c05bcb893.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-247-psa_crypto_storage_o_4ffe940eed5348ae.o": "738de67326e4c6bc70fe49179959eecde42748765de4bfc69ab215f95ee82a34",
+      "production/frozen-compiler-inputs/link-328-version_features_o_f5d8245507842203.o": "696b516c4b9f6d04c8bbeee8644813fa573d980ee22eb9505f000161636fb87e",
+      "production/frozen-compiler-inputs/link-172-pk_o_89922be29d7a1e8d.o": "238f7e2d42cc775606d3492487e7802965687763baabdb61aa41c3cb1f999513",
+      "production/frozen-compiler-inputs/link-142-md5_o_bf7a1bba7b5907a2.o": "fb49330eec17004888c490c51b75357ee6a601aebd03aae238964a7610267ba3",
+      "production/frozen-compiler-inputs/link-316-ssl_tls_o_68dae7c23a1ded41.o": "94ceb9511cf4f24cb8e92ad06c870188235e94a8c06247c2d80eb5f4922f8f4f",
+      "production/frozen-compiler-inputs/link-286-ssl_cookie_o_1a5dce99c29985cd.o": "ce100a78519daaa9262c4af5f63aeb20204c0f1d17b9aadddc0356ef205c1b3d",
+      "production/frozen-compiler-inputs/link-268-sha256_o_e16585af6114a7c8.o": "fe18b4c34a27dff9ab1e551ec51f02b2f0e01ed1de12db16236eda3e185d0a6a",
+      "production/frozen-compiler-inputs/link-64-camellia_o_e8f1bf542313d009.o": "ab0422a712f43660024a4c9b24c6b52e3be4b70279b5672c10398e96d50465d4",
+      "production/frozen-compiler-inputs/link-187-pkparse_o_70c5bcd428ce1537.o": "c9c83c70ba76cbb3589219c47503372a506a7123afda6b2049beb7c8dc465399",
+      "production/frozen-compiler-inputs/link-37-aria_o_feda0a8e40c9a29d.o": "a49db341ae1cc7a10be8e5093fb030d1e2bc4d7fdac37bd6dcd49505bda82cdb",
+      "production/frozen-compiler-inputs/link-193-pkwrite_o_b6106793110b5422.o": "e9c01f5cf9f9151a6d8fbd162434fa5050229ce02c89e62a69ee69eec34e4b95",
+      "production/frozen-compiler-inputs/link-40-asn1parse_o_1a766f326a2fa75f.o": "b4bc57b7478cce9f3b8b375f85f11a3c316fdb0623f2e890c60ff794ab440247",
+      "production/frozen-compiler-inputs/link-223-psa_crypto_ffdh_o_f8a1366e15c50acf.o": "2a43be83a8ca8bba41b0e3186993df23d5afda22da585e4aaad44b1bdcad1aa6",
+      "production/frozen-compiler-inputs/link-97-dhm_o_567427f48eafb2da.o": "e23f7362185641e06f895d83838a674233029e7a7095a6d41674810b03fbe814",
+      "production/frozen-compiler-inputs/link-205-psa_crypto_aead_o_b76100429602010.o": "1816cf7d93b38671e7f5c9b850895b8d9de97b7e99d1a661d6a7e554215982e3",
+      "production/frozen-compiler-inputs/link-73-chachapoly_o_5aba1b240bf0c128.o": "ad4f056d85972dbc1712bf717548c054e8a24dcd30892f24c05a7ac93aa03dda",
+      "production/frozen-compiler-inputs/link-313-ssl_tls13_server_o_db898b7043e067a5.o": "6cc3b0a20107da9661089f8de286a14953794b0b838e7a4dd390876b0496a260",
+      "production/frozen-compiler-inputs/link-271-sha3_o_2f6cec4b2ce13304.o": "4df4b921aca15fbc61ce143d561a6f483eb52204e1b324e56ae07a199eb8dc1a",
+      "production/frozen-compiler-inputs/link-10-execute_capture_nix_o_dd01c2331facbf3c.o": "2f1f56f640fe44c6f2206d8e727bcfede1590a7dcae41005dd3af3e196993309",
+      "production/frozen-compiler-inputs/link-130-hkdf_o_df6e9e4402bdd932.o": "a5ecd760a4b33437407e4d60a29b97ddaf44a8bad1eb0bdeb32dd65decd75d76",
+      "production/frozen-compiler-inputs/link-121-entropy_poll_o_d8827d8bbce4f704.o": "a124325e893eee4e779a5c21e057f6c14c282bc37de8fe03ae6c89dcd6d00337",
+      "production/frozen-compiler-inputs/link-283-ssl_client_o_df97b2b99d1455c9.o": "b9e94d7c702ebb069d4a3b2588b00b663cdff2442a7456fbf40d42558771df06",
+      "production/frozen-compiler-inputs/link-154-mps_trace_o_b7671f278c9a3639.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-169-pem_o_c3c6ff808a93305a.o": "8cc0873c7dce7e1a044b56bbc1fe398638355b707e64a09123c86abe86561b62",
+      "production/frozen-compiler-inputs/link-28-aes_o_4ff0ffb2da62906c.o": "8b1eb899dd3f6b79fbe2078fd59e6562184b99ae90982f112fc6f896e92e67fc",
+      "production/frozen-compiler-inputs/link-18-canvas_raster.o": "0b0f6a53f518949e3673560c76993590c3aeab5f5601973d37bcb91dc68e8bac",
+      "production/frozen-compiler-inputs/link-250-psa_its_file_o_699afcd5c9051736.o": "419c4776f9576475d41630aa65b99ef32fefda7f1686c39a14696d555af37d9b",
+      "production/frozen-compiler-inputs/link-136-lmots_o_72d8ad821bd62f3b.o": "18a210af4963b5c944861a351479657186f9498ec6bbd499f004e7aadd0a8de0",
+      "production/frozen-compiler-inputs/link-208-psa_crypto_o_6f76c15b9acf6330.o": "d1a2a0dd7a2ed4868a23ff5c40812b478ccff452e11e949892a006bc3da3b7d2",
+      "production/frozen-compiler-inputs/link-145-md_o_4cfb321c516ea26a.o": "862d0dd42e13c58b513f8560b746db976608c136412c8300a4421d3dda9bac87",
+      "production/frozen-compiler-inputs/link-13-unicode_case_mapping_o_15ea7672f868641c.o": "ac5364f9cf870548b3862a847e148d5b19c42800b2fd4ef327065263869bc23f",
+      "production/frozen-compiler-inputs/link-235-psa_crypto_random_o_7f9f3b0a07978ca7.o": "3b194030656528f4e27f926cd047bc42090e71ed56733e3ca94b998dc9ea3df2",
+      "production/frozen-compiler-inputs/link-310-ssl_tls13_keys_o_aad5409ba3da9dfd.o": "3d02ea6a2f30539e57f5654b6476dd6a975c5afa1e1de01b1ec360a6fee4dc29",
+      "production/frozen-compiler-inputs/link-79-cipher_wrap_o_dc75041352f16002.o": "885135a851c72b3c0b37dc36463eff343cd8b7ee5a538b3fd3a4ef2d4554748b",
+      "production/frozen-compiler-inputs/link-124-error_o_d8272a56209d79c8.o": "42ccd4f7d4a390c7ced5b37f11d2a9ddcb7c97fc157b04f7582c8cb2718b9529",
+      "production/frozen-compiler-inputs/link-277-ssl_cache_o_2b0aba76d8181846.o": "3baf9520a6c381d7663a0e8f8a415ad524c4924b560a0bb4d0c9f3ffd2bd8f89",
+      "production/frozen-compiler-inputs/2-fontstash_impl.c.i": "c3e17310a36c153ab702d2f16e59879709c7da42d045696f803d8d1ea6117c7c",
+      "production/frozen-compiler-inputs/link-100-ecdh_o_7c69b33bb0f5e63.o": "79ee41aab73ab93b80cb68819f4bfd62ee42cf52d3062b8629a0d67282acfe2c",
+      "production/frozen-compiler-inputs/link-211-psa_crypto_cipher_o_e834717a65e5a788.o": "eacb4f275f8a52e856b6ad8808d4a4beb61785f05167b85b947e483b8236d524",
+      "production/frozen-compiler-inputs/link-9-segfault_handler_nix_o_b154fef02baefbcb.o": "72445aa67b6f9566d2e240f7b430f3fd08474b6ac9d66cc3eef2f892143af4a8",
+      "production/frozen-compiler-inputs/link-133-hmac_drbg_o_98bd9ade97a7a41e.o": "aeb66577763ea3e5e071fc740118d8ecceb6983c64b0a936259cbf946db9e36c",
+      "production/frozen-compiler-inputs/link-334-x509_create_o_674a6b68b195edc6.o": "4f3bd21c619d0a6e43354dbdc6ff831e83a6fd0aadefc116a7eb7eb0b91883e5",
+      "production/frozen-compiler-inputs/link-349-x509write_crt_o_61909c56bec3bbe.o": "c8ee04288a1639e1a141ab9c3552bc1c9c84d2b28344adec2347d368c4ae6fa0",
+      "production/frozen-compiler-inputs/link-280-ssl_ciphersuites_o_eb683f22a6946126.o": "abb40a9e569f3d96d077463b0446d0c120f0f6f1884a02f16552e989b9895910",
+      "production/frozen-compiler-inputs/link-304-ssl_tls13_client_o_2907607c0096afb1.o": "62ad45a4ed33a208abc3d83b0824782b36fbb70b3fdd91c0a65b0a1ce7bdf503",
+      "production/frozen-compiler-inputs/link-46-base64_o_a3a47c53d872ffca.o": "74f86f7e26e1d55f3798a0b63c935f2d217fcaff1e13e172a5b3dfb8e1d8c4f2",
+      "production/frozen-compiler-inputs/link-409-libregex_native.a": "2c887fba2da5a1963e149f30a9b8e2cfb40d3075a9f7659e0c24976d0adba700",
+      "production/frozen-compiler-inputs/link-358-everest_o_e4d7ca6d4b10e837.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-34-aesni_o_a1094dd9149646fb.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-20-shadow_raster.o": "a138290da00b83d5cce0f021ca17fbce83629f28f8db5d18a3e8a462438eb4ea",
+      "production/frozen-compiler-inputs/link-340-x509_crt_o_20e6ac2ae1d69115.o": "c010a980b27f9f9157471b55ae50a7bf7a5f2d296bd60156eeb4feddc717599b",
+      "production/frozen-compiler-inputs/link-253-psa_util_o_51f43e3552e259c0.o": "ef755eac5aa3d6b1ab2ecadad16d575bd3624423c3c1a0edfcee91b44a92b293",
+      "production/frozen-compiler-inputs/link-112-ecp_curves_o_2bd3c395c62e359a.o": "0a00f0c900b1339db06332fa54cba2044eefc9e07be2289040acc2ef0dc3f4e0",
+      "production/frozen-compiler-inputs/link-181-pkcs7_o_ac166a19886a9b8.o": "8f16632b64bb601540ff24ffa27e65ff8593391633c10157fcfa59f01f28bdfb",
+      "production/frozen-compiler-inputs/link-52-bignum_core_o_922edae9f462bd1e.o": "688bf9f7577a68a557148140d94d9a0906c15096d52133d4efc4c01bb141acf5",
+      "production/frozen-compiler-inputs/link-58-bignum_mod_raw_o_cc28772251362951.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-115-ecp_curves_new_o_ce6fb45d3cf69f8e.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-43-asn1write_o_c38bb65ee355284.o": "4dc8668533a6a3c15aae3a71b8600d0bdc7f4ca41b54a6ec8d320bdcf2a6311d",
+      "production/frozen-compiler-inputs/0-Vox.c.i": "2d7037c96353d6f926c57f545561ed9de4753e6e1cac6740ea0cadcf65fd09fe",
+      "production/frozen-compiler-inputs/link-256-ripemd160_o_1f95b7b1ba977b6d.o": "5a33849e26c0d7fb12aa3e6b78aba422cb9e0589e05b96597e378da6897ba62a",
+      "production/frozen-compiler-inputs/link-127-gcm_o_45f6b1693d74e99c.o": "909a135a2dc45f77870081340741a9a9f428de38c4e1875ed93cc790726c8f29",
+      "production/frozen-compiler-inputs/link-139-lms_o_7aa40c7c2f92e9c2.o": "e5314fe374e21bc923dd582eb11ad4389d4cfca53556dd8eb08dbb7891fd0ab4",
+      "production/frozen-compiler-inputs/link-94-des_o_baff42e3098f4c28.o": "d420b6f04a8b3ec7082403334e713b291d64cfe91e646a7f692639ab9fe39516",
+      "production/frozen-compiler-inputs/link-361-x25519_o_324ec9fa1ca5358d.o": "620460355df8fbe949180b2612f48b1a84c5c6eeaff53f8427f8a8154927d4dd",
+      "production/frozen-compiler-inputs/link-163-oid_o_cfee78bd91e1d5a0.o": "b9a94b2de5ce843762649bfd3a2a5116fab1055b4d7cbbfe58a511b681244c9a",
+      "production/frozen-compiler-inputs/link-196-platform_o_a535f5bd3fbf5a08.o": "422c8f9c9ce211254ce6b93c9e145588e120de9b4fdf01a0994a5c345c3aa8f5",
+      "production/frozen-compiler-inputs/link-295-ssl_ticket_o_a2b526b38fb5594a.o": "e52038f38db75a081f4ae6ed0b2e831133b3c2d29a3787e28afff02094558b6b",
+      "inputs/integration-v2.html": "c34b5c1d8a410debba329563ca9f04cd537d7145ca559f8342f8b57e5b89cfe8",
+      "prior/baseline-integration-v3-terminal.json": "6dea77643a42007036f022e7402693c7f28c5d677bc29a5c2771d80e2e7bf8f7",
+      "prior/baseline-integration-v3-guard.json": "e8401a342f19a0e56c05c6e4542301388cb6629d4f16bd0f1847c3d5c4a00f30",
+      "prior/baseline-integration-03/plan.json": "7ca8954be0704bd2046f937231cdfd1b4b2eb8936b35d22e795fb201d7b884eb",
+      "prior/baseline-integration-03/result.json": "7f4150bb97ca6a321e3dbf0d497ff96799049b269f907809b95a211f82368b59",
+      "prior/baseline-integration-03/audit.json": "7260c2d453f42d778e47e6ac7268a93715eeb20659bcd2a8aec998fb89fb65a5",
+      "prior/baseline-integration-03/document.png": "5d95a4141fffd5a18b33724ab99c03337c033404d38118f80de9c1b793ca317d",
+      "references/historical-github.png": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+      "references/preceding-github.png": "9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81"
+    },
+    "policy": "Full completed production generated/preprocessed C and frozen native inputs, receipts, raw commands/exits/counters, all three fresh captures, both unchanged references and original API baseline. Original local cohort remains in the unchanged prior archive. No app-bundle, canonical-tool or source-tree snapshot."
+  },
+  "archive_guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/archive-completion.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 146243584,
+    "elapsed_seconds": 15.192870334,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive_terminal": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+      "--lock",
+      "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/archive-job.lock",
+      "--report",
+      "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/archive-job-guard.json",
+      "--limit-gib",
+      "3",
+      "--timeout",
+      "240",
+      "--",
+      "python3",
+      "/Users/alex/code/vox2/Build/github-failed-stylesheet-completion-20261105-session4076/archive-completion.py"
+    ],
+    "actual_exit": 0
+  }
+}
