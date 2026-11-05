@@ -4821,6 +4821,8 @@ static int native_try_gpu_css_filter_image(CGContextRef destination, CGImageRef 
 }
 
 void native_end_css_filter_layer(void) {
+	BOOL timing = getenv("VOX_CSS_FILTER_STAGE_TIMES") != NULL;
+	double timing_start = timing ? CACurrentMediaTime() : 0;
 	if (native_css_filter_overflow_depth > 0) {
 		native_css_filter_overflow_depth--;
 		return;
@@ -4843,6 +4845,7 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
+	double timing_access = timing ? CACurrentMediaTime() : 0;
     if (native_css_filter_visible_input_is_empty(&layer)) {
         [NSGraphicsContext restoreGraphicsState];
         CGContextRelease(layer.context);
@@ -4889,6 +4892,7 @@ void native_end_css_filter_layer(void) {
     CGImageRef grayscale_image = native_css_filter_grayscale_rows(&layer, layer.context, &identity_rect);
     BOOL grayscale_identity = !grayscale_image
         && native_css_grayscale_is_identity(&layer, layer.context, &identity_rect);
+	double timing_input = timing ? CACurrentMediaTime() : 0;
 	CGImageRef source_image;
 	if (layer.borrows_fresh_frame) {
 		// A filter attached to the enclosing layer still needs an isolated source.
@@ -4902,6 +4906,7 @@ void native_end_css_filter_layer(void) {
 			: native_take_bitmap_image(layer.context);
 	}
 	[NSGraphicsContext restoreGraphicsState];
+	double timing_source = timing ? CACurrentMediaTime() : 0;
 	if (layer.borrows_fresh_frame)
 		CGContextClearRect(layer.destination,
 			CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
@@ -4936,6 +4941,7 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
+	double timing_filter = timing_source, timing_draw = timing_source;
 	@autoreleasepool {
 		CGRect source_rect = CGRectMake(0, 0,
 			CGImageGetWidth(source_image), CGImageGetHeight(source_image));
@@ -5022,6 +5028,7 @@ void native_end_css_filter_layer(void) {
 			}
 			if (cropped_source) CGImageRelease(cropped_source);
 		}
+		timing_filter = timing ? CACurrentMediaTime() : 0;
 		if (filtered_image != NULL && layer.destination != NULL) {
 			CGRect target = CGRectEqualToRect(filtered_rect, source_rect)
 				? CGRectMake(0, 0, layer.canvas_width, layer.canvas_height)
@@ -5043,11 +5050,19 @@ void native_end_css_filter_layer(void) {
             }
 			CGImageRelease(filtered_image);
 		}
+		timing_draw = timing ? CACurrentMediaTime() : 0;
 	}
 	CGImageRelease(source_image);
 	if (compact_input) CGImageRelease(compact_input);
 	free(layer.operations);
 	native_free_svg_filter_graph(&layer);
+	if (timing) fprintf(stderr,
+        "VOX_CSS_FILTER_STAGES canvas=%.0fx%.0f scale=%.0f operations=%zu compact=%d grayscale=%d access_us=%.3f input_us=%.3f source_us=%.3f filter_us=%.3f draw_us=%.3f cleanup_us=%.3f total_us=%.3f\n",
+        layer.canvas_width, layer.canvas_height, layer.scale, layer.operation_count,
+        compact_input != NULL, grayscale_image != NULL, (timing_access - timing_start) * 1e6,
+        (timing_input - timing_access) * 1e6, (timing_source - timing_input) * 1e6,
+        (timing_filter - timing_source) * 1e6, (timing_draw - timing_filter) * 1e6,
+        (CACurrentMediaTime() - timing_draw) * 1e6, (CACurrentMediaTime() - timing_start) * 1e6);
 }
 
 void native_end_backdrop_filter_layer(float opacity) {
