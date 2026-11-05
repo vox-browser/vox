@@ -8419,6 +8419,7 @@ fn main() {
 		app.navigate(initial_url, true)
 	}
 	debug_timing_checkpoint('startup_navigation', main_checkpoint)
+	disable_native_writing_tools()
 	$if macos {
 		if options.screenshot != '' || os.getenv('VOX_TEST_WINDOW') == '1' {
 			C.native_prepare_test_window()
