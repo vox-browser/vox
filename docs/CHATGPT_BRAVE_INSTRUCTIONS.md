@@ -2658,3 +2658,48 @@ actual exits and six verified archives. The rejected preflight, prototype
 regression and corrected fixture failures remain preserved. The publication
 lease is released and broad-check cadence resets to zero. **No 5%-below-Brave
 acceptance is claimed**.
+
+
+## November 5: media-feature name dispatch
+
+Commit `6dd324679` replaces repeated media-feature name chains with a lookup by
+byte length followed by a `MediaFeatureID` switch. The original inexpensive
+hover branch stays ahead of general dispatch. There is no name/value cache:
+each call observes the current feature name, viewport, display density and
+preferences. The original complete name-chain function body remains unchanged
+as a control, selected with `VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN=1`.
+`VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS=1` reports an executed new path once.
+
+All **12 final focused jobs pass**: four compilations and both lookup modes
+under poisoned preallocation, ordinary GC, no GC and AddressSanitizer/
+UndefinedBehaviorSanitizer. Generated-C call sites confirm **344 test-function
+executions** (43 cases × four allocation/check modes × two lookup modes).
+The new cases cover all 37 supported identifiers, case-sensitive and arbitrary
+byte names, zero/fractional viewports, live preference/density changes, direct
+expression-name edits and caller-storage retirement. Existing media-query,
+CSSOM, shadow-root, precision, owned-value and parse-retention cases pass too.
+
+Tooling commit `8fd13f0fb` measures the public parsed-query evaluator, including
+lookup, result checks, allocation and batched scratch scopes. Parsing, oracle
+creation and warmup are excluded. Four alternating unprofiled trials retain
+every observation, with separate execution diagnostics.
+
+| Synthetic query component | Median observed instruction reduction |
+| --- | ---: |
+| Width queries | 34.256% |
+| Early feature names | −1.818% |
+| Preference queries | 33.403% |
+| Resolution and ratio queries | 28.239% |
+| Boolean queries across every supported name | 18.724% |
+
+The first version regressed 2.979% on early-name queries. Preserving the hover
+branch reduces that regression but does not eliminate it. Both cohorts and
+their passing correctness matrices remain in verified archives; the regression
+is not excluded from the report. These are synthetic query-evaluation costs,
+not isolated classifier costs or whole-page savings, and do not advance the
+broad-check cadence.
+
+The [focused/component receipt](performance/chatgpt-media-feature-lookup-20261105.json)
+links source/executable hashes, generated test calls, counters, checksums,
+commands, memory guards and verified archives. The production comparison
+below uses the existing original-script SOCKS capture and unchanged references.

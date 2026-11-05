@@ -1,0 +1,1363 @@
+{
+  "version": 1,
+  "complete": true,
+  "recorded_unix": 1793890527.245265,
+  "implementation_commit": "6dd324679",
+  "benchmark_commit": "8fd13f0fb",
+  "change": "Classify supported media feature names by byte length, then query the live document using MediaFeatureID. Hover preserves the original early branch. No cached names or values; the existing complete string-chain implementation remains the control.",
+  "original_name_chain_body_unchanged": true,
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/media_queries.v": "eae99a032cbb1da56f3dbf05689dba54dad7eeb8ad760093cb19525925fbe04c",
+      "css/media_feature_lookup.v": "81f14a54aed960dafdda9707858439d78b4d183a7b08493dd9be0a6216cd7433",
+      "css/media_feature_lookup_test.v": "47a0f1d51121f848cd630b1b3016a2ea2230c9d78d09755ce8d58be13644784f"
+    },
+    "source_after": {
+      "css/media_queries.v": "eae99a032cbb1da56f3dbf05689dba54dad7eeb8ad760093cb19525925fbe04c",
+      "css/media_feature_lookup.v": "81f14a54aed960dafdda9707858439d78b4d183a7b08493dd9be0a6216cd7433",
+      "css/media_feature_lookup_test.v": "47a0f1d51121f848cd630b1b3016a2ea2230c9d78d09755ce8d58be13644784f"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-prealloc",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793889966.5679958,
+          "cpu_count": 18,
+          "load": [
+            17.62939453125,
+            23.75537109375,
+            30.92431640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889972.207853,
+          "load": [
+            18.37939453125,
+            23.80908203125,
+            30.90087890625
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889972.214581,
+          "cpu_count": 18,
+          "load": [
+            18.37939453125,
+            23.80908203125,
+            30.90087890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889972.8963158,
+          "load": [
+            18.37939453125,
+            23.80908203125,
+            30.90087890625
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "1",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889972.9033349,
+          "cpu_count": 18,
+          "load": [
+            18.37939453125,
+            23.80908203125,
+            30.90087890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889973.218892,
+          "load": [
+            18.37939453125,
+            23.80908203125,
+            30.90087890625
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-default",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793889973.2265651,
+          "cpu_count": 18,
+          "load": [
+            18.37939453125,
+            23.80908203125,
+            30.90087890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889978.765151,
+          "load": [
+            19.1494140625,
+            23.87841796875,
+            30.8837890625
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889978.772944,
+          "cpu_count": 18,
+          "load": [
+            19.1494140625,
+            23.87841796875,
+            30.8837890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889979.208736,
+          "load": [
+            19.1494140625,
+            23.87841796875,
+            30.8837890625
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "1",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889979.215894,
+          "cpu_count": 18,
+          "load": [
+            19.1494140625,
+            23.87841796875,
+            30.8837890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889979.4270022,
+          "load": [
+            19.1494140625,
+            23.87841796875,
+            30.8837890625
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-none",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793889979.434013,
+          "cpu_count": 18,
+          "load": [
+            19.1494140625,
+            23.87841796875,
+            30.8837890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889984.922782,
+          "load": [
+            20.17822265625,
+            24.01318359375,
+            30.89013671875
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889984.930013,
+          "cpu_count": 18,
+          "load": [
+            20.17822265625,
+            24.01318359375,
+            30.89013671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889985.3738618,
+          "load": [
+            20.17822265625,
+            24.01318359375,
+            30.89013671875
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "1",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889985.380973,
+          "cpu_count": 18,
+          "load": [
+            20.17822265625,
+            24.01318359375,
+            30.89013671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889985.5862489,
+          "load": [
+            20.17822265625,
+            24.01318359375,
+            30.89013671875
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-sanitized",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793889985.5934231,
+          "cpu_count": 18,
+          "load": [
+            20.17822265625,
+            24.01318359375,
+            30.89013671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889997.1316621,
+          "load": [
+            21.5712890625,
+            24.140625,
+            30.8154296875
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889997.1387699,
+          "cpu_count": 18,
+          "load": [
+            21.5712890625,
+            24.140625,
+            30.8154296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889997.963475,
+          "load": [
+            21.5712890625,
+            24.140625,
+            30.8154296875
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "1",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793889997.970736,
+          "cpu_count": 18,
+          "load": [
+            21.5712890625,
+            24.140625,
+            30.8154296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793889998.543317,
+          "load": [
+            21.5712890625,
+            24.140625,
+            30.8154296875
+          ]
+        }
+      }
+    ]
+  },
+  "test_case_executions": 344,
+  "generated_c_test_calls": {
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-prealloc.c": {
+      "sha256": "bab91ee08b0b94fffc307c6f4ff68a311f8c84cd8bb17953bd65e0e433ea6e20",
+      "case_count": 43,
+      "cases": [
+        "css__test_media_feature_lookup_covers_every_supported_identifier",
+        "css__test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+        "css__test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+        "css__test_media_feature_name_classification_does_not_retain_caller_storage",
+        "css__test_media_feature_lookup_tracks_direct_expression_name_edits",
+        "css__test_first_media_rule_evaluation_establishes_a_baseline",
+        "css__test_prefers_color_scheme_uses_an_svg_image_document_override",
+        "css__test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+        "css__test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+        "css__test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+        "css__test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+        "css__test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+        "css__test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+        "css__test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+        "css__test_fractional_media_breakpoint_changes_live_styles",
+        "css__test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+        "css__test_parsed_media_values_survive_parser_churn_and_environment_changes",
+        "css__test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+        "css__test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+        "css__test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+        "css__test_literal_viewport_media_results_track_size_policy_and_text_changes",
+        "css__test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+        "css__test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+        "css__test_one_media_list_can_follow_distinct_document_viewports",
+        "css__test_media_candidates_filter_only_branches_without_media_effects",
+        "css__test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+        "css__test_media_candidates_same_length_replacement_discards_removed_rules",
+        "css__test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+        "css__test_media_candidates_keep_imports_before_the_sheet_arrives",
+        "css__test_media_candidates_preserve_ignored_grouping_rule_types",
+        "css__test_media_candidates_invalidate_before_change_callbacks",
+        "css__test_media_candidate_storage_survives_scratch_and_document_retirement",
+        "css__test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+        "css__test_empty_style_children_receive_later_insertions_and_removals",
+        "css__test_inactive_supports_preserves_delayed_child_media_baselines",
+        "css__test_imported_empty_sheet_still_updates_its_media_match_state",
+        "css__test_registered_shadow_media_visits_nested_connected_scopes",
+        "css__test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+        "css__test_registered_shadow_media_moves_with_adopted_host",
+        "css__test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+        "css__test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+        "css__test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+        "css__test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+      ]
+    },
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-default.c": {
+      "sha256": "36902e8c3abba825c248f05fc0dfdde59e7b427d7283eb00917c740636a8981a",
+      "case_count": 43,
+      "cases": [
+        "css__test_media_feature_lookup_covers_every_supported_identifier",
+        "css__test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+        "css__test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+        "css__test_media_feature_name_classification_does_not_retain_caller_storage",
+        "css__test_media_feature_lookup_tracks_direct_expression_name_edits",
+        "css__test_first_media_rule_evaluation_establishes_a_baseline",
+        "css__test_prefers_color_scheme_uses_an_svg_image_document_override",
+        "css__test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+        "css__test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+        "css__test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+        "css__test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+        "css__test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+        "css__test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+        "css__test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+        "css__test_fractional_media_breakpoint_changes_live_styles",
+        "css__test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+        "css__test_parsed_media_values_survive_parser_churn_and_environment_changes",
+        "css__test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+        "css__test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+        "css__test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+        "css__test_literal_viewport_media_results_track_size_policy_and_text_changes",
+        "css__test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+        "css__test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+        "css__test_one_media_list_can_follow_distinct_document_viewports",
+        "css__test_media_candidates_filter_only_branches_without_media_effects",
+        "css__test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+        "css__test_media_candidates_same_length_replacement_discards_removed_rules",
+        "css__test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+        "css__test_media_candidates_keep_imports_before_the_sheet_arrives",
+        "css__test_media_candidates_preserve_ignored_grouping_rule_types",
+        "css__test_media_candidates_invalidate_before_change_callbacks",
+        "css__test_media_candidate_storage_survives_scratch_and_document_retirement",
+        "css__test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+        "css__test_empty_style_children_receive_later_insertions_and_removals",
+        "css__test_inactive_supports_preserves_delayed_child_media_baselines",
+        "css__test_imported_empty_sheet_still_updates_its_media_match_state",
+        "css__test_registered_shadow_media_visits_nested_connected_scopes",
+        "css__test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+        "css__test_registered_shadow_media_moves_with_adopted_host",
+        "css__test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+        "css__test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+        "css__test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+        "css__test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+      ]
+    },
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-none.c": {
+      "sha256": "f69500ca6039c5f05ab6218250113e5332969e2effd9f2c18827a1728f8722a9",
+      "case_count": 43,
+      "cases": [
+        "css__test_media_feature_lookup_covers_every_supported_identifier",
+        "css__test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+        "css__test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+        "css__test_media_feature_name_classification_does_not_retain_caller_storage",
+        "css__test_media_feature_lookup_tracks_direct_expression_name_edits",
+        "css__test_first_media_rule_evaluation_establishes_a_baseline",
+        "css__test_prefers_color_scheme_uses_an_svg_image_document_override",
+        "css__test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+        "css__test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+        "css__test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+        "css__test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+        "css__test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+        "css__test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+        "css__test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+        "css__test_fractional_media_breakpoint_changes_live_styles",
+        "css__test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+        "css__test_parsed_media_values_survive_parser_churn_and_environment_changes",
+        "css__test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+        "css__test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+        "css__test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+        "css__test_literal_viewport_media_results_track_size_policy_and_text_changes",
+        "css__test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+        "css__test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+        "css__test_one_media_list_can_follow_distinct_document_viewports",
+        "css__test_media_candidates_filter_only_branches_without_media_effects",
+        "css__test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+        "css__test_media_candidates_same_length_replacement_discards_removed_rules",
+        "css__test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+        "css__test_media_candidates_keep_imports_before_the_sheet_arrives",
+        "css__test_media_candidates_preserve_ignored_grouping_rule_types",
+        "css__test_media_candidates_invalidate_before_change_callbacks",
+        "css__test_media_candidate_storage_survives_scratch_and_document_retirement",
+        "css__test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+        "css__test_empty_style_children_receive_later_insertions_and_removals",
+        "css__test_inactive_supports_preserves_delayed_child_media_baselines",
+        "css__test_imported_empty_sheet_still_updates_its_media_match_state",
+        "css__test_registered_shadow_media_visits_nested_connected_scopes",
+        "css__test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+        "css__test_registered_shadow_media_moves_with_adopted_host",
+        "css__test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+        "css__test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+        "css__test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+        "css__test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+      ]
+    },
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-sanitized.c": {
+      "sha256": "bab91ee08b0b94fffc307c6f4ff68a311f8c84cd8bb17953bd65e0e433ea6e20",
+      "case_count": 43,
+      "cases": [
+        "css__test_media_feature_lookup_covers_every_supported_identifier",
+        "css__test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+        "css__test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+        "css__test_media_feature_name_classification_does_not_retain_caller_storage",
+        "css__test_media_feature_lookup_tracks_direct_expression_name_edits",
+        "css__test_first_media_rule_evaluation_establishes_a_baseline",
+        "css__test_prefers_color_scheme_uses_an_svg_image_document_override",
+        "css__test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+        "css__test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+        "css__test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+        "css__test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+        "css__test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+        "css__test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+        "css__test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+        "css__test_fractional_media_breakpoint_changes_live_styles",
+        "css__test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+        "css__test_parsed_media_values_survive_parser_churn_and_environment_changes",
+        "css__test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+        "css__test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+        "css__test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+        "css__test_literal_viewport_media_results_track_size_policy_and_text_changes",
+        "css__test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+        "css__test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+        "css__test_one_media_list_can_follow_distinct_document_viewports",
+        "css__test_media_candidates_filter_only_branches_without_media_effects",
+        "css__test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+        "css__test_media_candidates_same_length_replacement_discards_removed_rules",
+        "css__test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+        "css__test_media_candidates_keep_imports_before_the_sheet_arrives",
+        "css__test_media_candidates_preserve_ignored_grouping_rule_types",
+        "css__test_media_candidates_invalidate_before_change_callbacks",
+        "css__test_media_candidate_storage_survives_scratch_and_document_retirement",
+        "css__test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+        "css__test_empty_style_children_receive_later_insertions_and_removals",
+        "css__test_inactive_supports_preserves_delayed_child_media_baselines",
+        "css__test_imported_empty_sheet_still_updates_its_media_match_state",
+        "css__test_registered_shadow_media_visits_nested_connected_scopes",
+        "css__test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+        "css__test_registered_shadow_media_moves_with_adopted_host",
+        "css__test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+        "css__test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+        "css__test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+        "css__test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+      ]
+    }
+  },
+  "test_executable_sha256": {
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-prealloc": "1165113081e86e88720235caec6981d8ea5724749ee31f36891357c95141ee6d",
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-default": "4f6f36a8b17b30d2c5b8161e4a455fdf35a42737e2b665c14f2c94267c8f5204",
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-none": "3b4ecea5e41ecd284a611281bf6734002feaa3c10f5731d717c922e4163d5352",
+    "Build/chatgpt-media-feature-lookup-20261105-r3/checks-sanitized": "a2da2865776a457fbdfbaf81417a8f2443e9e742b83de4baace8ba1ea7ecb659"
+  },
+  "compile_peak_rss_bytes": 4232560640,
+  "runtime_peak_rss_bytes": 241057792,
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-media-feature-lookup-20261105-r3/component": "3218a514e5444e556a07fe73f4054bd198663d0788415d53101aca063a5a40d5",
+      "css/media_feature_lookup.v": "81f14a54aed960dafdda9707858439d78b4d183a7b08493dd9be0a6216cd7433",
+      "css/media_queries.v": "eae99a032cbb1da56f3dbf05689dba54dad7eeb8ad760093cb19525925fbe04c",
+      "tools/media_feature_lookup_benchmark.v": "1131a0951b14d81a8a07c4ef54290bb1640cd328d303f9ccd233842ae7b4db0a"
+    },
+    "inputs_after": {
+      "Build/chatgpt-media-feature-lookup-20261105-r3/component": "3218a514e5444e556a07fe73f4054bd198663d0788415d53101aca063a5a40d5",
+      "css/media_feature_lookup.v": "81f14a54aed960dafdda9707858439d78b4d183a7b08493dd9be0a6216cd7433",
+      "css/media_queries.v": "eae99a032cbb1da56f3dbf05689dba54dad7eeb8ad760093cb19525925fbe04c",
+      "tools/media_feature_lookup_benchmark.v": "1131a0951b14d81a8a07c4ef54290bb1640cd328d303f9ccd233842ae7b4db0a"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "1",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793890443.3628669,
+          "cpu_count": 18,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793890444.1745589,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "width",
+            "instructions": 22444841,
+            "evaluations": 24576,
+            "checksum": 24576
+          },
+          {
+            "scene": "early-features",
+            "instructions": 10722067,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "preferences",
+            "instructions": 18299613,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "resolution-and-ratio",
+            "instructions": 29162155,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "every-feature-boolean",
+            "instructions": 50229943,
+            "evaluations": 75776,
+            "checksum": 100352
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793890444.20098,
+          "cpu_count": 18,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793890444.403925,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "width",
+            "instructions": 14752066,
+            "evaluations": 24576,
+            "checksum": 24576
+          },
+          {
+            "scene": "early-features",
+            "instructions": 10909984,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "preferences",
+            "instructions": 12179752,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "resolution-and-ratio",
+            "instructions": 20920591,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "every-feature-boolean",
+            "instructions": 40824727,
+            "evaluations": 75776,
+            "checksum": 100352
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793890444.430012,
+          "cpu_count": 18,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793890444.629337,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "width",
+            "instructions": 14760661,
+            "evaluations": 24576,
+            "checksum": 24576
+          },
+          {
+            "scene": "early-features",
+            "instructions": 10918613,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "preferences",
+            "instructions": 12188418,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "resolution-and-ratio",
+            "instructions": 20929245,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "every-feature-boolean",
+            "instructions": 40817899,
+            "evaluations": 75776,
+            "checksum": 100352
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "1",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793890444.655494,
+          "cpu_count": 18,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793890444.8585742,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "width",
+            "instructions": 22445554,
+            "evaluations": 24576,
+            "checksum": 24576
+          },
+          {
+            "scene": "early-features",
+            "instructions": 10716818,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "preferences",
+            "instructions": 18290933,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "resolution-and-ratio",
+            "instructions": 29156129,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "every-feature-boolean",
+            "instructions": 50221444,
+            "evaluations": 75776,
+            "checksum": 100352
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793890444.8849869,
+          "cpu_count": 18,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793890445.0942678,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "width",
+            "instructions": 14899472,
+            "evaluations": 24576,
+            "checksum": 24576
+          },
+          {
+            "scene": "early-features",
+            "instructions": 11106525,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "preferences",
+            "instructions": 12376310,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "resolution-and-ratio",
+            "instructions": 21117149,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "every-feature-boolean",
+            "instructions": 41259446,
+            "evaluations": 75776,
+            "checksum": 100352
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-feature-lookup-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_MEDIA_FEATURE_NAME_CHAIN": "1",
+          "VOX_MEDIA_FEATURE_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793890445.120685,
+          "cpu_count": 18,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793890445.322129,
+          "load": [
+            28.3525390625,
+            23.484375,
+            27.3603515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "width",
+            "instructions": 22436124,
+            "evaluations": 24576,
+            "checksum": 24576
+          },
+          {
+            "scene": "early-features",
+            "instructions": 10713301,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "preferences",
+            "instructions": 18290884,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "resolution-and-ratio",
+            "instructions": 29153501,
+            "evaluations": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "every-feature-boolean",
+            "instructions": 50221494,
+            "evaluations": 75776,
+            "checksum": 100352
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "width": {
+        "control": [
+          22444841,
+          22445554
+        ],
+        "candidate": [
+          14752066,
+          14760661
+        ],
+        "control_median": 22445197.5,
+        "candidate_median": 14756363.5,
+        "reduction_percent": 34.25603183041717,
+        "conservative_component_reduction": 7684180,
+        "checksum": 24576,
+        "evaluations": 24576
+      },
+      "early-features": {
+        "control": [
+          10722067,
+          10716818
+        ],
+        "candidate": [
+          10909984,
+          10918613
+        ],
+        "control_median": 10719442.5,
+        "candidate_median": 10914298.5,
+        "reduction_percent": -1.8177811019556287,
+        "conservative_component_reduction": -201795,
+        "checksum": 32768,
+        "evaluations": 32768
+      },
+      "preferences": {
+        "control": [
+          18299613,
+          18290933
+        ],
+        "candidate": [
+          12179752,
+          12188418
+        ],
+        "control_median": 18295273.0,
+        "candidate_median": 12184085.0,
+        "reduction_percent": 33.403098166395225,
+        "conservative_component_reduction": 6102515,
+        "checksum": 32768,
+        "evaluations": 32768
+      },
+      "resolution-and-ratio": {
+        "control": [
+          29162155,
+          29156129
+        ],
+        "candidate": [
+          20920591,
+          20929245
+        ],
+        "control_median": 29159142.0,
+        "candidate_median": 20924918.0,
+        "reduction_percent": 28.238910459025167,
+        "conservative_component_reduction": 8226884,
+        "checksum": 32768,
+        "evaluations": 32768
+      },
+      "every-feature-boolean": {
+        "control": [
+          50229943,
+          50221444
+        ],
+        "candidate": [
+          40824727,
+          40817899
+        ],
+        "control_median": 50225693.5,
+        "candidate_median": 40821313.0,
+        "reduction_percent": 18.724242204838845,
+        "conservative_component_reduction": 9396717,
+        "checksum": 100352,
+        "evaluations": 75776
+      }
+    },
+    "qualification": "Current-process unprofiled instruction intervals; setup/oracle creation and warmup are excluded. Every counted parsed-query result is checked and included in the checksum. These are query-evaluation intervals rather than isolated classification costs. Allocation, batched scratch lifetime and checking are included. Diagnostic runs are separate. Component savings earn no whole-page credit."
+  },
+  "initial": {
+    "evidence": {
+      "path": "docs/performance/chatgpt-media-feature-lookup-initial-20261105-evidence.zip",
+      "sha256": "1ca847de03dc9ee632aa603a4577b66675919cab902b9f6499bdcddbd17c5445",
+      "bytes": 76630
+    },
+    "qualification": "The initial classifier saved 29-36% on the main query groups but regressed 2.979% on early-name queries. Preserving the original hover branch reduces the final early-name regression to 1.818%. Both component cohorts and all prior checks remain retained."
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-media-feature-lookup-20261105-evidence.zip",
+    "sha256": "f92db97492fd47ca1ac0d3fc87e4de7d5c832cee721b6e1a2f3f65a8dc931c4e",
+    "bytes": 60671
+  },
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "qualification": "Twelve final focused jobs pass: four compile jobs and both lookup modes under poisoned preallocation, ordinary GC, no GC and ASan/UBSan, for 344 test-function executions. All 37 names, arbitrary/case-sensitive names, fractional/zero viewports, current density/preferences, direct expression edits and caller-storage retirement are covered. Components are synthetic parsed-query evaluations with exact boolean/checksum checks, not isolated classifier or page costs. Early-name regression is retained. No whole-page, live-site, Brave or scrolling credit.",
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-media-feature-lookup-20261105-r3/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 85475328,
+    "elapsed_seconds": 0.35328075,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "focused_compile_peak_rss_bytes": 3231940608,
+  "component_compile_guard": {
+    "command": [
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "-memory-limit",
+      "10G",
+      "-enable-globals",
+      "-prod",
+      "-prealloc",
+      "-gc",
+      "none",
+      "-cc",
+      "clang",
+      "-nocache",
+      "-keepc",
+      "-ldflags",
+      "-framework CoreGraphics",
+      "-o",
+      "Build/chatgpt-media-feature-lookup-20261105-r3/component",
+      "tools/media_feature_lookup_benchmark.v"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 4232560640,
+    "elapsed_seconds": 44.233568709000004,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
