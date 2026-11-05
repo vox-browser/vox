@@ -508,57 +508,7 @@ fn (mut parser Parser) parse_a_calculation(mut tokens ComponentValueStream, allo
 		}
 	}
 
-	// Split into operands and the operators between them.
-	mut operands := []CalcNode{}
-	mut operators := []u8{}
-	for term in terms {
-		if term.is_operator {
-			operators << term.operator
-		} else {
-			operands << term.node
-		}
-	}
-
-	// Fold products (`*` and `/`) first, leaving a sum-level operand list.
-	mut sum_operands := []CalcNode{}
-	mut sum_operators := []u8{}
-	mut factors := [operands[0]]
-	for index := 0; index < operators.len; index++ {
-		operator := operators[index]
-		right := operands[index + 1]
-		if operator == u8(`*`) {
-			factors << right
-		} else if operator == u8(`/`) {
-			factors << CalcNode(CalcInvert{
-				children: [right]
-			})
-		} else {
-			sum_operands << make_calc_product(factors)
-			sum_operators << operator
-			factors = [right]
-		}
-	}
-	sum_operands << make_calc_product(factors)
-
-	if sum_operands.len == 1 {
-		return sum_operands[0]
-	}
-
-	// Fold the sum, wrapping subtracted operands in CalcNegate.
-	mut sum_children := [sum_operands[0]]
-	for index := 0; index < sum_operators.len; index++ {
-		right := sum_operands[index + 1]
-		if sum_operators[index] == u8(`-`) {
-			sum_children << CalcNode(CalcNegate{
-				children: [right]
-			})
-		} else {
-			sum_children << right
-		}
-	}
-	return CalcNode(CalcSum{
-		children: sum_children
-	})
+	return fold_calc_terms(terms)
 }
 
 fn make_calc_product(factors []CalcNode) CalcNode {
