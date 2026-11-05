@@ -1,0 +1,1538 @@
+{
+  "version": 1,
+  "implementation_commit": "ef58a6de6",
+  "focused_checks": {
+    "complete": true,
+    "compiler_sha256": "c6f318c58763a1dd4027acaa50bc3f72f7dd6d8e0bad7c796329943770c62d43",
+    "inputs_before": {
+      "css/style_values_core.v": "44fbd2e5e6bf2dc31e9133c969f2dbbd015767e079a8b2c9d92d41400a766f5c",
+      "css/length_unit_lookup.v": "c18c31fd26948c949f60e4520bd028ac1469397bce58719f4e878f55b98b912d",
+      "css/length_unit_lookup_test.v": "8d7b605c83765bb784a951af104a5c1fdef91f9e09fa6af27e858658e83069ed",
+      "css/length_resolution_test.v": "4c9d8ea4a87ae2a4e988e33d833797308b43198395ba028b06c4e8814ae79f7a",
+      "css/calc_test.v": "eae6dff44ebcd43be62af64c8c941eacc34df8db3ebc67d6843ce9b1b76e0a10",
+      "css/calc_resolve_test.v": "cfd6495422dea9e4859cba554d33aa770d26f72e7c7e0906e2c819b1b423f79c",
+      "css/typed_om_math_test.v": "bd529cca7c3ab8d35360d23cb111da06d06242f097e46f8e911e1cd4e6160d09",
+      "css/syntax_calculation_context_test.v": "4236bc2910e55d0e3e14d67eccee000d24f209e78a65ed3e01304cf13d6d2aed"
+    },
+    "inputs_after": {
+      "css/style_values_core.v": "44fbd2e5e6bf2dc31e9133c969f2dbbd015767e079a8b2c9d92d41400a766f5c",
+      "css/length_unit_lookup.v": "c18c31fd26948c949f60e4520bd028ac1469397bce58719f4e878f55b98b912d",
+      "css/length_unit_lookup_test.v": "8d7b605c83765bb784a951af104a5c1fdef91f9e09fa6af27e858658e83069ed",
+      "css/length_resolution_test.v": "4c9d8ea4a87ae2a4e988e33d833797308b43198395ba028b06c4e8814ae79f7a",
+      "css/calc_test.v": "eae6dff44ebcd43be62af64c8c941eacc34df8db3ebc67d6843ce9b1b76e0a10",
+      "css/calc_resolve_test.v": "cfd6495422dea9e4859cba554d33aa770d26f72e7c7e0906e2c819b1b423f79c",
+      "css/typed_om_math_test.v": "bd529cca7c3ab8d35360d23cb111da06d06242f097e46f8e911e1cd4e6160d09",
+      "css/syntax_calculation_context_test.v": "4236bc2910e55d0e3e14d67eccee000d24f209e78a65ed3e01304cf13d6d2aed"
+    },
+    "rows": [
+      {
+        "label": "initial-compile",
+        "command": [
+          "env",
+          "V_MACOS_V3_NO_FALLBACK=1",
+          "Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-o",
+          "Build/chatgpt-length-unit-20261105-r1/focused",
+          "css/length_unit_lookup_test.v"
+        ],
+        "exit": 0,
+        "guard": "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/initial-compile-guard.json"
+      },
+      {
+        "label": "initial-candidate",
+        "command": [
+          "env",
+          "VOX_ARENA_POISON=1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION=",
+          "Build/chatgpt-length-unit-20261105-r1/focused"
+        ],
+        "exit": 0,
+        "guard": "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/initial-candidate-guard.json"
+      },
+      {
+        "label": "initial-control",
+        "command": [
+          "env",
+          "VOX_ARENA_POISON=1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION=1",
+          "Build/chatgpt-length-unit-20261105-r1/focused"
+        ],
+        "exit": 0,
+        "guard": "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/initial-control-guard.json"
+      },
+      {
+        "label": "compile-length_resolution_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-length_resolution_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-length_resolution_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_resolution_test-prealloc",
+          "/Users/alex/code/vox2/css/length_resolution_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_resolution_test-prealloc": "ddccc9a02fa96a1610ded43eb68abc91aa8dc6709a4920de5a97d593c53ebe48",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_resolution_test-prealloc.c": "639e2f5b3e1dfa8b25b9c1b28ec58eeabd5f9fb2492824a374cf18a5894a9480"
+        }
+      },
+      {
+        "label": "run-length_resolution_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_resolution_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_resolution_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_resolution_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-length_resolution_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_resolution_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_resolution_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_resolution_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-calc_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-calc_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-calc_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_test-prealloc",
+          "/Users/alex/code/vox2/css/calc_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_test-prealloc": "d93ae66f62f93af647d2de188955c4597bc439c643c6a5f38171f2dcc692d408",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_test-prealloc.c": "84c495f6e02adc72a129af13b8f530d0072c685e5d60064b35958f0fd89eb38a"
+        }
+      },
+      {
+        "label": "run-calc_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-calc_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-calc_resolve_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-calc_resolve_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-calc_resolve_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_resolve_test-prealloc",
+          "/Users/alex/code/vox2/css/calc_resolve_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_resolve_test-prealloc": "cc75cddf24358ce382ab6aa1d6d25558d67693bb5add4fa316e2998214cae4ce",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_resolve_test-prealloc.c": "a22bfdcf0c282337af79169fd9cdbed34b77a996acf1304c8068fb5f8871f005"
+        }
+      },
+      {
+        "label": "run-calc_resolve_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_resolve_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_resolve_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_resolve_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-calc_resolve_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_resolve_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-calc_resolve_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/calc_resolve_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-typed_om_math_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-typed_om_math_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-typed_om_math_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/typed_om_math_test-prealloc",
+          "/Users/alex/code/vox2/css/typed_om_math_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/typed_om_math_test-prealloc": "5a2d5860f864a2491b5baf73daa60d4573a2d22d3b92908898357250b4bcf842",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/typed_om_math_test-prealloc.c": "5071ef33d273753cc646940e39dffa3da96c0d8751408422cc75a4c2b33f289c"
+        }
+      },
+      {
+        "label": "run-typed_om_math_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-typed_om_math_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-typed_om_math_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/typed_om_math_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-typed_om_math_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-typed_om_math_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-typed_om_math_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/typed_om_math_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-syntax_calculation_context_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-syntax_calculation_context_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-syntax_calculation_context_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/syntax_calculation_context_test-prealloc",
+          "/Users/alex/code/vox2/css/syntax_calculation_context_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/syntax_calculation_context_test-prealloc": "ed8f44d1270b71df7eb54d22b33c88ae8559c5467530064b6b0cb8249ef60c38",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/syntax_calculation_context_test-prealloc.c": "5bac4d8ca498fbf1713a92aed20ec1900b7f00e95027b00872dc26feda3c5f3a"
+        }
+      },
+      {
+        "label": "run-syntax_calculation_context_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-syntax_calculation_context_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-syntax_calculation_context_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/syntax_calculation_context_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-syntax_calculation_context_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-syntax_calculation_context_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-syntax_calculation_context_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/syntax_calculation_context_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-length_unit_lookup_test-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-length_unit_lookup_test-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-length_unit_lookup_test-default-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-default",
+          "/Users/alex/code/vox2/css/length_unit_lookup_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-default": "c5b3fe0a097684ad07c9ec1541621beaa8c9c4a9f0073545c5b7bd588a2a2346",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-default.c": "937ffe27f2b7c2c8919935505078142055a2a7b06a884563c158c785160b718e"
+        }
+      },
+      {
+        "label": "run-length_unit_lookup_test-default-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-default-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-default"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-length_unit_lookup_test-default-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-default-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-default"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-length_unit_lookup_test-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-length_unit_lookup_test-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-length_unit_lookup_test-none-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-none",
+          "/Users/alex/code/vox2/css/length_unit_lookup_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-none": "855f11cb0f7648c276158ff3f7e095f98725133c2ba6452f38ae8a863e38726e",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-none.c": "8dce3734aec7953fedfb09c98d4094edd4144a33c37a95bd0ef934ff49e06529"
+        }
+      },
+      {
+        "label": "run-length_unit_lookup_test-none-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-none-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-none"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-length_unit_lookup_test-none-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-length_unit_lookup_test-none-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/length_unit_lookup_test-none"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/compile-sanitized-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-cflags",
+          "-O1 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/lookup-sanitized",
+          "/Users/alex/code/vox2/css/length_unit_lookup_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/lookup-sanitized": "d9904f9b5470a90fc9a40d3a3881e4ec8db6868f5c3da8045065a3999e8afaf9",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/lookup-sanitized.c": "0cf2563240afb9fb6eadfcf748eda924c46fbd4fab9e80413d3c90eab8e82c7e"
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-sanitized-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/lookup-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/run-sanitized-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/lookup-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1",
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1"
+        },
+        "exit": 0
+      }
+    ]
+  },
+  "component": {
+    "complete": true,
+    "instrumented": false,
+    "acceptance": false,
+    "page_instruction_credit": 0,
+    "inputs_before": {
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2.py": "a9e62a771c0c80dfdda25f3c48f4043a48f5713574584d987dc4de2740d2f266",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component_test.v": "5fd9bd1c7135e4a364cb265227478aac83ae7e203e8e2a94f5310396dccd43b1",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-files.txt": "2d64acd585ce932b693903182a2780c2a0732583bcaa25723f8b80829dd649ef",
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v": "c6f318c58763a1dd4027acaa50bc3f72f7dd6d8e0bad7c796329943770c62d43",
+      "/Users/alex/code/vox2/css/style_values_core.v": "44fbd2e5e6bf2dc31e9133c969f2dbbd015767e079a8b2c9d92d41400a766f5c",
+      "/Users/alex/code/vox2/css/length_unit_lookup.v": "c18c31fd26948c949f60e4520bd028ac1469397bce58719f4e878f55b98b912d",
+      "/Users/alex/code/vox2/css/length_unit_lookup_test.v": "8d7b605c83765bb784a951af104a5c1fdef91f9e09fa6af27e858658e83069ed",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/css-bodies.txt": "6e3b00324342629577aae3bf4e5a86447b3b33d5cdf98d7bed91ece0e1376f10",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8": "670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b": "f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component": "973c87e088a39e641080305655979f3b76f51260d5039b24de356da4a07e4374"
+    },
+    "observations": [
+      {
+        "label": "component-r2-0-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793853123.9885309,
+          "cpu_count": 18,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793853125.191662,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "variant": "control",
+        "scenes": [
+          {
+            "scene": "captured-css-dimensions",
+            "inputs": 6566,
+            "lookups": 656600,
+            "instructions": 455588343,
+            "checksum": 19987700
+          },
+          {
+            "scene": "all-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 246307149,
+            "checksum": 12740000
+          },
+          {
+            "scene": "uppercase-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 374144134,
+            "checksum": 12740000
+          },
+          {
+            "scene": "first-match-cap",
+            "inputs": 1,
+            "lookups": 500000,
+            "instructions": 72628970,
+            "checksum": 1000000
+          },
+          {
+            "scene": "invalid-units",
+            "inputs": 6,
+            "lookups": 600000,
+            "instructions": 453792592,
+            "checksum": 600000
+          }
+        ]
+      },
+      {
+        "label": "component-r2-1-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793853125.281153,
+          "cpu_count": 18,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793853125.627434,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "variant": "candidate",
+        "scenes": [
+          {
+            "scene": "captured-css-dimensions",
+            "inputs": 6566,
+            "lookups": 656600,
+            "instructions": 62629351,
+            "checksum": 19987700
+          },
+          {
+            "scene": "all-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 50786818,
+            "checksum": 12740000
+          },
+          {
+            "scene": "uppercase-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 50793144,
+            "checksum": 12740000
+          },
+          {
+            "scene": "first-match-cap",
+            "inputs": 1,
+            "lookups": 500000,
+            "instructions": 57506628,
+            "checksum": 1000000
+          },
+          {
+            "scene": "invalid-units",
+            "inputs": 6,
+            "lookups": 600000,
+            "instructions": 43906578,
+            "checksum": 600000
+          }
+        ]
+      },
+      {
+        "label": "component-r2-2-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793853125.72343,
+          "cpu_count": 18,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793853126.069886,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "variant": "candidate",
+        "scenes": [
+          {
+            "scene": "captured-css-dimensions",
+            "inputs": 6566,
+            "lookups": 656600,
+            "instructions": 62873595,
+            "checksum": 19987700
+          },
+          {
+            "scene": "all-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 50849545,
+            "checksum": 12740000
+          },
+          {
+            "scene": "uppercase-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 51067920,
+            "checksum": 12740000
+          },
+          {
+            "scene": "first-match-cap",
+            "inputs": 1,
+            "lookups": 500000,
+            "instructions": 57731059,
+            "checksum": 1000000
+          },
+          {
+            "scene": "invalid-units",
+            "inputs": 6,
+            "lookups": 600000,
+            "instructions": 44140811,
+            "checksum": 600000
+          }
+        ]
+      },
+      {
+        "label": "component-r2-3-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793853126.159104,
+          "cpu_count": 18,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793853126.668271,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "variant": "control",
+        "scenes": [
+          {
+            "scene": "captured-css-dimensions",
+            "inputs": 6566,
+            "lookups": 656600,
+            "instructions": 455231674,
+            "checksum": 19987700
+          },
+          {
+            "scene": "all-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 246779366,
+            "checksum": 12740000
+          },
+          {
+            "scene": "uppercase-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 373038208,
+            "checksum": 12740000
+          },
+          {
+            "scene": "first-match-cap",
+            "inputs": 1,
+            "lookups": 500000,
+            "instructions": 72544621,
+            "checksum": 1000000
+          },
+          {
+            "scene": "invalid-units",
+            "inputs": 6,
+            "lookups": 600000,
+            "instructions": 453099702,
+            "checksum": 600000
+          }
+        ]
+      },
+      {
+        "label": "component-r2-4-diagnostic",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-4-diagnostic.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-4-diagnostic-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793853126.755821,
+          "cpu_count": 18,
+          "load": [
+            135.37158203125,
+            136.96240234375,
+            115.203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793853127.125317,
+          "load": [
+            135.662109375,
+            136.99609375,
+            115.34228515625
+          ]
+        },
+        "variant": "diagnostic",
+        "scenes": [
+          {
+            "scene": "captured-css-dimensions",
+            "inputs": 6566,
+            "lookups": 656600,
+            "instructions": 66690886,
+            "checksum": 19987700
+          },
+          {
+            "scene": "all-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 53733320,
+            "checksum": 12740000
+          },
+          {
+            "scene": "uppercase-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 53726815,
+            "checksum": 12740000
+          },
+          {
+            "scene": "first-match-cap",
+            "inputs": 1,
+            "lookups": 500000,
+            "instructions": 60605844,
+            "checksum": 1000000
+          },
+          {
+            "scene": "invalid-units",
+            "inputs": 6,
+            "lookups": 600000,
+            "instructions": 47772301,
+            "checksum": 600000
+          }
+        ]
+      },
+      {
+        "label": "component-r2-5-diagnostic-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-5-diagnostic-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-5-diagnostic-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_LENGTH_UNIT_ITERATION": "1",
+          "VOX_LENGTH_UNIT_LOOKUP_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793853127.210867,
+          "cpu_count": 18,
+          "load": [
+            135.662109375,
+            136.99609375,
+            115.34228515625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793853127.712388,
+          "load": [
+            135.662109375,
+            136.99609375,
+            115.34228515625
+          ]
+        },
+        "variant": "diagnostic-control",
+        "scenes": [
+          {
+            "scene": "captured-css-dimensions",
+            "inputs": 6566,
+            "lookups": 656600,
+            "instructions": 454087024,
+            "checksum": 19987700
+          },
+          {
+            "scene": "all-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 247508811,
+            "checksum": 12740000
+          },
+          {
+            "scene": "uppercase-units",
+            "inputs": 49,
+            "lookups": 490000,
+            "instructions": 374654105,
+            "checksum": 12740000
+          },
+          {
+            "scene": "first-match-cap",
+            "inputs": 1,
+            "lookups": 500000,
+            "instructions": 72516994,
+            "checksum": 1000000
+          },
+          {
+            "scene": "invalid-units",
+            "inputs": 6,
+            "lookups": 600000,
+            "instructions": 453148931,
+            "checksum": 600000
+          }
+        ]
+      }
+    ],
+    "build": {
+      "label": "component-r2-compile",
+      "command": [
+        "python3",
+        "tools/run_memory_bounded.py",
+        "--limit-gib",
+        "12",
+        "--timeout",
+        "600",
+        "--lock",
+        "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-compile.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2-compile-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-w",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-cflags",
+        "-O2",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-file-list",
+        "/Users/alex/code/vox2/css/absolute_font_size_computation.v,/Users/alex/code/vox2/css/adopted_style_sheets.v,/Users/alex/code/vox2/css/affine_rounding.c.v,/Users/alex/code/vox2/css/ancestor_filter.v,/Users/alex/code/vox2/css/ancestor_filter_visits.v,/Users/alex/code/vox2/css/ancestor_hash_cache.v,/Users/alex/code/vox2/css/animation_ancestor_filter.v,/Users/alex/code/vox2/css/animation_range.v,/Users/alex/code/vox2/css/animation_rendering_demand.v,/Users/alex/code/vox2/css/animation_sample_batch.v,/Users/alex/code/vox2/css/animation_sample_page_scan.v,/Users/alex/code/vox2/css/animation_samples.v,/Users/alex/code/vox2/css/anonymous_computed_geometry.v,/Users/alex/code/vox2/css/arena_diagnostics.v,/Users/alex/code/vox2/css/attribute_tag_bucket.v,/Users/alex/code/vox2/css/background_resource_urls.v,/Users/alex/code/vox2/css/boolean_expressions.v,/Users/alex/code/vox2/css/borrowed_invalidation_values.v,/Users/alex/code/vox2/css/browser_font_rendering.v,/Users/alex/code/vox2/css/browser_font_size_keywords.v,/Users/alex/code/vox2/css/browser_line_height.v,/Users/alex/code/vox2/css/calc_parsing.v,/Users/alex/code/vox2/css/calc_resolve.v,/Users/alex/code/vox2/css/calc_simplify.v,/Users/alex/code/vox2/css/calculated_or.v,/Users/alex/code/vox2/css/cascade_entry_updates.v,/Users/alex/code/vox2/css/cascade_scratch.v,/Users/alex/code/vox2/css/cascade_value_borrow.v,/Users/alex/code/vox2/css/chromium_input_placeholder.v,/Users/alex/code/vox2/css/chromium_paint_color.v,/Users/alex/code/vox2/css/chromium_selector_alias.v,/Users/alex/code/vox2/css/color_interpolation.v,/Users/alex/code/vox2/css/component_input_lookahead.v,/Users/alex/code/vox2/css/compositor_animation.v,/Users/alex/code/vox2/css/computed_color.v,/Users/alex/code/vox2/css/computed_font_inputs.v,/Users/alex/code/vox2/css/computed_geometry_provenance.v,/Users/alex/code/vox2/css/computed_interpolation.v,/Users/alex/code/vox2/css/computed_layout_cache.v,/Users/alex/code/vox2/css/computed_layout_rare_data.v,/Users/alex/code/vox2/css/computed_length.v,/Users/alex/code/vox2/css/computed_longhand_eligibility.v,/Users/alex/code/vox2/css/computed_longhand_reuse.v,/Users/alex/code/vox2/css/computed_longhand_shapes.v,/Users/alex/code/vox2/css/computed_property_invalidation.v,/Users/alex/code/vox2/css/computed_property_page_semantics.v,/Users/alex/code/vox2/css/computed_property_storage.v,/Users/alex/code/vox2/css/computed_property_store.v,/Users/alex/code/vox2/css/computed_values.v,/Users/alex/code/vox2/css/conditional_style_sheet_invalidation.v,/Users/alex/code/vox2/css/container_query_invalidator.v,/Users/alex/code/vox2/css/container_rule.v,/Users/alex/code/vox2/css/content_counter_styles.v,/Users/alex/code/vox2/css/coordinating_value_queries.v,/Users/alex/code/vox2/css/corner_shape_parameters.v,/Users/alex/code/vox2/css/counter_resolution_workspace.v,/Users/alex/code/vox2/css/counter_values.v,/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v,/Users/alex/code/vox2/css/css.v,/Users/alex/code/vox2/css/css_rule_kind_storage.v,/Users/alex/code/vox2/css/cssom_declaration_builder.v,/Users/alex/code/vox2/css/cssom_events_extra.v,/Users/alex/code/vox2/css/cssom_rules.v,/Users/alex/code/vox2/css/custom_function_evaluation.v,/Users/alex/code/vox2/css/custom_function_scope.v,/Users/alex/code/vox2/css/custom_property_environment_equivalence.v,/Users/alex/code/vox2/css/deferred_declarations.v,/Users/alex/code/vox2/css/deferred_hidden_styles.v,/Users/alex/code/vox2/css/deleted_conditional_style_rules.v,/Users/alex/code/vox2/css/deleted_style_rule_invalidation.v,/Users/alex/code/vox2/css/descriptors.v,/Users/alex/code/vox2/css/device_layout_property_pages.v,/Users/alex/code/vox2/css/device_layout_scale_only.v,/Users/alex/code/vox2/css/device_layout_style.v,/Users/alex/code/vox2/css/dom_css_bridge.v,/Users/alex/code/vox2/css/dom_query.v,/Users/alex/code/vox2/css/empty_deleted_conditional_leaves.v,/Users/alex/code/vox2/css/empty_media_query_lists.v,/Users/alex/code/vox2/css/events_misc.v,/Users/alex/code/vox2/css/exact_layout_lengths.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs.v,/Users/alex/code/vox2/css/fetch_css_api.v,/Users/alex/code/vox2/css/font_face_values.v,/Users/alex/code/vox2/css/font_fetch_transport.v,/Users/alex/code/vox2/css/font_input_refresh.v,/Users/alex/code/vox2/css/font_input_scratch.v,/Users/alex/code/vox2/css/font_key_scratch.v,/Users/alex/code/vox2/css/font_loading.v,/Users/alex/code/vox2/css/font_loading_tasks.v,/Users/alex/code/vox2/css/font_synthesis.v,/Users/alex/code/vox2/css/font_variation_axis_storage.v,/Users/alex/code/vox2/css/function_rules.v,/Users/alex/code/vox2/css/generated_content_storage.v,/Users/alex/code/vox2/css/gradient_color_interpolation.v,/Users/alex/code/vox2/css/grid_values.v,/Users/alex/code/vox2/css/html_attribute_case.v,/Users/alex/code/vox2/css/hyphens.v,/Users/alex/code/vox2/css/identical_layout_inputs.v,/Users/alex/code/vox2/css/idle_computation_pages.v,/Users/alex/code/vox2/css/idle_layout_snapshots.v,/Users/alex/code/vox2/css/image_color_values.v,/Users/alex/code/vox2/css/independent_dom_query.v,/Users/alex/code/vox2/css/inherited_property_iterator.v,/Users/alex/code/vox2/css/initial_layout_snapshots.v,/Users/alex/code/vox2/css/inline_style.v,/Users/alex/code/vox2/css/instruction_diagnostics.v,/Users/alex/code/vox2/css/internal_font_settings.v,/Users/alex/code/vox2/css/invalidation_plan_union.v,/Users/alex/code/vox2/css/layout_inheritance_proof.v,/Users/alex/code/vox2/css/layout_input_diagnostics.v,/Users/alex/code/vox2/css/layout_viewport_overrides.v,/Users/alex/code/vox2/css/legacy_font_size.v,/Users/alex/code/vox2/css/length_percentage_storage.v,/Users/alex/code/vox2/css/length_unit_lookup.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints.v,/Users/alex/code/vox2/css/marker_counter_styles.v,/Users/alex/code/vox2/css/matching_rule_candidates.v,/Users/alex/code/vox2/css/matching_rule_set_workspace.v,/Users/alex/code/vox2/css/media_evaluation_candidates.v,/Users/alex/code/vox2/css/media_feature.v,/Users/alex/code/vox2/css/media_queries.v,/Users/alex/code/vox2/css/media_query_compatibility.v,/Users/alex/code/vox2/css/misc_values.v,/Users/alex/code/vox2/css/missing_style_query.v,/Users/alex/code/vox2/css/more_style_values.v,/Users/alex/code/vox2/css/native_document_retirement.v,/Users/alex/code/vox2/css/native_font_variations.v,/Users/alex/code/vox2/css/numeric_dimension_diagnostics.v,/Users/alex/code/vox2/css/parser_core.v,/Users/alex/code/vox2/css/parser_helpers.v,/Users/alex/code/vox2/css/parser_rules_selectors.v,/Users/alex/code/vox2/css/parser_stream_eof.v,/Users/alex/code/vox2/css/parser_syntax_helpers.v,/Users/alex/code/vox2/css/parser_value_logic.v,/Users/alex/code/vox2/css/pixel_rounding.c.v,/Users/alex/code/vox2/css/pixel_units.v,/Users/alex/code/vox2/css/primitives_extra.v,/Users/alex/code/vox2/css/properties_data.v,/Users/alex/code/vox2/css/property_calculation_metadata.v,/Users/alex/code/vox2/css/property_shorthand_metadata.v,/Users/alex/code/vox2/css/recursive_value_storage.v,/Users/alex/code/vox2/css/redundant_sheet_removal.v,/Users/alex/code/vox2/css/repeated_rule_matching.v,/Users/alex/code/vox2/css/resolved_box_model_edges.v,/Users/alex/code/vox2/css/resolved_scalar_computation.v,/Users/alex/code/vox2/css/resource_url_candidates.v,/Users/alex/code/vox2/css/retained_layout_style.v,/Users/alex/code/vox2/css/rule_bucket_iterator.v,/Users/alex/code/vox2/css/rule_selector_reuse.v,/Users/alex/code/vox2/css/scalar_font_computation.v,/Users/alex/code/vox2/css/scalar_style_value_equality.v,/Users/alex/code/vox2/css/screen_animation.v,/Users/alex/code/vox2/css/scroll_animation_source.v,/Users/alex/code/vox2/css/selector_input_workspace.v,/Users/alex/code/vox2/css/selector_invalidation_workspace.v,/Users/alex/code/vox2/css/selector_parse_workspace.v,/Users/alex/code/vox2/css/selector_rule_font_sync.v,/Users/alex/code/vox2/css/selector_substring_scan.v,/Users/alex/code/vox2/css/selectors.v,/Users/alex/code/vox2/css/simple_selector_storage.v,/Users/alex/code/vox2/css/size_query_result_reuse.v,/Users/alex/code/vox2/css/static_animation_names.v,/Users/alex/code/vox2/css/static_user_style_filter.v,/Users/alex/code/vox2/css/style_computer.v,/Users/alex/code/vox2/css/style_declarations.v,/Users/alex/code/vox2/css/style_scope_cache.v,/Users/alex/code/vox2/css/style_sheet_invalidation.v,/Users/alex/code/vox2/css/style_values_core.v,/Users/alex/code/vox2/css/style_values_extra.v,/Users/alex/code/vox2/css/stylesheet_conversion_workspace.v,/Users/alex/code/vox2/css/stylesheet_rule_scratch.v,/Users/alex/code/vox2/css/stylesheet_syntax_cache.v,/Users/alex/code/vox2/css/stylesheet_token_scratch.v,/Users/alex/code/vox2/css/substitution_leaf_validation.v,/Users/alex/code/vox2/css/substitution_workspace.v,/Users/alex/code/vox2/css/svg_presentation_path.v,/Users/alex/code/vox2/css/syntax_highlighter.v,/Users/alex/code/vox2/css/text_box.v,/Users/alex/code/vox2/css/transforms.v,/Users/alex/code/vox2/css/typed_om_math.v,/Users/alex/code/vox2/css/ua_only_shadow_style_cache.v,/Users/alex/code/vox2/css/unchanged_has_invalidation.v,/Users/alex/code/vox2/css/unparsed_values.v,/Users/alex/code/vox2/css/url_system.v,/Users/alex/code/vox2/css/user_agent_style_cache_templates.v,/Users/alex/code/vox2/css/user_agent_stylesheet.v,/Users/alex/code/vox2/css/user_style_change_invalidation.v,/Users/alex/code/vox2/css/value_parse_export.v,/Users/alex/code/vox2/css/value_token_workspace.v,/Users/alex/code/vox2/css/value_type_color.v,/Users/alex/code/vox2/css/view_transition_style_sheet.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component",
+        "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component_test.v"
+      ],
+      "environment": {},
+      "host_before": {
+        "unix": 1793852830.3376782,
+        "cpu_count": 18,
+        "load": [
+          176.5498046875,
+          124.74853515625,
+          103.11279296875
+        ]
+      },
+      "exit": 0,
+      "host_after": {
+        "unix": 1793853123.88285,
+        "load": [
+          135.37158203125,
+          136.96240234375,
+          115.203125
+        ]
+      }
+    },
+    "scenes": {
+      "captured-css-dimensions": {
+        "control": [
+          455588343,
+          455231674
+        ],
+        "candidate": [
+          62629351,
+          62873595
+        ],
+        "control_median": 455410008.5,
+        "candidate_median": 62751473.0,
+        "median_reduction_fraction": 0.8622088407615662,
+        "conservative_component_reduction": 392358079
+      },
+      "all-units": {
+        "control": [
+          246307149,
+          246779366
+        ],
+        "candidate": [
+          50786818,
+          50849545
+        ],
+        "control_median": 246543257.5,
+        "candidate_median": 50818181.5,
+        "median_reduction_fraction": 0.7938772205116986,
+        "conservative_component_reduction": 195457604
+      },
+      "uppercase-units": {
+        "control": [
+          374144134,
+          373038208
+        ],
+        "candidate": [
+          50793144,
+          51067920
+        ],
+        "control_median": 373591171.0,
+        "candidate_median": 50930532.0,
+        "median_reduction_fraction": 0.8636730845012395,
+        "conservative_component_reduction": 321970288
+      },
+      "first-match-cap": {
+        "control": [
+          72628970,
+          72544621
+        ],
+        "candidate": [
+          57506628,
+          57731059
+        ],
+        "control_median": 72586795.5,
+        "candidate_median": 57618843.5,
+        "median_reduction_fraction": 0.20620764282120707,
+        "conservative_component_reduction": 14813562
+      },
+      "invalid-units": {
+        "control": [
+          453792592,
+          453099702
+        ],
+        "candidate": [
+          43906578,
+          44140811
+        ],
+        "control_median": 453446147.0,
+        "candidate_median": 44023694.5,
+        "median_reduction_fraction": 0.9029130696307361,
+        "conservative_component_reduction": 408958891
+      }
+    },
+    "inputs_after": {
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-r2.py": "a9e62a771c0c80dfdda25f3c48f4043a48f5713574584d987dc4de2740d2f266",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component_test.v": "5fd9bd1c7135e4a364cb265227478aac83ae7e203e8e2a94f5310396dccd43b1",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component-files.txt": "2d64acd585ce932b693903182a2780c2a0732583bcaa25723f8b80829dd649ef",
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v": "c6f318c58763a1dd4027acaa50bc3f72f7dd6d8e0bad7c796329943770c62d43",
+      "/Users/alex/code/vox2/css/style_values_core.v": "44fbd2e5e6bf2dc31e9133c969f2dbbd015767e079a8b2c9d92d41400a766f5c",
+      "/Users/alex/code/vox2/css/length_unit_lookup.v": "c18c31fd26948c949f60e4520bd028ac1469397bce58719f4e878f55b98b912d",
+      "/Users/alex/code/vox2/css/length_unit_lookup_test.v": "8d7b605c83765bb784a951af104a5c1fdef91f9e09fa6af27e858658e83069ed",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/css-bodies.txt": "6e3b00324342629577aae3bf4e5a86447b3b33d5cdf98d7bed91ece0e1376f10",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8": "670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b": "f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b",
+      "/Users/alex/code/vox2/Build/chatgpt-length-unit-20261105-r1/component": "973c87e088a39e641080305655979f3b76f51260d5039b24de356da4a07e4374"
+    },
+    "identity_stable": true,
+    "scope": "Current-process retired instructions around public length-unit lookups with every result checked against the original string iteration. Five fixed scenes include all dimension token spellings from the two archived CSS responses, all 49 canonical units, uppercase units, earliest original cap match and invalid spellings. Authored token frequency is not runtime frequency. Excludes tokenization, input/oracle construction, startup, scratch retirement and teardown. V -prod, C -O2, production preallocation/no GC. Component only; no page instruction credit."
+  },
+  "correctness": "All 49 canonical units and ASCII case permutations; all 256 byte substitutions at each position, Unicode/NUL/whitespace/length boundaries and zero allocation in a caller preallocation arena. Original public normalization/string iteration retained by VOX_RETAIN_LENGTH_UNIT_ITERATION. Arithmetic, resolution, Typed OM and calculation-context selections pass with both branches. Ordinary GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers included.",
+  "qualification": "Components only. Five fixed workloads, every public lookup checked against the original iteration, current-process hardware counters, V -prod/C -O2/preallocation/no GC. Captured CSS scene repeats 6566 dimension-token spellings from the two original archived CSS responses 100 times. This is authored token frequency, not runtime call frequency. Startup, tokenization, oracle/input construction, scratch retirement and teardown excluded. Control/candidate/candidate/control order; diagnostics kept separate. No page instruction saving, causal browser credit, Brave acceptance or broad-cadence advance.",
+  "initial_failure": "Initial component file list included the test input twice. Compilation rejected duplicate declarations before any component observations. The original list, command, failure and source hashes remain retained; corrected list compiled successfully.",
+  "page_validation": "Pending. Latest completed bundle inspected after the feature commit lacks css__packed_length_unit. Shared production lock is busy with a pending request. No separate production build requested; final diagnostic and matched cohort are prepared under Build/chatgpt-length-unit-production-20261105-r1.",
+  "shared_build_state": {
+    "unix": 1793853888.3798242,
+    "busy": true,
+    "latest": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel"
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "2f50a29e33c6cd82593177ff220e9f87a44ef95bff6f68660b485b1ed8ee270a",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-070444-b6aa04d6/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "698f5b4b5991881f2a7a73ffd30ca2d988de009028466f70172bdf7002900b19",
+        "dirty": true,
+        "head": "fff39c3d6998898cbd6666e72bad3c15fd75063a",
+        "repository_sha256": "0b72fecda74e0af288376476a23b0b703d8ca042a4c4c7f7b9d61de3729317cf"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "200c049fb95330f1450bcee291ec0fbbbe6f8cd64b034703fa01b385f1353402",
+        "dirty": true,
+        "head": "de5d186f90ee8d1f482e58927a5c6d9a31559383",
+        "repository_sha256": "f133463ca53ffdbf3bde84f784d69a0db0a6e85dd9f12c8e9685863d788fc658"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "fff39c3d6998898cbd6666e72bad3c15fd75063a",
+        "id": "aebecbc5b62642ab92b98ac0f631bb57"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "698f5b4b5991881f2a7a73ffd30ca2d988de009028466f70172bdf7002900b19",
+        "dirty": true,
+        "head": "af68bcf86afac0071a40964e3b403d05dd7c964a",
+        "repository_sha256": "0477884939c653716ccb69747270116705edc4c000871db0ec10cc8a3c3ddab1"
+      }
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "ef58a6de6e1f49927d24f02c0656318d1c934306",
+      "id": "c0d4ede88f2c46328751f19c40aa3b21"
+    },
+    "pending": true
+  },
+  "instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-length-unit-component-20261105-evidence.zip",
+      "sha256": "1eb72734881071b5c48cec63cfbc0f3d09feb472d0e6bcd67781e4c59d49be6b",
+      "bytes": 19799894
+    },
+    {
+      "path": "docs/performance/chatgpt-length-unit-20261105-evidence.zip",
+      "sha256": "df3b1ddc74eaf1a4dab8bdaab9cbc1d0e860b2baf6fe96f9fb59e3b194e2ceee",
+      "bytes": 149500
+    }
+  ],
+  "archival_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-length-unit-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 39944192,
+    "elapsed_seconds": 33.482989458,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archival_recipe": "import hashlib,json,re,zipfile\nfrom pathlib import Path\nroot=Path.cwd();out=Path(__file__).resolve().parent;perf=root/'docs/performance'\ndef load(p):return json.loads(p.read_text())\ndef sha(p):\n h=hashlib.sha256()\n with p.open('rb')as stream:\n  for b in iter(lambda:stream.read(1024*1024),b''):h.update(b)\n return h.hexdigest()\nchecks=load(out/'checks-result.json');component=load(out/'component-result.json');shared=load(out/'shared-build-state.json')\nassert checks['complete']and len(checks['rows'])==27 and all(r['exit']==0 for r in checks['rows'])and checks['inputs_before']==checks['inputs_after']\nassert component['complete']and component['identity_stable']and len(component['observations'])==6 and all(r['exit']==0 for r in component['observations'])\nfeature=['css/style_values_core.v','css/length_unit_lookup.v','css/length_unit_lookup_test.v']\nfor p in feature:assert sha(root/p)==checks['inputs_before'][p]\nfiles=[p for p in out.rglob('*')if p.is_file()and p.suffix in['.py','.v','.json','.txt','.log','.c']]\nfiles.extend(root/p for p in feature)\narchive=perf/'chatgpt-length-unit-component-20261105-evidence.zip';entries={};seen=set()\nwith zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6)as z:\n for p in files:\n  h=sha(p);entries[str(p.relative_to(root))]=dict(sha256=h,bytes=p.stat().st_size)\n  if h not in seen:z.write(p,'blobs/'+h);seen.add(h)\n  assert sha(p)==h\n z.writestr('index.json',json.dumps(dict(version=1,entries=entries),indent=2)+'\\n')\nwith zipfile.ZipFile(archive)as z:\n assert z.testzip()is None\n for v in entries.values():\n  h=hashlib.sha256();n=0\n  with z.open('blobs/'+v['sha256'])as stream:\n   for b in iter(lambda:stream.read(1024*1024),b''):h.update(b);n+=len(b)\n  assert h.hexdigest()==v['sha256']and n==v['bytes']\nreport=dict(version=1,implementation_commit='ef58a6de6',focused_checks=checks,component=component,\n correctness='All 49 canonical units and ASCII case permutations; all 256 byte substitutions at each position, Unicode/NUL/whitespace/length boundaries and zero allocation in a caller preallocation arena. Original public normalization/string iteration retained by VOX_RETAIN_LENGTH_UNIT_ITERATION. Arithmetic, resolution, Typed OM and calculation-context selections pass with both branches. Ordinary GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers included.',\n qualification='Components only. Five fixed workloads, every public lookup checked against the original iteration, current-process hardware counters, V -prod/C -O2/preallocation/no GC. Captured CSS scene repeats 6566 dimension-token spellings from the two original archived CSS responses 100 times. This is authored token frequency, not runtime call frequency. Startup, tokenization, oracle/input construction, scratch retirement and teardown excluded. Control/candidate/candidate/control order; diagnostics kept separate. No page instruction saving, causal browser credit, Brave acceptance or broad-cadence advance.',\n initial_failure='Initial component file list included the test input twice. Compilation rejected duplicate declarations before any component observations. The original list, command, failure and source hashes remain retained; corrected list compiled successfully.',\n page_validation='Pending. Latest completed bundle inspected after the feature commit lacks css__packed_length_unit. Shared production lock is busy with a pending request. No separate production build requested; final diagnostic and matched cohort are prepared under Build/chatgpt-length-unit-production-20261105-r1.',\n shared_build_state=shared,instruction_credit=0,broad_cadence_before=0,broad_cadence_after=0,acceptance=False,target_fraction='0.95',\n evidence=[dict(path=str(archive.relative_to(root)),sha256=sha(archive),bytes=archive.stat().st_size),dict(path='docs/performance/chatgpt-length-unit-20261105-evidence.zip',sha256=sha(perf/'chatgpt-length-unit-20261105-evidence.zip'),bytes=(perf/'chatgpt-length-unit-20261105-evidence.zip').stat().st_size)])\n(perf/'chatgpt-length-unit-20261105.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps(dict(archive_bytes=archive.stat().st_size,checks=len(checks['rows']),scenes=component['scenes']),indent=2))\n",
+  "production_readiness": {
+    "unix": 1793854286.14184,
+    "latest": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel"
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "2f50a29e33c6cd82593177ff220e9f87a44ef95bff6f68660b485b1ed8ee270a",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-070444-b6aa04d6/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "698f5b4b5991881f2a7a73ffd30ca2d988de009028466f70172bdf7002900b19",
+        "dirty": true,
+        "head": "fff39c3d6998898cbd6666e72bad3c15fd75063a",
+        "repository_sha256": "0b72fecda74e0af288376476a23b0b703d8ca042a4c4c7f7b9d61de3729317cf"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "200c049fb95330f1450bcee291ec0fbbbe6f8cd64b034703fa01b385f1353402",
+        "dirty": true,
+        "head": "de5d186f90ee8d1f482e58927a5c6d9a31559383",
+        "repository_sha256": "f133463ca53ffdbf3bde84f784d69a0db0a6e85dd9f12c8e9685863d788fc658"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "fff39c3d6998898cbd6666e72bad3c15fd75063a",
+        "id": "aebecbc5b62642ab92b98ac0f631bb57"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "698f5b4b5991881f2a7a73ffd30ca2d988de009028466f70172bdf7002900b19",
+        "dirty": true,
+        "head": "af68bcf86afac0071a40964e3b403d05dd7c964a",
+        "repository_sha256": "0477884939c653716ccb69747270116705edc4c000871db0ec10cc8a3c3ddab1"
+      }
+    },
+    "frozen_manifest_sha256": "0fb41425ffde21b410ccf081edc4fb78bda03185dcf14280b92c2e991bf64568",
+    "sealed_source": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-070444-b6aa04d6/frozen-compiler-inputs/0-Vox.c.i",
+    "sealed_source_sha256": "ea5a08877f87daf946b63ce8b89a6a953fe13d8412b1c9a575e026523665ff46",
+    "has_packed_lookup": false,
+    "busy": true,
+    "pending": true
+  }
+}

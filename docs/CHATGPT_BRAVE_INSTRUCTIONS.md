@@ -1757,3 +1757,59 @@ preserves the profiler inputs, source transformation, guards, initial failures,
 full raw profile, exact capture and the separate seven-pair production cohort.
 This resolves the earlier V-source regeneration blocker without relaxing the
 measurement or memory guards. The requested 5% Brave advantage remains unmet.
+
+## November 5: packed CSS length-unit lookup
+
+Commit `ef58a6de6` replaces the length-unit parser's lowercase/string comparison
+chain with a bounded scalar key. All 49 supported spellings contain ASCII
+letters and at most five bytes. Folding bit 5 and shifting each byte into an
+explicit position preserves ASCII case matching independently of native byte
+order. No other byte can become a supported lowercase letter. Empty and longer
+inputs reject before packing, and no normalized string or borrowed input is
+retained. The original implementation remains selectable with
+`VOX_RETAIN_LENGTH_UNIT_ITERATION`; diagnostics have a separate opt-in marker.
+
+**All 27 focused jobs pass**, including both implementations, poisoned
+preallocation, ordinary GC, no GC and AddressSanitizer/UndefinedBehaviorSanitizer.
+The tests cover all 49 spellings and ASCII case permutations, every possible
+byte substitution at every position, Unicode, NUL, whitespace and length
+boundaries, and allocation-free mixed-case lookup in a caller arena. Existing
+length resolution, arithmetic, Typed OM and calculation-context checks also
+pass. The current staged compiler matches the canonical compiler byte for byte,
+with fallback disabled and the required compiler/runtime memory guards.
+
+The unprofiled component uses V `-prod`, C `-O2`, production preallocation and
+current-process hardware counters. Every public lookup is checked against the
+original iteration. Construction, tokenization, oracle preparation, startup,
+scratch retirement and teardown are outside the measured interval. Two control
+and two candidate observations run in control/candidate/candidate/control order,
+with separate branch diagnostics.
+
+| Component | Lookups per observation | Control median instructions | Candidate median instructions | Reduction |
+| --- | ---: | ---: | ---: | ---: |
+| Original archived CSS dimension tokens | 656,600 | 455,410,008.5 | 62,751,473 | 86.221% |
+| All 49 lowercase units | 490,000 | 246,543,257.5 | 50,818,181.5 | 79.388% |
+| All 49 uppercase units | 490,000 | 373,591,171 | 50,930,532 | 86.367% |
+| Original first-match `cap` | 500,000 | 72,586,795.5 | 57,618,843.5 | 20.621% |
+| Invalid and out-of-range spellings | 600,000 | 453,446,147 | 44,023,694.5 | 90.291% |
+
+The captured-token scene repeats the 6,566 dimension-unit spellings from the
+two original archived CSS responses one hundred times. It represents authored
+token frequency, **not runtime lookup frequency**. The initial component file
+list included its test source twice and failed compilation before collecting
+observations. Its original list, command, hashes and errors remain retained;
+the corrected component and all subsequent result checks pass.
+
+These are component results. No browser instruction saving, Brave acceptance
+or broad-cadence advance is credited. The latest completed bundle inspected
+after the feature commit lacks the packed lookup, while the shared production
+lock is busy with a pending request. No separate production build is queued.
+The production diagnostic and matched cohort are prepared for an eligible
+completed bundle; an older binary cannot validate this feature.
+
+The [length-unit receipt](performance/chatgpt-length-unit-20261105.json)
+links source proofs, complete component counts, the initial failure, all focused
+checks, compiler/fixture identities, memory guards and verified durable archives.
+The original single SOCKS capture, scripts, pixel references and five-second
+acceptance workload remain unchanged. The requested 5% Brave advantage remains
+unmet, with whole-page validation of this feature pending.
