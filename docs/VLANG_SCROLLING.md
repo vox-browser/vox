@@ -2038,3 +2038,58 @@ tests execute successfully, and 24 native variants stay within the existing
 three-level GPU bound (observed two), with exact unchanged outside pixels.
 Concurrent source edits temporarily supersede production builds; no other
 session is stopped and older bundles do not validate the new V integration.
+
+### Later scrollbar and layer experiments, November 5
+
+Smooth 60 fps remains open. The direct scrollbar batch is now enabled by
+`5acc85b33`: the qualifying matched pairs improved 83.01→90.62 and
+76.88→88.97 scroll-changing publications/s, with p95 intervals improving
+26.86→24.67 and 27.98→23.48 ms. The controls are
+`VOX_DISABLE_GPU_SCROLLBAR_BATCH=1` and
+`VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1`. This supersedes the pending
+default described in the preceding historical evidence snapshot.
+
+The later installed-bundle repeat is mixed: 69.94→67.90 and 66.21→87.08
+publications/s. Its default trials still have p95 intervals of 37.38 and
+22.51 ms, maxima of 109.25 and 94.37 ms, and deadline misses of 23.27% and
+11.41%. Mean rates above 60 do not establish smooth 60 fps.
+
+All measurements below use the same live-page protocol and retain both pairs.
+The native layer-publication endpoint does not establish display scanout.
+
+| Additional candidate | Pair 1 publications/s | Pair 2 publications/s | Decision |
+|---|---:|---:|---|
+| Fourth pooled frame slot | 74.44→75.37 | 81.03→91.06 | Off; maximum gaps regress in both pairs |
+| Native GPU raster grid | 75.50→84.36 | 83.42→72.61 | Off; mixed |
+| Cached compact color-filter results | 86.50→82.57 | 86.60→89.02 | Off; mixed, few cache hits |
+| GPU normal/screen opacity composites | 87.07→85.55 | 76.07→87.00 | Off; mixed |
+| Reused video-backdrop textures | 73.67→84.21 | 77.66→75.94 | Off; mixed |
+
+`1b84aab51` retains native raster-grid dimensions, origins and overlap ownership
+in GPU batches. Coverage selection must precede the damage clip so that the
+MSAA marker survives. Focused mixed-coverage cases stay within the existing
+three-level bound; backend optimized and sanitizer checks pass. Live counters
+prove the path executes during input, but its regression keeps it opt-in.
+
+`e265cdbfe` keys an 8 MiB color-filter cache by complete pixels, profile and
+operations. `b3aacd9f0` and `388cdb8a5` keep independent color-filter and
+normal/screen opacity results in pending GPU batches. The actual nested native
+entry points, independent blend arithmetic, source lifetime and fallback checks
+are exact. The first offscreen eligibility counter mistakenly counted only
+nonzero-error lines: aggregate counters show 21 exact input-window screen-group
+draws, with the correction retained separately. The later diagnostic observes
+16 group draws and a whole-log maximum of three levels in other GPU leaves.
+
+`7c8c55569` reuses video-backdrop uploads with owned exact rows and bounded
+texture storage. Padding changes do not invalidate them; changed pixels do.
+`44453b22e` adds an opt-in exact gradient-text raster cache. Its 64 cold/warm
+native cases include real glyphs, gradients, changed masks/backdrops and both
+scales, but neither live input diagnostic records a hit, so it receives no
+scrolling credit. An exact ARM digest experiment was removed after its
+microbenchmark showed no gain.
+
+The [machine-readable evidence](performance/vlang-gpu-scroll-layer-experiments-20261105.json)
+contains 53 attempts and links a verified archive of 711 raw files: commands,
+build/library identities, actual input schedules, complete interval statistics,
+guard/browser exits, host load, pixels, tests and retained failures. A later
+Dawn recorder experiment has separate pending validation.
