@@ -2307,17 +2307,60 @@ dropping successful observations.
 The [focused/component receipt](performance/chatgpt-protected-value-links-20261105.json)
 links the raw counts, source proofs, guards, host conditions and verified archive.
 
-Browser validation is pending. The latest completed executable is
-`d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e`;
-it predates the linked registry and contains no execution marker for it. Shared
-builds fail first on an unfinished navigation method, then on a generated-C
-optional CSP request-pointer conversion in navigation embedding policy. Those
-build receipts and errors are retained. No separate production build is queued,
-no app is copied, and no browser captures or page instruction trials are launched
-for this feature. The prepared diagnostic and matched comparison retain the
-original SOCKS fixture, scripts and pixel/content references.
+The earlier browser-validation checkpoint was blocked. Its completed executable,
+`d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e`,
+predated the linked registry. Shared builds failed first on an unfinished
+navigation method, then on a generated-C optional CSP request-pointer conversion
+in navigation embedding policy. The availability receipt, harness and failed
+builds remain retained; that checkpoint launched no browser captures.
 
-The [production availability receipt](performance/chatgpt-protected-value-links-production-20261105.json)
-records the blocker and preserves the prepared harness and failed shared builds.
-**No whole-page saving is credited**, no broad checkpoint is due, and the cadence
-stays at zero. The requested **5% advantage over Brave remains unmet**.
+The subsequent completed production executable is
+`142853c750815d0bf22b98526a0bca75806620c7c58e768b2e1f9c58364eb0f0`,
+compiled as 33 parallel C units. Its aggregate build-input hashes match before
+and after compilation. Exact owned-source blobs at its recorded Git head and
+available registry-function disassembly are retained; no sealed-C proof is
+claimed. A nonblocking shared publication lease pins the canonical bundle
+through the separate execution diagnostic, matched cohort and broad checks.
+The lease is released after completion. No separate production build or app
+copy is used.
+
+All twelve frozen-page captures pass JavaScriptCore bootstrap, full content,
+unchanged reference pixels, stable inputs and zero browser/kernel exits. Separate
+diagnostics confirm the linked registry only in the candidate and the original
+array registry only in the control. Diagnostics are disabled in the matched runs.
+
+| Four-pair launch-through-encoded-PNG diagnostic | Observed instructions |
+| --- | ---: |
+| Array-registry control observations | 30,015,745,038; 30,214,494,522 |
+| Linked-registry candidate observations | 29,933,821,350; 29,528,988,360 |
+| Control median | 30,115,119,780 |
+| Candidate median | 29,731,404,855 |
+| Observed median reduction | 1.274% |
+| Conservative control/candidate separation | 81,923,688 |
+
+The positive separation triggers the 5,000,000-instruction checkpoint:
+**all 47 broad checks pass**. The screenshot set has 17 exact cases and three
+within existing bounds (`inline-node`: 13 pixels; `text-decorations`: 1,341;
+`canvas-text`: 2,033). Native rendering checks and all 200 exact upstream AST
+comparisons pass. No references or tolerances change; the cadence resets to zero.
+
+Controls complete 484/471 frame checkpoints; candidates complete 468/476.
+Starting Vox load averages range 5.85–7.91 on 18 CPUs. The frame and host-load
+differences qualify causal attribution. This is a four-pair diagnostic with two
+candidate observations, below seven-pair acceptance. Brave's four lower bounds
+range 18,526,748,178–19,454,558,194, still below Vox. No historical compiler-mode
+comparison receives instruction credit.
+
+The cohort retains the saved SOCKS fixture, original scripts, empty private
+profiles/caches, five-second unfocused settle, 1024×768 viewport, scale 2 and
+exclusive-coalition creation-through-encoded-PNG boundary. OS filesystem/shader
+caches remain retained. The memory guard adopts 42 process identities without
+errors and peaks at 1,751,695,360 bytes under 12 GiB. Controller/guard exit is
+zero; driver exit 1 records the unmet Brave target.
+
+The [production receipt](performance/chatgpt-protected-value-links-production-20261105.json)
+links every count, capture, source proof, ownership audit, broad check, guard,
+host condition and verified archive, including the earlier unavailable-bundle
+checkpoint. The requested **5% advantage over Brave remains unmet**. These
+frozen-page results establish neither live-site performance, isolated rendering
+time nor scrolling FPS, and no qualifying catalog entry is added.
