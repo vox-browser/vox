@@ -6349,3 +6349,53 @@ eligibility frames appear, but recursive inclusive samples cannot isolate their
 instruction cost or establish a saving. Code inspection identifies avoidable
 input collection before resource/flex rejection; its reordered follow-up is
 under focused validation. [Sample and verified raw evidence](performance/bbc-auto-grid-height-production-sample-20261105.json).
+
+
+## Early grid-proof rejection and cohort 108 (2026-11-05)
+
+`7bc6e052d` rejects flex, replaced and SVG descendants before collecting
+retained grid inputs. This preserves the previous admission proof. All **126
+focused executions** pass across both arms and three memory modes, including
+30 executions of the five new grid cases and 16 exact geometry/glyph digest
+comparisons per arm and mode. [Focused checks and verified archive](performance/bbc-grid-height-early-rejection-focus-20261105.json).
+
+Parallel 33-unit production `142853c75081` contains the checked source and passes
+both original native captures, all 72 exact external author-script witnesses,
+loaded-image pins, ownership and normal exits. Height seeding fires only in the
+candidate before PNG; the SVG source-switch guard stays exact in both arms.
+Parallel provenance preserves complete generation fingerprints and metadata,
+without a sealed generated-C claim.
+
+Cohort **108 is invalid**. All 21 attempts remain: Brave pairs 1 and 4 fail their
+unchanged pixel references, and Vox pair 2 has a private helper outside its
+exclusive coalition before a usable count or PNG. That failed launch has a
+recorded controlled-cleanup kernel status of 15; the other 20 browsers exit
+normally with status 0. Eighteen capture audits pass. The missing count is not
+zero, and no full seven-triple medians, conservative acceptance ratio or saving
+are credited. Six observed complete Vox/control pairs show a **543,760,580.5**
+partial diagnostic median difference, with five improvements and one regression;
+these observations cannot establish acceptance.
+
+That positive partial observation conservatively triggers the broad checks.
+Each memory mode exercises **611 unique cases: 606 passes and the same five
+baseline failures** (three layout and two main cases). Repeated main controls
+bring the actual total to 1,370 executions, 1,356 passes and 14 known failures.
+All new grid cases pass and checked inputs stay unchanged. No full-suite pass
+or cadence reset is claimed.
+
+The pinned bundle lease releases after SVG/cohort checks; input hashes remain
+checked throughout. Scope remains exclusive coalition creation through encoded
+PNG, including fresh startup/window/target setup, readiness and two-second
+settlement. Vox stops before file writing; Brave includes CDP delivery; audits
+and teardown follow. Exited aggregates and allowed owned services are included,
+GPU execution and outside work excluded. Frozen 609-response original-origin
+replay, original scripts, 1024×768 CSS at scale 2, fresh private profiles/caches,
+retained OS caches, original references and three historical rendering policies
+remain unchanged. Cross-engine pixels still differ by 82.7154%, with the
+recorded DOM/script/font/decoded-paint limitations; no live-page, isolated
+rendering or scrolling claim is made.
+
+History reaches **107 measured cohorts / 2,314 acceptance browser attempts**,
+last ID 108; ID 104 remains preflight-only. The last valid full capture cohort,
+107, still fails the target. BBC homepage remains outside the catalog.
+[Every attempt, native checks and broad evidence](performance/bbc-grid-height-early-rejection-cohort108-20261105.json).
