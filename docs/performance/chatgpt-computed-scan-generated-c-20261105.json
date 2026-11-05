@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "complete": true,
+  "removed": [
+    {
+      "path": "Build/chatgpt-animation-computed-scan-20261105-r1/checks-default.c",
+      "sha256": "616fbf3439681dfd9b0abd041f5b477b6ee10d0ed32cc5116447e6b46f58b81d",
+      "bytes": 15168189
+    },
+    {
+      "path": "Build/chatgpt-animation-computed-scan-20261105-r1/checks-sanitized.c",
+      "sha256": "f13095b25f30757f8fb970ba578f4649b6f60e687f59ddbf2902528ebe10e438",
+      "bytes": 15518030
+    },
+    {
+      "path": "Build/chatgpt-animation-computed-scan-20261105-r1/checks-prealloc.c",
+      "sha256": "f13095b25f30757f8fb970ba578f4649b6f60e687f59ddbf2902528ebe10e438",
+      "bytes": 15518030
+    },
+    {
+      "path": "Build/chatgpt-animation-computed-scan-20261105-r1/checks-none.c",
+      "sha256": "208031cfd4b7d35f1092569b01fe141739c37340a83d549957f7988b651f3e8a",
+      "bytes": 15158861
+    },
+    {
+      "path": "Build/chatgpt-animation-computed-scan-rollback-20261105-r1/checks-default.c",
+      "sha256": "88a158fe05bdfe2b8b0921c1adb1782ead6b8c66ffe92c4dccd666145dc3b56c",
+      "bytes": 15164262
+    },
+    {
+      "path": "Build/chatgpt-animation-computed-scan-rollback-20261105-r1/checks-sanitized.c",
+      "sha256": "da2b05f8782a960ac00308184c42b1f9322a7bb0a06b76e98383d1cd3d6957da",
+      "bytes": 15494370
+    },
+    {
+      "path": "Build/chatgpt-animation-computed-scan-rollback-20261105-r1/checks-prealloc.c",
+      "sha256": "da2b05f8782a960ac00308184c42b1f9322a7bb0a06b76e98383d1cd3d6957da",
+      "bytes": 15494370
+    },
+    {
+      "path": "Build/chatgpt-animation-computed-scan-rollback-20261105-r1/checks-none.c",
+      "sha256": "a26007726d5e525795c5d87bff3a99fbefcb9c4206b51e75cfc2b54750694d04",
+      "bytes": 15154937
+    }
+  ],
+  "bytes_reclaimed": 122671049,
+  "evidence": {
+    "path": "docs/performance/chatgpt-computed-scan-generated-c-20261105-evidence.zip",
+    "sha256": "8c44c976c4a5389b90faa3cf3de38b5ecdb3519124477ddfdc8f186640a3e0d6",
+    "bytes": 17638524
+  },
+  "qualification": "Only generated C from this task's completed computed-style memo checks and rollback checks is removed. Every file matches its original durable test receipt hash and is losslessly archived and individually verified before removal. Executables, logs, receipts, test-call names, canonical source, canonical app and fixture remain untouched. No engine or instruction credit.",
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-current-c-profile-20261105-r2/archive_completed_test_sources.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 22773760,
+    "elapsed_seconds": 2.217636,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

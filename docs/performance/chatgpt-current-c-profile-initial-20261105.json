@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "complete": true,
+  "diagnostic": true,
+  "status": "rejected_before_native_compilation",
+  "build": {
+    "complete": false,
+    "diagnostic": true,
+    "acceptance": false,
+    "instruction_credit": 0,
+    "source_before": {
+      "head": "64032a5c5165408ac1bcab0cb673341146acf840",
+      "repository_sha256": "74ed94008f2e7b014cae6f663f8002b14b235a7263a7ffa4ec4aeb72bfa3790c",
+      "build_inputs_sha256": "d34b5357e628c83b0ce4c86ab783d0acaff82c0b2660e890c1982ae550ab0d27",
+      "dirty": true
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "codegen_command": [
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "-prod",
+      "-b",
+      "c",
+      "-cc",
+      "clang",
+      "-memory-limit",
+      "10G",
+      "-exclude",
+      "@vlib/time/zoneinfo.native.v",
+      "-enable-globals",
+      "-d",
+      "vox_sparse_ttf",
+      "-d",
+      "vox_production",
+      "-d",
+      "vox_ui2",
+      "-path",
+      "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/36288b2c0e7e6c50/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+      "-w",
+      "-n",
+      "-nocache",
+      "-prealloc",
+      "-gc",
+      "none",
+      "-cflags",
+      "-DLADYBIRD_V_HAS_RUST_YUV -DLADYBIRD_V_HAS_SKIA_TEXT -DLADYBIRD_V_HAS_FFMPEG -I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include -O3 -mllvm -inline-threshold=1500",
+      "-ldflags",
+      "-L/Users/alex/code/vox2/Build/v/rust-yuv/release -lladybird_v_yuv -L/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -lLadybirdVSkiaText -Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib -lc++ /Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib",
+      "-dump-c-flags",
+      "/Users/alex/code/vox2/Build/chatgpt-current-c-profile-20261105-r1/Vox.flags",
+      "-o",
+      "/Users/alex/code/vox2/Build/chatgpt-current-c-profile-20261105-r1/Vox.c",
+      "/Users/alex/code/vox2"
+    ],
+    "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+    "started_unix": 1793897454.123362,
+    "host": {
+      "cpu_count": 18,
+      "load": [
+        18.35791015625,
+        13.34423828125,
+        12.330078125
+      ]
+    },
+    "optimization": "O3",
+    "no_inline": false,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "eb7b4b3a95a1db362b67f2917fd53b72b2e6650e68d48d7aacff73b3b24baef5",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "30c87f61ccc04152d37f5bf7612068574cda6968157b97de6cd25e3946849223",
+        "dirty": true,
+        "head": "c16cf47075ac37c682257db2a2f38ae1e180fde6",
+        "repository_sha256": "38813d424e95128426c38cbfd6b57264a65827f0bd2288b842b993a043b66430"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "c16cf47075ac37c682257db2a2f38ae1e180fde6",
+        "id": "bd4daa4664ac4ff48d8a849601c05cc1"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "30c87f61ccc04152d37f5bf7612068574cda6968157b97de6cd25e3946849223",
+        "dirty": true,
+        "head": "0c00f254a04ec04fc38d27c4c7bc8c65dd20c2d7",
+        "repository_sha256": "c0da641073c9c263edae5307c32b4374ab82edeb69eefde7aa9580a0e6b195d9"
+      }
+    },
+    "qualification": "Fresh current canonical source with -prod, explicit production runtime module overlay and C O3/inlining threshold 1500; Clang after-inlining instrumentation. Single generated C unit with ThinLTO is diagnostic and differs from the canonical 33-unit production layout. Native libraries and objects are sealed/pinned without copying an app or source tree. No instruction or acceptance credit.",
+    "codegen_exit": 0,
+    "original_generated_sha256": "bc40ef457f5e1541638a3fccc510900ebf749c4ca2189fd967eb9507943088d5",
+    "error": "Missing module initialization boundary",
+    "source_after": {
+      "head": "64032a5c5165408ac1bcab0cb673341146acf840",
+      "repository_sha256": "c060681576819db69ebbd10a287ce1976493a192ecdb81853accbfbb70f80d47",
+      "build_inputs_sha256": "d34b5357e628c83b0ce4c86ab783d0acaff82c0b2660e890c1982ae550ab0d27",
+      "dirty": true
+    },
+    "finished_unix": 1793897495.192804
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-current-c-profile-20261105-r1/build.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 6232719360,
+    "elapsed_seconds": 43.441572875,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "browser_captures": 0,
+  "acceptance": false,
+  "instruction_credit": 0,
+  "removed_generated_duplicate": {
+    "path": "Build/chatgpt-current-c-profile-20261105-r1/Vox.c",
+    "sha256": "bc40ef457f5e1541638a3fccc510900ebf749c4ca2189fd967eb9507943088d5",
+    "bytes": 190109936
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-current-c-profile-initial-20261105-evidence.zip",
+    "sha256": "4699555e9499b309b361f85a088d3790cd2472537c1f2db5ce9f4b1333f69bf3",
+    "bytes": 23875976
+  },
+  "qualification": "Current normal V C source was generated, but the entry injector rejected tab indentation before native compilation, signing or browser launch. The failed attempt remains retained. The generated C duplicate is removed only after full lossless archive verification. The old tool source is retained as a commit reference, not a source-tree snapshot. No engine or performance acceptance claim.",
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-current-c-profile-20261105-r1/archive.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 27230208,
+    "elapsed_seconds": 5.870252625,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

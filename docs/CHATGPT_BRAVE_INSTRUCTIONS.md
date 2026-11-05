@@ -3164,3 +3164,47 @@ services are excluded. No app bundle is copied or extra build requested.
 Publication leases are released. **The requested 5% advantage remains unmet**;
 this experiment is not an optimized-site entry or a live-site, isolated-rendering
 or scrolling improvement.
+
+
+## November 5: current optimized C profile
+
+Commit `230673dc5` fixes the diagnostic entry injector for current V's tab
+indentation before `_vinit()`. Twelve Python tests pass, including preservation
+of every other source byte across spaces, tabs and CRLF, and rejection of
+missing or duplicate initialization boundaries. The initial attempt generates
+C but stops at that boundary before native compilation or any browser launch;
+its raw generated source, command, log and failed guard remain archived.
+
+A later diagnostic regenerates current canonical source with `-prod` and the
+explicit production runtime module overlay, seals its compiler inputs, and
+compiles with C `-O3`, inlining threshold 1500 and Clang's instrumentation after
+inlining. Its one generated C unit with ThinLTO differs from the canonical
+33-unit layout, so it supplies diagnostic leads only. No app bundle or source
+tree is copied. The main-thread gate starts after module initialization;
+helpers compile separately without instrumentation.
+
+Build, signing, browser and guards exit zero. The thirty-second frozen-page
+capture passes JavaScriptCore bootstrap, complete content/button identity and
+every unchanged reference pixel. All runtime input fingerprints stay stable.
+There are **3,496 resolved function rows, no unresolved functions and zero
+profiler faults**. Three open frames are explicitly closed and marked partial
+at shutdown. Native waits and profiling overhead enter self time, and recursive
+inclusive intervals overlap. The standalone adblock self-worker fallback also
+differs from the canonical minimal helper.
+
+The profile records 112,480 keyframe-value computations and 3,195,930 general
+map writes. These identify temporary keyframe lookup construction for further
+measurement; they establish no savings. The 26.12-second `sapp_run` self
+interval includes idle waits and must not be treated as CPU work. Thirty seconds
+applies only to this diagnostic; the unprofiled five-second protocol, original
+SOCKS fixture, author scripts and references remain unchanged.
+
+The [current optimized profile receipt](performance/chatgpt-current-c-profile-20261105.json)
+links raw rows, source seals, generated/preprocessed C, commands, actual exits,
+guards, the initial failed attempt and three verified archives. Its generated
+source duplicates and eight completed test-source duplicates are removed only
+after individual lossless-archive verification. The combined storage receipts
+account for 711,784,647 removed raw bytes; all exact source bytes remain
+recoverable. Executables, native inputs, audits, PNGs, canonical app/source and
+the original fixture remain in place. No instruction credit or broad checkpoint
+is assigned, and **the requested 5% advantage over Brave remains unmet**.
