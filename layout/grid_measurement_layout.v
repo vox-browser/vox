@@ -125,7 +125,6 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 	// inputs, as the closed inline measurement cache does, without clearing them.
 	if !inline_measurement_inputs_are_current(inputs) { return false }
 	for input in inputs {
-		if input.node.is_list_item_box() && !measurement_list_item_has_no_marker(input.node) { return false }
 		if image := input.measurement_image {
 			if (measurement_image_input(input.node) or { return false }) != image { return false }
 		}
@@ -148,7 +147,7 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
 	if !collect_retained_block_inputs_in_svg(root, false, !disable_extended_image_measurements,
-		!disable_markerless_measurements, mut inputs, mut rejected) { return false }
+		mut inputs, mut rejected) { return false }
 	for index, input in inputs {
 		// Controls, subgrids, floats, fragmentation and shifted positions
 		// keep their full algorithms. Every containing block must be inside the
@@ -226,7 +225,6 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
-		report_markerless_measurement_reuse(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
 		return cached.result
 	}
