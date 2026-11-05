@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Image-only compositor pictures retain transparent edges</title>
+<style>
+html,body{margin:0;background:#2437ad}
+body{height:2400px}
+.picture{position:absolute;left:13.375px;top:17.125px;width:440px;height:380px;will-change:transform}
+img{position:absolute;width:310.625px;height:310.625px}
+.second{left:99.125px;top:58.375px;transform:rotate(7deg)}
+p{position:absolute;top:1500px}
+</style>
+<div class="picture"><img src="../resources/image-decode-reused.png"><img class="second" src="../resources/image-decode-reused.png"></div>
+<p>Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture. Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture. Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture. Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture.</p>

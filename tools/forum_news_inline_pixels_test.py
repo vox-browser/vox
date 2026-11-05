@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_image_only_promoted_pictures_keep_their_transparent_compositor_surface(self):
+        self.compare_fixture('compositor-image-only-picture', width=1024, height=768)
+
     def test_generated_text_keeps_the_pseudo_root_as_its_live_style_target(self):
         self.compare_fixture('generated-pseudo-live-font', width=1024, height=768,
                              settle_seconds=2)

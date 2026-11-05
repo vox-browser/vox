@@ -46,7 +46,7 @@ fn chromium_svg_opacity_group_end(commands []layout.PaintCommand, start int) int
 	return start + 3
 }
 
-// Rasterize SVG and CSS gradient contents with their backgrounds and glyphs before
+// Rasterize SVG, bitmap and CSS gradient contents with their backgrounds and glyphs before
 // blending the layer over its parent. Isolating each path loses painted sibling
 // backgrounds; reading the parent directly loses premultiplied edge rounding.
 // Complex CSS scopes and layers interrupted by other drawing retain their
@@ -107,6 +107,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 	}
 	mut has_svg := false
 	mut has_text := false
+	mut has_image := false
 	mut opacity_end := -1
 	mut identity_scope_ends := []int{}
 	for position, command_index in layer.command_indices {
@@ -212,6 +213,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			'draw_replaced_image', 'draw_svg_image', 'draw_background_image' {
 				supported, _ := chromium_shared_recording_leaf_supported(command)
 				if !supported { return chromium_svg_compositor_layer_declined(index,command_index,'unrecorded leaf',command.kind) }
+				has_image = true
 			}
 			'fill_rect', 'fill_rounded_rect', 'paint_uniform_border' {
 				has_svg = has_svg || chromium_contoured_box_supported(command)
@@ -233,7 +235,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 		}
 	}
 	// Culling a distant vector does not remove the promoted layer's
-	// transparency boundary. Text still rounds against that transparent
-	// surface before blending over the parent, including across safe gaps.
-	return (has_svg || has_text) && identity_scope_ends.len == 0
+	// transparency boundary. Text and bitmap edges still round against that
+	// transparent surface before blending over the parent, including across safe gaps.
+	return (has_svg || has_text || has_image) && identity_scope_ends.len == 0
 }
