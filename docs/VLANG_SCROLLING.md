@@ -1749,3 +1749,122 @@ canvas cannot observe Quartz's anti-aliasing state and reads back first) and
 the scrollbar thumb, which is often a frame's only GPU leaf. The ring copy
 itself remains until the retained frame is presented through Core Animation
 instead of copied.
+
+## Video batching and shared frame presentation (2026-11-05)
+
+The large-window 60 FPS target remains open. The following changes are committed
+and have focused pixel and ownership checks:
+
+| Commit | Change | Matched live observations |
+| --- | --- | --- |
+| `881f5a55c` | Completed opaque callbacks skip clearing their pooled frame first; incomplete callbacks still clear | Initial pairs improved, installed pairs regressed; no reliable throughput credit |
+| `f5139fcdc` | Video draws remain in the GPU canvas across mixed ordinary/MSAA tiles, after restoring their CPU backdrop | 35.77→39.71 and 33.64→36.59 FPS; p95 74.3→62.2 and 75.4→64.5 ms |
+| `c1debfe0f` | A successful canvas read happens once; only a failed transfer retries | 69.89→75.41 and 63.54→86.67 FPS; host load fell during these pairs, so the size of the gain is uncertain |
+| `d7427e739`, `8a1e4df5f` | Raster frames paint directly into pooled IOSurfaces that Core Animation presents; immutable images remain available for snapshots and capture | 66.65→75.02 and 58.93→67.01 FPS; median intervals 11.81→9.23 and 12.89→9.98 ms |
+
+These are separate cohorts, each using one executable and matching C mode in
+both arms. They cannot be joined into a cumulative speedup: the video cohort
+uses a parallel-C build, the single-read cohort a single-C build, and the
+IOSurface cohort a newer parallel-C build. The latter pins executable
+`d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e` and the
+same unpublished native bridge in both arms. All use the live HTTPS page,
+a fresh private profile/cache, automatic author scripting, a 1708×953 document
+viewport at 2×, a title readiness check followed by 10 seconds of settling,
+and 600 precise delta-8 inputs at nominal 120 Hz reversing every 150 inputs.
+OS filesystem/shader caches are retained. The endpoint is a changed native
+layer publication with changed scroll position after `updateLayer`, measured
+across the entire first-to-last input period; physical display scanout is not
+measured.
+
+Shared frames are enabled by default. `VOX_DISABLE_IOSURFACE_FRAMES=1` restores
+CGImage presentation. A surface remains unavailable while an immutable image
+owns its pixels or WindowServer reports it in use. Exhaustion, unsupported
+sizes and allocation failures retain the ordinary image path. The focused
+checks compare actual Core Animation output exactly at 1× and 2×, cover
+padded rows and transparency, retain snapshots across further frames, simulate
+WindowServer use counts, exercise capture ownership and test resizing.
+A live diagnostic recorded 291 IOSurface and 11 fallback publications, plus
+359 direct canvas reads, during input; it is excluded from performance credit.
+
+`08fc3c50a` adds direct shared-Metal readback into the final frame rows, avoiding
+staging allocations and copies. It remains opt-in with
+`VOX_GPU_CANVAS_DIRECT_READBACK=1`: its live pairs were mixed (45.91→37.35 and
+41.05→54.26 FPS) while host load rose from 14 to 38. Unsupported targets or
+failures use the staged reader. Tests compare exact bytes, odd widths, row
+padding, multiple regions, CPU interruption order, and unchanged output when
+a later region is invalid.
+
+IOSurface p95 intervals were 32.71 and 38.82 ms, with maximum intervals 172.1
+and 141.6 ms. One p95 and one maximum regressed despite improved throughput;
+these results do not establish smooth 60 FPS. Earlier 60 Hz input trials of
+the single-read build produced 53.12 and 56.30 FPS, also below the target.
+The retained viewport copy and synchronous GPU/filter waits remain costs.
+
+The previous CPU video experiment was rejected: temporary source buffers were
+freed before Skia consumed them, and the corrected CPU rendering still differed
+at rounded clips and regressed scrolling. A copy into IOSurfaces before
+presentation also regressed both pairs. Disabling Metal GPU-optimized texture
+layout passed a small native test but failed to load the browser page; that
+experiment was reverted. Patches, failed attempts, profiles, all paired results,
+input schedules, native image identities, host load, raw publication timings,
+checks and actual exits are retained in the
+[machine-readable evidence](performance/vlang-gpu-scroll-finish-20261105.json)
+and its linked raw archive. References and pixel tolerances were not changed.
+
+The installed default-on IOSurface bundle `142853c750815d0bf22b98526a0bca75806620c7c58e768b2e1f9c58364eb0f0`
+(parallel C) completed two fresh, unprofiled 60 Hz trials at 50.19 and
+56.96 scroll-changing publications/second. Actual input delivery was 53.40 and
+58.73 Hz. Median/p95/maximum scroll intervals were 16.76/28.23/912.48 ms and
+16.68/22.78/105.88 ms, with 54.0% and 50.6% over the strict 16.67 ms budget.
+The 912 ms gap is retained. Earlier same-bundle IOSurface 60 Hz pairs were
+52.83→47.60 and 49.64→51.37 FPS; the throughput gain at 120 Hz does not carry
+over reliably to 60 Hz input. The installed bundle also passes `inline-node`
+and `canvas-text` with their existing bounds and the same-size SVG source
+mutation with exactly zero differing pixels.
+
+A separate stall diagnostic found that normal reused frames batch on the GPU,
+but full repaint fallbacks still perform synchronous per-leaf drawing. Two
+full repaint loops took 544 and 290 ms, with large shadow/decorations groups
+costing 176–180 ms each. `6dbf49287` permits the same GPU canvas to cover a
+complete eligible document raster with `VOX_ENABLE_FULL_FRAME_GPU_CANVAS=1`.
+The full-frame native pixel comparison passes the existing 3-level bound; the production V check passes with current V,
+`-new-compiler -prealloc -gc none -n`. The earlier check without the production
+compiler flags failed and is retained. Screenshot rendering preserves its
+ordinary full-frame path. The build request and any pending publication are
+recorded in the evidence; an older executable cannot validate this new path.
+
+
+The initial live full-frame verification exposed a 29-level stroke difference,
+so its timings are diagnostic evidence rather than optimization acceptance.
+`a367abce6` detects complete viewport rectangles and retains the ordinary tile
+path for shapes there; other approved leaves continue to batch. Forced full
+repaints with per-leaf verification now stay within 3 channel levels, including
+video, shadows and text. The earlier short verification schedules failed (an
+8-input schedule was below the tool minimum; 10 inputs completed only one
+publication under instrumentation). Both failures and their pixel diagnostics
+are retained; they are not performance results.
+
+With the corrected native bridge identical in both arms, two fresh unprofiled
+60 Hz pairs measured 49.85→57.04 and 52.92→53.32 FPS. Maximum scroll intervals
+fell 689.71→114.99 and 474.32→191.39 ms; p95 changed 30.66→26.02 and
+25.11→28.71 ms. The second p95 regressed. These pairs use parallel-C executable
+`fcbdb3e693fa5ed4dbb6c9b84fa0ba8770570f97afaeaab3b95a82a56aad97de`
+with the same explicit native bridge. `1458ba146` enables complete-frame
+batching by default for eligible rasters up to 64 MiB;
+`VOX_DISABLE_FULL_FRAME_GPU_CANVAS=1` restores the reused-frame-only policy.
+The user's GPU-scrolling setting still controls both paths. Screenshot
+full-frame rendering keeps its established path; native full-frame tests and
+the separate live per-leaf diagnostic exercise batching directly.
+
+Direct readback also had small gains in another combined-path cohort
+(57.18→57.42 and 53.59→54.82 FPS), with a p95 regression in one pair. It remains
+opt-in. All previous cohorts and regressions remain in the linked evidence.
+The shipped fixes remove substantial work and long stalls, but neither these
+throughput results nor the remaining p95/max gaps establish smooth 60 FPS.
+
+The final default-policy build was requested once after `1458ba146`. At the
+last check, publication was waiting behind another session's shared bundle
+lease; the available production bundle still used the older opt-in policy.
+The corrected full-frame measurements therefore use the explicitly pinned
+native candidate. They validate that rendering path, but do not substitute
+for a fresh launch of a subsequently published default-on executable.
