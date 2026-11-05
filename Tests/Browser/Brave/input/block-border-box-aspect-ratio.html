@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<title>Border-box aspect ratio regression</title><link rel="icon" href="data:,">
+<style>
+body{margin:0;background:white;font:16px Arial}
+.frame{position:absolute;width:464px;left:24px;top:24px}
+.target{display:block;box-sizing:border-box;width:100%;aspect-ratio:16/9;
+ border:1px solid #123456;background:#ddd;overflow:hidden}
+.child{width:100%;height:100%;background:#78b4d2}
+.small{width:212px;left:536px}
+.padded{width:212px;left:788px}.padded .target{aspect-ratio:2;border-width:3px;padding:5px}
+.clamped{top:320px}.clamped .target{width:400px;max-width:212px;aspect-ratio:2;border-width:3px;padding:5px}
+.explicit{left:536px;top:320px;width:212px}.explicit .target{height:70px;aspect-ratio:2;border-width:3px;padding:5px}
+.content{left:788px;top:320px;width:212px}.content .target{width:180px;box-sizing:content-box;aspect-ratio:2;border-width:3px;padding:5px}
+footer{position:absolute;top:1800px}
+</style>
+<div class="frame"><a class="target"><div class="child"></div></a></div>
+<div class="frame small"><a class="target"><div class="child"></div></a></div>
+<div class="frame padded"><a class="target"><div class="child"></div></a></div>
+<div class="frame clamped"><a class="target"><div class="child"></div></a></div>
+<div class="frame explicit"><a class="target"><div class="child"></div></a></div>
+<div class="frame content"><a class="target"><div class="child"></div></a></div>
+<footer>
+This regression preserves the border-box aspect ratio and gives percentage-height children the resolved content height. Each border and padding is deducted once.
+This regression preserves the border-box aspect ratio and gives percentage-height children the resolved content height. Each border and padding is deducted once.
+This regression preserves the border-box aspect ratio and gives percentage-height children the resolved content height. Each border and padding is deducted once.
+This regression preserves the border-box aspect ratio and gives percentage-height children the resolved content height. Each border and padding is deducted once.
+This regression preserves the border-box aspect ratio and gives percentage-height children the resolved content height. Each border and padding is deducted once.
+This regression preserves the border-box aspect ratio and gives percentage-height children the resolved content height. Each border and padding is deducted once.
+This regression preserves the border-box aspect ratio and gives percentage-height children the resolved content height. Each border and padding is deducted once.
+</footer></html>

@@ -490,6 +490,35 @@ fn calculate_inner_width_for_used_px(node &Node, box_state &UsedValues, width CS
 	return css_pixels_max(CSSPixels.new(0), inner_width)
 }
 
+// A concrete inline size on a Chromium CSS ratio block is converted to its
+// content box once. Transfer that used width through the ratio's own box model
+// before applying block-axis constraints, so percentage descendants receive
+// the final content height. Natural replaced-element sizing remains separate.
+fn chromium_concrete_ratio_block_size(box &Box, box_state &UsedValues,
+	available_space AvailableSpace) ?CSSPixelSize {
+	node := unsafe { &Node(box) }
+	if node.document().font_rendering_policy() != .chromium || node.is_replaced_box()
+		|| !box.has_preferred_aspect_ratio() { return none }
+	computed := node.computed_values()
+	width := computed.size_value(.width)
+	if !width.is_length_percentage()
+		|| (width.contains_percentage() && !available_space.width.is_definite()) { return none }
+	model := ReplacedBoxModel{
+		percentage_basis: available_space.width.to_px_or_zero()
+		used_inline_padding: box_state.padding_left.plus(box_state.padding_right)
+	}
+	size := compute_replaced_size_with_box_model(box, available_space, model)
+	height := computed.size_value(.height)
+	if !height.is_auto() && !(height.contains_percentage() && !available_space.height.is_definite()) {
+		return size
+	}
+	content_height := intrinsic_content_height_from_aspect_ratio(box, box_state, size.width())
+	clamped_height := apply_replaced_block_axis_constraints(node, computed.size_value(.min_height),
+		computed.size_value(.max_height), content_height, available_space.height, model, false,
+		CSSPixels.new(0))
+	return CSSPixelSize.new(size.width(), clamped_height)
+}
+
 // BlockFormattingContext::compute_width_for_block_level_replaced_element_in_normal_flow()
 //
 // The source assigns the used padding *after* calling
@@ -501,6 +530,9 @@ fn calculate_inner_width_for_used_px(node &Node, box_state &UsedValues, width CS
 // `box-sizing: border-box` really does lose its inline border and padding twice.
 fn compute_size_for_block_level_replaced_element_in_normal_flow(box &Box, box_state &UsedValues, available_space AvailableSpace) CSSPixelSize {
 	node := unsafe { &Node(box) }
+	if size := chromium_concrete_ratio_block_size(box, box_state, available_space) {
+		return size
+	}
 	// Chromium text controls convert the author border-box width once, with
 	// the final padding already available. The translated LibWeb path below
 	// intentionally retains its second conversion and ratio transfer.

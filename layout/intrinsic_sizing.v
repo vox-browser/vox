@@ -1158,6 +1158,11 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 	}
 	if size.is_auto() {
 		if ratio := box.preferred_aspect_ratio() {
+			if node.document().font_rendering_policy() == .chromium
+				&& !unsafe { &Node(node) }.is_replaced_box() {
+				return intrinsic_content_height_from_aspect_ratio(box, used_values,
+					used_values.content_width()).to_double()
+			}
 			return used_values.content_width().divided_by_fraction(ratio).to_double()
 		}
 		return none
@@ -1172,6 +1177,11 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 		if ratio := box.preferred_aspect_ratio() {
 			available_space := AvailableSpace.new(AvailableSize.make_definite(used_values.content_width()), AvailableSize.make_indefinite())
 			if box_is_sized_as_replaced_element(state, unsafe { &Node(node) }, available_space) {
+				if node.document().font_rendering_policy() == .chromium
+					&& !unsafe { &Node(node) }.is_replaced_box() {
+					return intrinsic_content_height_from_aspect_ratio(box, used_values,
+						used_values.content_width()).to_double()
+				}
 				return used_values.content_width().divided_by_fraction(ratio).to_double()
 			}
 		}
