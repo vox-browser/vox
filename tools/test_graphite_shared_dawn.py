@@ -99,6 +99,9 @@ def main():
     run('build', command)
     artifacts = {p: hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in [str(binary), *objects]}
     run('functional', [str(binary)], runtime=True, diagnostics=True)
+    run('functional-recorder-reuse', [str(binary), '--recorder-reuse'], runtime=True, diagnostics=True)
+    assert 'Vox Dawn region recorder: reused=1' in (out / 'functional-recorder-reuse.log').read_text()
+    assert 'Dawn error:' not in (out / 'functional-recorder-reuse.log').read_text()
     assert 'VOX_SHARED_DAWN ' in (out / 'functional.log').read_text()
     assert 'Dawn error:' not in (out / 'functional.log').read_text()
     assert 'VOX_DAWN_DIRECT_READBACK ' in (out / 'functional.log').read_text()

@@ -35,6 +35,7 @@ namespace {
 std::mutex gpu_mutex;
 VoxPictureTypefaceCache typeface_cache;
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
+std::unique_ptr<skgpu::graphite::Recorder> regional_recorder;
 bool gpu_context_attempted = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
@@ -181,6 +182,36 @@ sk_sp<SkTypeface> decode_picture_typeface(SkStream& stream, void*)
 {
     return typeface_cache.decode_stream(stream);
 }
+
+// The serialized draw has completed its synchronous read before returning
+// this recorder. Retain its glyph atlas between regions, and discard failed
+// recordings rather than allowing their pending tasks into the next draw.
+class RegionalRecorderLease {
+    bool reuse_, complete_ = false;
+public:
+    std::unique_ptr<skgpu::graphite::Recorder> recorder;
+    explicit RegionalRecorderLease(skgpu::graphite::Context* gpu)
+        : reuse_(pthread_main_np() && std::getenv("VOX_REUSE_DAWN_REGION_RECORDER")) {
+        bool reused = reuse_ && regional_recorder;
+        if (reuse_) recorder = std::move(regional_recorder);
+        else if (pthread_main_np()) regional_recorder.reset();
+        if (!recorder) {
+            skgpu::graphite::RecorderOptions options;
+            options.fImageProvider = sk_make_sp<PictureImageProvider>();
+            if (reuse_) options.fGpuBudgetInBytes = 32 * 1024 * 1024;
+            recorder = gpu->makeRecorder(options);
+        }
+        if (reuse_ && std::getenv("VOX_DAWN_REGION_RECORDER_DIAGNOSTICS"))
+            std::fprintf(stderr, "Vox Dawn region recorder: reused=%d ready=%d\n", reused, bool(recorder));
+    }
+    void complete() { complete_ = true; }
+    ~RegionalRecorderLease() {
+        if (reuse_ && complete_) regional_recorder = std::move(recorder);
+    }
+};
+#ifdef VOX_TEST_DAWN_REGION_FAILURE
+bool test_fail_dawn_region_after_draw;
+#endif
 }
 
 extern "C" __attribute__((visibility("default")))
@@ -207,12 +238,12 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
     if (!picture) return 0;
     auto* gpu = context();
     if (!gpu) return 0;
-    skgpu::graphite::RecorderOptions options;
-    options.fImageProvider = sk_make_sp<PictureImageProvider>();
-    auto recorder = gpu->makeRecorder(options);
+    RegionalRecorderLease lease(gpu);
+    auto* recorder = lease.recorder.get();
+    if (!recorder) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto shared = VoxDawnSharedSurface::Make(recorder.get(), info);
+    auto shared = VoxDawnSharedSurface::Make(recorder, info);
     auto surface = shared.surface;
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
@@ -221,6 +252,9 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
     transform.set9(matrix);
     canvas->setMatrix(transform);
     canvas->drawPicture(picture);
+#ifdef VOX_TEST_DAWN_REGION_FAILURE
+    if (test_fail_dawn_region_after_draw) return 0;
+#endif
     auto recording = recorder->snap();
     skgpu::graphite::InsertRecordingInfo insertion;
     insertion.fRecording = recording.get();
@@ -229,14 +263,17 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
         if (!std::getenv("VOX_DISABLE_DIRECT_DAWN_READBACK")) {
             if (std::getenv("VOX_SHARED_DAWN_DIAGNOSTICS"))
                 std::fprintf(stderr, "VOX_DAWN_DIRECT_READBACK width=%d height=%d\n", region_width, region_height);
-            return shared.read_final(gpu, SkIRect::MakeXYWH(x, y, region_width, region_height),
-                pixels, size_t(pitch));
+            if (!shared.read_final(gpu, SkIRect::MakeXYWH(x, y, region_width, region_height),
+                    pixels, size_t(pitch))) return 0;
+            lease.complete();
+            return 1;
         }
         std::vector<uint8_t> result;
         if (!shared.read(gpu, SkIRect::MakeXYWH(x, y, region_width, region_height), result)) return 0;
         for (int row = 0; row < region_height; ++row)
             std::memcpy(pixels + size_t(row) * pitch,
                 result.data() + size_t(row) * region_width * 4, size_t(region_width) * 4);
+        lease.complete();
         return 1;
     }
     std::unique_ptr<const SkImage::AsyncReadResult> result;
@@ -252,6 +289,7 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
         std::memcpy(pixels + size_t(row) * pitch,
             static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
             size_t(region_width) * 4);
+    lease.complete();
     return 1;
 }
 
@@ -404,6 +442,7 @@ int vox_graphite_draw_picture_regions_with_backdrop_pixels(VoxGraphitePictureReg
 
 static int retire_graphics_context_locked()
 {
+    regional_recorder.reset();
     if (!gpu_context) return 0;
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
@@ -435,6 +474,7 @@ void vox_graphite_picture_release_unused_graphics_memory()
 {
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
+    regional_recorder.reset();
     if (gpu_context) gpu_context->freeGpuResources();
     typeface_cache.clear();
 }

@@ -113,6 +113,15 @@ int main()
             ++cases;
         }
     s_gradient_text_raster_cache.clear();
+    for (int scale : {1, 2}) for (float phase : {0.f, .25f, .5f, .75f}) {
+        unsetenv("VOX_REUSE_DAWN_REGION_RECORDER");
+        auto reference = cached_text_frame(false, true, scale, false, true, false, phase);
+        setenv("VOX_REUSE_DAWN_REGION_RECORDER", "1", 1);
+        auto first = cached_text_frame(false, true, scale, false, true, false, phase);
+        auto reused = cached_text_frame(false, true, scale, false, true, false, phase);
+        assert(reference == first && reference == reused);
+    }
+    unsetenv("VOX_REUSE_DAWN_REGION_RECORDER");
     unsetenv("VOX_CACHE_GRADIENT_TEXT"); unsetenv("VOX_DISABLE_PICTURE_REGIONS");
     std::cout << "Gradient text cache: " << cases << " exact cold/warm frames, changed mask/color/backdrop, region modes and 1x/2x passed\n";
     std::cout << "Retained text mask ownership, fallback and GPU composition passed\n";
