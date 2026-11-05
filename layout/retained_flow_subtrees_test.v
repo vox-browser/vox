@@ -80,7 +80,7 @@ fn test_retained_flow_replays_counter_order_before_generated_following_content()
 	retained_flow_check_full_rebuild(mut document)
 }
 
-fn test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path() {
+fn test_retained_flow_rebuilds_ineligible_subtrees_and_validates_closed_svg_reuse() {
 	for content in [
 		'<ol><li>list marker</li></ol>',
 		'<svg width="10" height="10"><rect width="10" height="10" fill="red"/></svg>',
@@ -95,7 +95,7 @@ fn test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path() {
 		mut changed := document.get_element_by_id('changed')?
 		changed.set_inner_html('<p>new</p>')!
 		document.update_layout(.debugging)
-		assert retained_flow_handle(special) != before
+		assert (retained_flow_handle(special) == before) == (content.starts_with('<svg') && !disable_retained_flow_svg_trees)
 		retained_flow_check_full_rebuild(mut document)
 	}
 }

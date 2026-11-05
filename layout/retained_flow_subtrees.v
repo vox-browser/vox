@@ -25,6 +25,8 @@ fn collect_retained_flow_validation_inputs(node &Node, root bool,
 	style := node.computed_values()
 	revision := style.mutation_revision()
 	if revision == 0 { return false }
+	svg_input := if node.is_svg_svg_box() { retained_simple_svg_input(node) } else { none }
+	if node.is_svg_svg_box() && svg_input == none { return false }
 	inputs << RetainedInlineInput{
 		node: node
 		style: style
@@ -33,6 +35,7 @@ fn collect_retained_flow_validation_inputs(node &Node, root bool,
 		parent_id: if root { u64(0) } else if parent := node.parent() { u64(voidptr(parent)) } else { 0 }
 		sibling_index: node.index_in_parent_
 		text: if text := node.as_text_node() { text.text_for_rendering() } else { '' }
+		simple_svg: svg_input
 	}
 	for child in node.children() {
 		if !collect_retained_flow_validation_inputs(child, false, mut inputs) { return false }
@@ -52,7 +55,8 @@ fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool 
 	for input in cache.inputs {
 		// A provider can change kind or availability without changing CSS.
 		// Revalidate it even when this branch already has a validation cache.
-		if input.node.is_replaced_element() && !retained_flow_raster_image_is_ordinary(input.node) {
+		if input.node.is_replaced_element() && !input.node.is_svg_box() && !input.node.is_svg_svg_box()
+			&& !retained_flow_raster_image_is_ordinary(input.node) {
 			return false
 		}
 		if dom_node := input.node.dom_node() {
@@ -99,7 +103,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	mirror := dom_root.unsafe_layout_node() or { return none }
 	if mirror.real_layout_handle() == unsafe { nil } { return none }
 	root := unsafe { &Node(mirror.real_layout_handle()) }
-	if (!root.is_block_container() && !root.is_inline_node()
+	if (!root.is_block_container() && !root.is_inline_node() && !root.is_svg_svg_box()
 		&& !retained_tree_is_block_formatting_container(root)) || root.is_anonymous() { return none }
 	parent := root.parent() or { return none }
 	if parent.is_anonymous() { return none }
@@ -113,6 +117,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 		report_retained_formatting_tree(root)
 		report_retained_flow_style_reuse(root, root.flow_validation_cache_.elements)
 		report_retained_flow_image_tree(root.flow_validation_cache_.elements)
+		report_retained_flow_svg_tree(root, root.flow_validation_cache_.elements)
 		return RetainedFlowSubtree{root: root, elements: root.flow_validation_cache_.elements}
 	}
 	mut elements := []&dom.Element{}
@@ -129,6 +134,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	report_retained_formatting_tree(root)
 	report_retained_flow_style_reuse(root, elements)
 	report_retained_flow_image_tree(elements)
+	report_retained_flow_svg_tree(root, elements)
 	return RetainedFlowSubtree{
 		root:     root
 		elements: elements
@@ -144,6 +150,9 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	}
 	node := element.as_node()
 	if node.needs_layout_tree_update_() || node.child_needs_layout_tree_update_() { return false }
+	if element.is_svg_element() {
+		return collect_retained_flow_svg_elements(element, mut elements)
+	}
 	computed := css.computed_properties_for_element(element) or { return false }
 	if computed.display().is_none() {
 		eligible = true
@@ -204,9 +213,10 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 }
 
 fn retained_flow_layout_node_is_ordinary(node &Node) bool {
+	if (node.is_svg_box() || node.is_svg_svg_box()) && !retained_flow_svg_node_is_ordinary(node) { return false }
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
-		|| (node.is_replaced_element() && !retained_flow_raster_image_is_ordinary(node))
-		|| node.is_svg_box() || node.is_list_item_box()
+		|| (node.is_replaced_element() && !node.is_svg_box() && !node.is_svg_svg_box() && !retained_flow_raster_image_is_ordinary(node))
+		|| node.is_list_item_box()
 		|| (node.is_absolutely_positioned() && !node.is_image_box()) {
 		return false
 	}
