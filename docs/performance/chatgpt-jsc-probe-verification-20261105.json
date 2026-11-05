@@ -1,0 +1,68 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "instruction_credit": 0,
+  "broad_cadence": 0,
+  "development": {
+    "path": "docs/performance/chatgpt-jsc-probe-development-20261105.zip",
+    "sha256": "be913b88932169b989d9cf185fe40ec1436869ce864928a7f2c1726c359a0c78",
+    "bytes": 126123,
+    "entries": 206
+  },
+  "cohorts": [
+    {
+      "kind": "entry",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-jsc-scope-probe-20261105-r1/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {
+          "66834": "Thu Nov  5 22:11:55 2026    ",
+          "67173": "Thu Nov  5 22:12:02 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1672642560,
+        "elapsed_seconds": 40.536559583000006,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "report": "chatgpt-jsc-entry-profile-20261105.json",
+      "evidence": {
+        "path": "docs/performance/chatgpt-jsc-entry-profile-20261105-evidence.zip",
+        "sha256": "e3c13280e858f325444501422d6a7e3c42fe739f3c9df251b3be8e85cac23cf5",
+        "bytes": 687266,
+        "entries": 162
+      }
+    },
+    {
+      "kind": "native",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-jsc-native-profile-20261105-r1/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {
+          "83079": "Thu Nov  5 22:37:03 2026    ",
+          "83314": "Thu Nov  5 22:37:10 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1678229504,
+        "elapsed_seconds": 39.729426875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "report": "chatgpt-jsc-native-profile-20261105.json",
+      "evidence": {
+        "path": "docs/performance/chatgpt-jsc-native-profile-20261105-evidence.zip",
+        "sha256": "63b3ddc74bbdbd1548ddccf1a867a55b8522f46111cd67feebd155e463827a61",
+        "bytes": 641743,
+        "entries": 33
+      }
+    }
+  ]
+}

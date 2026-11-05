@@ -3551,3 +3551,81 @@ authenticates all four archives, 488 focused calls, 12 valid captures, source
 hashes, branch selection, exact median/separation arithmetic and the failing
 integer Brave gate. Whole-page credit and broad cadence remain zero. No live
 site, isolated rendering-time or scrolling improvement is claimed.
+
+### Production JSC entry and native callback diagnostics (2026-11-05)
+
+`88d37101d`, `53c55ddf7` and `9cd883093` add a separately injected,
+opt-in diagnostic library. It records main-thread C API and Objective-C
+entry scopes with current-process retired instructions. Public registration
+APIs also wrap native callable callbacks, preserving receivers, arguments,
+private data and exception identity. Selected labels come from native
+constructor arguments; the probe never reads JavaScript `.name` getters or
+author source text. Immutable wrapper slots hold original callbacks and labels,
+without an object-address cache, extra JS root or private V-record ABI access.
+Private Objective-C method encodings are checked before installing wrappers.
+Caller addresses resolve through their actual `dladdr` image and Mach-O text
+range; callback rows explicitly identify a function entry rather than a return
+site. Background entries forward unchanged and do not enter the scope stack.
+
+The final focused selection passes seven guarded jobs: both warning-clean
+compiles, both signatures, baseline, inactive injection and active injection.
+It verifies recursion, original exceptions, private data, UTF-16 metadata,
+Unicode registration labels, a throwing `.name` getter, original observable
+output, address ranges and complete scope retirement. Earlier rejected runs
+are retained: syntax errors can be deferred until evaluation; injecting the
+guard also injected Python; an Objective-C `out` qualifier needed ABI handling;
+and JSC may supply a non-null argument pointer with zero arguments. None of
+these failed checks supplies performance evidence.
+
+Two independent production cohorts each capture the frozen page at five and
+thirty seconds, using fresh canonical processes, the original SOCKS replay and
+author scripts, private profiles/caches, 1024×768 viewport and scale 2. Both
+cohorts acquire nonblocking shared publication leases and pin bundle, libraries,
+probe and fixture identities throughout. All four captures exit normally and
+pass bootstrap, full content/button identity and exact unchanged pixels.
+No manual production build or app copy is used.
+
+Entry-only probe: executable SHA-256
+`8d0d0946f3a2939554782046edb7e73008ed47fa1ddb7b7e5f166322fd7c3a6a`,
+33 C units.
+
+| Settle | Process diagnostic instructions | Script factories | Native callable callbacks |
+| --- | ---: | ---: | ---: |
+| 5 s | 29,832,556,690 | 290 | unobserved |
+| 30 s | 40,049,473,702 | 290 | unobserved |
+
+Native-callback probe: executable SHA-256
+`c9d2093c14326096351d04f7b00931de87f33b5adbaa6008ba294ed0ae0e75ec`,
+33 C units.
+
+| Settle | Process diagnostic instructions | Script factories | Native callable callbacks |
+| --- | ---: | ---: | ---: |
+| 5 s | 39,681,181,054 | 289 | 232374 |
+| 30 s | 49,721,766,676 | 289 | 232433 |
+
+Script factories use about 9 million observed instructions per capture;
+compilation can be deferred into evaluation, so this does not establish total
+parse/compile cost. Module delivery enters large synchronous JSC work scopes.
+With callback observation enabled, the five-second capture records 232,374
+native callable invocations. Their self scopes total 11.33 billion instructions,
+including observer cost; generic string/value host trampolines dominate these
+rows. Named selector wrappers contribute a small part. These are leads for
+investigation, not isolated VM or native engine costs.
+
+The callback probe substantially increases process work at this call volume.
+The cohorts use different pinned builds and instrumentation and must not be
+compared as a speedup. Current-process counts include concurrent threads;
+self subtracts only observed nested scopes and leaves unobserved native
+property callbacks in their parent. Inclusive totals overlap. Constructor-to-
+atexit process counts differ from the exclusive-coalition capture endpoint;
+neither profile supplies unprofiled optimization or Brave acceptance credit.
+The entry and callback guards exit zero, adopt both browser PIDs, and peak at
+1,672,642,560 and 1,678,229,504 sampled RSS bytes respectively under 3 GiB.
+
+The [entry receipt](performance/chatgpt-jsc-entry-profile-20261105.json),
+[callback receipt](performance/chatgpt-jsc-native-profile-20261105.json) and
+[verification receipt](performance/chatgpt-jsc-probe-verification-20261105.json)
+authenticate raw rows, all development attempts, source revisions, commands,
+guards, original PNGs and audits in content-addressed ZIP archives. Whole-page
+credit and the broad cadence remain zero. The 5%-below-Brave target remains
+unmet; no live-site, rendering-time or scrolling improvement is claimed.
