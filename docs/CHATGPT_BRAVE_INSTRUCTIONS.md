@@ -4432,3 +4432,62 @@ browser for this optimization. **Page validation remains pending, with zero new
 page instruction credit and unchanged zero broad carry.** The preceding 2.2367%
 document-envelope result remains separate. The **5%-below-Brave target remains
 unmet**.
+
+
+## Production validation of live root document owner read (2026-11-06)
+
+The pending comparison above is now complete on canonical executable SHA-256
+`69f5f5130505252da73043d304375ffe1009e2a5b0555854fb21c2813f25fdd7`, source
+head `bde01623f70f4caba3d1737f0f5654f6a043edc4`, using 33 parallel C units.
+The owned source blobs match exactly, and the before/after aggregate build-input
+hashes agree. A nonblocking shared publication lease pins the executable and all
+native libraries through separate diagnostics, matched captures and broad checks.
+No additional build, app copy or download is requested.
+
+All four diagnostic and eight unprofiled captures pass JavaScriptCore bootstrap,
+complete content/button identity, normal browser exits and unchanged per-engine
+pixels. The native root-owner marker appears only in the candidate. The original
+SOCKS fixture, author scripts, references, tolerances, private profiles/caches,
+1024×768 logical viewport, scale two and unfocused five-second settle are unchanged.
+The scope remains exclusive-coalition creation through encoded document PNG,
+including startup and the existing documented per-engine audit/delivery/teardown
+boundaries. OS filesystem/shader caches remain warm; GPU execution and services
+outside the owned coalition are excluded.
+
+| Vox variant | Observed launch-through-PNG instructions | Frame checkpoints |
+| --- | ---: | ---: |
+| Control | 30,135,767,733 | 417 |
+| Candidate | 28,708,687,125 | 494 |
+| Candidate | 28,988,902,700 | 485 |
+| Control | 29,423,835,325 | 483 |
+
+The control median is **29,779,801,529** instructions and the candidate median
+**28,848,794,912.5**, an observed **3.1263% reduction**. Conservative separation
+`min(control) - max(candidate)` is **434,932,625 instructions**, exceeding the
+5,000,000-instruction broad-check threshold. All **47 required jobs pass**:
+20 screenshot comparisons including live image replacement and SVG paint-server
+mutations, 22 native compile/runtime jobs, four AST compile/runtime jobs with all
+100 fixtures exact in both GC modes, and one pixel-diff control. The credited
+conservative page saving is 434,932,625 and broad carry resets to zero.
+
+One-minute host load spans about 8.35–14.51 on 18 CPUs during the matched cohort.
+Controls complete 417 and 483 frame checkpoints; candidates complete 494 and 485.
+The first control's smaller frame count and substantial host contention qualify
+this four-pair observation. Counts are not normalized by frames, and no confidence
+interval or seven-pair acceptance is inferred. Every observation remains retained.
+The cohort's highest Vox upper bound divided by the lowest Brave lower bound is
+about 1.6577, far above 0.95. Candidate counts alone also exceed Brave's counts.
+The exact cohort gate fails: `602715354660 > 345399281412`. The **requested
+5%-below-Brave target remains unmet**.
+
+The controller and outer 12 GiB guard exit zero over 278.32 seconds including the
+broad checkpoint, peaking at 1,576,730,624 sampled RSS bytes and adopting 42 process
+identities without an adoption error. The publication lease is released.
+Finalization and independent verification exit zero and authenticate six archives,
+including the earlier pending attempt. The
+[production receipt](performance/chatgpt-document-owner-production-20261106.json)
+and [verification receipt](performance/chatgpt-document-owner-production-verification-20261106.json)
+retain exact raw counts, all 12 captures and original PNGs, source/control proofs,
+commands, guards, audits, focused evidence and the complete broad checkpoint.
+The earlier document-envelope saving remains separate; no live-site, cross-browser
+pixel equality, isolated rendering or scrolling claim is added.

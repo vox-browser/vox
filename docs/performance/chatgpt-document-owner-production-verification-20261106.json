@@ -1,0 +1,90 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-document-owner-production-20261106-evidence.zip",
+      "sha256": "d3478b581fb68c0e8236731042b0542269e2f3677050a1e276fd0868d345ba6d",
+      "bytes": 1656500
+    },
+    {
+      "path": "docs/performance/chatgpt-document-owner-20261106-evidence.zip",
+      "sha256": "1983f2e89fd7e190012f1a6675b0029391946dadf4ada278131e11b51412de8d",
+      "bytes": 36083949
+    },
+    {
+      "path": "docs/performance/chatgpt-document-owner-production-pending-20261106-evidence.zip",
+      "sha256": "395c77c627ce846d5af3656bac7e2e5c94667258fc994c009d6e1a85ceef6aee",
+      "bytes": 37662
+    },
+    {
+      "path": "docs/performance/chatgpt-document-owner-production-r1-broad-20261106-evidence.zip",
+      "sha256": "8e943a6d68fc4f430d35ad87ef64aabe12c277922d2e763d2739acacc2bc0e9c",
+      "bytes": 370983
+    },
+    {
+      "path": "docs/performance/chatgpt-document-owner-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "f590c186efa5e0fe4ddda94a31cb0fc781db61e6baf70a2a6334d3bf79ae0b0c",
+      "bytes": 1379625
+    },
+    {
+      "path": "docs/performance/chatgpt-document-owner-production-r1-matched-20261106-evidence.zip",
+      "sha256": "77cb5632bd9df95f3484fc7e122f2a461b7b4202c51dba50e79b706bc789c058",
+      "bytes": 2853202
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "69f5f5130505252da73043d304375ffe1009e2a5b0555854fb21c2813f25fdd7",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available document query/reply function disassembly",
+      "proof_sha256": "c731ba2cc32315abb21a6f4ca31d6114535f9220a3f06438ce8f244e4b10936d",
+      "source_hashes": {
+        "browserjs/document_owner_query.v": "40c646cfcdb6f7fccffc51b0ca3464a6a8ade74aee515d77fb55e2950f67d01b",
+        "main_compact_document_owner.v": "077942c4cfda945e93756d0d252a0441cd309158303b8c2260fdab5a6e40788a",
+        "main_compact_document.v": "0fb4b7d894c71b9f2c250fab523a82079cccddcf81f116f12f62cb6a86da1daf"
+      },
+      "qualification": "A synchronous read checks registered node ownership against the binding root document on every request. Clean known-root reads return the existing document facade directly; unknown, foreign and pending-edit reads retain the ordinary query/replay path. No owner identity is cached. The callback borrows its temporary key, performs no DOM writes, and returns only a JavaScript boolean. Captured native and Set.size intrinsics resist later author replacement. Control omits the scalar host installation. Separate candidate-only execution markers establish consumption; source-proof work receives no instruction credit."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-document-owner-production-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 277020672,
+    "elapsed_seconds": 0.635706292,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "browserjs/document_owner_query.v": "40c646cfcdb6f7fccffc51b0ca3464a6a8ade74aee515d77fb55e2950f67d01b",
+    "browserjs/document_owner_query_test.v": "bcd03491ab90252e74e19a2fc31ea310dcd143f1c9d54d32a36b34c35562a6ca",
+    "main_compact_document_owner.v": "077942c4cfda945e93756d0d252a0441cd309158303b8c2260fdab5a6e40788a",
+    "main_compact_document_owner_test.v": "419a8da3d07fe28bbb9c02ef0e73f7878d1f79522ca98e60790baa754d3224ca",
+    "main_compact_document.v": "0fb4b7d894c71b9f2c250fab523a82079cccddcf81f116f12f62cb6a86da1daf"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 296,
+  "page_instruction_credit": 434932625,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 30135767733,
+    "min_brave_lower": 18178909548,
+    "numerator": 602715354660,
+    "denominator": 345399281412,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Raw control/candidate arithmetic and the required broad-check cadence are verified independently. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. Every observation, host load, frame count and any regression remains retained. Positive conservative page separation receives credit only with all 47 broad jobs passed. The 5%-below-Brave target remains unmet."
+}
