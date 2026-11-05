@@ -2355,3 +2355,67 @@ hosts retain the earlier barrier. The full native GPU suite and 90 focused
 ordinary/canvas frame pairs pass, including sanitizer checks, with maximum
 error two. Live validation is in progress at this checkpoint and is not part
 of the preceding archive.
+
+### Video transfer and text-layer follow-up, November 6
+
+Smooth 60 fps remains open. These live-page trials retain the 1708×953
+document viewport at 2×, 600 precise delta-8 inputs at nominal 120 Hz,
+150-input reversals, private empty profiles/caches and ten seconds of settling
+after the required title. They count scroll-changing native publications after
+`updateLayer`, over the entire input period. Display scanout remains unmeasured.
+All four configurations below remain opt-in after mixed alternating pairs.
+
+| Candidate | Pair 1 publications/s | Pair 2 publications/s | Candidate p95 intervals, ms |
+|---|---:|---:|---:|
+| Read-only video capture plus the existing image/filter flags | 78.94→82.08 | 65.79→61.70 | 29.429 / 43.047 |
+| Retained media painting with the existing GPU flags | 78.07→65.30 | 66.49→79.04 | 47.117 / 30.730 |
+| Batched Metal blit readback | 87.98→77.92 | 89.14→90.26 | 26.667 / 24.676 |
+| Retained media plus the color-filter cache | 90.16→88.89 | 77.74→86.45 | 25.875 / 25.208 |
+
+Candidate maximum intervals range from 52.915 to 143.060 ms and deadline
+misses from 14.06% to 27.08%. Every arm completes all 600 inputs. The evidence
+retains each median, maximum, miss fraction, moving-frame count, boundary gap,
+actual input cadence and host load; varying controls limit attribution.
+
+`576aca87e` has zero pending video prefixes in both live eligibility diagnostics,
+so deferred command barriers receive no timing credit. `e6c8479f2` preserves
+an already-current GPU copy after read-only video capture; five input-window
+captures exercise it, but the combined timings above do not isolate its effect.
+Native optimized and sanitizer cases also reject failed readbacks instead of
+restoring invalid GPU state.
+
+`83c018cec` adds bounded batched Metal blit readback. All 26 native transport
+cases are exact in optimized and sanitizer builds, including pending writers,
+alpha, padding, invalid later regions and allocation fallback; the full native
+GPU-canvas suite also passes with the option enabled. The live diagnostic
+observes 3,686 input-window blits, including 1,093 multi-region transfers, with
+maximum leaf error three. The first timing pair regresses substantially, so
+the option stays off. The retained-media/filter combination separately records
+12 cache hits and 13 retained frame updates, also within the existing limit.
+
+The text-layer experiment `20316a9b9` records no actual GPU composites during
+input and reaches error 55 in a border corner, versus three in its control.
+It stays off. `67e26d945` narrows the barrier query to actual independent opacity
+sources; passthrough and overflow layers keep their existing ordering. Focused
+tests cover those guards, actual glyphs, nested groups and following root leaves.
+The initial guard fixture failed because it selected the root recording mode;
+the corrected fixture and complete native suite pass. Fresh live validation of
+this restricted query remains separate.
+
+Two uncommitted experiments were removed: empty-image damage finds no eligible
+live image, and a transparent video-raster cache exceeds the pixel limit in its
+focused rounded/translucent case (error 18). Their patches, failures and earlier
+passing checks remain in the evidence; neither receives scrolling credit.
+
+These trials use the parallel production build with 33 C units and custom C
+`-O3`/inlining flags. The prealloc V frontend did **not** receive literal
+`-prod`. The later user-requested plain `-prod` build is a separate experiment;
+its results must not be inferred from this cohort. See the
+[build-mode distinction](PARALLEL_CC_PERFORMANCE.md).
+
+The [report](performance/vlang-gpu-scroll-video-transfer-20261106.json) and
+[verified raw archive](performance/raw/vlang-gpu-scroll-video-transfer-20261106.tar.gz)
+retain all 26 attempts and 346 raw files. The
+[completed collection receipt](performance/vlang-gpu-scroll-video-transfer-20261106-collection.json)
+is separate from the archive, and active collector output files were excluded.
+Earlier evidence archives remain unchanged.

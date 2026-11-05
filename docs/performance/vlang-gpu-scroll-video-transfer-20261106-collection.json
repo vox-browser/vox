@@ -1,0 +1,18 @@
+{
+  "guard": {
+    "command": [
+      "python3",
+      "Build/vlang-finish-20261105/collector-transfer-followup.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 45170688,
+    "elapsed_seconds": 1.998616542,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "collector_stdout": "26 attempts; 346 verified raw files; 2001780 archive bytes\n{\"command\": [\"python3\", \"Build/vlang-finish-20261105/collector-transfer-followup.py\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 45170688, \"elapsed_seconds\": 1.998616542, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n",
+  "active_collector_outputs_excluded_from_archive": true
+}
