@@ -1710,3 +1710,42 @@ which contains all five fixes, alternating runs at load 12–33 measured 97.0 an
 1708×953, delta-8, reverse-every-150 protocol. The larger window and longer
 scroll range reach the code panels, sponsor logos, mascot and video that the
 original protocol never scrolls to.
+
+## Toward 60 FPS at a 1708 px window (2026-11-05, continued)
+
+A main-thread sample of the user-sized scroll (bundle `e9b0f545…`, GPU canvas
+on) put 45% of the main thread in synchronous GPU round trips (inset
+shadows, CSS gradient tiles, shapes and images, plus canvas readbacks before
+unsupported commands), 19% in the scroll ring's copy into the frame and 11%
+in CSS gradient tiles alone. Changes since:
+
+| Commit | Change | Evidence |
+| --- | --- | --- |
+| `52b606694` | Inset shadows (including over Chromium MSAA tiles, through a multisampled scratch pass), stroked rounded rectangles and ellipses draw on the GPU canvas | 3 pairs, load 102–118: 46.6/45.9/46.7 → 53.1/53.8/51.8 FPS; live per-leaf verification finds no differing inset leaf |
+| `9d8ecb111` | CSS gradient tiles (generated-image patterns) draw on the GPU canvas | 3 pairs, load 42–58: 36.6/38.3/41.7 → 40.6/43.4/43.9 FPS |
+| `f9d0d123d` | Frame bitmaps come from a pool of three mapped buffers instead of a new 29 MB allocation per frame | copying 26 MB into a fresh bitmap: 2.73 ms, into a reused one: 0.75 ms; idle animation frames spend 33% of the main thread in that copy |
+| `8f7a8e859` | The ICC conversion cache holds 96 MB, so the 37 MB converted mascot is cached | the mascot leaf took 40–118 ms per frame, converting 9.25 million pixels each draw |
+| `3ac582b15` | Video frames swap channels with NEON instead of a per-byte loop | conversion check covers every byte |
+
+Both A/B cohorts use the same injected libraries in both arms with the new
+kill switches (`VOX_GPU_CANVAS_DISABLE_INSET`, `_OUTLINES`, `_GRADIENT_TILES`)
+in the control. With all canvas changes injected, a scroll frame reads the
+canvas back 0.88 times (only the end-of-frame readback in most frames) and
+the mean draw loop is 13.0 ms, against 26.9 ms for the bundle installed at the
+time under the same load.
+
+Absolute FPS moved with host contention throughout: the GPU was 20–36% busy
+with other sessions' work and per-leaf GPU waits grew about 1.5 times between
+two otherwise similar runs. The pool, ICC and video changes are in the main
+executable and await a production build; the shared build was repeatedly
+invalidated by concurrent edits before freezing, so no installed bundle
+contains them yet and they have no scroll measurement.
+
+Remaining costs per scroll frame at this size: the end-of-frame canvas
+readback, the playing video (a 1426×1080 frame uploaded and drawn at
+948×718 for every new frame, about 30 ms per draw under contention), the
+sponsor logos' Core Image filters, solid fills with fractional edges (the
+canvas cannot observe Quartz's anti-aliasing state and reads back first) and
+the scrollbar thumb, which is often a frame's only GPU leaf. The ring copy
+itself remains until the retained frame is presented through Core Animation
+instead of copied.
