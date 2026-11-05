@@ -1257,6 +1257,58 @@ no duplicate build is started. No new site or broad-suite pass is claimed.
 [Receipts, source seals and limitations](evidence/techcrunch-transition-storage-20261105.json),
 [retained traces and attempts](evidence/techcrunch-transition-storage-20261105.zip).
 
+## TechCrunch: native keyframe lookup lifetime (2026-11-05)
+
+Commit `822b9956d` retires the property-ID and specified-value lookup tables
+used during native keyframe computation. Resolved values, computation-context
+caches and the returned map remain in the document's retained owner. The
+workspace applies when that document owns the current allocation context;
+per-frame animation samples keep their existing bounded owner.
+
+The new allocation regression fails before the fix with **118,944 bytes**
+retained over 64 evaluations after warm-up. The correction passes the unchanged
+**65,536-byte** bound. A second regression reads the returned values after
+lookup retirement and later churn, checking variable substitution, initial-value
+fallback, logical-property mapping and intact specified input. Both new cases
+and all **nine existing dependency/substitution controls** pass with default GC,
+GC disabled and preallocation with arena poisoning.
+
+Commit `02c80f1ca` separately repairs two optional-property calls in the existing
+property-source fixture. Generated C passed a pointer-to-pointer into a helper
+expecting a style-value pointer. Unwrapping into locals preserves every assertion
+and expected value; all four cases then pass in all three memory modes. The
+original failure, generated-C excerpts and the first immutable-token compile
+failures remain recorded. No production compiler correction is claimed.
+
+Fresh **Hacker News and WIRED cold-cache strict checks pass at zero pixels** on
+`c0db66eb…`: saved source, both independent Brave replays and Vox agree. WIRED
+retains its explicit first-frame image policy. The native same-size SVG
+source-switch reftest is also exact, and independent RGBA hashes confirm all
+three comparisons. The earlier 8,700-pixel Brave reference failure remains in
+its original evidence.
+
+That control bundle and the later `999a3e88…` production browser have identical
+complete build-input digest `2b9b732b…`. The later receipt verifies inputs
+containing `822b9956d` and its transition-reuse ancestor. This ties the controls
+to the committed engine source while retaining the distinct executable
+identities; it supplies no matched performance comparison.
+
+TechCrunch still exceeds the **3 GiB runtime guard** on `999a3e88…` before a PNG
+is produced. The fresh baseline on `68ebd616…` and the private windowed candidate
+also fail. All browser exits remain `-9`, even where a surrounding diagnostic
+controller exits zero. The fixture, tools and browser identities remain pinned
+through each finite run. No guard, reference or pixel tolerance is changed.
+
+The private probe is preserved and removed from normal test discovery.
+Disposable generated C from the earlier task directories is removed after
+recording its hashes; their logs, source pins and committed archives remain.
+No new site or broad-suite pass is claimed. TechCrunch's full native comparison,
+the existing document-scratch bound, Engadget readiness, Slate source fidelity
+and ordinary WIRED animation parity remain open.
+
+[Receipts, source provenance and limits](evidence/techcrunch-keyframe-workspace-20261105.json),
+[retained checks and attempts](evidence/techcrunch-keyframe-workspace-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged

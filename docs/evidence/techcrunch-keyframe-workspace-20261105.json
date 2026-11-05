@@ -1,0 +1,3020 @@
+{
+  "status": "Keyframe lookup workspace correction and the independent fixture repair are committed. Production controls pass; TechCrunch still exceeds its native runtime memory guard. No new site or broad-suite pass is claimed.",
+  "commits": {
+    "engine": "822b9956d0ca3b575ddb6b5a4fa93c0705a27ecf",
+    "fixture": "02c80f1caadb17054ab858136d1ce01bccde1800"
+  },
+  "raw_root": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105",
+  "implementation": "Only native document-owned computation outside animation-frame sampling retires the property-ID and specified-value lookup maps. Resolved values, computation context caches and the returned map stay in the original document owner. Existing bounded animation sample ownership is preserved.",
+  "focused": {
+    "new_cases": 2,
+    "existing_cases": 9,
+    "modes": [
+      "default GC",
+      "GC disabled",
+      "prealloc with VOX_ARENA_POISON=1"
+    ],
+    "new_results": "focused-v2",
+    "existing_results": "controls-v3",
+    "negative": "negative: 118,944 bytes accumulated over 64 keyframe evaluations after warm-up, fails the unchanged 65,536-byte bound",
+    "positive": "Both new cases pass in all modes. The returned opacity value, substituted calculation, initial-value fallback, logical-to-physical mapping and original keyframe input remain correct after lookup retirement and subsequent churn.",
+    "feature_pins": {
+      "css/computed_interpolation.v": "66cb0be440956c0754dc1d2a880fe17ec194f8eb218daa317b977f0648de9150",
+      "css/keyframe_workspace_test.v": "d66e1a64695d2de8d428d779780f08e873d0f19a319b1b02d68539494226b418"
+    },
+    "control_pins": {
+      "css/computed_interpolation.v": "66cb0be440956c0754dc1d2a880fe17ec194f8eb218daa317b977f0648de9150",
+      "css/keyframe_workspace_test.v": "d66e1a64695d2de8d428d779780f08e873d0f19a319b1b02d68539494226b418",
+      "css/property_value_source_test.v": "7529941fc38a637f196cb9c563734de6a133738e5794dfee13ae48895f00b8d8"
+    }
+  },
+  "fixture_repair": {
+    "path": "css/property_value_source_test.v",
+    "cases": 4,
+    "failure": "controls-v2: missing typed list. The generated helper call passes &option.value (a pointer-to-pointer) when the V source unwraps an optional property inline.",
+    "correction": "Unwrap the two optional properties into locals before passing them. All assertions and expectations remain unchanged; all four cases pass in all three memory modes.",
+    "generated_C_snippets": {
+      "failed": {
+        "generated_c": "Build/techcrunch-keyframe-workspace-20261105/controls-v2/property_value_source_test-default.c",
+        "sha256": "2c0dd87b72ecc820a74a963c73f89280cdae2e0f15eb006a6d6b37d124fb73eb",
+        "snippet": "optional-argument-failed.txt"
+      },
+      "corrected": {
+        "generated_c": "Build/techcrunch-keyframe-workspace-20261105/controls-v3/property_value_source_test-default.c",
+        "sha256": "1b59b88281b5cdc47df9e6812732986d7de771b4988558e66ed15a3346ee0a92",
+        "snippet": "optional-argument-corrected.txt"
+      }
+    },
+    "qualification": "Test-call correction only; no production compiler correction is claimed."
+  },
+  "other_retained_failures": [
+    "The first engine compile attempts fail because the retained-allocation tokens were declared immutable. The corrected code declares those tokens mutable."
+  ],
+  "browser_controls": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c0db66eb91ee39e37739b961592403f847e102eef1f7fd7b892e07086380f296",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "63d9e5d7f47ba8ad9cac93dd6ecc81381822d2afefb667215defa73f14bcda3c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7b47838ace705566b3c1909680ada4a07451864b96e84d7a82181dd9678678f0",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "c0db66eb91ee39e37739b961592403f847e102eef1f7fd7b892e07086380f296",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+        "dirty": true,
+        "head": "7f478e6b87a2d04f53f56b586d3764a779ef59a2",
+        "repository_sha256": "8498ca9c4e8582474da3f8bb074fdabd55c3850ca3a7261bb054cae5c0c10512"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "7f478e6b87a2d04f53f56b586d3764a779ef59a2",
+        "id": "06f12d6943f64bb6ac713918b9f857ce"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+        "dirty": true,
+        "head": "02c80f1caadb17054ab858136d1ce01bccde1800",
+        "repository_sha256": "c8b50937a6dd5723a612775f091a01589a3087defa5a41b362075c399a6bdceb"
+      }
+    },
+    "inputs_unchanged": true,
+    "sites": {
+      "started_at": "2026-11-05T19:29:05+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "cold",
+      "sites": [
+        {
+          "id": "hacker-news",
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        },
+        {
+          "id": "wired",
+          "name": "WIRED",
+          "url": "https://www.wired.com/",
+          "status": "pass",
+          "image_animation_policy": "none",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "c70c845521149c08f0243e4529b8510581e47f9d7a56d4f3d9bb9ae4f9f90f7b"
+        }
+      ],
+      "passed": 2
+    },
+    "results": [
+      {
+        "name": "sites",
+        "exit": 0
+      },
+      {
+        "name": "svg-source-switch",
+        "exit": 0
+      }
+    ],
+    "rgba": {
+      "hacker-news": [
+        {
+          "path": "/Users/alex/code/vox2/Tests/Browser/Brave/sites/hacker-news/live.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/brave.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/brave-repeat.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/vox.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        }
+      ],
+      "wired": [
+        {
+          "path": "/Users/alex/code/vox2/Tests/Browser/Brave/sites/wired/live.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/brave.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/brave-repeat.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/vox.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        }
+      ],
+      "svg-source-switch": [
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/svg-source-switch/svg-image-source-switch-same-size.actual.png",
+          "size": [
+            800,
+            600
+          ],
+          "rgba_sha256": "ab791fe176f9600ce5280f367d6802114ddb5d96fbdf92a5323449bba803560e"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/svg-source-switch/svg-image-source-switch-same-size.expected.png",
+          "size": [
+            800,
+            600
+          ],
+          "rgba_sha256": "ab791fe176f9600ce5280f367d6802114ddb5d96fbdf92a5323449bba803560e"
+        }
+      ]
+    },
+    "source_provenance": {
+      "controls_build_inputs": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+      "verified_engine_build_inputs": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+      "engine_receipt": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "999a3e88c47c979800d5d653d41a3f8d07fa1747c426aeaf0a10c9bc49679176",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+          "dirty": true,
+          "head": "822b9956d0ca3b575ddb6b5a4fa93c0705a27ecf",
+          "repository_sha256": "3cb2666834af018d2817d815a436ddcb1de8897315db75310638552334996ef2"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "822b9956d0ca3b575ddb6b5a4fa93c0705a27ecf",
+          "id": "0ac3bd0dd7ec4bb79a75ea8e25a49f77"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+          "dirty": true,
+          "head": "8142a72c796ceb4c791a8daaeb8cb6a3f89c2325",
+          "repository_sha256": "87c550aafffcb11f2a74ec1c254fcc3bd9e36db46a1d2c7f1714bfcba97ee253"
+        }
+      },
+      "qualification": "Equal complete build-input digests tie the successful control bundle to the later verified inputs containing commit 822b9956d and its transition-reuse ancestor. Executable identities remain distinct; this supplies no matched performance comparison."
+    },
+    "qualification": "Hacker News and WIRED cold-cache strict source/replay/native gates are exact on c0db66eb, with unchanged inputs. WIRED retains its explicit first-frame policy. The native same-size SVG source-switch reftest is exact. The earlier 8,700-pixel Brave reference failure remains in its original evidence."
+  },
+  "techcrunch": {
+    "baseline_identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "68ebd616723ad2274218a18ba86f9b59b62789a132f4575f66f7c1527d978d5f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "63d9e5d7f47ba8ad9cac93dd6ecc81381822d2afefb667215defa73f14bcda3c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7b47838ace705566b3c1909680ada4a07451864b96e84d7a82181dd9678678f0",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "baseline_guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/baseline/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3287154688,
+      "elapsed_seconds": 4.613284707999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "private_candidate_guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/instrumented-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/instrumented/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3222339584,
+      "elapsed_seconds": 26.318869417000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "private_candidate_inputs_unchanged": true,
+    "production_identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "999a3e88c47c979800d5d653d41a3f8d07fa1747c426aeaf0a10c9bc49679176",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "63d9e5d7f47ba8ad9cac93dd6ecc81381822d2afefb667215defa73f14bcda3c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7b47838ace705566b3c1909680ada4a07451864b96e84d7a82181dd9678678f0",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "production_receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "999a3e88c47c979800d5d653d41a3f8d07fa1747c426aeaf0a10c9bc49679176",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+        "dirty": true,
+        "head": "822b9956d0ca3b575ddb6b5a4fa93c0705a27ecf",
+        "repository_sha256": "3cb2666834af018d2817d815a436ddcb1de8897315db75310638552334996ef2"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "822b9956d0ca3b575ddb6b5a4fa93c0705a27ecf",
+        "id": "0ac3bd0dd7ec4bb79a75ea8e25a49f77"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "2b9b732bf1adda49617aefbcb83edfe4c4c15acb7507287ec978ccb28cb20618",
+        "dirty": true,
+        "head": "8142a72c796ceb4c791a8daaeb8cb6a3f89c2325",
+        "repository_sha256": "87c550aafffcb11f2a74ec1c254fcc3bd9e36db46a1d2c7f1714bfcba97ee253"
+      }
+    },
+    "production_inputs_unchanged": true,
+    "production_guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/production-fixed/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3264069632,
+      "elapsed_seconds": 4.153452292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "qualification": "Every native attempt retains memory_limit and browser exit -9. A zero-exit diagnostic controller does not confer browser success. No TechCrunch PNG, native pixel pass, or matched memory/instruction/timing improvement is claimed."
+  },
+  "cleanup": "Disposable generated C from the earlier task Build directories was removed after preserving a SHA-256 manifest; original logs, commands, source pins, binaries and committed evidence archives remain. The private windowed probe is preserved in this archive and removed from normal test discovery.",
+  "pending": [
+    "TechCrunch capture under the unchanged 3 GiB runtime guard and exact source/reference/native checks",
+    "The existing native document-scratch bound failure from the prior controlled baseline",
+    "Engadget readiness, Slate source fidelity, and WIRED ordinary-animation parity"
+  ],
+  "broad_suite": "No new broad suite. Historical rendering results retain their original build identities.",
+  "archive": {
+    "path": "docs/evidence/techcrunch-keyframe-workspace-20261105.zip",
+    "sha256": "1a119644e4b112e55af5d4dfcdb7757580cdc3d20dc0a49a1bea68b93cc9814c",
+    "bytes": 1924073,
+    "files": [
+      {
+        "path": "baseline/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "baseline/browser.guard.json",
+        "bytes": 594,
+        "sha256": "2d5d9fbf415dd70b5454f1476a6f59ec941dadc752c1d2ec38105e1ac2177b4f"
+      },
+      {
+        "path": "baseline/browser.log",
+        "bytes": 760,
+        "sha256": "f8aff004032738da72dfe2171d1445c3a3ce8a6df2339367da834b27e0e2ef9b"
+      },
+      {
+        "path": "baseline/command.json",
+        "bytes": 626,
+        "sha256": "c511cd136705418b97765a840cc82f8736da1ea39908dc74db067839e76ead64"
+      },
+      {
+        "path": "baseline/replay/openssl.log",
+        "bytes": 925,
+        "sha256": "5012a1f4492c3aeededde73e01dd9fdaaaf207727a6805f9d68acd0e9ff6e80e"
+      },
+      {
+        "path": "baseline/replay/ready.json",
+        "bytes": 461,
+        "sha256": "4b633e11394277a3a32e2d66a7d0a5bf978db4ffdc52ab031fb2f348cd25e915"
+      },
+      {
+        "path": "baseline/replay/requests.jsonl",
+        "bytes": 11822,
+        "sha256": "ba406f4f7a1081e4480eccc147b32bc2b5cdf3c0f04fc51c253d98ad04e3af1e"
+      },
+      {
+        "path": "baseline/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "337a6a0964f8c2ad5ddb5cc9a94ab9dd952ba6ad20dcef46cfbf338b321626c1"
+      },
+      {
+        "path": "browser-controls/inputs-after.json",
+        "bytes": 158890,
+        "sha256": "b25d1574f95c9d3c689276007bbbca9338914374ca971f9eccf685700a595eec"
+      },
+      {
+        "path": "browser-controls/inputs.json",
+        "bytes": 160200,
+        "sha256": "aae300f562bce750e49721e0530fd42b4750bf443413f8b9584710b5b55abd8d"
+      },
+      {
+        "path": "browser-controls/results.json",
+        "bytes": 103,
+        "sha256": "7ff035f696f0d31daa427e613f1d695f18147d7f426e4981ed1a0ec8538db6ba"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/audit-config.json",
+        "bytes": 184,
+        "sha256": "ec0e24fdf228276dc26545141fdceb554435b06f2e74eb6bbbde89b49bb481d3"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.command.json",
+        "bytes": 1389,
+        "sha256": "920fc3b53cef1be3cd3104b2b1573b3dfe5d65429ad393f7a17224f792f52907"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.guard.json",
+        "bytes": 1299,
+        "sha256": "9d6eb4193e8332e2b5de6936dd6542539df1eb44274ffceddb9ac7619db8b29a"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.json",
+        "bytes": 133744,
+        "sha256": "735ec3794575c5fa47257579cd1306317a0b14c8162abef9055db3e695eff919"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "caaefee0d137cf60114d1380adb8675843d7c17f5be6575941fe2d633ecaba66"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.log",
+        "bytes": 1605,
+        "sha256": "61660517648d51df3b47f0b50c9e0005e4fba6bc6b08518716fc30c238435f24"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.png",
+        "bytes": 200558,
+        "sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.png.json",
+        "bytes": 134330,
+        "sha256": "f97593a35d31d350a6c1597131ae2cb94a9921f76db8c2696f8f5145686af75a"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.command.json",
+        "bytes": 1361,
+        "sha256": "f562304130360fbf43b322a07c5dd19f42e041d0c7ce218465149d78672124ec"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.guard.json",
+        "bytes": 1285,
+        "sha256": "b0d28516e727c810db21b18db11162fb9dda371db196c0706efa55f71975c8c8"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.json",
+        "bytes": 133740,
+        "sha256": "d6c821590d18ea6521a8ae196a434933cbaf35c3b4925cc138aeb5a40f96156f"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "36a27c21869e206d02adfaa7e8b50d3ee3f1d443aef4235b564cb29f698337c3"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.log",
+        "bytes": 1584,
+        "sha256": "495903ab4e3dd1cced2e57a8351aa7f48fa5b28a4b5414aa884f74693561be4f"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.png",
+        "bytes": 200558,
+        "sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.png.json",
+        "bytes": 134330,
+        "sha256": "f97593a35d31d350a6c1597131ae2cb94a9921f76db8c2696f8f5145686af75a"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/browser-identities-after.json",
+        "bytes": 10824,
+        "sha256": "5bea09d5282eb84f0e75ab8f65023d27533b40af570a4b859804db720eb43e96"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/browser-identities.json",
+        "bytes": 10824,
+        "sha256": "5bea09d5282eb84f0e75ab8f65023d27533b40af570a4b859804db720eb43e96"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/cache-policy.json",
+        "bytes": 52,
+        "sha256": "6b48c39b387bc1d8591ae9e70eb9b4aef6acc78ed28286515bf5fcc806c4d57b"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/identity.json",
+        "bytes": 3641,
+        "sha256": "780a911d3359e7a51d792c4bac9749a200220ca1252cce24adc43b35912bc65b"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/live-to-frozen.diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/live-to-frozen.json",
+        "bytes": 778,
+        "sha256": "b3a2ae6426213c26dd24d6f27f32b7f7f9b2717d03f57dc2ea5e2d7788096d04"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/pixels.json",
+        "bytes": 789,
+        "sha256": "75f67ef2120ac27b6a5b2c78e3dda88f224ff7d4e372ea44e00a38cd867bab32"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/reference-replay.diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/reference-replay.json",
+        "bytes": 832,
+        "sha256": "b27151cbde3b6066418ad4b2d797aea75cc7ea2e2b2b4605e3aa3cb7cc6c8469"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/replay/openssl.log",
+        "bytes": 1144,
+        "sha256": "24b5b0486d3ff086aefaed768cc6b02e5b82bd9c262b9f5dbb5c287b288a0295"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/replay/ready.json",
+        "bytes": 494,
+        "sha256": "5e7583c04292b381dbe72e14ef99b8abf4980547153efd22f284eb3a706758ac"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/replay/requests.jsonl",
+        "bytes": 6251,
+        "sha256": "c1681f60362fbb8ab8169c7569fed5c539210d87ff55e3daaca7472f76094db9"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.audit.json",
+        "bytes": 5968,
+        "sha256": "ff3bbc5522a3810d473356d78e7db6811fb8908e9cbef557cd4fa8c06a9eef56"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.command.json",
+        "bytes": 725,
+        "sha256": "4d36ba6168f23931a8544ac69f764308182980b182ad3b43536277bed5b57662"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.guard.json",
+        "bytes": 622,
+        "sha256": "11744a389d6ecbd9c7d0ec3ca5994e207a9a7e28ed8b74a17faf7c7b001df100"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.log",
+        "bytes": 934,
+        "sha256": "0c986c1657a92c5de349a4548631d938c08d20098228dc1b374310e1617794f7"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.png",
+        "bytes": 490277,
+        "sha256": "75423e1774abde26ee131961d08a7a73fd2833564cfd884964898be1230ef889"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.requests.jsonl",
+        "bytes": 12041,
+        "sha256": "6a0bcf1f322e88e3e4510eafa64f6410ebcb0441444a80eaf2e3d71bcc1148b1"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.command.json",
+        "bytes": 1249,
+        "sha256": "7921deef02ee3a833fec580b05901af7784907b7775804dd50a5e6f1b1ca3e4b"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.guard.json",
+        "bytes": 1161,
+        "sha256": "68a06766d6d3e0d9c62f1761ebcaae8643540880ac3e041b7d38a517b9b9396e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.json",
+        "bytes": 20470,
+        "sha256": "5787d4d4a23e345aefb24d71d3287413dcee25ceb4909c67a2325b12b42b5e1b"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "a32a92520eef2e8dec6026695c4f728051fb2cfd655714d7ca25435c3f1ba9cc"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.log",
+        "bytes": 1349,
+        "sha256": "7be245eb66960bea54a126c0d633b7e660008e9e05e3a1fcf76b1cce4508bde2"
+      },
+      {
+        "path": "browser-controls/sites/summary.json",
+        "bytes": 1290,
+        "sha256": "a670d0d4d03df4f6a5879f5c66201c65e71fec5a0879e767413baf7b45ebbd60"
+      },
+      {
+        "path": "browser-controls/sites/wired/audit-config.json",
+        "bytes": 184,
+        "sha256": "ec0e24fdf228276dc26545141fdceb554435b06f2e74eb6bbbde89b49bb481d3"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.command.json",
+        "bytes": 1355,
+        "sha256": "2f7015dd0c302fd974e80c98626deeadd3a5d093b1cb050c5854ee832f3c770e"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.guard.json",
+        "bytes": 1277,
+        "sha256": "15bb4ca4261f626288306b28ec1674d3fa68bfc144f5521fb850183ad9f8209f"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.json",
+        "bytes": 244802,
+        "sha256": "7f327bd508f6a2ffad4d82486174fd8aefcadbf965ad62544b8268e4030e8b17"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "30ec40584e6df9f0b44bb28d92512b8415bc882d533108ef7e346e2ef5fec145"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.log",
+        "bytes": 1638,
+        "sha256": "b804104fe9c342ac3016c03ac5d4f41b14148e8c52eb6af4eec04998351f24fe"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.png",
+        "bytes": 188422,
+        "sha256": "bad89a2bdbde652b63c25dc244a571ae9ab390831b06ea69f71fe0266e0f88b0"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.png.json",
+        "bytes": 647804,
+        "sha256": "f2adef83d73593c109f1567e5b4385e072ec0130971081b35d8a7a7d0da02f6a"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.command.json",
+        "bytes": 1327,
+        "sha256": "d18970f8bbf06c4a1e6fddd972319380ab152cfb1c502c952503cecc041f6edf"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.guard.json",
+        "bytes": 1263,
+        "sha256": "7f1c8afce931194e34da26e9c5f8d036bba03285b1b3f5680119acd97e31158d"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.json",
+        "bytes": 244792,
+        "sha256": "f74eefad4fdab7032f81c04d5de04451bfe5c0cc5cefe02ebad23cbd118b1175"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "916285ac3994feeeaf24d89448770fd0f530df39581a348c209e58f681295b69"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.log",
+        "bytes": 1617,
+        "sha256": "170df5460b02714e29d9b024331432fcc894d27192d0f53a62d2ae0bb54d43a5"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.png",
+        "bytes": 188422,
+        "sha256": "bad89a2bdbde652b63c25dc244a571ae9ab390831b06ea69f71fe0266e0f88b0"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.png.json",
+        "bytes": 647804,
+        "sha256": "f2adef83d73593c109f1567e5b4385e072ec0130971081b35d8a7a7d0da02f6a"
+      },
+      {
+        "path": "browser-controls/sites/wired/browser-identities-after.json",
+        "bytes": 10824,
+        "sha256": "5bea09d5282eb84f0e75ab8f65023d27533b40af570a4b859804db720eb43e96"
+      },
+      {
+        "path": "browser-controls/sites/wired/browser-identities.json",
+        "bytes": 10824,
+        "sha256": "5bea09d5282eb84f0e75ab8f65023d27533b40af570a4b859804db720eb43e96"
+      },
+      {
+        "path": "browser-controls/sites/wired/cache-policy.json",
+        "bytes": 52,
+        "sha256": "6b48c39b387bc1d8591ae9e70eb9b4aef6acc78ed28286515bf5fcc806c4d57b"
+      },
+      {
+        "path": "browser-controls/sites/wired/diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/wired/identity.json",
+        "bytes": 3641,
+        "sha256": "780a911d3359e7a51d792c4bac9749a200220ca1252cce24adc43b35912bc65b"
+      },
+      {
+        "path": "browser-controls/sites/wired/live-to-frozen.diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/wired/live-to-frozen.json",
+        "bytes": 754,
+        "sha256": "5cff95c740850ed418ef828e1fcefe17e1d34c60d9db7c920189628aaee9c38e"
+      },
+      {
+        "path": "browser-controls/sites/wired/pixels.json",
+        "bytes": 765,
+        "sha256": "6234c224c01c31024fb41c30b72d142fa44e75bcd1729a774c113c89a4da6cc5"
+      },
+      {
+        "path": "browser-controls/sites/wired/reference-replay.diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/wired/reference-replay.json",
+        "bytes": 808,
+        "sha256": "d4c54b44b22d34c6215c2255c9b1a0843a2493d0a9510c53117adca99cd8bbfc"
+      },
+      {
+        "path": "browser-controls/sites/wired/replay/openssl.log",
+        "bytes": 655,
+        "sha256": "261f46be1275d87fff4b9151e88306c06596c0c38ed2a174b3732eea24a3e6b2"
+      },
+      {
+        "path": "browser-controls/sites/wired/replay/ready.json",
+        "bytes": 475,
+        "sha256": "5cba264eb71f246e33125710ae195ddb376e17459880f949904896b157d081c5"
+      },
+      {
+        "path": "browser-controls/sites/wired/replay/requests.jsonl",
+        "bytes": 42113,
+        "sha256": "88aecfd98e43edcb66bdb4038f4120e1b4a56616c95723de49c99f5eb351c12e"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.audit.json",
+        "bytes": 74043,
+        "sha256": "a9a1921aeb26d7fea06c8daa8a8cac19ca0c1b2e4a2fe1031f4d6a4fc08c030e"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.command.json",
+        "bytes": 700,
+        "sha256": "c8071f3ee6d80b079c5c791fdbd11a3a6a12a0e195b6eef726a40dd68365d1ed"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.guard.json",
+        "bytes": 608,
+        "sha256": "7c6e2685a05c6b6b6e1923dc19ac1534dec2e2e522e2139227f0d74bd827c94f"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.log",
+        "bytes": 914,
+        "sha256": "81e43f635d171545ea7918a47b0ab01bf70477861e07089636a1864262286219"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.png",
+        "bytes": 641922,
+        "sha256": "e0602eabb97ac56af87f02e6225da3bcfeecffab0838e06da46dcee29e40d885"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.requests.jsonl",
+        "bytes": 172524,
+        "sha256": "6617a6fb5ab6d03cda8e28efa8ea47c64a4c8f1a2cc1e16edd5ed23c7d40fa4c"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.command.json",
+        "bytes": 1215,
+        "sha256": "20257ab21821883c4fa745a053b0d8f3fbcc7c1fe213ce4d47bc36eb0ddca0af"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.guard.json",
+        "bytes": 1138,
+        "sha256": "48bb2cd00b8c97d27678eb901214057a51c05c38acacc2c43f76d8bc533b5af8"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.json",
+        "bytes": 156667,
+        "sha256": "36292493a0c7dcad01b788977df632c774156192ca2e6fa0c76d4ace18482b0d"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "52a01c9eff168b83e668648a79ff97dd503c5a83fe8f6a4f749c886ec1b015b3"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.log",
+        "bytes": 1321,
+        "sha256": "0d9e1c8dd0e5c6fd624293dd115eee6d9eeb0e2819039c55f2cb1326463a9773"
+      },
+      {
+        "path": "browser-controls/sites.command.json",
+        "bytes": 801,
+        "sha256": "5e99fae1f8dedd8116af4687bb22cf68cb0dd658ab149b74642e14029473e644"
+      },
+      {
+        "path": "browser-controls/sites.guard.json",
+        "bytes": 808,
+        "sha256": "2c28ef29ba82b3320a506b404e09b7f54af6c08b0c5ecf4f8cd1b19499190911"
+      },
+      {
+        "path": "browser-controls/sites.log",
+        "bytes": 1715,
+        "sha256": "8372d22c5f21177dd89d03e93797372e909f4ef40d5dece9d30ae5c716b1dbf4"
+      },
+      {
+        "path": "browser-controls/svg-browser-logs/browser.log",
+        "bytes": 303,
+        "sha256": "d079b65c01c88f7d51614019ebf1703f027f4544d47ca69b046246b78b7c2702"
+      },
+      {
+        "path": "browser-controls/svg-source-switch/svg-image-source-switch-same-size.actual.png",
+        "bytes": 11124,
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      },
+      {
+        "path": "browser-controls/svg-source-switch/svg-image-source-switch-same-size.diff.png",
+        "bytes": 19598,
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "browser-controls/svg-source-switch/svg-image-source-switch-same-size.expected.png",
+        "bytes": 11124,
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      },
+      {
+        "path": "browser-controls/svg-source-switch.command.json",
+        "bytes": 456,
+        "sha256": "e2771e33b7f60217a0cb47b0554ce06cffd97fbe353a8b5c2b696beac3621581"
+      },
+      {
+        "path": "browser-controls/svg-source-switch.guard.json",
+        "bytes": 390,
+        "sha256": "3f9f5d2f6fdfbeb0fe5718e8651137425c3d169b7bd2cbba7f16e75a7069eb99"
+      },
+      {
+        "path": "browser-controls/svg-source-switch.log",
+        "bytes": 1340,
+        "sha256": "0ba1f94a4ac93efcd027f58e2c783479f2d84cc6218d3993550081e9979002c3"
+      },
+      {
+        "path": "browser_controls.py",
+        "bytes": 3383,
+        "sha256": "b45b88eb1f604f0a22378f3660109192004a28c6093c77e63c648fefe1b2de9e"
+      },
+      {
+        "path": "compile_instrumented.py",
+        "bytes": 2035,
+        "sha256": "90c11e8fbb7fd02e90db123f92c00c8ee7bab60541af395ca5050fe9b9a29428"
+      },
+      {
+        "path": "controls/feature-inputs.json",
+        "bytes": 208,
+        "sha256": "9de0f27e14e6ce9540c22c89750e6f0d47b07ff8e4cb2c61e5816bb018868abc"
+      },
+      {
+        "path": "controls/inputs.json",
+        "bytes": 258,
+        "sha256": "52febd9b80246c39479df53597f8ab9cdc128a52b34c2b2b452f6436e34eefbd"
+      },
+      {
+        "path": "controls/property_value_source_test-default-compile.command.json",
+        "bytes": 1390,
+        "sha256": "fcca03056a5020bded9ffa411940067e7090ae5d9a3987e8cc964fb5b62447d3"
+      },
+      {
+        "path": "controls/property_value_source_test-default-compile.guard.json",
+        "bytes": 1340,
+        "sha256": "aa332187218bc593f8ab03c47b5da565592e5f7819714b2afb22a5a65539c9fd"
+      },
+      {
+        "path": "controls/property_value_source_test-default-compile.log",
+        "bytes": 4622,
+        "sha256": "2705a2240bf9fe7ad116302f44bddd29049c39be9471e4b78a9580426edf0885"
+      },
+      {
+        "path": "controls-v2/feature-inputs.json",
+        "bytes": 208,
+        "sha256": "b4ed23c4ff27be2d242dec1d6e884feec1ee659e29523bb94d476cf9893c1832"
+      },
+      {
+        "path": "controls-v2/inputs.json",
+        "bytes": 258,
+        "sha256": "1bdf8800abf45765a383ec16e7b4f3ad26b26896c12d7038064d87da6608b0da"
+      },
+      {
+        "path": "controls-v2/property_value_source_test-default-compile.command.json",
+        "bytes": 1399,
+        "sha256": "ae4c0267873526c91716cb02546693c951f9d2c8cd8fd63a86f2d4bce22ed0bc"
+      },
+      {
+        "path": "controls-v2/property_value_source_test-default-compile.guard.json",
+        "bytes": 1343,
+        "sha256": "2108c923d9ad3ad457d78d13a0c4e9d195b4efdd0f5c7c1853aabc82fcd2a6c0"
+      },
+      {
+        "path": "controls-v2/property_value_source_test-default-compile.log",
+        "bytes": 3803,
+        "sha256": "658cbc3b497687bc6d607359ec72a951b6363b9308c6e46fadd342d0591a7d28"
+      },
+      {
+        "path": "controls-v2/property_value_source_test-default-run.command.json",
+        "bytes": 554,
+        "sha256": "da058d147f67d64dff798fb264bea6f2b2f892feaa7133ee8b242d8ca10790bb"
+      },
+      {
+        "path": "controls-v2/property_value_source_test-default-run.guard.json",
+        "bytes": 434,
+        "sha256": "c063f7965b0276ef4cd5e7623332c78fafd90bc556f5c5ace340dcaf200538b3"
+      },
+      {
+        "path": "controls-v2/property_value_source_test-default-run.log",
+        "bytes": 872,
+        "sha256": "c8a8d8fa4f7ec3bc9ce7c73ba0b3c8b3ce4a32ccb2f736faf06bd4cc1ca562d9"
+      },
+      {
+        "path": "controls-v3/feature-inputs-after.json",
+        "bytes": 314,
+        "sha256": "45392085f19b7b62dbd05a6e9474a7c848495d0cbfef2de9ba1c1cb6053e9d4b"
+      },
+      {
+        "path": "controls-v3/feature-inputs.json",
+        "bytes": 314,
+        "sha256": "45392085f19b7b62dbd05a6e9474a7c848495d0cbfef2de9ba1c1cb6053e9d4b"
+      },
+      {
+        "path": "controls-v3/inputs-after.json",
+        "bytes": 279,
+        "sha256": "9261cd1ed908fd90ccbd67521bf51b716c0d8a095bcbb9ee3661a7af5f8c31fd"
+      },
+      {
+        "path": "controls-v3/inputs.json",
+        "bytes": 258,
+        "sha256": "66ef09862f2dcf746bdd34f3d4e130cc960693b6608e06fc2c9f77dac79d4fd1"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-default-compile.command.json",
+        "bytes": 1399,
+        "sha256": "5e8efdae1553f12bda862f44b5d56e7e791631eac9b8df89e8e0e1e73847816e"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-default-compile.guard.json",
+        "bytes": 1350,
+        "sha256": "5da93fa932f45ad2dfda367ad914a867e83e1112e2c13dbef3b83e3e088e3e94"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-default-compile.log",
+        "bytes": 3810,
+        "sha256": "bc4e12c4be880f7c49139170113a48616ec1b27021feaa711d872cca16862e4b"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-default-run.command.json",
+        "bytes": 554,
+        "sha256": "02bd19bad40c4aa0c67f11a28cd63763b4da17946d0a450de972e14d61d3eb92"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-default-run.guard.json",
+        "bytes": 423,
+        "sha256": "159905b99fb1b9de9241e7603d6247b5d2c8b61b73dffc3c1e6fe384b0e96be1"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-default-run.log",
+        "bytes": 395,
+        "sha256": "3364d91cd396d86f4a8954d619c29dd6a8603e156d5f07ee72074017d2827f25"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-none-compile.command.json",
+        "bytes": 1409,
+        "sha256": "94c868b556dab006b3894618771bffe27b30cbacc6011611ae7c601570af49f9"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-none-compile.guard.json",
+        "bytes": 1362,
+        "sha256": "799689098e581de826a612d5ad670834da07d38ada1a3ae6ac47385b8a680754"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-none-compile.log",
+        "bytes": 5074,
+        "sha256": "6d076776e9563db250da33b1603707628642460351f48d42cdb0eac85eac9f01"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-none-run.command.json",
+        "bytes": 545,
+        "sha256": "590543f283b9916643e4685b98507fc0e2772fb7d063a4075d0af3ae5f650e72"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-none-run.guard.json",
+        "bytes": 424,
+        "sha256": "f51c0e28cce61b198aaeca913da9a0d0021222195dcff6e8cd1bbb1f89ae90e6"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-none-run.log",
+        "bytes": 396,
+        "sha256": "b1fa5cd1a3ddee1048694f13f1282dfe779044828051ad0fb1423901431c600e"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-prealloc-compile.command.json",
+        "bytes": 1436,
+        "sha256": "aa97b1015928c9014bad0b2f8213d96962b87cd76614a55a287cc08a92c3f8ab"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-prealloc-compile.guard.json",
+        "bytes": 1391,
+        "sha256": "4e82e132a1eb3524503109ee3a5e9a3e3bb2b9471ec2cf7507be43353586ac3c"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-prealloc-compile.log",
+        "bytes": 6003,
+        "sha256": "39cbc3ed296956faf6dabd3f1ba0e1d80a9214ed3c834c82531114d68f2d7b46"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-prealloc-run.command.json",
+        "bytes": 557,
+        "sha256": "798dacf5de851a4f4b89395a59e657e21debfdd3d0f9d5a686536eab3d8659ef"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-prealloc-run.guard.json",
+        "bytes": 427,
+        "sha256": "a433242d57bb60637acac507050af44f9cc0ff03c3dd68cfc0d39d04c47edc17"
+      },
+      {
+        "path": "controls-v3/keyframe_substitution_test-prealloc-run.log",
+        "bytes": 399,
+        "sha256": "f212c6006be9169b64f828d4578208ed3938283cfacd83f936728e716eaa2a9a"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-default-compile.command.json",
+        "bytes": 1399,
+        "sha256": "c5f1ff9ca71b2a7c5f1a5bf79e9e141d17cf53bae73f97a915c5c0b35da28897"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-default-compile.guard.json",
+        "bytes": 1343,
+        "sha256": "9465ce82682ce7f9fc2c806e45ba7975c3f24b99a75b6e164ec6242a3e217775"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-default-compile.log",
+        "bytes": 3803,
+        "sha256": "c67fc2733313fa0eeac8d45dbb2c8023cbebfe815502aacca9545402e70e5a7b"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-default-run.command.json",
+        "bytes": 554,
+        "sha256": "a55552489719ebbfc20eda668842903bcd5b395b3a8ac5a29ce801feefb449de"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-default-run.guard.json",
+        "bytes": 426,
+        "sha256": "f214ce2da33e819f79dc192cd894e49e5481b1c56789843cf1eb4592565b83f7"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-default-run.log",
+        "bytes": 398,
+        "sha256": "23961d4c24ee814a04502c389e37e1d45c20442a34970a249778a81085b6cb4e"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-none-compile.command.json",
+        "bytes": 1409,
+        "sha256": "be7a141774964cae2bb0aa0e29b9fe0ec25685fe2a81c2fd9eebbec01aaa6d5b"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-none-compile.guard.json",
+        "bytes": 1362,
+        "sha256": "739634e1e7ff46fa237492dded15326c3229157e4ab3b11904765fa852ce4d54"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-none-compile.log",
+        "bytes": 5074,
+        "sha256": "e5ae43725f8f7fd77d6a4edf2b65dca6e08e3516be99448a74c491c67eb88e7a"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-none-run.command.json",
+        "bytes": 545,
+        "sha256": "fdfaa77b8ab4fc568998f5663e533374b208dc82a2f5470687c65918e66de982"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-none-run.guard.json",
+        "bytes": 424,
+        "sha256": "908c42fd3758df0f289f9d30e77fe6d50ddefe2a867936c2fc26e0e2376d6b0b"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-none-run.log",
+        "bytes": 396,
+        "sha256": "9a31d5436d5b230e8a0399d949bc6d94dd82d907f8f4175c375a3ab985f45320"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-prealloc-compile.command.json",
+        "bytes": 1436,
+        "sha256": "4a0e0a1527175f32835caa12eb879e88852395157f51415bb0d33ff181b28884"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-prealloc-compile.guard.json",
+        "bytes": 1384,
+        "sha256": "d51f08e3f75e925a5d2baf693fcac9a0fd9060e763e0f010a0679183f4a0b72c"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-prealloc-compile.log",
+        "bytes": 5996,
+        "sha256": "13eff5e5c7850ded9780c70a5f89f3264141019678c670faed30d5344ac1abdb"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-prealloc-run.command.json",
+        "bytes": 557,
+        "sha256": "79ba3b3f992b20148e487341bbd20f26b0078a30f6c28a642d9cbf652feb6359"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-prealloc-run.guard.json",
+        "bytes": 427,
+        "sha256": "d30878fdc80ba28eb7f680a2139ddd0eeb77dcb87a882fb93745e7160fd71e39"
+      },
+      {
+        "path": "controls-v3/property_value_source_test-prealloc-run.log",
+        "bytes": 399,
+        "sha256": "d1038c1f7f7590fec42c24dd46f7ecfe62340c87596f4890211fbd87e1535646"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-default-compile.command.json",
+        "bytes": 1435,
+        "sha256": "e4ab0cbbecfb18962b299d91c291a356f28aa3e48f85fd6784d8077c032cb831"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-default-compile.guard.json",
+        "bytes": 1362,
+        "sha256": "b2390bf8ea7e2d45c0422c4a977b5bf510d53e469a20f27e9ee01b949832acec"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-default-compile.log",
+        "bytes": 3822,
+        "sha256": "cc7c3c3f17f998a6030cec1e0473acd6768873b7d04e3e0e443b2db3913f3427"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-default-run.command.json",
+        "bytes": 581,
+        "sha256": "ca4e98936fe8c7cd32ab3df14e48fb085e1c51da36778cbba4a5001c740b5cd5"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-default-run.guard.json",
+        "bytes": 438,
+        "sha256": "d3ff1907d866ac24d4a01db6cc3802a607da79f4da8d11a3bcdf817f95add52e"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-default-run.log",
+        "bytes": 410,
+        "sha256": "efad32b735428f21fa718f610adb4b4ad2ed0a3964462ca026ae6de1f1559fa8"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-none-compile.command.json",
+        "bytes": 1445,
+        "sha256": "3d41bd0f72c4bbd2275704c44dbfa715f8467e2aaa3136d5a373641d9a462c9b"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-none-compile.guard.json",
+        "bytes": 1382,
+        "sha256": "1822e3d33053d6dbc3a382bdf440acd5309d68fbcf2d8edd1838703ff2e64e70"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-none-compile.log",
+        "bytes": 5094,
+        "sha256": "67e5b6c3c7a625f724757418f8d4c1c7dbe0783c1de4137844003c7495dd9175"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-none-run.command.json",
+        "bytes": 572,
+        "sha256": "d62bd5e6547b1dde3fd3d9bce04e13eabffae0addf91f2562af4aa652fa1e982"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-none-run.guard.json",
+        "bytes": 432,
+        "sha256": "95aa73d2fed3b445b13ebb5b5f2e2910eb1379c13a43bacdabf1f76aeb81d717"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-none-run.log",
+        "bytes": 404,
+        "sha256": "a4dddc547b3f03b3c7403990c08ea1d1cd90e7b2efe5996b5248dbb00c90a020"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-prealloc-compile.command.json",
+        "bytes": 1472,
+        "sha256": "b98e7a8eb15fbcd8b70f966b6be478872392f7329a8d45c8982abf7d340685c6"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-prealloc-compile.guard.json",
+        "bytes": 1402,
+        "sha256": "108f0b265a80134a1506f86e64d8bae3d7ad85d1e062f6361409672dd5e1a5a9"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-prealloc-compile.log",
+        "bytes": 6014,
+        "sha256": "46ba5750e111728a240630ea5bcab5421556c81dffee224713b418146e771437"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-prealloc-run.command.json",
+        "bytes": 584,
+        "sha256": "09f139c6fd7ab34cd98e78ec39dab3f801631fa59cccc34379764cb48057d85a"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-prealloc-run.guard.json",
+        "bytes": 436,
+        "sha256": "dca86d385608de249e0a36a222d1dd9553fb39af2ab6367a95bc41588f65c241"
+      },
+      {
+        "path": "controls-v3/synchronous_style_dependencies_test-prealloc-run.log",
+        "bytes": 408,
+        "sha256": "89fc2f72939b96e9f70057a27b73b82b7a2258d5881f88dd7135bf809e484484"
+      },
+      {
+        "path": "controls.py",
+        "bytes": 3229,
+        "sha256": "2725bc85662d295499afacfc706ccef4f9135704eee79bff2397a441f3bc2fd1"
+      },
+      {
+        "path": "controls_v2.py",
+        "bytes": 3232,
+        "sha256": "5f38e24d63dd25ff004e5bec9f4382502d3d2a32b0937ca043d30c0ea8930a26"
+      },
+      {
+        "path": "controls_v3.py",
+        "bytes": 3267,
+        "sha256": "186cd68b90111676caa5fc9c749b2856ac4a9e9a08c4871f6fc63da867ab1a2a"
+      },
+      {
+        "path": "disposable-C-cleanup.json",
+        "bytes": 14929,
+        "sha256": "2edef59daaa2100089fb4fc9e77290d6d7f8a51e53b326040b9ede9c348f3b26"
+      },
+      {
+        "path": "focused/feature-inputs.json",
+        "bytes": 208,
+        "sha256": "9de0f27e14e6ce9540c22c89750e6f0d47b07ff8e4cb2c61e5816bb018868abc"
+      },
+      {
+        "path": "focused/inputs.json",
+        "bytes": 258,
+        "sha256": "52febd9b80246c39479df53597f8ab9cdc128a52b34c2b2b452f6436e34eefbd"
+      },
+      {
+        "path": "focused/keyframe_workspace_test-default-compile.command.json",
+        "bytes": 1375,
+        "sha256": "a2d4eb326a0c0ea4ec51c6359242b703d862bc31d66f622e0131d3ea063fef2b"
+      },
+      {
+        "path": "focused/keyframe_workspace_test-default-compile.guard.json",
+        "bytes": 1339,
+        "sha256": "3e18166ae98b016dddcd4b108ecd6ecc432b392eb6d33822bccea0e12f2039af"
+      },
+      {
+        "path": "focused/keyframe_workspace_test-default-compile.log",
+        "bytes": 4621,
+        "sha256": "2d8942d4098545e6c528881d5961b1a33da8bb0f0085b3adc7833e020cec46e0"
+      },
+      {
+        "path": "focused-v2/feature-inputs-after.json",
+        "bytes": 208,
+        "sha256": "b4ed23c4ff27be2d242dec1d6e884feec1ee659e29523bb94d476cf9893c1832"
+      },
+      {
+        "path": "focused-v2/feature-inputs.json",
+        "bytes": 208,
+        "sha256": "b4ed23c4ff27be2d242dec1d6e884feec1ee659e29523bb94d476cf9893c1832"
+      },
+      {
+        "path": "focused-v2/inputs-after.json",
+        "bytes": 280,
+        "sha256": "0b22169549699a38a17cb267f6fd0b0247b5469c3f7b40f4c849fb47bd01554c"
+      },
+      {
+        "path": "focused-v2/inputs.json",
+        "bytes": 258,
+        "sha256": "1bdf8800abf45765a383ec16e7b4f3ad26b26896c12d7038064d87da6608b0da"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-default-compile.command.json",
+        "bytes": 1384,
+        "sha256": "37ea22bd6ac07701e997ffde172315b7ed19dd1575e18ea837ad3dd755f619c3"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-default-compile.guard.json",
+        "bytes": 1333,
+        "sha256": "5f92a3f1a64828cac1dc07d444d5953fd61c3a541f2116597a8e659c6f3f28ce"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-default-compile.log",
+        "bytes": 3793,
+        "sha256": "c6acc466809794bacdd1eda746223759412b9bb044c30bb3c6062c7c505ba6cc"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-default-run.command.json",
+        "bytes": 542,
+        "sha256": "c0294a9cf2d9a79a29d513ddc914c0ea8e1ee6711cd6b8c74e4ab7dfa3403601"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-default-run.guard.json",
+        "bytes": 430,
+        "sha256": "e655e100b4e78d7e87b79877150329bbfdb8acf005f4628acb5893c86dc861de"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-default-run.log",
+        "bytes": 402,
+        "sha256": "40d4c0e5d4797e63f736c157731dbea4c162aca4d7636c3b41d2f3bc60a7b8bb"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-none-compile.command.json",
+        "bytes": 1394,
+        "sha256": "b81dafeb1e807eda0e6cdad13a348cb79daa7f9b37d59d1f3dff2d500b98e9a7"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-none-compile.guard.json",
+        "bytes": 1362,
+        "sha256": "82c44c6912b68c859fefd8a7a9a6bcc84fb1f37614d09fdfb73ac7d3ce0c9eb5"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-none-compile.log",
+        "bytes": 5074,
+        "sha256": "2d963abf24277511602a01bdde6335b28972dcdc69cba046b368ceff094fab9b"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-none-run.command.json",
+        "bytes": 533,
+        "sha256": "e21289c7673f2e2b93584469301062c18df9f234f33e5d1e8e568373f40faa80"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-none-run.guard.json",
+        "bytes": 422,
+        "sha256": "48b4457211479ea41a445cc10d2e8dd8a6cd64af6fe8cd82f133344d19c43d1b"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-none-run.log",
+        "bytes": 394,
+        "sha256": "be216f331cda763f8453024923856dfe673f3c8223c2c293515e96449c27ef03"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-prealloc-compile.command.json",
+        "bytes": 1421,
+        "sha256": "3718c5ca0ba757f8f86c854bdfd80207f3fc504f2d515ce52e79023281de1c70"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-prealloc-compile.guard.json",
+        "bytes": 1377,
+        "sha256": "26d99af9e9bbe745a1b8505ec4a007ac28ec0d6a0b18c69036f759682f8ee728"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-prealloc-compile.log",
+        "bytes": 5989,
+        "sha256": "02d731c083079318a84efcc31c8b1321680e6f8e52fe16fd6baf8dff6697f558"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-prealloc-run.command.json",
+        "bytes": 545,
+        "sha256": "e9619467da680c57496faaf9f44a6a086068d6f736875002bab21e0a10bf0fb1"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-prealloc-run.guard.json",
+        "bytes": 423,
+        "sha256": "f0fb13a20c1188dc233afa71aa59329cf6cfd57e5df2b4b9ceccb6a6d3b8cdec"
+      },
+      {
+        "path": "focused-v2/keyframe_workspace_test-prealloc-run.log",
+        "bytes": 395,
+        "sha256": "bbf5d7862afadcf6fd81b6b50dc09d2a7d1bf519dbdb15fd20924f2d5ddef7ce"
+      },
+      {
+        "path": "focused.py",
+        "bytes": 3146,
+        "sha256": "1f8a0557c05994cbdd2f2435d10bff2eee3d9fd5076e6b1beca5f77a9b565699"
+      },
+      {
+        "path": "focused_v2.py",
+        "bytes": 3149,
+        "sha256": "e0cec62428fa2436bfb6cdb0e67a868de26b159f2e1b3a9b4d8febe0ab1b00f6"
+      },
+      {
+        "path": "instrumented/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "instrumented/browser.guard.json",
+        "bytes": 635,
+        "sha256": "be32b93e0a2f18284b575c7de02045481f58d95960967664f06bef4289f05998"
+      },
+      {
+        "path": "instrumented/browser.log",
+        "bytes": 45616,
+        "sha256": "4b5bf343482888cb2ff0220cb20efe6cf3a4f6bb201b642b05a950c66c538a03"
+      },
+      {
+        "path": "instrumented/command.json",
+        "bytes": 674,
+        "sha256": "5e822cb2b225c817df0873cb38a7fafda607814a82e7f56070a945e95ab360d3"
+      },
+      {
+        "path": "instrumented/replay/openssl.log",
+        "bytes": 1476,
+        "sha256": "f0c627264e0c696e70a655aa29fa6f15dac1fbc4f194df6ce9d73e778e743ae9"
+      },
+      {
+        "path": "instrumented/replay/ready.json",
+        "bytes": 465,
+        "sha256": "9ae270c5166f29366b92ffbb7dd6fb8167e40a117d279d02865260d3efbafbb5"
+      },
+      {
+        "path": "instrumented/replay/requests.jsonl",
+        "bytes": 11820,
+        "sha256": "9ff743422fca318e0ab384608f289bc8983d38eaefac707004acb6915f869835"
+      },
+      {
+        "path": "instrumented/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "ac9351e27e55b0d605c9c409da9cfb9d9d9be2d5c6fe21001f7301b936e12b51"
+      },
+      {
+        "path": "instrumented-compile/inputs-after.json",
+        "bytes": 279,
+        "sha256": "e25bd67c9159e0da575207791132d1221b02999158f099f136128c7d6969c894"
+      },
+      {
+        "path": "instrumented-compile/inputs.json",
+        "bytes": 258,
+        "sha256": "372204ede11855fdee5a939567621c296f69adaa9ec9ce38270a8b4d097016a3"
+      },
+      {
+        "path": "instrumented-compile/none-compile.command.json",
+        "bytes": 1372,
+        "sha256": "648c8fbf8ed7cf34e7b7c1191ba84114b636e8dc34dfe170c22eba1071bc515b"
+      },
+      {
+        "path": "instrumented-compile/none-compile.guard.json",
+        "bytes": 1365,
+        "sha256": "539b462b7bc435d3b7dd0a15a48603df87a849c381ff04084dc3f0cfa16006f0"
+      },
+      {
+        "path": "instrumented-compile/none-compile.log",
+        "bytes": 68789,
+        "sha256": "6cf87cd992e6932b9a08f1516c758c6bcc726642e16ecf4a9ee89d97a2cb20fc"
+      },
+      {
+        "path": "instrumented-controller.guard.json",
+        "bytes": 401,
+        "sha256": "6f967253fd4c214f6b1588f594c35db7618a18d523eba1f3ce10de48682c87ba"
+      },
+      {
+        "path": "instrumented-inputs-after.json",
+        "bytes": 17619,
+        "sha256": "9fdc7235ca20104c3f7c4c30a03ae4729b8dc39ed48cfaa670a858b8e38a13e3"
+      },
+      {
+        "path": "instrumented-inputs.json",
+        "bytes": 18929,
+        "sha256": "8ab503542f958dbb1bd53e3dc96fdf111152a2a439455b0887a1e99365ced956"
+      },
+      {
+        "path": "instrumented.py",
+        "bytes": 2681,
+        "sha256": "c1cee17eb9f2969a4e2ea4b743cd444e15de701e6c6df4ce91329b3965c72595"
+      },
+      {
+        "path": "latest-native-inputs-after.json",
+        "bytes": 17366,
+        "sha256": "76122f4a368326b03c2fbb894d65ca8da340570b65096b2b7a2cfea85052bd6c"
+      },
+      {
+        "path": "latest-native-inputs.json",
+        "bytes": 18674,
+        "sha256": "427fcf708e5f892d3d6c4a583e33ccb061fd8234d54f360e1e478463173b0ee1"
+      },
+      {
+        "path": "main_memory_isolation_probe_test.v",
+        "bytes": 1429,
+        "sha256": "96e4105718fbe22ca69da7b48c5cc11787eec9482d9b5b558813e5f8cf6cb08d"
+      },
+      {
+        "path": "native-baseline-controller.guard.json",
+        "bytes": 397,
+        "sha256": "b939a0b257b8e49d91c40d3e3ec6065bede1346b7cf266dec38f3350de762cfc"
+      },
+      {
+        "path": "native-fixed-controller.guard.json",
+        "bytes": 394,
+        "sha256": "f821a8fc71b8e33fd1905fafff0ef0cb0b33137e91459b4b6702aaa64c131c50"
+      },
+      {
+        "path": "native_baseline.py",
+        "bytes": 2547,
+        "sha256": "bdb828187e4ee648f9487a9402d8685c7ef8fd85eaed08365da0f50626e02801"
+      },
+      {
+        "path": "native_fixed.py",
+        "bytes": 2558,
+        "sha256": "675990caa01cae2640c47d198e7229bb30176ef13e5d4d6247d325b0a9a5a780"
+      },
+      {
+        "path": "negative/feature-inputs.json",
+        "bytes": 208,
+        "sha256": "e8405e8125cb40bcbe1842d5bf4345d27f1cbd12bf015c6c8c255c54041e4f76"
+      },
+      {
+        "path": "negative/inputs.json",
+        "bytes": 258,
+        "sha256": "4360514e6dbced32bbaec2244674fc7febebfe388c8dfeeb617f99d169660c0c"
+      },
+      {
+        "path": "negative/keyframe_workspace_test-prealloc-compile.command.json",
+        "bytes": 1415,
+        "sha256": "8918f1c4fc0339637ec93d61547b4c156c540f6b22f5c1a1b6fed3bdbdc7e41b"
+      },
+      {
+        "path": "negative/keyframe_workspace_test-prealloc-compile.guard.json",
+        "bytes": 1376,
+        "sha256": "deac5d7acb9b679d92d454f2e1d1a99e741144ddb1b611884370726082b4db4c"
+      },
+      {
+        "path": "negative/keyframe_workspace_test-prealloc-compile.log",
+        "bytes": 5988,
+        "sha256": "f74fc40353b07a698c85ae6065e9d040df1be161fc8fdff4018869e031e1bf67"
+      },
+      {
+        "path": "negative/keyframe_workspace_test-prealloc-run.command.json",
+        "bytes": 539,
+        "sha256": "9c357595e03c66ddd77807116127c09fb3002dcb32d7736c2308d9e880531b5f"
+      },
+      {
+        "path": "negative/keyframe_workspace_test-prealloc-run.guard.json",
+        "bytes": 420,
+        "sha256": "7ac128d497f88e74663ecf8294da8ad81a5ab2b398a8b28b35ec8d5c4d9cbfa2"
+      },
+      {
+        "path": "negative/keyframe_workspace_test-prealloc-run.log",
+        "bytes": 773,
+        "sha256": "88cc28081bd5ce37989d4c02df499423b13782fa5b9b6bee4e4bb89934df4b78"
+      },
+      {
+        "path": "negative.py",
+        "bytes": 3130,
+        "sha256": "e2b071ee1ce90c7cf7675acd18c2ef3212eab3e14f4ae88bdf9adb5e8ef5f93e"
+      },
+      {
+        "path": "optional-argument-codegen.json",
+        "bytes": 535,
+        "sha256": "abbe04c86e948aef8ebf398783fcbb6597a5ff555f9c6d26791f5a3b6e6d9964"
+      },
+      {
+        "path": "optional-argument-corrected.txt",
+        "bytes": 2600,
+        "sha256": "a6519cd95cd50121caf031a088379db147e1b8936e563cd520f535c4e9ec55e3"
+      },
+      {
+        "path": "optional-argument-failed.txt",
+        "bytes": 2600,
+        "sha256": "886c7f523574411c2b296f51c4a677f1912a559e9baaf76cca5eba60c9353472"
+      },
+      {
+        "path": "production-fixed/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "production-fixed/browser.guard.json",
+        "bytes": 596,
+        "sha256": "6c1c32bce7620a04cb37ce9336095380a41916cd20601a9bd6394ed5f279b521"
+      },
+      {
+        "path": "production-fixed/browser.log",
+        "bytes": 762,
+        "sha256": "f079d82f14f5ab2cb5fc8b532eed573e722fe8e133939f5c0cc685ffa743b8fa"
+      },
+      {
+        "path": "production-fixed/command.json",
+        "bytes": 650,
+        "sha256": "fb02dac995245e48258fc4d9e3bb7eaaa70680ac51d384fb868edfb27d37198f"
+      },
+      {
+        "path": "production-fixed/replay/openssl.log",
+        "bytes": 2051,
+        "sha256": "1dc114bfaa93c0799b7b42ca331ae276045edd1abc9e2248acc480d4ce5ad889"
+      },
+      {
+        "path": "production-fixed/replay/ready.json",
+        "bytes": 469,
+        "sha256": "fb7437d1812fe8f0970e4f608cea4459904c68a8f16861b4b946ebb24ec97be2"
+      },
+      {
+        "path": "production-fixed/replay/requests.jsonl",
+        "bytes": 11822,
+        "sha256": "52b31679e9364b4d4e7fb8e82fc412124b113199128bd65857e32d1a971e81e9"
+      },
+      {
+        "path": "production-fixed/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "a682fae5e283d267e3aa9401ecce66259d8ca4f22282dd6f142927dc588e3227"
+      },
+      {
+        "path": "production-fixed-inputs-after.json",
+        "bytes": 17363,
+        "sha256": "70854ab06d805548896490092a4dd8e48b43cb56fbcaacee2d03b4020275ae1b"
+      },
+      {
+        "path": "production-fixed-inputs.json",
+        "bytes": 18674,
+        "sha256": "864f94240c2a5ef4127e1d3b9d9586f7dabeee3c3869f2ec09f90bf5f15167f6"
+      },
+      {
+        "path": "rgba-verification.json",
+        "bytes": 2852,
+        "sha256": "a472b6cd45505b5f15e5de003d7fe60fe36c39df1e1dcf0354eafa717100c323"
+      },
+      {
+        "path": "seal-initial.log",
+        "bytes": 152,
+        "sha256": "08e7b3fba3479403c27e5c7dc4d91685252ad55ccc2108e8ae51646ab726a943"
+      },
+      {
+        "path": "seal.py",
+        "bytes": 6496,
+        "sha256": "24aeb8f5aa618995b68aabce2b9d23663bc3450c9caba0127aedd9fe65c44908"
+      },
+      {
+        "path": "seal_initial.py",
+        "bytes": 6499,
+        "sha256": "19d5176697a447431efaae1832642c18dc68840a262b0027e97307bbc5b14abd"
+      },
+      {
+        "path": "verify_rgba.py",
+        "bytes": 1207,
+        "sha256": "bfd191a2d67b10a826b847d3ca662076d007749063725c730686d68b1ff7d928"
+      }
+    ],
+    "extraction_verified": true
+  },
+  "guards": {
+    "baseline/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/baseline/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3287154688,
+      "elapsed_seconds": 4.613284707999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:64631",
+        "--replay-spki",
+        "SjZKBugch+S+LPTWew1FfceQlijaLxSSQSHsBxGzckQ="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1783431168,
+      "elapsed_seconds": 14.401289625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:64631",
+        "--replay-spki",
+        "SjZKBugch+S+LPTWew1FfceQlijaLxSSQSHsBxGzckQ="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1764278272,
+      "elapsed_seconds": 12.914367917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/vox.png",
+        "https://news.ycombinator.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 169279488,
+      "elapsed_seconds": 5.4871845409999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/hacker-news/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1806811136,
+      "elapsed_seconds": 10.059867958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:64796",
+        "--replay-spki",
+        "6dcDJzPtVEgrBR5fIX13Mv2vWK4f1Aca9DvEd6pOyqs="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1745403904,
+      "elapsed_seconds": 11.724383917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:64796",
+        "--replay-spki",
+        "6dcDJzPtVEgrBR5fIX13Mv2vWK4f1Aca9DvEd6pOyqs="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1695776768,
+      "elapsed_seconds": 13.072737125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/vox.png",
+        "https://www.wired.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 803766272,
+      "elapsed_seconds": 6.613210415999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites/wired/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1778614272,
+      "elapsed_seconds": 5.952467833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites.guard.json": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "tools/forum_news_pixels.py",
+        "--sites",
+        "hacker-news,wired",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/browser-controls/sites",
+        "--extension",
+        "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "Build/wired-parity-20261104-inputs/adblock-check",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--cache-policy",
+        "cold"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2184167424,
+      "elapsed_seconds": 86.209370666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/svg-source-switch.guard.json": {
+      "command": [
+        "sh",
+        "compare_screenshots.sh",
+        "svg-image-source-switch-same-size"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 210108416,
+      "elapsed_seconds": 5.252863917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls/property_value_source_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls/property_value_source_test-default",
+        "/Users/alex/code/vox2/css/property_value_source_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1295777792,
+      "elapsed_seconds": 5.786575375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v2/property_value_source_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v2/property_value_source_test-default",
+        "/Users/alex/code/vox2/css/property_value_source_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1794244608,
+      "elapsed_seconds": 6.099782292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v2/property_value_source_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v2/property_value_source_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.43054895800000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/keyframe_substitution_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/keyframe_substitution_test-default",
+        "/Users/alex/code/vox2/css/keyframe_substitution_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1981775872,
+      "elapsed_seconds": 6.6743908329999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/keyframe_substitution_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/keyframe_substitution_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.426456,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/keyframe_substitution_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/keyframe_substitution_test-none",
+        "/Users/alex/code/vox2/css/keyframe_substitution_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1902198784,
+      "elapsed_seconds": 9.19139575,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/keyframe_substitution_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/keyframe_substitution_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 622592,
+      "elapsed_seconds": 0.453278333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/keyframe_substitution_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/keyframe_substitution_test-prealloc",
+        "/Users/alex/code/vox2/css/keyframe_substitution_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2024849408,
+      "elapsed_seconds": 10.091671499999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/keyframe_substitution_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/keyframe_substitution_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.465006125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/property_value_source_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/property_value_source_test-default",
+        "/Users/alex/code/vox2/css/property_value_source_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1920270336,
+      "elapsed_seconds": 5.659244291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/property_value_source_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/property_value_source_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.402874833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/property_value_source_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/property_value_source_test-none",
+        "/Users/alex/code/vox2/css/property_value_source_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1873215488,
+      "elapsed_seconds": 5.65847625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/property_value_source_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/property_value_source_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 933888,
+      "elapsed_seconds": 0.415140042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/property_value_source_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/property_value_source_test-prealloc",
+        "/Users/alex/code/vox2/css/property_value_source_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1885175808,
+      "elapsed_seconds": 5.671613291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/property_value_source_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/property_value_source_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.403361541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/synchronous_style_dependencies_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/synchronous_style_dependencies_test-default",
+        "/Users/alex/code/vox2/css/synchronous_style_dependencies_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1997488128,
+      "elapsed_seconds": 15.876002542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/synchronous_style_dependencies_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/synchronous_style_dependencies_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 30539776,
+      "elapsed_seconds": 0.500104125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/synchronous_style_dependencies_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/synchronous_style_dependencies_test-none",
+        "/Users/alex/code/vox2/css/synchronous_style_dependencies_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1944879104,
+      "elapsed_seconds": 15.283766667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/synchronous_style_dependencies_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/synchronous_style_dependencies_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.484175833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/synchronous_style_dependencies_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/synchronous_style_dependencies_test-prealloc",
+        "/Users/alex/code/vox2/css/synchronous_style_dependencies_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1888305152,
+      "elapsed_seconds": 8.237720958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls-v3/synchronous_style_dependencies_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/controls-v3/synchronous_style_dependencies_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 212992,
+      "elapsed_seconds": 0.45906225,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused/keyframe_workspace_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/focused/keyframe_workspace_test-default",
+        "/Users/alex/code/vox2/css/keyframe_workspace_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1303724032,
+      "elapsed_seconds": 5.876621333999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused-v2/keyframe_workspace_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/focused-v2/keyframe_workspace_test-default",
+        "/Users/alex/code/vox2/css/keyframe_workspace_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1852801024,
+      "elapsed_seconds": 5.989299,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused-v2/keyframe_workspace_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/focused-v2/keyframe_workspace_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.41574491700000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused-v2/keyframe_workspace_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/focused-v2/keyframe_workspace_test-none",
+        "/Users/alex/code/vox2/css/keyframe_workspace_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1845002240,
+      "elapsed_seconds": 5.819130374999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused-v2/keyframe_workspace_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/focused-v2/keyframe_workspace_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 23347200,
+      "elapsed_seconds": 0.301996458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused-v2/keyframe_workspace_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/focused-v2/keyframe_workspace_test-prealloc",
+        "/Users/alex/code/vox2/css/keyframe_workspace_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1854750720,
+      "elapsed_seconds": 6.907406875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused-v2/keyframe_workspace_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/focused-v2/keyframe_workspace_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.416110667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/instrumented-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/instrumented/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3222339584,
+      "elapsed_seconds": 26.318869417000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented-compile/none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/instrumented-compile/none",
+        "/Users/alex/code/vox2/main_memory_isolation_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5531041792,
+      "elapsed_seconds": 32.173064041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-keyframe-workspace-20261105/instrumented.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3309223936,
+      "elapsed_seconds": 26.815434916999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-baseline-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-keyframe-workspace-20261105/native_baseline.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3375464448,
+      "elapsed_seconds": 5.234821833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-fixed-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-keyframe-workspace-20261105/native_fixed.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3288891392,
+      "elapsed_seconds": 4.985444209,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "negative/keyframe_workspace_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/negative/keyframe_workspace_test-prealloc",
+        "/Users/alex/code/vox2/css/keyframe_workspace_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1980088320,
+      "elapsed_seconds": 10.422877375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "negative/keyframe_workspace_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/negative/keyframe_workspace_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.42337625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-fixed/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-keyframe-workspace-20261105/production-fixed/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3264069632,
+      "elapsed_seconds": 4.153452292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}
