@@ -5954,3 +5954,67 @@ C; the corrected literal is verified against that source's exact helper.
 The failed compile, source-proof preparation mismatch, corrected source and
 successful run are retained in the [rejection evidence](performance/bbc-measurement-rejections-20261105.json).
 The 10% target and catalog status are unchanged.
+
+
+## Placement cohort 103 and experiment restoration (2026-11-05)
+
+Production `dd2957bc9df4` contains the placement cache and typed-setter guard.
+Fresh candidate/control launches pass the original PNG, complete content,
+72 external author-script and actual native-image audits. Placement reuse fires
+before encoded PNG only in the candidate. Headless startup and the SVG
+source-switch reftest also pass. These diagnostics establish eligibility and
+correctness, not instruction savings.
+
+Cohort 103 completes all seven alternating triples and retains all 21 attempts.
+Every browser exits normally, content and endpoint ownership pass, and the
+driver's input checks remain stable throughout. Brave pairs 2 and 6 each
+differ by 53,392 pixels, invalidating acceptance. Their observation status is
+1 because of that pixel audit; their actual native exit is 0. An early progress
+claim that the first ten captures all passed missed pair 2 and was corrected.
+Neither failed observation is excluded or replaced.
+
+Observed launch-to-PNG medians are **27,649,940,404 Vox**, **27,445,014,213
+control**, and **17,736,153,639 Brave lower bound**. Placement reuse regresses
+the median by **204,926,191 instructions** (0.747%); two paired improvements
+and five regressions give no robust saving. Highest Vox / lowest control is
+**1.12758**. The strict Brave gate fails:
+`290434170750 > 158257200780`, ratio **1.65168**. A subsequent shared bundle
+publication prevents rehashing that executable now; the completed driver checks,
+all raw per-row receipts, and its sealed C remain preserved.
+
+`2242b6692` removes the provisional placement cache and its cache-specific tests.
+Restored formatter/state bytes match the earlier implementation. The separate
+markerless-list measurement experiment (`6930ae8be`) passes **342 focused
+executions** after its fixture establishes a retained document heap owner.
+Its fresh production candidate/control captures retain exact original pixels,
+complete content, all 72 scripts and pinned native images, but neither arm
+reports markerless reuse before PNG. It earns no performance credit and runs no
+instruction cohort. `683a4fb69` removes that extension and its three new cases.
+Restored shared collectors match their earlier bytes; existing measurement and
+unused-height behavior remains.
+
+Placement restoration passes **342 executions** (38 cases × three arms × three
+memory modes). Restoration of both experiments passes **315 executions**
+(35 × three × three), with unchanged checked inputs and actual test calls
+verified. The first markerless compile's missing mode argument, the premature
+preallocation fixture's two signal-139 runs and assertion failure, and the
+later disk-space failures before focused/native checks all remain recorded.
+The corrected owned-fixture checks pass before either restoration is committed.
+
+Storage recovery deletes only 133 generated artifacts with verified durable
+copies: completed private profiles/caches, reproducible test executables and
+generated C. Three archive manifests and their members are read back and
+hashed before deletion. It frees 1,413,427,841 logical bytes; browser bundles,
+shared receipts, fixtures, raw counts and PNGs remain in place.
+
+This supersedes the placement/markerless pending status above. No positive
+cohort-103 reduction triggers another broad batch. The last broad batch remains
+532 unique cases per memory mode: 529 passes and the same three baseline
+failures, without a full-suite pass or cadence reset. Prepared 537/535-case
+inventories are retained as unexecuted plans. History is **103 measured cohorts
+/ 2,230 acceptance browser attempts**. The unchanged workload, launch-to-PNG
+scope and rendering limitations described above still apply. BBC homepage
+remains outside `OPTIMIZED_SITES.md`; the 10% target remains open.
+[Exact counts, all attempts, focused/native checks, restoration proofs and
+storage receipts](performance/bbc-placement-cohort103-and-restorations-20261105.json)
+are preserved in a fully verified archive.
