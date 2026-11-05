@@ -1,0 +1,716 @@
+{
+  "status": "Cohort112invalid:Brave3failsunchangedpixelreference.All21attemptsretained,20captureauditspass,allnativeexits0. Observedmedians27.606BVox/28.141Bcontrol/17.479BBrave;matched534527840pointdifference(1.899%),5improvements2regressions,worstV/bestcontrol1.0825 fails.Norobustsavingor10%targetcredit.Broad615eachmode same5baselinefails;21callbackfocuscarried unchanged.",
+  "implementation_commit": "411e0574a",
+  "control_commit": "8c5ddafec",
+  "statistics": {
+    "valid_capture_cohort": false,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 27757154000,
+            "upper": 27757154000
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28140792412,
+            "upper": 28140792412
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 18360467205,
+            "upper": 18385537655
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 28271313649,
+            "upper": 28271313649
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28431897680,
+            "upper": 28431897680
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17381286227,
+            "upper": 17397851641
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 26676391247,
+            "upper": 26676391247
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28699672116,
+            "upper": 28699672116
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17508134075,
+            "upper": 17527669562
+          },
+          "exit": 1,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": false,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "passed": false
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 26027569264,
+            "upper": 26027569264
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28047729320,
+            "upper": 28047729320
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17466295925,
+            "upper": 17486979031
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 27636151265,
+            "upper": 27636151265
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26116064346,
+            "upper": 26116064346
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17495383370,
+            "upper": 17498859592
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 27606264572,
+            "upper": 27606264572
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26558259376,
+            "upper": 26558259376
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17478656250,
+            "upper": 17516519356
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 27513643473,
+            "upper": 27513643473
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28811984238,
+            "upper": 28811984238
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17362455750,
+            "upper": 17397511553
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [
+      {
+        "pair": 3,
+        "arm": "brave",
+        "error": "Captured document differs from its unchanged pixel reference",
+        "native_exit": 0,
+        "cleanup_native_exit": null
+      }
+    ],
+    "attempts_retained": 21,
+    "capture_audits_passed": 20,
+    "median_vox": 27606264572,
+    "median_control": 28140792412,
+    "median_brave_lower": 17478656250,
+    "point_reduction": 534527840,
+    "point_fraction": 0.018994768596923475,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": 534527840,
+    "paired_control_minus_vox": [
+      383638412,
+      160584031,
+      2023280869,
+      2020160056,
+      -1520086919,
+      -1048005196,
+      1298340765
+    ],
+    "improvements": 5,
+    "regressions": 2,
+    "worst_vox_over_best_control": 1.0825258076579254,
+    "strict_left": 282713136490,
+    "strict_right": 156262101750,
+    "conservative_brave_ratio": 1.6283015522732145,
+    "target_met": false,
+    "broad_trigger": true,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 109,
+      "acceptance_browser_attempts": 2356,
+      "last_measured_id": 112,
+      "preflight_only_ids": [
+        104,
+        110,
+        111
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793888576.4470332
+  },
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "object_receiver_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "object_receiver_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "1e77ee4556ed8a5c1ffa56eaf53759e5ae07cf6dfec23c5258aa8fc84229536d",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "fba45237bd74577e493bfd3c42d7fcdbc3bc32ef664be16d97d54c23329c4d9b",
+        "dirty": true,
+        "head": "8c5ddafec923a97d322128db843edd564749b748",
+        "repository_sha256": "39515f921782d1968d8bd39c079b4cb855620b365d214a4d5d3473d5f5479c5b"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "8c5ddafec923a97d322128db843edd564749b748",
+        "id": "d8d69fbedfc347029cf1f96335a2018c"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "fba45237bd74577e493bfd3c42d7fcdbc3bc32ef664be16d97d54c23329c4d9b",
+        "dirty": true,
+        "head": "8c5ddafec923a97d322128db843edd564749b748",
+        "repository_sha256": "39515f921782d1968d8bd39c079b4cb855620b365d214a4d5d3473d5f5479c5b"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; only direct object receiver calls disabled in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793888391.4795399
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/object-receiver-disabled arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793888402.305044
+  },
+  "broad": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "cadence_reset": false,
+    "inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "layout_entered": 541,
+        "layout_passes": 538,
+        "layout_failures": [
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+        ],
+        "main_arms": {
+          "candidate": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "unique_cases": 615,
+        "unique_passes": 610,
+        "unique_known_failures": 5
+      },
+      {
+        "mode": "none",
+        "layout_entered": 541,
+        "layout_passes": 538,
+        "layout_failures": [
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+        ],
+        "main_arms": {
+          "candidate": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "unique_cases": 615,
+        "unique_passes": 610,
+        "unique_known_failures": 5
+      }
+    ],
+    "actual_case_executions": 1378,
+    "actual_passes": 1364,
+    "actual_baseline_failures": 14,
+    "notes": "541layout cases plus74main cases perGC mode. Main repeats both candidate/control arms, producing148main executions permode, including74repeated cases. Every original assertion is retained. Three layout andtwo main baseline failures persist; no full-pass/cadence reset claim.",
+    "unix": 1793888816.662376,
+    "carried_callback_focus": {
+      "unique_cases_per_mode": 21,
+      "pass_cases_per_mode": 21,
+      "actual_default_none_executions": 84,
+      "inputs_unchanged": true,
+      "source": "audit.json/focused-results.json with every native test call verified; preallocation42 executions remain separatefocusedcoverage"
+    },
+    "combined_unique_cases_each_mode": 636,
+    "combined_unique_passes_each_mode": 631,
+    "combined_known_failures_each_mode": 5,
+    "combined_actual_executions_including_carried": 1462,
+    "combined_actual_passes_including_carried": 1448
+  },
+  "image_preflight111": {
+    "status": "NewdefiniteimagecandidatehasnoBBCpathbeforePNG;bothunprofiledoriginalpixel/content/72script/nativeimage/ownership/native0audits pass.Noacceptance111launch,noinstructioncredit.",
+    "acceptance_attempts": 0,
+    "native": {
+      "passed": false,
+      "checks": [
+        {
+          "arm": "vox",
+          "passed": false,
+          "native_exit": 0,
+          "content_exact": true,
+          "pixels_exact": true,
+          "scripts72": true,
+          "actual_runtime_images_pinned": true,
+          "definite_image_before_png": false,
+          "border_before_png": true,
+          "ownership_passed": true
+        },
+        {
+          "arm": "control",
+          "passed": true,
+          "native_exit": 0,
+          "content_exact": true,
+          "pixels_exact": true,
+          "scripts72": true,
+          "actual_runtime_images_pinned": true,
+          "definite_image_before_png": false,
+          "border_before_png": true,
+          "ownership_passed": true
+        }
+      ],
+      "executable_unchanged": true,
+      "production": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "1e77ee4556ed8a5c1ffa56eaf53759e5ae07cf6dfec23c5258aa8fc84229536d",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "fba45237bd74577e493bfd3c42d7fcdbc3bc32ef664be16d97d54c23329c4d9b",
+          "dirty": true,
+          "head": "8c5ddafec923a97d322128db843edd564749b748",
+          "repository_sha256": "39515f921782d1968d8bd39c079b4cb855620b365d214a4d5d3473d5f5479c5b"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "8c5ddafec923a97d322128db843edd564749b748",
+          "id": "d8d69fbedfc347029cf1f96335a2018c"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "fba45237bd74577e493bfd3c42d7fcdbc3bc32ef664be16d97d54c23329c4d9b",
+          "dirty": true,
+          "head": "8c5ddafec923a97d322128db843edd564749b748",
+          "repository_sha256": "39515f921782d1968d8bd39c079b4cb855620b365d214a4d5d3473d5f5479c5b"
+        }
+      },
+      "scope": "Fresh diagnostic launches of the canonical completed production app; only definite positioned image repaint disabled in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+      "unix": 1793888138.061023
+    },
+    "lease": {
+      "requested_unix": 1793888125.022462,
+      "purpose": "Canonical read lease through fresh native eligibility/SVG guards and seven-triple cohort111. No endpoint/ref/input changes;hashes checked throughout. No performancecredit from coordination.",
+      "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+      "helper_sha256": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+      "acquired_unix": 1793888125.022652,
+      "native_exit": 0,
+      "native_finished_unix": 1793888136.893872,
+      "native-audit_exit": 1,
+      "native-audit_finished_unix": 1793888138.175884,
+      "released_unix": 1793888138.1761248
+    },
+    "unix": 1793889075.716736
+  },
+  "lease": {
+    "requested_unix": 1793888375.826151,
+    "purpose": "Canonical read lease through fresh native eligibility/SVG guards and seven-triple cohort112. No endpoint/ref/input changes;hashes checked throughout. No performancecredit from coordination.",
+    "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+    "helper_sha256": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+    "acquired_unix": 1793888375.826637,
+    "native_exit": 0,
+    "native_finished_unix": 1793888390.022877,
+    "native-audit_exit": 0,
+    "native-audit_finished_unix": 1793888391.6155012,
+    "svg_exit": 0,
+    "svg_finished_unix": 1793888402.3106802,
+    "cohort_exit": 1,
+    "cohort_finished_unix": 1793888552.139103,
+    "released_unix": 1793888552.139531
+  },
+  "source_proof": {
+    "checked": {
+      "browserjs/object_receiver_call_test.v": "ac845763299644f3328959e55f36c3b31afb96af1e2ab43e89abc656779d728f",
+      "browserjs/native_callback_call_test.v": "eb68266c03e9e6bce13e32721826f97e569eb5e11751dcd874f3a23d26a40e37",
+      "browserjs/host_value_function_test.v": "14099b04df0a5e4a66bd818dc5c87205693f5389dbeb93713325229bec8d6f73",
+      "browserjs/native_forwarding_test.v": "90ea8610b38b0306dbfa4b7c172a2242f9fdf1f0057b1ee088615cdcd7c742be",
+      "browserjs/microtask_binding_test.v": "5090f7912eac597840cb4f9b0720042a2f39e925f9a6a9d0f4e9094076078dbf",
+      "browserjs/webidl_callback_order_test.v": "7bb3a225bae0707116294749abaf7e6f4a6af1c27b6d90c160211fae015984cb",
+      "browserjs/object_receiver_call_jsc.c.v": "3ac915957615543a7471fa615597d2a4981ccdc7ba5b7fdc7ae7a91139b0215d",
+      "browserjs/runtime.v": "a90987db51c923fe08383fd257a3e77a8be8b64435224dafee8380175657cd10",
+      "browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1",
+      "browserjs/host_function_darwin.h": "a40f9e479f5dd45ce0bc6aba77de53a7fe4982f676244a62886fc76ccf63fa57",
+      "browserjs/jsc_abi.h": "b5c14c9e2223ebc86095d03e64408a298be66bb236126cbd0654be0b2faa0302",
+      "browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+      "browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605"
+    },
+    "build_head": "8c5ddafec923a97d322128db843edd564749b748",
+    "committed_sources_match": true,
+    "generated_c_preserved": false,
+    "qualification": "Final focused source hashes match production build HEAD and current checked files. For parallel receipt,unchanged complete generation input fingerprints are required by canonical driver;no sealedgeneratedC claim."
+  },
+  "scope": "UnprofiledexclusivecoalitioncreationthroughencodedPNG inclfreshstartup/window/targetsetup/readiness+2ssettle.Voxbeforefilewrite,BraveinclCDPdelivery;audit/teardownafterendpoint.Exitedaggregates/allowedownedservicesincluded,GPUexecution/outsideexcluded.Fixed609responseoriginaloriginHTTPSreplay/originalauthorJS/1024x768CSS/DPR2/freshprivateprofiles+caches/retainedOScaches/originalperenginePNGrefs/3historicalrenderpolicies unchanged.Crossengine82.7154%different withknownDOM/script/font/paintlimitations.No livepage/isolatedrendering/FPSclaim.",
+  "qualifications": "Same1e77ee4556edparallel33unitbundleinbothVoxarms;checkedsourcehashesmatchbuildHEAD.Parallelmetadata retainscompleteunchangedgenerationfingerprints/compiler/runtime butnosealedCclaim.NativeobjectmarkerbeforePNGcandidateonly;all72exactauthorwitnessesbotharms. Separatev-profilediagnosticnevercountsforacceptance. Pointdifferencefrominvalidcohortnotcredit;positivepointtriggersbroadcheckonly.All5baselinefailurespersist,no full-suitepass/cadencereset.111imagepreflightnopathdoesnotincrementmeasuredhistory.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-object-receiver-call-cohort112-20261105.tar.gz",
+    "bytes": 33418596,
+    "sha256": "6773aa99dfd6a98032889edeb80e92b1677cf62c5177a3e86e082cd18578e8bd",
+    "members": 876,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793889195.357234
+}

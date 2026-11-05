@@ -6579,7 +6579,7 @@ library lease releases after capture. No profile instruction credit is assigned.
 
 The earlier captured-\`Function.call\` experiment remains rolled back.
 \`411e0574a\` instead invokes JSC's existing typed call ABI for verified callable
-targets with object receivers. Primitive and noncallable targets retain their
+targets with object receivers. Primitive receivers and noncallable targets retain their
 existing captured-\`Reflect.apply\` behavior; HTML realm preparation, actual
 exceptions and Promise ordering stay covered. \`8c5ddafec\` supplies the isolated
 comparison control.
@@ -6593,3 +6593,58 @@ call and unchanged checked input is verified. All **334 instruction-tool
 tests** pass. [Focused evidence](performance/bbc-object-receiver-call-focus-20261105.json).
 Native eligibility and matched instructions remain pending at this checkpoint;
 the 10% goal and BBC homepage catalog entry remain open.
+
+
+## Object-receiver cohort 112 / image preflight 111 (2026-11-05)
+
+Completed parallel 33-unit production `1e77ee4556ed` contains the checked
+object-call candidate. Both fresh native captures pass original pixels/content,
+all 72 exact external author-script witnesses, loaded-image pins, ownership and
+normal exits. Only the candidate reports the direct object-call marker before
+PNG. All four SVG source-switch captures and all three comparisons are exact.
+Parallel receipts preserve unchanged complete generation fingerprints and
+compiler/runtime metadata; no sealed generated-C claim is made.
+
+Cohort **112** retains all **21 attempts**. Brave pair 3 fails its unchanged
+pixel reference, invalidating acceptance; 20 capture audits pass and all 21
+actual browser exits are 0. Observed launch-to-PNG medians are **27,606,264,572
+Vox**, **28,140,792,412 control**, and **17,478,656,250 Brave lower bound**.
+The matched point difference is **534,527,840 (1.899%)**, with five improvements
+and two regressions. Highest Vox / lowest control is **1.08253**, so no robust
+saving is credited. The strict target also fails:
+`282713136490 > 156262101750`, observed conservative Vox/Brave ratio **1.62830**.
+No failed attempt is retried, removed or combined with another build.
+
+The positive point triggers broader verification despite the invalid cohort.
+Each memory mode exercises **615 unique broad cases: 610 passes and the same
+five baseline failures** (three layout, two main). Repeated main controls yield
+1,378 fresh executions, 1,364 passes and 14 baseline failures. The 21 callback
+cases from focused default/no-GC runs carry forward only after all checked
+source hashes still match, adding 84 passing executions. The verified union is
+636 unique cases per mode (631 passes / five known failures), or 1,462 actual
+executions including carried checks: 1,448 passes / 14 known failures.
+Preallocation remains separate focused coverage. No full-suite pass or cadence
+reset is claimed.
+
+The same completed bundle also validates the pending definite-image candidate's
+original pixels/content/scripts/native images/ownership/exits in both arms, but
+neither arm reports that path before PNG. ID **111 remains preflight-only** with
+zero acceptance browser launches and no image-path instruction credit. Its
+native attempts and lease cleanup are preserved with this cohort.
+
+The canonical read lease releases after SVG/cohort checks; input hashes remain
+checked throughout. Scope stays exclusive coalition creation through encoded
+document PNG, including fresh startup/window/target setup, readiness and two
+seconds of settlement. Vox stops before file writing; Brave includes CDP
+delivery; audits and teardown follow. Exited aggregates and allowed owned
+services are included, GPU execution and outside work excluded. Frozen
+609-response original-origin replay, original author scripts, 1024×768 CSS at
+scale 2, private profiles/caches, retained OS caches, original per-engine
+references and the three common historical rendering policies remain unchanged.
+Cross-engine pixels still differ by 82.7154%, with recorded DOM/script/font/paint
+limitations. No live-page, isolated rendering or scrolling result is established.
+
+History is **109 measured cohorts / 2,356 acceptance browser attempts**, last
+ID 112; IDs 104, 110 and 111 are preflight-only. The 10% target remains open and
+BBC homepage stays outside the catalog.
+[Every attempt, native/SVG proofs, image no-hit check and regression evidence](performance/bbc-object-receiver-call-cohort112-20261105.json).
