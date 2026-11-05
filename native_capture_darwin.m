@@ -2864,6 +2864,36 @@ void native_set_video_frame_image(int active) {
 
 // GPU canvas over a complete eligible frame or the rectangles a reused frame repaints.
 // Repainted rectangles are viewport device rows; the canvas also holds chrome.
+// A caller-owned sequence after the document ring has been stored, with
+// conservative top-left canvas-point bounds. Graphics policy stays in V.
+int native_gpu_canvas_begin_rects(const float *rects, int count) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+    if (!context || !rects || count <= 0 || count > 8) return 0;
+    CGFloat scale = native_svg_mask_backing_scale();
+    if (!isfinite(scale) || scale <= 0) return 0;
+    int device[8*4];
+    for (int index=0; index<count; ++index) {
+        const float *rect=rects+index*4;
+        double left=floor(rect[0]*scale),top=floor(rect[1]*scale);
+        double right=ceil((rect[0]+rect[2])*scale),bottom=ceil((rect[1]+rect[3])*scale);
+        if (!isfinite(left) || !isfinite(top) || !isfinite(right) || !isfinite(bottom)
+            || left < -16384 || top < -16384 || right > 32768 || bottom > 32768
+            || right<=left || bottom<=top) return 0;
+        int values[]={(int)left,(int)top,(int)(right-left),(int)(bottom-top)};
+        memcpy(device+index*4,values,sizeof(values));
+    }
+    int begun=ladybird_v_skia_gpu_canvas_begin(context,device,count);
+    if (begun && ladybird_v_skia_gpu_canvas_frame_surface)
+        ladybird_v_skia_gpu_canvas_frame_surface(native_layer_frame_surface(context));
+    if (begun && getenv("VOX_GPU_CANVAS_DIAGNOSTICS"))
+        fprintf(stderr,"Vox GPU bounded batch: rects=%d\n",count);
+    return begun;
+#else
+    return 0;
+#endif
+}
+
 int native_gpu_canvas_begin(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	VoxScrollRaster *cache = &native_scroll_raster;

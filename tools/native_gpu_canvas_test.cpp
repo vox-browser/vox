@@ -8,6 +8,7 @@
 #include "../native_scroll_raster_darwin.h"
 #include "../native_layer_presentation_darwin.h"
 #define LADYBIRD_V_HAS_SKIA_TEXT
+static CGFloat native_svg_mask_backing_scale() { return 2; }
 #include "native_video_backdrop_entry_points.inc"
 #include <cassert>
 #include <cstdlib>
@@ -412,8 +413,49 @@ static std::vector<uint8_t> shared_frame_pixels(NSView* view)
     return output;
 }
 
+static std::vector<uint8_t> render_overlay_batch(bool batch,int alpha,bool horizontal,float phase)
+{
+    auto pixels=backdrop();auto color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context=CGBitmapContextCreate(pixels.data(),width,height,8,width*4,color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color);assert(context);CGContextScaleCTM(context,scale,scale);
+    auto saved=NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext=[NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0,css_width,css_height);
+    float rects[]={384,7,16,154,24,282,134,18};
+    if(batch) assert(native_gpu_canvas_begin_rects(rects,horizontal?2:1));
+    for(int axis=0;axis<(horizontal?2:1);++axis) for(int fill:{1,0}) {
+        if(batch) assert(ladybird_v_skia_gpu_canvas_command(fill?"fill_rounded_rect":"stroke_rounded_rect",fill?17:19,4));
+        assert(ladybird_v_skia_draw_rounded_rect(context,axis?30:390+phase,axis?290:13+phase,
+            axis?120:7,axis?6:140,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,
+            1,0,0,1,0,0,0,0,0,css_width,css_height,fill?50:60,fill?50:60,fill?50:60,alpha,fill,1,0,0));
+    }
+    if(batch)ladybird_v_skia_gpu_canvas_end();
+    ladybird_v_skia_set_chromium_painting(0);NSGraphicsContext.currentContext=saved;
+    CGContextFlush(context);CGContextRelease(context);return pixels;
+}
+
 int main(int argc, char** argv)
 {
+    if(argc==2 && !std::strcmp(argv[1],"--overlay-batch")) {
+        int error=0;
+        for(int alpha:{73,128,255})for(bool horizontal:{false,true})for(float phase:{0.f,.25f,.5f,.75f}) {
+            auto reference=render_overlay_batch(false,alpha,horizontal,phase);
+            auto candidate=render_overlay_batch(true,alpha,horizontal,phase);
+            for(size_t i=0;i<reference.size();++i)error=std::max(error,std::abs(int(reference[i])-int(candidate[i])));
+            auto original=backdrop();
+            for(int y=0;y<height;++y)for(int x=0;x<width;++x) {
+                bool vertical=x>=384*2 && y>=7*2 && y<(7+154)*2;
+                bool across=horizontal && x>=24*2 && x<(24+134)*2 && y>=282*2;
+                if(!vertical && !across)for(int channel=0;channel<4;++channel)
+                    assert(candidate[(y*width+x)*4+channel]==original[(y*width+x)*4+channel]);
+            }
+        }
+        std::cout<<"Late GPU overlay batch: maximum channel error "<<error<<'\n';
+        // The established GPU canvas leaf bound is three channel levels.
+        assert(error<=3);return 0;
+    }
     if (argc==2 && !std::strcmp(argv[1],"--partial-readback")) {
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api);
         s_backend_read=api->read;api->read=counted_read;

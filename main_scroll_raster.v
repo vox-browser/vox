@@ -286,12 +286,54 @@ fn (mut app BrowserApp) draw_scroll_raster_scrollbars(page_y f32, window_height 
 	} else {
 		scroll_raster_scrollbar_start(app.paint_commands)
 	}
+	mut gpu_overlay := false
+	$if macos {
+		if app.ctx.native_rendering && gpu_scrollbar_batch_enabled {
+			gpu_overlay = gpu_canvas_overlay_begin(scrollbar_gpu_damage_rects(app.paint_commands, start, page_y))
+		}
+	}
+	defer {
+		$if macos { if gpu_overlay { C.native_gpu_canvas_end() } }
+	}
 	for index in start .. app.paint_commands.len {
 		command := app.paint_commands[index]
 		if command.scrollbar_axis == '' { continue }
 		if index < app.chromium_raster_plan.command_layers.len {
 			app.select_chromium_raster_layer(app.chromium_raster_plan.command_layers[index])
 		}
+		if gpu_overlay { gpu_canvas_command_supported(&command) }
 		app.draw_command(command, 0, page_y, window_height)
 	}
+}
+
+// Only the late scrollbar leaves enter this pass. Their conservative visual
+// extents include stroke fringes; merge overlaps to keep the native tile count
+// bounded. The document ring has already stored pixels without these overlays.
+fn scrollbar_gpu_damage_rects(commands []layout.PaintCommand, start int, page_y f32) []f32 {
+	mut regions := []layout.LayoutRect{}
+	for index in start .. commands.len {
+		command := &commands[index]
+		if command.scrollbar_axis == '' { continue }
+		if command.kind !in ['fill_rect', 'fill_rounded_rect', 'stroke_rounded_rect'] { return []f32{} }
+		ink := layout.scroll_raster_leaf_ink_bounds(command) or { return []f32{} }
+		mut rect := layout.LayoutRect{ink.x - 2, ink.y + page_y - 2, ink.width + 4, ink.height + 4}
+		for region_index := 0; region_index < regions.len; {
+			other := regions[region_index]
+			if rect.x <= other.x + other.width && rect.x + rect.width >= other.x
+				&& rect.y <= other.y + other.height && rect.y + rect.height >= other.y {
+				left := math.min(rect.x, other.x)
+				top := math.min(rect.y, other.y)
+				right := math.max(rect.x + rect.width, other.x + other.width)
+				bottom := math.max(rect.y + rect.height, other.y + other.height)
+				rect = layout.LayoutRect{left, top, right - left, bottom - top}
+				regions.delete(region_index)
+				region_index = 0
+			} else { region_index++ }
+		}
+		regions << rect
+		if regions.len > 8 { return []f32{} }
+	}
+	mut rects := []f32{cap: regions.len * 4}
+	for rect in regions { rects << [f32(rect.x), f32(rect.y), f32(rect.width), f32(rect.height)] }
+	return rects
 }

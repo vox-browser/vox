@@ -18,6 +18,7 @@ import sys
 source = Path(sys.argv[1]).read_text()
 functions = []
 for signature in ('void native_capture_video_backdrop(', 'int native_gpu_canvas_begin(',
+                  'int native_gpu_canvas_begin_rects(',
                   'static int native_try_restore_gpu_video_backdrop(', 'void native_restore_video_backdrop('):
     first = source.index(signature)
     functions.append(source[first:source.index('\n}\n', first) + 2])
@@ -35,4 +36,5 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
 "$output_dir/native_gpu_canvas_test" --failed-readback
 "$output_dir/native_gpu_canvas_test" --iosurface-readback
 "$output_dir/native_gpu_canvas_test" --partial-readback
+"$output_dir/native_gpu_canvas_test" --overlay-batch
 VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-verify

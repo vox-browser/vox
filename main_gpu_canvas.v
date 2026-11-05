@@ -1,12 +1,26 @@
 module main
 
 import layout
+import browsersettings
+import os
+
+const gpu_scrollbar_batch_enabled = os.getenv('VOX_GPU_SCROLLBAR_BATCH') != ''
 
 $if macos {
 	fn C.native_gpu_canvas_begin() int
+	fn C.native_gpu_canvas_begin_rects(rects &f32, count i32) int
 	fn C.native_gpu_canvas_cpu_access()
 	fn C.native_gpu_canvas_end()
 	fn C.native_gpu_canvas_command(kind &u8, kind_len int, flags int) int
+}
+
+fn gpu_canvas_overlay_begin(rects []f32) bool {
+	$if macos {
+		if !gpu_scrollbar_batch_enabled
+			|| browsersettings.current().disable_gpu_canvas || rects.len == 0 { return false }
+		return C.native_gpu_canvas_begin_rects(rects.data, i32(rects.len / 4)) != 0
+	}
+	return false
 }
 
 // Facts the native GPU canvas (on unless browsersettings disable_gpu_canvas)
