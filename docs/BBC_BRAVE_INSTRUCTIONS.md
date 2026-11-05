@@ -1,6 +1,26 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 125** on parallel production `763626382a9e` is
+Latest attempt — **cohort 126**, parallel production `cecb4831bb22`, is
+invalid for acceptance because Brave pair 7 differs from its unchanged pixel
+reference. All 21 attempts are retained; 20 capture audits pass with normal
+native exits and unchanged identities. Launch-to-PNG medians are
+**26,100,765,310 Vox**, **27,237,469,790 byte-pair-filter control** and
+**17,378,744,319 Brave lower bound** instructions. The observed median point
+reduction is **1,136,704,480 (4.17331%)**, with five paired improvements and two
+regressions; the conservative control ratio **1.08612** fails. The strict Brave
+gate also fails `268632823440 > 155857775814` (ratio **1.55122**). No robust saving,
+acceptance or catalog credit is claimed.
+[Complete cohort, native and broader evidence](performance/bbc-attribute-byte-pairs-cohort126-20261106.json).
+
+The observed point reduction triggers fresh broader checks: **754 unique cases
+per default/no-GC mode, 749 passes and the same five baseline failures**. Layout
+555, main 74, CSS 110 and module-runtime 15 cases are all fresh; main/CSS repeat
+candidate/control, and module checks repeat their existing lexer arms. All
+1,906 actual executions and current source pins are audited: 1,892 passes and
+14 repeated baseline failures, with no carried executions, full-suite pass or
+cadence reset. All eight new filter cases pass.
+
+Retained attempt — **cohort 125** on parallel production `763626382a9e` is
 invalid for acceptance: Brave pairs 2 and 7 differ from their unchanged pixel
 reference. All 21 attempts remain recorded, with 19 successful capture audits,
 normal native exits and unchanged identities. Medians are **27,709,657,175 Vox**,
@@ -11,9 +31,10 @@ with four paired improvements and three regressions. The positive paired median
 The strict target also fails `290029312460 > 157792364613` (ratio **1.65424**).
 The substring memo experiment is retired (`2d5314555`), with its comparison
 control removed separately (`a95f2d80f`). All **57 restoration executions** and
-**341 tooling tests** pass. Native restoration awaits a completed production
-bundle containing the rollback; an older memo bundle supplies no restoration
-credit. [Restoration checks](performance/bbc-short-attribute-retirement-focus-20261106.json).
+**341 tooling tests** pass. Production `cecb4831bb22` now confirms the rollback: both native arms retain
+original captures, scripts, images, ownership and normal exits; the retired marker
+and source files are absent. The control also disables the new byte-pair filter.
+SVG source-switch is exact. See the current cohort ledger for native proof. [Restoration checks](performance/bbc-short-attribute-retirement-focus-20261106.json).
 [All attempts and native validation](performance/bbc-short-attribute-memo-cohort125-20261106.json).
 
 The memo's primary **150 focused executions** (25 cases, both arms, three GC
@@ -38,18 +59,19 @@ bound** instructions. The strict 10% target fails
 The candidate shows a **104,261,382** median point reduction (**0.397203%**),
 with four paired improvements and three regressions; the conservative control
 ratio **1.05345** fails. No robust saving or catalog credit is claimed.
-History through cohort 125 is **119 measured cohorts / 2,566 acceptance browser attempts**;
+History through cohort 126 is **120 measured cohorts / 2,587 acceptance browser attempts**;
 104, 110, 111, 113, 118 and 124 are preflight-only. Every earlier result remains
 preserved. [Complete current evidence](performance/bbc-empty-pseudo-indexes-cohort123-20261106.json).
 
-A new **attribute byte-pair prefilter** (`ff90485a2`, control `b54c3d910`) is
-under native validation. All **228 focused executions** (38 cases, both arms,
+A new **attribute byte-pair prefilter** (`ff90485a2`, control `b54c3d910`) has
+passed native validation and completed cohort 126. All **228 focused executions** (38 cases, both arms,
 three GC modes) and **342 tooling tests** pass. The local 1024-bit filter checks
 necessary ASCII-folded byte pairs for static one-compound attribute selectors;
 collisions retain extra candidates for the ordinary matcher. Dynamic, scoped,
 container, namespace-dependent, small-bucket and long-value cases keep the
-ordinary path. It retains no DOM, selector or value storage. No workload saving
-is credited before candidate-only execution and an unprofiled matched cohort.
+ordinary path. It retains no DOM, selector or value storage. Candidate-only rejection before PNG is verified on BBC, with original capture
+audits and exact SVG source-switch. The comparison above earns no robust saving
+or acceptance credit.
 [Checks and retained fixture failures](performance/bbc-attribute-byte-pairs-focus-20261106.json).
 
 The empty-index candidate (`34d4000d9`, isolated control `9717aa4b7`) skips
