@@ -56,3 +56,29 @@ fn test_window_self_is_isolated_between_actual_window_realms() {
 	assert second.evaluate_host('self===globalThis&&typeof self==="object"')! == 'true'
 	assert first.evaluate_host('self==="replaced in first realm"')! == 'true'
 }
+
+fn test_window_interface_object_brands_the_actual_global() {
+	$if !darwin && !linux {
+		return
+	}
+	mut runtime, mut document := window_self_fixture()!
+	mut other, mut other_document := window_self_fixture()!
+	defer {
+		runtime.close()
+		other.close()
+		document.finalize()
+		other_document.finalize()
+	}
+	assert runtime.evaluate_host(r'
+ let illegal=false;try{new Window()}catch(error){illegal=error instanceof TypeError}
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,"Window");
+ const brand=globalThis instanceof Window&&self instanceof Window&&!({} instanceof Window)&&!(Object.create(null) instanceof Window);
+ const tag=Object.prototype.toString.call(globalThis)==="[object Window]";
+ const proto=Window.prototype.constructor===Window&&(typeof EventTarget!=="function"||Object.getPrototypeOf(Window.prototype)===EventTarget.prototype);
+ illegal&&brand&&tag&&proto&&descriptor.writable&&!descriptor.enumerable&&descriptor.configurable;
+ ')! == 'true'
+	// Each realm's interface object recognizes only its own global.
+	other.evaluate_host('globalThis.otherWindow=Window')!
+	assert runtime.evaluate_host('typeof Window==="function"')! == 'true'
+	assert other.evaluate_host('otherWindow===Window&&globalThis instanceof Window')! == 'true'
+}
