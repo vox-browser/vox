@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "complete": false,
+  "status": "rejected_before_browser_launch",
+  "recorded_unix": 1793899651.108456,
+  "diagnostic": true,
+  "acceptance": false,
+  "instruction_credit": 0,
+  "browser_captures": 0,
+  "restore_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-current-c-profile-20261105-r2/restore_sources.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 22413312,
+    "elapsed_seconds": 2.20913475,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_restore_cleanup": {
+    "removed": [
+      {
+        "path": "Build/chatgpt-current-c-profile-20261105-r2/Vox.c",
+        "bytes": 190110013,
+        "sha256": "c19b0921cf0949ac4091e4cf0a36ded2e93e23a7e5398b43362aef95fff8510b",
+        "verified_archive_prefix_of": "c19b0921cf0949ac4091e4cf0a36ded2e93e23a7e5398b43362aef95fff8510b"
+      },
+      {
+        "path": "Build/chatgpt-current-c-profile-20261105-r2/frozen-compiler-inputs/0-Vox.c.i.restore",
+        "bytes": 116391936,
+        "sha256": "8692971bd0e1197733a6d2702a2da255761b82e60854796ea45e3bb4557bdc20",
+        "verified_archive_prefix_of": "29143ff9f386b0c5d9d0da01cef77c2bea401fd0acab0e97c12c032bce78f914"
+      }
+    ],
+    "bytes_reclaimed": 306501949,
+    "reason": "Only exact full/prefix reconstruction files from the failed restoration are removed; the verified durable source archive remains."
+  },
+  "archive_validator_test_cases": 5,
+  "archive_validator_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-current-c-profile-20261105-r2/archive_validation_test.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 3227648,
+    "elapsed_seconds": 0.171815459,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "probe_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-current-c-profile-20261105-r2/run-selected.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 40960000,
+    "elapsed_seconds": 0.541029958,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "changed_link_input": {
+    "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+    "expected_sha256": "592ccbd3689d2f5bf96cc9509941fbc78de87f4eebbc41515832cd0e2d0fe99a",
+    "observed_after_rejection": {
+      "path": "Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+      "sha256": "3427507f5fe3b8910050ad7bdf0aec03860cf1ac981968d1dcde1ee2c8836d83",
+      "bytes": 1031584
+    }
+  },
+  "base_profile": {
+    "path": "docs/performance/chatgpt-current-c-profile-20261105.json",
+    "sha256": "b561694e2a4871c0b19a5a71d8aeedd4a85bc81581b9bc846e41b40bdbc2390e",
+    "bytes": 293193
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-native-counter-probe-rejected-20261105-evidence.zip",
+    "sha256": "4fd300d5db08527a74b24da9197fa7fd7d3c9642876257d5b972fd3d8a78cc32",
+    "bytes": 13285
+  },
+  "qualification": "The optional selected native-function counter diagnostic never launches a browser. First, materializing archived C runs out of disk space. Only the verified full/prefix restoration files are removed, reclaiming 306501949 bytes. A separately tested archive-backed check authenticates the same explicitly archived missing source hashes without materialization and retains every live linker-input and library-resolution check. It then rejects the changed shared libLadybirdVSkiaText.dylib. No changed library is accepted, no bytes are substituted and no counter/function-cost result or optimization credit is assigned. The earlier valid elapsed-time profile remains tied to its recorded stable inputs; native instruction attribution remains pending.",
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-current-c-profile-20261105-r2/archive_selected_rejections.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 3457024,
+    "elapsed_seconds": 0.177881292,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

@@ -3256,3 +3256,79 @@ CSS-suite pass. Browser attribution still requires a completed bundle proving
 the final source, an executed-path diagnostic and unprofiled comparison.
 Page instruction credit and the broad cadence remain zero; **the requested
 5% advantage remains unmet**.
+
+
+## November 5: keyframe-union production comparison
+
+The shared build first supersedes a compilation whose aggregate source inputs
+change. A later completed 33-unit parallel bundle contains exact owned-source
+blobs at its recorded head with stable aggregate build inputs. The harness pins
+executable `a7182e18afe3dc48049af878dc9ab78951e2a1e26f07b5a19f5b17b17f812698`
+with a nonblocking publication lease and retains available function disassembly;
+no sealed-C claim is made for this production bundle.
+
+All **12 fresh captures pass bootstrap, complete content and exact unchanged
+pixels**. Separate diagnostics confirm the ordered-vector path executes only
+in the candidate. Matched captures disable diagnostics and retain the original
+map-union function as their control.
+
+| Unprofiled frozen-page variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Map-union control 1 | 30,148,694,411 |
+| Ordered-vector candidate 1 | 29,961,008,966 |
+| Ordered-vector candidate 2 | 30,512,891,249 |
+| Map-union control 2 | 30,318,805,723 |
+| Control median | 30,233,750,067 |
+| Candidate median | 30,236,950,107.5 |
+
+The candidate median is **0.0106% higher**, with overlapping ranges and
+conservative separation of **−364,196,838 instructions**. Therefore **no
+whole-page saving is credited**, no broad checkpoint is triggered and the
+cadence remains zero. The first candidate's reduction and second candidate's
+regression both remain retained. Component gains and the inherited-color
+regression remain separate from this page result.
+
+Control frame checkpoints are 427/425 versus 440/445 for candidates. One-minute
+host load ranges from 14.97 to 22.62 on 18 CPUs. The four Brave reference
+intervals span 16,476,347,924 to 19,503,680,438 observed instructions. Variation,
+different completed frame work, only two observations per variant and four
+total matched pairs limit attribution and fall short of seven-pair acceptance.
+**The requested 5% advantage over Brave remains unmet**.
+
+The original SOCKS fixture, author scripts and content/pixel references,
+fresh private profiles/caches, five-second unfocused settle, 1024×768 viewport,
+scale 2 and exclusive-coalition creation-through-encoded-document-PNG scope
+remain unchanged. OS filesystem/shader caches are retained; GPU and
+outside-coalition services are excluded. The outer guard exits zero, adopts
+42 process identities without error and peaks at 1,739,046,912 sampled RSS bytes
+under 12 GiB. Both phase controllers exit zero; the comparison driver's separate
+exit one records the unmet Brave gate. No live-site, isolated-rendering or
+scrolling improvement is established.
+
+The [completed production receipt](performance/chatgpt-keyframe-union-production-20261105.json)
+links raw counters, audits, PNGs, source proofs, commands, host conditions,
+actual exits and four verified archives. No app bundle is copied or duplicate
+build requested, and the publication lease is released. No optimized-site
+entry or 5%-below-Brave acceptance is claimed.
+
+### Native counter attribution remains pending
+
+An optional selected-function counter probe is attempted only after the
+unprofiled cohort finishes. Restoring the archived C sources first runs out
+of disk space. The exact full/prefix reconstruction files are verified against
+the durable archive before removal, reclaiming 306,501,949 bytes; the originals
+remain recoverable.
+
+A separate archive-backed verifier passes five tests for changed existing
+inputs, missing unlisted inputs, archive/blob/length mismatches and valid
+missing-source authentication. It checks the same explicitly archived source
+hashes without materializing duplicates, retaining every live linker-input
+and library-resolution check. The subsequent probe rejects a changed shared
+`libLadybirdVSkiaText.dylib` before launching any browser. It accepts no changed
+library and produces no native function instruction counts. The earlier
+elapsed-time profile remains valid for its own pinned inputs; it cannot fill
+this attribution gap.
+
+The [rejected counter-probe receipt](performance/chatgpt-native-counter-probe-rejected-20261105.json)
+preserves both actual failed exits, the verifier tests, cleanup hashes and
+source. No instruction credit, broad checkpoint or 5%-below-Brave claim follows.
