@@ -8917,7 +8917,15 @@ pub fn (d &Document) anything_is_delaying_the_load_event() bool {
 		return true
 	}
 
-	for navigable in d.descendant_navigables() {
+	// Only the predicate result escapes this query. The descendant list and
+	// traversal callback are temporary, even when a parser polls it every frame.
+	mut scratch := platform.begin_thread_scratch('load event delay traversal')
+	navigables := d.descendant_navigables()
+	scratch.leave()
+	defer { scratch.finish() }
+	// Embedder delay hooks run outside the workspace so their retained updates
+	// keep the caller's allocation owner.
+	for navigable in navigables {
 		container := navigable.container() or { continue }
 		if container.currently_delays_the_load_event() {
 			return true
