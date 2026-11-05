@@ -718,21 +718,24 @@ def preserve_parallel_compilation_receipt(output, binary, receipt, published, se
     result_path = candidates[0]
     c_mode_path = result_path.parent / 'c-compile.json'
     before_path = result_path.parent / 'inputs-before.json'
-    browser.require(json.loads(c_mode_path.read_bytes()) == mode
-                    and json.loads(before_path.read_bytes()) == receipt['inputs'],
+    c_mode_bytes = c_mode_path.read_bytes()
+    before_bytes = before_path.read_bytes()
+    browser.require(json.loads(c_mode_bytes) == mode
+                    and json.loads(before_bytes) == receipt['inputs'],
                     'Parallel compilation metadata differs from the published receipt')
     compiler = Path(mode['compiler'])
     runtime_path = compiler.parent.parent / 'manifest.json'
-    runtime = json.loads(runtime_path.read_bytes())
+    runtime_bytes = runtime_path.read_bytes()
+    runtime = json.loads(runtime_bytes)
     browser.require(hashlib.sha256(compiler.read_bytes()).hexdigest() == runtime['compiler_sha256'],
                     'Parallel compiler no longer matches its staged runtime identity')
     folder = output / 'production-compilation' / expected
     folder.mkdir(parents=True, exist_ok=False)
     for name, source, data in [('published-receipt.json', REPO / 'Build/production-build/latest.json', published),
                                ('result.json', result_path, published),
-                               ('c-compile.json', c_mode_path, c_mode_path.read_bytes()),
-                               ('inputs-before.json', before_path, before_path.read_bytes()),
-                               ('compiler-runtime.json', runtime_path, runtime_path.read_bytes())]:
+                               ('c-compile.json', c_mode_path, c_mode_bytes),
+                               ('inputs-before.json', before_path, before_bytes),
+                               ('compiler-runtime.json', runtime_path, runtime_bytes)]:
         target = folder / name
         target.write_bytes(data)
         browser.require(source.read_bytes() == data, f'Parallel receipt changed: {source}')

@@ -96,6 +96,25 @@ class BBCInstructionTests(unittest.TestCase):
                         preserve_production_compilation(output, dict(vox=app), fingerprint({binary}))
                 self.assertFalse(json.loads((output / 'production-compilation.json').read_text())['passed'])
 
+    def test_parallel_compilation_rejects_metadata_changes_after_its_initial_read(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            app, binary, published, output, folder, compiler, receipt = self.parallel_compilation_fixture(root)
+            original_read = Path.read_bytes
+            changed = False
+            def replace_after_read(path):
+                nonlocal changed
+                data = original_read(path)
+                if path == folder / 'c-compile.json' and not changed:
+                    changed = True
+                    path.write_bytes(b'{}')
+                return data
+            with patch('bbc_browser_instructions.REPO', root), patch.object(Path, 'read_bytes', replace_after_read):
+                with self.assertRaisesRegex(RuntimeError, 'Parallel receipt changed'):
+                    preserve_production_compilation(output, dict(vox=app), fingerprint({binary}))
+            self.assertTrue(changed)
+            self.assertFalse(json.loads((output / 'production-compilation.json').read_text())['passed'])
+
     def compilation_fixture(self, root):
         app = root / 'Build/v/Vox.app'
         binary = app / 'Contents/MacOS/Vox'
