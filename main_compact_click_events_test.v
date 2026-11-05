@@ -15,6 +15,8 @@ fn test_compact_click_listeners_use_native_paths_capture_cancellation_and_once()
 	}
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [r'
+if(globalThis.parent!==window)throw new Error("Window.parent was hidden by an element ID");
+const parent=document.getElementById("parent");
 globalThis.order=[];globalThis.valid=true;
 document.addEventListener("click",event=>{order.push("document");valid=valid&&event instanceof MouseEvent&&event.composedPath()[0]===field&&event.eventPhase===1},{capture:true});
 parent.addEventListener("click",()=>order.push("parent"),true);

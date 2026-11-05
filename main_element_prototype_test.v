@@ -56,6 +56,7 @@ fn test_compact_element_selectors_use_native_css_and_live_dom_mutations() {
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [
 		r'
+const parent=document.getElementById("parent");
 if(!leaf.matches("section.region > div > span.choice[data-kind=yes]:first-child"))throw new Error("complex selector");
 if(leaf.closest(".region")!==ancestor||leaf.closest("span")!==leaf||leaf.closest("article")!==null)throw new Error("closest identity");
 if(parent.querySelector(".choice")!==leaf||parent.querySelector("#parent")!==null||document.querySelector(".region .choice")!==leaf)throw new Error("descendant selector");
@@ -90,6 +91,7 @@ fn test_compact_queries_import_inner_html_children_with_live_native_identity_and
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [
 		r'
+const parent=document.getElementById("parent");
 const firstCollision=document.getElementById("collision");
 parent.innerHTML="<strong id=imported data-state=ready>new <i>child</i></strong><b id=collision>second</b><i id=id#with.punctuation>exact ID</i>";
 globalThis.imported=parent.querySelector("strong[data-state=ready]");

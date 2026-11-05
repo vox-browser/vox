@@ -42,7 +42,7 @@ fn test_pending_finalization_covers_removed_and_created_content_and_control_edit
 	defer { runtime.close() }
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [''], runtime, mut messages)
-	runtime.evaluate_host('text.textContent="after";control.checked=true;control.indeterminate=true;globalThis.added=document.createElement("p");added.id="added";added.innerHTML="<b>created</b>";parent.appendChild(added);text.remove();')!
+	runtime.evaluate_host('const parent=document.getElementById("parent");text.textContent="after";control.checked=true;control.indeterminate=true;globalThis.added=document.createElement("p");added.id="added";added.innerHTML="<b>created</b>";parent.appendChild(added);text.remove();')!
 	encoded := runtime.evaluate_host('__ladybirdFinalize()')!
 	apply_javascript_runtime_state(document, encoded, runtime, mut messages)
 	assert document.get_element_by_id('text') == none

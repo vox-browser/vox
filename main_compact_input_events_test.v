@@ -10,6 +10,7 @@ fn test_compact_input_and_change_listeners_receive_native_events_and_composed_pa
 	defer { runtime.close(); document.finalize() }
 	mut messages := []string{}
 	run_document_javascript(document,'about:blank',[r'
+const parent=document.getElementById("parent");
 globalThis.events=[];globalThis.checks=[];let saved;
 function input(event){events.push("field");saved=event;checks.push(event instanceof Event&&event.isTrusted&&this===field&&event.target===field&&event.currentTarget===field&&event.composedPath()[0]===field&&event.composedPath().includes(parent)&&event.composedPath().includes(document));}
 field.addEventListener("input",input,{once:true});parent.addEventListener("input",event=>{events.push("parent");checks.push(event===saved&&event.currentTarget===parent)});

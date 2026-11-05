@@ -189,7 +189,7 @@ fn test_browser_content_window_tracks_eager_contexts_and_detached_receivers() {
 	$if !darwin {
 		return
 	}
-	mut host, mut document := child_browser_fixture('<!doctype html><body></body>', 'https://parent.example/')
+	mut host, mut document := child_browser_fixture('<!doctype html><body><div id=parent></div><div id=top></div><div id=frames></div><div id=length></div></body>', 'https://parent.example/')
 	mut runtime := browserjs.Runtime.create()
 	defer {
 		host.close()

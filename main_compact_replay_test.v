@@ -36,6 +36,7 @@ fn test_selector_replay_flushes_control_state_and_retains_console_messages() {
 	defer { runtime.close() }
 	mut messages := []string{}
 	run_document_javascript(document, address.serialize(), [r'
+const parent=document.getElementById("parent");
 console.log("before");
 check.checked=true;if(!check.matches(":checked"))throw new Error("pending checked state not applied");
 check.checked=false;if(document.querySelector(":checked")!==null)throw new Error("unchecked state not applied");

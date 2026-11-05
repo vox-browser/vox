@@ -21,7 +21,7 @@ fn window_proxy_binding_factory() string {
    get [name](){const receiver=this==null?global:this;return name==="frames"?(operate("brand",receiver),receiver):operate(name,receiver)},
    set [name](value){const receiver=this==null?global:this;operate("brand",receiver);define(receiver,name,{value,writable:true,enumerable:true,configurable:true})}
   },name);
-  const attributes={get:accessors.get,enumerable:true,configurable:name!=="top"};
+  const attributes={get:accessors.get,set:undefined,enumerable:true,configurable:name!=="top"};
   if(name!=="top")attributes.set=accessors.set;
   define(global,name,attributes);
  }

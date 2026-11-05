@@ -38,6 +38,7 @@ fn test_compact_mutation_observer_child_records_are_snapshots_and_take_records_d
 	}
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [r'
+const parent=document.getElementById("parent");
 globalThis.calls=0;const observer=new MutationObserver(()=>calls++);
 observer.observe(parent,{subtree:true,childList:true,characterDataOldValue:true,attributes:true});
 const text=child.firstChild;text.data="new";parent.removeChild(child);child.setAttribute("data-removed","1");
