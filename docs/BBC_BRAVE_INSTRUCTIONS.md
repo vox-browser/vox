@@ -1,31 +1,37 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 117**, on pinned parallel production `df6e738381e5`:
+Current result — **cohort 119**, on pinned parallel production `8d0d0946f3a2`:
 all 21 capture audits pass, with normal native exits and unchanged input
-identities. Launch-to-PNG medians are **27,270,592,115 Vox**,
-**27,303,652,900 FIFO control**, and **17,470,665,268 Brave lower bound**
+identities. Launch-to-PNG medians are **26,295,216,121 Vox**,
+**26,628,284,976 word-only control**, and **17,493,238,228 Brave lower bound**
 instructions. The strict 10% target fails
-`282544023760 > 156799815462` (conservative ratio **1.62175**).
-Cache recency's difference of medians is +33,060,785 (0.1211%), but the median
-paired difference is **−19,048,210**, with three improvements and four
-regressions. Conservative control ratio **1.07881** fails; no robust saving or
-catalog entry is credited. The invalid cohort 116 remains recorded separately.
-History is 113 measured cohorts / 2,440 acceptance browser attempts; 104, 110,
-111 and 113 are preflight-only.
-[Complete current evidence](performance/bbc-measurement-recency-cohort117-20261105.json).
+`272645326190 > 156127068990` (conservative ratio **1.57167**).
+The classic import-call filter's difference of medians is +333,068,855
+(1.2508%), but the median paired difference is **−132,844,514**, with three
+improvements and four regressions. Conservative control ratio **1.04471**
+fails; no robust saving or catalog entry is credited. History is **114 measured
+cohorts / 2,461 acceptance browser attempts**; 104, 110, 111, 113 and 118 are
+preflight-only. Cohort 117 and every earlier failing result remain preserved.
+[Complete current evidence](performance/bbc-classic-import-call-cohort119-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
 
-Both native captures confirm candidate-only cache promotion before
-PNG and pass original pixels/content, all 72 external author scripts, actual
+Both native captures confirm candidate-only import-call filtering before PNG
+and pass original pixels/content, all 72 external author scripts, actual
 native-library pins, helper ownership and exits. The SVG source-switch guard
-is exact in both arms. The triggered broader checks cover **693 unique cases
-per default/no-GC mode: 688 passes and the same five baseline failures**.
-That includes fresh layout/main checks and the current CSS focused cases;
-there is no full-suite pass or cadence reset. The generated-pseudo correctness
-fix and anchor shortcut are common to both measured Vox arms. The parallel build preserves complete
-input/compiler metadata but has no sealed generated C receipt. Workload,
-references, endpoints, cache policy and rendering limitations remain unchanged.
-BBC homepage remains outside `OPTIMIZED_SITES.md`.
+is exact in both arms. Storage preflight 118 launches no measured browser.
+After lossless compression of completed generated artifacts, cohort 119 reuses
+those native checks only after verifying the identical executable and current
+checked sources under a fresh publication lease. The same disk planning
+minimum, counters, thresholds, workload, references and endpoints remain.
+
+Triggered broader checks cover **702 unique cases per default/no-GC mode:
+697 passes and the same five baseline failures**. Fresh layout 555/main 74/CSS
+64 cases combine with nine current browser-JS focused cases; main and browser-JS
+checks include both candidate and control. There are 1,534 fresh and 36 carried
+executions, with 1,556 passes and 14 baseline failures. There is no full-suite
+pass or cadence reset. The parallel build retains complete input/compiler/
+runtime metadata but has no sealed generated C receipt. Known rendering and
+scripting limitations remain unchanged. BBC stays outside `OPTIMIZED_SITES.md`.
 
 Measurement recency (`f0a747f84`, FIFO control `b90dfdbb9`) keeps recently reused
 disposable grid/flex/inline geometry in the existing four-entry caches. Keys,
