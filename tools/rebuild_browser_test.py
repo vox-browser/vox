@@ -356,7 +356,9 @@ class ProductionBuildTests(unittest.TestCase):
             first, second = run.call_args_list
             self.assertIn('run_memory_bounded.py', first.args[0][1])
             self.assertNotIn('--limit-gib', first.args[0])
+            self.assertEqual(first.args[0][first.args[0].index('--timeout') + 1], '2700')
             self.assertIn('--headless-smoke', second.args[0])
+            self.assertNotIn('--timeout', second.args[0])
             self.assertEqual(second.args[0][second.args[0].index('--limit-gib') + 1], '3')
             self.assertEqual(first.kwargs['cwd'], root)
             self.assertEqual(first.kwargs['env']['VOX_BUILD_OUTPUT_DIR'], str(stage))
@@ -413,6 +415,8 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
                 evidence = json.loads((receipt / name).read_text())
                 self.assertEqual(evidence['reason'], 'completed')
                 self.assertEqual(evidence['child_exit_code'], 0)
+                self.assertEqual(evidence['limit_bytes'],
+                                 (12 if name == 'memory.json' else 3) * 1024 ** 3)
 
 
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')

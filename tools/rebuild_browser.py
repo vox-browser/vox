@@ -16,6 +16,9 @@ import tempfile
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+# Large optimized C builds need more wall time when the shared host is busy.
+# Keep the memory guard's default aggregate RSS budget.
+PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
@@ -196,7 +199,8 @@ def run_build(root, stage, receipt, environment):
     with (receipt / 'build.log').open('wb') as log:
         result = subprocess.run([sys.executable, str(guard), '--lock',
             str(root / 'Build/production-build/memory.lock'), '--report',
-            str(receipt / 'memory.json'), '--', 'sh', '-c',
+            str(receipt / 'memory.json'), '--timeout',
+            str(PRODUCTION_BUILD_TIMEOUT_SECONDS), '--', 'sh', '-c',
             'exec sh -c "$(cat)" "$0"', str(script)], input=script_bytes,
             cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)
     if result.returncode:
