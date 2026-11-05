@@ -163,9 +163,69 @@ static void test_bounds(void)
     printf("Opacity bounds: %zu exact region/padding comparisons passed\n", comparisons);
 }
 
+static void test_byte_opacity_large_spans(void)
+{
+    enum { bytes = 1024 * 4 + 32 };
+    uint8_t source[bytes], backdrop[bytes], expected[bytes], actual[bytes];
+    size_t pixels = 0;
+    const size_t counts[] = {0, 7, 8, 255, 256, 257, 511, 768, 1024};
+    for (int iteration = 0; iteration < 2048; ++iteration) {
+        float opacity = (float)(random_value() & 0xffffff) / 16777215.0f;
+        if (iteration % 8 == 0) opacity = nextafterf(0.5f, iteration % 16 ? 0 : 1);
+        if (iteration % 8 == 1) opacity = nextafterf(0.1f, iteration % 16 ? 0 : 1);
+        for (size_t i = 0; i < bytes; ++i) {
+            source[i] = random_value(); backdrop[i] = random_value();
+        }
+        size_t count = counts[iteration % (sizeof(counts) / sizeof(counts[0]))];
+        memset(expected, 0xa9, bytes); memset(actual, 0xa9, bytes);
+        reference_composite(source + 1, backdrop + 3, expected + 5, count, opacity);
+        native_composite_opacity_pixels(source + 1, backdrop + 3, actual + 5, count, opacity);
+        assert(!memcmp(expected, actual, bytes));
+        reference_composite(source, backdrop, expected, count, opacity);
+        memcpy(actual, backdrop, bytes);
+        native_composite_opacity_pixels(source, actual, actual, count, opacity);
+        assert(!memcmp(expected, actual, count * 4));
+        assert(!memcmp(actual + count * 4, backdrop + count * 4, bytes - count * 4));
+        memcpy(actual, source, bytes);
+        native_composite_opacity_pixels(actual, backdrop, actual, count, opacity);
+        assert(!memcmp(expected, actual, count * 4));
+        assert(!memcmp(actual + count * 4, source + count * 4, bytes - count * 4));
+        pixels += count * 3;
+    }
+    // An exact byte-unit half can be biased in normalized GPU arithmetic.
+    // The guard must reject it, and the public compositor must retain it.
+    for (size_t i = 0; i < 1024; ++i) {
+        source[i * 4] = source[i * 4 + 1] = source[i * 4 + 2] = 0;
+        source[i * 4 + 3] = 255;
+        backdrop[i * 4] = backdrop[i * 4 + 1] = backdrop[i * 4 + 2] = 33;
+        backdrop[i * 4 + 3] = 255;
+    }
+    reference_composite(source, backdrop, expected, 1024, 0.5f);
+    assert(expected[0] == 17);
+    native_composite_opacity_pixels(source, backdrop, actual, 1024, 0.5f);
+    assert(!memcmp(expected, actual, 1024 * 4));
+#if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+    uint8x8x4_t output;
+    assert(!native_opacity_unambiguous_byte_block(vld4_u8(source), vld4_u8(backdrop),
+        vdupq_n_f32(0.5f), vdupq_n_f32(0.5f), vdupq_n_f32(0.5f), &output));
+    for (size_t i = 0; i < 8; ++i) {
+        source[i * 4] = 10; source[i * 4 + 1] = 20; source[i * 4 + 2] = 30;
+        source[i * 4 + 3] = 100;
+        backdrop[i * 4] = 40; backdrop[i * 4 + 1] = 50; backdrop[i * 4 + 2] = 60;
+    }
+    float remaining = 1 - ((float)100 / 255) * 0.25f;
+    assert(native_opacity_unambiguous_byte_block(vld4_u8(source), vld4_u8(backdrop),
+        vdupq_n_f32(0.25f), vdupq_n_f32(remaining), vdupq_n_f32(remaining), &output));
+    vst4_u8(actual, output); reference_composite(source, backdrop, expected, 8, 0.25f);
+    assert(!memcmp(expected, actual, 8 * 4));
+#endif
+    printf("Byte opacity: %zu large-span/alias pixels and halfway guards passed\n", pixels);
+}
+
 int main(void)
 {
     test_composite();
     test_bounds();
+    test_byte_opacity_large_spans();
     return 0;
 }

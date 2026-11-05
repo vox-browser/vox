@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "platform/native_state.h"
 
 #if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
 #include <arm_neon.h>
@@ -42,6 +43,9 @@ static void native_composite_opacity_pixels_scalar(const uint8_t *layer, const u
 }
 
 #if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+VOX_NATIVE_STATE int vox_unit_opacity_reported;
+VOX_NATIVE_STATE int vox_byte_opacity_reported;
+
 static float32x4_t native_opacity_normalize(uint16x4_t bytes)
 {
     return vdivq_f32(vcvtq_f32_u32(vmovl_u16(bytes)), vdupq_n_f32(255.0f));
@@ -54,6 +58,38 @@ static uint32x4_t native_opacity_quantize(float32x4_t values)
     uint64x2_t low = vcvtnq_u64_f64(vmulq_n_f64(vcvt_f64_f32(vget_low_f32(values)), 255.0));
     uint64x2_t high = vcvtnq_u64_f64(vmulq_n_f64(vcvt_f64_f32(vget_high_f32(values)), 255.0));
     return vminq_u32(vcombine_u32(vmovn_u64(low), vmovn_u64(high)), vdupq_n_u32(255));
+}
+
+// Work in byte units when rounding is provably unambiguous. Both expressions
+// use the same float32 remaining coverage. Replacing normalized RGB arithmetic
+// and double scaling changes an unsaturated result by less than 2^-14 levels:
+// normalization, source multiplication and the original FMA contribute at
+// most 255*5*2^-25; byte-unit multiplication/FMA add at most 3*2^-17. Their
+// sum is below 2^-14 (bytes, alpha in [0,1], output in [0,510]). Keep a 2^-10
+// exclusion around every half level. Ambiguous blocks use the original path.
+static int native_opacity_unambiguous_byte_block(uint8x8x4_t source,
+    uint8x8x4_t destination, float32x4_t alpha, float32x4_t remaining_low,
+    float32x4_t remaining_high, uint8x8x4_t *output)
+{
+#pragma clang fp contract(off)
+    float32x4_t distance = vdupq_n_f32(0);
+    for (int channel = 0; channel < 4; ++channel) {
+        uint16x8_t s = vmovl_u8(source.val[channel]);
+        uint16x8_t d = vmovl_u8(destination.val[channel]);
+        float32x4_t low = vfmaq_f32(
+            vmulq_f32(vcvtq_f32_u32(vmovl_u16(vget_low_u16(s))), alpha),
+            vcvtq_f32_u32(vmovl_u16(vget_low_u16(d))), remaining_low);
+        float32x4_t high = vfmaq_f32(
+            vmulq_f32(vcvtq_f32_u32(vmovl_u16(vget_high_u16(s))), alpha),
+            vcvtq_f32_u32(vmovl_u16(vget_high_u16(d))), remaining_high);
+        float32x4_t rounded_low = vrndnq_f32(low), rounded_high = vrndnq_f32(high);
+        distance = vmaxq_f32(distance, vmaxq_f32(vabsq_f32(vsubq_f32(low, rounded_low)),
+            vabsq_f32(vsubq_f32(high, rounded_high))));
+        output->val[channel] = vqmovn_u16(vcombine_u16(
+            vqmovn_u32(vcvtq_u32_f32(rounded_low)),
+            vqmovn_u32(vcvtq_u32_f32(rounded_high))));
+    }
+    return vmaxvq_f32(distance) < 0.5f - 0x1p-10f;
 }
 #endif
 
@@ -68,6 +104,12 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
     if (count >= 8 && opacity >= 0.0f && opacity <= 1.0f && fegetround() == FE_TONEAREST) {
         const char *disabled = opacity == 1.0f ? getenv("VOX_DISABLE_UNIT_OPACITY_INTEGER") : NULL;
         int unit_opacity = opacity == 1.0f && (!disabled || !*disabled), used_unit = 0;
+        int byte_opacity = count >= 256 && opacity > 0 && opacity < 1, used_byte = 0;
+        if (byte_opacity) {
+            const char *retain_normalized = getenv("VOX_RETAIN_NORMALIZED_OPACITY_FLOAT");
+            byte_opacity = !retain_normalized || !*retain_normalized;
+        }
+        size_t byte_attempts = 0, ambiguous_blocks = 0;
         float32x4_t alpha = vdupq_n_f32(opacity);
         for (; count - index >= 8; index += 8) {
             uint8x8x4_t source = vld4_u8(layer + index * 4);
@@ -107,6 +149,19 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
             float32x4_t remaining_high = vsubq_f32(vdupq_n_f32(1.0f),
                 vmulq_f32(native_opacity_normalize(vget_high_u16(coverage)), alpha));
             uint8x8x4_t output;
+            if (byte_opacity) {
+                ++byte_attempts;
+                if (native_opacity_unambiguous_byte_block(source, destination, alpha,
+                    remaining_low, remaining_high, &output)) {
+                    vst4_u8(result + index * 4, output);
+                    used_byte = 1;
+                    continue;
+                }
+                // Repeated halfway results (for example opaque half-alpha
+                // spans) should pay for at most a short unsuccessful probe.
+                if (++ambiguous_blocks >= 2 && ambiguous_blocks * 3 > byte_attempts)
+                    byte_opacity = 0;
+            }
             for (int channel = 0; channel < 4; ++channel) {
                 uint16x8_t s = vmovl_u8(source.val[channel]);
                 uint16x8_t d = vmovl_u8(destination.val[channel]);
@@ -122,11 +177,17 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
             vst4_u8(result + index * 4, output);
         }
         if (used_unit) {
-            static int reported;
-            if (!__atomic_exchange_n(&reported, 1, __ATOMIC_RELAXED)) {
+            if (!__atomic_exchange_n(&vox_unit_opacity_reported, 1, __ATOMIC_RELAXED)) {
                 const char *diagnostics = getenv("VOX_UNIT_OPACITY_INTEGER_DIAGNOSTICS");
                 if (diagnostics && *diagnostics)
                     fprintf(stderr, "Vox unit opacity integer: mixed-alpha span executed pixels=%zu\n", count);
+            }
+        }
+        if (used_byte) {
+            if (!__atomic_exchange_n(&vox_byte_opacity_reported, 1, __ATOMIC_RELAXED)) {
+                const char *diagnostics = getenv("VOX_BYTE_OPACITY_DIAGNOSTICS");
+                if (diagnostics && *diagnostics)
+                    fprintf(stderr, "Vox byte opacity: unambiguous float span executed pixels=%zu\n", count);
             }
         }
     }
