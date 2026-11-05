@@ -1,0 +1,279 @@
+{
+  "status": "Final31cases279executions pass in3GCmodes and3arms, including pending/decode/SVG/broken transitions,absolute containing blocks,resize/role changes,immutable old pixels and full-builder oracles. All284instruction-tool tests pass. Native828eligibility/pixels/scripts andSVGguard pass separately; unprofiled cohort pending. No instruction credit or catalog entry.",
+  "engine_commit": "5c5ed9a46",
+  "control_commit": "4c5a0641c",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-extended-control",
+        "exit": 0
+      },
+      {
+        "name": "default-image-tree-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-extended-control",
+        "exit": 0
+      },
+      {
+        "name": "none-image-tree-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-extended-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-image-tree-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_decoded_raster_image_branches_keep_tree_identity_and_refresh_geometry",
+          "test_retained_image_tree_source_and_natural_size_changes_keep_current_pixels",
+          "test_cached_image_tree_rechecks_svg_and_broken_provider_transitions",
+          "test_broken_css_replacement_and_fixed_images_keep_full_tree_builder",
+          "test_pending_and_absolute_image_branches_retain_only_structure_across_sibling_mutations",
+          "test_pending_tree_rechecks_success_svg_and_failure_before_reusing_cached_nodes",
+          "test_absolute_image_tree_recomputes_containing_blocks_after_resize_and_role_changes",
+          "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+          "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+          "test_retained_flow_replays_counter_order_before_generated_following_content",
+          "test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path",
+          "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+          "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+          "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+          "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+          "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+          "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+          "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+          "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+          "test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+          "test_completed_image_with_a_definite_size_repaints_without_layout",
+          "test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands",
+          "test_completed_image_sized_by_its_contents_needs_layout",
+          "test_fixed_size_image_with_a_new_source_needs_layout",
+          "test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio",
+          "test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints",
+          "test_positioned_image_repaint_preserves_pending_attribute_selector_relayout"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_decoded_raster_image_branches_keep_tree_identity_and_refresh_geometry",
+          "test_retained_image_tree_source_and_natural_size_changes_keep_current_pixels",
+          "test_cached_image_tree_rechecks_svg_and_broken_provider_transitions",
+          "test_broken_css_replacement_and_fixed_images_keep_full_tree_builder",
+          "test_pending_and_absolute_image_branches_retain_only_structure_across_sibling_mutations",
+          "test_pending_tree_rechecks_success_svg_and_failure_before_reusing_cached_nodes",
+          "test_absolute_image_tree_recomputes_containing_blocks_after_resize_and_role_changes",
+          "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+          "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+          "test_retained_flow_replays_counter_order_before_generated_following_content",
+          "test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path",
+          "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+          "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+          "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+          "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+          "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+          "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+          "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+          "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+          "test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+          "test_completed_image_with_a_definite_size_repaints_without_layout",
+          "test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands",
+          "test_completed_image_sized_by_its_contents_needs_layout",
+          "test_fixed_size_image_with_a_new_source_needs_layout",
+          "test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio",
+          "test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints",
+          "test_positioned_image_repaint_preserves_pending_attribute_selector_relayout"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_decoded_raster_image_branches_keep_tree_identity_and_refresh_geometry",
+          "test_retained_image_tree_source_and_natural_size_changes_keep_current_pixels",
+          "test_cached_image_tree_rechecks_svg_and_broken_provider_transitions",
+          "test_broken_css_replacement_and_fixed_images_keep_full_tree_builder",
+          "test_pending_and_absolute_image_branches_retain_only_structure_across_sibling_mutations",
+          "test_pending_tree_rechecks_success_svg_and_failure_before_reusing_cached_nodes",
+          "test_absolute_image_tree_recomputes_containing_blocks_after_resize_and_role_changes",
+          "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+          "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+          "test_retained_flow_replays_counter_order_before_generated_following_content",
+          "test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path",
+          "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+          "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+          "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+          "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+          "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+          "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+          "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+          "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+          "test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+          "test_completed_image_with_a_definite_size_repaints_without_layout",
+          "test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands",
+          "test_completed_image_sized_by_its_contents_needs_layout",
+          "test_fixed_size_image_with_a_new_source_needs_layout",
+          "test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio",
+          "test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints",
+          "test_positioned_image_repaint_preserves_pending_attribute_selector_relayout"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees_test.v": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8",
+      "/Users/alex/code/vox2/layout/retained_flow_subtrees_test.v": "64598b593671e1059b93f30e89f39cfc711e5c1ce295e7bbb14b46ed2bedf0bd",
+      "/Users/alex/code/vox2/layout/retained_formatting_trees_test.v": "12e5b10b0d5126e75183097b49979e9a90545664ab0e8166e12804961466ca0d",
+      "/Users/alex/code/vox2/layout/retained_block_images_test.v": "62ca7a15cfa9267ac9ddf4c88c21cf7cc65845ba2b994a1e37024e195bc56a56",
+      "/Users/alex/code/vox2/layout/image_contents_repaint_test.v": "c712647e4ad2bf36da6b087d73c2c46329d893e6f74e5885512415a031c89ac7",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees.v": "e44b540b9596acd36cb3e506f92b4f0c93b31a7c8e67aa0e933e88f47af4aae4",
+      "/Users/alex/code/vox2/layout/retained_flow_subtrees.v": "ff1365ba23f62d10502d7259d1ae173fee9c7abc2e0d910d6aa29ecb7ab8ccb2",
+      "/Users/alex/code/vox2/layout/retained_flow_styles.v": "5e62de2800eb25cb612591f4249830f454523cb5f38a447624e456ef920cf8cf",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "e7d067dcb7d10161c7c4111ad19c1d92bcdabc69d5dcec93245b33bc2e239fbd",
+      "/Users/alex/code/vox2/layout/special_boxes.v": "7ff33ed2bcaace8a7174d6c1b5d7840a7e32291215b07aeb6ae05c7e42f0ff20",
+      "/Users/alex/code/vox2/layout/document_tree_builder.v": "10ff42305bd79a4bd1e9a0f3e7ef82f036a60c7a46ee4cfe6d38118625386946",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc"
+    },
+    "unchanged": true,
+    "cases_per_run": 31,
+    "expected_cases": [
+      "test_decoded_raster_image_branches_keep_tree_identity_and_refresh_geometry",
+      "test_retained_image_tree_source_and_natural_size_changes_keep_current_pixels",
+      "test_cached_image_tree_rechecks_svg_and_broken_provider_transitions",
+      "test_broken_css_replacement_and_fixed_images_keep_full_tree_builder",
+      "test_pending_and_absolute_image_branches_retain_only_structure_across_sibling_mutations",
+      "test_pending_tree_rechecks_success_svg_and_failure_before_reusing_cached_nodes",
+      "test_absolute_image_tree_recomputes_containing_blocks_after_resize_and_role_changes",
+      "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+      "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+      "test_retained_flow_replays_counter_order_before_generated_following_content",
+      "test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path",
+      "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+      "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+      "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+      "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+      "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+      "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+      "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+      "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+      "test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path",
+      "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+      "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+      "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+      "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+      "test_completed_image_with_a_definite_size_repaints_without_layout",
+      "test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands",
+      "test_completed_image_sized_by_its_contents_needs_layout",
+      "test_fixed_size_image_with_a_new_source_needs_layout",
+      "test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio",
+      "test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints",
+      "test_positioned_image_repaint_preserves_pending_attribute_selector_relayout"
+    ]
+  },
+  "retained_failures": "Initial tests assert provider-kind transition must rebuild immediately although only geometry was requested; move identity check after an actual sibling DOM mutation. Corrected controls pass; candidate exposes remaining DOM-level blanket absolute-position rejection. Restrict its exception to HTML images behind new control and existing live ImageBox checks; final all279pass. Initial and intermediate phases retained.",
+  "historical_source_recovery": [
+    {
+      "phase": "initial",
+      "path": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/recovered-inputs/initial-subtrees.v",
+      "sha256": "d0eea24b4da5807b528566aa0efbf09c6f51fa7b69fa8f146ae378f78c66d6ff",
+      "verified": true
+    },
+    {
+      "phase": "initial",
+      "individual_test_source_recovered_exact": true,
+      "combined_test_source_preserved": true,
+      "expected_sha256": "234f22f8e56e0fea91647c295e7c4f944ebf4feccadac5732074c62a852765a9"
+    },
+    {
+      "phase": "transition-and-eligibility-checks",
+      "path": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/recovered-inputs/transition-subtrees.v",
+      "sha256": "d0eea24b4da5807b528566aa0efbf09c6f51fa7b69fa8f146ae378f78c66d6ff",
+      "verified": true
+    },
+    {
+      "phase": "transition-and-eligibility-checks",
+      "individual_test_source_recovered_exact": true,
+      "combined_test_source_preserved": true,
+      "expected_sha256": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8"
+    }
+  ],
+  "tool_tests": {
+    "passed": 284,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser_instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 61538304,
+      "elapsed_seconds": 2.533282458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-pending-image-focus-20261105.tar.gz",
+    "bytes": 36449000,
+    "sha256": "f607f2246295f63c3f5e251b9d8b0ee7eb65b9b1cc4ead1ba6ad1397e60fc4b6",
+    "members": 172,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793831416.862318
+}

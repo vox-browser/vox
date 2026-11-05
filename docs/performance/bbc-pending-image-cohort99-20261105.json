@@ -1,0 +1,734 @@
+{
+  "status": "Cohort98invalid after17captures due shared publication. Cohort99all21normal-exit original-pixel/content audits pass; target fails. Pending/absolute tree extension only has variable463103582median point improvement,no robust saving. Broad524cases ineachGCmode with3knownbaseline failures. Original scope,fixtures,references and gate unchanged; no catalog entry.",
+  "cohorts": {
+    "98": {
+      "rows": [
+        {
+          "trial": "pair-1-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17431991213,
+            "upper": 17447799697
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-1-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27980041631,
+            "upper": 27980041631
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-1-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27187847528,
+            "upper": 27187847528
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-2-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17509686898,
+            "upper": 17510216042
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-2-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27567450469,
+            "upper": 27567450469
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-2-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27633070780,
+            "upper": 27633070780
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-3-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17368185855,
+            "upper": 17392253126
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-3-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28571820252,
+            "upper": 28571820252
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-3-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27988639735,
+            "upper": 27988639735
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-4-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17365364843,
+            "upper": 17380897628
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-4-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28286919780,
+            "upper": 28286919780
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-4-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27185686430,
+            "upper": 27185686430
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-5-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17587949308,
+            "upper": 17603817914
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-5-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27501427027,
+            "upper": 27501427027
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-5-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26714464211,
+            "upper": 26714464211
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-6-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17624592033,
+            "upper": 17657566641
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-6-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27823239071,
+            "upper": 27823239071
+          },
+          "ownership": true
+        }
+      ],
+      "identity_failures": [
+        {
+          "changed_inputs": [
+            {
+              "expected": {
+                "bytes": 32567808,
+                "sha256": "0265539a5c31ef86517916e4870b19e0161a3562345694249a07da6a2f632d2b"
+              },
+              "observed": {
+                "bytes": 32568896,
+                "sha256": "f104d01ef91b6dcf0f15000e123ee4192ba9a4a86d8ff4f4fa6e49044b136ce3"
+              },
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox"
+            }
+          ],
+          "invalidates_cohort": true
+        }
+      ],
+      "summary": null,
+      "guard": {
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-0265/cohort-with-host.py",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-0265/cohort98/cohort-98",
+          "--repeat",
+          "7",
+          "--control-vox-app",
+          "Build/v/Vox.app",
+          "--control-disable-extended-image-trees",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-0265/fixture/clock-archive-v3",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-0265/cohort98/cohort98-pids.json",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-0265/fixture/reference-complete/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-0265/fixture/reference-complete/pair-1-brave/document.png",
+          "--preserve-inputs",
+          "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+          "--retain-logical-paint-snapping",
+          "--retain-css-layout-for-svg"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "8429": "Thu Nov  5 01:34:16 2026    ",
+          "8432": "Thu Nov  5 01:34:16 2026    ",
+          "8736": "Thu Nov  5 01:34:21 2026    ",
+          "8741": "Thu Nov  5 01:34:21 2026    ",
+          "9307": "Thu Nov  5 01:34:28 2026    ",
+          "9311": "Thu Nov  5 01:34:28 2026    ",
+          "9804": "Thu Nov  5 01:34:34 2026    ",
+          "9808": "Thu Nov  5 01:34:34 2026    ",
+          "10141": "Thu Nov  5 01:34:40 2026    ",
+          "10148": "Thu Nov  5 01:34:40 2026    ",
+          "10488": "Thu Nov  5 01:34:46 2026    ",
+          "10493": "Thu Nov  5 01:34:46 2026    ",
+          "10702": "Thu Nov  5 01:34:51 2026    ",
+          "10706": "Thu Nov  5 01:34:51 2026    ",
+          "10714": "Thu Nov  5 01:34:51 2026    ",
+          "10715": "Thu Nov  5 01:34:51 2026    ",
+          "10716": "Thu Nov  5 01:34:51 2026    ",
+          "10855": "Thu Nov  5 01:34:55 2026    ",
+          "10857": "Thu Nov  5 01:34:55 2026    ",
+          "10862": "Thu Nov  5 01:34:55 2026    ",
+          "10863": "Thu Nov  5 01:34:55 2026    ",
+          "10866": "Thu Nov  5 01:34:55 2026    ",
+          "10883": "Thu Nov  5 01:34:56 2026    ",
+          "11011": "Thu Nov  5 01:35:00 2026    ",
+          "11018": "Thu Nov  5 01:35:00 2026    ",
+          "11285": "Thu Nov  5 01:35:05 2026    ",
+          "11290": "Thu Nov  5 01:35:05 2026    ",
+          "11773": "Thu Nov  5 01:35:12 2026    ",
+          "11778": "Thu Nov  5 01:35:12 2026    ",
+          "12152": "Thu Nov  5 01:35:19 2026    ",
+          "12155": "Thu Nov  5 01:35:19 2026    ",
+          "12541": "Thu Nov  5 01:35:25 2026    ",
+          "12545": "Thu Nov  5 01:35:26 2026    ",
+          "12552": "Thu Nov  5 01:35:26 2026    ",
+          "12553": "Thu Nov  5 01:35:26 2026    ",
+          "12554": "Thu Nov  5 01:35:26 2026    ",
+          "12835": "Thu Nov  5 01:35:31 2026    ",
+          "12847": "Thu Nov  5 01:35:31 2026    ",
+          "12871": "Thu Nov  5 01:35:31 2026    ",
+          "12872": "Thu Nov  5 01:35:31 2026    ",
+          "12877": "Thu Nov  5 01:35:31 2026    ",
+          "13270": "Thu Nov  5 01:35:36 2026    ",
+          "13272": "Thu Nov  5 01:35:36 2026    ",
+          "13620": "Thu Nov  5 01:35:43 2026    ",
+          "13623": "Thu Nov  5 01:35:43 2026    ",
+          "13959": "Thu Nov  5 01:35:50 2026    ",
+          "13962": "Thu Nov  5 01:35:50 2026    ",
+          "14335": "Thu Nov  5 01:35:57 2026    ",
+          "14338": "Thu Nov  5 01:35:57 2026    ",
+          "14686": "Thu Nov  5 01:36:03 2026    ",
+          "14691": "Thu Nov  5 01:36:03 2026    ",
+          "14700": "Thu Nov  5 01:36:03 2026    ",
+          "14701": "Thu Nov  5 01:36:03 2026    ",
+          "14706": "Thu Nov  5 01:36:03 2026    ",
+          "14877": "Thu Nov  5 01:36:09 2026    ",
+          "14881": "Thu Nov  5 01:36:09 2026    ",
+          "14885": "Thu Nov  5 01:36:09 2026    ",
+          "14886": "Thu Nov  5 01:36:09 2026    ",
+          "14887": "Thu Nov  5 01:36:09 2026    ",
+          "15128": "Thu Nov  5 01:36:14 2026    ",
+          "15130": "Thu Nov  5 01:36:14 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1467580416,
+        "elapsed_seconds": 127.43335375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "exit": {
+        "driver_guard_exit": 1
+      }
+    },
+    "99": {
+      "rows": [
+        {
+          "trial": "pair-1-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17431401660,
+            "upper": 17467074084
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-1-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27872984258,
+            "upper": 27872984258
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-1-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27979206396,
+            "upper": 27979206396
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-2-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17375979100,
+            "upper": 17398964550
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-2-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26255599549,
+            "upper": 26255599549
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-2-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27195996844,
+            "upper": 27195996844
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-3-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17368137221,
+            "upper": 17389435513
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-3-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27996400927,
+            "upper": 27996400927
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-3-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 25734847254,
+            "upper": 25734847254
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-4-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17615246237,
+            "upper": 17649935847
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-4-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28013087686,
+            "upper": 28013087686
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-4-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27409880676,
+            "upper": 27409880676
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-5-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17468453017,
+            "upper": 17500231634
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-5-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27767761049,
+            "upper": 27767761049
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-5-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26182667431,
+            "upper": 26182667431
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-6-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17471650289,
+            "upper": 17499052826
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-6-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26685639543,
+            "upper": 26685639543
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-6-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27616307315,
+            "upper": 27616307315
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-7-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17340211751,
+            "upper": 17359116196
+          },
+          "ownership": null
+        },
+        {
+          "trial": "pair-7-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28771583410,
+            "upper": 28771583410
+          },
+          "ownership": true
+        },
+        {
+          "trial": "pair-7-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27488023369,
+            "upper": 27488023369
+          },
+          "ownership": true
+        }
+      ],
+      "identity_failures": [],
+      "summary": {
+        "brave_median_lower_bound_instructions": 17431401660,
+        "cross_browser_pixels": {
+          "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/cohort99/cohort-99/cross-browser.diff.png",
+          "different_pixels": 2602001,
+          "exact": false,
+          "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/cohort99/cohort-99/cross-browser.diff.png\n"
+        },
+        "instruction_scope": "launch",
+        "matched_control": {
+          "brave_median_lower_bound_instructions": 27872984258,
+          "instruction_scope": "launch",
+          "pairs": 7,
+          "passed": false,
+          "target_vox_fraction": 0.9,
+          "vox_median_instructions": 27409880676,
+          "worst_vox_over_best_brave": 1.0656472096088794
+        },
+        "pairs": 7,
+        "passed": false,
+        "target_vox_fraction": 0.9,
+        "vox_median_instructions": 27409880676,
+        "worst_vox_over_best_brave": 1.6135446785640581
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/cohort-with-host.py",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/cohort99/cohort-99",
+          "--repeat",
+          "7",
+          "--control-vox-app",
+          "Build/v/Vox.app",
+          "--control-disable-extended-image-trees",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/fixture/clock-archive-v3",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/cohort99/cohort99-pids.json",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/fixture/reference-complete/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/native-recheck-f104/fixture/reference-complete/pair-1-brave/document.png",
+          "--preserve-inputs",
+          "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+          "--retain-logical-paint-snapping",
+          "--retain-css-layout-for-svg"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "20500": "Thu Nov  5 01:38:34 2026    ",
+          "20503": "Thu Nov  5 01:38:34 2026    ",
+          "20693": "Thu Nov  5 01:38:39 2026    ",
+          "20696": "Thu Nov  5 01:38:39 2026    ",
+          "21194": "Thu Nov  5 01:38:46 2026    ",
+          "21200": "Thu Nov  5 01:38:46 2026    ",
+          "21597": "Thu Nov  5 01:38:52 2026    ",
+          "21604": "Thu Nov  5 01:38:52 2026    ",
+          "21973": "Thu Nov  5 01:38:57 2026    ",
+          "21977": "Thu Nov  5 01:38:57 2026    ",
+          "22361": "Thu Nov  5 01:39:02 2026    ",
+          "22363": "Thu Nov  5 01:39:02 2026    ",
+          "22596": "Thu Nov  5 01:39:08 2026    ",
+          "22609": "Thu Nov  5 01:39:08 2026    ",
+          "22644": "Thu Nov  5 01:39:08 2026    ",
+          "22645": "Thu Nov  5 01:39:08 2026    ",
+          "22649": "Thu Nov  5 01:39:08 2026    ",
+          "22915": "Thu Nov  5 01:39:12 2026    ",
+          "22918": "Thu Nov  5 01:39:13 2026    ",
+          "22923": "Thu Nov  5 01:39:13 2026    ",
+          "22924": "Thu Nov  5 01:39:13 2026    ",
+          "22925": "Thu Nov  5 01:39:13 2026    ",
+          "22938": "Thu Nov  5 01:39:13 2026    ",
+          "22939": "Thu Nov  5 01:39:13 2026    ",
+          "22945": "Thu Nov  5 01:39:13 2026    ",
+          "23010": "Thu Nov  5 01:39:17 2026    ",
+          "23013": "Thu Nov  5 01:39:17 2026    ",
+          "23212": "Thu Nov  5 01:39:22 2026    ",
+          "23214": "Thu Nov  5 01:39:22 2026    ",
+          "23390": "Thu Nov  5 01:39:27 2026    ",
+          "23392": "Thu Nov  5 01:39:27 2026    ",
+          "23612": "Thu Nov  5 01:39:32 2026    ",
+          "23614": "Thu Nov  5 01:39:32 2026    ",
+          "23840": "Thu Nov  5 01:39:37 2026    ",
+          "23850": "Thu Nov  5 01:39:37 2026    ",
+          "23854": "Thu Nov  5 01:39:37 2026    ",
+          "23856": "Thu Nov  5 01:39:37 2026    ",
+          "23857": "Thu Nov  5 01:39:37 2026    ",
+          "23994": "Thu Nov  5 01:39:42 2026    ",
+          "23997": "Thu Nov  5 01:39:42 2026    ",
+          "24001": "Thu Nov  5 01:39:42 2026    ",
+          "24002": "Thu Nov  5 01:39:42 2026    ",
+          "24004": "Thu Nov  5 01:39:42 2026    ",
+          "24097": "Thu Nov  5 01:39:46 2026    ",
+          "24100": "Thu Nov  5 01:39:46 2026    ",
+          "24294": "Thu Nov  5 01:39:51 2026    ",
+          "24296": "Thu Nov  5 01:39:51 2026    ",
+          "24588": "Thu Nov  5 01:39:57 2026    ",
+          "24591": "Thu Nov  5 01:39:57 2026    ",
+          "24987": "Thu Nov  5 01:40:02 2026    ",
+          "24993": "Thu Nov  5 01:40:02 2026    ",
+          "25398": "Thu Nov  5 01:40:08 2026    ",
+          "25404": "Thu Nov  5 01:40:08 2026    ",
+          "25412": "Thu Nov  5 01:40:08 2026    ",
+          "25413": "Thu Nov  5 01:40:08 2026    ",
+          "25415": "Thu Nov  5 01:40:08 2026    ",
+          "25443": "Thu Nov  5 01:40:08 2026    ",
+          "25700": "Thu Nov  5 01:40:12 2026    ",
+          "25704": "Thu Nov  5 01:40:12 2026    ",
+          "25711": "Thu Nov  5 01:40:12 2026    ",
+          "25712": "Thu Nov  5 01:40:13 2026    ",
+          "25716": "Thu Nov  5 01:40:13 2026    ",
+          "25966": "Thu Nov  5 01:40:17 2026    ",
+          "25971": "Thu Nov  5 01:40:17 2026    ",
+          "26148": "Thu Nov  5 01:40:22 2026    ",
+          "26151": "Thu Nov  5 01:40:22 2026    ",
+          "26340": "Thu Nov  5 01:40:27 2026    ",
+          "26349": "Thu Nov  5 01:40:27 2026    ",
+          "26537": "Thu Nov  5 01:40:33 2026    ",
+          "26539": "Thu Nov  5 01:40:33 2026    ",
+          "26753": "Thu Nov  5 01:40:38 2026    ",
+          "26767": "Thu Nov  5 01:40:38 2026    ",
+          "26783": "Thu Nov  5 01:40:38 2026    ",
+          "26785": "Thu Nov  5 01:40:38 2026    ",
+          "26787": "Thu Nov  5 01:40:38 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1502478336,
+        "elapsed_seconds": 131.175529458,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "exit": {
+        "driver_guard_exit": 1
+      }
+    }
+  },
+  "statistics": {
+    "median_vox": 27409880676,
+    "median_brave_lower": 17431401660,
+    "median_control": 27872984258,
+    "median_point_difference": 463103582,
+    "paired_differences": [
+      -106222138,
+      -940397295,
+      2261553673,
+      603207010,
+      1585093618,
+      -930667772,
+      1283560041
+    ],
+    "worst_candidate_best_control": 1.0656472096088794,
+    "strict_left": 279792063960,
+    "strict_right": 156061905759
+  },
+  "broad": {
+    "default": {
+      "entered": 524,
+      "failed_jobs": [
+        "default-all"
+      ]
+    },
+    "none": {
+      "entered": 524,
+      "failed_jobs": [
+        "none-1",
+        "none-4"
+      ]
+    }
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-pending-image-cohort99-20261105.tar.gz",
+    "bytes": 39571213,
+    "sha256": "08941546a31d0a564c0cc2cac9fb613061adc2a1e200f89d06470076f4f026ad",
+    "members": 923,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793846798.069587
+}

@@ -5606,3 +5606,46 @@ isolated rendering-time or scrolling claim. See the
 [focused exact-flex record](performance/bbc-committed-flex-focus-20261105.json),
 [all new evidence and exact counts](performance/bbc-flex-image-progress-20261105.json),
 and [521-case broader checks](performance/bbc-flex-image-broad-20261105.json).
+
+
+## Pending image tree comparison and fresh profile (2026-11-05)
+
+The pending/absolute image-tree extension (`5c5ed9a46`) passes 279 focused
+executions across three memory modes and three arms; all 284 instruction-tool
+tests pass. Fresh native diagnostics verify candidate-only use before PNG,
+original pixels/content and all 72 external author scripts through JavaScriptCore.
+The original SVG source-switch guard is exact. The separate coarse V profile
+also passes these audits and retains 21 timing scopes; its 21,113 uncached grid
+and 41,327 uncached inline calls motivate further investigation. Instrumented
+timings earn no instruction credit.
+
+Cohort 98 is invalid after 17 successful captures because the shared bundle
+changes; every attempted capture and identity-failure receipt is retained.
+Cohort 99 completes seven alternating control/Vox/Brave triples on `f104d01e`.
+All 21 browsers exit normally and pass original pixel/content checks; coalition
+ownership and pinned input identities pass. Observed medians are **27,872,984,258
+control**, **27,409,880,676 Vox**, and **17,431,401,660 Brave lower bound**.
+The 463,103,582-instruction median point difference (1.6615%) has four paired
+improvements and three regressions. Highest-candidate/lowest-control is 1.06565,
+so no robust saving is credited. The strict target fails:
+`279792063960 > 156061905759`, ratio **1.61354**. Driver and guard exit 1 for
+the failed gate; this is a complete valid failing comparison.
+
+Both broader GC modes enter all 524 selected cases: 521 pass and the same
+three known baseline failures remain (root percentage height, text-control
+baseline and radio baseline). Checked inputs are unchanged. There is no
+full-suite pass or cadence reset. History is **99 attempted cohorts / 2,146
+acceptance browser attempts**, with diagnostics and preflights separate.
+
+The original frozen 609-response replay, author scripts, 1024×768 CSS viewport,
+scale 2, private profiles/caches, two-second readiness/decode settling and
+exclusive-coalition launch-through-encoded-PNG scope remain unchanged. Vox
+ends before PNG writing; Brave includes CDP delivery; semantic audits and
+teardown follow. OS caches are retained, exited work and allowed owned services
+are counted, and GPU/outside services are excluded. The 82.7154% cross-engine
+pixel difference and prior DOM/script, performance.measure, local Arial fallback
+and paint_decoded limitations remain. There is no live-site, isolated rendering
+or scrolling claim. BBC remains outside `OPTIMIZED_SITES.md`. See the
+[focused evidence](performance/bbc-pending-image-focus-20261105.json),
+[fresh profile](performance/bbc-coarse-profile-20261105.json), and
+[cohorts, exact counts and broader checks](performance/bbc-pending-image-cohort99-20261105.json).
