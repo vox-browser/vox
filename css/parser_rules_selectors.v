@@ -3969,8 +3969,8 @@ fn collect_arbitrary_substitution_function_presence_from_component(value Compone
 	collect_substitution_presence_from_component_in_workspace(value, mut presence)!
 }
 
-// Argument parsers produce temporary grammar records; only these scalar flags
-// escape. Recursion stays inside the same workspace and never publishes tokens.
+// Argument validation borrows spans; only these scalar flags escape. Recursion
+// stays inside the same workspace and never publishes tokens.
 fn collect_substitution_presence_from_component_in_workspace(value ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
 	if value.is_function() {
 		function := value.function()
@@ -3978,7 +3978,7 @@ fn collect_substitution_presence_from_component_in_workspace(value ComponentValu
 			presence.custom_function = true
 		}
 		if substitution_function := to_arbitrary_substitution_function(function.name) {
-			parse_according_to_argument_grammar(substitution_function, function.value) or {
+			if !arbitrary_substitution_arguments_are_valid(substitution_function, function.value) {
 				return error('invalid arbitrary substitution function syntax')
 			}
 			match substitution_function {
@@ -4154,55 +4154,74 @@ fn is_valid_optional_declaration_value(values []ComponentValue) bool {
 	if !tokens.has_next_token() {
 		return true
 	}
-	_ := parse_declaration_value(mut tokens, none) or { return false }
+	_ := parse_declaration_value_span(mut tokens, none) or { return false }
 	tokens.discard_whitespace()
 	return !tokens.has_next_token()
 }
 
 fn parse_declaration_value_then_optional_declaration_value(mut tokens ParserTokenStream, separator TokenType) ?DeclarationValueList {
-	first_argument := parse_declaration_value(mut tokens, separator) or { return none }
-
-	if !tokens.has_next_token() {
+	arguments := parse_substitution_argument_spans(mut tokens, separator) or { return none }
+	if second_argument := arguments.second_argument {
 		return DeclarationValueList{
-			values: [first_argument]
+			values: [arguments.first_argument.clone(), second_argument.clone()]
 		}
 	}
-
-	if !tokens.next_token().is(separator) {
-		return none
-	}
-
-	tokens.discard_a_token()
-	second_argument := parse_declaration_value(mut tokens, none) or { []ComponentValue{} }
 	return DeclarationValueList{
-		values: [first_argument, second_argument]
+		values: [arguments.first_argument.clone()]
 	}
 }
 
-// Borrowed argument spans for immediate var()/inherit() replacement only.
+// Borrowed argument spans for immediate validation and var()/inherit() replacement.
 // Public argument grammar continues to return independently owned arrays.
-struct SubstitutionNameArgumentSpans {
+struct SubstitutionArgumentSpans {
 	first_argument  []ComponentValue
 	second_argument ?[]ComponentValue
 }
 
-fn parse_substitution_name_argument_spans(values []ComponentValue) ?SubstitutionNameArgumentSpans {
-	mut tokens := ParserTokenStream.from_values(values)
-	first_argument := parse_declaration_value_span(mut tokens, .comma) or { return none }
+fn parse_substitution_argument_spans(mut tokens ParserTokenStream, separator TokenType) ?SubstitutionArgumentSpans {
+	first_argument := parse_declaration_value_span(mut tokens, separator) or { return none }
 	if !tokens.has_next_token() {
-		return SubstitutionNameArgumentSpans{first_argument: first_argument}
+		return SubstitutionArgumentSpans{first_argument: first_argument}
 	}
-	if !tokens.next_token().is(.comma) {
+	if !tokens.next_token().is(separator) {
 		return none
 	}
 	tokens.discard_a_token()
 	second_argument := parse_declaration_value_span(mut tokens, none) or { []ComponentValue{} }
+	return SubstitutionArgumentSpans{
+		first_argument: first_argument
+		second_argument: second_argument
+	}
+}
+
+fn parse_substitution_name_argument_spans(values []ComponentValue) ?SubstitutionArgumentSpans {
+	mut tokens := ParserTokenStream.from_values(values)
+	arguments := parse_substitution_argument_spans(mut tokens, .comma) or { return none }
 	if tokens.has_next_token() {
 		return none
 	}
-	return SubstitutionNameArgumentSpans{
-		first_argument: first_argument
-		second_argument: second_argument
+	return arguments
+}
+
+fn arbitrary_substitution_arguments_are_valid(function ArbitrarySubstitutionFunction, values []ComponentValue) bool {
+	mut tokens := ParserTokenStream.from_values(values)
+	match function {
+		.attr, .env, .inherit, .var_ {
+			_ := parse_substitution_argument_spans(mut tokens, .comma) or { return false }
+			return !tokens.has_next_token()
+		}
+		.if_ {
+			mut branch_count := 0
+			for tokens.has_next_token() {
+				_ := parse_substitution_argument_spans(mut tokens, .colon) or { break }
+				branch_count++
+				if !tokens.next_token().is(.semicolon) {
+					break
+				}
+				tokens.discard_a_token()
+			}
+			return branch_count > 0 && !tokens.has_next_token()
+		}
 	}
 }
 

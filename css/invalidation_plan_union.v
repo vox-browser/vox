@@ -111,7 +111,9 @@ fn append_or_merge_descendant_invalidation_rule(mut rules []DescendantInvalidati
 		if rules[index].match_any != rule.match_any || !invalidation_plans_equal(rules[index].payload, rule.payload) { continue
 		 }
 		if !rule.match_any {
-			if invalidation_match_sets_equal(&rules[index].match_set, &rule.match_set) { return }
+			// A covered subset contributes no keys or flags, so neither the
+			// rule vector nor the existing property map needs a new owner.
+			if invalidation_match_set_covers(&rules[index].match_set, &rule.match_set) { return }
 			// A value-copy of a V plan can share the old array header.
 			// Replace the modified vector before changing an existing entry.
 			rules = rules.clone()
@@ -130,7 +132,7 @@ fn append_or_merge_sibling_invalidation_rule(mut rules []SiblingInvalidationRule
 			continue
 		}
 		if !rule.match_any {
-			if invalidation_match_sets_equal(&rules[index].match_set, &rule.match_set) { return }
+			if invalidation_match_set_covers(&rules[index].match_set, &rule.match_set) { return }
 			rules = rules.clone()
 			rules[index].match_set = union_invalidation_match_sets(rules[index].match_set,
 				rule.match_set)
