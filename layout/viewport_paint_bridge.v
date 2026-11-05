@@ -1343,16 +1343,21 @@ fn layout_paintable_image_contents_changed_with_geometry_check(target voidptr, l
 	if paintable.is_svg_image || box.media().is_svg_image || image_box.svg_image_document() != none {
 		return false
 	}
+	independent_size := check_geometry
+		&& positioned_image_geometry_is_independent_of_natural_size(source_node, result.state)
 	if check_geometry {
-		if !positioned_image_geometry_is_independent_of_natural_width(source_node, result.state) {
+		if !independent_size
+			&& !positioned_image_geometry_is_independent_of_natural_width(source_node, result.state) {
 			return false
 		}
 		dom_node := source_node.dom_node() or { return false }
 		element := dom_node.as_element() or { return false }
 		if available_html_svg_image_document(element) != none { return false }
-		previous_size := paintable.intrinsic_size or { return false }
 		new_size := available_html_image_natural_size(element) or { return false }
-		if !positioned_image_natural_ratios_match(previous_size, new_size) { return false }
+		if !independent_size {
+			previous_size := paintable.intrinsic_size or { return false }
+			if !positioned_image_natural_ratios_match(previous_size, new_size) { return false }
+		}
 	}
 	mut mutable_image_box := unsafe { &ImageBox(image_box) }
 	if check_geometry { mutable_image_box.reset_cached_intrinsic_sizes() }
@@ -1362,12 +1367,12 @@ fn layout_paintable_image_contents_changed_with_geometry_check(target voidptr, l
 	}
 	source := mutable_image_box.source()
 	source_url := source_node.document().encoding_parse_and_serialize_url(source) or { source }
-	if check_geometry {
+	if check_geometry && !independent_size {
 		previous_size := paintable.intrinsic_size or { return false }
 		if !positioned_image_natural_ratios_match(previous_size, mutable_image_box.natural_size()) {
 			return false
 		}
-	} else if source_url != box.media().replaced_image_url {
+	} else if !check_geometry && source_url != box.media().replaced_image_url {
 		return false
 	}
 	box.media_data = retained_block_box_media(BlockBoxMediaData{
@@ -1381,7 +1386,8 @@ fn layout_paintable_image_contents_changed_with_geometry_check(target voidptr, l
 		}
 	})
 	layout_paintable_set_needs_repaint(target, layout_handle, .paint_commands)
-	if check_geometry { report_positioned_image_ratio_reuse() }
+	if independent_size { report_positioned_definite_image_reuse() }
+	else if check_geometry { report_positioned_image_ratio_reuse() }
 	return true
 }
 

@@ -4,9 +4,13 @@ import css
 import os
 
 const disable_positioned_image_ratio_reuse = os.getenv('VOX_DISABLE_POSITIONED_IMAGE_RATIO_REUSE') != ''
+const disable_positioned_definite_image_reuse = os.getenv('VOX_DISABLE_POSITIONED_DEFINITE_IMAGE_REUSE') != ''
+const positioned_definite_image_reuse_diagnostics = os.getenv('VOX_POSITIONED_DEFINITE_IMAGE_REUSE_DIAGNOSTICS') != ''
+
 const positioned_image_ratio_reuse_diagnostics = os.getenv('VOX_POSITIONED_IMAGE_RATIO_REUSE_DIAGNOSTICS') != ''
 
 __global positioned_image_ratio_reuse_reported bool
+__global positioned_definite_image_reuse_reported bool
 
 fn positioned_image_size_is_definite(size css.Size, definite_basis bool) bool {
 	return size.is_length() || (size.is_percentage() && definite_basis)
@@ -18,8 +22,12 @@ fn positioned_image_size_is_definite(size css.Size, definite_basis bool) bool {
 // its automatic height depends on the natural ratio, not the natural width.
 // Consult the committed containing-block basis, never just a numeric height.
 fn positioned_image_geometry_is_independent_of_natural_width(node &Node, state &LayoutState) bool {
-	if disable_positioned_image_ratio_reuse || !node.is_absolutely_positioned()
-		|| state == unsafe { nil } { return false }
+	return !disable_positioned_image_ratio_reuse
+		&& positioned_image_has_definite_width_and_constraints(node, state)
+}
+
+fn positioned_image_has_definite_width_and_constraints(node &Node, state &LayoutState) bool {
+	if !node.is_absolutely_positioned() || state == unsafe { nil } { return false }
 	styled := node.as_node_with_style() or { return false }
 	used := state.try_get(styled) or { return false }
 	basis := used.containing_block_used_values() or { return false }
@@ -63,5 +71,25 @@ fn report_positioned_image_ratio_reuse() {
 	if positioned_image_ratio_reuse_diagnostics && !positioned_image_ratio_reuse_reported {
 		positioned_image_ratio_reuse_reported = true
 		eprintln('Vox image ratio reuse: preserved positioned image geometry')
+	}
+}
+
+// Both specified axes resolve independently of the decoded image. An
+// out-of-flow image contributes no automatic minimum to its parent's tracks,
+// so a first decode or a changed natural ratio only changes its paint input.
+fn positioned_image_geometry_is_independent_of_natural_size(node &Node, state &LayoutState) bool {
+	if disable_positioned_definite_image_reuse
+		|| !positioned_image_has_definite_width_and_constraints(node, state) { return false }
+	styled := node.as_node_with_style() or { return false }
+	used := state.try_get(styled) or { return false }
+	basis := used.containing_block_used_values() or { return false }
+	return used.has_definite_height()
+		&& positioned_image_size_is_definite(node.computed_values().height(), basis.has_definite_height())
+}
+
+fn report_positioned_definite_image_reuse() {
+	if positioned_definite_image_reuse_diagnostics && !positioned_definite_image_reuse_reported {
+		positioned_definite_image_reuse_reported = true
+		eprintln('Vox definite image reuse: repainted positioned raster without intrinsic layout')
 	}
 }
