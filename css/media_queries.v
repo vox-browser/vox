@@ -1625,7 +1625,7 @@ fn evaluate_media_feature(feature_name string, kind MediaFeatureEvalKind, value 
 	}
 }
 
-fn query_media_feature(feature_name string, document ?&dom.Document) ?MediaFeatureValueLocal {
+fn query_media_feature_by_name(feature_name string, document ?&dom.Document) ?MediaFeatureValueLocal {
 	viewport_width := if doc := document { doc.viewport_rect().width } else { 800.0 }
 	viewport_height := if doc := document { doc.viewport_rect().height } else { 600.0 }
 	return match feature_name {
