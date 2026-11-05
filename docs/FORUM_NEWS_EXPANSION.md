@@ -1548,6 +1548,66 @@ accordingly. No live-site, animation, scrolling or performance claim is added.
 [Results, source pins and limitations](evidence/techcrunch-full-style-font-snapshot-20261105.json),
 [all retained attempts and captures](evidence/techcrunch-full-style-font-snapshot-20261105.zip).
 
+## TechCrunch: unpainted root raster bounds (2026-11-05)
+
+TechCrunch now differs from Brave + full uBO by **33 pixels**, down from
+34,710. Its registered archive (`e96b9b25…`), publisher responses, saved source,
+references and zero-pixel threshold remain unchanged. Production `7b592d36…`
+has the same complete source fingerprint as the final focused checks; its
+unchanged clip implementation was subsequently committed as `71c52b57e`.
+
+| Cache | Saved source → Brave | Independent Brave replay | Vox → Brave |
+| --- | ---: | ---: | ---: |
+| Cold | 0 | 0 | **33** |
+| Complete | 0 | 0 | **33** |
+
+Three separately committed renderer corrections retain the document's raster
+origin without adding independent surfaces for invisible overflow:
+
+- `05aab52d1` retains unpainted root hit-test bounds through atomic opacity
+  scopes and supports finite horizontal overflow. The actual page has a
+  1,044-pixel scrolling extent at a 1,024-pixel viewport; the previous guard
+  rejected its root cull projection and left the main raster at `y=48`.
+- `dec9f7880` preserves the existing policy when a painted canvas already
+  supplies those bounds. The first broad run exposed 23 rounded-control pixels
+  and seven sticky-border pixels; both regressions are retained and corrected.
+- `71c52b57e` clips ordinary grouping and metadata bounds to their ancestor
+  context in document coordinates. Otherwise a clipped gradient extending past
+  the right edge could create a separate raster solely for invisible area.
+  Fixed, sticky and composited scopes keep their existing bounds.
+
+The root checks cover 21 cases, the painted-canvas correction covers 22, and
+the clip correction adds four offset/scroll variations with 13 related controls.
+They pass with default GC, GC disabled and poisoned preallocation. Negative
+assertions, the earlier incorrect sticky-only hypothesis, a formatting-invalidated
+check and transient concurrent CSS compile errors remain in the evidence.
+
+The final **135-test / 141-capture** suite is entirely exact, including both
+cases that regressed. Executable, native libraries, canonical tools, fixtures and
+references remain unchanged throughout that cohort. Hacker News and first-frame
+WIRED also pass all source, independent-reference and native gates. Independent
+RGBA comparisons verify both complete TechCrunch cache-policy runs.
+
+Commit `2a4f63f7f` adds the authored
+[`transparent-root-atomic-effects`](../Tests/Browser/Brave/input/transparent-root-atomic-effects.html)
+HTTP regression, its full-uBO source PNG and the `--case root-origin` option in
+[`forum_news_image_effects.py`](../tools/forum_news_image_effects.py). Its original
+encoded WebP and all references stay fixed. The initial native difference is
+17,220 pixels; broad root geometry makes the combined-mask column worse at
+22,282 total pixels, and the clip correction reduces the total to **four**.
+The plain, overlay and combined-mask columns are now exact. The four mask-only
+pixels were already present in the initial baseline, and the tool continues to
+fail its strict gate for them. All three archive-tool unit checks pass.
+
+**Full TechCrunch parity remains open:** one logo pixel at `(698,181)` has a
+maximum channel error of 61; the other 32 differences are one-level photo
+pixels. The separate mask-only reducer also remains open. Private O0 geometry
+probes and a forced-root native diagnostic receive no pixel acceptance credit.
+No live-site, ordinary-animation, scrolling or performance claim is added.
+
+[Results, identities and limitations](evidence/techcrunch-root-raster-20261105.json),
+[retained attempts, screenshots and receipts](evidence/techcrunch-root-raster-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
