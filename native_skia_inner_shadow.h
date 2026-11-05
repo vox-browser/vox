@@ -30,6 +30,10 @@ static sk_sp<SkData> inset_picture_bytes(SkPicture* picture, bool multisampled)
     return picture->serialize(&procs);
 }
 
+#ifdef VOX_TEST_CLIPPED_INSET_SHADOWS
+static unsigned s_test_clipped_inset_shadows;
+#endif
+
 extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
     float const* outer_data, float const* inner_data, float const* content_data,
     float const* clip_data, float const* transform, float page_x, float page_y,
@@ -69,25 +73,11 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
     if (!clipped_raster_region(matrix.mapRect(content.rect()), canvas_width,
             canvas_height, 1, region)) return 1;
     float scale = screenshot_uses_logical_pixels() ? 1 : raster_scale_for_context(destination);
-    int width = raster_dimension(region.width(), scale);
-    int height = raster_dimension(region.height(), scale);
-    if (width <= 0 || height <= 0 || size_t(width) * height > 8 * 1024 * 1024) return 0;
-    std::vector<uint32_t> pixels(size_t(width) * height);
-    bool has_background = s_raster_layer_is_root && opaque_backdrop
-        && copy_backdrop(destination, region, scale, width, height, pixels);
-    SkPictureRecorder recorder;
-    auto* canvas = recorder.beginRecording(SkRect::MakeWH(width, height));
-    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
-        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    if (has_background) {
-        auto background = SkImages::RasterFromPixmapCopy(SkPixmap(info,
-            pixels.data(), size_t(width) * 4));
-        if (!background) return 0;
-        canvas->drawImage(background, 0, 0);
+    {
+        int width = raster_dimension(region.width(), scale);
+        int height = raster_dimension(region.height(), scale);
+        if (width <= 0 || height <= 0 || size_t(width) * height > 8 * 1024 * 1024) return 0;
     }
-    canvas->setMatrix(raster_matrix(matrix, region,
-        float(width) / region.width(), float(height) / region.height()));
-    canvas->clipRRect(content, true);
     SkPath path;
     path.setFillType(SkPathFillType::kEvenOdd);
     // The outer caster is a rectangle around the complete hole, not another
@@ -138,31 +128,75 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
         if (isolated_input_defers_leaf_raster(destination)
             || shared_recording_defers_leaf_raster(destination, matrix.mapRect(content.rect()).makeOutset(2, 2))) return 1;
     }
-    draw_shadow(canvas);
-    auto picture = recorder.finishRecordingAsPicture();
-    auto bytes = inset_picture_bytes(picture.get(), false);
-    sk_sp<SkData> multisampled_bytes;
-    if (!bytes) return 0;
-    bool rendered = draw_chromium_root_raster_grid(pixels, width, height,
-        region, page_x, page_y, scroll_y, scale,
-        [&](auto& tile, long offset_x, long offset_y, bool multisampled) {
-            if (multisampled && !multisampled_bytes)
-                multisampled_bytes = inset_picture_bytes(picture.get(), true);
-            auto const& selected = multisampled ? multisampled_bytes : bytes;
-            if (!selected) return false;
-            float translation[] {1, 0, float(offset_x), 0, 1, float(offset_y), 0, 0, 1};
-            return draw(reinterpret_cast<uint8_t*>(tile.data()), s_msaa_grid_width,
-                s_msaa_grid_height, s_msaa_grid_width * 4, selected->data(),
-                selected->size(), translation) != 0;
-        });
-    if (!rendered) {
-        float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
-        if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), width, height,
-                width * 4, bytes->data(), bytes->size(), identity)) return 0;
+    // Rasterize the box over its backdrop in the region's own pixels. A
+    // cropped region returns -1 when it cannot use the root tiles, so the
+    // complete region replays as before.
+    auto raster = [&](RasterRegion const& region, bool cropped) {
+        int failed = cropped ? -1 : 0;
+        int width = raster_dimension(region.width(), scale);
+        int height = raster_dimension(region.height(), scale);
+        std::vector<uint32_t> pixels(size_t(width) * height);
+        bool has_background = s_raster_layer_is_root && opaque_backdrop
+            && copy_backdrop(destination, region, scale, width, height, pixels);
+        SkPictureRecorder recorder;
+        auto* canvas = recorder.beginRecording(SkRect::MakeWH(width, height));
+        auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+            kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+        if (has_background) {
+            auto background = SkImages::RasterFromPixmapCopy(SkPixmap(info,
+                pixels.data(), size_t(width) * 4));
+            if (!background) return failed;
+            canvas->drawImage(background, 0, 0);
+        }
+        canvas->setMatrix(raster_matrix(matrix, region,
+            float(width) / region.width(), float(height) / region.height()));
+        canvas->clipRRect(content, true);
+        draw_shadow(canvas);
+        auto picture = recorder.finishRecordingAsPicture();
+        auto bytes = inset_picture_bytes(picture.get(), false);
+        sk_sp<SkData> multisampled_bytes;
+        if (!bytes) return failed;
+        bool rendered = draw_chromium_root_raster_grid(pixels, width, height,
+            region, page_x, page_y, scroll_y, scale,
+            [&](auto& tile, long offset_x, long offset_y, bool multisampled) {
+                if (multisampled && !multisampled_bytes)
+                    multisampled_bytes = inset_picture_bytes(picture.get(), true);
+                auto const& selected = multisampled ? multisampled_bytes : bytes;
+                if (!selected) return false;
+                float translation[] {1, 0, float(offset_x), 0, 1, float(offset_y), 0, 0, 1};
+                return draw(reinterpret_cast<uint8_t*>(tile.data()), s_msaa_grid_width,
+                    s_msaa_grid_height, s_msaa_grid_width * 4, selected->data(),
+                    selected->size(), translation) != 0;
+            });
+        if (!rendered) {
+            if (cropped) return failed;
+            float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+            if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), width, height,
+                    width * 4, bytes->data(), bytes->size(), identity)) return 0;
+        }
+        return composite_pixels(destination, std::move(pixels), width, height,
+            float(region.left), canvas_height - float(region.bottom),
+            float(region.width()), float(region.height()), has_background);
+    };
+    // Root grid tiles are anchored to the document, so a pixel's value does
+    // not depend on the requested region. As for outer shadows, a strip or
+    // damage repaint copies, rasterizes and composites only the rows it shows
+    // rather than the whole box and its backdrop.
+    RasterRegion visible;
+    if (s_raster_layer_is_root && s_msaa_grid_columns > 0 && !screenshot_uses_logical_pixels()
+        && !std::getenv("VOX_DISABLE_CLIPPED_INSET_SHADOWS")
+        && visible_raster_region(destination, canvas_height, region, visible)
+        && (visible.left != region.left || visible.top != region.top
+            || visible.right != region.right || visible.bottom != region.bottom)) {
+        int result = raster(visible, true);
+        if (result >= 0) {
+#ifdef VOX_TEST_CLIPPED_INSET_SHADOWS
+            ++s_test_clipped_inset_shadows;
+#endif
+            return result;
+        }
     }
-    return composite_pixels(destination, std::move(pixels), width, height,
-        float(region.left), canvas_height - float(region.bottom),
-        float(region.width()), float(region.height()), has_background);
+    return raster(region, false);
 }
 
 struct InsetDecorationRecording {

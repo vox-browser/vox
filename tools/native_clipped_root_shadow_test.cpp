@@ -1,4 +1,5 @@
 #define VOX_TEST_CLIPPED_ROOT_SHADOWS
+#define VOX_TEST_CLIPPED_INSET_SHADOWS
 #include "../native_skia_text_darwin.cpp"
 #include <cassert>
 #include <iostream>
@@ -23,7 +24,7 @@ static std::vector<uint8_t> backdrop()
 }
 
 static std::vector<uint8_t> draw_card_shadow(float scroll, float strip_top, float strip_height,
-    std::vector<SkRect> const& extra = {})
+    std::vector<SkRect> const& extra = {}, bool inset = false)
 {
     int width = css_width * scale, height = css_height * scale;
     auto pixels = backdrop();
@@ -49,9 +50,18 @@ static std::vector<uint8_t> draw_card_shadow(float scroll, float strip_top, floa
     s_root_raster_scroll_y = scroll;
     // vlang.io-like card: 0 20px 50px #0009 around a 16px rounded box.
     float x = 64.25f, y = 120.5f, w = 896, h = 520;
-    assert(ladybird_v_skia_draw_outer_box_shadow(context, x, y + 20, w, h, 16, 16, 16, 16,
-        16, 16, 16, 16, x, y, w, h, 16, 16, 16, 16, 16, 16, 16, 16, 1, 0, 0, 1, 0, 0, 0, 0,
-        0, css_width, css_height, 50, 0, 0, 0, 153, 1));
+    if (inset) {
+        // vlang.io's code panels: inset 0 6px 40px #000a in a 12px rounded box.
+        float outer[] {x, y, w, h, 12, 12, 12, 12, 12, 12, 12, 12};
+        float inner[] {x, y + 6, w, h, 12, 12, 12, 12, 12, 12, 12, 12};
+        float transform[] {1, 0, 0, 1, 0, 0};
+        assert(ladybird_v_skia_draw_inner_box_shadow(context, outer, inner, outer, outer, transform,
+            0, 0, 0, css_width, css_height, 40, 0, 0, 0, 170, 1));
+    } else {
+        assert(ladybird_v_skia_draw_outer_box_shadow(context, x, y + 20, w, h, 16, 16, 16, 16,
+            16, 16, 16, 16, x, y, w, h, 16, 16, 16, 16, 16, 16, 16, 16, 1, 0, 0, 1, 0, 0, 0, 0,
+            0, css_width, css_height, 50, 0, 0, 0, 153, 1));
+    }
     ladybird_v_skia_set_scroll_damage_rects(nullptr, nullptr, 0);
     CGContextFlush(context); CGContextRelease(context);
     return pixels;
@@ -110,6 +120,33 @@ int main()
         }
     }
     ++cases;
+    // Inset shadows replay a picture of the box over its backdrop in the same
+    // document-anchored tiles; a strip rasterizes and composites only its rows.
+    for (float scroll : {0.f, 37.5f, 240.f}) {
+        auto full = draw_card_shadow(scroll, 0, 0, {}, true);
+        if (full == untouched) {
+            std::cerr << "Inset shadow painted nothing\n";
+            return 1;
+        }
+        for (float strip_top : {42.f, 121.f, 131.5f, 400.f, 620.f, 700.f}) {
+            auto before = s_test_clipped_inset_shadows;
+            auto strip = draw_card_shadow(scroll, strip_top, 20, {}, true);
+            // A strip outside the box leaves nothing to rasterize.
+            bool touches = strip_top + 20 > 120.5f - 2 && strip_top < 640.5f + 2;
+            assert(s_test_clipped_inset_shadows == before + (touches ? 1 : 0));
+            int first = int(strip_top * scale), last = int((strip_top + 20) * scale);
+            for (int y = 0; y < css_height * scale; ++y) {
+                auto const& expected = y >= first && y < last ? full : untouched;
+                if (!std::equal(strip.begin() + size_t(y) * pitch, strip.begin() + size_t(y + 1) * pitch,
+                        expected.begin() + size_t(y) * pitch)) {
+                    std::cerr << "Clipped inset shadow row differs: scroll=" << scroll
+                        << " strip=" << strip_top << " row=" << y << '\n';
+                    return 1;
+                }
+            }
+            ++cases;
+        }
+    }
     // An independent composited layer rasterizes the whole shadow region on a
     // transparent target; its crops keep that target and transfer one strip.
     s_raster_layer_is_root = false;
@@ -158,5 +195,5 @@ int main()
         CGContextRelease(context);
         ++cases;
     }
-    std::cout << cases << " clipped root and layer shadow strips match complete replays exactly\n";
+    std::cout << cases << " clipped root, inset and layer shadow strips match complete replays exactly\n";
 }
