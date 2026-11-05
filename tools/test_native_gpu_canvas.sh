@@ -27,6 +27,7 @@ functions.append(source[source.index('// A Chromium-profile opacity group'):
 for signature in ('void native_capture_video_backdrop(', 'int native_gpu_canvas_begin(',
                   'int native_gpu_canvas_begin_rects(',
                   'static int native_try_gpu_css_filter_image(',
+                  'static void native_prepare_image_cpu_fallback(',
                   'static int native_try_restore_gpu_video_backdrop(', 'void native_restore_video_backdrop('):
     first = source.index(signature)
     functions.append(source[first:source.index('\n}\n', first) + 2])
@@ -42,6 +43,7 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     -o "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
+"$output_dir/native_gpu_canvas_test" --deferred-video-barriers
 "$output_dir/native_gpu_canvas_test" --failed-readback
 "$output_dir/native_gpu_canvas_test" --iosurface-readback
 "$output_dir/native_gpu_canvas_test" --partial-readback

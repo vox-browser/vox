@@ -2993,7 +2993,7 @@ int native_gpu_canvas_begin(void) {
 		if (begun && ladybird_v_skia_gpu_canvas_frame_surface)
 			ladybird_v_skia_gpu_canvas_frame_surface(native_layer_frame_surface(cache->context));
 		if (begun && ladybird_v_skia_gpu_canvas_video_backdrop_callbacks)
-			ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(1);
+			ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(2);
 		if (begun && getenv("VOX_GPU_CANVAS_DIAGNOSTICS"))
 			fprintf(stderr, "VOX_GPU_CANVAS_FULL_FRAME width=%zu height=%zu\n", cache->width, cache->height);
 		return begun;
@@ -3016,7 +3016,7 @@ int native_gpu_canvas_begin(void) {
 	if (begun && ladybird_v_skia_gpu_canvas_frame_surface)
 		ladybird_v_skia_gpu_canvas_frame_surface(native_layer_frame_surface(cache->context));
 	if (begun && ladybird_v_skia_gpu_canvas_video_backdrop_callbacks)
-		ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(1);
+		ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(2);
 	return begun;
 #else
 	return 0;
@@ -6764,6 +6764,17 @@ int native_draw_svg_image_pattern(gg__Image *image, const float *path, int count
 #endif
 }
 
+static void native_prepare_image_cpu_fallback(CGContextRef context) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (ladybird_v_skia_gpu_canvas_context_access)
+        ladybird_v_skia_gpu_canvas_context_access(context);
+    else ladybird_v_skia_gpu_canvas_cpu_access();
+    ladybird_v_skia_block_shared_recording(context);
+#else
+    (void)context;
+#endif
+}
+
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,
 	float destination_height, float source_x, float source_y, float source_width,
@@ -6807,7 +6818,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		CGImageRelease(image_copy);
 		return;
 	}
-	ladybird_v_skia_block_shared_recording(context);
+	native_prepare_image_cpu_fallback(context);
 #endif
 	CGFloat pixel_scale_x = (CGFloat)CGImageGetWidth(image_copy) / image->width;
 	CGFloat pixel_scale_y = (CGFloat)CGImageGetHeight(image_copy) / image->height;

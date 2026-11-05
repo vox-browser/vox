@@ -182,7 +182,9 @@ static std::vector<uint8_t> s_video_frame = [] {
 static void draw_video_leaves(CGContextRef context, bool canvas)
 {
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == int(
-        s_gpu_canvas->video_backdrop_callbacks && std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP")));
+        s_gpu_canvas->video_backdrop_callbacks && (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP")
+            || (std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS")
+                && s_gpu_canvas->video_cpu_fallback_synchronized))));
     float radii[] {13, 13, 13, 13, 0, 0, 0, 0};
     assert(ladybird_v_skia_draw_rgba_image(context, s_video_frame.data(), 1426, 1080, 1426 * 4,
         52.5f, 81.25f, 238, 180, 0, 0, 1426, 1080, 52.5f, 81.25f, 238, 180,
@@ -215,6 +217,17 @@ static decltype(&vox_graphite_canvas_read) s_backend_read;
 static decltype(&vox_graphite_canvas_read_direct) s_backend_direct_read;
 static unsigned s_direct_reads;
 static bool s_fail_direct_read;
+
+static int s_deferred_video_callbacks;
+static void draw_deferred_video_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(s_deferred_video_callbacks);
+    draw_outline_leaves(context, canvas);
+    unsigned before = canvas ? s_gpu_canvas->flushes : 0;
+    draw_video_leaves(context, canvas);
+    if (canvas && s_deferred_video_callbacks >= 2)
+        assert(s_gpu_canvas->cpu_stale && s_gpu_canvas->flushes == before);
+}
 
 static int counted_direct_read(VoxGraphitePixelRegion const* views, int count)
 {
@@ -309,6 +322,18 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
 static bool s_fail_backdrop_copy;
 static int s_backdrop_verify_error;
 static decltype(&vox_graphite_canvas_copy_pixels) s_real_backdrop_copy;
+
+static void draw_native_image_cpu_fallback(CGContextRef context, bool canvas)
+{
+    draw_outline_leaves(context, canvas);
+    native_prepare_image_cpu_fallback(context);
+    if (canvas) assert(!s_gpu_canvas->cpu_stale && !s_gpu_canvas->gpu_valid);
+    CGContextSetRGBFillColor(context, .1, .7, .4, .6);
+    CGContextFillRect(context, CGRectMake(35, css_height-157, 90, 70));
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+    assert(ladybird_v_skia_draw_rounded_rect(context,70,120,200,60,8,8,8,8,8,8,8,8,
+        1,0,0,1,0,0,0,0,0,css_width,css_height,230,240,250,140,1,0,1,1));
+}
 static int maybe_fail_backdrop_copy(uint8_t const* pixels, int w, int h, int pitch, int x, int y)
 {
     return s_fail_backdrop_copy ? 0 : s_real_backdrop_copy(pixels, w, h, pitch, x, y);
@@ -341,6 +366,7 @@ static std::vector<uint8_t> render_video_backdrop(bool canvas, bool callbacks, i
     }
     draw_outline_leaves(context, canvas);
     unsigned before_capture = canvas ? s_gpu_canvas->flushes : 0;
+    if (canvas) ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0);
     native_capture_video_backdrop(40, 210, 100.5, 51.5);
     if (canvas) assert(!s_gpu_canvas->cpu_stale && s_gpu_canvas->flushes == before_capture + 1);
     long geometry[] {80, 420, 201, 103};
@@ -356,11 +382,14 @@ static std::vector<uint8_t> render_video_backdrop(bool canvas, bool callbacks, i
     draw_outline_leaves(context, canvas);
     unsigned before_restore = canvas ? s_gpu_canvas->flushes : 0;
     auto cpu_before = pixels;
-    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == int(callbacks));
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == int(callbacks
+        && (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") || (std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS")
+            && s_gpu_canvas->video_cpu_fallback_synchronized))));
     s_fail_backdrop_copy = fail;
     native_restore_video_backdrop(40, 210, 100.5, 51.5);
     s_fail_backdrop_copy = false;
-    if (canvas && callbacks && !fail && !gpu_canvas_verify()) {
+    if (canvas && callbacks && !fail && !gpu_canvas_verify()
+        && std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP")) {
         assert(s_gpu_canvas->cpu_stale && s_gpu_canvas->flushes == before_restore);
         assert(pixels == cpu_before); // The successful GPU restore never writes stale CPU rows.
     } else if (canvas) assert(s_gpu_canvas->flushes == before_restore + 1);
@@ -664,6 +693,54 @@ static void test_bitmap_inspection_pending_inputs()
 int main(int argc, char** argv)
 {
     test_bitmap_inspection_pending_inputs();
+    if (argc == 2 && !std::strcmp(argv[1], "--deferred-video-barriers")) {
+        setenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS", "1", 1);
+        unsetenv("VOX_GPU_CANVAS_VIDEO_BACKDROP");
+        unsetenv("VOX_GPU_CANVAS_DISABLE_ISOLATED_SHAPES");
+        auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        assert(api && api->draw_image_msaa && api->copy_pixels);
+        s_backend_read = api->read; api->read = counted_read;
+        int tiles[] {0, 1, 2, 3, 4, 5, 6, 7};
+        int error = 0; unsigned cases = 0;
+        for (bool full : {false, true}) for (int coverage : {0, 1, 2})
+        for (bool rounded : {false, true}) for (int alpha : {128, 255})
+        for (int callbacks : {0, 1, 2}) {
+            s_video_rounded = rounded; s_deferred_video_callbacks = callbacks;
+            for (size_t at=3; at<s_video_frame.size(); at+=4) s_video_frame[at]=alpha;
+            s_raster_layer_height=css_height;
+            ladybird_v_skia_set_msaa_grid(coverage ? tiles : nullptr,
+                coverage == 1 ? 8 : coverage == 2 ? 1 : 0, 512, 256, 2);
+            auto reference=render(false,false,draw_deferred_video_leaves,full);
+            auto candidate=render(true,false,draw_deferred_video_leaves,full);
+            for (size_t at=0; at<reference.size(); ++at)
+                error=std::max(error,std::abs(int(reference[at])-int(candidate[at])));
+            assert(error <= 3); ++cases;
+        }
+        for (bool full : {false,true}) {
+            auto reference=render(false,false,draw_native_image_cpu_fallback,full);
+            auto candidate=render(true,false,draw_native_image_cpu_fallback,full);
+            for (size_t at=0; at<reference.size(); ++at)
+                error=std::max(error,std::abs(int(reference[at])-int(candidate[at])));
+            assert(error <= 3); ++cases;
+        }
+        ladybird_v_skia_set_msaa_grid(nullptr,0,0,0,0);
+        s_raster_layer_height=0; s_video_rounded=false;
+        s_real_backdrop_copy=api->copy_pixels; api->copy_pixels=maybe_fail_backdrop_copy;
+        for (bool gpu_restore : {false,true}) {
+            if (gpu_restore) setenv("VOX_GPU_CANVAS_VIDEO_BACKDROP","1",1);
+            else unsetenv("VOX_GPU_CANVAS_VIDEO_BACKDROP");
+            for (int alpha : {128,255}) for (bool callbacks : {false,true}) for (bool fail : {false,true}) {
+                auto reference=render_video_backdrop(false,callbacks,alpha,false);
+                auto candidate=render_video_backdrop(true,callbacks,alpha,fail);
+                for (size_t at=0; at<reference.size(); ++at)
+                    error=std::max(error,std::abs(int(reference[at])-int(candidate[at])));
+                assert(error <= 3); ++cases;
+            }
+        }
+        std::cout << "Deferred video barriers: " << cases << " ordinary/canvas frames, max error "
+            << error << "; pending prefix, capture, CPU/GPU restore, failed copy and legacy host\n";
+        return 0;
+    }
     if (argc == 2 && !std::strcmp(argv[1], "--static-msaa-images")) {
         setenv("VOX_GPU_CANVAS_MSAA_IMAGES", "1", 1);
         assert(gpu_canvas_api()->draw_image_msaa);

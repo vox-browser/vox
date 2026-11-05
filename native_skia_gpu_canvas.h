@@ -41,6 +41,7 @@ struct GpuCanvasFrame {
     bool native_grid = false;
     int document_top = -1;
     bool video_backdrop_callbacks = false;
+    bool video_cpu_fallback_synchronized = false;
     void* frame_surface = nullptr; // Borrowed only for this native paint callback.
     void* frame_surface_pixels = nullptr;
     std::map<std::string, unsigned> flush_reasons;
@@ -512,8 +513,13 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     if (kind == "stroke_rounded_rect") return outlines && !(flags & 512);
     if (kind == "fill_ellipse" || kind == "stroke_ellipse") return outlines;
     if (kind == "draw_text") return !gpu_canvas_text_disabled();
+    // A capable host's capture/restore callbacks already synchronize CPU
+    // access when needed. A video with no backdrop operation can therefore
+    // join the pending GPU leaves without an unconditional earlier readback.
     if (kind == "draw_video") return s_gpu_canvas && s_gpu_canvas->video_backdrop_callbacks
-        && std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") && gpu_canvas_api()->copy_pixels;
+        && ((std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS")
+                && s_gpu_canvas->video_cpu_fallback_synchronized)
+            || (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") && gpu_canvas_api()->copy_pixels));
     if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
     if (kind == "begin_css_filter_layer" || kind == "end_css_filter_layer")
         return std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS");
@@ -618,8 +624,11 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
         gpu_canvas_decline(destination);
         return 0;
     }
-    // draw_video stays an unapproved command so its CPU backdrop is restored
-    // after a flush. Only the actual frame image rejoins the GPU pass here.
+    if (video && s_gpu_canvas->cpu_stale && s_gpu_canvas->gpu_valid
+        && std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_GPU_VIDEO_PENDING_PREFIX reused=1\n");
+    // Older hosts keep the earlier command barrier. The actual frame image
+    // can still rejoin the GPU pass after their CPU backdrop work completes.
     if (video) s_gpu_canvas->in_gpu_command = true;
     std::vector<VoxGraphiteCanvasClip> clips;
     auto* frame = gpu_canvas_for_leaf(destination, clips);
@@ -920,7 +929,11 @@ extern "C" int ladybird_v_skia_gpu_canvas_filter_image(CGContextRef destination,
 
 extern "C" void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int enabled)
 {
-    if (s_gpu_canvas) s_gpu_canvas->video_backdrop_callbacks = enabled != 0;
+    if (s_gpu_canvas) {
+        s_gpu_canvas->video_backdrop_callbacks = enabled != 0;
+        // Version two also synchronizes the final Quartz image fallback.
+        s_gpu_canvas->video_cpu_fallback_synchronized = enabled >= 2;
+    }
 }
 
 extern "C" void ladybird_v_skia_gpu_canvas_document_top(int top)
