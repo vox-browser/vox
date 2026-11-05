@@ -1,0 +1,45 @@
+{
+  "status": "Definite positioned raster image refresh passes108executions,24newcaseexecutions;333instructiontooltests pass.NativeBBCeligibility andunprofiled matched effectpending;targetunmet,no optimizationcredit.",
+  "implementation_commit": "14e4a4501",
+  "control_commit": "d7d84f1dc",
+  "focus": {
+    "passed": true,
+    "cases_per_run": 18,
+    "executions": 108,
+    "new_cases": [
+      "test_positioned_definite_image_changed_natural_ratio_refreshes_paint_and_keeps_old_pixels",
+      "test_positioned_definite_image_first_decode_keeps_percentage_geometry_and_replaces_placeholder",
+      "test_positioned_definite_image_repaint_keeps_intrinsic_constraints_and_indefinite_bases_on_layout",
+      "test_positioned_definite_image_repaint_rejects_svg_broken_and_pending_selector_geometry_changes"
+    ],
+    "new_case_executions": 24,
+    "inputs": {
+      "/Users/alex/code/vox2/layout/positioned_definite_image_repaint_test.v": "4c0e2066eed47075f05334f4bee34cfefa926d95cdd81d52f816017296d2bcf2",
+      "/Users/alex/code/vox2/layout/image_contents_repaint_test.v": "c712647e4ad2bf36da6b087d73c2c46329d893e6f74e5885512415a031c89ac7",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees_test.v": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8",
+      "/Users/alex/code/vox2/layout/positioned_image_ratio_reuse.v": "8f4c4540a9f4dc9e9b5cfa912bf68740f2343cda8a202e250b15fc7026965914",
+      "/Users/alex/code/vox2/layout/viewport_paint_bridge.v": "6083d987221e4dd63b1149300a661263d00523a80f92bda835455ac99f7575b7",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees.v": "e44b540b9596acd36cb3e506f92b4f0c93b31a7c8e67aa0e933e88f47af4aae4"
+    },
+    "inputs_unchanged": true,
+    "all_actual_native_test_calls_verified": true,
+    "qualifications": "Candidate/controlin3GCmodes;uncachedfulltreebuilderdisplaylistcomparison afterfirstdecode/newsource/ratiochanges,5objectfitpolicies,oldpixels/oldURLownership,S VG/broken/attribute-selector/indefinitebase/intrinsicconstraintrejection. InitialcandidatefailedsourcereplacementbecauseelseguardstillrejectedchangedURLafterbothsizesproven;correctedguardpreservesURLcheckonlywithoutgeometryproof. Initialall3candidatefailures and3passingcontrols retained.NoBBCeligibility orinstructioncredit."
+  },
+  "committed_sources": {
+    "layout/positioned_definite_image_repaint_test.v": "4c0e2066eed47075f05334f4bee34cfefa926d95cdd81d52f816017296d2bcf2",
+    "layout/image_contents_repaint_test.v": "c712647e4ad2bf36da6b087d73c2c46329d893e6f74e5885512415a031c89ac7",
+    "layout/retained_flow_image_trees_test.v": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8",
+    "layout/positioned_image_ratio_reuse.v": "8f4c4540a9f4dc9e9b5cfa912bf68740f2343cda8a202e250b15fc7026965914",
+    "layout/viewport_paint_bridge.v": "6083d987221e4dd63b1149300a661263d00523a80f92bda835455ac99f7575b7",
+    "layout/retained_flow_image_trees.v": "e44b540b9596acd36cb3e506f92b4f0c93b31a7c8e67aa0e933e88f47af4aae4"
+  },
+  "scope": "Requireabsolutepositioning,specifieddefinitebothsizes,resolvedpercentagebasesandnonintrinsicconstraints. Refreshretainedrasterprovider/naturalsize/source withoutlayout;firstdecode andchangednaturalratio admitted. Pendingselectorchangesstillrestyle;SVG/broken providers retainedonfullpath. Default/noGC/prealloc,botharms,fullbuilderdisplaylistoracles,5objectfitpolicies,oldbitmap/URLownership andfallbackconstraints. InitialsourceURLguardbugand3failedcandidates retained;allinitialcontrols passed. Additionaldefaultold-ratio-disabledarm passes18cases;noBBCeligibility orinstructioncredit.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-positioned-definite-image-focus-20261105.tar.gz",
+    "bytes": 26662218,
+    "sha256": "6a27393ed7d7c5099829ae6d62e3c110a04d96cbd7cda1f4b79e738c9407a9cb",
+    "members": 92,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793882238.199763
+}

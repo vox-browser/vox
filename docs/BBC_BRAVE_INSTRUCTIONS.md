@@ -6488,3 +6488,29 @@ History stays **108 measured cohorts / 2,335 acceptance browser attempts**;
 IDs 104 and 110 are preflight-only. The original workload, references and scope
 remain unchanged. The target is open and BBC homepage remains outside the
 catalog.
+
+
+## Definite positioned-image repaint candidate (2026-11-05)
+
+`14e4a4501` permits an out-of-flow raster image with two independently resolved
+specified dimensions to refresh its retained paint input after first decode or
+a changed natural aspect ratio. Percentage dimensions require definite committed
+containing-block bases; intrinsic constraints, SVG/broken providers and pending
+style-driven geometry changes retain their existing layout paths. Old paint
+commands keep their original URLs and pixels. `d7d84f1dc` adds the isolated
+same-binary comparison control.
+
+All **108 focused executions** pass: 18 cases in both arms across default,
+no-GC and preallocation modes, including **24 executions of four new cases**.
+Checks compare display lists with a full tree rebuild, exercise five object-fit
+policies, first decode, changed ratios, old-pixel ownership, constraints,
+indefinite bases, SVG/broken transitions and attribute-selector changes.
+An additional 18-case default run with the older ratio optimization disabled
+passes. Initial candidate runs caught a source-URL guard that still rejected
+proved source replacements; those three failures and passing controls remain
+retained alongside the correction. All **333 instruction-tool tests** pass.
+[Focused checks and verified raw archive](performance/bbc-positioned-definite-image-focus-20261105.json).
+
+Native BBC eligibility and the unprofiled matched effect are pending. The latest
+completed bundle lacks this change and a shared build is already running. No
+optimization credit or catalog entry is assigned; the 10% task remains open.
