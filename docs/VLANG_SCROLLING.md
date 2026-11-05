@@ -1986,3 +1986,55 @@ returning zero, so it is rejected. The committed-script rerun pins the executabl
 libraries and scripts, observes no changed inputs, and completes without errors.
 `bb2f87162` also supplies the required V compiler memory limit in screenshot
 comparisons. Earlier evidence archives remain unchanged.
+
+### Readback and pointwise filter follow-up (2026-11-05)
+
+Smooth 60 fps remains open. The following same-binary pairs use the live URL,
+1708×953 document pixels at 2×, 600 precise delta-8 inputs at nominal 120 Hz,
+private empty profiles/caches, title readiness and ten seconds of settling.
+They measure changed scroll publications over the full input window, not scanout.
+Every attempt, interval distribution, boundary gap, input timestamp, cache hash,
+build identity and guard result is retained in
+[the report](performance/vlang-gpu-scroll-readback-filters-20261105.json) and its
+[raw archive](performance/raw/vlang-gpu-scroll-readback-filters-20261105.tar.gz).
+
+| Opt-in candidate | Pair 1 publication fps | Pair 2 publication fps | Decision |
+|---|---:|---:|---|
+| Compact clipped filter input | 78.18 → 89.19 | 90.39 → 90.30 | Mixed; disabled |
+| CPU grayscale on current isolated shapes | 87.39 → 87.20 | 87.35 → 89.90 | Mixed; disabled |
+| Integer-texel IOSurface readback | 86.43 → 75.83 | 78.62 → 79.54 | Mixed; disabled |
+| Partial GPU readback | 77.69 → 91.74 | 90.50 → 77.45 | Mixed; disabled |
+| GPU video backdrop with partial readback | 86.55 → 81.50 | 83.80 → 73.75 | Both regress; disabled |
+| Tight pointwise filter input | 72.68 → 73.30 | 68.52 → 69.85 | Falling host load confounds small gains; disabled |
+
+`d565ac6dd` fixes a correctness gap: two failed GPU reads reject the replay and
+disable later GPU attempts in that process. The immediate ordinary replay can
+then reconstruct the missing GPU-only leaves. Forced failure and retry tests pass.
+
+The first IOSurface implementation copied Skia image snapshots. Its live transport
+check found an eleven-level error during loading and rejected the path before
+scrolling. `6200f6524` replaces it with integer Metal texel reads on the same
+ordered queue. Native optimized/sanitized tests cover alpha, padded rows,
+overlapping damage, pending writes, lifetime and full 3416×1906 targets; live
+transport checks are exact. The mixed timings keep it opt-in. Partial readback
+also verifies unchanged pixels outside each proposed extent: 151 input-window
+checks are exact, with 43,859,561 rather than 70,761,568 transferred pixels.
+
+Command-boundary diagnostics identify repeated CSS filter completions near
+scroll position 697. `9805d92bc` trims transparent margins for pointwise filters
+with the existing integer device mapping, retaining Core Image arithmetic and
+ordinary non-pointwise fallback. Both optimized and ASan/UBSan runs pass 768
+exact frame comparisons, including empty/sparse input, profiles and alpha.
+The live diagnostic reduces source bytes from 669,399,360 to 1,095,324, but its
+timing cohort still has p95 gaps of 34.61/35.25 ms and maxima of 110.35/119.46 ms.
+Host load falls through the cohort; this does not establish an isolated gain.
+
+`40fd1d3e0` and `a76fd7d25` add opt-in command/Metal timing diagnostics. Creation
+to GPU start includes encoding and submission, so it does not isolate queue wait.
+The later profile also finds separate shape readbacks in the scrollbar tail.
+`7f478e6b8` batches those V-owned leaves after the document ring is stored;
+`VOX_GPU_SCROLLBAR_BATCH=1` remains opt-in pending live validation. Its V geometry
+tests execute successfully, and 24 native variants stay within the existing
+three-level GPU bound (observed two), with exact unchanged outside pixels.
+Concurrent source edits temporarily supersede production builds; no other
+session is stopped and older bundles do not validate the new V integration.
