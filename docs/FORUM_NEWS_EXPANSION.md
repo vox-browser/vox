@@ -1089,6 +1089,71 @@ rendering pass retains its original build qualification.
 [Commands, receipts, identities and limits](evidence/engadget-readiness-navigation-20261105.json),
 [raw audits and failed attempts](evidence/engadget-readiness-navigation-20261105.zip).
 
+## Prepared profiles, Slate acquisition and TechCrunch memory (2026-11-05)
+
+A new disposable Brave profile is prepared against sealed Hacker News with the
+pinned full uBO engine/lists, verified filtering and normal shutdown. Unlike the
+older template, this preparation completes. Engadget's acquisition still fails:
+one trace receives HTTP 200 but remains `loading`, with an empty body and 35
+elements. Another observes a second main-document request without a recorded
+response before timeout. These diagnostics do not establish a blocking external
+script. No new Engadget archive qualifies.
+
+Fresh **complete-cache Slate** acquisition produces candidate manifest
+`8be971a3…`. Vox and two fresh Brave replays are exact, but the saved live source
+differs by **17,473 pixels**, confined to the small photo at `(15,263)` through
+`(211,394)`, with maximum channel error 13. Its original response is AVIF despite
+the `.jpeg` URL. The source/replay image URL, natural width and viewport bounds
+agree; a decoder-history explanation remains unproven. A separate cold-cache
+acquisition reaches HTTP 200 and an `interactive` document but fails complete
+readiness. It seals no archive. Both attempts remain failures.
+
+The complete-cache bytes are preserved separately in the
+[unregistered Slate candidate](../Tests/Browser/Brave/candidates/slate-complete-20261105.zip)
+with [qualification metadata](../Tests/Browser/Brave/candidates/slate-complete-20261105.json).
+Extraction reproduces all **40 files** byte for byte and passes archive
+validation. The registered Slate fixture is unchanged.
+
+TechCrunch's saved source and two Brave replays still agree at zero pixels.
+The native browser exceeds its **3 GiB runtime guard** before capture on both
+`e05f01a6…` and the later completed `4cd3e205…`. Four retained browser attempts,
+including separate stack/timing diagnostics, end with `memory_limit` and browser
+exit `-9`; their outer diagnostic wrappers do not confer success. Replay logs
+show 41 unique transport requests with no repeated URL. Repeated uBO audit
+entries therefore do not prove duplicate network fetches.
+
+The private core-model probes do not reproduce that growth. The final probe
+loads captured resources, initializes the root runtime and child hosts, then
+records 64 explicit updates at a peak **734,560,256 bytes (about 701 MiB)** with
+unchanged production source inputs. It omits native window/drawing work and is
+not a conformance or performance result. Earlier probe revisions were edited
+in place and remain diagnostic only. Several setup attempts used the original
+unbounded allocator because their compiler working directory differed from
+production. The build script already selects the staged directory correctly;
+no production allocator correction is claimed.
+
+Commit `3c61c6e0e` adds a deterministic hosted-frame regression for the sealed
+proxy's empty HTTP 410 response. It verifies that loading finishes and the
+parent, failed frame and empty sibling retain distinct documents without
+duplicating the parent body or issuing another navigation. It passes with
+default GC and GC disabled. Initial network-fixture and compile failures are
+retained; the controlled response avoids dependence on ambient transport.
+All **50 Python archive/conformance checks pass**.
+
+The fresh complete-cache Hacker News control passes all strict gates on
+`4cd3e205…`. Independent decoded RGBA hashes confirm equality of its source,
+both references and Vox; Slate's three replay/native images agree while its
+source differs. No additional site pass, renderer fix or new broad-suite pass
+is claimed. The prior 134-test/140-capture result retains its original build
+qualification, and all registered archives and references remain unchanged.
+
+The existing reduced HTTP image-effects command also fails its fresh-source
+check by **89,113 pixels** against the committed PNG. It stops before native
+comparison; neither that reference nor its tolerance is changed.
+
+[Commands, identities, receipts and limitations](evidence/forum-news-profile-memory-20261105.json),
+[raw attempts and private probes](evidence/forum-news-profile-memory-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
