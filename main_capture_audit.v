@@ -13,12 +13,22 @@ import platform
 // screenshot launch mode intentionally changes document activity, so it cannot
 // serve as the content check for an ordinary scripted browsing measurement.
 fn (mut app BrowserApp) schedule_native_observation() bool {
+	interval := os.getenv('VOX_NATIVE_OBSERVATION_INTERVAL_MS').int()
 	delay_text := os.getenv('VOX_NATIVE_OBSERVATION_DELAY_MS')
-	if delay_text == '' { return false }
+	if delay_text == '' && interval <= 0 { return false }
 	delay := delay_text.int()
-	if delay <= 0 { return false }
+	if delay <= 0 && interval <= 0 { return false }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	// Interactive diagnostics of script-driven pages rewrite the audit while
+	// the window stays open; it observes the active tab like the single shot.
+	if interval > 0 {
+		mut repeating := platform.Timer.create_repeating(interval, fn [app] () {
+			app.active_browser_tab().write_capture_audit_if_requested()
+		})
+		repeating.start()
+		if delay <= 0 { return true }
+	}
 	screenshot := os.getenv('VOX_NATIVE_OBSERVATION_SCREENSHOT')
 	mut timer := platform.Timer.create_single_shot(delay, fn [app, screenshot] () {
 		active := app.active_browser_tab()

@@ -31,6 +31,30 @@ fn test_normal_window_observation_does_not_enable_screenshot_document_mode() {
 	assert app.screenshot_path == '' && !app.screenshot_scheduled
 }
 
+fn test_interval_observation_rewrites_the_active_audit() {
+	path := os.join_path(os.temp_dir(), 'vox-interval-observation-${os.getpid()}.json')
+	defer {
+		os.unsetenv('VOX_NATIVE_OBSERVATION_INTERVAL_MS')
+		os.unsetenv('VOX_CAPTURE_AUDIT_PATH')
+		os.rm(path) or {}
+	}
+	os.setenv('VOX_CAPTURE_AUDIT_PATH', path, true)
+	mut document := html.parse_document('<!doctype html><title>First</title><p>Content</p>')
+	defer { document.finalize() }
+	mut app := &BrowserApp{document: document}
+	os.setenv('VOX_NATIVE_OBSERVATION_INTERVAL_MS', '5', true)
+	assert app.schedule_native_observation()
+	mut deadline := time.sys_mono_now() + time.second
+	for !os.is_file(path) && time.sys_mono_now() < deadline { platform.pump_native_events(0.01) }
+	assert json2.decode[CaptureAudit](os.read_file(path)!)!.title == 'First'
+	os.rm(path)!
+	document.set_title('Second')!
+	deadline = time.sys_mono_now() + time.second
+	for !os.is_file(path) && time.sys_mono_now() < deadline { platform.pump_native_events(0.01) }
+	assert json2.decode[CaptureAudit](os.read_file(path)!)!.title == 'Second'
+	assert app.screenshot_path == '' && !app.screenshot_scheduled
+}
+
 fn test_capture_audit_reads_retained_text_attributes_counts_and_geometry() {
 	mut document := html.parse_document('<!doctype html><title>Capture</title><style>body{margin:0}.row{width:70px;height:20px}</style><div class="row" data-key="one">Первый</div><div class="row" data-key="two">Second</div>')
 	mut app := BrowserApp{document: document, js_messages: ['retained diagnostic']}
