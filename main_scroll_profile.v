@@ -58,6 +58,14 @@ fn scroll_profile_allocated() u64 {
 	return u64(gc_heap_usage().total_bytes)
 }
 
+// Command replay runs in a resettable arena. The aggregate outlives each
+// replay, including its map storage and copied command-kind keys.
+fn (mut profile BrowserScrollProfile) record_replay_allocation(kind string, bytes i64) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	profile.replay_kind_bytes[kind] += bytes
+}
+
 fn (mut app BrowserApp) scroll_profile_mark(name string) {
 	mut profile := &app.scroll_profile
 	if !profile.active || profile.phase_count >= profile.phase_names.len { return }

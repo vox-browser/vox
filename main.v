@@ -7703,7 +7703,7 @@ fn (mut app BrowserApp) draw() {
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 					before := platform.thread_arena_usage().used
 					app.draw_command(*command, 0, page_y, window.height)
-					app.scroll_profile.replay_kind_bytes[command.kind] += platform.thread_arena_usage().used - before
+					app.scroll_profile.record_replay_allocation(command.kind, platform.thread_arena_usage().used - before)
 				} else {
 					app.draw_command(*command, 0, page_y, window.height)
 				}
