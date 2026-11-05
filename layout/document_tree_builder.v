@@ -1910,6 +1910,8 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 		}
 		placeholder := element.get_attribute_value('placeholder')
 		placeholder_is_visible := value.len == 0 && placeholder.len > 0
+		// HTMLInputElement::create_text_input_shadow_tree(): the editor scrolls
+		// to keep the caret visible but never shows a scrollbar.
 		inner_style := computed_style_with_overrides(outer_style, {
 			css.PropertyID.display:              'block'
 			css.PropertyID.width:                '100%'
@@ -1917,6 +1919,8 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 			css.PropertyID.line_height:          inner_line_height
 			css.PropertyID.overflow_x:           'auto'
 			css.PropertyID.overflow_y:           'auto'
+			css.PropertyID.scrollbar_width:      'none'
+			css.PropertyID.text_overflow:        'clip'
 			css.PropertyID.white_space_collapse: 'preserve'
 			css.PropertyID.text_wrap_mode:       'nowrap'
 		})
