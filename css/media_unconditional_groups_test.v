@@ -31,12 +31,18 @@ fn test_media_group_candidates_flatten_all_unconditional_types_in_order() {
 	assert first.did_evaluate && second.did_evaluate && last.did_evaluate
 	assert first.condition_matches() && !second.condition_matches() && last.condition_matches()
 	if !disable_media_rule_candidates && !retain_media_group_recursion {
-		candidates := list.media_evaluation_candidates()
-		assert candidates.len == 3
+		// A multi-candidate group remains a boundary. Its single-candidate
+		// child chains collapse without widening either retained vector.
+		outer_candidates := list.media_evaluation_candidates()
+		assert outer_candidates.len == 2
+		assert voidptr(outer_candidates[0]) == voidptr(group)
+		assert voidptr(outer_candidates[1]) == voidptr(last)
+		mut child_list := group.rules or { panic('group children') }
+		candidates := child_list.media_evaluation_candidates()
+		assert candidates.len == 2
 		assert voidptr(candidates[0]) == voidptr(first)
 		assert voidptr(candidates[1]) == voidptr(second)
-		assert voidptr(candidates[2]) == voidptr(last)
-		assert list.media_evaluation_flattened_groups_
+		assert child_list.media_evaluation_flattened_groups_
 	}
 	document.set_viewport_rect(dom.Rect{width:400, height:600})
 	assert list.evaluate_media_queries(document)
@@ -80,7 +86,7 @@ fn test_media_group_flattening_bounds_expansion_and_rechecks_nested_replacement(
 	defer { document.finalize() }
 	mut children := CSSRuleList.create_empty()
 	mut leaves := []&CSSRule{}
-	for _ in 0 .. media_group_flatten_limit + 1 {
+	for _ in 0 .. 257 {
 		leaves << media_group_leaf('(min-width:600px)')
 	}
 	children.set_rules(leaves)

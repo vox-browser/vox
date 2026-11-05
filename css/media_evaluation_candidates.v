@@ -52,14 +52,13 @@ fn (mut rule_list CSSRuleList) media_evaluation_candidates() []&CSSRule {
 				if mut children := rule.rules {
 					child_candidates := children.media_evaluation_candidates()
 					if child_candidates.len != 0 {
-						if retain_media_group_recursion || child_candidates.len > media_group_flatten_limit
-							- rule_list.media_evaluation_candidates_.len {
+						if retain_media_group_recursion || child_candidates.len != 1 {
 							rule_list.media_evaluation_candidates_ << rule
 						} else {
-							// Evaluation traverses these groups unconditionally. Keep
-							// their live descendants in the same order and avoid
-							// reentering each intermediate list on every evaluation.
-							rule_list.media_evaluation_candidates_ << child_candidates
+							// Evaluation traverses these groups unconditionally.
+							// Replace a one-candidate chain with its live descendant;
+							// never expand a vector or copy a wider child summary.
+							rule_list.media_evaluation_candidates_ << child_candidates[0]
 							rule_list.media_evaluation_flattened_groups_ = true
 						}
 					}

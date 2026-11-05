@@ -5,7 +5,6 @@ import sync.stdatomic
 
 const retain_media_group_recursion = os.getenv('VOX_RETAIN_MEDIA_GROUP_RECURSION') != ''
 const media_group_evaluation_diagnostics = os.getenv('VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS') != ''
-const media_group_flatten_limit = 256
 __global media_group_evaluation_reported stdatomic.AtomicVal[bool]
 
 fn report_media_group_evaluation(list &CSSRuleList) {
