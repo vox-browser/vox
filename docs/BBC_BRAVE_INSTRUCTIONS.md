@@ -1,94 +1,104 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 122**, on pinned parallel production `193fbf989f12`:
+Current result — **cohort 123**, on pinned parallel production `2ed5a2e46d92`:
 all 21 capture audits pass, with normal native exits and unchanged input
-identities. Launch-to-PNG medians are **26,384,582,433 Vox**,
-**26,324,861,392 previous-measurement-disabled control**, and **17,428,409,664
-Brave lower bound** instructions. The strict 10% target fails
-`280844761700 > 156015337923` (conservative ratio **1.62010**).
-Previous-pass measurement reuse regresses **59,721,041** instructions at the
-median point (**0.226862%**), with one paired improvement and six regressions;
-conservative control ratio is **1.12907**. No saving or catalog credit is
-claimed. History is **117 measured cohorts / 2,524 acceptance browser attempts**;
+identities. Launch-to-PNG medians are **26,144,631,473 Vox**,
+**26,248,892,855 empty-index-lookup control**, and **17,449,156,252 Brave lower
+bound** instructions. The strict 10% target fails
+`274539251640 > 155120755050` (conservative ratio **1.59286**).
+The candidate shows a **104,261,382** median point reduction (**0.397203%**),
+with four paired improvements and three regressions; the conservative control
+ratio **1.05345** fails. No robust saving or catalog credit is claimed.
+History is **118 measured cohorts / 2,545 acceptance browser attempts**;
 104, 110, 111, 113 and 118 are preflight-only. Every earlier result remains
-preserved. [Complete cohort evidence](performance/bbc-previous-measurement-cohort122-20261106.json).
+preserved. [Complete current evidence](performance/bbc-empty-pseudo-indexes-cohort123-20261106.json).
 
-The next candidate (`34d4000d9`, isolated control `9717aa4b7`) skips element
-metadata reads when the corresponding pseudo-candidate rule index is empty.
-Populated buckets, mutable rule hints and later population/removal retain the
-ordinary query. All **96 focused executions** (16 cases × two arms × three GC
-modes) and **341 tooling tests** pass; native BBC eligibility and matched
-instructions remain pending a completed production bundle containing this code.
+The empty-index candidate (`34d4000d9`, isolated control `9717aa4b7`) skips
+metadata reads only when the corresponding pseudo-candidate rule index is
+currently empty. Populated buckets, mutable rule hints, namespace/quirks rules
+and later population/removal stay live. All **96 focused executions** (16 cases
+in both arms across three GC modes) and **341 tooling tests** pass, including
+late population, clear and hint changes against the original bucket oracle.
 [Focused evidence](performance/bbc-empty-pseudo-indexes-focus-20261106.json).
+Fresh native captures prove candidate-only actual execution before PNG and pass
+original pixels/content, all 72 external author-source evaluations, actual
+native-image pins, ownership and normal exits. SVG source-switch is pixel-exact
+in both arms. Seven alternating triples retain every first launch and
+regression under a canonical publication lease. Both arms use the same
+parallel 33-unit executable; only the empty-index guard control differs. The
+production receipt has complete input/compiler/runtime metadata, without sealed
+generated C.
 
-A separate **73-scope `v -profile`** diagnostic passes original pixels/content,
-all 72 external author-source witnesses, native images, normal exits and exact
-caller-group reconciliation. It restores 29 original profiler scopes on the
-sealed earlier diagnostic baseline, with unchanged normalized engine bodies;
-it is not a fresh-source production build. There are 70 executed scopes and
+The point reduction triggers broader checks: **724 unique cases per default
+and no-GC mode, with 719 passes and the same five baseline failures**. Fresh
+layout 555/main 74/CSS 80 cases combine with 15 current module-runtime cases;
+main and CSS repeat both arms. Primary coverage is 1,726 fresh and 60 carried
+executions, with 1,772 passes and 14 baseline failures. Intermediate shared
+URL-helper compile and bootstrap failures, failed auditors and a message
+investigation remain preserved. The final main repeat pins all top-level and
+browser-JS source files and restores the prior two main failures. There is no
+full-suite pass or cadence reset.
+
+Known DOM/script/font/paint limitations and the **82.7154% cross-browser pixel
+difference** remain; reference stability is per engine. The known unsupported
+`performance.measure` module error remains, and 72 exact external source
+evaluations do not establish complete asynchronous script conformance. The
+same fixed 609 original-origin HTTPS responses, original author scripts,
+1024×768 CSS viewport, DPR 2, fresh private profiles/caches, retained OS caches,
+readiness/visible-image/two-second settlement and creation-to-encoded-PNG scope
+remain in use. Startup/native window/target setup is included; Vox ends before
+file writing, Brave includes CDP delivery, and audits/teardown follow. Exited
+aggregates/allowed owned services are included, while GPU/outside work is
+excluded. No live-site, isolated rendering or FPS result is claimed. BBC
+homepage still has no qualifying instruction entry in `OPTIMIZED_SITES.md`.
+
+The prior cross-pass measurement history **regressed** in cohort 122:
+26.385B Vox / 26.325B control / 17.428B Brave lower median, with one paired
+improvement and six regressions. It is retired (`0a8de752f`), with its control
+removed separately (`7fdffd5e0`). All 102 restoration executions and 340 tooling
+tests pass; production `4d07a9d00d50` confirms exact original pixels/content,
+scripts/native images/ownership/exits and SVG source-switch, with the retired
+marker absent. The original 258 focused executions, earlier failed attempts
+and corrected count auditor remain recorded.
+[Retained cohort 122](performance/bbc-previous-measurement-cohort122-20261106.json),
+[focused checks](performance/bbc-previous-measurement-focus-20261106.json),
+[retirement checks](performance/bbc-previous-measurement-retirement-20261106.json).
+
+Separate **73-scope `v -profile`** diagnostics pass original captures and exact
+caller-group reconciliation. They restore 29 original profiler scopes on the
+sealed earlier diagnostic baseline with unchanged normalized engine bodies;
+this is not a fresh-source production build. There are 70 executed scopes and
 7,340,584 main-thread counter reads. Selected rows include 132,962 rule-cache
-pseudo-candidate calls (920,289,065 self / 1,561,577,566 inclusive) and 340,790
-bucket scans (641,288,501 self), plus 1,230,492 attribute namespace matches
-(3,318,978,879 self). These include substantial probe overhead and supply no
-production instruction share or saving. Independent focused/native checks
-overlap the diagnostic; recursive inclusive counts overlap and post-PNG work
-can be included. [Profile and sealed compiler evidence](performance/bbc-v-profile-pseudo-candidates-20261106.json).
-The separate fresh [production CPU sample](performance/bbc-current-production-sample-20261106.json)
-validates PID/start identity, executable UUID and Vox address ranges; its
-requested six-second/1-ms cadence is not an instruction measurement.
+pseudo-candidate calls (920,289,065 self / 1,561,577,566 inclusive), 340,790
+bucket scans (641,288,501 self), and 1,230,492 attribute namespace matches
+(3,318,978,879 self). Substantial probe overhead, overlapping recursive counts,
+unselected work and possible post-PNG work prevent production share or saving
+claims; independent focused/native checks overlap this diagnostic.
+[Profile and compiler evidence](performance/bbc-v-profile-pseudo-candidates-20261106.json).
+The fresh [CPU sample](performance/bbc-current-production-sample-20261106.json)
+validates PID/start identity, executable UUID and Vox address ranges, with no
+instruction credit.
 
-The regressing cross-pass history has now been **retired** (`0a8de752f`), with
-its comparison control removed separately (`7fdffd5e0`). All **102 restoration
-executions** (34 existing grid/flex/image cases in three GC modes) and **340
-tooling tests** pass. Completed parallel production `4d07a9d00d50` contains the
-removal and passes fresh original pixels/content, all 72 external author-source
-evaluations, actual native-image/ownership/exit checks and the pixel-exact SVG
-source-switch guard. The retired marker is absent. This single correctness
-launch establishes no new instruction result or saving.
-[Retirement evidence](performance/bbc-previous-measurement-retirement-20261106.json).
-
-The extension and isolated control (`05e1743ff`, `f5e0ace39`) pass **258 focused
-executions**: 43 cases in both arms across three GC modes, including nine new
-cases, with all native test-main calls verified. All **341 instruction-tool
-tests** pass. Earlier compiler, fixture, storage, retained-map growth and
-count-auditor failures are preserved; only the final corrected matrix supplies
-focused credit. The final count is 258, correcting the rejected 252-count
-auditor after the engine commit; no runtime case failed in that final matrix.
-[Focused evidence](performance/bbc-previous-measurement-focus-20261106.json).
-
-Fresh native captures confirm candidate-only previous-pass geometry reuse before
-PNG, exact original pixels/content, all 72 external author-source evaluations,
-actual native-library pins, helper ownership and normal exits. The SVG
-source-switch guard is exact in both arms. The initial native wrapper's invalid
-CLI flag is retained as a preparation rejection before any browser launched;
-it supplies no measurement. Seven complete alternating triples run under a
-publication lease, retaining every first launch and regression. The only
-control difference disables previous-pass measurement history. The parallel
-build has complete input/compiler/runtime metadata, without sealed generated C.
-
-The negative point difference triggers no new broad check. The last triggered
-broader checks (cohort 121) retain **708 unique cases per default/no-GC mode:
-703 passes and the same five baseline failures**; there is no full-suite pass or
-cadence reset. Known DOM/script/font/paint limitations and the 82.7154%
-cross-browser pixel difference remain. Both arms retain the known unsupported
-`performance.measure` module error; 72 exact external source evaluations do not
-establish complete asynchronous script conformance. No live-site, isolated
-rendering or FPS result is claimed. BBC homepage still has no qualifying
-instruction entry in `OPTIMIZED_SITES.md`.
+Two more diagnostic leads supply no improvement or production change. Actual
+JSC option dumps verify 10,000/100 versus 500/100; their instrumented root
+checkpoints are 26.115B and 27.388B. An omitted sampling-output directory causes
+an initial abnormal exit after correct pixels/content; that attempt is retained
+separately from the refined pair with normal exits.
+[JIT diagnostic](performance/bbc-moderate-jit-diagnostic-20261106.json).
+A genuine native Function forwarding the private query host's original callback
+runs 7,774 candidate-only calls with unchanged capture audits, but its root
+checkpoint is 26.694B versus control's 26.529B. The diagnostic changes private
+function representation and retains extra roots; complete binding conformance
+is unproven. It is not an engine implementation.
+[Private-query diagnostic](performance/bbc-native-query-function-diagnostic-20261106.json).
+These instrumented root-process counts are not the exclusive-coalition
+acceptance backend and earn no unprofiled saving, Brave ratio or broad credit.
 
 Cohort 121's keyword-free module bypass result remains separately recorded:
 25.654B Vox / 26.875B full-lexer control / 17.464B Brave lower median;
 1.221B point reduction with seven improvements, but conservative control and
 Brave gates both fail. [Retained cohort 121](performance/bbc-keyword-free-module-cohort121-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
-
-The fresh optimized `v -profile` investigations supply diagnostic evidence only.
-The main-thread counter and callback groups identify expensive asynchronous
-script callbacks and repeated layout. Further geometry, private-helper and JSC
-sampling diagnostics do not establish production instruction shares or savings.
-[Profiles and verified compiler inputs](performance/bbc-v-profile-thread-instructions-20261105.json),
-[geometry scopes](performance/bbc-v-profile-client-geometry-20261105.json),
-[private helpers and JIT revisit](performance/bbc-javascript-helper-and-jit-diagnostics-20261106.json).
 
 Measurement recency (`f0a747f84`, FIFO control `b90dfdbb9`) keeps recently reused
 disposable grid/flex/inline geometry in the existing four-entry caches. Keys,
