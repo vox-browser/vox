@@ -956,6 +956,8 @@ pub mut:
 	// Box-local CSS border geometry resolves its snapped origin against the
 	// current retained transform, including compositor-only animation updates.
 	local_border_data &PaintLocalBorderData = unsafe { nil }
+	// Replaced images likewise snap before a static non-translation transform.
+	local_image_data &PaintLocalImageData = unsafe { nil }
 	// NativeTheme keeps CSS-sized geometry at the snapped device-pixel origin.
 	checkbox_theme_data &PaintCheckboxThemeData = unsafe { nil }
 	// Rectangles clipped out of an antialiased 'fill_rect' without
@@ -2743,6 +2745,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				commands[command_index].transform = chromium_local_border_transform(data,
 					box.paint_transform, box.own_paint_transform)
 			}
+			chromium_local_image_geometry(mut commands[command_index],box,border_rect)
 			chromium_record_corner_shapes(mut commands[command_index], box, border_rect, box_radii)
 			commands[command_index].paint_box_index = entry_index
 			commands[command_index].force_dark_backdrop = painting.Color{box.background_color.r,

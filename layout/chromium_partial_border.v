@@ -44,6 +44,9 @@ fn chromium_local_border_transform(data &PaintLocalBorderData, full [6]f64,
 
 fn chromium_border_replay_transform(command &PaintCommand, full [6]f64,
 	tree &painting.AccumulatedVisualContextTree) [6]f64 {
+	if command.local_image_data != unsafe { nil } {
+		return chromium_image_replay_transform(command.local_image_data,full,tree)
+	}
 	data := command.local_border_data
 	if data == unsafe { nil } || !data.has_local_geometry { return full }
 	initial := data.initial_transform
