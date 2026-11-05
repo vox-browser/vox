@@ -986,8 +986,8 @@ fn (mut image HTMLImageElementModel) create_alt_text_shadow_tree() {
 	mut shadow_node := unsafe { &dom.Node(shadow) }
 	shadow_node.append_child(wrapper.as_node()) or { return }
 	image.alt_text_node_ = text
-	mut document := unsafe { &dom.Document(dom_element.document()) }
-	document.set_needs_full_layout_tree_update(true)
+	// Attaching the shadow tree already invalidates this host. Preserve the
+	// normal subtree invalidation so unrelated layout branches remain reusable.
 }
 
 fn (mut image HTMLImageElementModel) remove_alt_text_shadow_tree() {
@@ -998,8 +998,6 @@ fn (mut image HTMLImageElementModel) remove_alt_text_shadow_tree() {
 	mut dom_element := image_dom_element(element)
 	dom_element.set_shadow_root(none)
 	image.alt_text_node_ = none
-	mut document := unsafe { &dom.Document(dom_element.document()) }
-	document.set_needs_full_layout_tree_update(true)
 }
 
 pub fn (mut image HTMLImageElementModel) update_alt_text_shadow_tree() {
@@ -1021,8 +1019,6 @@ pub fn (mut image HTMLImageElementModel) update_alt_text_shadow_tree() {
 		if element := image.element_ {
 			mut node := image_dom_element(element).as_node()
 			node.set_needs_layout_tree_update(true, .html_image_element_update_the_image_data)
-			mut document := unsafe { &dom.Document(image_dom_element(element).document()) }
-			document.set_needs_full_layout_tree_update(true)
 		}
 	}
 }
