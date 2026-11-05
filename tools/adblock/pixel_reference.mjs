@@ -71,7 +71,14 @@ export async function pixelReferenceState() {
 }
 
 export async function capturePixelReference(page, file, navigation) {
-    if (navigation?.coverage !== 'page') throw new Error('Pixel reference requires successful page coverage');
+    if (navigation?.coverage !== 'page') {
+        // A failed/challenge navigation never reaches the readiness snapshot.
+        // Keep its identity and classification rather than losing the actual
+        // status behind the generic pixel-reference precondition error.
+        await fs.writeFile(file+'.json',JSON.stringify({stable:false,
+            navigation:navigation??null},null,2)+'\n');
+        throw new Error('Pixel reference requires successful page coverage');
+    }
     const state = await page.evaluate(`(${pixelReferenceState.toString()})()`);
     // Retain readiness and resource failures even when no PNG can qualify as
     // a reference. A failed run must never leave a sidecar claiming stability.

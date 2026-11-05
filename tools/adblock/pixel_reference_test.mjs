@@ -90,6 +90,8 @@ test('failed navigation, incomplete pages and missing visible images cannot beco
     const nav={coverage:'page',url:state.url};
     const page={evaluate:async()=>state,send:()=>{throw Error('Unexpected screenshot');}};
     await assert.rejects(capturePixelReference(page,file,{coverage:'challenge'}),/successful page coverage/);
+    assert.deepEqual(JSON.parse(await fs.readFile(file+'.json','utf8')),
+        {stable:false,navigation:{coverage:'challenge'}});
     for (const change of [{ready:'loading'},{fonts:'loading'},{width:800},{scale:2},{text:'Access denied'},
         {url:'https://other.test/'},{images:[{url:'https://example.test/avatar.png',width:10,height:10,x:0,y:0,complete:true,naturalWidth:0}]},
         {styles:[{url:'https://example.test/main.css',active:true,loaded:false}]},
@@ -99,6 +101,22 @@ test('failed navigation, incomplete pages and missing visible images cannot beco
         const diagnostic=JSON.parse(await fs.readFile(file+'.json','utf8'));
         assert.equal(diagnostic.stable,false);
         for (const [key,value] of Object.entries(change)) assert.deepEqual(diagnostic[key],value);
+        await assert.rejects(fs.stat(file),{code:'ENOENT'});
+    }
+});
+
+test('failed navigation receipts retain response identity without querying or capturing an error page',async t=>{
+    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'vox-pixel-navigation-'));
+    t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+    const file=path.join(directory,'brave.png');
+    const page={evaluate:()=>{throw Error('Must not audit the error document');},
+        send:()=>{throw Error('Must not capture the error document');}};
+    for(const navigation of [null,undefined,{url:'https://example.test/',coverage:'challenge',
+        status:403,title:'Human verification',error:'Blocked response'},
+        {url:'https://example.test/',coverage:'navigation-error',status:null,error:'net::ERR_PROXY_CONNECTION_FAILED'}]) {
+        await assert.rejects(capturePixelReference(page,file,navigation),/successful page coverage/);
+        assert.deepEqual(JSON.parse(await fs.readFile(file+'.json','utf8')),
+            {stable:false,navigation:navigation??null});
         await assert.rejects(fs.stat(file),{code:'ENOENT'});
     }
 });
