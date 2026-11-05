@@ -14,6 +14,7 @@ struct CanvasTile {
 std::unique_ptr<skgpu::graphite::Recorder> canvas_recorder;
 std::vector<CanvasTile> canvas_tiles;
 std::vector<sk_sp<SkSurface>> canvas_surface_pool;
+id<MTLComputePipelineState> canvas_readback_pipeline;
 
 SkImageInfo canvas_info(int width, int height)
 {
@@ -27,6 +28,8 @@ void canvas_reset()
     canvas_tiles.clear();
     canvas_surface_pool.clear();
     canvas_recorder.reset();
+    [canvas_readback_pipeline release];
+    canvas_readback_pipeline = nil;
 }
 
 // Repainted rectangles change size from frame to frame (scroll steps, damage
@@ -551,52 +554,73 @@ int vox_graphite_canvas_read_iosurface(void* handle, int width, int height)
         || IOSurfaceGetPixelFormat(surface) != uint32_t('RGBA')
         || IOSurfaceGetBytesPerElement(surface) != 4
         || IOSurfaceGetBytesPerRow(surface) < size_t(width) * 4) return 0;
-    auto recorder = gpu->makeRecorder();
-    auto device = vox_shared_metal_device(recorder.get());
-    if (!device) return 0;
+    auto device = vox_shared_metal_device(canvas_recorder.get());
+    if (!device || !gpu_frame_queue) return 0;
+    if (!canvas_readback_pipeline) {
+        // Read integer texels from the exact storage used by the established
+        // reader. A Skia image draw can resample snapshot/resolve coverage.
+        NSString* source=@"#include <metal_stdlib>\nusing namespace metal;\n"
+            "kernel void canvas_readback(texture2d<float,access::read> source [[texture(0)]],"
+            "texture2d<float,access::write> target [[texture(1)]],"
+            "constant int4& offset [[buffer(0)]],uint2 p [[thread_position_in_grid]]) {"
+            "uint2 s=p+uint2(offset.xy);target.write(source.read(s),s+uint2(offset.zw));}";
+        id<MTLLibrary> library=[device newLibraryWithSource:source options:nil error:nil];
+        id<MTLFunction> function=[library newFunctionWithName:@"canvas_readback"];
+        canvas_readback_pipeline=function ? [device newComputePipelineStateWithFunction:function error:nil] : nil;
+        [function release]; [library release];
+        if (!canvas_readback_pipeline) return 0;
+    }
+    auto frame = SkIRect::MakeWH(width,height);
+    std::vector<id<MTLTexture>> textures;
+    for (auto const& tile : canvas_tiles) {
+        auto damage=tile.clip.makeOffset(tile.x,tile.y);
+        auto texture=vox_shared_metal_texture(tile.surface.get());
+        if (!frame.contains(damage) || !texture) return 0;
+        textures.push_back(texture);
+    }
     auto* descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
         width:width height:height mipmapped:NO];
-    descriptor.storageMode = MTLStorageModeShared;
-    descriptor.usage = MTLTextureUsageRenderTarget;
-    id<MTLTexture> texture = [device newTextureWithDescriptor:descriptor iosurface:surface plane:0];
-    if (!texture) return 0;
-    auto backend = skgpu::graphite::BackendTextures::MakeMetal({width,height}, (CFTypeRef)texture);
-    auto target = SkSurfaces::WrapBackendTexture(recorder.get(), backend, SkColorSpace::MakeSRGB(), nullptr);
-    [texture release];
+    descriptor.storageMode=MTLStorageModeShared;
+    descriptor.usage=MTLTextureUsageShaderWrite;
+    id<MTLTexture> target=[device newTextureWithDescriptor:descriptor iosurface:surface plane:0];
     if (!target) return 0;
-    // All allocations and bounds checks precede any destination writes. The
-    // short-lived recorder releases imported frame resources after submission,
-    // so its cache cannot keep a published frame's pool slot in use.
-    std::vector<sk_sp<SkImage>> images;
-    auto frame = SkIRect::MakeWH(width,height);
-    for (auto const& tile : canvas_tiles) {
-        auto damage = tile.clip.makeOffset(tile.x,tile.y);
-        if (!frame.contains(damage)) return 0;
-        auto image = tile.surface->makeImageSnapshot();
-        if (!image) return 0;
-        images.push_back(std::move(image));
+    id<MTLCommandBuffer> commands=[gpu_frame_queue commandBuffer];
+    bool encoded=commands!=nil;
+    for(size_t index=0;encoded && index<canvas_tiles.size();++index) {
+        auto const& tile=canvas_tiles[index];
+        // Separate encoders preserve ordered overlapping damage writes with
+        // Metal's ordinary tracked resource hazards.
+        id<MTLComputeCommandEncoder> encoder=[commands computeCommandEncoder];
+        if (!encoder) { encoded=false; break; }
+        int offset[]={tile.clip.x(),tile.clip.y(),tile.x,tile.y};
+        [encoder setComputePipelineState:canvas_readback_pipeline];
+        [encoder setTexture:textures[index] atIndex:0];
+        [encoder setTexture:target atIndex:1];
+        [encoder setBytes:offset length:sizeof(offset) atIndex:0];
+        [encoder dispatchThreads:MTLSizeMake(tile.clip.width(),tile.clip.height(),1)
+            threadsPerThreadgroup:MTLSizeMake(8,8,1)];
+        [encoder endEncoding];
     }
-    auto* canvas = target->getCanvas();
-    SkPaint copy; copy.setBlendMode(SkBlendMode::kSrc);
-    for (size_t index=0; index<canvas_tiles.size(); ++index) {
-        auto const& tile = canvas_tiles[index];
-        canvas->save();
-        canvas->clipRect(SkRect::Make(tile.clip.makeOffset(tile.x,tile.y)));
-        canvas->drawImage(images[index],tile.x,tile.y,SkSamplingOptions(),&copy);
-        canvas->restore();
-    }
-    if (IOSurfaceUnlock(surface,0,nullptr) != kIOReturnSuccess) return 0;
-    auto source = canvas_recorder->snap();
-    auto output = recorder->snap();
-    bool ok = output != nullptr;
-    for (auto* recording : {source.get(),output.get()}) if (recording) {
+    [target release]; // The command buffer owns its encoded resources.
+    if (!encoded || IOSurfaceUnlock(surface,0,nullptr)!=kIOReturnSuccess) return 0;
+    auto recording=canvas_recorder->snap();
+    bool ok=true;
+    if(recording) {
         skgpu::graphite::InsertRecordingInfo insertion;
-        insertion.fRecording = recording;
-        if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) { ok=false; break; }
+        insertion.fRecording=recording.get();
+        ok=gpu->insertRecording(insertion)==skgpu::graphite::InsertStatus::kSuccess;
     }
-    // Even a failed insertion must finish any previously accepted commands
-    // before CPU access resumes.
-    bool submitted = gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    // Both submissions use the same VoxFrameMetalQueue. The source recording
+    // commits first; waiting for the following compute command completes both.
+    bool submitted=gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kNo));
+    if(ok && submitted) {
+        [commands commit]; [commands waitUntilCompleted];
+        ok=commands.status==MTLCommandBufferStatusCompleted;
+    } else {
+        // Finish any accepted source work before returning CPU access.
+        gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    }
+    gpu->checkAsyncWorkCompletion();
     bool locked = IOSurfaceLock(surface,0,nullptr) == kIOReturnSuccess;
     return ok && submitted && locked ? 1 : -1;
 } }

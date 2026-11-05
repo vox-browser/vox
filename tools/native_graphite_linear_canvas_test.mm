@@ -183,6 +183,46 @@ int main() { @autoreleasepool {
         assert(IOSurfaceUnlock(frame,0,nullptr)==kIOReturnSuccess);
         CFRelease(frame); vox_graphite_canvas_end();
     }
+    canvas_reset();
+    {
+        constexpr int width=3416,height=1906;
+        IOSurfaceRef frame=IOSurfaceCreate((__bridge CFDictionaryRef)@{
+            (__bridge id)kIOSurfaceWidth:@(width),(__bridge id)kIOSurfaceHeight:@(height),
+            (__bridge id)kIOSurfaceBytesPerElement:@4,
+            (__bridge id)kIOSurfacePixelFormat:@((uint32_t)'RGBA')});
+        assert(frame && IOSurfaceLock(frame,0,nullptr)==kIOReturnSuccess);
+        int rects[]={0,0,width,height,0,0,width,height};
+        assert(vox_graphite_canvas_begin(rects,1));
+        std::vector<uint32_t> source(size_t(width)*height);
+        for(size_t pixel=0;pixel<source.size();++pixel) {
+            unsigned alpha=32+pixel%224;
+            source[pixel]=(alpha<<24)|(((pixel*13)%(alpha+1))<<16)
+                |(((pixel*7)%(alpha+1))<<8)|((pixel*3)%(alpha+1));
+        }
+        assert(vox_graphite_canvas_upload(0,reinterpret_cast<uint8_t*>(source.data()),width*4));
+        std::vector<uint32_t> expected(source.size());
+        VoxGraphitePixelRegion view{0,0,width,height,width*4,reinterpret_cast<uint8_t*>(expected.data())};
+        auto* pixels=static_cast<uint8_t*>(IOSurfaceGetBaseAddress(frame));
+        size_t pitch=IOSurfaceGetBytesPerRow(frame);
+        std::memset(pixels,0xa7,pitch*height);
+        for(int pass=0;pass<3;++pass) {
+            auto* canvas=canvas_tiles[0].surface->getCanvas();
+            force_msaa_render_pass(canvas,width,height);
+            SkPaint paint;paint.setAntiAlias(true);paint.setColor(0x704080c0);
+            canvas->drawRoundRect(SkRect::MakeXYWH(5.25f+pass,9.5f,width-11.75f,height-17.25f),23.5f,19.25f,paint);
+            assert(vox_graphite_canvas_read_iosurface(frame,width,height)==1);
+            assert(vox_graphite_canvas_read_direct(&view,1));
+            for(int y=0;y<height;++y) for(int x=0;x<width;++x) {
+                auto bgra=expected[size_t(y)*width+x];auto* actual=pixels+size_t(y)*pitch+x*4;
+                assert(actual[0]==((bgra>>16)&255) && actual[1]==((bgra>>8)&255)
+                    && actual[2]==(bgra&255) && actual[3]==(bgra>>24));
+            }
+            for(int y=0;y<height;++y) for(size_t x=width*4;x<pitch;++x) assert(pixels[y*pitch+x]==0xa7);
+        }
+        assert(!IOSurfaceIsInUse(frame));
+        assert(IOSurfaceUnlock(frame,0,nullptr)==kIOReturnSuccess);
+        CFRelease(frame);vox_graphite_canvas_end();
+    }
     canvas_reset(); recorder.reset(); gpu_context.reset();
     std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }
