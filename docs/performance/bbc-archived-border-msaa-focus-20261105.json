@@ -1,0 +1,328 @@
+{
+  "status": "Historical border tile sampling option committed after90focused executions; common benchmark option passes326instruction-tool tests. No instruction credit. Containing production original-reference native validation still pending.",
+  "engine_commit": "0804e5699",
+  "tooling_commit": "7cb843063",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-run",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-run",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-run",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_archived_border_msaa_retains_arc_tiles_without_changing_border_geometry",
+          "test_archived_border_msaa_distinguishes_arc_records_from_straight_and_diagonal_lines",
+          "test_dashed_border_paths_share_msaa_with_their_document_tile",
+          "test_elliptical_border_shares_msaa_with_other_boxes_in_its_tiles",
+          "test_circular_and_square_uniform_borders_keep_analytic_tile_coverage",
+          "test_partial_rounded_border_clips_share_the_parent_tile_msaa_mode",
+          "test_square_one_sided_borders_ignore_their_degenerate_corner_arcs",
+          "test_degenerate_border_arcs_keep_straight_and_diagonal_line_semantics",
+          "test_axis_aligned_dashed_border_paths_keep_their_multisampled_pass",
+          "test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile",
+          "test_empty_clips_do_not_change_the_document_tile_multisampling_mode",
+          "test_empty_nested_viewport_clips_discard_their_vector_triggers",
+          "test_collapsed_path_clips_ignore_their_positive_reference_box",
+          "test_visible_and_curved_clip_paths_keep_multisampling",
+          "test_zero_opacity_svg_paints_do_not_multisample_neighboring_draws",
+          "test_svg_paint_culling_keeps_visible_fills_and_strokes",
+          "test_transparent_fills_keep_gradient_and_pattern_stroke_triggers",
+          "test_transparent_svg_background_paths_do_not_trigger_document_msaa",
+          "test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not",
+          "test_chromium_gpu_raster_tiles_follow_the_viewport_height",
+          "test_single_rounded_border_clips_multisample_their_transformed_tiles",
+          "test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths",
+          "test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms",
+          "test_clipped_out_rect_segments_cover_the_parts_between_clip_outs",
+          "test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer",
+          "test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer",
+          "test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it",
+          "test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths",
+          "test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order",
+          "test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_archived_border_msaa_retains_arc_tiles_without_changing_border_geometry",
+          "test_archived_border_msaa_distinguishes_arc_records_from_straight_and_diagonal_lines",
+          "test_dashed_border_paths_share_msaa_with_their_document_tile",
+          "test_elliptical_border_shares_msaa_with_other_boxes_in_its_tiles",
+          "test_circular_and_square_uniform_borders_keep_analytic_tile_coverage",
+          "test_partial_rounded_border_clips_share_the_parent_tile_msaa_mode",
+          "test_square_one_sided_borders_ignore_their_degenerate_corner_arcs",
+          "test_degenerate_border_arcs_keep_straight_and_diagonal_line_semantics",
+          "test_axis_aligned_dashed_border_paths_keep_their_multisampled_pass",
+          "test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile",
+          "test_empty_clips_do_not_change_the_document_tile_multisampling_mode",
+          "test_empty_nested_viewport_clips_discard_their_vector_triggers",
+          "test_collapsed_path_clips_ignore_their_positive_reference_box",
+          "test_visible_and_curved_clip_paths_keep_multisampling",
+          "test_zero_opacity_svg_paints_do_not_multisample_neighboring_draws",
+          "test_svg_paint_culling_keeps_visible_fills_and_strokes",
+          "test_transparent_fills_keep_gradient_and_pattern_stroke_triggers",
+          "test_transparent_svg_background_paths_do_not_trigger_document_msaa",
+          "test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not",
+          "test_chromium_gpu_raster_tiles_follow_the_viewport_height",
+          "test_single_rounded_border_clips_multisample_their_transformed_tiles",
+          "test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths",
+          "test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms",
+          "test_clipped_out_rect_segments_cover_the_parts_between_clip_outs",
+          "test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer",
+          "test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer",
+          "test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it",
+          "test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths",
+          "test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order",
+          "test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_archived_border_msaa_retains_arc_tiles_without_changing_border_geometry",
+          "test_archived_border_msaa_distinguishes_arc_records_from_straight_and_diagonal_lines",
+          "test_dashed_border_paths_share_msaa_with_their_document_tile",
+          "test_elliptical_border_shares_msaa_with_other_boxes_in_its_tiles",
+          "test_circular_and_square_uniform_borders_keep_analytic_tile_coverage",
+          "test_partial_rounded_border_clips_share_the_parent_tile_msaa_mode",
+          "test_square_one_sided_borders_ignore_their_degenerate_corner_arcs",
+          "test_degenerate_border_arcs_keep_straight_and_diagonal_line_semantics",
+          "test_axis_aligned_dashed_border_paths_keep_their_multisampled_pass",
+          "test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile",
+          "test_empty_clips_do_not_change_the_document_tile_multisampling_mode",
+          "test_empty_nested_viewport_clips_discard_their_vector_triggers",
+          "test_collapsed_path_clips_ignore_their_positive_reference_box",
+          "test_visible_and_curved_clip_paths_keep_multisampling",
+          "test_zero_opacity_svg_paints_do_not_multisample_neighboring_draws",
+          "test_svg_paint_culling_keeps_visible_fills_and_strokes",
+          "test_transparent_fills_keep_gradient_and_pattern_stroke_triggers",
+          "test_transparent_svg_background_paths_do_not_trigger_document_msaa",
+          "test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not",
+          "test_chromium_gpu_raster_tiles_follow_the_viewport_height",
+          "test_single_rounded_border_clips_multisample_their_transformed_tiles",
+          "test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths",
+          "test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms",
+          "test_clipped_out_rect_segments_cover_the_parts_between_clip_outs",
+          "test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer",
+          "test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer",
+          "test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it",
+          "test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths",
+          "test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order",
+          "test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/main_archived_border_msaa_test.v": "22fd1f1184b24999229f88fff6e9e1eeb791fbc19df604a0b69963a64a12e976",
+      "/Users/alex/code/vox2/main_chromium_border_msaa_test.v": "a8b2c0b7e9b021db661b4720395b124cf7a2c2c95981d97631ba37272d768586",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles_test.v": "f398f4f3e26ee9ae3384fa19dfba185d1fc1d3c629c4438e12e2e813bb667aa9",
+      "/Users/alex/code/vox2/main_archived_border_msaa.v": "303e1d995d6f696cd5dfab338c152a7c275709ab646e495abd0ffd870bc99177",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles.v": "e37d4bdea4187868d8b6eb530b0dfa3d9b62fd852ce3167e23e147de6b086bf8",
+      "/Users/alex/code/vox2/main_chromium_shared_recording.v": "26baf46d2728013d9ef9f4141b00f88b61ab545e6d176a41300eeb3edaada009"
+    },
+    "unchanged": true,
+    "cases_per_run": 30,
+    "expected_cases": [
+      "test_archived_border_msaa_retains_arc_tiles_without_changing_border_geometry",
+      "test_archived_border_msaa_distinguishes_arc_records_from_straight_and_diagonal_lines",
+      "test_dashed_border_paths_share_msaa_with_their_document_tile",
+      "test_elliptical_border_shares_msaa_with_other_boxes_in_its_tiles",
+      "test_circular_and_square_uniform_borders_keep_analytic_tile_coverage",
+      "test_partial_rounded_border_clips_share_the_parent_tile_msaa_mode",
+      "test_square_one_sided_borders_ignore_their_degenerate_corner_arcs",
+      "test_degenerate_border_arcs_keep_straight_and_diagonal_line_semantics",
+      "test_axis_aligned_dashed_border_paths_keep_their_multisampled_pass",
+      "test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile",
+      "test_empty_clips_do_not_change_the_document_tile_multisampling_mode",
+      "test_empty_nested_viewport_clips_discard_their_vector_triggers",
+      "test_collapsed_path_clips_ignore_their_positive_reference_box",
+      "test_visible_and_curved_clip_paths_keep_multisampling",
+      "test_zero_opacity_svg_paints_do_not_multisample_neighboring_draws",
+      "test_svg_paint_culling_keeps_visible_fills_and_strokes",
+      "test_transparent_fills_keep_gradient_and_pattern_stroke_triggers",
+      "test_transparent_svg_background_paths_do_not_trigger_document_msaa",
+      "test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not",
+      "test_chromium_gpu_raster_tiles_follow_the_viewport_height",
+      "test_single_rounded_border_clips_multisample_their_transformed_tiles",
+      "test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths",
+      "test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms",
+      "test_clipped_out_rect_segments_cover_the_parts_between_clip_outs",
+      "test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer",
+      "test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer",
+      "test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it",
+      "test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths",
+      "test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order",
+      "test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers"
+    ]
+  },
+  "executions": 90,
+  "tool_tests": {
+    "passed": 326,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 89915392,
+      "elapsed_seconds": 9.006748625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "initial_interruption": {
+    "reason": "Diagnostic-only marker added while first focused compile was running. Do not validate mixed inputs; retain guard interruption and pin mismatch and rerun every case against final source.",
+    "targets": [
+      {
+        "pid": 39946,
+        "command": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python tools/run_memory_bounded.py --lock /Users/alex/code/vox2/Build/bbc-archived-border-msaa-20261105-0950/none-compile.lock --report /Users/alex/code/vox2/Build/bbc-archived-border-msaa-20261105-0950/none-compile.guard.json --limit-gib 12 --timeout 900 -- /Users/alex/code/v/v -cflags -O0 -ldflags -framework CoreGraphics -memory-limit 10G -w -enable-globals -nocache -b c -cc clang -d vox_ui2 -d vox_sparse_ttf -path /Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib -exclude @vlib/time/zoneinfo.native.v -skip-running -gc none -o /Users/alex/code/vox2/Build/bbc-archived-border-msaa-20261105-0950/none /Users/alex/code/vox2/bbc_archived_border_msaa_focus_test.v"
+      }
+    ],
+    "unix": 1793861386.254824
+  },
+  "initial_matrix": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-run",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": -15
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_archived_border_msaa_retains_arc_tiles_without_changing_border_geometry",
+          "test_archived_border_msaa_distinguishes_arc_records_from_straight_and_diagonal_lines",
+          "test_dashed_border_paths_share_msaa_with_their_document_tile",
+          "test_elliptical_border_shares_msaa_with_other_boxes_in_its_tiles",
+          "test_circular_and_square_uniform_borders_keep_analytic_tile_coverage",
+          "test_partial_rounded_border_clips_share_the_parent_tile_msaa_mode",
+          "test_square_one_sided_borders_ignore_their_degenerate_corner_arcs",
+          "test_degenerate_border_arcs_keep_straight_and_diagonal_line_semantics",
+          "test_axis_aligned_dashed_border_paths_keep_their_multisampled_pass",
+          "test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile",
+          "test_empty_clips_do_not_change_the_document_tile_multisampling_mode",
+          "test_empty_nested_viewport_clips_discard_their_vector_triggers",
+          "test_collapsed_path_clips_ignore_their_positive_reference_box",
+          "test_visible_and_curved_clip_paths_keep_multisampling",
+          "test_zero_opacity_svg_paints_do_not_multisample_neighboring_draws",
+          "test_svg_paint_culling_keeps_visible_fills_and_strokes",
+          "test_transparent_fills_keep_gradient_and_pattern_stroke_triggers",
+          "test_transparent_svg_background_paths_do_not_trigger_document_msaa",
+          "test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not",
+          "test_chromium_gpu_raster_tiles_follow_the_viewport_height",
+          "test_single_rounded_border_clips_multisample_their_transformed_tiles",
+          "test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths",
+          "test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms",
+          "test_clipped_out_rect_segments_cover_the_parts_between_clip_outs",
+          "test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer",
+          "test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer",
+          "test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it",
+          "test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths",
+          "test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order",
+          "test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/main_archived_border_msaa_test.v": "22fd1f1184b24999229f88fff6e9e1eeb791fbc19df604a0b69963a64a12e976",
+      "/Users/alex/code/vox2/main_chromium_border_msaa_test.v": "a8b2c0b7e9b021db661b4720395b124cf7a2c2c95981d97631ba37272d768586",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles_test.v": "f398f4f3e26ee9ae3384fa19dfba185d1fc1d3c629c4438e12e2e813bb667aa9",
+      "/Users/alex/code/vox2/main_archived_border_msaa.v": "ea792aed22cb809bae30a8b8b04232f34122b102c5a7a238af1de4caa378cf37",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles.v": "2c573d690845c98e8a60d7dc05a410be6e5f47cb1886db0e147de011ff1ee331",
+      "/Users/alex/code/vox2/main_chromium_shared_recording.v": "26baf46d2728013d9ef9f4141b00f88b61ab545e6d176a41300eeb3edaada009"
+    },
+    "unchanged": false,
+    "cases_per_run": 30,
+    "expected_cases": [
+      "test_archived_border_msaa_retains_arc_tiles_without_changing_border_geometry",
+      "test_archived_border_msaa_distinguishes_arc_records_from_straight_and_diagonal_lines",
+      "test_dashed_border_paths_share_msaa_with_their_document_tile",
+      "test_elliptical_border_shares_msaa_with_other_boxes_in_its_tiles",
+      "test_circular_and_square_uniform_borders_keep_analytic_tile_coverage",
+      "test_partial_rounded_border_clips_share_the_parent_tile_msaa_mode",
+      "test_square_one_sided_borders_ignore_their_degenerate_corner_arcs",
+      "test_degenerate_border_arcs_keep_straight_and_diagonal_line_semantics",
+      "test_axis_aligned_dashed_border_paths_keep_their_multisampled_pass",
+      "test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile",
+      "test_empty_clips_do_not_change_the_document_tile_multisampling_mode",
+      "test_empty_nested_viewport_clips_discard_their_vector_triggers",
+      "test_collapsed_path_clips_ignore_their_positive_reference_box",
+      "test_visible_and_curved_clip_paths_keep_multisampling",
+      "test_zero_opacity_svg_paints_do_not_multisample_neighboring_draws",
+      "test_svg_paint_culling_keeps_visible_fills_and_strokes",
+      "test_transparent_fills_keep_gradient_and_pattern_stroke_triggers",
+      "test_transparent_svg_background_paths_do_not_trigger_document_msaa",
+      "test_css_border_diagonal_miters_multisample_but_orthogonal_edges_do_not",
+      "test_chromium_gpu_raster_tiles_follow_the_viewport_height",
+      "test_single_rounded_border_clips_multisample_their_transformed_tiles",
+      "test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths",
+      "test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms",
+      "test_clipped_out_rect_segments_cover_the_parts_between_clip_outs",
+      "test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer",
+      "test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer",
+      "test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it",
+      "test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths",
+      "test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order",
+      "test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers"
+    ]
+  },
+  "policy": "Only explicit VOX_RETAIN_DEGENERATE_BORDER_MSAA=1 restores the earlier arc-trigger decision; both benchmark Vox arms share it. The current default analytic border policy remains. No changed PNG references,tolerances,capture or instruction boundaries. Eligibility marker is diagnostic only.",
+  "native_pending": true,
+  "instruction_credit": 0,
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-archived-border-msaa-focus-20261105.tar.gz",
+    "bytes": 34934137,
+    "sha256": "669879c92e4f56e05229a1ad71ba284a161d975b555eb9a72de9a7b1d29d4287",
+    "members": 67,
+    "all_members_verified": true
+  },
+  "unix": 1793862254.66926
+}

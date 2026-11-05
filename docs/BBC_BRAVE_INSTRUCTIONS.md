@@ -6066,3 +6066,15 @@ remains open, and BBC homepage stays outside the catalog.
 [Every failed capture, exact single-helper control, source/input hashes,
 commands and actual exits](performance/bbc-pixel-msaa-attribution-20261105.json)
 are preserved in a verified durable archive.
+
+`0804e5699` completes the explicit historical border-sampling implementation.
+All **90 focused executions** pass (30 cases in default, no-GC and bounded
+preallocation modes), with actual test calls and unchanged checked inputs
+verified. Tests cover ordinary lines, curved/omitted/zero-radius arcs and live
+border geometry under both policy choices. The first matrix is retained as
+invalid after a diagnostic-marker edit during compilation; the complete final
+matrix is rerun against fixed inputs. The new option has zero optimization
+credit. The latest completed `68cec4406133` predates it, and the shared build
+remains busy; a preflight launches no browser. Original-reference native
+validation remains pending. [Focused evidence and tested sources](performance/bbc-archived-border-msaa-focus-20261105.json)
+are archived with full member readback checks.
