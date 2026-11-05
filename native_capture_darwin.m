@@ -4560,6 +4560,47 @@ static CIContext *native_css_filter_render_context(NativeCSSFilterLayer const *l
     return native_css_filter_software_context;
 }
 
+static CGImageRef native_render_css_filter_image(NativeCSSFilterLayer const *layer,
+    CGImageRef input, CGRect bounds, BOOL allow_software) {
+    native_initialize_css_filter_renderer();
+    CIContext *renderer = allow_software
+        ? native_css_filter_render_context(layer, input) : native_css_filter_ci_context;
+    CIImage *filtered = native_apply_css_filter_layer(layer, input);
+    CGImageRef image = [renderer createCGImage:filtered fromRect:bounds
+        format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+    if (renderer == native_css_filter_software_context
+        && getenv("VOX_SOFTWARE_POINTWISE_FILTER_VERIFY")) {
+        CGImageRef reference = [native_css_filter_ci_context createCGImage:filtered
+            fromRect:bounds format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+        CFDataRef actual = image ? CGDataProviderCopyData(CGImageGetDataProvider(image)) : NULL;
+        CFDataRef expected = reference ? CGDataProviderCopyData(CGImageGetDataProvider(reference)) : NULL;
+        size_t width = image ? CGImageGetWidth(image) : 0;
+        size_t height = image ? CGImageGetHeight(image) : 0;
+        size_t pitch = image ? CGImageGetBytesPerRow(image) : 0;
+        size_t expected_pitch = reference ? CGImageGetBytesPerRow(reference) : 0;
+        BOOL valid = actual && expected && reference
+            && width == CGImageGetWidth(reference) && height == CGImageGetHeight(reference)
+            && pitch >= width * 4 && expected_pitch >= width * 4
+            && CFDataGetLength(actual) >= pitch * height
+            && CFDataGetLength(expected) >= expected_pitch * height;
+        size_t differing = 0;
+        int error = valid ? 0 : -1;
+        if (valid) for (size_t y = 0; y < height; ++y)
+            for (size_t x = 0; x < width * 4; ++x) {
+                int delta = abs(CFDataGetBytePtr(actual)[y * pitch + x]
+                    - CFDataGetBytePtr(expected)[y * expected_pitch + x]);
+                if (delta) ++differing;
+                if (delta > error) error = delta;
+            }
+        fprintf(stderr, "VOX_SOFTWARE_POINTWISE_VERIFY valid=%d pixels=%zu differing_channels=%zu max_error=%d\n",
+            valid, width * height, differing, error);
+        if (actual) CFRelease(actual);
+        if (expected) CFRelease(expected);
+        if (reference) CGImageRelease(reference);
+    }
+    return image;
+}
+
 #ifdef VOX_TEST_GRAYSCALE_IDENTITY
 static unsigned native_test_grayscale_identities;
 #endif
@@ -4975,14 +5016,9 @@ void native_end_css_filter_layer(void) {
 			} else if (compact_input && (filtered_image = native_cached_css_color_filter_image(&layer, input))) {
 				// The immutable cached result uses the same Core Image arithmetic.
 			} else {
-				native_initialize_css_filter_renderer();
-				CIContext *renderer = compact_input
-                    ? native_css_filter_render_context(&layer, input) : native_css_filter_ci_context;
-				CIImage *output = native_apply_css_filter_layer(&layer, input);
-				filtered_image = [renderer createCGImage:output
-					fromRect:cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
-						filtered_rect.size.height) : source_rect
-					format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+				filtered_image = native_render_css_filter_image(&layer, input,
+                    cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
+                        filtered_rect.size.height) : source_rect, compact_input != NULL);
 			}
 			if (cropped_source) CGImageRelease(cropped_source);
 		}

@@ -86,6 +86,7 @@ static void check_software_selection(void) {
 }
 int main(int argc,char **argv){@autoreleasepool{
     setenv("VOX_COMPACT_CSS_FILTER_INPUT","1",1);
+    setenv("VOX_SOFTWARE_POINTWISE_FILTER_VERIFY","1",1);
     NativeCSSFilterOperation operation={.kind=2,.first=.5,.second=2};
     for(int bgra=0;bgra<2;++bgra)for(int wide=0;wide<2;++wide){
         selected=source(bgra,wide);
