@@ -103,6 +103,28 @@ launch-to-PNG count. It provides investigation leads with no production shares,
 unprofiled saving, Brave ratio or catalog credit.
 [Scope proof, complete sealed inputs and capture audits](performance/bbc-v-profile-instruction-scopes-20261105.json).
 
+Two follow-up diagnostics reuse that sealed source baseline with profiler-only
+changes. The first adds 18 host, HTML lifecycle, recursive style and inline
+construction scopes; all 43 execute. The second groups the existing script-call
+intervals by native callers without extra clock reads or JavaScript property
+accesses. All **142 caller groups** reconcile exactly with the V profiler;
+every nonzero address lies inside the actual executable's text range and
+resolves against its recorded `dladdr` image base. Both captures pass the
+original pixels/content, all 72 external scripts, native-image pins and exits.
+
+In the caller diagnostic, ten event callbacks account for 14.588B selected
+script-call self instructions and seven module-rewrite calls for 2.978B. These
+are investigation leads, with the same C-O0, process-counter, instrumentation,
+concurrent-worker and post-PNG qualifications. They are not production shares
+or savings, and the archived source cannot validate later changes. Inspecting
+the frozen scripts finds false lexer candidates such as CSS `@import`, quoted
+error text, `dynamic-import` labels and an assigned `loader.import` property.
+The following syntax filter is motivated by these observations, not credited
+by them. Complete compiler inputs are covered by this archive and its pinned
+baseline reference. A full-disk archival failure, its partial output and the
+subsequent losslessly verified compression are retained.
+[Expanded scopes, exact caller reconciliation and original audits](performance/bbc-v-profile-host-scopes-20261105.json).
+
 The follow-up pending-full-cascade shortcut now covers pseudo-element and
 trailing-universal anchor walks (`bbdaa7475`, isolated control `99c5cfdbe`).
 Its exact paint oracle exposed an existing retention bug: a newly styled
