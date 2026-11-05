@@ -20750,3 +20750,96 @@ preserved.
 
 See [the local checkpoint and pending validation audit](performance/github-lazy-match-memo-20261104.json)
 and [durable C, failed builds, focused checks and counters](performance/raw/github-lazy-match-memo-20261104.tar.gz).
+
+
+## Deferred selector memo: installed validation continuation, November 5, 2026
+
+The pending browser checks for `ded75a2b3` have now run. The API fixture passes
+at exactly 640×480 and is pixel-exact against the archived preceding-production
+capture. The cached GitHub capture passes its strict content and viewport gate,
+but fails the unchanged historical pixel comparison. Installed correctness has
+useful positive evidence; historical visual acceptance and page-level
+optimization credit remain open.
+
+Tooling commit `8759ce3a9` gives production compilation an explicit 2,700-second
+(45-minute) timeout, preserving the default 12 GiB memory budget and separate
+3 GiB startup check. All 22 build-runner tests pass with actual test/guard exits
+zero. The previously recorded 1,800-second build failures remain failures.
+No production build was requested during this continuation: newer builds from
+concurrent work were already available. The original checkpoint and all 372
+archived files were recovered and hash-verified without replacing the six local
+probe observations or repeating the 34 completed focused executions.
+
+API validation uses completed receipt `20261105-053603-586e198a`, executable
+SHA-256 `beb540c02f16d8601b2f9de37a48533f900a819e64df612a753f0422e05ba863`.
+Before GitHub launched, the shared worker published receipt
+`20261105-054047-15117476`, executable SHA-256
+`c74e5d0dce0ac165182f0fa437738086ac67572392d15f37c5152ac32c4dd462`.
+The identity check stops that preparation attempt with controller/guard exits
+one and **zero browser observations**. The newer completed bundle is then audited
+and used for the one declared candidate GitHub observation. Neither app was
+copied, rebuilt for this session, or substituted during a running observation.
+The user's existing GUI browser remains untouched.
+
+For each completed build, the changed collector/helper and inline memo record
+match the tested generated C exactly after resolving string constants; five
+unchanged helpers match preceding production, preserving assertion code. All
+131 sealed inputs and 35 surviving live inputs also match. The 12 removed
+publication-staging paths per build are listed explicitly. Calling the complete
+historical revalidation routine after publication fails because its staging
+`Info.plist` no longer exists; that failure is retained, and no full live-input
+revalidation is claimed. Original receipts record actual native compilation,
+build guard and startup-check exits zero. Per-observation executable and native
+library fingerprints remain stable. Both builds use current V/preallocation/
+C-O3 and single-unit native compilation, with the requested parallel mode's
+unsupported-native-header fallback recorded.
+
+The first candidate API capture passes every script assertion but uses the
+wrong 592-pixel window height, producing a 640×508 document. Browser exit zero
+and controller/3 GiB guard exits one remain retained. Screenshot mode with this
+private profile has 84 pixels of chrome; a separately declared 564-pixel-window
+capture passes at 640×480 with browser/controller/guard exits zero. Its original
+fixture bytes and document PNG are unchanged, SHA-256
+`f673d2984f33c6e44317dd141136ca0feffbf08f4f8b4aad1b7757a263a8a8e7`.
+It exercises mixed selectors, insertion/removal, class changes, collection-local
+memo expiry and pseudo-elements. The invalid-geometry capture is not replaced.
+
+The fixed candidate GitHub observation retains the same 193-response archive
+(manifest SHA-256 `902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b`),
+33 rows, 66 filename/href links, 21 image sources, known-image decoding and
+1024×768 document viewport. Browser/controller/12 GiB guard exits are zero.
+The unchanged historical reference has **4,544 differing pixels**, confined to
+three header controls in `(761,16)` through `(1008,52)`; maximum channel error is
+77 and RGB MAE is 0.2100037469. The captured PNG SHA-256 is
+`9dff6662661186fadc3d0249dd8cb829c9b6f002876d1beba9460dd370acde81`,
+versus historical `65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+The reference and zero-difference tolerance remain unchanged, and this is not a
+passing visual gate. One native exception reports the unavailable IndexedDB
+`createIndex` method; four unarchived CSS module 404s also remain recorded.
+
+A separately declared, fixed N=1 correctness diagnostic enables eager memo
+initialization in the **same executable**. It passes the strict content gate and
+produces a byte-identical PNG to the deferred primary, with zero browser,
+controller and 12 GiB guard exits. Its native exception count is zero; this does
+not erase the primary exception. The diagnostic shows that the historical header
+pixel differences persist in both initialization modes in this executable.
+Their root cause is unresolved, and this is not literal equivalence to the old
+memo representation. It neither extends nor replaces the candidate primary and
+supplies no instruction-saving credit.
+
+The candidate's inclusive main-task counts are 12,023,965,314 instructions at
+`navigation_to_first_document_paint` and 92,313,345,684 at
+`navigation_to_first_native_layer_submission`, reported separately. Raw counters
+from the eager correctness diagnostic remain archived without an instruction
+comparison. All-thread main-process counters include concurrent work and omit
+other tasks; host contention is recorded. These observations are not a paired
+performance cohort, do not isolate concurrent engine changes, and do not establish
+GitHub savings, full hydration or Chrome parity. Historical pixel acceptance
+remains open. No broad suite, historical observation, baseline, reference or
+tolerance is replaced or reset; the local C-O2 result remains separate.
+
+See [the continuation audit](performance/github-lazy-match-memo-completion-20261105.json)
+and [raw continuation evidence and full completed generated C](performance/raw/github-lazy-match-memo-completion-20261105.tar.gz).
+The [original checkpoint](performance/github-lazy-match-memo-20261104.json) and
+[original local evidence](performance/raw/github-lazy-match-memo-20261104.tar.gz)
+remain unchanged.
