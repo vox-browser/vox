@@ -74,7 +74,7 @@ fn test_property_value_export_owns_nested_lists_ratios_shorthands_and_rgb_names(
 }
 
 fn test_property_value_export_rejects_unsupported_descendants_before_publication() {
-	mut parser := Parser.from_css_text('calc(13px + 2%)')
+	mut parser := Parser.from_css_text('calc(13px + sibling-index() * 2px)')
 	calculated := parser.parse_css_value(.width) or { panic('missing calculated value') }
 	nested := StyleValue(ShorthandStyleValue.create(.margin, [.margin_top], [
 		StyleValue(StyleValueList.create([StyleValue(NumberStyleValue.create(1)), calculated],
@@ -111,10 +111,10 @@ fn test_property_value_workspace_preserves_supported_parser_graphs_and_serializa
 fn test_property_value_workspace_fallback_preserves_unsupported_graphs_and_decoded_input() {
 	properties := [PropertyID.width, .content, .font_family, .background_image, .transform, .width,
 		.aspect_ratio]
-	sources := ['calc(13px + 2%)', r'"esc\61 ped"', r'"f\61 mily", serif',
+	sources := ['calc(13px + sibling-index() * 2px)', r'"esc\61 ped"', r'"f\61 mily", serif',
 		r'image-set(url("esc\61 ped.png") 1x, url(other.png) 2x)', 'translate(3px, 4px) rotate(10deg)',
 		r'var(--esc\61 ped, calc(7px + env(safe-area-inset-left, 2px)))',
-		'calc(6em / 1px) / calc(3rem / 1px)']
+		'calc(6em * sibling-index() / 1px) / calc(3rem / 1px)']
 	for i, property in properties {
 		mut reference := Parser.from_css_text(sources[i])
 		expected := reference.parse_css_value(property) or { panic('reference fallback missing') }
