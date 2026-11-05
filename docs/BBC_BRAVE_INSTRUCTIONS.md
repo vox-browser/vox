@@ -136,6 +136,18 @@ bucket scans (641,288,501 self), and 1,230,492 attribute namespace matches
 unselected work and possible post-PNG work prevent production share or saving
 claims; independent focused/native checks overlap this diagnostic.
 [Profile and compiler evidence](performance/bbc-v-profile-pseudo-candidates-20261106.json).
+A separate private-query action diagnostic follows that callback lead without
+changing author scripts or the native callback representation. Both fresh
+captures pass original pixels/content, 72 external source witnesses, native
+image pins, normal exits and private-PID memory adoption. The refined run groups
+7,775 calls into 131 buckets without overflow: `geometry/rect` has 26 calls and
+2,188,694,911 selected thread instructions; `geometry/scrollWidth` has 12 calls
+and 1,058,497,968. All groups total 4,276,398,210. Counter overhead is included;
+labels truncate/normalize private request witnesses, and work after PNG can be
+included. The initial 3,633-call overflow aggregate remains recorded. These are
+instrumented callback intervals, not production shares or unprofiled savings.
+[Query action diagnostic](performance/bbc-query-action-diagnostic-20261106.json).
+
 The fresh [CPU sample](performance/bbc-current-production-sample-20261106.json)
 validates PID/start identity, executable UUID and Vox address ranges, with no
 instruction credit.
