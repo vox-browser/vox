@@ -852,6 +852,8 @@ public:
     void clear() { index.clear(); entries.clear(); bytes = 0; }
 };
 GlyphRasterCache s_glyph_raster_cache;
+GlyphRasterCache s_gradient_text_raster_cache(16 * 1024 * 1024, 64, 4 * 1024 * 1024);
+uint64_t s_gradient_text_raster_cache_hits;
 VoxGlyphTextBlobCache s_glyph_text_blob_cache;
 
 template<typename T> void append_glyph_key(std::vector<uint8_t>& key, T const* data, size_t count)
@@ -1135,6 +1137,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
     clear_native_rounded_image_cache();
     s_sparse_raster_pool.clear();
     s_glyph_raster_cache.clear();
+    s_gradient_text_raster_cache.clear();
     s_glyph_text_blob_cache.clear();
     vox_solid_svg_coverage::clear();
     SkGraphics::PurgeAllCaches();
@@ -2953,14 +2956,41 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     auto bytes = picture->serialize(&procs);
     float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
     if (!bytes) return 0;
-    auto* output_pixels = reinterpret_cast<uint8_t*>(pixels.data());
-    int rendered = regional
-        ? draw_region(output_pixels, pixel_width, pixel_height, output_width * 4,
-            region_x, region_y, output_width, output_height, bytes->data(), bytes->size(), identity)
-        : shared_picture_draw()(output_pixels, pixel_width, pixel_height,
-            output_width * 4, bytes->data(), bytes->size(), identity);
-    if (!rendered)
-        return 0;
+    GlyphRasterCache::Request cached;
+    bool cache_enabled = std::getenv("VOX_CACHE_GRADIENT_TEXT") != nullptr;
+    if (cache_enabled) {
+        // Transport packets contain short-lived pixel lease tokens. Build a
+        // separate self-contained key with exact owned image rows instead.
+        auto canonical_procs = procs;
+        canonical_procs.fImageProc = [](SkImage* image, void*) { return vox_encode_picture_image(image); };
+        auto canonical = picture->serialize(&canonical_procs);
+        std::vector<uint8_t> key;
+        int geometry[] {pixel_width, pixel_height, region_x, region_y, output_width, output_height,
+            int(regional), int(CGBitmapContextGetBitmapInfo(destination)), int(rgba_bitmap(destination))};
+        append_glyph_key(key, geometry, sizeof(geometry) / sizeof(geometry[0]));
+        if (canonical) {
+            key.insert(key.end(), static_cast<uint8_t const*>(canonical->data()),
+                static_cast<uint8_t const*>(canonical->data()) + canonical->size());
+            cached = s_gradient_text_raster_cache.prepare(std::move(key), output_width, output_height, nullptr, 0);
+        }
+    }
+    CGImageRef output_image = cached.image ? CGImageRetain(cached.image) : nullptr;
+    if (output_image) ++s_gradient_text_raster_cache_hits;
+    else {
+        auto* output_pixels = reinterpret_cast<uint8_t*>(pixels.data());
+        int rendered = regional
+            ? draw_region(output_pixels, pixel_width, pixel_height, output_width * 4,
+                region_x, region_y, output_width, output_height, bytes->data(), bytes->size(), identity)
+            : shared_picture_draw()(output_pixels, pixel_width, pixel_height,
+                output_width * 4, bytes->data(), bytes->size(), identity);
+        if (!rendered) return 0;
+        output_image = create_pixel_image(destination, std::move(pixels), output_width, output_height);
+        if (!output_image) return 0;
+        if (cache_enabled) s_gradient_text_raster_cache.finish(std::move(cached), output_image);
+    }
+    if (cache_enabled && std::getenv("VOX_GRADIENT_TEXT_CACHE_DIAGNOSTICS"))
+        std::fprintf(stderr, "Vox gradient text cache: reused=%d size=%dx%d picture_bytes=%zu\n",
+            bool(cached.image), output_width, output_height, bytes->size());
     if (regional && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
         std::fprintf(stderr, "VOX_PICTURE_REGION text target=%dx%d region=%d,%d,%d,%d\n",
             pixel_width, pixel_height, region_x, region_y, output_width, output_height);
@@ -2972,12 +3002,11 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     auto right = std::ceil((x + width) * scale) / scale;
     auto top = std::ceil((y + height) * scale) / scale;
     CGContextClipToRect(destination, CGRectMake(left, bottom, right - left, top - bottom));
-    auto drawn = regional
-        ? composite_pixels(destination, std::move(pixels), output_width, output_height,
-            region_x / scale, canvas_height - (region_y + output_height) / scale,
-            output_width / scale, output_height / scale, true)
-        : composite_pixels(destination, std::move(pixels), pixel_width, pixel_height,
-            0, 0, canvas_width, canvas_height, true);
+    auto drawn = composite_image(destination, output_image, regional
+        ? CGRectMake(region_x / scale, canvas_height - (region_y + output_height) / scale,
+            output_width / scale, output_height / scale)
+        : CGRectMake(0, 0, canvas_width, canvas_height), true);
+    CGImageRelease(output_image);
     CGContextRestoreGState(destination);
     return drawn;
 }

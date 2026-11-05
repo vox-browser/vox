@@ -11,7 +11,7 @@ skia_root="$upstream_dir/Build/release/vcpkg_installed/${LADYBIRD_VCPKG_TRIPLET:
 output_dir=${NATIVE_SKIA_TEST_OUTPUT_DIR:-"$repo_dir/Build/native-skia-gradient-text-test"}
 graphite_dir=${NATIVE_GRAPHITE_DAWN_DIR:-"$repo_dir/Build/v/Vox.app/Contents/MacOS"}
 mkdir -p "$output_dir"
-clang++ -std=c++20 -O2 -x objective-c++ \
+clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     -I"$skia_root/include/skia" -I"$skia_root/include" \
     "$repo_dir/tools/native_skia_gradient_text_test.cpp" \
     -L"$skia_root/lib" -lskia \
