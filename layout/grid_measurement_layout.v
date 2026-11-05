@@ -7,12 +7,15 @@ import platform
 
 const disable_grid_measurement_reuse = os.getenv('VOX_DISABLE_GRID_MEASUREMENT_REUSE') != ''
 const grid_measurement_diagnostics = os.getenv('VOX_GRID_MEASUREMENT_DIAGNOSTICS') != ''
+const disable_intrinsic_grid_measurement_reuse = os.getenv('VOX_DISABLE_INTRINSIC_GRID_MEASUREMENT_REUSE') != ''
+const intrinsic_grid_measurement_diagnostics = os.getenv('VOX_INTRINSIC_GRID_MEASUREMENT_DIAGNOSTICS') != ''
 const disable_relative_measurement_reuse = os.getenv('VOX_DISABLE_RELATIVE_MEASUREMENT_REUSE') != ''
 const relative_measurement_diagnostics = os.getenv('VOX_RELATIVE_MEASUREMENT_DIAGNOSTICS') != ''
 const disable_svg_measurement_reuse = os.getenv('VOX_DISABLE_SVG_MEASUREMENT_REUSE') != ''
 const svg_measurement_diagnostics = os.getenv('VOX_SVG_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global grid_measurement_reuse_reported bool
+__global intrinsic_grid_measurement_reuse_reported bool
 __global relative_measurement_reuse_reported bool
 __global svg_measurement_reuse_reported bool
 
@@ -60,6 +63,7 @@ struct GridMeasurementBasis {
 
 @[heap]
 struct GridMeasurementLayout {
+	mode LayoutMode
 	key GridMeasurementKey
 	external_heights_independent bool
 	inputs []RetainedInlineInput
@@ -178,7 +182,12 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace, width_only bool) FormattingContextResult {
 	mut pool := state.measurement_chunk_pool_
 	committed := state.subtree_root == none
-	if disable_grid_measurement_reuse || mode != .normal || width_only
+	// Intrinsic block-size probes run the same closed grid algorithm, but do
+	// not publish resolved tracks on the root. Keep their mode in the entry
+	// and replay only the automatic height that this branch actually writes.
+	intrinsic := mode == .intrinsic_sizing && !committed
+		&& !space.height.is_definite() && !disable_intrinsic_grid_measurement_reuse
+	if disable_grid_measurement_reuse || (mode != .normal && !intrinsic) || width_only
 		|| !space.width.is_definite() || (committed && disable_committed_grid_measurement_reuse)
 		|| used.containing_block_used_values_ == none || pool == unsafe { nil } || pool.closed
 		|| !retained_context_allows_grid(container) || container.document().in_quirks_mode()
@@ -196,6 +205,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	style_environment := container.document().style_environment_version()
 	previous := pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
 	for cached in previous {
+		if cached.mode != mode { continue }
 		keys_match := cached.key == key || (committed && cached.external_heights_independent
 			&& committed_grid_measurement_keys_match(&cached.key, &key))
 		unused_heights := !keys_match && !disable_unused_measurement_heights
@@ -206,12 +216,19 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			|| cached.font_policy != container.document().font_rendering_policy()
 			|| cached.style_environment != style_environment
 			|| !grid_measurement_inputs_are_current(cached.inputs) { continue }
-		// The caller owns the root's size, offset and relative-position basis.
-		// The normal definite-width grid algorithm publishes only these tracks.
-		used.set_grid_template_columns(cached.columns)
-		used.set_grid_template_rows(cached.rows)
-		used.set_grid_line_names(cached.column_names, cached.row_names)
-		used.set_grid_subgridded_axes(false, false)
+		// The caller owns the root's offset and relative-position basis.
+		// Normal layout publishes tracks; intrinsic layout only sets a
+		// constraint-derived automatic content height, never track metadata.
+		if mode == .intrinsic_sizing {
+			if space.height.is_intrinsic_sizing_constraint() {
+				used.set_content_height(cached.result.automatic_content_height)
+			}
+		} else {
+			used.set_grid_template_columns(cached.columns)
+			used.set_grid_template_rows(cached.rows)
+			used.set_grid_line_names(cached.column_names, cached.row_names)
+			used.set_grid_subgridded_axes(false, false)
+		}
 		for index in 0 .. cached.values.len {
 			entry := unsafe { &cached.values[index] }
 			containing := if parent := entry.containing { state.get(parent) } else { none }
@@ -220,6 +237,10 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		if grid_measurement_diagnostics && !grid_measurement_reuse_reported {
 			grid_measurement_reuse_reported = true
 			eprintln('Vox grid measurement: reused resolved within-pass geometry')
+		}
+		if intrinsic && intrinsic_grid_measurement_diagnostics && !intrinsic_grid_measurement_reuse_reported {
+			intrinsic_grid_measurement_reuse_reported = true
+			eprintln('Vox intrinsic grid measurement: reused owned block-size probe')
 		}
 		if committed { report_committed_grid_measurement_reuse() }
 		report_relative_measurement_reuse(cached.inputs)
@@ -256,6 +277,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		append_owned_measurement_values(mut snapshots, styled, values)
 	}
 	cached := &GridMeasurementLayout{
+		mode: mode
 		key: GridMeasurementKey{ ...key, external_bases: key.external_bases.clone() }
 		external_heights_independent: grid_measurement_external_heights_are_unused(owned_inputs)
 		inputs: owned_inputs
