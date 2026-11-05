@@ -1,6 +1,7 @@
 from pathlib import Path
 import hashlib
 import json
+import os
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -12,6 +13,48 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    def test_literal_prod_request_survives_automatic_requests_and_can_be_reset(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); state=root/'Build/production-build'
+            with patch.object(build,'validate_repository'), patch.object(build,'git',return_value=b'head'):
+                build.enqueue(root,background=False,c_mode='single',v_prod=True)
+                first=json.loads((state/'request.json').read_text())
+                build.write_json(state/'started.json',dict(id=first['id']))
+                build.enqueue(root,background=False)
+                automatic=json.loads((state/'request.json').read_text())
+                self.assertTrue(automatic['v_prod'])
+                self.assertEqual(automatic['c_mode'],'single')
+                build.enqueue(root,background=False,c_mode='parallel',v_prod=False)
+                reset=json.loads((state/'request.json').read_text())
+                self.assertFalse(reset['v_prod'])
+                self.assertEqual(reset['c_mode'],'parallel')
+
+    @unittest.skipUnless(sys.platform=='darwin','macOS application-directory publication')
+    def test_literal_prod_request_reaches_the_supervised_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); self.app(root/'Build/v',b'old')
+            build.write_json(root/'Build/production-build/request.json',dict(id='prod',c_mode='single',v_prod=True))
+            def compile(repo,stage,receipt,environment):
+                self.assertEqual(environment['VOX_BUILD_C_MODE'],'single')
+                self.assertEqual(environment['VOX_BUILD_V_PROD'],'1')
+                self.app(stage,b'prod'); return 0
+            with patch.object(build,'validate_repository'), patch.object(build,'repository_state',return_value=dict(head='one')):
+                self.assertEqual(build.build_pending(root,compile),0)
+            self.assertTrue(json.loads((root/'Build/production-build/latest.json').read_text())['request']['v_prod'])
+
+    def test_shell_prod_option_forwards_both_options_in_either_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); executable=root/'python3'; capture=root/'args'
+            executable.write_text('#!/bin/sh\nprintf \'%s\\n\' "$@" > "$VOX_TEST_CAPTURE_ARGS"\n')
+            executable.chmod(0o755)
+            environment=dict(os.environ,PATH=str(root)+os.pathsep+os.environ['PATH'],
+                             VOX_BUILD_SUPERVISED='0',VOX_TEST_CAPTURE_ARGS=str(capture))
+            script=build.ROOT/'build-prod-browser.sh'
+            for options in [('--prod',),('--prod','--no-parallel-cc'),('--no-parallel-cc','--prod')]:
+                subprocess.run(['sh',str(script),*options],env=environment,check=True)
+                self.assertEqual(capture.read_text().splitlines(),
+                                 [str(build.ROOT/'tools/rebuild_browser.py'),'--build','--no-parallel-cc','--prod'])
+
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
     def test_verified_frozen_compile_can_publish_its_pinned_source_after_later_edits(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -479,8 +522,12 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
         self.assertIn('--no-parallel-cc requires --build', result.stderr)
+        result = subprocess.run([sys.executable, str(tool), '--request', '--prod'],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('--prod requires --build', result.stderr)
         script = tool.parents[1] / 'build-prod-browser.sh'
-        for arguments in (['--parallel'], ['--no-parallel-cc', '--no-parallel-cc']):
+        for arguments in (['--parallel'], ['--no-parallel-cc', '--no-parallel-cc'], ['--prod', '--prod']):
             result = subprocess.run(['sh', str(script), *arguments], capture_output=True, text=True)
             self.assertEqual(result.returncode, 2)
             self.assertIn('usage: build-prod-browser.sh [--no-parallel-cc]', result.stderr)

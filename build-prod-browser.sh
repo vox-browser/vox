@@ -3,12 +3,14 @@ set -eu
 
 # Build the optimized V-native browser for the current desktop platform.
 #
-# usage: build-prod-browser.sh [--no-parallel-cc]
+# usage: build-prod-browser.sh [--no-parallel-cc] [--prod]
 #
 # By default V splits the generated C into units, compiles them concurrently
 # (-parallel-cc) and links them with ThinLTO, which keeps cross-unit inlining.
 # --no-parallel-cc compiles one sealed C unit instead: several times slower to
 # build, for maximum binary performance and comparisons with single-unit builds.
+# --prod selects V's literal -prod mode in one C unit, without the custom
+# C -O3/inlining options used by the default prealloc build.
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
@@ -24,17 +26,30 @@ set -eu
 #   VOX_BUILD_C_MODE          parallel (default) or single; set by the build supervisor
 
 single_c_unit_flag=
-case "$#:${1:-}" in
-    0:) ;;
-    1:--no-parallel-cc) single_c_unit_flag=--no-parallel-cc ;;
+v_prod=${VOX_BUILD_V_PROD:-0}
+v_prod_flag=
+seen_single_option=0
+for argument in "$@"; do
+    case "$argument" in
+    --no-parallel-cc)
+        if [ "$seen_single_option" = 1 ]; then
+            echo "usage: build-prod-browser.sh [--no-parallel-cc] [--prod]" >&2; exit 2
+        fi
+        seen_single_option=1; single_c_unit_flag=--no-parallel-cc ;;
+    --prod)
+        if [ -n "$v_prod_flag" ]; then
+            echo "usage: build-prod-browser.sh [--no-parallel-cc] [--prod]" >&2; exit 2
+        fi
+        v_prod=1; v_prod_flag=--prod; single_c_unit_flag=--no-parallel-cc ;;
     *)
-        echo "usage: build-prod-browser.sh [--no-parallel-cc]" >&2
+        echo "usage: build-prod-browser.sh [--no-parallel-cc] [--prod]" >&2
         exit 2
         ;;
-esac
+    esac
+done
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build $single_c_unit_flag
+    exec python3 "$repo_dir/tools/rebuild_browser.py" --build $single_c_unit_flag $v_prod_flag
 fi
 
 case "$(uname -s)" in
@@ -46,7 +61,7 @@ esac
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v1 ]; then
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v2 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
@@ -56,6 +71,7 @@ c_mode=${VOX_BUILD_C_MODE:-parallel}
 if [ -n "$single_c_unit_flag" ]; then
     c_mode=single
 fi
+if [ "$v_prod" = 1 ]; then c_mode=single; fi
 case "$c_mode" in
     parallel|single) ;;
     *)
@@ -294,9 +310,11 @@ if [ "$gc_mode" = prealloc ]; then
     # the same native inputs; -O3 removes additional layout/cascade overhead.
     # The generated translation unit contains many small style/layout adapters.
     # Inline across those adapters without relaxing checks or FP semantics.
-    extra_cflags="$extra_cflags -O3 -mllvm -inline-threshold=1500"
-    # ThinLTO inlines across split C units at link time; keep the same threshold.
-    parallel_lto_ldflags=" -Wl,-mllvm,-inline-threshold=1500"
+    if [ "$v_prod" != 1 ]; then
+        extra_cflags="$extra_cflags -O3 -mllvm -inline-threshold=1500"
+        # ThinLTO inlines across split C units at link time; keep the same threshold.
+        parallel_lto_ldflags=" -Wl,-mllvm,-inline-threshold=1500"
+    fi
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     if [ "$(uname -m)" = arm64 ] && [ "$(getconf PAGESIZE)" = 16384 ]; then
@@ -311,6 +329,7 @@ elif [ "$gc_mode" != none ]; then
 else
     set -- "$@" -prod -gc none
 fi
+if [ "$v_prod" = 1 ]; then set -- "$@" -prod; fi
 requested_c_mode=$c_mode
 if [ -n "${LADYBIRD_V_PROFILE:-}" ]; then
     # V compiles profiled programs as one unit inside the resident compiler.
@@ -335,6 +354,7 @@ set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_spa
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then
     set -- "$@" -w -n -nocache -prealloc -gc none
+    if [ "$v_prod" = 1 ]; then helper_cflags=; fi
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     helper_cflags="$helper_cflags -DLARGE_CONFIG=1"
@@ -345,6 +365,7 @@ elif [ "$gc_mode" != none ]; then
 else
     set -- "$@" -prod -gc none
 fi
+if [ "$v_prod" = 1 ]; then set -- "$@" -prod; fi
 # Imported font/runtime modules may contribute link flags without any live
 # helper symbols. Do not initialize their unused native libraries at startup.
 "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
@@ -375,7 +396,9 @@ if [ "$c_mode" = parallel ]; then
         -cflags "$extra_cflags -flto=thin" \
         -ldflags "$extra_ldflags -flto=thin${parallel_lto_ldflags:-}" "$repo_dir"
 else
-    printf '{"mode": "single", "requested": "%s"}\n' "$requested_c_mode" > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
+    v_prod_json=false
+    if [ "$v_prod" = 1 ]; then v_prod_json=true; fi
+    printf '{"mode": "single", "requested": "%s", "v_prod": %s}\n' "$requested_c_mode" "$v_prod_json" > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
 fi
 if [ ! -f "$compile_dir/Vox" ]; then
     generated_dir="$VOX_BUILD_RECEIPT_DIR/generated"
