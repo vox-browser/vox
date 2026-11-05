@@ -4199,6 +4199,52 @@ static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
 	return native_apply_svg_filter_graph(layer, output);
 }
 
+#ifdef VOX_TEST_CROPPED_CSS_FILTERS
+static int native_test_cropped_css_filters;
+#endif
+
+// Color filters map each pixel on its own, and keep transparent pixels
+// transparent. Core Image renders, and the destination composites, only the
+// part of the layer its clip can show: a scrolled strip need not filter and
+// blend the whole canvas. The crop keeps whole device pixels of an image that
+// maps one to one onto the destination, so every visible pixel is unchanged.
+static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
+	CGRect source_rect) {
+	const char *disabled = getenv("VOX_DISABLE_CROPPED_CSS_FILTERS");
+	if ((disabled && disabled[0] && strcmp(disabled, "0") != 0)
+		|| layer->destination == NULL || layer->graph_node_count != 0
+		|| layer->operation_count == 0 || layer->copies_to_fresh_frame
+		|| layer->borrows_fresh_frame || !(layer->scale >= 1)
+		|| layer->scale != floor(layer->scale)
+		|| layer->canvas_width * layer->scale != source_rect.size.width
+		|| layer->canvas_height * layer->scale != source_rect.size.height)
+		return source_rect;
+	for (size_t index = 0; index < layer->operation_count; ++index) {
+		int kind = layer->operations[index].kind;
+		if (kind != 2 && kind != 3) return source_rect;
+	}
+	CGAffineTransform ctm = CGContextGetCTM(layer->destination);
+	if (ctm.a != layer->scale || ctm.d != layer->scale || ctm.b != 0 || ctm.c != 0
+		|| ctm.tx != floor(ctm.tx) || ctm.ty != floor(ctm.ty)) return source_rect;
+	CGRect clip = CGContextGetClipBoundingBox(layer->destination);
+	if (CGRectIsNull(clip) || CGRectIsInfinite(clip) || CGRectIsEmpty(clip)
+		|| !isfinite(CGRectGetMinX(clip)) || !isfinite(CGRectGetMaxX(clip))
+		|| !isfinite(CGRectGetMinY(clip)) || !isfinite(CGRectGetMaxY(clip)))
+		return source_rect;
+	CGFloat left = floor(CGRectGetMinX(clip) * layer->scale) - 2;
+	CGFloat bottom = floor(CGRectGetMinY(clip) * layer->scale) - 2;
+	CGFloat right = ceil(CGRectGetMaxX(clip) * layer->scale) + 2;
+	CGFloat top = ceil(CGRectGetMaxY(clip) * layer->scale) + 2;
+	CGRect pixels = CGRectIntersection(CGRectMake(left, bottom, right - left, top - bottom),
+		source_rect);
+	if (CGRectIsNull(pixels) || CGRectIsEmpty(pixels)
+		|| CGRectEqualToRect(pixels, source_rect)) return source_rect;
+#ifdef VOX_TEST_CROPPED_CSS_FILTERS
+	native_test_cropped_css_filters++;
+#endif
+	return pixels;
+}
+
 void native_end_css_filter_layer(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	ladybird_v_skia_gpu_canvas_cpu_access();
@@ -4299,6 +4345,7 @@ void native_end_css_filter_layer(void) {
 		CGRect source_rect = CGRectMake(0, 0,
 			CGImageGetWidth(source_image), CGImageGetHeight(source_image));
 		CGImageRef filtered_image = NULL;
+		CGRect filtered_rect = source_rect;
 		int rendered_with_skia = 0;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 		if (layer.operation_count == 1 && layer.graph_node_count == 0
@@ -4357,13 +4404,19 @@ void native_end_css_filter_layer(void) {
 		} else {
 			native_initialize_css_filter_renderer();
 			CIImage *output = native_apply_css_filter_layer(&layer, source_image);
+			filtered_rect = native_css_filter_output_rect(&layer, source_rect);
 			filtered_image = [native_css_filter_ci_context createCGImage:output
-				fromRect:source_rect format:kCIFormatRGBA8
+				fromRect:filtered_rect format:kCIFormatRGBA8
 				colorSpace:native_css_filter_color_space];
 		}
 		if (filtered_image != NULL && layer.destination != NULL) {
-			native_layer_draw_document_image(layer.destination,
-				CGRectMake(0, 0, layer.canvas_width, layer.canvas_height),
+			CGRect target = CGRectEqualToRect(filtered_rect, source_rect)
+				? CGRectMake(0, 0, layer.canvas_width, layer.canvas_height)
+				: CGRectMake(filtered_rect.origin.x / layer.scale,
+					filtered_rect.origin.y / layer.scale,
+					filtered_rect.size.width / layer.scale,
+					filtered_rect.size.height / layer.scale);
+			native_layer_draw_document_image(layer.destination, target,
 				filtered_image, layer.copies_to_fresh_frame);
 			CGImageRelease(filtered_image);
 		}

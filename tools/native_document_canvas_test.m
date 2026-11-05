@@ -9,6 +9,7 @@ static CGContextRef native_font_compositing_context;
 static int native_font_compositing_transparency_depth;
 static CGFloat test_scale;
 static CGFloat native_svg_mask_backing_scale(void) { return test_scale; }
+#define VOX_TEST_CROPPED_CSS_FILTERS
 #include "native_document_canvas_entry_points.inc"
 
 static void pattern(CGContextRef c,int width,int height) {
@@ -72,6 +73,23 @@ static void paint_frame(id view, SEL selector, NSRect rect) {
   native_begin_svg_filter_graph(0, 1, 0, 0, width, height, 1, 0, 0, 1, 0, 0, 0, 0);
   native_add_svg_filter_node(0, 4, 1.25, 0.75, 0, 0, 0, 0, (gg__Color){0}, 0, 0, 0);
  }
+ if (scenario == 7) {
+  // A strip repaint filters only the rows its clip shows; the reference
+  // filters and composites the complete layer.
+  if (reference) setenv("VOX_DISABLE_CROPPED_CSS_FILTERS", "1", 1);
+  int before = native_test_cropped_css_filters;
+  CGContextSaveGState(root);
+  CGContextClipToRect(root, CGRectMake(0, 13.5, width, 9.25));
+  native_begin_css_filter_layer(width, height);
+  pattern(NSGraphicsContext.currentContext.CGContext, width-2, height-5);
+  native_add_css_filter_operation(2, 0.8, 2, 0, (gg__Color){0});
+  native_add_css_filter_operation(3, 40, 0, 0, (gg__Color){0});
+  native_end_css_filter_layer();
+  CGContextRestoreGState(root);
+  unsetenv("VOX_DISABLE_CROPPED_CSS_FILTERS");
+  assert(native_test_cropped_css_filters
+   == before + (!reference && test_scale == floor(test_scale)));
+ }
  CGContextTranslateCTM(root, 3, 4);
  CGContextClipToRect(root, CGRectMake(1, 1, 2, 2));
  CGContextSetAlpha(root, 0.2);
@@ -134,7 +152,7 @@ int main(void) {
    expect_borrow = logical_width*test_scale == ceil(logical_width*test_scale)
     && logical_height*test_scale == ceil(logical_height*test_scale);
    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, logical_width, logical_height)];
-   for (scenario=0; scenario<7; scenario++) compare_frame(view);
+   for (scenario=0; scenario<8; scenario++) compare_frame(view);
   }
   int rejected = check_rejections();
   fprintf(stderr, "PASS %d exact root/nested/CSS/SVG/backdrop/overflow/state/immutable-frame comparisons; %d guarded rejections plus NULL\n", comparisons, rejected);
