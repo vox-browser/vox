@@ -7,6 +7,9 @@ const retain_unbounded_border_effects = os.getenv('VOX_RETAIN_UNBOUNDED_BORDER_E
 const effect_border_bounds_diagnostics = os.getenv('VOX_EFFECT_BORDER_BOUNDS_DIAGNOSTICS') != ''
 
 fn effect_content_leaf_ink_bounds(command &PaintCommand) ?LayoutRect {
+	if command.kind == 'draw_svg_path' && !retain_unbounded_svg_effects {
+		return effect_svg_fill_ink_bounds(command)
+	}
 	if command.kind == 'paint_uniform_border' && !retain_unbounded_border_effects {
 		return effect_uniform_border_ink_bounds(command)
 	}

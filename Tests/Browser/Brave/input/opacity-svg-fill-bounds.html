@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG fill opacity bounds</title>
+<style>
+html,body { margin:0; width:640px; height:480px; background:#e7ecf3 }
+.box { position:absolute; width:100px; height:80px; opacity:.6; border:3px solid #354c8c; border-radius:12px }
+svg { width:100px; height:80px; overflow:visible }
+.a { left:15px; top:20px }.b { left:160px; top:25px; transform:rotate(17deg) }
+.c { left:305px; top:30px; transform:scale(.75,1.125) }.d { left:460px; top:30px; mix-blend-mode:screen }
+.e { left:20px; top:175px }.f { left:170px; top:170px; filter:grayscale(.5) }
+.g { left:320px; top:170px; filter:blur(2px) }.h { left:470px; top:170px }
+.i { left:90px; top:330px }.j { left:345px; top:330px; transform:skewX(12deg) }
+</style>
+<div class="box a"><svg viewBox="0 0 100 80"><path fill="#ad315b" d="M20 10H75V65H20Z"/></svg></div>
+<div class="box b"><svg viewBox="0 0 100 80"><path fill="#176b7a" d="M10 60C-10 5 110 5 90 60Z"/></svg></div>
+<div class="box c"><svg viewBox="0 0 100 80"><path fill="#863caf" d="M10 40A35 20 25 1 1 80 45Z"/></svg></div>
+<div class="box d"><svg viewBox="0 0 100 80"><circle fill="#c2347a" cx="50" cy="35" r="24"/></svg></div>
+<div class="box e"><svg viewBox="0 0 100 80"><g opacity=".5" transform="translate(4 5) scale(.8)"><path fill="#dc7526" d="M15 15H85V65H15Z"/></g></svg></div>
+<div class="box f"><svg viewBox="0 0 100 80"><path fill="#176b7a" fill-rule="evenodd" d="M5 5H95V75H5ZM25 20H75V60H25Z"/></svg></div>
+<div class="box g"><svg viewBox="0 0 100 80"><path fill="#ad315b" d="M15 15H85V65H15Z"/></svg></div>
+<div class="box h"><svg viewBox="0 0 100 80"><path fill="none" stroke="#176b7a" stroke-width="8" d="M10 65L50 10L90 65Z"/></svg></div>
+<div class="box i"><svg viewBox="0 0 100 80"><defs><linearGradient id="gradient"><stop stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient></defs><path fill="url(#gradient)" d="M15 15H85V65H15Z"/></svg></div>
+<div class="box j"><svg viewBox="0 0 100 80"><path fill="#863caf" transform="translate(5 4) rotate(-9 50 40)" d="M15 15Q50 75 85 15L85 65H15Z"/></svg></div>

@@ -13,6 +13,7 @@ mut:
 	has_ink bool
 	ink     LayoutRect
 	has_uniform_border bool
+	has_svg_fill bool
 }
 
 // CSS color matrices and hue rotation leave transparent input transparent
@@ -217,12 +218,18 @@ fn bound_visual_effect_contents(mut commands []PaintCommand) {
 				if effect_border_bounds_diagnostics && bounds.has_uniform_border {
 					report_effect_border_bounds(ink)
 				}
+				if effect_svg_bounds_diagnostics && bounds.has_svg_fill {
+					report_effect_svg_bounds(ink)
+				}
 			}
 			if stack.len > 0 {
 				if bounds.bounded {
 					stack[stack.len - 1].include(bounds.ink)
 					if effect_border_bounds_diagnostics && bounds.has_uniform_border {
 						stack[stack.len - 1].has_uniform_border = true
+					}
+					if effect_svg_bounds_diagnostics && bounds.has_svg_fill {
+						stack[stack.len - 1].has_svg_fill = true
 					}
 				} else {
 					stack[stack.len - 1].bounded = false
@@ -235,6 +242,9 @@ fn bound_visual_effect_contents(mut commands []PaintCommand) {
 			stack[stack.len - 1].include(ink)
 			if effect_border_bounds_diagnostics && command.kind == 'paint_uniform_border' {
 				stack[stack.len - 1].has_uniform_border = true
+			}
+			if effect_svg_bounds_diagnostics && command.kind == 'draw_svg_path' {
+				stack[stack.len - 1].has_svg_fill = true
 			}
 		} else {
 			// In particular, a nested filter may move or generate pixels beyond
