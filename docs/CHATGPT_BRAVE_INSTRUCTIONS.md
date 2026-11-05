@@ -3208,3 +3208,51 @@ account for 711,784,647 removed raw bytes; all exact source bytes remain
 recoverable. Executables, native inputs, audits, PNGs, canonical app/source and
 the original fixture remain in place. No instruction credit or broad checkpoint
 is assigned, and **the requested 5% advantage over Brave remains unmet**.
+
+
+## November 5: ordered keyframe property unions
+
+Commit `6cec4f7e3` replaces a temporary bool-map union with an ordered
+property-ID vector during keyframe-value computation. Explicit keys come
+first, followed by initial-value keys absent from the explicit map. The bool
+payload does not affect presence. Specified/computed value resolution,
+substitution, keyword handling and physical/logical alias overwrite order stay
+on the existing path. There is no cross-frame cache or new invalidation rule.
+
+The original function is byte-identical apart from its name and remains the
+control via `VOX_RETAIN_KEYFRAME_ID_UNION_MAP=1`.
+`VOX_KEYFRAME_ID_UNION_DIAGNOSTICS=1` reports an executed nonempty vector path
+once. All **12 final focused jobs pass**, with **408 test-function executions**:
+51 cases × four modes × both variants. These cover union order, false-valued
+initial keys, explicit duplicates, shorthand IDs, live input-map changes,
+independent vectors, temporary storage lifetime, substitutions, inheritance,
+relative fonts and logical-alias collisions in horizontal/vertical writing
+modes. Existing selected cases retain the animation sample ownership guards.
+Modes include poisoned preallocation, ordinary GC, no GC and ASan/UBSan, with
+preallocation-specific assertions conditional in the other modes. Every
+compile uses the explicit production runtime overlay, 10 GiB compiler limit
+and memory guard; runtimes use 3 GiB guards. The first fixture uses a nonexistent
+enum name and fails compilation before executing any test; its log is retained.
+
+The unchanged, pinned animation/style component tool from `ed8c5e961` checks
+five computed properties on 64 targets during each of 128 updates against
+ordinary-storage frames. Fixture/reference construction, layout, paint and
+teardown are excluded; updates and result checks are counted. Four unprofiled
+control/candidate/candidate/control observations have equal checksums, with
+execution diagnostics kept separately.
+
+| Animation/style component | Median observed instruction reduction |
+| --- | ---: |
+| Opacity and transform | 2.391% |
+| Inherited color | −0.265% |
+| Mixed layout and paint properties | 3.147% |
+| Unchanged opacity | 1.573% |
+
+The inherited-color regression remains retained. The
+[focused/component receipt](performance/chatgpt-keyframe-union-20261105.json)
+links all commands, actual exits, test-call counts, raw counters, source hashes,
+checksums and the verified archive. This establishes no whole-page or overall
+CSS-suite pass. Browser attribution still requires a completed bundle proving
+the final source, an executed-path diagnostic and unprofiled comparison.
+Page instruction credit and the broad cadence remain zero; **the requested
+5% advantage remains unmet**.
