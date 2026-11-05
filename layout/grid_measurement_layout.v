@@ -194,7 +194,6 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	key := grid_measurement_key(state, container, used, space)
 	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
 	style_environment := container.document().style_environment_version()
-	if !committed { pool.seed_previous_grid_measurements(container, font_generation, style_environment) }
 	mut previous := pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
 	for cache_index, cached in previous {
 		keys_match := cached.key == key || (committed && cached.external_heights_independent
@@ -223,7 +222,6 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			eprintln('Vox grid measurement: reused resolved within-pass geometry')
 		}
 		if committed { report_committed_grid_measurement_reuse() }
-		pool.report_previous_measurement_hit(u64(voidptr(cached)))
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)

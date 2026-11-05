@@ -955,9 +955,6 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 		}
 	}
 	state.enable_measurement_chunk_pool()
-	if previous := document_layout_result(document) {
-		state.seed_previous_measurements(previous.state, root)
-	}
 	$if prealloc {
 		state.measurement_chunk_pool_.scratch_enabled_ = document.native_storage() != unsafe { nil }
 	}
@@ -976,7 +973,6 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	coordinates := begin_paint_coordinate_session(state)
 	measure_document_scrollable_overflow(mut state, root)
 	coordinates.finish()
-	state.retain_measurements_for_next_layout(root)
 	geometry_scratch.finish()
 	// The new cache retains only contexts present in this committed pass. Drop
 	// the lookup owner for removed or otherwise ineligible previous contexts.

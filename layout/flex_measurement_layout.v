@@ -80,7 +80,6 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	key := flex_measurement_question(state, container, used, space)
 	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
 	style_environment := container.document().style_environment_version()
-	if !committed { pool.seed_previous_flex_measurements(container, font_generation, style_environment) }
 	mut previous := pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} }
 	for cache_index, cached in previous {
 		keys_match := cached.key == key || (committed && cached.external_heights_independent
@@ -112,7 +111,6 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			eprintln('Vox flex images: reused decoded image measurement')
 		}
 		report_relative_measurement_reuse(cached.inputs)
-		pool.report_previous_measurement_hit(u64(voidptr(cached)))
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
