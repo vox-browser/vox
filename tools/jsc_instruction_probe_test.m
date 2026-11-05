@@ -7,6 +7,8 @@
 
 static JSObjectRef recursive;
 static volatile unsigned bridge_returns;
+static int private_token;
+static JSObjectRef named_function;
 static JSValueRef bridge(JSContextRef context, JSObjectRef function, JSObjectRef receiver,
     size_t count, const JSValueRef arguments[], JSValueRef *exception)
 {
@@ -14,6 +16,26 @@ static JSValueRef bridge(JSContextRef context, JSObjectRef function, JSObjectRef
     JSValueRef result = JSObjectCallAsFunction(context, recursive, NULL, count, arguments, exception);
     ++bridge_returns; // Keep the native callback's call site in this image.
     return result;
+}
+
+static JSValueRef class_bridge(JSContextRef context, JSObjectRef function, JSObjectRef receiver,
+    size_t count, const JSValueRef arguments[], JSValueRef *exception)
+{
+    assert(JSObjectGetPrivate(function) == &private_token);
+    assert(receiver == JSContextGetGlobalObject(context) && count == 1);
+    assert(JSValueToNumber(context, arguments[0], NULL) == 0);
+    JSValueRef result = JSObjectCallAsFunction(context, recursive, NULL, count, arguments, exception);
+    ++bridge_returns;
+    return result;
+}
+
+static JSValueRef named_callback(JSContextRef context, JSObjectRef function, JSObjectRef receiver,
+    size_t count, const JSValueRef arguments[], JSValueRef *exception)
+{
+    assert(function == named_function && receiver == JSContextGetGlobalObject(context));
+    (void)arguments;
+    assert(count == 0 && exception);
+    return JSValueMakeNumber(context, 42);
 }
 
 static JSValueRef evaluate(JSGlobalContextRef context, const char *text, JSValueRef *exception)
@@ -58,6 +80,25 @@ int main(void)
         assert(exception == sentinel);
         exception = NULL; evaluate(context, "throw sentinel", &exception);
         assert(exception == sentinel);
+        exception = NULL;
+        JSClassDefinition definition = kJSClassDefinitionEmpty;
+        definition.callAsFunction = class_bridge;
+        JSClassRef callable_class = JSClassCreate(&definition);
+        JSObjectRef class_function = JSObjectMake(context, callable_class, &private_token);
+        JSClassRelease(callable_class);
+        argument = JSValueMakeNumber(context, 0);
+        value = JSObjectCallAsFunction(context, class_function, NULL, 1, &argument, &exception);
+        assert(!exception && JSValueToNumber(context, value, NULL) == 1 && bridge_returns == 5);
+        name = JSStringCreateWithUTF8CString("native 🦊");
+        named_function = JSObjectMakeFunctionWithCallback(context, name, named_callback);
+        JSStringRelease(name);
+        name = JSStringCreateWithUTF8CString("namedFunction");
+        JSObjectSetProperty(context, JSContextGetGlobalObject(context), name, named_function, 0, NULL);
+        JSStringRelease(name);
+        evaluate(context, "Object.defineProperty(namedFunction, 'name', {get(){throw sentinel}})", &exception);
+        assert(!exception);
+        value = JSObjectCallAsFunction(context, named_function, NULL, 0, NULL, &exception);
+        assert(!exception && JSValueToNumber(context, value, NULL) == 42);
         pthread_t thread; assert(!pthread_create(&thread, NULL, background, NULL));
         assert(!pthread_join(thread, NULL));
         JSContext *owner = [JSContext contextWithJSGlobalContextRef:context];

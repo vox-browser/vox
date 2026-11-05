@@ -9,6 +9,7 @@
 #include <objc/runtime.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,8 +27,10 @@ struct Frame { struct Row *row; uint64_t start, children, time; };
 static struct Row rows[slots];
 static _Thread_local struct Frame stack[stack_limit];
 static _Thread_local unsigned depth;
-static unsigned faults, maximum_depth;
-static int active, started, factory_available, objc_call_available, script_eval_available;
+static _Atomic unsigned faults;
+static unsigned maximum_depth;
+static _Atomic int active;
+static int started, factory_available, objc_call_available, script_eval_available;
 static uint64_t initial_instructions;
 static char factory_encoding[256];
 static char call_encoding[128];
@@ -36,6 +39,13 @@ static mach_timebase_info_data_t timebase;
 static id (*original_factory)(id, SEL, NSInteger, id, id, id, id, id *);
 static id (*original_objc_call)(id, SEL, id);
 static id (*original_script_evaluation)(id, SEL, id);
+enum { callback_slots = 64 };
+struct Callback { _Atomic(JSObjectCallAsFunctionCallback) original; char name[text_limit]; };
+static struct Callback callbacks[callback_slots];
+static unsigned callback_count;
+static pthread_mutex_t callback_lock = PTHREAD_MUTEX_INITIALIZER;
+static char native_names[4096];
+static _Atomic uint64_t wrapped_classes, wrapped_functions;
 
 static uint64_t instructions(void)
 {
@@ -142,6 +152,97 @@ static id counted_script_evaluation(id object, SEL selector, id script)
     leave(entered); return result;
 }
 
+static JSValueRef invoke_native(unsigned slot, JSContextRef context, JSObjectRef function,
+    JSObjectRef receiver, size_t count, const JSValueRef arguments[], JSValueRef *exception)
+{
+    JSObjectCallAsFunctionCallback original = atomic_load_explicit(&callbacks[slot].original, memory_order_acquire);
+    int entered = enter(6, (const void *)original, callbacks[slot].name, 0, 0);
+    JSValueRef value = original(context, function, receiver, count, arguments, exception);
+    leave(entered); return value;
+}
+
+#define CALLBACK(N) \
+    static JSValueRef callback_##N(JSContextRef context, JSObjectRef function, JSObjectRef receiver, \
+        size_t count, const JSValueRef arguments[], JSValueRef *exception) { \
+        return invoke_native(N, context, function, receiver, count, arguments, exception); }
+CALLBACK(0) CALLBACK(1) CALLBACK(2) CALLBACK(3) CALLBACK(4) CALLBACK(5) CALLBACK(6) CALLBACK(7)
+CALLBACK(8) CALLBACK(9) CALLBACK(10) CALLBACK(11) CALLBACK(12) CALLBACK(13) CALLBACK(14) CALLBACK(15)
+CALLBACK(16) CALLBACK(17) CALLBACK(18) CALLBACK(19) CALLBACK(20) CALLBACK(21) CALLBACK(22) CALLBACK(23)
+CALLBACK(24) CALLBACK(25) CALLBACK(26) CALLBACK(27) CALLBACK(28) CALLBACK(29) CALLBACK(30) CALLBACK(31)
+CALLBACK(32) CALLBACK(33) CALLBACK(34) CALLBACK(35) CALLBACK(36) CALLBACK(37) CALLBACK(38) CALLBACK(39)
+CALLBACK(40) CALLBACK(41) CALLBACK(42) CALLBACK(43) CALLBACK(44) CALLBACK(45) CALLBACK(46) CALLBACK(47)
+CALLBACK(48) CALLBACK(49) CALLBACK(50) CALLBACK(51) CALLBACK(52) CALLBACK(53) CALLBACK(54) CALLBACK(55)
+CALLBACK(56) CALLBACK(57) CALLBACK(58) CALLBACK(59) CALLBACK(60) CALLBACK(61) CALLBACK(62) CALLBACK(63)
+#define ADDRESS(N) callback_##N,
+static JSObjectCallAsFunctionCallback callback_wrappers[callback_slots] = {
+    ADDRESS(0) ADDRESS(1) ADDRESS(2) ADDRESS(3) ADDRESS(4) ADDRESS(5) ADDRESS(6) ADDRESS(7)
+    ADDRESS(8) ADDRESS(9) ADDRESS(10) ADDRESS(11) ADDRESS(12) ADDRESS(13) ADDRESS(14) ADDRESS(15)
+    ADDRESS(16) ADDRESS(17) ADDRESS(18) ADDRESS(19) ADDRESS(20) ADDRESS(21) ADDRESS(22) ADDRESS(23)
+    ADDRESS(24) ADDRESS(25) ADDRESS(26) ADDRESS(27) ADDRESS(28) ADDRESS(29) ADDRESS(30) ADDRESS(31)
+    ADDRESS(32) ADDRESS(33) ADDRESS(34) ADDRESS(35) ADDRESS(36) ADDRESS(37) ADDRESS(38) ADDRESS(39)
+    ADDRESS(40) ADDRESS(41) ADDRESS(42) ADDRESS(43) ADDRESS(44) ADDRESS(45) ADDRESS(46) ADDRESS(47)
+    ADDRESS(48) ADDRESS(49) ADDRESS(50) ADDRESS(51) ADDRESS(52) ADDRESS(53) ADDRESS(54) ADDRESS(55)
+    ADDRESS(56) ADDRESS(57) ADDRESS(58) ADDRESS(59) ADDRESS(60) ADDRESS(61) ADDRESS(62) ADDRESS(63)
+};
+#undef ADDRESS
+#undef CALLBACK
+
+static JSObjectCallAsFunctionCallback native_callback(JSObjectCallAsFunctionCallback original, const char *name)
+{
+    pthread_mutex_lock(&callback_lock);
+    unsigned slot = 0;
+    for (; slot < callback_count; ++slot)
+        if (atomic_load_explicit(&callbacks[slot].original, memory_order_relaxed) == original
+            && !strcmp(callbacks[slot].name, name)) break;
+    if (slot == callback_count) {
+        if (callback_count == callback_slots) {
+            ++faults; active = 0; pthread_mutex_unlock(&callback_lock); return original;
+        }
+        snprintf(callbacks[slot].name, sizeof(callbacks[slot].name), "%s", name);
+        atomic_store_explicit(&callbacks[slot].original, original, memory_order_release);
+        ++callback_count;
+    }
+    pthread_mutex_unlock(&callback_lock);
+    return callback_wrappers[slot];
+}
+
+static int selected_native_name(const char *name)
+{
+    size_t length = strlen(name);
+    for (const char *item = native_names; *item;) {
+        const char *end = strchr(item, ',');
+        size_t size = end ? (size_t)(end - item) : strlen(item);
+        if (size == length && !memcmp(item, name, length)) return 1;
+        if (!end) break;
+        item = end + 1;
+    }
+    return 0;
+}
+
+static JSClassRef counted_class(const JSClassDefinition *definition)
+{
+    if (!active || !definition || !definition->callAsFunction) return JSClassCreate(definition);
+    JSClassDefinition copy = *definition;
+    copy.callAsFunction = native_callback(definition->callAsFunction, "");
+    atomic_fetch_add_explicit(&wrapped_classes, 1, memory_order_relaxed);
+    return JSClassCreate(&copy);
+}
+
+static JSObjectRef counted_function(JSContextRef context, JSStringRef name, JSObjectCallAsFunctionCallback callback)
+{
+    if (!active || !callback) return JSObjectMakeFunctionWithCallback(context, name, callback);
+    char text[text_limit] = {0};
+    // Registration labels come from the constructor argument, never a
+    // JavaScript .name property. Each immutable wrapper owns its label; no
+    // object-address cache, JS root or private callback record is retained.
+    if (name && JSStringGetMaximumUTF8CStringSize(name) <= sizeof(text)) {
+        size_t written = JSStringGetUTF8CString(name, text, sizeof(text));
+        if (!written || strlen(text) != written - 1 || !selected_native_name(text)) text[0] = 0;
+    }
+    atomic_fetch_add_explicit(&wrapped_functions, 1, memory_order_relaxed);
+    return JSObjectMakeFunctionWithCallback(context, name, native_callback(callback, text));
+}
+
 static void quoted(const char *text)
 {
     fputc('"', stderr);
@@ -167,8 +268,12 @@ static void report(void)
     fprintf(stderr, ",\"objc_call_available\":%s,\"call_encoding\":", objc_call_available ? "true" : "false");
     quoted(call_encoding);
     fprintf(stderr, ",\"script_eval_available\":%s,\"evaluation_encoding\":", script_eval_available ? "true" : "false");
-    quoted(evaluation_encoding); fputs("}\n", stderr);
-    static const char *names[] = {"", "JSEvaluateScript", "JSObjectCallAsFunction", "JSScriptFactory", "JSValue.callWithArguments", "JSContext.evaluateJSScript"};
+    quoted(evaluation_encoding);
+    pthread_mutex_lock(&callback_lock); unsigned kinds = callback_count; pthread_mutex_unlock(&callback_lock);
+    fprintf(stderr, ",\"native_callback_kinds\":%u,\"wrapped_classes\":%llu,\"wrapped_functions\":%llu,\"selected_native_names\":", kinds,
+        (unsigned long long)atomic_load(&wrapped_classes), (unsigned long long)atomic_load(&wrapped_functions));
+    quoted(native_names); fputs("}\n", stderr);
+    static const char *names[] = {"", "JSEvaluateScript", "JSObjectCallAsFunction", "JSScriptFactory", "JSValue.callWithArguments", "JSContext.evaluateJSScript", "NativeCallback"};
     for (unsigned i = 0; i < slots; ++i) {
         struct Row *row = &rows[i]; if (!row->calls) continue;
         Dl_info info = {0};
@@ -182,7 +287,9 @@ static void report(void)
             (unsigned long long)((uintptr_t)row->caller - (uintptr_t)info.dli_fbase),
             (unsigned long long)(uintptr_t)info.dli_fbase);
         quoted(info.dli_fname); fputs(",\"nearest_symbol\":", stderr); quoted(info.dli_sname);
-        fputs(",\"url\":", stderr); quoted(row->url); fputs("}\n", stderr);
+        fputs(",\"url\":", stderr); quoted(row->api == 3 ? row->url : "");
+        fputs(",\"native_registration_label\":", stderr); quoted(row->api == 6 ? row->url : "");
+        fprintf(stderr, ",\"address_kind\":\"%s\"}\n", row->api == 6 ? "callback" : "return_site");
     }
     fflush(stderr);
 }
@@ -193,6 +300,8 @@ __attribute__((constructor)) static void initialize(void)
     if (!enabled || !*enabled || !pthread_main_np()) return;
     started = 1; mach_timebase_info(&timebase);
     initial_instructions = instructions();
+    const char *selected = getenv("VOX_JSC_NATIVE_NAMES");
+    if (selected && snprintf(native_names, sizeof(native_names), "%s", selected) >= (int)sizeof(native_names)) ++faults;
     Class cls = objc_lookUpClass("JSScript");
     SEL selector = sel_registerName("scriptOfType:withSource:andSourceURL:andBytecodeCache:inVirtualMachine:error:");
     Method method = cls ? class_getClassMethod(cls, selector) : NULL;
@@ -251,4 +360,6 @@ __attribute__((used)) static struct { const void *replacement, *original; }
 interposers[] __attribute__((section("__DATA,__interpose"))) = {
     {(const void *)counted_eval, (const void *)JSEvaluateScript},
     {(const void *)counted_call, (const void *)JSObjectCallAsFunction},
+    {(const void *)counted_class, (const void *)JSClassCreate},
+    {(const void *)counted_function, (const void *)JSObjectMakeFunctionWithCallback},
 };

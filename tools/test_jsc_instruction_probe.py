@@ -79,7 +79,8 @@ def main():
         job('fixture-sign', ['codesign', '--force', '--sign', '-', fixture])
         job('baseline', [fixture], True)
         job('inactive', [fixture], True, dict(DYLD_INSERT_LIBRARIES=str(probe)))
-        job('active', [fixture], True, dict(DYLD_INSERT_LIBRARIES=str(probe), VOX_JSC_INSTRUCTION_PROBE='1'))
+        job('active', [fixture], True, dict(DYLD_INSERT_LIBRARIES=str(probe),
+            VOX_JSC_INSTRUCTION_PROBE='1', VOX_JSC_NATIVE_NAMES='native 🦊'))
         baseline = (out / 'baseline.stdout').read_text()
         assert baseline.startswith('JSC scope fixture passed:')
         assert baseline == (out / 'inactive.stdout').read_text() == (out / 'active.stdout').read_text()
@@ -94,6 +95,8 @@ def main():
         meta = metadata[0]
         assert meta['faults'] == meta['open_frames'] == 0 and meta['maximum_depth'] >= 5
         assert meta['factory_available'] and meta['objc_call_available'] and meta['script_eval_available']
+        assert meta['wrapped_classes'] >= 1 and meta['wrapped_functions'] >= 2
+        assert meta['native_callback_kinds'] >= 3 and meta['selected_native_names'] == 'native 🦊'
         assert Path(meta['executable']).resolve() == fixture
         assert all(r['pid'] == meta['pid'] and 0 < r['self_instructions'] <= r['inclusive_instructions'] for r in rows)
         assert sum(r['self_instructions'] for r in rows) <= meta['process_instructions']
@@ -104,9 +107,14 @@ def main():
             assert row['caller'] == row['image_base'] + row['caller_offset']
         counts = {name: sum(r['calls'] for r in main_rows if r['api'] == name)
                   for name in ['JSEvaluateScript', 'JSObjectCallAsFunction', 'JSScriptFactory',
-                               'JSValue.callWithArguments', 'JSContext.evaluateJSScript']}
-        assert counts == dict(JSEvaluateScript=3, JSObjectCallAsFunction=6, JSScriptFactory=3,
+                               'JSValue.callWithArguments', 'JSContext.evaluateJSScript', 'NativeCallback']}
+        assert counts == dict(JSEvaluateScript=4, JSObjectCallAsFunction=9, JSScriptFactory=3,
+                              NativeCallback=6,
                               **{'JSValue.callWithArguments': 2, 'JSContext.evaluateJSScript': 3}), counts
+        assert all(r['address_kind'] == ('callback' if r['api'] == 'NativeCallback' else 'return_site') for r in rows)
+        native = [r for r in main_rows if r['api'] == 'NativeCallback']
+        assert sum(r['calls'] for r in native if r['native_registration_label'] == 'native 🦊') == 1
+        assert all(not r['native_registration_label'] for r in rows if r['api'] != 'NativeCallback')
         factories = [r for r in main_rows if r['api'] == 'JSScriptFactory']
         assert all(r['url'] == 'https://probe.test/module.js' and not r['url_truncated'] for r in factories)
         expected_units = sum(len(s.encode('utf-16-le')) // 2 for s in
