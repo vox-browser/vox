@@ -27,6 +27,75 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def parallel_compilation_fixture(self, root):
+        app, binary, source, metadata, published, output = self.compilation_fixture(root)
+        folder = root / 'Build/production-build/receipts/parallel-fixture'
+        folder.mkdir(parents=True)
+        compiler = root / 'Build/prealloc/stage/compiler/v'
+        compiler.parent.mkdir(parents=True)
+        compiler.write_bytes(b'pinned split compiler')
+        runtime = compiler.parent.parent / 'manifest.json'
+        runtime.write_text(json.dumps(dict(compiler_sha256=hashlib.sha256(compiler.read_bytes()).hexdigest())))
+        receipt = dict(exit=0, executable=str(binary),
+            executable_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            c_compile=dict(mode='parallel', requested='parallel', units=33, compiler=str(compiler)),
+            inputs=dict(build_inputs_sha256='stable-inputs', head='before'),
+            verified_inputs=dict(build_inputs_sha256='stable-inputs', head='after'))
+        serialized = json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+        published.write_text(serialized)
+        (folder / 'result.json').write_text(serialized)
+        (folder / 'c-compile.json').write_text(json.dumps(receipt['c_compile']))
+        (folder / 'inputs-before.json').write_text(json.dumps(receipt['inputs']))
+        return app, binary, published, output, folder, compiler, receipt
+
+    def test_parallel_compilation_preserves_verified_receipts_without_claiming_sealed_c(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            app, binary, published, output, folder, compiler, receipt = self.parallel_compilation_fixture(root)
+            with patch('bbc_browser_instructions.REPO', root):
+                paths = preserve_production_compilation(output, dict(vox=app, control=app), fingerprint({binary}))
+            manifest = json.loads((output / 'production-compilation.json').read_text())
+            self.assertTrue(manifest['passed'])
+            self.assertEqual(manifest['engines']['vox'], manifest['engines']['control'])
+            self.assertFalse(manifest['engines']['vox']['generated_c_preserved'])
+            self.assertEqual(manifest['engines']['vox']['c_compile']['mode'], 'parallel')
+            self.assertEqual(len(manifest['files']), 5)
+            self.assertFalse(any(path.name == 'Vox' or path.name == 'v' or path.suffix == '.i' for path in paths))
+            pins = fingerprint(paths)
+            for path in folder.iterdir():
+                path.unlink()
+            compiler.unlink()
+            self.assertEqual(fingerprint(paths), pins)
+
+    def test_parallel_compilation_rejects_incomplete_inconsistent_or_changed_provenance(self):
+        for failure in ['wrong-mode', 'changed-inputs', 'superseded', 'missing-result',
+                        'wrong-c-mode', 'wrong-before', 'changed-compiler']:
+            with self.subTest(failure=failure), TemporaryDirectory() as directory:
+                root = Path(directory).resolve()
+                app, binary, published, output, folder, compiler, receipt = self.parallel_compilation_fixture(root)
+                if failure == 'wrong-mode':
+                    receipt['c_compile']['mode'] = 'single'
+                elif failure == 'changed-inputs':
+                    receipt['verified_inputs']['build_inputs_sha256'] = 'changed'
+                elif failure == 'superseded':
+                    receipt['superseded'] = True
+                elif failure == 'missing-result':
+                    (folder / 'result.json').unlink()
+                elif failure == 'wrong-c-mode':
+                    (folder / 'c-compile.json').write_text('{}')
+                elif failure == 'wrong-before':
+                    (folder / 'inputs-before.json').write_text('{}')
+                elif failure == 'changed-compiler':
+                    compiler.write_bytes(b'changed compiler')
+                serialized = json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+                published.write_text(serialized)
+                if failure != 'missing-result':
+                    (folder / 'result.json').write_text(serialized)
+                with patch('bbc_browser_instructions.REPO', root):
+                    with self.assertRaises((RuntimeError, FileNotFoundError)):
+                        preserve_production_compilation(output, dict(vox=app), fingerprint({binary}))
+                self.assertFalse(json.loads((output / 'production-compilation.json').read_text())['passed'])
+
     def compilation_fixture(self, root):
         app = root / 'Build/v/Vox.app'
         binary = app / 'Contents/MacOS/Vox'

@@ -700,6 +700,56 @@ def replay_vox_environment(args, ready):
     return environment
 
 
+def preserve_parallel_compilation_receipt(output, binary, receipt, published, selected,
+                                         manifest, preserved):
+    """Retain verified split-build provenance without claiming sealed C exists."""
+    mode = receipt.get('c_compile', {})
+    before = receipt.get('inputs', {}).get('build_inputs_sha256')
+    after = receipt.get('verified_inputs', {}).get('build_inputs_sha256')
+    browser.require(mode.get('mode') == 'parallel' and before and before == after
+                    and not receipt.get('superseded'),
+                    'Parallel production receipt lacks unchanged verified build inputs')
+    expected = receipt['executable_sha256']
+    candidates = []
+    for path in (REPO / 'Build/production-build/receipts').glob('*/result.json'):
+        if path.read_bytes() == published:
+            candidates.append(path)
+    browser.require(len(candidates) == 1, 'Parallel publication lacks a unique matching receipt')
+    result_path = candidates[0]
+    c_mode_path = result_path.parent / 'c-compile.json'
+    before_path = result_path.parent / 'inputs-before.json'
+    browser.require(json.loads(c_mode_path.read_bytes()) == mode
+                    and json.loads(before_path.read_bytes()) == receipt['inputs'],
+                    'Parallel compilation metadata differs from the published receipt')
+    compiler = Path(mode['compiler'])
+    runtime_path = compiler.parent.parent / 'manifest.json'
+    runtime = json.loads(runtime_path.read_bytes())
+    browser.require(hashlib.sha256(compiler.read_bytes()).hexdigest() == runtime['compiler_sha256'],
+                    'Parallel compiler no longer matches its staged runtime identity')
+    folder = output / 'production-compilation' / expected
+    folder.mkdir(parents=True, exist_ok=False)
+    for name, source, data in [('published-receipt.json', REPO / 'Build/production-build/latest.json', published),
+                               ('result.json', result_path, published),
+                               ('c-compile.json', c_mode_path, c_mode_path.read_bytes()),
+                               ('inputs-before.json', before_path, before_path.read_bytes()),
+                               ('compiler-runtime.json', runtime_path, runtime_path.read_bytes())]:
+        target = folder / name
+        target.write_bytes(data)
+        browser.require(source.read_bytes() == data, f'Parallel receipt changed: {source}')
+        preserved.add(target)
+        manifest['files'][str(target)] = dict(source=str(source),
+            sha256=hashlib.sha256(data).hexdigest(), bytes=len(data))
+    browser.require((REPO / 'Build/production-build/latest.json').read_bytes() == published
+                    and browser.fingerprint({binary})[str(binary)]['sha256'] == expected,
+                    'Production browser or receipt changed during preservation')
+    for engine in selected:
+        manifest['engines'][engine] = dict(executable_sha256=expected,
+            evidence_directory=str(folder), c_compile=mode,
+            compiler_sha256=runtime['compiler_sha256'], generated_c_preserved=False,
+            source_evidence='Equal complete production build-input fingerprints before/after compilation; '
+                            'no sealed generated C is provided by the parallel build receipt')
+
+
 def preserve_production_compilation(output, apps, pinned):
     """Archive generated compiler evidence before shared receipts can retire."""
     canonical = (REPO / 'Build/v/Vox.app').resolve()
@@ -721,6 +771,11 @@ def preserve_production_compilation(output, apps, pinned):
                             Path(receipt['executable']).resolve() == binary and
                             receipt['executable_sha256'] == expected,
                             'Production receipt does not match the pinned executable')
+            if not receipt.get('frozen_compilation'):
+                preserve_parallel_compilation_receipt(output, binary, receipt, published,
+                    selected, manifest, preserved)
+                manifest['passed'] = True
+                return preserved
             meta_path = Path(receipt['frozen_compilation'])
             metadata = meta_path.read_bytes()
             frozen = json.loads(metadata)
