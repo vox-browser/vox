@@ -1689,14 +1689,13 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		publish_animated_custom_properties(computed, target_element)
 
 		samples.enter()
-		mut invalidation := animated_property_maps_invalidation(old_animated_values, computed.animated_property_values())
+		property_changes := sampled_animation_property_changes(old_animated_values, computed)
+		mut invalidation := property_changes.invalidation
 		custom_properties_changed := animated_custom_property_maps_differ(old_animated_custom_values,
 			computed.animated_custom_property_values())
-		compositor_only_changes := animated_changes_are_compositor_only(old_animated_values,
-			computed.animated_property_values())
-		local_paint, background_only := animated_changes_are_local_paint(old_animated_values,
-			computed.animated_property_values())
-		local_paint_changes := !compositor_only_changes && local_paint
+		compositor_only_changes := property_changes.compositor_only
+		background_only := property_changes.background_only
+		local_paint_changes := !compositor_only_changes && property_changes.local_paint
 		samples.leave()
 		if full_refresh {
 			// Every value derived from the previous samples is rebuilt: paint
