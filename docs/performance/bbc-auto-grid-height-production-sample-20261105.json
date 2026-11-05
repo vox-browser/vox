@@ -1,0 +1,89 @@
+{
+  "status": "Current production CPU sample has verified rootPID/startticks, matching dyld/executableUUID and all Vox frames in actual executable range. Native exit0, original content/pixels exact,72original external JS sources execute beforePNG, actual native-image identities unchanged. Diagnostic only; no instruction saving.",
+  "sample": {
+    "pid": 38716,
+    "start_ticks": 3394130615135,
+    "command": [
+      "/usr/bin/sample",
+      "38716",
+      "6",
+      "1",
+      "-file",
+      "/Users/alex/code/vox2/Build/bbc-auto-grid-height-sample-20261105-1430/page/pair-1-vox/cpu.sample.txt"
+    ],
+    "started_unix": 1793878281.073837,
+    "exit": 0,
+    "finished_unix": 1793878290.269135
+  },
+  "symbol_validation": {
+    "pid": 38716,
+    "uuid": "BD52EB93-B685-30C8-8306-1C4B86E4BDE5",
+    "load_start": 4338040832,
+    "load_end": 4364863223,
+    "vox_frames_checked": 15590,
+    "all_in_actual_executable": true,
+    "dyld_uuid_matches": true
+  },
+  "page": {
+    "native_exit": 0,
+    "content_exact": true,
+    "pixels_exact": true,
+    "external_sources": 72,
+    "all_source_hashes_exact": true,
+    "native_images_pinned": true
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-auto-grid-height-sample-20261105-1430/native-sample.py",
+      "--capture-reference",
+      "--reference-engine",
+      "vox",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-auto-grid-height-sample-20261105-1430/page",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-auto-grid-height-sample-20261105-1430/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-auto-grid-height-sample-20261105-1430/pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-auto-grid-height-sample-20261105-1430/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-auto-grid-height-sample-20261105-1430/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg",
+      "--retain-degenerate-border-msaa"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "38716": "Thu Nov  5 14:31:20 2026    ",
+      "38726": "Thu Nov  5 14:31:21 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1604222976,
+    "elapsed_seconds": 15.490386125,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "controller_exit": {
+    "exit": 0
+  },
+  "qualifications": "Requested6seconds at1ms; actual sampling cadence is not proven1kHz. Root starts during real page load; sampling can include PNG/audit/teardown. Main-thread3087observations and all-thread totals are not CPU-instruction shares. All-thread leaf summary is dominated by idle workers; recursive inclusive counts overlap. JIT addresses may be unknown. Parallel33unit production d0eac328379f, newer than cohort10731a7d6dc0c41; no cross-build performance attribution. Cohort107 and broad jobs finished first; independent host jobs/archival compressor may overlap,host loads retained. Root scoped with canonical readlease. Gridseed eligibility frames appear, but recursive inclusive counts do not isolate proof cost. Existing unprofiled cohort107 remains separate; no wall-time, scrolling, live-site or optimization acceptance claim.",
+  "investigative_leads": [
+    "Repeated intrinsic grid/inline layout",
+    "Auto-grid eligibility reaches full retained-input collection before rejecting specialized descendants; code inspection shows a cheap resource/flex precheck can avoid this work without expanding eligibility",
+    "A sample frame is not an exclusive instruction cost or proof of a saving"
+  ],
+  "archive": {
+    "path": "docs/performance/raw/bbc-auto-grid-height-production-sample-20261105.tar.gz",
+    "bytes": 2253940,
+    "sha256": "6dd2abc642974ad434f706c27dd65ebf41731f0b8f2d8049b4812bbf01b93445",
+    "members": 40,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793878791.899698
+}

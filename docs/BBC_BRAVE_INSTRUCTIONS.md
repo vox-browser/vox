@@ -6303,3 +6303,49 @@ Native BBC eligibility and matched instruction effect remain pending at this
 checkpoint. No performance credit is assigned. Cohort 106 remains the last
 verified acceptance comparison, the target remains unmet and the homepage stays
 outside the catalog.
+
+
+## Automatic-grid height cohort 107 (2026-11-05)
+
+Parallel 33-unit production `31a7d6dc0c41`, build HEAD `0d6dd95ef`, matches every
+checked focused source hash. Both fresh native arms pass original pixels and
+content, all 72 exact external author-script witnesses, loaded-image pins,
+ownership and normal exits. The new height seed fires before PNG only in the
+candidate. The SVG source-switch guard is exact in both arms and across
+policies. Parallel receipts retain unchanged complete generation fingerprints
+and compiler metadata; no sealed generated C is claimed.
+
+Cohort **107** completes all seven alternating triples with **all 21 audits
+passing** and unchanged identities. Launch-to-PNG medians are **27,568,511,392
+Vox**, **27,334,456,203 control**, and **17,540,883,525 Brave lower bound**. The
+seed shows a **234,055,189 median regression (0.856%)**, with one paired
+improvement and six regressions. Highest candidate / lowest control is
+**1.07574**; no saving is credited. The strict target fails:
+`286606990260 > 157090086387`, conservative Vox/Brave ratio **1.64203**.
+Driver/guard exit 1 reflects that failed target; all actual browsers exit 0.
+The prospective 611-case inventory is retained but has no positive point-saving
+trigger and is not run.
+
+The existing canonical bundle read lease holds publication through the short
+SVG/cohort check and releases afterward; hashes remain checked throughout.
+This coordination changes no endpoint or workload and earns no instruction
+credit. Scope stays exclusive coalition creation through encoded PNG, including
+startup/window/target setup, readiness and two-second settlement; Vox stops
+before file writing and Brave includes CDP delivery. Audits/teardown follow the
+endpoint, exited aggregates/allowed services are included, and GPU execution
+and outside work are excluded. Frozen replay, scripts, viewport/scale, private
+profiles/caches, retained OS caches, original references and historical rendering
+policies remain unchanged. Cross-engine pixel/DOM/script/font/paint limitations
+remain; no live-page or isolated rendering/scrolling claim is made.
+
+History reaches **106 measured cohorts / 2,293 acceptance browser attempts**,
+last ID 107, with ID 104 still preflight-only. BBC homepage stays outside the
+catalog and the 10% task remains open. [All measured/native/SVG attempts and receipts](performance/bbc-auto-grid-height-cohort107-20261105.json).
+
+A later fresh sample uses completed parallel production `d0eac328379f`. PID,
+start ticks, dyld UUID, executable address ranges, original pixels/content, all
+72 external author scripts, native-image pins and normal exits pass. Grid-seed
+eligibility frames appear, but recursive inclusive samples cannot isolate their
+instruction cost or establish a saving. Code inspection identifies avoidable
+input collection before resource/flex rejection; its reordered follow-up is
+under focused validation. [Sample and verified raw evidence](performance/bbc-auto-grid-height-production-sample-20261105.json).
