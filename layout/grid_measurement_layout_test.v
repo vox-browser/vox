@@ -26,7 +26,8 @@ fn grid_measurement_test_prepare(mut probe LayoutState, root &Node, width int, h
 	mut used := probe.get_mutable(styled)
 	used.set_containing_block_used_values(parent)
 	used.set_content_width(CSSPixels.new(width))
-	used.set_content_height(CSSPixels.new(height))
+	// Negative test inputs carry a numeric height without making it definite.
+	used.set_content_height(CSSPixels.new(if height < 0 { -height } else { height }))
 	used.set_has_definite_width(true)
 	used.set_has_definite_height(height > 0)
 	resolve_box_model_edges(root.computed_values(), mut used, f64(parent_width))
@@ -410,7 +411,10 @@ fn test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_ba
 		mode := if change == 'intrinsic' { LayoutMode.intrinsic_sizing } else { LayoutMode.normal }
 		width_only := change == 'width-only'
 		actual := run_grid_formatting_context_internal(mut source, root, mut used, mode, space, width_only)
-		if !disable_grid_measurement_reuse { assert !committed_grid_test_reused(source, entries[0]) }
+		if !disable_grid_measurement_reuse {
+			assert committed_grid_test_reused(source, entries[0]) == (change == 'parent-height'
+				&& !disable_unused_measurement_heights && !disable_committed_grid_measurement_reuse)
+		}
 		current := source.measurement_chunk_pool_.grid_measurements_[u64(voidptr(root))] or { []&GridMeasurementLayout{} }
 		assert current.len == entries.len
 		for i in 0 .. current.len { assert voidptr(current[i]) == voidptr(entries[i]) }
@@ -536,6 +540,45 @@ fn test_grid_measurement_revalidates_svg_attributes_before_replay() {
 		document.update_style()
 		assert !grid_measurement_test_compare(mut source, root, 180, 0, 500)
 		assert grid_measurement_test_compare(mut source, root, 180, 0, 500) == (!disable_grid_measurement_reuse && !disable_svg_measurement_reuse && !disable_retained_simple_svg && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes() {
+	for rules in ['grid-template-columns:1fr 2fr;gap:7px',
+		'grid-template-columns:1fr 1fr;direction:rtl;align-items:baseline'] {
+		mut document := html.parse_document('<!doctype html><main><section id="grid" style="display:grid;${rules}"><div style="display:flex"><p>Wrapping alpha beta gamma 😀.</p><p>More words.</p></div><p style="position:relative">Caption.</p></section></main>')
+		document.enable_native_storage()
+		mut owner := document.enter_native_storage()
+		defer { owner.finish(); document.finalize(); document.release_native_storage() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := grid_measurement_test_node(document, 'grid')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		source.measurement_chunk_pool_.scratch_enabled_ = true
+		assert !grid_measurement_test_compare(mut source, root, 180, 0, 500)
+		for height in [-37, -123, -71] {
+			assert grid_measurement_test_compare(mut source, root, 180, height, 500) == (!disable_unused_measurement_heights && !disable_grid_measurement_reuse)
+		}
+		// The same numeric value becomes meaningful when it is definite.
+		assert !grid_measurement_test_compare(mut source, root, 180, 71, 500)
+		assert !grid_measurement_test_compare(mut source, root, 180, 72, 500)
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_grid_measurement_preserves_unused_height_proof_rejections() {
+	for rules in ['height:50%', 'min-height:20%', 'max-height:60%',
+		'row-gap:5%', 'display:grid;grid-template-rows:1fr 1fr',
+		'position:absolute;top:10%'] {
+		mut document := html.parse_document('<!doctype html><section id="grid" style="display:grid;position:relative;grid-template-columns:1fr 2fr"><div style="${rules}"><p>Wrapping words alpha beta gamma.</p></div><p>Caption.</p></section>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := grid_measurement_test_node(document, 'grid')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		assert !grid_measurement_test_compare(mut source, root, 180, 0, 500)
+		assert !grid_measurement_test_compare(mut source, root, 180, -123, 500), rules
 		source.release_measurement_chunk_pool()
 	}
 }

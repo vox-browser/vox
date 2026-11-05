@@ -39,9 +39,14 @@ struct FlexMeasurementLayout {
 }
 
 fn committed_flex_measurement_keys_match(a &FlexMeasurementQuestion, b &FlexMeasurementQuestion) bool {
+	return flex_measurement_keys_match_with_height_policy(a, b, false)
+}
+
+fn flex_measurement_keys_match_with_height_policy(a &FlexMeasurementQuestion, b &FlexMeasurementQuestion,
+	unused_heights bool) bool {
 	return a.parent == b.parent && a.sibling == b.sibling
 		&& a.flex_item == b.flex_item && a.grid_item == b.grid_item
-		&& committed_grid_measurement_keys_match(&a.geometry, &b.geometry)
+		&& grid_measurement_keys_match_with_height_policy(&a.geometry, &b.geometry, unused_heights)
 }
 
 fn flex_measurement_question(state &LayoutState, root &Node, used &UsedValues,
@@ -76,8 +81,12 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
 	style_environment := container.document().style_environment_version()
 	for cached in pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} } {
-		if (cached.key != key && !(committed && cached.external_heights_independent
-			&& committed_flex_measurement_keys_match(&cached.key, &key)))
+		keys_match := cached.key == key || (committed && cached.external_heights_independent
+			&& committed_flex_measurement_keys_match(&cached.key, &key))
+		unused_heights := !keys_match && !disable_unused_measurement_heights
+			&& cached.external_heights_independent
+			&& flex_measurement_keys_match_with_height_policy(&cached.key, &key, true)
+		if (!keys_match && !unused_heights)
 			|| cached.font_generation != font_generation
 			|| cached.font_policy != container.document().font_rendering_policy()
 			|| cached.style_environment != style_environment
@@ -103,6 +112,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
+		if unused_heights { report_unused_measurement_heights() }
 		if committed && committed_flex_measurement_diagnostics && !committed_flex_measurement_reported {
 			committed_flex_measurement_reported = true
 			eprintln('Vox flex measurement: promoted measured flex into committed geometry')

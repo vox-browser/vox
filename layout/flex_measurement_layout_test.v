@@ -24,7 +24,8 @@ fn flex_measurement_test_prepare(mut state LayoutState, root &Node, width int, h
 	mut used := state.get_mutable(styled)
 	used.set_containing_block_used_values(parent_values)
 	used.set_content_width(CSSPixels.new(width))
-	used.set_content_height(CSSPixels.new(height))
+	// Negative test inputs carry a numeric height without making it definite.
+	used.set_content_height(CSSPixels.new(if height < 0 { -height } else { height }))
 	used.set_has_definite_height(height > 0)
 	used.offset = css.CSSPixelPoint.from_values(11, 13)
 	used.set_relative_inset_basis(CSSPixels.new(731), CSSPixels.new(919))
@@ -188,9 +189,10 @@ fn test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry() {
 			assign_layout_indexes(top)
 			recompute_containing_blocks(top)
 		}
-		assert !flex_measurement_test_compare(mut source, root,
+		assert flex_measurement_test_compare(mut source, root,
 			if change == 'width' { 181 } else { 180 }, if change == 'height' { 160 } else { 0 },
-			if change == 'mode' { LayoutMode.intrinsic_sizing } else { LayoutMode.normal }, change)
+			if change == 'mode' { LayoutMode.intrinsic_sizing } else { LayoutMode.normal }, change) == (change == 'parent-height'
+				&& !disable_unused_measurement_heights && !disable_flex_measurement_reuse)
 		for width in [80, 100, 120, 140, 160, 180] {
 			_ = flex_measurement_test_compare(mut source, root, width, 0, .normal, '')
 		}
@@ -515,7 +517,8 @@ fn test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_p
 		assert after.len == entries.len
 		for index, entry in entries {
 			assert voidptr(entry) == voidptr(after[index])
-			assert !committed_flex_measurement_test_reused(source, entry)
+			assert committed_flex_measurement_test_reused(source, entry) == (change == 'parent-height'
+				&& !disable_unused_measurement_heights && !disable_committed_flex_measurement_reuse)
 		}
 		mut oracle := LayoutState.new_for_subtree(styled)
 		mut expected := flex_measurement_test_prepare(mut oracle, root, width, height, change)
@@ -565,6 +568,46 @@ fn test_committed_flex_preserves_external_heights_for_dependent_descendants() {
 		assert actual == run_uncached_flex_formatting_context_with_mode(mut oracle,root,mut expected,.normal,space)
 		assert flex_measurement_test_geometry(source,root) == flex_measurement_test_geometry(oracle,root)
 		oracle.release_measurement()
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_flex_measurement_reuses_unused_root_and_immediate_containing_heights() {
+	for rules in ['gap:7px', 'flex-wrap:wrap;direction:rtl;gap:3px',
+		'flex-direction:column;gap:2px'] {
+		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;${rules}"><div><p style="position:relative">Wrapping alpha beta gamma 😀.</p></div><p>Other text.</p></section></main>')
+		document.enable_native_storage()
+		mut owner := document.enter_native_storage()
+		defer { owner.finish(); document.finalize(); document.release_native_storage() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		source.measurement_chunk_pool_.scratch_enabled_ = true
+		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+		for height in [-37, -123, -71] {
+			for change in ['', 'parent-height'] {
+				assert flex_measurement_test_compare(mut source, root, 180, height, .normal, change) == (!disable_unused_measurement_heights && !disable_flex_measurement_reuse)
+			}
+		}
+		assert !flex_measurement_test_compare(mut source, root, 180, 71, .normal, '')
+		assert !flex_measurement_test_compare(mut source, root, 180, 72, .normal, '')
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_flex_measurement_preserves_unused_height_proof_rejections() {
+	for rules in ['height:50%', 'min-height:20%', 'max-height:60%',
+		'row-gap:5%', 'display:grid;grid-template-rows:1fr 1fr',
+		'position:absolute;top:10%'] {
+		mut document := html.parse_document('<!doctype html><section id="flex" style="display:flex;position:relative"><div style="${rules}"><p>Wrapping words alpha beta gamma.</p></div><p>Caption.</p></section>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+		assert !flex_measurement_test_compare(mut source, root, 180, -123, .normal, ''), rules
 		source.release_measurement_chunk_pool()
 	}
 }
