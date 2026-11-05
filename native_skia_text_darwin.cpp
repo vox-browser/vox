@@ -4625,8 +4625,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     // replay selects coverage per raster tile. Mixed tiles and fractional
     // corners can differ substantially; keep that established tile path.
     // Video has its own API with explicit MSAA rectangles and still batches.
-    bool isolated_shapes = std::getenv("VOX_GPU_CANVAS_ISOLATED_SHAPES") && gpu_canvas_api()
-        && gpu_canvas_api()->draw_shape_isolated;
+    bool isolated_shapes = gpu_canvas_isolated_shapes_enabled();
     if (root_msaa_tile && !isolated_shapes) gpu_canvas_decline(destination);
     bool rounded_on_canvas = false;
     if ((!root_msaa_tile || isolated_shapes) && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {

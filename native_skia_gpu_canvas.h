@@ -98,6 +98,12 @@ bool gpu_canvas_enabled()
     return enabled;
 }
 
+bool gpu_canvas_isolated_shapes_enabled()
+{
+    return !std::getenv("VOX_GPU_CANVAS_DISABLE_ISOLATED_SHAPES")
+        && gpu_canvas_api() && gpu_canvas_api()->draw_shape_isolated;
+}
+
 // Verification draws every canvas leaf on the GPU and through its ordinary
 // path; each flush compares the GPU rectangles with the CPU canvas instead of
 // replacing it, measuring the pixel difference the GPU canvas would introduce.
@@ -334,7 +340,7 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     // strip need not touch. Keep shapes on their established per-tile path
     // until the full-surface resolve matches that coverage as well.
     if (s_gpu_canvas && s_gpu_canvas->complete_viewport
-        && !(std::getenv("VOX_GPU_CANVAS_ISOLATED_SHAPES") && gpu_canvas_api()->draw_shape_isolated)
+        && !gpu_canvas_isolated_shapes_enabled()
         && (kind == "fill_rounded_rect" || kind == "stroke_rounded_rect"
             || kind == "fill_ellipse" || kind == "stroke_ellipse"
             || kind == "paint_uniform_border" || kind == "paint_partial_rounded_border"
