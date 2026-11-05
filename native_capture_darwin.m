@@ -4321,7 +4321,7 @@ static int native_test_cropped_css_filters;
 // part of the layer its clip can show: a scrolled strip need not filter and
 // blend the whole canvas. The crop keeps whole device pixels of an image that
 // maps one to one onto the destination, so every visible pixel is unchanged.
-static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
+static BOOL native_css_filter_has_pointwise_device_mapping(NativeCSSFilterLayer const *layer,
 	CGRect source_rect) {
 	const char *disabled = getenv("VOX_DISABLE_CROPPED_CSS_FILTERS");
 	if ((disabled && disabled[0] && strcmp(disabled, "0") != 0)
@@ -4331,14 +4331,20 @@ static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
 		|| layer->scale != floor(layer->scale)
 		|| layer->canvas_width * layer->scale != source_rect.size.width
 		|| layer->canvas_height * layer->scale != source_rect.size.height)
-		return source_rect;
+		return NO;
 	for (size_t index = 0; index < layer->operation_count; ++index) {
 		int kind = layer->operations[index].kind;
-		if (kind != 2 && kind != 3) return source_rect;
+		if (kind != 2 && kind != 3) return NO;
 	}
 	CGAffineTransform ctm = CGContextGetCTM(layer->destination);
 	if (ctm.a != layer->scale || ctm.d != layer->scale || ctm.b != 0 || ctm.c != 0
-		|| ctm.tx != floor(ctm.tx) || ctm.ty != floor(ctm.ty)) return source_rect;
+		|| ctm.tx != floor(ctm.tx) || ctm.ty != floor(ctm.ty)) return NO;
+	return YES;
+}
+
+static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
+	CGRect source_rect) {
+	if (!native_css_filter_has_pointwise_device_mapping(layer, source_rect)) return source_rect;
 	CGRect clip = CGContextGetClipBoundingBox(layer->destination);
 	if (CGRectIsNull(clip) || CGRectIsInfinite(clip) || CGRectIsEmpty(clip)
 		|| !isfinite(CGRectGetMinX(clip)) || !isfinite(CGRectGetMaxX(clip))
@@ -4366,12 +4372,15 @@ static unsigned native_test_grayscale_identities;
 static unsigned native_test_compact_css_filter_inputs;
 #endif
 
+#include "native_opacity_group_darwin.h"
+
 // A cropped CGImage can retain its complete viewport-sized provider. Give
 // pointwise filters an independently owned compact input when their visible
 // output already qualifies for the established integer-device crop.
 static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *layer,
     CGContextRef context, CGRect *output_rect) {
-    if (!getenv("VOX_COMPACT_CSS_FILTER_INPUT") || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
+    BOOL tight = getenv("VOX_TIGHT_CSS_FILTER_INPUT") && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
+    if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
         || !context || CGBitmapContextGetBitsPerComponent(context) != 8
         || CGBitmapContextGetBitsPerPixel(context) != 32) return NULL;
     CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
@@ -4383,11 +4392,23 @@ static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *la
         || source_pitch > 64 * 1024 * 1024 / height) return NULL;
     CGRect whole = CGRectMake(0, 0, width, height);
     CGRect rect = native_css_filter_output_rect(layer, whole);
-    if (CGRectEqualToRect(rect, whole)) return NULL;
+    if (tight && !native_css_filter_has_pointwise_device_mapping(layer, whole)) return NULL;
+    if (!tight && CGRectEqualToRect(rect, whole)) return NULL;
     CGContextFlush(context);
     const uint8_t *source = CGBitmapContextGetData(context);
     CGColorSpaceRef color = CGBitmapContextGetColorSpace(context);
     if (!source || !color) return NULL;
+    if (tight) {
+        int left, top, right, bottom;
+        if (!native_opacity_layer_ink_bounds(source,source_pitch,(int)rect.origin.x,
+                (int)(height-CGRectGetMaxY(rect)),(int)CGRectGetMaxX(rect),
+                (int)(height-rect.origin.y),&left,&top,&right,&bottom)) {
+            left=(int)rect.origin.x; top=(int)(height-CGRectGetMaxY(rect));
+            right=left+1; bottom=top+1;
+        }
+        rect=CGRectMake(left,height-bottom,right-left,bottom-top);
+        if (CGRectEqualToRect(rect,whole)) return NULL;
+    }
     size_t left = rect.origin.x, top = height - CGRectGetMaxY(rect);
     size_t copy_width = rect.size.width, copy_height = rect.size.height, pitch = copy_width * 4;
     CFMutableDataRef data = CFDataCreateMutable(NULL, pitch * copy_height);
@@ -4412,8 +4433,6 @@ static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *la
     }
     return image;
 }
-
-#include "native_opacity_group_darwin.h"
 
 // Both grayscale paths require addressable premultiplied sRGB bitmap rows.
 typedef struct {

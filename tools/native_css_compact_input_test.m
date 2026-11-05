@@ -13,7 +13,7 @@ static CGFloat native_svg_mask_backing_scale(void) { return test_scale; }
 #include "native_document_canvas_entry_points.inc"
 
 static CGImageRef selected;
-static int clipped, operation_kind;
+static int clipped, operation_kind, sparse;
 static CGFloat canvas_width=257,canvas_height=256;
 static double filter_seconds;
 static CGImageRef source(int bgra,int wide) {
@@ -23,6 +23,7 @@ static CGImageRef source(int bgra,int wide) {
         uint8_t *p=(uint8_t*)data.mutableBytes+y*pitch+x*4;
         p[bgra?2:0]=(x*71+y*3)%(y+1);p[1]=(x*37+19)%(y+1);
         p[bgra?0:2]=(x*11+y*5)%(y+1);p[3]=y;
+        if(sparse==2 || (sparse==1 && (x<64 || x>121 || y<71 || y>103))) memset(p,0,4);
     }
     CGDataProviderRef provider=CGDataProviderCreateWithCFData((__bridge CFDataRef)data);
     CGColorSpaceRef color=CGColorSpaceCreateWithName(wide?kCGColorSpaceDisplayP3:kCGColorSpaceSRGB);
@@ -41,7 +42,9 @@ static void paint(id view,SEL selector,NSRect rect) {
         native_add_css_filter_operation(2,.65,2,0,(gg__Color){0});
         native_add_css_filter_operation(2,.25,3,0,(gg__Color){0});
     }else if(operation_kind==1)native_add_css_filter_operation(3,33,0,0,(gg__Color){0});
-    else native_add_css_filter_operation(0,2,0,0,(gg__Color){0});
+    else if(operation_kind==2)native_add_css_filter_operation(0,2,0,0,(gg__Color){0});
+    else native_add_css_filter_operation(2,operation_kind==4?.4:1.4,
+        operation_kind==3?1:operation_kind==4?4:operation_kind==5?5:operation_kind==6?6:0,0,(gg__Color){0});
     double start=CACurrentMediaTime();native_end_css_filter_layer();
     filter_seconds=CACurrentMediaTime()-start;
 }
@@ -90,18 +93,23 @@ int main(int argc,char **argv){@autoreleasepool{
         CGImageRelease(selected);return 0;
     }
     NSView *view=[[NSView alloc]initWithFrame:NSMakeRect(0,0,257,256)];unsigned cases=0;
+    for(int tight=0;tight<2;++tight)for(sparse=0;sparse<3;++sparse)
     for(int bgra=0;bgra<2;++bgra)for(int wide=0;wide<2;++wide)for(clipped=0;clipped<2;++clipped)
-        for(int scale=1;scale<=2;++scale)for(operation_kind=0;operation_kind<3;++operation_kind){
+        for(int scale=1;scale<=2;++scale)for(operation_kind=0;operation_kind<8;++operation_kind){
+            if(tight)setenv("VOX_TIGHT_CSS_FILTER_INPUT","1",1);else unsetenv("VOX_TIGHT_CSS_FILTER_INPUT");
             test_scale=scale;
             selected=source(bgra,wide);setenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT","1",1);
             CGImageRef reference=native_layer_raster_frame(view,scale,(IMP)paint);assert(reference);
             unsigned before=native_test_compact_css_filter_inputs;unsetenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT");
             CGImageRef candidate=native_layer_raster_frame(view,scale,(IMP)paint);assert(candidate);
             assert([packed(candidate)isEqualToData:packed(reference)]);
-            if ((native_test_compact_css_filter_inputs>before)!=(clipped&&operation_kind!=2))
-                fprintf(stderr,"compact admission bgra=%d wide=%d clip=%d scale=%d operation=%d copied=%u\n",bgra,wide,clipped,scale,operation_kind,native_test_compact_css_filter_inputs-before);
-            assert((native_test_compact_css_filter_inputs>before)==(clipped&&operation_kind!=2));
+            if (!tight) assert((native_test_compact_css_filter_inputs>before)==(clipped&&operation_kind!=2));
+            else if(operation_kind==2) assert(native_test_compact_css_filter_inputs==before);
+            else if(sparse) assert(native_test_compact_css_filter_inputs>before);
             ++cases;CGImageRelease(reference);CGImageRelease(candidate);CGImageRelease(selected);
+            // Bound the many distinct Core Image target sizes in this corpus;
+            // the tested arithmetic and the production cache policy are unchanged.
+            if(cases%8==0)[native_css_filter_ci_context clearCaches];
         }
     printf("Compact CSS inputs: %u exact real frames; owned tight rows, RGBA/BGRA, alpha, padding, profiles, fractional clips, 1x/2x and non-pointwise fallback passed\n",cases);
 }}
