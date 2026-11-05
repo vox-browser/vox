@@ -1,0 +1,53 @@
+{
+  "status": "Closed definite-width intrinsic grid block measurement reuse passes192executions,24newcaseexecutions;333instructiontooltests pass.NativeBBCeligibility andunprofiled matched effectpending;targetunmet,no optimizationcredit.",
+  "implementation_commit": "3576100c0",
+  "control_commit": "4459da977",
+  "focus": {
+    "passed": true,
+    "cases_per_run": 32,
+    "executions": 192,
+    "new_cases": [
+      "test_intrinsic_grid_measurement_replays_closed_geometry_after_scratch_retirement",
+      "test_intrinsic_grid_measurement_keeps_normal_and_intrinsic_root_publication_separate",
+      "test_intrinsic_grid_measurement_rejects_changed_text_fonts_style_and_width",
+      "test_intrinsic_grid_measurement_keeps_positioned_float_and_subgrid_effects_uncached"
+    ],
+    "new_case_executions": 24,
+    "actual_calls_in_all3memory_modes_verified": true,
+    "inputs_unchanged": true,
+    "inputs": {
+      "/Users/alex/code/vox2/layout/grid_intrinsic_measurement_test.v": "d633fbb3bf41a72989027d3350a8054f065222d7b3db8785ff25712475f33803",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "efa9559bcd7586babaa3813f2cae113a3118e859523c689d5f865503bf030def",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "f967984ce58e863b1fb03a4e5a0698cff952270cedf629c6af0e675120e37f14",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "cd5c1d181cfe1c3e2408b33aa51fbff404bdf6b7f5c53d9c55222e7d4c11cacf",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "4793ffc680283a3c2a205665143778f579ae58dc7286bbb980fc248a960a5e0b",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+      "/Users/alex/code/vox2/layout/retained_block_layout.v": "969728a8c1c1ea70fabe9e0194fd8194e5865e7aed6a6804eda00f27edc95ffc",
+      "/Users/alex/code/vox2/layout/node.v": "405ca6b29caebb303e4fa38ee54e95052c97f5133c0cf5bacf12eef25dc16f21",
+      "/Users/alex/code/vox2/layout/intrinsic_sizing.v": "e40c995478ea2fb95cf9f88f3e67e0a0fe02dee7104d73009e79b5d864ae60bf"
+    },
+    "scope": "Default/noGC/prealloc;candidate/newintrinsic-disabledcontrol;all32cases called ineacharm;24newcaseexecutions. Fullscalar/glyph geometry comparedwithunpooleduncachedoracle afterproducer scratchretirement;roottrackmetadata preserved,normal/intrinsicmodeisolation,COW,mutations/fonts/widths/policies andspecializationrejections. Initial fixtureusednonexistentupstreamenum;correctedlibweb enumonly,initialcompilefailures retained. NoBBCeligibility/performanceclaim."
+  },
+  "committed_sources": {
+    "layout/grid_intrinsic_measurement_test.v": "d633fbb3bf41a72989027d3350a8054f065222d7b3db8785ff25712475f33803",
+    "layout/grid_measurement_layout_test.v": "efa9559bcd7586babaa3813f2cae113a3118e859523c689d5f865503bf030def",
+    "layout/flex_measurement_layout_test.v": "f967984ce58e863b1fb03a4e5a0698cff952270cedf629c6af0e675120e37f14",
+    "layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+    "layout/grid_measurement_layout.v": "cd5c1d181cfe1c3e2408b33aa51fbff404bdf6b7f5c53d9c55222e7d4c11cacf",
+    "layout/flex_measurement_layout.v": "4793ffc680283a3c2a205665143778f579ae58dc7286bbb980fc248a960a5e0b",
+    "layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+    "layout/retained_block_layout.v": "969728a8c1c1ea70fabe9e0194fd8194e5865e7aed6a6804eda00f27edc95ffc",
+    "layout/node.v": "405ca6b29caebb303e4fa38ee54e95052c97f5133c0cf5bacf12eef25dc16f21",
+    "layout/intrinsic_sizing.v": "e40c995478ea2fb95cf9f88f3e67e0a0fe02dee7104d73009e79b5d864ae60bf"
+  },
+  "scope": "Retainmode-specific owneddescendantgeometry inexistingwithin-passmeasurementpool. Intrinsicmode restoresconstraint-derivedrootheight butneverroottrackmetadata;normal/intrinsicentriesdistinct.Existingvalidation/font/style/resource/ownership/cachelimits unchanged. Default/noGC/prealloc,bothcandidate/control,uncachedoracles afterscratchretirement,COW,prefixtracks/fonts/widths/policies/mutations/rejectedpositioning-float-subgrid effects. InitialtestnonexistentFontRenderingPolicy.upstream correctedtolibweb;initialcompilefailsretained.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-intrinsic-grid-measurement-focus-20261105.tar.gz",
+    "bytes": 13479550,
+    "sha256": "4c3789a7ba69c849a22d7c45fc49ec7ae03a3746e51b922ff48ab45f3293a59e",
+    "members": 68,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793881318.830534
+}

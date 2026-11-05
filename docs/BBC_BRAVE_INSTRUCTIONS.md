@@ -6442,3 +6442,27 @@ no live-page, isolated rendering or scrolling claim is made.
 History is **108 measured cohorts / 2,335 acceptance browser attempts**, last
 ID 109; ID 104 remains preflight-only. The target remains open and BBC homepage
 stays outside the catalog. [Complete attempts, receipts and frame diagnostics](performance/bbc-grid-height-cohort109-frame-parts-20261105.json).
+
+
+## Intrinsic grid block-measurement reuse (2026-11-05)
+
+`3576100c0` admits closed definite-width intrinsic block-size probes to the
+existing owned grid measurement cache. Entries keep their layout mode, so an
+intrinsic result cannot replace normal root track publication. Replay preserves
+root track metadata and restores only the automatic height that the intrinsic
+algorithm writes. Existing subtree/resource/font/style validation and cache
+limits remain. `4459da977` adds the isolated same-binary control.
+
+All **192 focused executions** pass: 32 cases in both arms across default,
+no-GC and preallocation modes, including 24 executions of four new cases.
+Unpooled uncached oracles check scalar/glyph geometry after scratch retirement,
+copy-on-write, root track preservation, normal/intrinsic separation, widths,
+font policies, text/font/environment changes and rejection of positioned,
+floating and subgrid effects. Actual native test calls and unchanged checked
+inputs are verified. The initial fixture's invalid font-policy enum is corrected
+to `libweb`; its three compile failures remain retained. All **333 instruction
+tool tests** pass. [Focused evidence and verified archive](performance/bbc-intrinsic-grid-measurement-focus-20261105.json).
+
+Native BBC eligibility and matched instruction effect remain pending at this
+checkpoint. No optimization credit or catalog entry is assigned; the 10% task
+remains open.
