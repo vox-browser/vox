@@ -13,6 +13,16 @@ claimed. History is **117 measured cohorts / 2,524 acceptance browser attempts**
 104, 110, 111, 113 and 118 are preflight-only. Every earlier result remains
 preserved. [Complete cohort evidence](performance/bbc-previous-measurement-cohort122-20261106.json).
 
+The regressing cross-pass history has now been **retired** (`0a8de752f`), with
+its comparison control removed separately (`7fdffd5e0`). All **102 restoration
+executions** (34 existing grid/flex/image cases in three GC modes) and **340
+tooling tests** pass. Completed parallel production `4d07a9d00d50` contains the
+removal and passes fresh original pixels/content, all 72 external author-source
+evaluations, actual native-image/ownership/exit checks and the pixel-exact SVG
+source-switch guard. The retired marker is absent. This single correctness
+launch establishes no new instruction result or saving.
+[Retirement evidence](performance/bbc-previous-measurement-retirement-20261106.json).
+
 The extension and isolated control (`05e1743ff`, `f5e0ace39`) pass **258 focused
 executions**: 43 cases in both arms across three GC modes, including nine new
 cases, with all native test-main calls verified. All **341 instruction-tool
