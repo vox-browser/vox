@@ -9,6 +9,7 @@ static CGContextRef native_font_compositing_context;
 static int native_font_compositing_transparency_depth;
 static CGFloat test_scale;
 static CGFloat native_svg_mask_backing_scale(void) { return test_scale; }
+#define VOX_TEST_EMPTY_BOUNDED_POINTWISE_FILTERS
 #include "native_document_canvas_entry_points.inc"
 
 static int clipped, fractional, operation, content, placement, admitted;
@@ -58,7 +59,7 @@ static void check_guards(void) {
 int main(void) { @autoreleasepool {
     test_scale=1; check_guards();
     NSView *view=[[NSView alloc] initWithFrame:NSMakeRect(0,0,211,173)];
-    unsigned cases=0, bounded=0;
+    unsigned cases=0, bounded=0, avoided=0;
     for (int scale=1; scale<=2; ++scale) for (clipped=0; clipped<2; ++clipped)
     for (fractional=0; fractional<2; ++fractional) for (placement=-2; placement<=2; ++placement)
     for (content=0; content<4; ++content) for (operation=0; operation<9; ++operation) {
@@ -67,13 +68,18 @@ int main(void) { @autoreleasepool {
             unsetenv("VOX_BOUND_POINTWISE_FILTER_OUTPUTS");
             CGImageRef reference=native_layer_raster_frame(view,scale,(IMP)paint); assert(reference && !admitted);
             setenv("VOX_BOUND_POINTWISE_FILTER_OUTPUTS","1",1);
+            unsigned before=native_test_empty_bounded_pointwise_filters;
             CGImageRef candidate=native_layer_raster_frame(view,scale,(IMP)paint); assert(candidate);
             assert(admitted == (!fractional && operation != 8)); bounded += admitted;
+            BOOL expect_skip=admitted && (clipped ? placement != 0 : abs(placement) == 2)
+                && !getenv("VOX_DISABLE_EMPTY_BOUNDED_POINTWISE_FILTERS");
+            assert((native_test_empty_bounded_pointwise_filters > before) == expect_skip);
+            avoided += expect_skip;
             assert([packed(candidate) isEqualToData:packed(reference)]);
             CGImageRelease(reference); CGImageRelease(candidate); ++cases;
             if (cases%32==0) [native_css_filter_ci_context clearCaches];
         }
     }
     assert(bounded);
-    printf("Bounded pointwise outputs: %u exact frames, %u admitted; alpha-one edges, fractional clips, placement, 1x/2x, blur and non-integral mapping fallback\n",cases,bounded);
+    printf("Bounded pointwise outputs: %u exact frames, %u admitted, %u empty outputs avoided; alpha-one edges, fractional clips, placement, 1x/2x, blur and non-integral mapping fallback\n",cases,bounded,avoided);
 } }

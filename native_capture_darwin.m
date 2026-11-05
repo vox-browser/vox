@@ -4550,6 +4550,35 @@ static void native_verify_pointwise_filter_output_bounds(NativeCSSFilterLayer *l
 	if (!valid) layer->has_pointwise_output_bounds = 0;
 }
 
+#ifdef VOX_TEST_EMPTY_BOUNDED_POINTWISE_FILTERS
+static unsigned native_test_empty_bounded_pointwise_filters;
+#endif
+
+// An empty intersection is a completed no-op, not a request to fall back to
+// filtering the full canvas. The retained group bounds already include three
+// CSS pixels of rounding guard; also preserve the usual two-device-pixel clip
+// fringe before proving that none of its output can reach the destination.
+static BOOL native_css_filter_bounded_output_is_empty(NativeCSSFilterLayer const *layer) {
+    if (getenv("VOX_DISABLE_EMPTY_BOUNDED_POINTWISE_FILTERS")
+        || !layer->active || !layer->has_pointwise_output_bounds
+        || layer->svg_filter_recording || layer->gradient_blur_recording
+        || !native_css_filter_has_pointwise_device_mapping(layer,
+            CGRectMake(0, 0, layer->canvas_width * layer->scale,
+                layer->canvas_height * layer->scale))) return NO;
+    CGRect clip = CGContextGetClipBoundingBox(layer->destination);
+    if (CGRectIsNull(clip) || CGRectIsInfinite(clip)
+        || !isfinite(CGRectGetMinX(clip)) || !isfinite(CGRectGetMaxX(clip))
+        || !isfinite(CGRectGetMinY(clip)) || !isfinite(CGRectGetMaxY(clip))) return NO;
+    clip = CGRectInset(clip, -2 / layer->scale, -2 / layer->scale);
+    if (CGRectIntersectsRect(clip, layer->pointwise_output_bounds)) return NO;
+#ifdef VOX_TEST_EMPTY_BOUNDED_POINTWISE_FILTERS
+    ++native_test_empty_bounded_pointwise_filters;
+#endif
+    if (getenv("VOX_EMPTY_BOUNDED_POINTWISE_FILTER_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_EMPTY_BOUNDED_POINTWISE_FILTER operations=%zu\n", layer->operation_count);
+    return YES;
+}
+
 #ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
 static unsigned native_test_empty_pointwise_filters;
 #endif
@@ -5012,6 +5041,13 @@ void native_end_css_filter_layer(void) {
         layer.has_pointwise_output_bounds = 0;
 #endif
     native_verify_pointwise_filter_output_bounds(&layer);
+    if (native_css_filter_bounded_output_is_empty(&layer)) {
+        [NSGraphicsContext restoreGraphicsState];
+        CGContextRelease(layer.context);
+        free(layer.operations);
+        native_free_svg_filter_graph(&layer);
+        return;
+    }
     CGImageRef compact_input = native_compact_css_filter_input(&layer, layer.context, &compact_rect);
     CGImageRef grayscale_image = native_css_filter_grayscale_rows(&layer, layer.context, &identity_rect);
     BOOL grayscale_identity = !grayscale_image
