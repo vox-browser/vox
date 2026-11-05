@@ -710,6 +710,48 @@ decoder's path in a particular frame.
 Older site checkpoints retain their recorded protocols; they do not
 retroactively establish agreement between fresh Brave processes.
 
+## Engadget: oracle startup and cleanup blocker (2026-11-05)
+
+The fresh Engadget continuation supplies **no new qualified pixel result**.
+Seven normal acquisition/baseline attempts fail browser lifecycle checks.
+Several fresh full-uBO profiles stall before page navigation: `readyToFilter` remains
+false, selected lists remain empty, and the buffered startup log stops before
+administrative settings are ready. The extension files match the pinned
+1.75.0 release ZIP exactly. An explicit-proxy HTTP 200 response establishes
+reachability only, not browser document coverage.
+
+Clones of a previously verified closed test profile get past initialization.
+They load Engadget with matching full-uBO request, cosmetic and list audits,
+and produce stable source PNGs with matching before/after DOM snapshots.
+Their source capture or cache warmup nevertheless leaves owned Brave processes
+alive at shutdown. Those captures are retained as diagnostics and are not sealed
+or registered as passing archives. The original registered Engadget manifest
+`53ea109a…`, its source PNG and its historical 221-pixel source-fidelity failure
+remain unchanged.
+
+Two harness fixes are committed separately. `684f8ed3c` logs and writes the
+original comparison exception before cleanup, so a second shutdown exception
+cannot erase its cause. `457e899b9` closes page/extension debugger clients before
+requesting browser shutdown and releases the browser debugger after that request.
+The complete observed process tree must still exit; no process-exit or pixel
+gate is relaxed. One warmup exits cleanly with the revised order, but subsequent
+source captures still fail cleanup. All **49 focused Node checks and 29 Python
+conformance checks pass**.
+
+A separate mock-keychain diagnostic does not fix initialization and is removed.
+A 30-second shutdown wait also fails and is restored to the original eight
+seconds. Moving temporary profiles under the task's `Build/` directory does not
+qualify an acquisition. A browser worker is sampled in `fsync` while uBO awaits
+managed storage; this does not establish causation. Foreground fsync probes in
+both directories complete in under a millisecond. Host load is high
+(177.87 / 157.78 / 129.72), so contention remains a possible contributor rather
+than a demonstrated explanation. No renderer change or new parity acceptance is
+claimed; the next comparison still requires successful uBO startup and complete
+owned-process shutdown.
+
+[Evidence and exact commands](evidence/engadget-oracle-lifecycle-20261105.json),
+[raw diagnostics and failed source captures](evidence/engadget-oracle-lifecycle-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged

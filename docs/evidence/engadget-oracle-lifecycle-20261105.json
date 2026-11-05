@@ -1,0 +1,589 @@
+{
+  "version": 1,
+  "status": "blocked-oracle-lifecycle",
+  "scope": "Engadget strict guest-viewport conformance, 1024x768 scale 1, full uBlock Origin 1.75.0, pinned repository lists, zero RGBA tolerance",
+  "commits": [
+    "684f8ed3c",
+    "457e899b9"
+  ],
+  "registered_manifest": {
+    "path": "Tests/Browser/Brave/sites/engadget/manifest.json",
+    "sha256": "53ea109a6418706286f6401849a4a1f6aa5be20f42f24ee498ac6e59c8ad3872",
+    "unchanged": true
+  },
+  "attempts": [
+    {
+      "name": "acquire",
+      "summary": {
+        "started_at": "2026-11-05T06:38:02+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "engadget",
+            "name": "Engadget",
+            "url": "https://www.engadget.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-resume-20261105-acquire/engadget/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--sites",
+          "engadget",
+          "--capture",
+          "--capture-proxy",
+          "http://127.0.0.1:51241",
+          "--fixtures",
+          "Build/engadget-resume-20261105-fixtures",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/engadget-resume-20261105-acquire"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1576910848,
+        "elapsed_seconds": 136.746358958,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "baseline",
+      "summary": {
+        "started_at": "2026-11-05T06:39:39+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "engadget",
+            "name": "Engadget",
+            "url": "https://www.engadget.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-resume-20261105-baseline/engadget/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--sites",
+          "engadget",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/engadget-resume-20261105-baseline"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1483292672,
+        "elapsed_seconds": 138.74463975,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "acquire2",
+      "summary": {
+        "started_at": "2026-11-05T06:42:11+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "engadget",
+            "name": "Engadget",
+            "url": "https://www.engadget.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-resume-20261105-acquire2/engadget/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--sites",
+          "engadget",
+          "--capture",
+          "--capture-proxy",
+          "http://127.0.0.1:51241",
+          "--fixtures",
+          "Build/engadget-resume-20261105-fixtures2",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/engadget-resume-20261105-acquire2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1492582400,
+        "elapsed_seconds": 141.904736334,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "prepared",
+      "summary": {
+        "started_at": "2026-11-05T06:45:36+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "engadget",
+            "name": "Engadget",
+            "url": "https://www.engadget.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-resume-20261105-prepared/engadget/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--sites",
+          "engadget",
+          "--capture",
+          "--capture-proxy",
+          "http://127.0.0.1:51241",
+          "--profile-template",
+          "Build/register-resume-20261105-fixed-complete/theregister/brave-warm-profile",
+          "--fixtures",
+          "Build/engadget-resume-20261105-prepared-fixtures",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/engadget-resume-20261105-prepared"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2321268736,
+        "elapsed_seconds": 42.613049083,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "detached",
+      "summary": {
+        "started_at": "2026-11-05T06:47:55+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "engadget",
+            "name": "Engadget",
+            "url": "https://www.engadget.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-resume-20261105-detached/engadget/capture.log"
+          }
+        ],
+        "passed": 0
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--sites",
+          "engadget",
+          "--capture",
+          "--capture-proxy",
+          "http://127.0.0.1:51241",
+          "--profile-template",
+          "Build/register-resume-20261105-fixed-complete/theregister/brave-warm-profile",
+          "--fixtures",
+          "Build/engadget-resume-20261105-detached-fixtures",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/engadget-resume-20261105-detached"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2135588864,
+        "elapsed_seconds": 84.433125875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "patient",
+      "summary": {
+        "started_at": "2026-11-05T06:56:14+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "engadget",
+            "name": "Engadget",
+            "url": "https://www.engadget.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-resume-20261105-patient/engadget/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--sites",
+          "engadget",
+          "--capture",
+          "--capture-proxy",
+          "http://127.0.0.1:51241",
+          "--profile-template",
+          "Build/register-resume-20261105-fixed-complete/theregister/brave-warm-profile",
+          "--fixtures",
+          "Build/engadget-resume-20261105-patient-fixtures",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/engadget-resume-20261105-patient",
+          "--timeout",
+          "240"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2346647552,
+        "elapsed_seconds": 71.01973054099999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "local-tmp",
+      "summary": {
+        "started_at": "2026-11-05T06:58:19+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "engadget",
+            "name": "Engadget",
+            "url": "https://www.engadget.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-resume-20261105-local-tmp/engadget/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--sites",
+          "engadget",
+          "--capture",
+          "--capture-proxy",
+          "http://127.0.0.1:51241",
+          "--fixtures",
+          "Build/engadget-resume-20261105-local-tmp-fixtures",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/engadget-resume-20261105-local-tmp"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1898627072,
+        "elapsed_seconds": 106.271269375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "diagnostics": {
+    "extension_release": "All unpacked extension files match the pinned 1.75.0 ZIP exactly.",
+    "http": "Explicit-proxy HEAD request returned HTTP 200; this is not browser page coverage.",
+    "bootstrap": "Fresh background reports readyToFilter=false, no selected filter lists, empty local storage; buffered startup log stops before Admin settings ready.",
+    "sample": "A browser background worker was sampled in fsync. This single sample does not identify the cause of the unresolved managed-storage promise.",
+    "fsync_probes": "A small foreground fsync completed in 0.000153 seconds in Build and 0.000298 seconds in the system temporary directory; no general filesystem latency claim.",
+    "load": "iostat reports load average 177.87 / 157.78 / 129.72 during diagnostics; contention is a possible contributor, not a proven cause.",
+    "rejected": [
+      "The mock-keychain diagnostic did not unblock startup; all related launch-option code was removed.",
+      "Increasing the owned-process shutdown deadline from 8 to 30 seconds did not resolve cleanup; the original 8-second deadline was restored.",
+      "A task-local TMPDIR did not establish a successful source capture."
+    ]
+  },
+  "result": "No new qualified comparison or site acceptance. No archive, existing golden, tolerance, uBO engine/list bytes, or production bundle was changed by this continuation.",
+  "raw_evidence": {
+    "path": "docs/evidence/engadget-oracle-lifecycle-20261105.zip",
+    "sha256": "6c73abee612d7097c282a9b78559d89f3bd4e3b3cd2cb4d90b828eb1ef350e4b",
+    "files": 2254,
+    "bytes": 17506838
+  },
+  "host": {
+    "cpu_count": 18,
+    "recorded_at": "2026-11-05T07:04:26+0300",
+    "measurement_scope": "diagnostic only; no rendering or instruction performance result"
+  },
+  "checks": {
+    "oracle-tests": {
+      "path": "Build/engadget-resume-20261105-oracle-tests.guard.json",
+      "sha256": "668500b8180d15e9fac764d5a4487d077234a4c23fb398fdfc956f50a727986c",
+      "data": {
+        "command": [
+          "node",
+          "--test",
+          "tools/adblock/oracle_failure_test.mjs",
+          "tools/adblock/oracle_shutdown_test.mjs"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 95256576,
+        "elapsed_seconds": 0.584643667,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "detach-tests": {
+      "path": "Build/engadget-resume-20261105-detach-tests.guard.json",
+      "sha256": "e91f84d9a6eb00a0a3c812549308a86367bcb6a0b8515320ddd1cca5240c7b02",
+      "data": {
+        "command": [
+          "node",
+          "--test",
+          "tools/adblock/oracle_failure_test.mjs",
+          "tools/adblock/oracle_shutdown_test.mjs"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 135413760,
+        "elapsed_seconds": 1.116466291,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "capture-tests": {
+      "path": "Build/engadget-resume-20261105-capture-tests.guard.json",
+      "sha256": "481b83dacb90dea3f1ee75a2ef15d6604268ababb779719d70bddc704d921e5d",
+      "data": {
+        "command": [
+          "node",
+          "--test",
+          "tools/adblock/capture_archive_test.mjs",
+          "tools/adblock/pixel_reference_test.mjs",
+          "tools/adblock/oracle_assets_test.mjs",
+          "tools/adblock/oracle_cosmetics_test.mjs",
+          "tools/adblock/oracle_failure_test.mjs",
+          "tools/adblock/oracle_network_test.mjs",
+          "tools/adblock/oracle_profile_test.mjs",
+          "tools/adblock/oracle_shutdown_test.mjs",
+          "tools/adblock/oracle_target_test.mjs"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 314982400,
+        "elapsed_seconds": 5.242573666999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "shutdown-tests": {
+      "path": "Build/engadget-resume-20261105-shutdown-tests.guard.json",
+      "sha256": "b712b44fdc4dff2756ec5e6b2bbd006742883166dd2a25048b9014716cb192b2",
+      "data": {
+        "command": [
+          "node",
+          "--test",
+          "tools/adblock/oracle_shutdown_test.mjs",
+          "tools/adblock/oracle_failure_test.mjs"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 102367232,
+        "elapsed_seconds": 0.691975,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "python-tests": {
+      "path": "Build/engadget-resume-20261105-python-tests.guard.json",
+      "sha256": "c1fa80fd87e1bcc681fece6a39dda39ab216f089146b223e7b67c0eb7d711c5b",
+      "data": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "forum_news_pixels_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 62177280,
+        "elapsed_seconds": 2.4295532079999997,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  },
+  "diagnostic_guard": {
+    "command": [
+      "node",
+      "tools/adblock/brave_parity.mjs",
+      "--url",
+      "https://www.engadget.com/",
+      "--extension",
+      "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+      "--checker",
+      "Build/wired-parity-20261104-inputs/adblock-check",
+      "--proxy-server",
+      "http://127.0.0.1:51241",
+      "--keychain-policy",
+      "mock",
+      "--settle",
+      "5",
+      "--capture-dir",
+      "Build/engadget-resume-20261105-keychain-capture",
+      "--output",
+      "Build/engadget-resume-20261105/keychain-capture.json"
+    ],
+    "reason": "remaining_children",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 1126973440,
+    "elapsed_seconds": 134.547158916,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "tools_after": {
+    "tools/adblock/oracle_profile_test.mjs": "573ae4c268861eb7ef6b982de68b7b7db33759f5bdb00ece8bdcbfd7b52c2831",
+    "tools/adblock/pixel_reference_test.mjs": "f773650f18a91f5e9c18d7dda8c054932005b5362b5ff59c3f910af7aa56bc23",
+    "tools/adblock/oracle_profile.mjs": "03959a4d75199bbf982eb6d31e7239b6af60fe6586b781443b2fc807e8f8a7b2",
+    "tools/adblock/popular_sites.mjs": "0357c9423cb8366b3a74bac0569c7bbc0884c3b88bc693e420f65b0ffa0f6c8f",
+    "tools/adblock/lazy_parser.mjs": "5acc88f5a530fb1d4779079ccf54b642cc5d6606663ce5a864d3b1ebe451d320",
+    "tools/adblock/capture_archive_test.mjs": "c9600baa474d38cac0b7d99238c9cf5027fa656323af55e8653693df6031b705",
+    "tools/adblock/oracle_cosmetics_test.mjs": "28b6feea5bcb4bfe7f49ac2acbee5f238c4f6536315664ca370aa0b6ffdb40f0",
+    "tools/adblock/lazy_url.mjs": "acb987dfb6f5608c4a852f69210f20fef91ca47cc1cc344592bb460b30d2f3c0",
+    "tools/adblock/visibility_probe_test.mjs": "2fd08d4675628f8711c02e50bfde1eb52bff25b6dce8730e0320f21b616a3f24",
+    "tools/adblock/oracle_cosmetics.mjs": "b87a652132e7a14bec281458a78e766a8a873702ba659d55dabc111514aae8ce",
+    "tools/adblock/request_stream.mjs": "207c4d6bb5d140df799d0aa3d6929e1770ac0d40113139287dc011eea432b222",
+    "tools/adblock/pixel_reference.mjs": "41e03c45b5843dab4f81a655f0faea449fa3e8dece357863e5c5277beb37ea27",
+    "tools/adblock/lazy_resources_test.mjs": "f5070bb5c4ca7c7e9c6f4ee497e6f2b2bccb24e7462eba5454f3c012c0f023b2",
+    "tools/adblock/oracle_shutdown.mjs": "155fa46c4f85fc0d43c8b1e471734ad3d484442611bd182230ad070bc84c2d66",
+    "tools/adblock/refresh-source.mjs": "3e3e224b3a382f983e8b00f759c79ab5bda7b8a10e11e638d4b8500f9c541111",
+    "tools/adblock/visibility_probe.mjs": "c8758003ec8baf42c78a046e2b2337967617727acb1d830f733b008f66289026",
+    "tools/adblock/archive_focus.mjs": "70c5f0260d7de4b027ed920e0a6585da69e4c70edff334ddf76aa16c9fa48bac",
+    "tools/adblock/capture_archive.mjs": "003999d9f240b01215c45135518a0fa91179953b5f0fd50d1c33f7baaf254d4b",
+    "tools/adblock/lazy_url_test.mjs": "1853431beea614598ab7cfbb3eaa36b94c9a9aa45750f6fae651b5d8f454d9c0",
+    "tools/adblock/oracle_network_test.mjs": "12e348f967f35e2dd7a7371538ff9fb5d6152f9ac24e33f91287f9a07f8d98ca",
+    "tools/adblock/classic_script_test.mjs": "ed68bc2ec2b107dc604272352d869489f317e6299517d4cecb6e92250ff3d811",
+    "tools/adblock/popular_sites_test.mjs": "4c161b25f1c98c5fdd65e556393b0e80edc21f84dec4071bfcaa50ca48da124d",
+    "tools/adblock/oracle_target.mjs": "c6c7b8e21de3e5d7f73e3e9a531ca3ec8731c2291f27880438ef520094286024",
+    "tools/adblock/navigation.mjs": "de7755a963b1b0ce1a886429345cb239c3812e12c650e7a574ea7ecc820314b2",
+    "tools/adblock/oracle_failure.mjs": "5c3a1de2c0f38274c44f08704a5c7961a14643d4a63ec1aec079ce1e1cb808eb",
+    "tools/adblock/refresh.mjs": "be316455074119e7772e8423b96f59a36afde78b8d31dfa845ea6f19d0b26d7b",
+    "tools/adblock/oracle_network.mjs": "706d9de749d4dc1bcbcdbeffa896828424f2f4a3c29442bff118ee49103d02ec",
+    "tools/adblock/request_stream_test.mjs": "dfb7a764790e73e272656718830966e55da2275028e917bdac803b7e8d33a524",
+    "tools/adblock/oracle_failure_test.mjs": "c8f020988646702ad069c1f5232c1604b0dfc8edd8968ce45fb2b16a77de67a1",
+    "tools/adblock/classic_script.mjs": "8ea6328d2d95d9ca0849c5cf45e8f6dcb1a5ea36b8b2f9860037b967bf1f5635",
+    "tools/adblock/archive_focus_test.mjs": "61f02500073e9f8b294a2b6880a8e1209c36a4147ba19e3a0d7e3a456a366f32",
+    "tools/adblock/navigation.test.mjs": "664be73f5793be77fa16f8be1c48b493769fe31b306d25a7ba40ae710d6bb1f1",
+    "tools/adblock/runtime_test.mjs": "ba03d429a3b5a0ebd3b70c7d49ac6055117d2f10cb0dcb607e9e338248cee319",
+    "tools/adblock/build.mjs": "0317e2254f2d29dd46da22e7f52fd9aecd39b98634bb2a85de440871eccb8624",
+    "tools/adblock/lazy_parser_test.mjs": "65054d009ed885eccd17183908d6a2edfd211bd4f46e838c04ec8e271a735d13",
+    "tools/adblock/snapshot_test.mjs": "409de70576392191a93980edd4585ad21a907e76adf6bc590f37999fe94151df",
+    "tools/adblock/oracle_target_test.mjs": "1fe82c7bff1cb5a1b9cd9ac9b5f84c0b006ccfc9cf3cd5d56fa8bfef61bf3588",
+    "tools/adblock/brave_parity.mjs": "171d3475ed4fe81523bafae3a147874a5fa7cb6180b6ca07002b8b6f5184668e",
+    "tools/adblock/lazy_base64.mjs": "12381e5f7a30c0b5413767e1516d4b2c9d7bed3ebef4089df4dc10519495250d",
+    "tools/adblock/audit_scripts.mjs": "ee29d85d6c0d253f683ce156f99fd0fe0c44b6b4b4a6b96af1bbfca6d2e16779",
+    "tools/adblock/lazy_snapshot.mjs": "dafd596228043792e5deee7bc16ec7c1a3f69947391585b19b59a3a989f08fd6",
+    "tools/adblock/refresh-extended.mjs": "6740458e8fedb6708ef526b467472f99a13a20d5274e2c21f94a4cba158f30aa",
+    "tools/adblock/oracle_assets.mjs": "7333c6de7513177fa90b2ba816db2bfe48de3eb2bc4ad80cdea00bfa62decff0",
+    "tools/adblock/lazy_base64_test.mjs": "468d68d2aca51e9e3bd36c1ec82c818bd4b70253e9e45c4e3933167301d5ba03",
+    "tools/adblock/snapshot.mjs": "8cd095df8d5a4066fe2ebec55d441463f911d23b2cb76013e04ba0cdf3ae890c",
+    "tools/adblock/lazy_snapshot_test.mjs": "cf4fa7161309730d85a9a58e9033df8373ee6a030a16521b76b61639f1c32d49",
+    "tools/adblock/lazy_resources.mjs": "bd51ccb46a1b93bcfce6aef130862c6c26363f8a88f9c731ebe49da82d6e870e",
+    "tools/adblock/oracle_assets_test.mjs": "a42507957d3c09fe3685026afd76de3b2ea6a0eb33d6bbbbaf89ec6818c205c5",
+    "tools/adblock/oracle_shutdown_test.mjs": "c98b9c7de369ac66ba4a4d61ddd57797c62ac23ba8d22d2ca7dd31a40370ef82",
+    "tools/adblock/audit_scripts_test.mjs": "77c2a9e265258bc38cb0e31dafd9c3a238403b315fafbe154c6a0c2a3b6ae8fc"
+  }
+}
