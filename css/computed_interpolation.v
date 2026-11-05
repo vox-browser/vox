@@ -11377,7 +11377,7 @@ pub fn (mut s StyleComputer) set_viewport_rect(viewport_rect CSSPixelRect) {
 	s.viewport_rect_ = viewport_rect
 }
 
-fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractElement, keyframe ResolvedKeyFrame, computed_properties &ComputedProperties) map[PropertyID]&dom.StyleValue {
+fn (s &StyleComputer) compute_keyframe_values_with_id_map(abstract_element dom.AbstractElement, keyframe ResolvedKeyFrame, computed_properties &ComputedProperties) map[PropertyID]&dom.StyleValue {
 	mut result := map[PropertyID]&dom.StyleValue{}
 	// Native recascades retain resolved values, but use the lookup tables only
 	// synchronously. Animation-frame samples already have their bounded owner.
