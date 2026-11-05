@@ -135,7 +135,7 @@ pub fn (matrix FloatMatrix4x4) at(row int, column int) f64 {
 
 // Temporaries stay in fixed arrays: these run for every visual-context node
 // and hit-test candidate, where heap-allocated scratch dominated their cost.
-pub fn (left FloatMatrix4x4) multiply(right FloatMatrix4x4) FloatMatrix4x4 {
+fn (left FloatMatrix4x4) multiply_with_accessors(right FloatMatrix4x4) FloatMatrix4x4 {
 	mut values := [16]f64{}
 	for row in 0 .. 4 {
 		for column in 0 .. 4 {
