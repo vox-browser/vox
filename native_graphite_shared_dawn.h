@@ -143,14 +143,24 @@ struct VoxDawnSharedSurface {
         }
         return result;
     }
-    // The caller retires this surface immediately after the read. Leave GPU
-    // access ended and copy into its owned destination, avoiding a second
-    // full-size CPU allocation. Batch targets use read() to resume GPU access.
+    // Leave GPU access ended and copy into the caller's owned destination,
+    // avoiding a second full-size CPU allocation. A retained target explicitly
+    // resumes access before its next draw; batch targets use read() below.
     bool read_final(skgpu::graphite::Context* gpu, SkIRect rect, void* out, size_t pitch) {
         if (!pixels || !out || rect.isEmpty() || pitch < size_t(rect.width()) * 4
             || pitch > SIZE_MAX / size_t(rect.height())) return false;
-        if (!gpu || !gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes))
+        // EndAccess's queue fence follows both Skia's submission and any work
+        // EndAccess itself flushes. It can provide the single CPU wait for this
+        // final read, then Skia can retire its completed recordings normally.
+        bool single_wait = std::getenv("VOX_DAWN_SINGLE_SUBMIT_WAIT");
+        auto sync = single_wait ? skgpu::graphite::SyncToCpu::kNo : skgpu::graphite::SyncToCpu::kYes;
+        if (!gpu || !gpu->submit(skgpu::graphite::SubmitInfo(sync))
             || !pixels->end_and_wait()) return false;
+        if (single_wait) {
+            gpu->checkAsyncWorkCompletion();
+            if (std::getenv("VOX_SHARED_DAWN_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_DAWN_SINGLE_SUBMIT_WAIT completed=1\n");
+        }
         return pixels->copy(rect, out, pitch, false);
     }
     bool read(skgpu::graphite::Context* gpu, SkIRect rect, std::vector<uint8_t>& out) {

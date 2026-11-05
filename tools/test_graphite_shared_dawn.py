@@ -102,6 +102,12 @@ def main():
     run('functional-recorder-reuse', [str(binary), '--recorder-reuse'], runtime=True, diagnostics=True)
     assert 'Vox Dawn region recorder: reused=1' in (out / 'functional-recorder-reuse.log').read_text()
     assert 'Dawn error:' not in (out / 'functional-recorder-reuse.log').read_text()
+    for name, option in [('functional-single-wait', '--single-submit-wait'),
+                         ('functional-reuse-single-wait', '--recorder-reuse-single-wait')]:
+        run(name, [str(binary), option], runtime=True, diagnostics=True)
+        log = (out / (name + '.log')).read_text()
+        assert 'VOX_DAWN_SINGLE_SUBMIT_WAIT completed=1' in log
+        assert 'Dawn error:' not in log
     assert 'VOX_SHARED_DAWN ' in (out / 'functional.log').read_text()
     assert 'Dawn error:' not in (out / 'functional.log').read_text()
     assert 'VOX_DAWN_DIRECT_READBACK ' in (out / 'functional.log').read_text()

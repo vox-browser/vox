@@ -139,15 +139,22 @@ static void check_retired_texture_views() {
 }
 
 int main(int argc, char** argv) { @autoreleasepool {
-    if (argc > 1 && !std::strcmp(argv[1], "--recorder-reuse")) {
+    bool single_wait = argc > 1 && (!std::strcmp(argv[1], "--single-submit-wait")
+        || !std::strcmp(argv[1], "--recorder-reuse-single-wait"));
+    unsetenv("VOX_DAWN_SINGLE_SUBMIT_WAIT");
+    if (single_wait) setenv("VOX_DAWN_SINGLE_SUBMIT_WAIT", "1", 1);
+    if (argc > 1 && (!std::strcmp(argv[1], "--recorder-reuse")
+        || !std::strcmp(argv[1], "--recorder-reuse-single-wait"))) {
         setenv("VOX_DAWN_REGION_RECORDER_DIAGNOSTICS", "1", 1);
         setenv("VOX_REUSE_DAWN_REGION_TARGET", "1", 1);
         unsigned cases = 0;
         for (float phase : {0.f, .25f, .5f, .75f}) for (bool image : {false, true})
             for (bool tagged : {false, true}) for (bool cropped : {false, true}) {
                 unsetenv("VOX_REUSE_DAWN_REGION_RECORDER");
+                unsetenv("VOX_DAWN_SINGLE_SUBMIT_WAIT");
                 auto expected = draw(true, false, false, phase, image, tagged, cropped);
                 assert(!regional_recorder);
+                if (single_wait) setenv("VOX_DAWN_SINGLE_SUBMIT_WAIT", "1", 1);
                 setenv("VOX_REUSE_DAWN_REGION_RECORDER", "1", 1);
                 assert(draw(true, false, false, phase, image, tagged, cropped) == expected);
                 auto* retained = regional_recorder.get(); assert(retained && regional_surface);
@@ -176,6 +183,7 @@ int main(int argc, char** argv) { @autoreleasepool {
         std::printf("%u exact cold/reused Dawn recorder cases; failure discard, purge and context retirement passed\n", cases);
         return 0;
     }
+    if (single_wait) argc = 1;
     if (argc > 1 && (std::strcmp(argv[1], "final-direct") == 0
         || std::strcmp(argv[1], "final-staged") == 0)) {
         bool direct = std::strcmp(argv[1], "final-direct") == 0;
