@@ -30,6 +30,18 @@ inline void vox_swap_red_blue_pixels(uint8_t* destination, uint8_t const* source
     }, "channel-swap");
 }
 
+// Independent, disjoint rows (or an identical in-place view). Keep padding
+// untouched, and bound memory-copy participation while the GPU is also busy.
+inline void vox_swap_red_blue_rows(uint8_t* destination, size_t destination_pitch,
+    uint8_t const* source, size_t source_pitch, size_t width, size_t height)
+{
+    vox_raster::parallel_rows(width, height, [&](size_t begin, size_t end) {
+        for (size_t row = begin; row < end; ++row)
+            vox_swap_red_blue_serial(destination + row * destination_pitch,
+                source + row * source_pitch, width);
+    }, "channel-swap-rows", 4);
+}
+
 inline void vox_copy_backdrop_pixels(uint8_t* destination, uint8_t const* source, size_t pitch,
     size_t width, size_t height, size_t left, size_t top, size_t right, size_t bottom)
 {

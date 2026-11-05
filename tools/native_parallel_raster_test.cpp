@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-static void check_workers(vox_raster::ParallelRanges& pool, size_t expected = 0)
+static void check_workers(vox_raster::ParallelRanges& pool, size_t expected = 0, size_t maximum = 0)
 {
     if (!expected) expected = pool.capacity();
     std::mutex mutex;
@@ -20,7 +20,7 @@ static void check_workers(vox_raster::ParallelRanges& pool, size_t expected = 0)
         ready.notify_all();
         // Every configured lane must actually enter the job simultaneously.
         ready.wait(lock, [&] { return threads.size() == expected; });
-    });
+    }, "test-workers", maximum);
     assert(threads.size() == expected);
     std::printf("worker participation: %zu distinct threads, %u logical CPUs\n",
         threads.size(), std::thread::hardware_concurrency());
@@ -31,6 +31,7 @@ static void check_scheduler()
     vox_raster::ParallelRanges pool(4), single(1);
     check_workers(pool);
     check_workers(vox_raster::shared_pool());
+    check_workers(vox_raster::shared_pool(), std::min(size_t(4), vox_raster::shared_pool().capacity()), 4);
     for (size_t count = 0; count < 110; ++count) {
         std::vector<unsigned> visits(count);
         pool.run(count, 3, [&](size_t begin, size_t end) {
@@ -119,6 +120,22 @@ static void check_pixels()
         }
         vox_copy_backdrop_pixels(output.data(), source.data(), pitch, width, height, left, top, right, bottom);
         assert(output == expected); // Padding and skipped opaque core remain untouched.
+    }
+    for (size_t w : {size_t(0), size_t(1), size_t(7), size_t(2051)}) {
+        size_t rows = w > 100 ? 1541 : 9, src_pitch = w * 4 + 29, dst_pitch = w * 4 + 13;
+        auto input = pattern(src_pitch * rows + 17), saved = input;
+        std::vector<uint8_t> actual(dst_pitch * rows + 19, 0xa7), expected = actual;
+        for (size_t y = 0; y < rows; ++y) for (size_t x = 0; x < w; ++x)
+            for (size_t channel = 0; channel < 4; ++channel)
+                expected[3 + y * dst_pitch + x * 4 + channel]
+                    = input[5 + y * src_pitch + x * 4 + (channel == 0 ? 2 : channel == 2 ? 0 : channel)];
+        vox_swap_red_blue_rows(actual.data() + 3, dst_pitch, input.data() + 5, src_pitch, w, rows);
+        assert(actual == expected && input == saved);
+        actual = input; expected = input;
+        for (size_t y = 0; y < rows; ++y) for (size_t x = 0; x < w; ++x)
+            std::swap(expected[5 + y * src_pitch + x * 4], expected[7 + y * src_pitch + x * 4]);
+        vox_swap_red_blue_rows(actual.data() + 5, src_pitch, actual.data() + 5, src_pitch, w, rows);
+        assert(actual == expected);
     }
 }
 

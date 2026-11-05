@@ -53,9 +53,11 @@ public:
     size_t capacity() const { return m_workers.size() + 1; }
 
     template<typename Function>
-    void run(size_t count, size_t minimum_per_lane, Function&& function, char const* label = "pixels")
+    void run(size_t count, size_t minimum_per_lane, Function&& function, char const* label = "pixels",
+        size_t maximum_lanes = 0)
     {
         auto lanes = std::min(capacity(), count / std::max(size_t(1), minimum_per_lane));
+        if (maximum_lanes) lanes = std::min(lanes, maximum_lanes);
         // Interactive frames share memory bandwidth with GPU submissions and
         // video decoding. Keep surplus workers asleep in this diagnostic arm;
         // range ownership, rounding and the completion barrier stay unchanged.
@@ -181,7 +183,8 @@ inline void parallel_pixels(size_t count, Function&& function, char const* label
 }
 
 template<typename Function>
-inline void parallel_rows(size_t width, size_t height, Function&& function, char const* label)
+inline void parallel_rows(size_t width, size_t height, Function&& function, char const* label,
+    size_t maximum_lanes = 0)
 {
     // Dispatch pixel-sized ranges but assign whole rows to each participant.
     // Width is nonzero at all raster callers; accept empty buffers as a no-op.
@@ -191,6 +194,7 @@ inline void parallel_rows(size_t width, size_t height, Function&& function, char
         function(0, height);
         return;
     }
-    shared_pool().run(height, std::max(size_t(1), (minimum_pixels_per_lane + width - 1) / width), function, label);
+    shared_pool().run(height, std::max(size_t(1), (minimum_pixels_per_lane + width - 1) / width),
+        function, label, maximum_lanes);
 }
 }

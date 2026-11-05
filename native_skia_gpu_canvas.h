@@ -337,6 +337,12 @@ void gpu_canvas_flush()
             CGContextFlush(frame->destination);
             for (size_t index = 0; index < read_rects.size(); ++index) {
                 auto const& rect = read_rects[index];
+                if (std::getenv("VOX_PARALLEL_GPU_CANVAS_READBACK")) {
+                    vox_swap_red_blue_rows(data + size_t(rect.top()) * pitch + size_t(rect.left()) * 4,
+                        pitch, reinterpret_cast<uint8_t const*>(pixels[index].data()),
+                        size_t(rect.width()) * 4, size_t(rect.width()), size_t(rect.height()));
+                    continue;
+                }
                 for (int row = 0; row < rect.height(); ++row)
                     swap_red_blue_pixels(data + size_t(rect.top() + row) * pitch + size_t(rect.left()) * 4,
                         reinterpret_cast<uint8_t const*>(pixels[index].data() + size_t(row) * rect.width()),
