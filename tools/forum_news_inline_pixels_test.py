@@ -87,6 +87,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_closing_punctuation_keeps_automatic_hyphenation_opportunities(self):
         self.compare_fixture('hyphenation-closing-punctuation', width=1024, height=768)
 
+    def test_css_ratio_blocks_keep_border_box_sizes_and_percentage_descendants(self):
+        self.compare_fixture('block-border-box-aspect-ratio', width=1024, height=768)
+
     def test_register_header_uses_block_content_alignment(self):
         self.compare_fixture('block-content-alignment', width=1024, height=768)
 
