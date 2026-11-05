@@ -1220,6 +1220,8 @@ pub mut:
 }
 
 pub struct CSSTransitionStorage {
+mut:
+	spare_registration_bucket &CSSRegisteredTransitionStorageBucket = unsafe { nil }
 pub mut:
 	registered_transition_attributes map[i64]&CSSRegisteredTransitionStorageBucket
 	associated_transitions           map[i64]&CSSTransitionStorageBucket
@@ -1241,6 +1243,7 @@ pub struct CSSRegisteredTransitionStorageBucket {
 pub mut:
 	property_ids []PropertyID
 	attributes   []TransitionTimingAttributes
+	// Negative indexes preserve reusable hash slots for inactive properties.
 	indexes      map[PropertyID]int
 }
 
@@ -1284,7 +1287,12 @@ fn (mut storage CSSTransitionStorage) ensure_registered_transition_bucket(abstra
 	if bucket := storage.registered_transition_attributes[key] {
 		return bucket
 	}
-	bucket := &CSSRegisteredTransitionStorageBucket{}
+	mut bucket := storage.spare_registration_bucket
+	if bucket == unsafe { nil } {
+		bucket = &CSSRegisteredTransitionStorageBucket{}
+	} else {
+		storage.spare_registration_bucket = unsafe { nil }
+	}
 	storage.registered_transition_attributes[key] = bucket
 	return bucket
 }
@@ -1300,7 +1308,17 @@ fn (mut storage CSSTransitionStorage) ensure_associated_transition_bucket(abstra
 }
 
 pub fn (mut storage CSSTransitionStorage) clear_registered_transitions(abstract_element dom.AbstractElement) {
-	storage.registered_transition_attributes.delete(abstract_element_storage_key(abstract_element))
+	key := abstract_element_storage_key(abstract_element)
+	mut bucket := storage.registered_transition_attributes[key] or { return }
+	storage.registered_transition_attributes.delete(key)
+	// Style recomputation replaces registrations synchronously. Keep one empty
+	// table for that replacement instead of growing document storage each time.
+	if storage.spare_registration_bucket == unsafe { nil } {
+		for property_id in bucket.property_ids { bucket.indexes[property_id] = -1 }
+		bucket.property_ids.clear()
+		bucket.attributes.clear()
+		storage.spare_registration_bucket = bucket
+	}
 }
 
 pub fn (mut storage CSSTransitionStorage) add_transitioned_properties(abstract_element dom.AbstractElement, transitions []TransitionProperties) {
@@ -1310,7 +1328,7 @@ pub fn (mut storage CSSTransitionStorage) add_transitioned_properties(abstract_e
 		attributes_index := bucket.attributes.len
 		bucket.attributes << transition_attributes_from_transition_properties(transition_properties)
 		for property_id in transition_properties.properties {
-			if property_id !in bucket.indexes {
+			if (bucket.indexes[property_id] or { -1 }) < 0 {
 				bucket.property_ids << property_id
 			}
 			bucket.indexes[property_id] = attributes_index
@@ -1330,6 +1348,7 @@ pub fn (storage &CSSTransitionStorage) property_transition_attributes(abstract_e
 		return none
 	}
 	index := bucket.indexes[property_id] or { return none }
+	if index < 0 { return none }
 	return bucket.attributes[index]
 }
 
