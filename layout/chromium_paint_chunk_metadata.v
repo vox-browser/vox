@@ -166,6 +166,21 @@ fn chromium_hit_test_border_rect(box &BlockBox) LayoutRect {
 	return pixel_snapped_layout_rect(rect)
 }
 
+// PendingLayer merging uses visible bounds in the common property space.
+// A clipped decoration can be much wider than its visible ancestor; using its
+// complete border box here invents empty raster area beyond the document.
+fn chromium_paint_context_bounds(bounds LayoutRect, context int,
+	state ChromiumRasterPropertyState, result &DocumentLayoutResult) LayoutRect {
+	if state.legacy_effect || state.effect_scope != 0 || state.scroll_frame > 0
+		|| state.sticky_frame > 0 || state.fixed_to_viewport { return bounds }
+	clip := compatibility_visual_context_clip(&result.visual_context_tree, context,
+		result.scroll_state_snapshot)
+	if !clip.has_clip { return bounds }
+	viewport := result.document.viewport_rect()
+	return compatibility_intersect_rects(bounds, LayoutRect{clip.clip.x + viewport.x,
+		clip.clip.y + viewport.y, clip.clip.width, clip.clip.height})
+}
+
 fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []PaintCommand,
 	cull ?LayoutRect, mut scratch ChromiumRasterPlanScratch) ChromiumPaintMetadataMode {
 	scratch.paint_metadata.clear()
@@ -198,8 +213,9 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 		// BoxFragmentPainter records hit-test data from ToPixelSnappedRect,
 		// before mapping it through the paint property's transform.
 		rect := chromium_hit_test_border_rect(box)
-		bounds := compatibility_affine_map_rect(box.paint_transform, rect)
+		unclipped_bounds := compatibility_affine_map_rect(box.paint_transform, rect)
 		context, state := chromium_metadata_state(box, result, &scratch)
+		bounds := chromium_paint_context_bounds(unclipped_bounds, context, state, result)
 		// Fully clipped boxes have neither painted ink nor hit-test bounds.
 		// Their invisible border must not move a visible sibling's raster origin.
 		if context < 0 || state.requires_root_raster
@@ -449,7 +465,8 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			context, client := chromium_chunk_context(chunk, result, commands)
 			recorded := if !chunk.draws_content { LayoutRect{} } else if chunk.recorded_bounds.width > 0
 				&& chunk.recorded_bounds.height > 0 { chunk.recorded_bounds } else { chunk.bounds }
-			group := chromium_append_paint_chunk(chunk.bounds, recorded, chunk.state, context, client,
+			bounds := chromium_paint_context_bounds(chunk.bounds, context, chunk.state, result)
+			group := chromium_append_paint_chunk(bounds, recorded, chunk.state, context, client,
 				mut scratch)
 			if chunk.unbounded_sticky_overlap {
 				last := scratch.paint_chunks[group]
