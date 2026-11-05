@@ -2881,3 +2881,55 @@ exits and four verified archives. It preserves the failed preflights, test-runti
 mismatch and independent closure probes. No app is copied or duplicate build
 queued. The publication lease is released; **no 5%-below-Brave acceptance is
 claimed**.
+
+
+## November 5: direct matrix field multiplication
+
+Commit `4073ac8c1` replaces indexed `FloatMatrix4x4` multiplication with sixteen
+direct field dot products. Each preserves the original zero-initialized,
+left-to-right accumulation, including zero terms. It introduces no identity or
+affine shortcut and no floating-point reassociation. The original accessor
+loop is byte-identical apart from its method name and remains the control via
+`VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY=1`. The diagnostic flag
+`VOX_MATRIX_MULTIPLY_DIAGNOSTICS=1` reports the executed candidate once.
+
+All **15 focused arithmetic jobs pass**, with **40 test-function executions**:
+four cases × five modes × both variants. The cases cover noncommuting
+transforms, all 256 basis pairs, 1,024 randomized finite/raw-bit matrix pairs,
+signed zero, subnormals, infinities and NaNs, and no preallocation-arena growth.
+Non-NaN results match the original loop bit for bit; NaN classification is
+checked without claiming equal NaN payloads or floating-point exception flags.
+The five modes include poisoned preallocation, ordinary GC, no GC, production
+C `-O3`, and ASan/UBSan. Every compiler invocation uses the explicit production
+runtime overlay, its 10 GiB compiler limit and a memory guard.
+
+The complete wider CSS selection is retained and **does not pass**. Its 768
+test-function calls have identical failure sets in both variants: the existing
+geometry-provenance expectation and extrapolated-opacity expectation fail
+under preallocation and sanitizers; opacity also fails under ordinary GC and
+no GC. The initial failed selection and a separate accessor-control execution
+are retained as well. No case is removed or weakened, and these failures are
+not counted as passing arithmetic checks.
+
+Tooling commit `f46fe400c` measures 32,768 products per scene through the public
+method. Each counted product checks all sixteen results against the accessor
+oracle. Fixture/oracle construction and warmup are excluded; a common
+non-inlined wrapper, result checks and checksum remain included. Four
+unprofiled control/candidate/candidate/control observations have matching
+checksums, with two execution diagnostics kept separately.
+
+| Matrix component | Median observed instruction reduction |
+| --- | ---: |
+| Identity | 2.976% |
+| Affine | 3.224% |
+| Perspective and rotation | 2.807% |
+| Dense | 2.481% |
+| Nonfinite | 2.525% |
+
+The [focused/component receipt](performance/chatgpt-matrix-multiply-20261105.json)
+links all raw jobs, failures, test-call counts, source/executable hashes,
+counters, checksums and the verified archive. These are component results,
+with **no whole-page instruction credit**. The broad-check cadence remains
+zero. Browser validation requires a completed bundle whose source receipt
+proves the final change; the original SOCKS capture, scripts and references
+remain unchanged. **The 5%-below-Brave target remains unmet**.

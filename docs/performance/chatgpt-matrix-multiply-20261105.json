@@ -1,0 +1,2385 @@
+{
+  "version": 1,
+  "complete": true,
+  "recorded_unix": 1793894229.753612,
+  "implementation_commit": "4073ac8c1",
+  "benchmark_commit": "f46fe400c",
+  "change": "Multiply FloatMatrix4x4 fields directly with sixteen dot products. Each keeps the old zero-initialized, left-to-right accumulation. No zero term, identity/affine shortcut or reassociation is introduced. The original accessor loop remains the control.",
+  "original_accessor_loop_unchanged": true,
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/transforms.v": "d13cfcaf743debbbc52fab664f4bb0f458b62e7dcb5a9b27b53a63d380671e00",
+      "css/matrix_multiply.v": "ad1989c96cc18ceafe7bdb42e376f880e92910eed6372e284675ece7e4443456",
+      "css/matrix_multiply_test.v": "a369f3cd6f0300024dc7e41e43cca8c08567d26fb4a74f98ea27ff5959ec0b86"
+    },
+    "source_after": {
+      "css/transforms.v": "d13cfcaf743debbbc52fab664f4bb0f458b62e7dcb5a9b27b53a63d380671e00",
+      "css/matrix_multiply.v": "ad1989c96cc18ceafe7bdb42e376f880e92910eed6372e284675ece7e4443456",
+      "css/matrix_multiply_test.v": "a369f3cd6f0300024dc7e41e43cca8c08567d26fb4a74f98ea27ff5959ec0b86"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-prealloc",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893346.5575411,
+          "cpu_count": 18,
+          "load": [
+            27.82421875,
+            37.591796875,
+            32.14404296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893352.234515,
+          "load": [
+            25.916015625,
+            37.03369140625,
+            31.97900390625
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893352.241408,
+          "cpu_count": 18,
+          "load": [
+            25.916015625,
+            37.03369140625,
+            31.97900390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893352.687789,
+          "load": [
+            25.916015625,
+            37.03369140625,
+            31.97900390625
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893352.694654,
+          "cpu_count": 18,
+          "load": [
+            25.916015625,
+            37.03369140625,
+            31.97900390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893352.896252,
+          "load": [
+            25.916015625,
+            37.03369140625,
+            31.97900390625
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-default",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893352.902973,
+          "cpu_count": 18,
+          "load": [
+            25.916015625,
+            37.03369140625,
+            31.97900390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893358.647423,
+          "load": [
+            23.0615234375,
+            36.0595703125,
+            31.6923828125
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893358.654285,
+          "cpu_count": 18,
+          "load": [
+            23.0615234375,
+            36.0595703125,
+            31.6923828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893359.084597,
+          "load": [
+            23.0615234375,
+            36.0595703125,
+            31.6923828125
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893359.091577,
+          "cpu_count": 18,
+          "load": [
+            23.0615234375,
+            36.0595703125,
+            31.6923828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893359.286887,
+          "load": [
+            23.0615234375,
+            36.0595703125,
+            31.6923828125
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-none",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893359.293809,
+          "cpu_count": 18,
+          "load": [
+            23.0615234375,
+            36.0595703125,
+            31.6923828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893365.10137,
+          "load": [
+            21.37451171875,
+            35.49365234375,
+            31.51806640625
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893365.108496,
+          "cpu_count": 18,
+          "load": [
+            21.37451171875,
+            35.49365234375,
+            31.51806640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893365.677151,
+          "load": [
+            21.37451171875,
+            35.49365234375,
+            31.51806640625
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893365.684342,
+          "cpu_count": 18,
+          "load": [
+            21.37451171875,
+            35.49365234375,
+            31.51806640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893365.88563,
+          "load": [
+            21.37451171875,
+            35.49365234375,
+            31.51806640625
+          ]
+        }
+      },
+      {
+        "label": "compile-production",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-production.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-production-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prod",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O3",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-production",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893365.892858,
+          "cpu_count": 18,
+          "load": [
+            21.37451171875,
+            35.49365234375,
+            31.51806640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893404.908353,
+          "load": [
+            21.35205078125,
+            33.48388671875,
+            30.94873046875
+          ]
+        }
+      },
+      {
+        "label": "run-production-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-production-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-production-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-production"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893404.915584,
+          "cpu_count": 18,
+          "load": [
+            21.35205078125,
+            33.48388671875,
+            30.94873046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893405.48303,
+          "load": [
+            21.35205078125,
+            33.48388671875,
+            30.94873046875
+          ]
+        }
+      },
+      {
+        "label": "run-production-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-production-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-production-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-production"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893405.490338,
+          "cpu_count": 18,
+          "load": [
+            21.35205078125,
+            33.48388671875,
+            30.94873046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893405.685726,
+          "load": [
+            21.35205078125,
+            33.48388671875,
+            30.94873046875
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-sanitized",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893405.693006,
+          "cpu_count": 18,
+          "load": [
+            21.35205078125,
+            33.48388671875,
+            30.94873046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893417.403852,
+          "load": [
+            23.142578125,
+            33.46728515625,
+            30.97216796875
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893417.410719,
+          "cpu_count": 18,
+          "load": [
+            23.142578125,
+            33.46728515625,
+            30.97216796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893418.0278022,
+          "load": [
+            23.142578125,
+            33.46728515625,
+            30.97216796875
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893418.034579,
+          "cpu_count": 18,
+          "load": [
+            23.142578125,
+            33.46728515625,
+            30.97216796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893418.223556,
+          "load": [
+            23.142578125,
+            33.46728515625,
+            30.97216796875
+          ]
+        }
+      }
+    ]
+  },
+  "focused_test_function_executions": 40,
+  "related": {
+    "complete": true,
+    "passed": false,
+    "source_before": {
+      "css/transforms.v": "d13cfcaf743debbbc52fab664f4bb0f458b62e7dcb5a9b27b53a63d380671e00",
+      "css/matrix_multiply.v": "ad1989c96cc18ceafe7bdb42e376f880e92910eed6372e284675ece7e4443456",
+      "css/matrix_multiply_test.v": "a369f3cd6f0300024dc7e41e43cca8c08567d26fb4a74f98ea27ff5959ec0b86"
+    },
+    "source_after": {
+      "css/transforms.v": "d13cfcaf743debbbc52fab664f4bb0f458b62e7dcb5a9b27b53a63d380671e00",
+      "css/matrix_multiply.v": "ad1989c96cc18ceafe7bdb42e376f880e92910eed6372e284675ece7e4443456",
+      "css/matrix_multiply_test.v": "a369f3cd6f0300024dc7e41e43cca8c08567d26fb4a74f98ea27ff5959ec0b86"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/affine_transform_test.v,/Users/alex/code/vox2/css/backface_visibility_test.v,/Users/alex/code/vox2/css/projection_style_lifetime_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/invalidation_projection_storage_test.v,/Users/alex/code/vox2/css/device_layout_projection_storage_test.v,/Users/alex/code/vox2/css/anonymous_computed_geometry_test.v,/Users/alex/code/vox2/css/generated_metadata_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-prealloc",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893521.5862432,
+          "cpu_count": 18,
+          "load": [
+            25.02685546875,
+            30.962890625,
+            30.27490234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893535.894322,
+          "load": [
+            33.3984375,
+            32.51708984375,
+            30.84033203125
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893535.902574,
+          "cpu_count": 18,
+          "load": [
+            33.3984375,
+            32.51708984375,
+            30.84033203125
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893537.062644,
+          "load": [
+            33.3984375,
+            32.51708984375,
+            30.84033203125
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893537.071498,
+          "cpu_count": 18,
+          "load": [
+            33.3984375,
+            32.51708984375,
+            30.84033203125
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893538.107579,
+          "load": [
+            33.3984375,
+            32.51708984375,
+            30.84033203125
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-file-list",
+          "/Users/alex/code/vox2/css/affine_transform_test.v,/Users/alex/code/vox2/css/backface_visibility_test.v,/Users/alex/code/vox2/css/projection_style_lifetime_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/invalidation_projection_storage_test.v,/Users/alex/code/vox2/css/device_layout_projection_storage_test.v,/Users/alex/code/vox2/css/anonymous_computed_geometry_test.v,/Users/alex/code/vox2/css/generated_metadata_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-default",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893538.1165152,
+          "cpu_count": 18,
+          "load": [
+            33.3984375,
+            32.51708984375,
+            30.84033203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893553.141875,
+          "load": [
+            39.81884765625,
+            33.951171875,
+            31.37890625
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893553.153397,
+          "cpu_count": 18,
+          "load": [
+            39.81884765625,
+            33.951171875,
+            31.37890625
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893553.9468212,
+          "load": [
+            43.8369140625,
+            34.88134765625,
+            31.72216796875
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893553.9553459,
+          "cpu_count": 18,
+          "load": [
+            43.8369140625,
+            34.88134765625,
+            31.72216796875
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893554.385535,
+          "load": [
+            43.8369140625,
+            34.88134765625,
+            31.72216796875
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/affine_transform_test.v,/Users/alex/code/vox2/css/backface_visibility_test.v,/Users/alex/code/vox2/css/projection_style_lifetime_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/invalidation_projection_storage_test.v,/Users/alex/code/vox2/css/device_layout_projection_storage_test.v,/Users/alex/code/vox2/css/anonymous_computed_geometry_test.v,/Users/alex/code/vox2/css/generated_metadata_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-none",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893554.394217,
+          "cpu_count": 18,
+          "load": [
+            43.8369140625,
+            34.88134765625,
+            31.72216796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893570.190099,
+          "load": [
+            41.3173828125,
+            34.744140625,
+            31.72705078125
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893570.199834,
+          "cpu_count": 18,
+          "load": [
+            41.3173828125,
+            34.744140625,
+            31.72705078125
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893570.763357,
+          "load": [
+            41.3173828125,
+            34.744140625,
+            31.72705078125
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893570.774855,
+          "cpu_count": 18,
+          "load": [
+            41.3173828125,
+            34.744140625,
+            31.72705078125
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893571.079123,
+          "load": [
+            41.3173828125,
+            34.744140625,
+            31.72705078125
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/affine_transform_test.v,/Users/alex/code/vox2/css/backface_visibility_test.v,/Users/alex/code/vox2/css/projection_style_lifetime_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/invalidation_projection_storage_test.v,/Users/alex/code/vox2/css/device_layout_projection_storage_test.v,/Users/alex/code/vox2/css/anonymous_computed_geometry_test.v,/Users/alex/code/vox2/css/generated_metadata_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-sanitized",
+          "/Users/alex/code/vox2/css/matrix_multiply_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793893571.092326,
+          "cpu_count": 18,
+          "load": [
+            41.3173828125,
+            34.744140625,
+            31.72705078125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793893623.152651,
+          "load": [
+            34.91357421875,
+            33.64453125,
+            31.47119140625
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893623.162444,
+          "cpu_count": 18,
+          "load": [
+            34.91357421875,
+            33.64453125,
+            31.47119140625
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893625.4688609,
+          "load": [
+            35.64111328125,
+            33.81640625,
+            31.54443359375
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/related/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793893625.48008,
+          "cpu_count": 18,
+          "load": [
+            35.64111328125,
+            33.81640625,
+            31.54443359375
+          ]
+        },
+        "exit": 1,
+        "host_after": {
+          "unix": 1793893627.268836,
+          "load": [
+            35.64111328125,
+            33.81640625,
+            31.54443359375
+          ]
+        }
+      }
+    ]
+  },
+  "related_test_function_calls": 768,
+  "related_failures": {
+    "prealloc": {
+      "candidate": [
+        "test_custom_property_interpolation_matches_css_animation_rules",
+        "test_lazy_computed_geometry_and_provenance_outlive_paint_projection"
+      ],
+      "control": [
+        "test_custom_property_interpolation_matches_css_animation_rules",
+        "test_lazy_computed_geometry_and_provenance_outlive_paint_projection"
+      ]
+    },
+    "default": {
+      "candidate": [
+        "test_custom_property_interpolation_matches_css_animation_rules"
+      ],
+      "control": [
+        "test_custom_property_interpolation_matches_css_animation_rules"
+      ]
+    },
+    "none": {
+      "candidate": [
+        "test_custom_property_interpolation_matches_css_animation_rules"
+      ],
+      "control": [
+        "test_custom_property_interpolation_matches_css_animation_rules"
+      ]
+    },
+    "sanitized": {
+      "candidate": [
+        "test_custom_property_interpolation_matches_css_animation_rules",
+        "test_lazy_computed_geometry_and_provenance_outlive_paint_projection"
+      ],
+      "control": [
+        "test_custom_property_interpolation_matches_css_animation_rules",
+        "test_lazy_computed_geometry_and_provenance_outlive_paint_projection"
+      ]
+    }
+  },
+  "related_qualification": "The complete related selection is retained and remains failing. Candidate and accessor control report identical failure sets: geometry provenance plus extrapolated opacity under prealloc/sanitizers, and opacity under GC/no-GC. No test is removed, weakened or labeled passing. The arithmetic selection is independently passing in both variants under all five modes, including production C -O3.",
+  "generated_c_test_calls": {
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-prealloc.c": {
+      "sha256": "bde1329aa896858e53be7938bd2118bfe8fb0497bf46be2917951fc21ed168e3",
+      "case_count": 4,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage"
+      ],
+      "group": "arithmetic"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-default.c": {
+      "sha256": "0d14acc79774c7db1bdd3fbed1f5840ab1b8e0f3c0dd635a7c945865ccb71826",
+      "case_count": 4,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage"
+      ],
+      "group": "arithmetic"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-none.c": {
+      "sha256": "4ab808ca5af24deceacf8df2bb7bdfec017c18adbf134efdcb188702fc1dedc9",
+      "case_count": 4,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage"
+      ],
+      "group": "arithmetic"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-production.c": {
+      "sha256": "65a11b81b93a9be42a01dd81165267b8bc5b5dfbb038c6fee85f7df99ba2cb96",
+      "case_count": 4,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage"
+      ],
+      "group": "arithmetic"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-sanitized.c": {
+      "sha256": "bde1329aa896858e53be7938bd2118bfe8fb0497bf46be2917951fc21ed168e3",
+      "case_count": 4,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage"
+      ],
+      "group": "arithmetic"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-prealloc.c": {
+      "sha256": "eb470ca2427e0582fe2d6d195e5a1b6553ce5d2c6378a58cc46118231578e1dc",
+      "case_count": 96,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage",
+        "css__test_source_affine_scale_translate_and_full_inverse_map",
+        "css__test_source_affine_singular_inverse_uses_identity_before_integer_mapping",
+        "css__test_backface_visibility_metadata_and_parsing",
+        "css__test_backface_visibility_computed_value",
+        "css__test_backface_visibility_invalidation",
+        "css__test_document_reports_running_css_animations_to_the_browser_host",
+        "css__test_backface_visibility_matrix_math",
+        "css__test_transform_function_names_are_ascii_case_insensitive",
+        "css__test_lazy_computed_geometry_and_provenance_outlive_paint_projection",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_invalidation_projection_reads_selector_records_without_heap_copies",
+        "css__test_invalidation_projection_preserves_nested_and_slotted_selector_inputs",
+        "css__test_density_projection_does_not_materialize_a_source_layout_cache",
+        "css__test_density_projection_preserves_an_existing_source_layout_snapshot",
+        "css__test_anonymous_geometry_matches_full_materialization_for_default_and_rich_inherited_styles",
+        "css__test_anonymous_geometry_preserves_full_resolver_for_unresolved_and_animated_sources",
+        "css__test_anonymous_geometry_preserves_relative_units_normal_metrics_and_cache_lifetimes",
+        "css__test_anonymous_geometry_keeps_font_environment_refresh_and_explicit_metrics_fallback",
+        "css__test_anonymous_geometry_provenance_tracks_raw_aliases_created_before_and_after_resolution",
+        "css__test_anonymous_geometry_provenance_is_cleared_by_typed_overrides_and_animation_removal",
+        "css__test_anonymous_geometry_provenance_checks_root_viewport_and_subject_context",
+        "css__test_anonymous_geometry_callback_mutations_preserve_the_original_clone_boundary",
+        "css__test_anonymous_geometry_preserves_container_lengths_when_the_container_resizes",
+        "css__test_anonymous_geometry_keeps_the_original_font_snapshot_after_unrelated_completion",
+        "css__test_logical_alias_metadata_covers_generated_properties",
+        "css__test_logical_edges_map_in_horizontal_writing_mode",
+        "css__test_logical_edges_map_in_vertical_and_sideways_writing_modes",
+        "css__test_logical_corner_mapping",
+        "css__test_pseudo_element_property_whitelists",
+        "css__test_generated_property_computation_dependency_order",
+        "css__test_generated_shorthand_relationship_metadata_matches_upstream_order",
+        "css__test_computed_font_size_and_line_height_use_parent_metrics",
+        "css__test_logical_alias_context_inherits_parent_writing_mode_and_direction",
+        "css__test_create_document_style_uses_viewport_and_block_display",
+        "css__test_root_and_out_of_flow_elements_are_blockified",
+        "css__test_document_element_pseudo_element_is_not_blockified_as_the_root",
+        "css__test_flex_container_blockifies_inline_child",
+        "css__test_full_style_pipeline_resolves_inherited_custom_properties_and_shorthands",
+        "css__test_custom_property_important_wins_in_author_stylesheet",
+        "css__test_custom_property_data_is_shared_with_descendants_without_own_values",
+        "css__test_custom_property_data_is_shared_when_the_same_rule_matches_parent_and_child",
+        "css__test_custom_property_css_wide_keywords_follow_upstream_computation",
+        "css__test_custom_property_change_tracking_compares_resolved_own_values",
+        "css__test_inline_style_retains_one_typed_declaration_across_cascades_and_mutations",
+        "css__test_pseudo_element_style_is_created_only_when_generated",
+        "css__test_internal_shadow_tree_element_uses_host_pseudo_element_style",
+        "css__test_monospace_font_family_recascades_inherited_keyword_font_size",
+        "css__test_font_relative_units_use_the_inheritance_parent_computation_context",
+        "css__test_own_monospace_font_size_does_not_use_the_recascade_placeholder_as_its_em_basis",
+        "css__test_match_parent_text_align_resolves_against_parent_direction",
+        "css__test_computed_cssom_reads_regular_and_custom_properties",
+        "css__test_stacking_context_neutral_values_are_detected",
+        "css__test_computed_values_composite_initial_values_match_upstream",
+        "css__test_computed_property_accessors_return_typed_values",
+        "css__test_box_shadow_interpolation_uses_typed_shadow_components",
+        "css__test_mixed_length_percentage_interpolation_builds_a_calculation",
+        "css__test_additive_composition_uses_typed_css_values",
+        "css__test_transform_interpolation_matches_primitives_and_pads_none",
+        "css__test_grid_track_interpolation_handles_mixed_values_and_repeats",
+        "css__test_ratio_parser_preserves_number_calculations_until_computed_value_time",
+        "css__test_border_and_list_style_shorthand_special_resets",
+        "css__test_shape_outside_accepts_images_shape_boxes_and_combined_shapes",
+        "css__test_rule_cache_retains_resolved_keyframes_and_endpoint_markers",
+        "css__test_custom_properties_declared_in_keyframes_are_sampled_and_published",
+        "css__test_inherited_custom_property_change_passes_through_animation_overlay",
+        "css__test_animation_refresh_recomputes_standard_property_using_animated_custom_property",
+        "css__test_animated_registered_custom_property_can_reference_another_animation",
+        "css__test_rule_cache_merges_duplicate_keyframe_offsets_in_source_order",
+        "css__test_css_animation_definitions_are_stored_and_sampled",
+        "css__test_keyframe_animation_timing_function_resolves_custom_properties_when_sampled",
+        "css__test_css_animation_sampling_holds_paused_progress_and_applies_direction_at_boundaries",
+        "css__test_layout_node_resolution_context_uses_installed_element_and_root_styles",
+        "css__test_color_resolution_uses_the_page_preferred_color_scheme",
+        "css__test_unresolved_css_functions_record_dom_style_dependencies",
+        "css__test_css_transitions_are_retained_and_sampled",
+        "css__test_zero_duration_transitions_do_not_allocate_registration_storage",
+        "css__test_shadow_root_author_stylesheet_uses_its_own_css_scope",
+        "css__test_svg_symbol_instance_root_adjusts_display_and_position",
+        "css__test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree",
+        "css__test_subtree_style_recompute_filters_pseudos_without_skipping_bucketed_rules",
+        "css__test_document_user_stylesheet_participates_in_user_cascade",
+        "css__test_page_user_stylesheet_crosses_dom_bridge_and_can_be_invalidated",
+        "css__test_computed_value_flag_helpers_match_computed_values_contract",
+        "css__test_custom_property_interpolation_matches_css_animation_rules",
+        "css__test_stroke_dasharray_interpolation_repeats_patterns_and_handles_none_discretely",
+        "css__test_nested_style_value_interpolation_uses_component_fallback",
+        "css__test_color_interpolation_uses_the_elements_color_resolution_context",
+        "css__test_animation_keyword_resolution_matches_upstream_boundaries",
+        "css__test_basic_shape_interpolation_and_composition",
+        "css__test_inline_style_priority_and_css_text",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "group": "related"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-default.c": {
+      "sha256": "5ef0a77444d9f2b899aa07a76147de489a5f693ffd271dfea0242e8051223957",
+      "case_count": 96,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage",
+        "css__test_source_affine_scale_translate_and_full_inverse_map",
+        "css__test_source_affine_singular_inverse_uses_identity_before_integer_mapping",
+        "css__test_backface_visibility_metadata_and_parsing",
+        "css__test_backface_visibility_computed_value",
+        "css__test_backface_visibility_invalidation",
+        "css__test_document_reports_running_css_animations_to_the_browser_host",
+        "css__test_backface_visibility_matrix_math",
+        "css__test_transform_function_names_are_ascii_case_insensitive",
+        "css__test_lazy_computed_geometry_and_provenance_outlive_paint_projection",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_invalidation_projection_reads_selector_records_without_heap_copies",
+        "css__test_invalidation_projection_preserves_nested_and_slotted_selector_inputs",
+        "css__test_density_projection_does_not_materialize_a_source_layout_cache",
+        "css__test_density_projection_preserves_an_existing_source_layout_snapshot",
+        "css__test_anonymous_geometry_matches_full_materialization_for_default_and_rich_inherited_styles",
+        "css__test_anonymous_geometry_preserves_full_resolver_for_unresolved_and_animated_sources",
+        "css__test_anonymous_geometry_preserves_relative_units_normal_metrics_and_cache_lifetimes",
+        "css__test_anonymous_geometry_keeps_font_environment_refresh_and_explicit_metrics_fallback",
+        "css__test_anonymous_geometry_provenance_tracks_raw_aliases_created_before_and_after_resolution",
+        "css__test_anonymous_geometry_provenance_is_cleared_by_typed_overrides_and_animation_removal",
+        "css__test_anonymous_geometry_provenance_checks_root_viewport_and_subject_context",
+        "css__test_anonymous_geometry_callback_mutations_preserve_the_original_clone_boundary",
+        "css__test_anonymous_geometry_preserves_container_lengths_when_the_container_resizes",
+        "css__test_anonymous_geometry_keeps_the_original_font_snapshot_after_unrelated_completion",
+        "css__test_logical_alias_metadata_covers_generated_properties",
+        "css__test_logical_edges_map_in_horizontal_writing_mode",
+        "css__test_logical_edges_map_in_vertical_and_sideways_writing_modes",
+        "css__test_logical_corner_mapping",
+        "css__test_pseudo_element_property_whitelists",
+        "css__test_generated_property_computation_dependency_order",
+        "css__test_generated_shorthand_relationship_metadata_matches_upstream_order",
+        "css__test_computed_font_size_and_line_height_use_parent_metrics",
+        "css__test_logical_alias_context_inherits_parent_writing_mode_and_direction",
+        "css__test_create_document_style_uses_viewport_and_block_display",
+        "css__test_root_and_out_of_flow_elements_are_blockified",
+        "css__test_document_element_pseudo_element_is_not_blockified_as_the_root",
+        "css__test_flex_container_blockifies_inline_child",
+        "css__test_full_style_pipeline_resolves_inherited_custom_properties_and_shorthands",
+        "css__test_custom_property_important_wins_in_author_stylesheet",
+        "css__test_custom_property_data_is_shared_with_descendants_without_own_values",
+        "css__test_custom_property_data_is_shared_when_the_same_rule_matches_parent_and_child",
+        "css__test_custom_property_css_wide_keywords_follow_upstream_computation",
+        "css__test_custom_property_change_tracking_compares_resolved_own_values",
+        "css__test_inline_style_retains_one_typed_declaration_across_cascades_and_mutations",
+        "css__test_pseudo_element_style_is_created_only_when_generated",
+        "css__test_internal_shadow_tree_element_uses_host_pseudo_element_style",
+        "css__test_monospace_font_family_recascades_inherited_keyword_font_size",
+        "css__test_font_relative_units_use_the_inheritance_parent_computation_context",
+        "css__test_own_monospace_font_size_does_not_use_the_recascade_placeholder_as_its_em_basis",
+        "css__test_match_parent_text_align_resolves_against_parent_direction",
+        "css__test_computed_cssom_reads_regular_and_custom_properties",
+        "css__test_stacking_context_neutral_values_are_detected",
+        "css__test_computed_values_composite_initial_values_match_upstream",
+        "css__test_computed_property_accessors_return_typed_values",
+        "css__test_box_shadow_interpolation_uses_typed_shadow_components",
+        "css__test_mixed_length_percentage_interpolation_builds_a_calculation",
+        "css__test_additive_composition_uses_typed_css_values",
+        "css__test_transform_interpolation_matches_primitives_and_pads_none",
+        "css__test_grid_track_interpolation_handles_mixed_values_and_repeats",
+        "css__test_ratio_parser_preserves_number_calculations_until_computed_value_time",
+        "css__test_border_and_list_style_shorthand_special_resets",
+        "css__test_shape_outside_accepts_images_shape_boxes_and_combined_shapes",
+        "css__test_rule_cache_retains_resolved_keyframes_and_endpoint_markers",
+        "css__test_custom_properties_declared_in_keyframes_are_sampled_and_published",
+        "css__test_inherited_custom_property_change_passes_through_animation_overlay",
+        "css__test_animation_refresh_recomputes_standard_property_using_animated_custom_property",
+        "css__test_animated_registered_custom_property_can_reference_another_animation",
+        "css__test_rule_cache_merges_duplicate_keyframe_offsets_in_source_order",
+        "css__test_css_animation_definitions_are_stored_and_sampled",
+        "css__test_keyframe_animation_timing_function_resolves_custom_properties_when_sampled",
+        "css__test_css_animation_sampling_holds_paused_progress_and_applies_direction_at_boundaries",
+        "css__test_layout_node_resolution_context_uses_installed_element_and_root_styles",
+        "css__test_color_resolution_uses_the_page_preferred_color_scheme",
+        "css__test_unresolved_css_functions_record_dom_style_dependencies",
+        "css__test_css_transitions_are_retained_and_sampled",
+        "css__test_zero_duration_transitions_do_not_allocate_registration_storage",
+        "css__test_shadow_root_author_stylesheet_uses_its_own_css_scope",
+        "css__test_svg_symbol_instance_root_adjusts_display_and_position",
+        "css__test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree",
+        "css__test_subtree_style_recompute_filters_pseudos_without_skipping_bucketed_rules",
+        "css__test_document_user_stylesheet_participates_in_user_cascade",
+        "css__test_page_user_stylesheet_crosses_dom_bridge_and_can_be_invalidated",
+        "css__test_computed_value_flag_helpers_match_computed_values_contract",
+        "css__test_custom_property_interpolation_matches_css_animation_rules",
+        "css__test_stroke_dasharray_interpolation_repeats_patterns_and_handles_none_discretely",
+        "css__test_nested_style_value_interpolation_uses_component_fallback",
+        "css__test_color_interpolation_uses_the_elements_color_resolution_context",
+        "css__test_animation_keyword_resolution_matches_upstream_boundaries",
+        "css__test_basic_shape_interpolation_and_composition",
+        "css__test_inline_style_priority_and_css_text",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "group": "related"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-none.c": {
+      "sha256": "1635e3971d61e6707cb2870ca1f207787251b2ec46b51b1b439bd863d8b4e945",
+      "case_count": 96,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage",
+        "css__test_source_affine_scale_translate_and_full_inverse_map",
+        "css__test_source_affine_singular_inverse_uses_identity_before_integer_mapping",
+        "css__test_backface_visibility_metadata_and_parsing",
+        "css__test_backface_visibility_computed_value",
+        "css__test_backface_visibility_invalidation",
+        "css__test_document_reports_running_css_animations_to_the_browser_host",
+        "css__test_backface_visibility_matrix_math",
+        "css__test_transform_function_names_are_ascii_case_insensitive",
+        "css__test_lazy_computed_geometry_and_provenance_outlive_paint_projection",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_invalidation_projection_reads_selector_records_without_heap_copies",
+        "css__test_invalidation_projection_preserves_nested_and_slotted_selector_inputs",
+        "css__test_density_projection_does_not_materialize_a_source_layout_cache",
+        "css__test_density_projection_preserves_an_existing_source_layout_snapshot",
+        "css__test_anonymous_geometry_matches_full_materialization_for_default_and_rich_inherited_styles",
+        "css__test_anonymous_geometry_preserves_full_resolver_for_unresolved_and_animated_sources",
+        "css__test_anonymous_geometry_preserves_relative_units_normal_metrics_and_cache_lifetimes",
+        "css__test_anonymous_geometry_keeps_font_environment_refresh_and_explicit_metrics_fallback",
+        "css__test_anonymous_geometry_provenance_tracks_raw_aliases_created_before_and_after_resolution",
+        "css__test_anonymous_geometry_provenance_is_cleared_by_typed_overrides_and_animation_removal",
+        "css__test_anonymous_geometry_provenance_checks_root_viewport_and_subject_context",
+        "css__test_anonymous_geometry_callback_mutations_preserve_the_original_clone_boundary",
+        "css__test_anonymous_geometry_preserves_container_lengths_when_the_container_resizes",
+        "css__test_anonymous_geometry_keeps_the_original_font_snapshot_after_unrelated_completion",
+        "css__test_logical_alias_metadata_covers_generated_properties",
+        "css__test_logical_edges_map_in_horizontal_writing_mode",
+        "css__test_logical_edges_map_in_vertical_and_sideways_writing_modes",
+        "css__test_logical_corner_mapping",
+        "css__test_pseudo_element_property_whitelists",
+        "css__test_generated_property_computation_dependency_order",
+        "css__test_generated_shorthand_relationship_metadata_matches_upstream_order",
+        "css__test_computed_font_size_and_line_height_use_parent_metrics",
+        "css__test_logical_alias_context_inherits_parent_writing_mode_and_direction",
+        "css__test_create_document_style_uses_viewport_and_block_display",
+        "css__test_root_and_out_of_flow_elements_are_blockified",
+        "css__test_document_element_pseudo_element_is_not_blockified_as_the_root",
+        "css__test_flex_container_blockifies_inline_child",
+        "css__test_full_style_pipeline_resolves_inherited_custom_properties_and_shorthands",
+        "css__test_custom_property_important_wins_in_author_stylesheet",
+        "css__test_custom_property_data_is_shared_with_descendants_without_own_values",
+        "css__test_custom_property_data_is_shared_when_the_same_rule_matches_parent_and_child",
+        "css__test_custom_property_css_wide_keywords_follow_upstream_computation",
+        "css__test_custom_property_change_tracking_compares_resolved_own_values",
+        "css__test_inline_style_retains_one_typed_declaration_across_cascades_and_mutations",
+        "css__test_pseudo_element_style_is_created_only_when_generated",
+        "css__test_internal_shadow_tree_element_uses_host_pseudo_element_style",
+        "css__test_monospace_font_family_recascades_inherited_keyword_font_size",
+        "css__test_font_relative_units_use_the_inheritance_parent_computation_context",
+        "css__test_own_monospace_font_size_does_not_use_the_recascade_placeholder_as_its_em_basis",
+        "css__test_match_parent_text_align_resolves_against_parent_direction",
+        "css__test_computed_cssom_reads_regular_and_custom_properties",
+        "css__test_stacking_context_neutral_values_are_detected",
+        "css__test_computed_values_composite_initial_values_match_upstream",
+        "css__test_computed_property_accessors_return_typed_values",
+        "css__test_box_shadow_interpolation_uses_typed_shadow_components",
+        "css__test_mixed_length_percentage_interpolation_builds_a_calculation",
+        "css__test_additive_composition_uses_typed_css_values",
+        "css__test_transform_interpolation_matches_primitives_and_pads_none",
+        "css__test_grid_track_interpolation_handles_mixed_values_and_repeats",
+        "css__test_ratio_parser_preserves_number_calculations_until_computed_value_time",
+        "css__test_border_and_list_style_shorthand_special_resets",
+        "css__test_shape_outside_accepts_images_shape_boxes_and_combined_shapes",
+        "css__test_rule_cache_retains_resolved_keyframes_and_endpoint_markers",
+        "css__test_custom_properties_declared_in_keyframes_are_sampled_and_published",
+        "css__test_inherited_custom_property_change_passes_through_animation_overlay",
+        "css__test_animation_refresh_recomputes_standard_property_using_animated_custom_property",
+        "css__test_animated_registered_custom_property_can_reference_another_animation",
+        "css__test_rule_cache_merges_duplicate_keyframe_offsets_in_source_order",
+        "css__test_css_animation_definitions_are_stored_and_sampled",
+        "css__test_keyframe_animation_timing_function_resolves_custom_properties_when_sampled",
+        "css__test_css_animation_sampling_holds_paused_progress_and_applies_direction_at_boundaries",
+        "css__test_layout_node_resolution_context_uses_installed_element_and_root_styles",
+        "css__test_color_resolution_uses_the_page_preferred_color_scheme",
+        "css__test_unresolved_css_functions_record_dom_style_dependencies",
+        "css__test_css_transitions_are_retained_and_sampled",
+        "css__test_zero_duration_transitions_do_not_allocate_registration_storage",
+        "css__test_shadow_root_author_stylesheet_uses_its_own_css_scope",
+        "css__test_svg_symbol_instance_root_adjusts_display_and_position",
+        "css__test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree",
+        "css__test_subtree_style_recompute_filters_pseudos_without_skipping_bucketed_rules",
+        "css__test_document_user_stylesheet_participates_in_user_cascade",
+        "css__test_page_user_stylesheet_crosses_dom_bridge_and_can_be_invalidated",
+        "css__test_computed_value_flag_helpers_match_computed_values_contract",
+        "css__test_custom_property_interpolation_matches_css_animation_rules",
+        "css__test_stroke_dasharray_interpolation_repeats_patterns_and_handles_none_discretely",
+        "css__test_nested_style_value_interpolation_uses_component_fallback",
+        "css__test_color_interpolation_uses_the_elements_color_resolution_context",
+        "css__test_animation_keyword_resolution_matches_upstream_boundaries",
+        "css__test_basic_shape_interpolation_and_composition",
+        "css__test_inline_style_priority_and_css_text",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "group": "related"
+    },
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-sanitized.c": {
+      "sha256": "eb470ca2427e0582fe2d6d195e5a1b6553ce5d2c6378a58cc46118231578e1dc",
+      "case_count": 96,
+      "cases": [
+        "css__test_direct_matrix_product_preserves_noncommuting_transform_order",
+        "css__test_direct_matrix_product_covers_all_basis_matrix_pairs",
+        "css__test_direct_matrix_product_keeps_finite_bits_and_nonfinite_classification",
+        "css__test_direct_matrix_product_keeps_zero_accumulation_and_needs_no_arena_storage",
+        "css__test_source_affine_scale_translate_and_full_inverse_map",
+        "css__test_source_affine_singular_inverse_uses_identity_before_integer_mapping",
+        "css__test_backface_visibility_metadata_and_parsing",
+        "css__test_backface_visibility_computed_value",
+        "css__test_backface_visibility_invalidation",
+        "css__test_document_reports_running_css_animations_to_the_browser_host",
+        "css__test_backface_visibility_matrix_math",
+        "css__test_transform_function_names_are_ascii_case_insensitive",
+        "css__test_lazy_computed_geometry_and_provenance_outlive_paint_projection",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_invalidation_projection_reads_selector_records_without_heap_copies",
+        "css__test_invalidation_projection_preserves_nested_and_slotted_selector_inputs",
+        "css__test_density_projection_does_not_materialize_a_source_layout_cache",
+        "css__test_density_projection_preserves_an_existing_source_layout_snapshot",
+        "css__test_anonymous_geometry_matches_full_materialization_for_default_and_rich_inherited_styles",
+        "css__test_anonymous_geometry_preserves_full_resolver_for_unresolved_and_animated_sources",
+        "css__test_anonymous_geometry_preserves_relative_units_normal_metrics_and_cache_lifetimes",
+        "css__test_anonymous_geometry_keeps_font_environment_refresh_and_explicit_metrics_fallback",
+        "css__test_anonymous_geometry_provenance_tracks_raw_aliases_created_before_and_after_resolution",
+        "css__test_anonymous_geometry_provenance_is_cleared_by_typed_overrides_and_animation_removal",
+        "css__test_anonymous_geometry_provenance_checks_root_viewport_and_subject_context",
+        "css__test_anonymous_geometry_callback_mutations_preserve_the_original_clone_boundary",
+        "css__test_anonymous_geometry_preserves_container_lengths_when_the_container_resizes",
+        "css__test_anonymous_geometry_keeps_the_original_font_snapshot_after_unrelated_completion",
+        "css__test_logical_alias_metadata_covers_generated_properties",
+        "css__test_logical_edges_map_in_horizontal_writing_mode",
+        "css__test_logical_edges_map_in_vertical_and_sideways_writing_modes",
+        "css__test_logical_corner_mapping",
+        "css__test_pseudo_element_property_whitelists",
+        "css__test_generated_property_computation_dependency_order",
+        "css__test_generated_shorthand_relationship_metadata_matches_upstream_order",
+        "css__test_computed_font_size_and_line_height_use_parent_metrics",
+        "css__test_logical_alias_context_inherits_parent_writing_mode_and_direction",
+        "css__test_create_document_style_uses_viewport_and_block_display",
+        "css__test_root_and_out_of_flow_elements_are_blockified",
+        "css__test_document_element_pseudo_element_is_not_blockified_as_the_root",
+        "css__test_flex_container_blockifies_inline_child",
+        "css__test_full_style_pipeline_resolves_inherited_custom_properties_and_shorthands",
+        "css__test_custom_property_important_wins_in_author_stylesheet",
+        "css__test_custom_property_data_is_shared_with_descendants_without_own_values",
+        "css__test_custom_property_data_is_shared_when_the_same_rule_matches_parent_and_child",
+        "css__test_custom_property_css_wide_keywords_follow_upstream_computation",
+        "css__test_custom_property_change_tracking_compares_resolved_own_values",
+        "css__test_inline_style_retains_one_typed_declaration_across_cascades_and_mutations",
+        "css__test_pseudo_element_style_is_created_only_when_generated",
+        "css__test_internal_shadow_tree_element_uses_host_pseudo_element_style",
+        "css__test_monospace_font_family_recascades_inherited_keyword_font_size",
+        "css__test_font_relative_units_use_the_inheritance_parent_computation_context",
+        "css__test_own_monospace_font_size_does_not_use_the_recascade_placeholder_as_its_em_basis",
+        "css__test_match_parent_text_align_resolves_against_parent_direction",
+        "css__test_computed_cssom_reads_regular_and_custom_properties",
+        "css__test_stacking_context_neutral_values_are_detected",
+        "css__test_computed_values_composite_initial_values_match_upstream",
+        "css__test_computed_property_accessors_return_typed_values",
+        "css__test_box_shadow_interpolation_uses_typed_shadow_components",
+        "css__test_mixed_length_percentage_interpolation_builds_a_calculation",
+        "css__test_additive_composition_uses_typed_css_values",
+        "css__test_transform_interpolation_matches_primitives_and_pads_none",
+        "css__test_grid_track_interpolation_handles_mixed_values_and_repeats",
+        "css__test_ratio_parser_preserves_number_calculations_until_computed_value_time",
+        "css__test_border_and_list_style_shorthand_special_resets",
+        "css__test_shape_outside_accepts_images_shape_boxes_and_combined_shapes",
+        "css__test_rule_cache_retains_resolved_keyframes_and_endpoint_markers",
+        "css__test_custom_properties_declared_in_keyframes_are_sampled_and_published",
+        "css__test_inherited_custom_property_change_passes_through_animation_overlay",
+        "css__test_animation_refresh_recomputes_standard_property_using_animated_custom_property",
+        "css__test_animated_registered_custom_property_can_reference_another_animation",
+        "css__test_rule_cache_merges_duplicate_keyframe_offsets_in_source_order",
+        "css__test_css_animation_definitions_are_stored_and_sampled",
+        "css__test_keyframe_animation_timing_function_resolves_custom_properties_when_sampled",
+        "css__test_css_animation_sampling_holds_paused_progress_and_applies_direction_at_boundaries",
+        "css__test_layout_node_resolution_context_uses_installed_element_and_root_styles",
+        "css__test_color_resolution_uses_the_page_preferred_color_scheme",
+        "css__test_unresolved_css_functions_record_dom_style_dependencies",
+        "css__test_css_transitions_are_retained_and_sampled",
+        "css__test_zero_duration_transitions_do_not_allocate_registration_storage",
+        "css__test_shadow_root_author_stylesheet_uses_its_own_css_scope",
+        "css__test_svg_symbol_instance_root_adjusts_display_and_position",
+        "css__test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree",
+        "css__test_subtree_style_recompute_filters_pseudos_without_skipping_bucketed_rules",
+        "css__test_document_user_stylesheet_participates_in_user_cascade",
+        "css__test_page_user_stylesheet_crosses_dom_bridge_and_can_be_invalidated",
+        "css__test_computed_value_flag_helpers_match_computed_values_contract",
+        "css__test_custom_property_interpolation_matches_css_animation_rules",
+        "css__test_stroke_dasharray_interpolation_repeats_patterns_and_handles_none_discretely",
+        "css__test_nested_style_value_interpolation_uses_component_fallback",
+        "css__test_color_interpolation_uses_the_elements_color_resolution_context",
+        "css__test_animation_keyword_resolution_matches_upstream_boundaries",
+        "css__test_basic_shape_interpolation_and_composition",
+        "css__test_inline_style_priority_and_css_text",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "group": "related"
+    }
+  },
+  "test_executable_sha256": {
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-prealloc": "3c50fea7589e270608fea5d05e104217e38c4baa29c70b8eb1eab1d8e108f5bc",
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-default": "0dc54e1b6ff27cc0a020d5e3569dfd25bc72516269d29e81d5b859e5d0b10672",
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-none": "9224de11b7567350b0f8b1f60a1a583b9c2a84dfb51afc77b69fc409cc08270b",
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-production": "ab7821643ea30f473fed83f5abde7140a01156d098fb43a52eff7488c8d38df8",
+    "Build/chatgpt-matrix-multiply-20261105-r2/checks-sanitized": "7ef038413cc32920f0317456d511e7769fb5f48f7fb3afea07966947f167fd0d",
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-prealloc": "169cc4ce1d3b7a080e557c1c23f48e4c0ad07df0cdc8bf6e5d883736ae13625e",
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-default": "80aa43fd5534f8308d80a28886966818fe67227012f8dde9f4f2508c09ccd967",
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-none": "12609566969032589dd35e1c173e55b92d633d736dfd2478d4331c4a79a8a3b0",
+    "Build/chatgpt-matrix-multiply-20261105-r2/related/checks-sanitized": "3daa378155808e15b8f5e9da443bc846485c704ba5d01a8e6238b0b173f802a7"
+  },
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-matrix-multiply-20261105-r2/component": "2d12006633df84c276a65653e7998ed06942aa5c5879c29ae7281357958ee067",
+      "css/matrix_multiply.v": "ad1989c96cc18ceafe7bdb42e376f880e92910eed6372e284675ece7e4443456",
+      "css/transforms.v": "d13cfcaf743debbbc52fab664f4bb0f458b62e7dcb5a9b27b53a63d380671e00",
+      "tools/matrix_multiply_benchmark.v": "0fef6d494404caf90f054e4028ef05e93479a3d8bc1e571f83a186e39801cdd3",
+      "Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/manifest.json": "454a6d67464e29152bd17d697a791a85dd132f1725cc0d8bba5180c7ada87fd9"
+    },
+    "inputs_after": {
+      "Build/chatgpt-matrix-multiply-20261105-r2/component": "2d12006633df84c276a65653e7998ed06942aa5c5879c29ae7281357958ee067",
+      "css/matrix_multiply.v": "ad1989c96cc18ceafe7bdb42e376f880e92910eed6372e284675ece7e4443456",
+      "css/transforms.v": "d13cfcaf743debbbc52fab664f4bb0f458b62e7dcb5a9b27b53a63d380671e00",
+      "tools/matrix_multiply_benchmark.v": "0fef6d494404caf90f054e4028ef05e93479a3d8bc1e571f83a186e39801cdd3",
+      "Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/manifest.json": "454a6d67464e29152bd17d697a791a85dd132f1725cc0d8bba5180c7ada87fd9"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793893655.443079,
+          "cpu_count": 18,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793893656.0519922,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "identity",
+            "instructions": 7822630,
+            "products": 32768,
+            "checksum": 7049751853134914341
+          },
+          {
+            "scene": "affine",
+            "instructions": 7904422,
+            "products": 32768,
+            "checksum": 13091899080539054885
+          },
+          {
+            "scene": "perspective-rotation",
+            "instructions": 7782952,
+            "products": 32768,
+            "checksum": 2265183546618348325
+          },
+          {
+            "scene": "dense",
+            "instructions": 7782952,
+            "products": 32768,
+            "checksum": 2447879203618693925
+          },
+          {
+            "scene": "nonfinite",
+            "instructions": 7782952,
+            "products": 32768,
+            "checksum": 4384746773638423333
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793893656.081682,
+          "cpu_count": 18,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793893656.185347,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "identity",
+            "instructions": 7586445,
+            "products": 32768,
+            "checksum": 7049751853134914341
+          },
+          {
+            "scene": "affine",
+            "instructions": 7586424,
+            "products": 32768,
+            "checksum": 13091899080539054885
+          },
+          {
+            "scene": "perspective-rotation",
+            "instructions": 7586444,
+            "products": 32768,
+            "checksum": 2265183546618348325
+          },
+          {
+            "scene": "dense",
+            "instructions": 7589017,
+            "products": 32768,
+            "checksum": 2447879203618693925
+          },
+          {
+            "scene": "nonfinite",
+            "instructions": 7586494,
+            "products": 32768,
+            "checksum": 4384746773638423333
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793893656.215381,
+          "cpu_count": 18,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793893656.314218,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "identity",
+            "instructions": 7586420,
+            "products": 32768,
+            "checksum": 7049751853134914341
+          },
+          {
+            "scene": "affine",
+            "instructions": 7596141,
+            "products": 32768,
+            "checksum": 13091899080539054885
+          },
+          {
+            "scene": "perspective-rotation",
+            "instructions": 7586369,
+            "products": 32768,
+            "checksum": 2265183546618348325
+          },
+          {
+            "scene": "dense",
+            "instructions": 7590693,
+            "products": 32768,
+            "checksum": 2447879203618693925
+          },
+          {
+            "scene": "nonfinite",
+            "instructions": 7586344,
+            "products": 32768,
+            "checksum": 4384746773638423333
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793893656.3442519,
+          "cpu_count": 18,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793893656.440414,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "identity",
+            "instructions": 7815646,
+            "products": 32768,
+            "checksum": 7049751853134914341
+          },
+          {
+            "scene": "affine",
+            "instructions": 7783882,
+            "products": 32768,
+            "checksum": 13091899080539054885
+          },
+          {
+            "scene": "perspective-rotation",
+            "instructions": 7827990,
+            "products": 32768,
+            "checksum": 2265183546618348325
+          },
+          {
+            "scene": "dense",
+            "instructions": 7782952,
+            "products": 32768,
+            "checksum": 2447879203618693925
+          },
+          {
+            "scene": "nonfinite",
+            "instructions": 7782952,
+            "products": 32768,
+            "checksum": 4384746773638423333
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793893656.470263,
+          "cpu_count": 18,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793893656.6875231,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "identity",
+            "instructions": 7782978,
+            "products": 32768,
+            "checksum": 7049751853134914341
+          },
+          {
+            "scene": "affine",
+            "instructions": 7782878,
+            "products": 32768,
+            "checksum": 13091899080539054885
+          },
+          {
+            "scene": "perspective-rotation",
+            "instructions": 7782927,
+            "products": 32768,
+            "checksum": 2265183546618348325
+          },
+          {
+            "scene": "dense",
+            "instructions": 7787204,
+            "products": 32768,
+            "checksum": 2447879203618693925
+          },
+          {
+            "scene": "nonfinite",
+            "instructions": 7782927,
+            "products": 32768,
+            "checksum": 4384746773638423333
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-matrix-multiply-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ACCESSOR_MATRIX_MULTIPLY": "1",
+          "VOX_MATRIX_MULTIPLY_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793893656.71699,
+          "cpu_count": 18,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793893656.813728,
+          "load": [
+            29.060546875,
+            32.55078125,
+            31.1728515625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "identity",
+            "instructions": 7782978,
+            "products": 32768,
+            "checksum": 7049751853134914341
+          },
+          {
+            "scene": "affine",
+            "instructions": 7782969,
+            "products": 32768,
+            "checksum": 13091899080539054885
+          },
+          {
+            "scene": "perspective-rotation",
+            "instructions": 7789101,
+            "products": 32768,
+            "checksum": 2265183546618348325
+          },
+          {
+            "scene": "dense",
+            "instructions": 7782902,
+            "products": 32768,
+            "checksum": 2447879203618693925
+          },
+          {
+            "scene": "nonfinite",
+            "instructions": 7782902,
+            "products": 32768,
+            "checksum": 4384746773638423333
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "identity": {
+        "control": [
+          7822630,
+          7815646
+        ],
+        "candidate": [
+          7586445,
+          7586420
+        ],
+        "control_median": 7819138.0,
+        "candidate_median": 7586432.5,
+        "reduction_percent": 2.976101713513689,
+        "conservative_component_reduction": 229201,
+        "checksum": 7049751853134914341,
+        "products": 32768
+      },
+      "affine": {
+        "control": [
+          7904422,
+          7783882
+        ],
+        "candidate": [
+          7586424,
+          7596141
+        ],
+        "control_median": 7844152.0,
+        "candidate_median": 7591282.5,
+        "reduction_percent": 3.2236690466987383,
+        "conservative_component_reduction": 187741,
+        "checksum": 13091899080539054885,
+        "products": 32768
+      },
+      "perspective-rotation": {
+        "control": [
+          7782952,
+          7827990
+        ],
+        "candidate": [
+          7586444,
+          7586369
+        ],
+        "control_median": 7805471.0,
+        "candidate_median": 7586406.5,
+        "reduction_percent": 2.8065506873320007,
+        "conservative_component_reduction": 196508,
+        "checksum": 2265183546618348325,
+        "products": 32768
+      },
+      "dense": {
+        "control": [
+          7782952,
+          7782952
+        ],
+        "candidate": [
+          7589017,
+          7590693
+        ],
+        "control_median": 7782952.0,
+        "candidate_median": 7589855.0,
+        "reduction_percent": 2.481025194553429,
+        "conservative_component_reduction": 192259,
+        "checksum": 2447879203618693925,
+        "products": 32768
+      },
+      "nonfinite": {
+        "control": [
+          7782952,
+          7782952
+        ],
+        "candidate": [
+          7586494,
+          7586344
+        ],
+        "control_median": 7782952.0,
+        "candidate_median": 7586419.0,
+        "reduction_percent": 2.5251729677890857,
+        "conservative_component_reduction": 196458,
+        "checksum": 4384746773638423333,
+        "products": 32768
+      }
+    },
+    "qualification": "Current-process unprofiled instruction intervals; setup/oracle creation and warmup are excluded. Every counted product checks all 16 results against the accessor-loop oracle, bit-exact except for NaN payloads. The common non-inlined wrapper, result checks and checksum are included. Matrix fixture/oracle construction and warmup are excluded. Allocation, batched scratch lifetime and checking are included. Diagnostic runs are separate. Component savings earn no whole-page credit."
+  },
+  "component_compile_guard": {
+    "command": [
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "-path",
+      "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+      "-memory-limit",
+      "10G",
+      "-enable-globals",
+      "-prod",
+      "-prealloc",
+      "-gc",
+      "none",
+      "-cc",
+      "clang",
+      "-nocache",
+      "-keepc",
+      "-ldflags",
+      "-framework CoreGraphics",
+      "-o",
+      "Build/chatgpt-matrix-multiply-20261105-r2/component",
+      "tools/matrix_multiply_benchmark.v"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 4236214272,
+    "elapsed_seconds": 74.753589667,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-matrix-multiply-20261105-evidence.zip",
+    "sha256": "6ae71587598c87332d81a1476236226a4791aa85d3786c6fe134af03b4b59363",
+    "bytes": 111890
+  },
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "qualification": "All fifteen focused arithmetic jobs pass. Forty arithmetic test-function executions cover noncommuting transforms, all 256 basis pairs, randomized finite/raw-bit inputs, signed zero, nonfinite classification, input independence and no prealloc growth. Non-NaN results are bit-exact to the original loop; NaN payloads and FP exception flags are not compared. Wider CSS failures are reported separately. All compiles use the explicit production runtime overlay, bounded compiler memory and per-job guards. Component intervals include all sixteen result checks, checksum and a common non-inlined wrapper; fixture/oracle construction and warmup are excluded. No isolated-multiply, whole-page, live-site, scrolling or Brave credit.",
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-matrix-multiply-20261105-r2/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 145555456,
+    "elapsed_seconds": 0.287983041,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
