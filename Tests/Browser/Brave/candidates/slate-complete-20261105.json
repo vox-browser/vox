@@ -1,0 +1,16 @@
+{
+  "status": "unqualified candidate; source fidelity mismatch",
+  "capture_policy": "complete encoded-response caches; ordinary image animation; full pinned uBO; 1024x768 guest viewport",
+  "archive_sha256": "f2ed8e9bf6972d292458b469cdb3bb54cf9a3eef8ebf9df0c9a0968e390ee1aa",
+  "manifest_sha256": "8be971a39881aa559712d4cc508da00ccc5d31d56a76ba1a67800a88ad29cf4d",
+  "files": 40,
+  "extraction_equal": true,
+  "vox_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+  "different_pixels": {
+    "native": 0,
+    "reference_replay": 0,
+    "live_to_frozen": 17473
+  },
+  "registered_archive_changed": false,
+  "evidence": "docs/evidence/forum-news-profile-memory-20261105.json"
+}
