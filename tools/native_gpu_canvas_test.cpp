@@ -163,6 +163,17 @@ static void draw_video_leaves(CGContextRef context, bool canvas)
 }
 
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
+static unsigned s_read_calls, s_successful_reads, s_fail_reads;
+static decltype(&vox_graphite_canvas_read) s_backend_read;
+
+static int counted_read(VoxGraphitePixelRegion const* views, int count)
+{
+    ++s_read_calls;
+    if (s_fail_reads) { --s_fail_reads; return 0; }
+    int result = s_backend_read(views, count);
+    s_successful_reads += result != 0;
+    return result;
+}
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
     void (*leaves)(CGContextRef, bool) = draw_leaves)
@@ -194,8 +205,12 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
         s_flushes = s_gpu_canvas->flushes;
         s_declined = s_gpu_canvas->declined;
         s_cpu_leaves = s_gpu_canvas->cpu_leaves;
+        unsigned expected_reads = s_gpu_canvas->flushes + unsigned(s_gpu_canvas->cpu_stale);
+        unsigned before_final_read = s_successful_reads;
         ladybird_v_skia_gpu_canvas_end();
         assert(!s_gpu_canvas);
+        // Every earlier flush succeeded; final publication adds at most one.
+        assert(s_successful_reads - before_final_read == expected_reads - s_flushes);
     }
     ladybird_v_skia_set_chromium_painting(0);
     CGContextFlush(context);
@@ -208,8 +223,16 @@ int main()
     // On by default; only VOX_DISABLE_GPU_CANVAS turns the native canvas off.
     unsetenv("VOX_DISABLE_GPU_CANVAS");
     assert(gpu_canvas_api());
+    auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
+    s_backend_read = api->read;
+    api->read = counted_read;
     auto reference = render(false);
     auto candidate = render(true);
+    assert(s_read_calls == 2 && s_successful_reads == 2);
+    s_fail_reads = 1;
+    auto retry_candidate = render(true);
+    assert(s_read_calls == 5 && s_successful_reads == 4 && !s_fail_reads);
+    assert(retry_candidate == candidate);
     // All three approved leaves draw on the GPU; the CPU fill between them
     // forces one readback and a fresh upload before the border. The final
     // readback happens when the frame ends.

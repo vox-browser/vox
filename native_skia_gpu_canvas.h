@@ -141,7 +141,11 @@ void gpu_canvas_flush()
             views.push_back({rect.left() - tile.left(), rect.top() - tile.top(), rect.width(),
                 rect.height(), rect.width() * 4, reinterpret_cast<uint8_t*>(pixels[index].data())});
         }
-        if (api && data && api->read(views.data(), int(views.size())) && gpu_canvas_verify()) {
+        bool read = api && data && api->read(views.data(), int(views.size()));
+        // Retry a failed transfer, but never repeat a successful synchronous
+        // read just because this frame is not running pixel verification.
+        if (!read && api && data) read = api->read(views.data(), int(views.size()));
+        if (read && gpu_canvas_verify()) {
             CGContextFlush(frame->destination);
             for (size_t index = 0; index < frame->rects.size(); ++index) {
                 auto const& rect = frame->rects[index];
@@ -167,7 +171,7 @@ void gpu_canvas_flush()
                     }
                 }
             }
-        } else if (api && data && api->read(views.data(), int(views.size()))) {
+        } else if (read) {
             CGContextFlush(frame->destination);
             for (size_t index = 0; index < frame->rects.size(); ++index) {
                 auto const& rect = frame->rects[index];
