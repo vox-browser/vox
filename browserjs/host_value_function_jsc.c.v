@@ -5,12 +5,6 @@ module browserjs
 
 import webidl
 import platform
-import os
-
-const disable_native_callback_call = os.getenv('VOX_DISABLE_NATIVE_CALLBACK_CALL') != ''
-const native_callback_call_diagnostics = os.getenv('VOX_NATIVE_CALLBACK_CALL_DIAGNOSTICS') != ''
-
-__global native_callback_call_reported bool
 
 
 #include "host_function_darwin.h"
@@ -22,7 +16,6 @@ fn C.JSValueProtect(context voidptr, value voidptr)
 fn C.JSValueUnprotect(context voidptr, value voidptr)
 fn C.vox_jsc_JSObjectMakeArray(context voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
 fn C.vox_jsc_JSObjectCallAsFunction(context voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
-fn C.vox_jsc_call_with_receiver_argument(context voidptr, call voidptr, function voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr
 fn C.vox_jsc_JSObjectMakeDeferredPromise(context voidptr, resolve &voidptr, reject &voidptr, exception &voidptr) voidptr
 fn C.vox_jsc_JSValueToObject(context voidptr, value voidptr, exception &voidptr) voidptr
 
@@ -142,7 +135,6 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	// global Reflect/Promise properties. Native Promise adoption remains JSC's
 	// Resolve function, including then getter access and thenable job scheduling.
 	runtime.value_call_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver,args,caught){if(!caught)return apply(callback,receiver,args);try{return [true,apply(callback,receiver,args)]}catch(error){return [false,error]}}})()')!
-	runtime.function_call_intrinsic_ = runtime.evaluate_host_value('Function.prototype.call')!
 	runtime.promise_observe_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,then=Promise.prototype.then;return function(promise,fulfilled,rejected){return apply(then,promise,[fulfilled,rejected])}})()')!
 	runtime.value_error_intrinsic_ = runtime.evaluate_host_value('(function(){const E=Error,T=TypeError,R=RangeError,V=EvalError,F=ReferenceError,U=URIError;return function(kind,message){return new (kind==="TypeError"?T:kind==="RangeError"?R:kind==="EvalError"?V:kind==="ReferenceError"?F:kind==="URIError"?U:E)(message)}})()')!
 	runtime.value_same_intrinsic_ = runtime.evaluate_host_value('Object.is')!
@@ -204,23 +196,6 @@ fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr
 
 pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
 	runtime.require_javascript_value_context()!
-	// Calling the captured builtin with the target as its object receiver keeps
-	// primitive/undefined `this` values intact without materializing a JS array.
-	// Non-callables retain the existing Reflect.apply exception path.
-	if !disable_native_callback_call && C.JSValueIsObject(runtime.context, function)
-		&& C.JSObjectIsFunction(runtime.context, function) {
-		runtime.prepare_html_script()
-		defer { runtime.clean_up_html_script() }
-		mut exception := unsafe { nil }
-		value := C.vox_jsc_call_with_receiver_argument(runtime.context, runtime.function_call_intrinsic_,
-			function, receiver, uint(arguments.len), arguments.data, &exception)
-		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-		if native_callback_call_diagnostics && !native_callback_call_reported {
-			native_callback_call_reported = true
-			eprintln('Vox native callback call: invoked captured Function.call without a JavaScript argument array')
-		}
-		return value
-	}
 	mut exception := unsafe { nil }
 	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
