@@ -5,8 +5,11 @@ import sync.stdatomic
 
 const retain_animation_sample_property_scan = os.getenv('VOX_RETAIN_ANIMATION_SAMPLE_PROPERTY_SCAN') != ''
 const animation_sample_property_diagnostics = os.getenv('VOX_ANIMATION_SAMPLE_PROPERTY_DIAGNOSTICS') != ''
+const retain_animation_sample_computed_scan = os.getenv('VOX_RETAIN_ANIMATION_SAMPLE_COMPUTED_SCAN') != ''
+const animation_sample_computed_diagnostics = os.getenv('VOX_ANIMATION_SAMPLE_COMPUTED_DIAGNOSTICS') != ''
 
 __global animation_sample_property_scan_reported stdatomic.AtomicVal[bool]
+__global animation_sample_computed_scan_reported stdatomic.AtomicVal[bool]
 
 // One synchronous, read-only inspection of one settled retiring arena. Shared
 // property pages need inspecting only once during that call. Nothing invokes
@@ -17,8 +20,15 @@ __global animation_sample_property_scan_reported stdatomic.AtomicVal[bool]
 struct AnimationSampleReferenceScan {
 	retiring           &RetiringAnimationSamples
 	use_property_pages bool = !retain_animation_sample_property_scan
+	use_clean_computed bool = !retain_animation_sample_computed_scan
 mut:
 	clean_pages [256]voidptr
+	clean_computed [256]voidptr
+}
+
+fn animation_sample_computed_scan_slot(computed &ComputedProperties) int {
+	address := u64(voidptr(computed))
+	return int(((address >> 4) ^ (address >> 12)) & 255)
 }
 
 fn animation_sample_page_scan_slot(page &ComputedPropertyPage) int {
