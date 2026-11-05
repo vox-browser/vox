@@ -125,6 +125,26 @@ baseline reference. A full-disk archival failure, its partial output and the
 subsequent losslessly verified compression are retained.
 [Expanded scopes, exact caller reconciliation and original audits](performance/bbc-v-profile-host-scopes-20261105.json).
 
+The resulting classic import-call filter (`43da93ba7`, isolated control
+`167c1a025`) skips the lexer only when no import word can be followed by a call
+or meta candidate. ASCII whitespace and complete comments are skipped; dots,
+non-ASCII bytes, incomplete comments and possible HTML comments keep the
+trusted path. Module scripts retain the full lexer. Invalid static imports
+still reach JSC's original classic-script parser.
+
+All **54 focused native executions** pass: nine cases in both arms across
+three GC modes, including actual module values/fetch counts, Unicode/comment
+forms, parse goals, cycles, live exports, import maps, Promise failures and
+top-level await. All **338 tooling tests** pass. Initial aggregation failures
+and incorrect fixture assumptions in both arms are retained. The corrected
+Unicode checks require exact trusted-lexer output and real import execution,
+including forms the lexer leaves unchanged. Production eligibility and
+unprofiled measurements remain pending; no saving or catalog credit is claimed.
+Lossless compression of 139 completed, guarded test executables reclaims
+1,206,046,490 bytes while retaining decoded hashes and modes locally; raw
+counters, captures, source, bundles and shared build receipts are unchanged.
+[Focused checks, control tests and retained attempts](performance/bbc-classic-import-call-focus-20261105.json).
+
 The follow-up pending-full-cascade shortcut now covers pseudo-element and
 trailing-universal anchor walks (`bbdaa7475`, isolated control `99c5cfdbe`).
 Its exact paint oracle exposed an existing retention bug: a newly styled
