@@ -1,0 +1,691 @@
+{
+  "status": "Within-pass pending/absolute image measurement reuse passes279focused executions and separate native original-pixel/content/72-script andSVGguards. All21cohort100audits pass with pinned identities but target fails; median candidate regresses65101412instructions versus isolated control,no savings. No broad trigger,no catalog entry.",
+  "engine_commit": "135e81868",
+  "control_commit": "f16acb5cd",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-extended-control",
+        "exit": 0
+      },
+      {
+        "name": "default-cache-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-extended-control",
+        "exit": 0
+      },
+      {
+        "name": "none-cache-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-extended-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-cache-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "bfd3a38293b6d18e2843f29f5fdcf7099b452a4fed8c30eb75e407357c1a0275",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "13a16603cb7a51e8cb8bbbd3bb388e64177ed82b3787b62f0516816c838dee79",
+      "/Users/alex/code/vox2/layout/measurement_rare_data_lifetime_test.v": "8cfb78169db046a12ed1f3af96d293e5000e947be1385d37b5a66c5c41f51f3e",
+      "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "4f61d7bf8c230e58fb449c8cee3d3111178ea82291013cdb96a75f02ab35824e",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "10556309bc6642370376f3d3a7596249369978dabd2dce00b03135d08ead62a7",
+      "/Users/alex/code/vox2/layout/retained_block_layout.v": "969728a8c1c1ea70fabe9e0194fd8194e5865e7aed6a6804eda00f27edc95ffc",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "8f82c8793b2c058974e8807f1ed176844bd8dc675c96bcd5155e2d425aa2ccdd",
+      "/Users/alex/code/vox2/layout/special_boxes.v": "7ff33ed2bcaace8a7174d6c1b5d7840a7e32291215b07aeb6ae05c7e42f0ff20",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "6041b182007228bd2bbdb42ea962381725a088857923db134e141748da786728"
+    },
+    "unchanged": true,
+    "cases_per_run": 31,
+    "expected_cases": [
+      "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+      "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+      "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+      "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+      "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_grid_measurement_revalidates_svg_attributes_before_replay",
+      "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+      "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+      "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+      "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+      "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_flex_measurement_revalidates_svg_attributes_before_replay",
+      "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+      "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+      "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+      "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+      "test_measurement_grid_array_borrows_remain_independent_across_population",
+      "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+    ]
+  },
+  "current_input_sha256": {
+    "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+    "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "bfd3a38293b6d18e2843f29f5fdcf7099b452a4fed8c30eb75e407357c1a0275",
+    "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "13a16603cb7a51e8cb8bbbd3bb388e64177ed82b3787b62f0516816c838dee79",
+    "/Users/alex/code/vox2/layout/measurement_rare_data_lifetime_test.v": "8cfb78169db046a12ed1f3af96d293e5000e947be1385d37b5a66c5c41f51f3e",
+    "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+    "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "f571fd91a1b5603e97f28c8d2d9b4c7b6a25587a2d071a7dc99083dbf34331cf",
+    "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "56fd225382e9e6239921ad48c1d2c50a320753f49a86b06c29ead05bce0e9222",
+    "/Users/alex/code/vox2/layout/retained_block_layout.v": "969728a8c1c1ea70fabe9e0194fd8194e5865e7aed6a6804eda00f27edc95ffc",
+    "/Users/alex/code/vox2/layout/retained_inline_layout.v": "8f82c8793b2c058974e8807f1ed176844bd8dc675c96bcd5155e2d425aa2ccdd",
+    "/Users/alex/code/vox2/layout/special_boxes.v": "7ff33ed2bcaace8a7174d6c1b5d7840a7e32291215b07aeb6ae05c7e42f0ff20",
+    "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+    "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+    "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "6041b182007228bd2bbdb42ea962381725a088857923db134e141748da786728"
+  },
+  "tested_to_current_difference": "Only explanatory comments changed after focused checks, independently verified after stripping line comments; tested exact inputs preserved.",
+  "tool_tests": {
+    "passed": 321,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 84885504,
+      "elapsed_seconds": 3.07371525,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "native": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "cohort": {
+    "rows": [
+      {
+        "trial": "pair-1-brave",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 17600211619,
+          "upper": 17605908477
+        },
+        "ownership": null
+      },
+      {
+        "trial": "pair-1-control",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 27267125417,
+          "upper": 27267125417
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-1-vox",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 28457971228,
+          "upper": 28457971228
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-2-brave",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 17624835024,
+          "upper": 17625816840
+        },
+        "ownership": null
+      },
+      {
+        "trial": "pair-2-control",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 28086331897,
+          "upper": 28086331897
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-2-vox",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 28104993763,
+          "upper": 28104993763
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-3-brave",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 17697756390,
+          "upper": 17716194684
+        },
+        "ownership": null
+      },
+      {
+        "trial": "pair-3-control",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 27766944904,
+          "upper": 27766944904
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-3-vox",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 27493999773,
+          "upper": 27493999773
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-4-brave",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 17540442159,
+          "upper": 17555411193
+        },
+        "ownership": null
+      },
+      {
+        "trial": "pair-4-control",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 27342958255,
+          "upper": 27342958255
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-4-vox",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 27580572082,
+          "upper": 27580572082
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-5-brave",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 17416790637,
+          "upper": 17437714551
+        },
+        "ownership": null
+      },
+      {
+        "trial": "pair-5-control",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 28105023519,
+          "upper": 28105023519
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-5-vox",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 26603887689,
+          "upper": 26603887689
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-6-brave",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 17412474931,
+          "upper": 17437873714
+        },
+        "ownership": null
+      },
+      {
+        "trial": "pair-6-control",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 27515470670,
+          "upper": 27515470670
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-6-vox",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 28546848372,
+          "upper": 28546848372
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-7-brave",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 17607802912,
+          "upper": 17632759390
+        },
+        "ownership": null
+      },
+      {
+        "trial": "pair-7-control",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 26684267412,
+          "upper": 26684267412
+        },
+        "ownership": true
+      },
+      {
+        "trial": "pair-7-vox",
+        "exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "instructions": {
+          "lower": 27084395603,
+          "upper": 27084395603
+        },
+        "ownership": true
+      }
+    ],
+    "summary": {
+      "brave_median_lower_bound_instructions": 17600211619,
+      "cross_browser_pixels": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/cohort100/cohort-100/cross-browser.diff.png",
+        "different_pixels": 2602001,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/cohort100/cohort-100/cross-browser.diff.png\n"
+      },
+      "instruction_scope": "launch",
+      "matched_control": {
+        "brave_median_lower_bound_instructions": 27515470670,
+        "instruction_scope": "launch",
+        "pairs": 7,
+        "passed": false,
+        "target_vox_fraction": 0.9,
+        "vox_median_instructions": 27580572082,
+        "worst_vox_over_best_brave": 1.0698007155767892
+      },
+      "pairs": 7,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 27580572082,
+      "worst_vox_over_best_brave": 1.6394480672691227
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/cohort-with-host.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/cohort100/cohort-100",
+        "--repeat",
+        "7",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-disable-extended-image-measurements",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/cohort100/cohort100-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "5372": "Thu Nov  5 05:57:14 2026    ",
+        "5377": "Thu Nov  5 05:57:14 2026    ",
+        "5956": "Thu Nov  5 05:57:21 2026    ",
+        "5959": "Thu Nov  5 05:57:21 2026    ",
+        "6896": "Thu Nov  5 05:57:31 2026    ",
+        "6901": "Thu Nov  5 05:57:31 2026    ",
+        "7563": "Thu Nov  5 05:57:39 2026    ",
+        "7571": "Thu Nov  5 05:57:39 2026    ",
+        "8327": "Thu Nov  5 05:57:47 2026    ",
+        "8330": "Thu Nov  5 05:57:47 2026    ",
+        "9031": "Thu Nov  5 05:57:55 2026    ",
+        "9038": "Thu Nov  5 05:57:55 2026    ",
+        "9667": "Thu Nov  5 05:58:02 2026    ",
+        "9672": "Thu Nov  5 05:58:02 2026    ",
+        "9680": "Thu Nov  5 05:58:02 2026    ",
+        "9681": "Thu Nov  5 05:58:02 2026    ",
+        "9685": "Thu Nov  5 05:58:02 2026    ",
+        "10011": "Thu Nov  5 05:58:08 2026    ",
+        "10013": "Thu Nov  5 05:58:08 2026    ",
+        "10021": "Thu Nov  5 05:58:08 2026    ",
+        "10022": "Thu Nov  5 05:58:08 2026    ",
+        "10023": "Thu Nov  5 05:58:08 2026    ",
+        "10057": "Thu Nov  5 05:58:09 2026    ",
+        "10058": "Thu Nov  5 05:58:09 2026    ",
+        "10096": "Thu Nov  5 05:58:10 2026    ",
+        "10422": "Thu Nov  5 05:58:15 2026    ",
+        "10425": "Thu Nov  5 05:58:15 2026    ",
+        "10886": "Thu Nov  5 05:58:22 2026    ",
+        "10892": "Thu Nov  5 05:58:22 2026    ",
+        "11428": "Thu Nov  5 05:58:30 2026    ",
+        "11432": "Thu Nov  5 05:58:30 2026    ",
+        "12028": "Thu Nov  5 05:58:37 2026    ",
+        "12030": "Thu Nov  5 05:58:37 2026    ",
+        "12853": "Thu Nov  5 05:58:44 2026    ",
+        "12858": "Thu Nov  5 05:58:44 2026    ",
+        "12882": "Thu Nov  5 05:58:45 2026    ",
+        "12883": "Thu Nov  5 05:58:45 2026    ",
+        "12890": "Thu Nov  5 05:58:45 2026    ",
+        "13455": "Thu Nov  5 05:58:51 2026    ",
+        "13462": "Thu Nov  5 05:58:51 2026    ",
+        "13475": "Thu Nov  5 05:58:51 2026    ",
+        "13476": "Thu Nov  5 05:58:51 2026    ",
+        "13479": "Thu Nov  5 05:58:51 2026    ",
+        "14032": "Thu Nov  5 05:58:56 2026    ",
+        "14036": "Thu Nov  5 05:58:56 2026    ",
+        "14765": "Thu Nov  5 05:59:04 2026    ",
+        "14770": "Thu Nov  5 05:59:04 2026    ",
+        "15476": "Thu Nov  5 05:59:11 2026    ",
+        "15483": "Thu Nov  5 05:59:11 2026    ",
+        "16128": "Thu Nov  5 05:59:18 2026    ",
+        "16132": "Thu Nov  5 05:59:18 2026    ",
+        "16673": "Thu Nov  5 05:59:24 2026    ",
+        "16676": "Thu Nov  5 05:59:24 2026    ",
+        "16689": "Thu Nov  5 05:59:25 2026    ",
+        "16690": "Thu Nov  5 05:59:25 2026    ",
+        "16692": "Thu Nov  5 05:59:25 2026    ",
+        "16745": "Thu Nov  5 05:59:25 2026    ",
+        "16746": "Thu Nov  5 05:59:25 2026    ",
+        "16772": "Thu Nov  5 05:59:26 2026    ",
+        "17040": "Thu Nov  5 05:59:30 2026    ",
+        "17044": "Thu Nov  5 05:59:30 2026    ",
+        "17052": "Thu Nov  5 05:59:30 2026    ",
+        "17053": "Thu Nov  5 05:59:30 2026    ",
+        "17054": "Thu Nov  5 05:59:30 2026    ",
+        "17524": "Thu Nov  5 05:59:35 2026    ",
+        "17535": "Thu Nov  5 05:59:35 2026    ",
+        "18185": "Thu Nov  5 05:59:43 2026    ",
+        "18191": "Thu Nov  5 05:59:43 2026    ",
+        "18833": "Thu Nov  5 05:59:50 2026    ",
+        "18839": "Thu Nov  5 05:59:50 2026    ",
+        "19558": "Thu Nov  5 05:59:57 2026    ",
+        "19562": "Thu Nov  5 05:59:57 2026    ",
+        "20347": "Thu Nov  5 06:00:04 2026    ",
+        "20357": "Thu Nov  5 06:00:04 2026    ",
+        "20372": "Thu Nov  5 06:00:05 2026    ",
+        "20373": "Thu Nov  5 06:00:05 2026    ",
+        "20375": "Thu Nov  5 06:00:05 2026    ",
+        "20422": "Thu Nov  5 06:00:05 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1631961088,
+      "elapsed_seconds": 180.074529125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "driver_exit": {
+      "driver_guard_exit": 1
+    }
+  },
+  "statistics": {
+    "median_vox": 27580572082,
+    "median_brave_lower": 17600211619,
+    "median_control": 27515470670,
+    "median_point_difference": -65101412,
+    "paired_differences": [
+      -1190845811,
+      -18661866,
+      272945131,
+      -237613827,
+      1501135830,
+      -1031377702,
+      -400128191
+    ],
+    "worst_candidate_best_control": 1.0698007155767892,
+    "strict_left": 285468483720,
+    "strict_right": 156712274379
+  },
+  "retained_failures": "Initial three-case fixture does not wrap DecodedImageData in SharedResourceImageData; compile rejects both assignments. Corrected initial three-case default run passes; final fourth case adds committed nested-absolute replay and extends live natural-size coverage. Final31cases are called in every memory mode, verified by main disassembly.",
+  "broad": "No new positive median reduction since the prior524-case broader checks; no broad rerun or cadence reset. That batch had521passes and3knownbaselinefailures ineachmode.",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-image-measurement-cohort100-20261105.tar.gz",
+    "bytes": 35143291,
+    "sha256": "dfd16dfabba220aed96d3b89355ccdbf2055bbc1fc441e8f4129c87ebf5681e7",
+    "members": 410,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793848071.9631329
+}
