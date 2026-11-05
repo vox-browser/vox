@@ -31,6 +31,13 @@ $if gcboehm ? {
 // Collect temporary browser data before it inflates the resident heap. Apply
 // before startup work; heap capacity grows naturally with actual live data.
 pub fn initialize_browser_heap_policy() bool {
+	$if prealloc {
+		// HTTP reapers and native callbacks can still read process-owned V
+		// state while exit handlers run. Freeing the main arena at that point
+		// races those workers. Keep it mapped until the OS ends the process;
+		// normal document/scratch retirement and worker cleanup remain active.
+		unsafe { prealloc_keep_memory_at_exit() }
+	}
 	$if gcboehm ? {
 		// An explicit collector configuration owns both sizing and collection
 		// behavior, so leave all of it unchanged when any override is present.
