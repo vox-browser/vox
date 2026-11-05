@@ -9,6 +9,20 @@ import os
 const disable_javascript_paint_only_sync = os.getenv('VOX_DISABLE_JAVASCRIPT_PAINT_SYNC') != ''
 const javascript_paint_sync_diagnostics = os.getenv('VOX_JAVASCRIPT_PAINT_SYNC_DIAGNOSTICS') != ''
 
+fn C.native_prepare_css_filter_renderer()
+
+fn (app &BrowserApp) prepare_native_css_filter_renderer() {
+	$if macos {
+		if app.ctx == unsafe { nil } || !app.ctx.native_rendering { return }
+		for index in 0 .. app.paint_commands.len {
+			if app.paint_commands[index].kind == 'begin_css_filter_layer' {
+				C.native_prepare_css_filter_renderer()
+				return
+			}
+		}
+	}
+}
+
 // A scrolled display list can be stale while its layout and committed paint
 // geometry remain current. Keep the cosmetic-filter pass, then let Document
 // update only what those filters actually invalidate before adopting paint.
@@ -142,6 +156,7 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	// a layout pass. Adopt that final snapshot as well as geometry changes.
 	app.adopt_current_document_geometry()
 	app.prime_document_paint_resources()
+	app.prepare_native_css_filter_renderer()
 	// Raster-layer origins and tile grids use screen pixels. Zoomed commands
 	// use the ordinary compositing layer until those plans support a scale.
 	if document.font_rendering_policy() == .chromium && app.page_zoom == 1 {

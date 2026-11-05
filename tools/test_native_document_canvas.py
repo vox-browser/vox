@@ -29,6 +29,7 @@ def entry_points(text):
         "static void native_add_elliptical_arc(",
         "static CGPathRef native_create_corner_rounded_rect_path(",
         "static void native_initialize_css_filter_renderer(",
+        "void native_prepare_css_filter_renderer(",
         "void native_begin_css_filter_layer(")]
     functions.append("void native_end_css_filter_layer(void);")
     functions += [function(signature) for signature in (

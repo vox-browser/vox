@@ -92,7 +92,20 @@ static void test_guards(void) {
 
 int main(void) { @autoreleasepool {
     test_guards();
+    assert(!native_css_filter_ci_context && !native_css_filter_color_space);
+    NSGraphicsContext *previous = NSGraphicsContext.currentContext;
+    setenv("VOX_DISABLE_EARLY_CSS_FILTER_CONTEXT", "1", 1);
+    native_prepare_css_filter_renderer();
+    assert(!native_css_filter_ci_context && !native_css_filter_color_space);
+    unsetenv("VOX_DISABLE_EARLY_CSS_FILTER_CONTEXT");
+    native_prepare_css_filter_renderer();
+    assert(native_css_filter_ci_context && native_css_filter_color_space);
+    CIContext *renderer = native_css_filter_ci_context;
+    CGColorSpaceRef color = native_css_filter_color_space;
+    native_prepare_css_filter_renderer();
     native_initialize_css_filter_renderer();
+    assert(renderer == native_css_filter_ci_context && color == native_css_filter_color_space);
+    assert(NSGraphicsContext.currentContext == previous && native_css_filter_stack_depth == 0);
     Method method = class_getInstanceMethod(object_getClass(native_css_filter_ci_context),
         @selector(createCGImage:fromRect:format:colorSpace:));
     original_create_image = method_setImplementation(method, (IMP)count_image);

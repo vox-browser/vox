@@ -2814,6 +2814,19 @@ static void native_initialize_css_filter_renderer(void) {
 	});
 }
 
+// Retained filters may be outside the initial viewport. Prepare their shared
+// renderer while adopting the display list, rather than creating a Metal/Core
+// Image context on the first wheel event that exposes one. No bitmap, filter
+// graph or rendered result is retained here; pages without filters stay lazy.
+void native_prepare_css_filter_renderer(void) {
+	if (getenv("VOX_DISABLE_EARLY_CSS_FILTER_CONTEXT") || native_css_filter_ci_context) return;
+	BOOL diagnostics = getenv("VOX_CSS_FILTER_PREPARATION_DIAGNOSTICS") != NULL;
+	double started = diagnostics ? CACurrentMediaTime() : 0;
+	native_initialize_css_filter_renderer();
+	if (diagnostics) fprintf(stderr, "VOX_CSS_FILTER_PREPARED context=%d us=%.3f\n",
+		native_css_filter_ci_context != nil, (CACurrentMediaTime() - started) * 1e6);
+}
+
 void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	if (!ladybird_v_skia_gpu_canvas_defer_filters || !ladybird_v_skia_gpu_canvas_defer_filters())
