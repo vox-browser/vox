@@ -5927,3 +5927,30 @@ No acceptance cohort has been added: history stays 102 / 2,209, the 10% target
 remains unmet, and BBC homepage stays outside the catalog.
 [Setter regression and restored native evidence](performance/bbc-grid-placement-typed-and-callback-restored-20261105.json)
 are preserved with a verified archive.
+
+
+## Measurement rejection classifier (2026-11-05)
+
+A separate C-O0/bounded-prealloc diagnostic instruments the closed-input
+collector in sealed production `557eb0c8`, dumping thread-local counts before
+encoded PNG. It passes original pixels, complete content, 72 exact external
+scripts, native exit zero, unchanged inputs and actual loaded-image pins.
+Compiler/runtime guards exit zero after the corrected probe. It predates grid
+placement reuse and supplies no acceptance, instruction or timing credit.
+
+The reject branch records 3,366 visits. Positioned rejections comprise 2,549
+absolute and 32 fixed visits, with zero relative visits and zero all-auto or
+absolute-zero relative-inset opportunities. Position-related visits include
+1,057 image boxes and 514 block containers, with zero SVG boxes. These are
+nonexclusive repeated visits, not unique elements. Widening the relative-inset
+rule has no observed opportunity in this run.
+
+All 640 rejected list-item visits have no marker. This motivates a narrow
+measurement-only extension, still requiring every other closed-subtree guard
+and live marker validation. It does not prove that those visits would pass all
+remaining predicates or that the extension runs in production. The initial
+probe compile uses an enum macro already expanded in the sealed preprocessed
+C; the corrected literal is verified against that source's exact helper.
+The failed compile, source-proof preparation mismatch, corrected source and
+successful run are retained in the [rejection evidence](performance/bbc-measurement-rejections-20261105.json).
+The 10% target and catalog status are unchanged.
