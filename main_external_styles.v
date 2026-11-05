@@ -103,18 +103,21 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 
 // Install the actual link-owned CSSOM sheet before dispatching its completion
 // event. An adjacent synthetic <style> cannot supply LinkStyle.sheet or retain
-// CSSOM edits on the link, and makes late load listeners wait forever.
-fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource) {
+// CSSOM edits on the link, and makes late load listeners wait forever. Report
+// whether the owned sheet changed, including removal after a failed replacement.
+fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource) bool {
 	mut allocations := link.document().enter_native_storage()
 	defer { allocations.finish() }
+	native_link := unsafe { &dom.HTMLLinkElement(link) }
+	previous_sheet := native_link.linked_style_sheet_
 	mut content_type := ''
 	for header in resource.response_headers {
 		if header.name.to_lower() == 'content-type' { content_type = header.value }
 	}
 	address := if resource.final_url == '' { resource.url } else { resource.final_url }
-	mut model := html.html_link_element_model_for_dom_element(unsafe { &dom.HTMLLinkElement(link) })
+	mut model := html.html_link_element_model_for_dom_element(native_link)
 	model.set_external_stylesheet_fetcher(true)
-	html.html_link_element_process_stylesheet_resource(unsafe { &dom.HTMLLinkElement(link) },
+	html.html_link_element_process_stylesheet_resource(native_link,
 		resource.error == '', html.LinkResourceResponse{
 			content_type: content_type
 			body:         resource.body.bytes()
@@ -123,6 +126,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 			// sheets may style the page, but their rules must remain private.
 			origin_clean: dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
 		})
+	return previous_sheet != native_link.linked_style_sheet_
 }
 
 // Scripts can insert stylesheet links after the initial resources; 4chan's
@@ -130,7 +134,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 // new remote one in the background. The CSS bridge installs it, in the link's
 // tree position, once its text arrives. A sheet the disk cache holds is
 // installed at once, so the document is not laid out and painted without it
-// first. Returns whether any sheet was installed.
+// first. Returns whether an owned sheet was installed, removed, or replaced.
 fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 	if app.document == unsafe { nil } {
 		return false
@@ -163,19 +167,19 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 			continue
 		}
 		if resource := app.script_stylesheet_responses[resolved_url] {
-			complete_browser_link_stylesheet(link, resource)
-			installed = true
+			if complete_browser_link_stylesheet(link, resource) { installed = true }
+			continue
+		}
+		// The navigation already requested the parser's sheets. One that
+		// failed is not requested again when the page is installed. Complete
+		// every link owner before deduplicating new transport requests.
+		if resource := app.navigation_preloaded_resources[resolved_url] {
+			app.script_stylesheet_requests[resolved_url] = true
+			if complete_browser_link_stylesheet(link, resource) { installed = true }
 			continue
 		}
 		if resolved_url in app.script_stylesheet_requests { continue }
 		app.script_stylesheet_requests[resolved_url] = true
-		// The navigation already requested the parser's sheets. One that
-		// failed is not requested again when the page is installed.
-		if resource := app.navigation_preloaded_resources[resolved_url] {
-			complete_browser_link_stylesheet(link, resource)
-			installed = true
-			continue
-		}
 		if cached := disk_cached_browser_resource(resolved_url, source_url, 'stylesheet') {
 			if app.install_script_inserted_stylesheet(cached) {
 				installed = true
@@ -226,9 +230,8 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		}
 		resolved := css.link_style_sheet_url(link.get_attribute_value('href'), app.document.base_url().serialize()) or { continue }
 		if resolved != resource.url { continue }
-		complete_browser_link_stylesheet(link, retained)
+		if complete_browser_link_stylesheet(link, retained) { installed = true }
 		app.script_stylesheet_links[link.as_node().unique_id()] = resolved
-		installed = true
 	}
 	return installed
 }

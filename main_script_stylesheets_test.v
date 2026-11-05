@@ -10,6 +10,9 @@ fn script_stylesheet_test_document() &dom.Document {
 	address := dom.URL{value: 'https://script-styles.test/pol/catalog'}
 	mut document := html.parse_navigation_document('<!doctype html><html><head><link id="mobile-css" rel="stylesheet" href="mobile.css"></head><body><p id="text">text</p></body></html>',
 		address, address.origin(), none) or { panic(err) }
+	mut navigable := &dom.Navigable{ active_document_: document, is_top_level_traversable_: true }
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
 	document.set_scripting_enabled_by_embedder(false)
 	document.set_viewport_rect(dom.Rect{width: 1024, height: 768})
 	return document
