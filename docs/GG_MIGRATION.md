@@ -47,7 +47,7 @@ Reconciling those histories requires a decision consistent with the repository's
 linear-history and no-rewrite rules; no force push, merge or rebase was attempted.
 
 The upstream implementation is V branch `gg-skia-parity`, PR
-[vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `dbfcab86a1`.
+[vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `b434ae7005`.
 `V_BIN=~/code/v-gg/v sh build-prod-browser.sh` selects that compiler. The build
 recognizes `vlib/gg/canvas` and supplies `-d vox_gg_canvas`; ordinary V builds
 exclude the adapters. Runtime selection remains `VOX_GG_TEXT=1`,
@@ -87,6 +87,14 @@ MinGW, and a separate GLCORE executable cross-build links successfully. Native
 Windows execution and Linux runtime tests were not run. See the
 [review-fix receipt](gg-migration/pr-reviews-20261105.json) for source pins,
 commands, actual exits and retained failures.
+
+The follow-up review confirmed those implementation fixes and found three text
+helper tests still referencing Darwin-only definitions on other platforms.
+`b434ae7005` puts their bodies under matching macOS guards. The previous
+cross-target checks omitted `text_test.v`; verification now typechecks all 12
+canvas test files for both Linux and Windows (24 checks), then runs the text
+and platform test files on macOS. All pass. This follow-up changes only tests;
+see its [verification receipt](gg-migration/pr-review-followup-20261105.json).
 
 The 262-fixture stage22 browser result below remains pinned to `ff4cd6dc66`;
 it does not validate a production browser built with this newer review-fix head.

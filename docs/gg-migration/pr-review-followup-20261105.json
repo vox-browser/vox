@@ -1,0 +1,413 @@
+{
+  "date": "2026-11-05",
+  "review": "https://github.com/vlang/v/pull/31826#issuecomment-6658667047",
+  "reviewed_head": "dbfcab86a1f6427ea075878cff2387a9f91d4929",
+  "fixed_head": "b434ae70050427315b68de034fef5aa2c25e1caa",
+  "pull_request": {
+    "headRefName": "gg-skia-parity",
+    "headRefOid": "b434ae70050427315b68de034fef5aa2c25e1caa",
+    "headRepository": {
+      "nameWithOwner": "medvednikov/v-pr-fork"
+    },
+    "isDraft": false,
+    "state": "open",
+    "url": "https://github.com/vlang/v/pull/31826"
+  },
+  "pushed_and_verified": true,
+  "source_worktree_clean": true,
+  "changed_files": [
+    "vlib/gg/canvas/text_test.v"
+  ],
+  "change": "Guard the div255, PipelineColor and pack_glyph_id test bodies with $if macos, matching the Darwin-only implementation. Test assertions and renderer implementation remain unchanged. Unsupported-platform behavior stays covered by text_platform_test.v.",
+  "source_identity": {
+    "thirdparty/sokol/sokol_gfx.h": "a70f4c765ff70f5ca6054e23abbeb595ceb26da4a63b98fb40f0dda390768441",
+    "v": "29b1cf98ce4b25df0b8547b67e1252952dff7aa29a618917d952ac509ab4e06d",
+    "vlib/gg/canvas/README.md": "3c5b2eda25264148d38acb665b8a15a37daf91be09c0a5390c567aad5fa8ed8f",
+    "vlib/gg/canvas/color.v": "320a482196e454889f9f94f6b969df5137bdafa35ff3bd85e343cef3b16e4f02",
+    "vlib/gg/canvas/gpu_buffers.v": "e47c67b5fdd94093ae1d207fe44ee92d37ce32bc47c5e9d331503fa3a2fee3a7",
+    "vlib/gg/canvas/gpu_clip.v": "670da233e3e58e0eb398f3e4d61ab4182584805c8949a96fc3d69d3e0d936de2",
+    "vlib/gg/canvas/gpu_clip_test.v": "ab377b87246c160e86105864a61fd9f132cb33b8715e6be48ad3051f6e06a1a5",
+    "vlib/gg/canvas/gpu_context.v": "d1f6c28c211d0ef47ff69a01a85429e365e2182ccd7b76d8cace4c12d58a98a9",
+    "vlib/gg/canvas/gpu_draw_order.v": "374d67f034d3577dbcf11c3753291cd87536fd0f3bb95fb953d454b682ff58ae",
+    "vlib/gg/canvas/gpu_gradient.v": "73a7802b86b5c3ba6dd11e8cb3e2814926a8efdf18fd38b8bd0ebad7e441633b",
+    "vlib/gg/canvas/gpu_gradient_test.v": "f05b494116c171bfc0a6ceed94374141a225716a7573699dc894a41414d44d87",
+    "vlib/gg/canvas/gpu_layer.v": "40cd0a6dd91e794c83fa9bb4c5f1e4baa6a591dbb055ea8913d6960adb9e7f6f",
+    "vlib/gg/canvas/gpu_layer_test.v": "1263c12c01a943fdf11e63db067abb54faa4edb4fb96ac3d65c200b34efb2eb9",
+    "vlib/gg/canvas/gpu_metal_darwin.h": "fb2631e4374b974fedab48c51cb5a855754d248bb310ba2af44d0e3fede325af",
+    "vlib/gg/canvas/gpu_path.v": "14a3880db6e5cb067fbffc27fc6e32b0edc82fc612fef15d81de2bd7bbdfdf90",
+    "vlib/gg/canvas/gpu_per_edge_quad.v": "323864daa15e5eff44c0297f33fb6a89727e621132aea8cae7d94a090675505d",
+    "vlib/gg/canvas/gpu_render_steps.v": "82a819b717fbc536b67d7d716f5f39f8195acea4df312a3cd2d7413f77d07aaa",
+    "vlib/gg/canvas/gpu_render_steps_test.v": "64a70e1931daed29d64628dbc118e315a2928b5d19345216db13c4a383709e7b",
+    "vlib/gg/canvas/gpu_strokes.v": "6b5c145e84d918bf6d1efaad4065fed60e30a983d0ff822832d20663859b168c",
+    "vlib/gg/canvas/gpu_strokes_test.v": "2ed8320ab246e120a42fc9bcc34ea0fae7aaed6fed45b3c378f98d7262048467",
+    "vlib/gg/canvas/gpu_surface.v": "14d14749264ad60eb215dad8a425842a29462bbaa4b09f491bb82916f2afddfe",
+    "vlib/gg/canvas/gpu_surface_metal_test.v": "2825918bb91bb6b874748842b7501b724a2fbfa64e4015ba4b52dd9105c6fdd6",
+    "vlib/gg/canvas/libcpp_sort.v": "d94abfbf4be3cd31b66dccf6a6d8075a48f6473e24b42cbe93c16bc701af0712",
+    "vlib/gg/canvas/libcpp_sort_test.v": "069dda9f9127c47c7d34a43947633e778ddc51dd2378e0365fae60dfc4c9467e",
+    "vlib/gg/canvas/mask_gamma.v": "a64d078ea987a1f3be3634e9de1bedf9789dd9cf2803f627dcda19547b2d4051",
+    "vlib/gg/canvas/matrix.v": "9e34b2c62001d8a8428cb185b25c7ef0717ec07cf5512aa19d1d987126ff12d2",
+    "vlib/gg/canvas/paint.v": "07c699bfb0f93c656c84f4463414c2a066627379bbfe4b1f6a2d8b49a56fcdb1",
+    "vlib/gg/canvas/path.v": "be4e38d48e6823147d094c04b8cd5cb2cc9905f7386170987b319d9b30e45f91",
+    "vlib/gg/canvas/path_math.h": "443ef8bc09930669e0a9d90c066b0c1f6bf6ff059795b4da72f75313581765da",
+    "vlib/gg/canvas/path_test.v": "7c5d56f0874a39054c1fa7089740d65c27f6a721893fb1cc51418be5987cbf05",
+    "vlib/gg/canvas/raster_matrix.v": "a2b81f18843c87824738da4e7c1dfe49d627fa058d4018a3ddc66104f91521f5",
+    "vlib/gg/canvas/raster_surface.v": "2691aab0452e871c016ec3dfdef36dcf99387de7c363c2617e47e0c44a51642a",
+    "vlib/gg/canvas/raster_text_darwin.c.v": "6e726881b31aaa1adedf706637e11ebc6e2afdc8a51c3140b324b2377289f271",
+    "vlib/gg/canvas/raster_text_default.c.v": "769c29e53c9d5b357080b263e62a420392cac5c4b5f454ec69e2d1cc786d0add",
+    "vlib/gg/canvas/rect.v": "7b4d3f7dd3e8c03531bf049ad97d8bd600b101d33cf26286be5618ab04562bf0",
+    "vlib/gg/canvas/rrect.v": "503f65048232f8fbbf8e9adecf81eb92e3ad9bda02adda58842c2b66eed8ee86",
+    "vlib/gg/canvas/rrect_test.v": "128841a34f7e1b33ceaabd98416d0202c9cd141d905fb579a568a5eedd077143",
+    "vlib/gg/canvas/shaders/LICENSE-skia": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd",
+    "vlib/gg/canvas/shaders/analytic_rrect_solid.frag.metal": "1c4e421d5e45489e6f079041d29c5a14cda390978fb6530bc20c9af79bdaf7c7",
+    "vlib/gg/canvas/shaders/analytic_rrect_solid.vert.metal": "bed744712e2ccbb5b6f63ec3537a247f33c1a083a17effd879182f5dbcf222ab",
+    "vlib/gg/canvas/shaders/analytic_rrect_solid_clip.frag.metal": "09c6345090a591e4fcf7a5b978edc67301b0862b4c8d574d788c0b33ac812b44",
+    "vlib/gg/canvas/shaders/analytic_rrect_solid_clip.vert.metal": "dd7e52183e8c8be37151223da4cb9e58e5d2cebbd3fd839f9c22123a139cb660",
+    "vlib/gg/canvas/shaders/cover_bounds_depth.vert.metal": "3bd4e13fcbf7647a2d4eae1a10a9c5e73c717c54db080d71eb37d1dc06ed7345",
+    "vlib/gg/canvas/shaders/cover_bounds_solid.frag.metal": "c3c821632b00398efe13377aeaf0c3bea7fc3edb019956aa06ce2868db55553e",
+    "vlib/gg/canvas/shaders/cover_bounds_solid.vert.metal": "a2ff4d7de1a6b6b9ea22f42c1ca0a3fc0b796a23257bcd4b19e1fab0db4bd143",
+    "vlib/gg/canvas/shaders/cover_bounds_solid_clip.frag.metal": "6e0910fd05f945aa2a8fe41b52fce2bd5080d13d281f5d059581d1a45c83a517",
+    "vlib/gg/canvas/shaders/cover_bounds_solid_clip.vert.metal": "27e849c1dfbe5134405453d175ed7bfe510239d0011a916d0414319a51800ef6",
+    "vlib/gg/canvas/shaders/load_msaa_from_resolve.metal": "0cf871f5ed0dd2d46986db62de68d96092eb88d1a5660bc777654e5c3e8d8b1f",
+    "vlib/gg/canvas/shaders/paint_snippets.metal": "612071bf8703373f17509f1c0e82890443d50c2adae6c8807506ccfc4447dfc9",
+    "vlib/gg/canvas/shaders/per_edge_quad_solid.frag.metal": "6a40e8d3e6ceeaae3127aa34eb67d5d94a8f8acebfd2c69beb82b0478d0e89f7",
+    "vlib/gg/canvas/shaders/per_edge_quad_solid.vert.metal": "21204b5c2895ba411e298956ee856606fe5a76863ce9c30cf89323cd3dfdb91f",
+    "vlib/gg/canvas/shaders/per_edge_quad_solid_clip.frag.metal": "ce5a507b35487892ad26b1cdf83ba5bca4f8fe5fd0052dd194378ba534a300a9",
+    "vlib/gg/canvas/shaders/per_edge_quad_solid_clip.vert.metal": "c7c35201c9f99121990bf7a9eb6df1cfdcc9682597ddc9f13edefb35c64b1305",
+    "vlib/gg/canvas/shaders/tessellate_strokes_solid.frag.metal": "39ce1cc063fe09d44358f78d968b9795b537b19db4c287f9b9ecd14392f33dfd",
+    "vlib/gg/canvas/shaders/tessellate_strokes_solid.vert.metal": "727e9f188a4ca726f62093e31e8b1934961a7ca68ea26d721c62b903d8fea4be",
+    "vlib/gg/canvas/shaders/tessellate_strokes_solid_clip.frag.metal": "d06e6e448cff666f14eacb7adc57cf9fdfee496cd415bf531d83b47e81d4cb7b",
+    "vlib/gg/canvas/shaders/tessellate_strokes_solid_clip.vert.metal": "3e360357b15eef97edd4ed57d4776cc76d8d200218af44c64801ae60c46061c9",
+    "vlib/gg/canvas/shaders/tessellate_wedges_convex.vert.metal": "dbbe31af4e651c2b92df78a1707a23a9acb8d1328f9ee4090aa03a94f9ba8030",
+    "vlib/gg/canvas/shaders/tessellate_wedges_solid.frag.metal": "1f4d933c5bcf8e0bfa8f5e1b9d9f3901e39e6fdf3c3f422ac37e810c240523af",
+    "vlib/gg/canvas/shaders/tessellate_wedges_solid.vert.metal": "1df534672def90a5bdf3c5e01c92b3e10aa424f141e5b9257bd1d6165ce0ee8d",
+    "vlib/gg/canvas/shaders/tessellate_wedges_solid_clip.frag.metal": "b41ce7c0649022f7ded8e4fe7a4b02b96be20d943c1968eb37f91aee90ccd830",
+    "vlib/gg/canvas/shaders/tessellate_wedges_solid_clip.vert.metal": "c24e2d3cfb6cfbdc3d3d41e808659b32c286ee17c195d239cf60bb7e91456c68",
+    "vlib/gg/canvas/text.v": "5983967a53ae1e309dff296f3ea1a609d7e5ddcc30a4ac3cacd13d6d787a3c1b",
+    "vlib/gg/canvas/text_cache_test.v": "6721c7f715d00b5c0311ae5387729cadd73289ef6428fbe41aef25aee51af698",
+    "vlib/gg/canvas/text_coretext_darwin.h": "03462f4e0158984ccf4ac478b88c57dbd5b347219033c80d90135526aa99578d",
+    "vlib/gg/canvas/text_darwin.c.v": "24f8810ae645b5f8d39758ffc0bf6bb34edbc4956f9415edb1bfd2ecc05a1314",
+    "vlib/gg/canvas/text_platform_test.v": "2ea8deaafaecdd09711f4d53d0345e199eb731801b6a07e5f5f33e92666c3d27",
+    "vlib/gg/canvas/text_spider_font.h": "19d2b0de77a851cb905d05130ec899f55353fcd266867427c8dd2c2507dd3dff",
+    "vlib/gg/canvas/text_test.v": "6f302625682eccc43ff9fce556e94f2ffe18e0d471d21d21f0296870848826f2",
+    "vlib/gg/canvas/typeface.v": "089580d121fd0d35e878bc8b91e38957a2273f911c5209f6f58fe07467758507",
+    "vlib/gg/canvas/typeface_darwin.c.v": "3770a497d462baff4e06e999885e9be0a0100fe140c15fec5d329ecfd1ccfa4e",
+    "vlib/gg/canvas/typeface_default.c.v": "567a0c9919c6be6ca6e31cc73c8fac651819636bcdad55da148a0cc873885870"
+  },
+  "pins_unchanged_at_endpoint": true,
+  "tests": {
+    "cross_target_typechecks": {
+      "linux": 12,
+      "windows": 12
+    },
+    "macos_executed_files": [
+      "text_test.v",
+      "text_platform_test.v"
+    ],
+    "note": "Native Windows/Linux runtime execution was not run; macOS executes the guarded arithmetic and text pixel tests. The older 262-fixture browser cohort was not rerun."
+  },
+  "commands": [
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_clip_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_gradient_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_layer_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_render_steps_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_strokes_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_surface_metal_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/libcpp_sort_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/path_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/rrect_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/text_cache_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/text_platform_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/text_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_clip_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_gradient_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_layer_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_render_steps_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_strokes_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_surface_metal_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/libcpp_sort_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/path_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/rrect_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/text_cache_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/text_platform_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/text_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-cc",
+      "clang",
+      "test",
+      "vlib/gg/canvas/text_test.v",
+      "vlib/gg/canvas/text_platform_test.v"
+    ]
+  ],
+  "checks": {
+    "linux-red": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-os",
+        "linux",
+        "-check",
+        "vlib/gg/canvas/text_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 272515072,
+      "elapsed_seconds": 12.650636875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "checks-fixed": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 470581248,
+      "elapsed_seconds": 246.964885167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "docs": {
+      "command": [
+        "/Users/alex/code/v-gg/v",
+        "-memory-limit",
+        "10G",
+        "check-md",
+        "docs/GG_MIGRATION.md"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 6389760,
+      "elapsed_seconds": 0.261423834,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "retained_attempts": [
+    "Before the fix, Linux typechecking text_test.v failed on the three Darwin-only helper references. Previous cross-target checks omitted this file; the new check covers all canvas test files on both targets.",
+    "The first post-push GraphQL snapshot timed out, leaving an empty response that the packaging check rejected. A successful REST snapshot and git ls-remote both verify the pushed head before final packaging."
+  ],
+  "raw_evidence": {
+    "file": "pr-review-followup-20261105.tar.gz",
+    "sha256": "005154f83a76dbaa05e192ba9a3e0e74cf42888b1269ceb1927057efdf8f2bda",
+    "bytes": 12839,
+    "manifest_entries": 14,
+    "contents": "Review snapshots, source hashes, exact commands, failed Linux typecheck, successful complete cross-target and macOS test log, guard reports and verified PR/remote heads. No repository source copies or browser bundles."
+  },
+  "packaging_guard": {
+    "command": [
+      "python3",
+      "-"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 25657344,
+    "elapsed_seconds": 0.5117375,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
