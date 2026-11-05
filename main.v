@@ -492,7 +492,6 @@ mut:
 	background_resource_results         chan PreloadedResource
 	image_request_loader                ?&BrowserImageRequestLoader
 	script_request_loader               ?&BrowserScriptRequestLoader
-	child_document_host                 ?&BrowserChildDocumentHost
 	background_resource_pending         map[string]bool
 	// Remote stylesheets requested for links that scripts inserted, and the DOM
 	// tree version last scanned for them.
@@ -3796,8 +3795,6 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.image_request_loader = none
 	if mut old_loader := app.script_request_loader { old_loader.cancel() }
 	app.script_request_loader = none
-	if mut children := app.child_document_host { children.close() }
-	app.child_document_host = none
 	app.address = if loaded.url == browser_new_tab_url { '' } else { loaded.url }
 	app.address_cursor = app.address.runes().len
 	app.address_select = false
@@ -4101,7 +4098,6 @@ fn (mut app BrowserApp) poll_navigation_and_background_resources() {
 	app.poll_navigation()
 	if voidptr(app.document) == document_before_navigation {
 		app.poll_browser_script_requests()
-		app.poll_browser_child_documents()
 		app.poll_browser_image_requests()
 		app.poll_background_resources()
 	} else {
