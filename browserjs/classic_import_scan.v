@@ -31,7 +31,10 @@ fn classic_source_may_have_import_word(source string) bool {
 }
 
 fn classic_source_can_skip_import_lexer(source string) bool {
-	if disable_classic_import_word_scan || classic_source_may_have_import_word(source) { return false }
+	if disable_classic_import_word_scan { return false }
+	if classic_source_may_have_import_word(source) {
+		return classic_import_call_scan_can_skip(source)
+	}
 	if classic_import_word_diagnostics && !classic_import_word_skip_reported {
 		classic_import_word_skip_reported = true
 		eprintln('Vox module rewrite: skipped identifier-only import text')
