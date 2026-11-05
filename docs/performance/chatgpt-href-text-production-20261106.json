@@ -1,0 +1,440 @@
+{
+  "version": 1,
+  "complete": true,
+  "status": "complete",
+  "recorded_unix": 1793918284.2260811,
+  "implementation_commits": [
+    "b6463ad4c"
+  ],
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "04ea81d85142b2d71de231567d6e70ff4aa615d0def376e1bb7635667c916d6f",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "f19924f031f690c39f30bd16fee1fc2dc7a145ec70a6a50b485e369c88043bc3",
+      "dirty": true,
+      "head": "44b8ffd4a32efa032c39f6f264ff1683b1ef103e",
+      "repository_sha256": "00d037a7cb4391c53435a7a9cd5fb352cf31e755b763e64347be1b5839929ad6"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "44b8ffd4a32efa032c39f6f264ff1683b1ef103e",
+      "id": "fb2e5079733e4340ba6bdee69a49d3be"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f19924f031f690c39f30bd16fee1fc2dc7a145ec70a6a50b485e369c88043bc3",
+      "dirty": true,
+      "head": "c82ce8a13e8d0ec094355778edf12cc5905ad4c8",
+      "repository_sha256": "2d72f09735ebd504849d95129922cc2beaabf296b2484b9e7f135dbeff433470"
+    }
+  },
+  "controller": {
+    "path": "docs/performance/chatgpt-href-text-production-r1-controller-20261106.json",
+    "sha256": "33973b9d25ce7e8fb1f22b6cef63d7e7e93c262e1a0976641b837e2189068826",
+    "bytes": 3308
+  },
+  "diagnostic": {
+    "path": "docs/performance/chatgpt-href-text-production-r1-diagnostic-20261106.json",
+    "sha256": "13706066731d90f66d8b7085e83f06c4d67f7de12acb135ae09de71646925e50",
+    "bytes": 1733766
+  },
+  "matched": {
+    "path": "docs/performance/chatgpt-href-text-production-r1-matched-20261106.json",
+    "sha256": "4a457638ad3b07867ea7eb79e33819616b758802a2cfee8bc1f750dc09d3cf60",
+    "bytes": 2638294
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-href-text-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "73334": "Fri Nov  6 01:35:26 2026    ",
+      "73336": "Fri Nov  6 01:35:26 2026    ",
+      "73699": "Fri Nov  6 01:35:35 2026    ",
+      "73702": "Fri Nov  6 01:35:35 2026    ",
+      "73707": "Fri Nov  6 01:35:35 2026    ",
+      "73708": "Fri Nov  6 01:35:35 2026    ",
+      "73709": "Fri Nov  6 01:35:35 2026    ",
+      "73966": "Fri Nov  6 01:35:44 2026    ",
+      "73971": "Fri Nov  6 01:35:44 2026    ",
+      "73974": "Fri Nov  6 01:35:44 2026    ",
+      "73975": "Fri Nov  6 01:35:44 2026    ",
+      "73978": "Fri Nov  6 01:35:44 2026    ",
+      "74238": "Fri Nov  6 01:35:53 2026    ",
+      "74243": "Fri Nov  6 01:35:53 2026    ",
+      "74818": "Fri Nov  6 01:36:05 2026    ",
+      "74823": "Fri Nov  6 01:36:05 2026    ",
+      "75154": "Fri Nov  6 01:36:14 2026    ",
+      "75156": "Fri Nov  6 01:36:14 2026    ",
+      "75162": "Fri Nov  6 01:36:14 2026    ",
+      "75163": "Fri Nov  6 01:36:14 2026    ",
+      "75164": "Fri Nov  6 01:36:14 2026    ",
+      "75304": "Fri Nov  6 01:36:23 2026    ",
+      "75307": "Fri Nov  6 01:36:23 2026    ",
+      "75310": "Fri Nov  6 01:36:23 2026    ",
+      "75311": "Fri Nov  6 01:36:23 2026    ",
+      "75312": "Fri Nov  6 01:36:23 2026    ",
+      "75585": "Fri Nov  6 01:36:32 2026    ",
+      "75589": "Fri Nov  6 01:36:32 2026    ",
+      "75941": "Fri Nov  6 01:36:40 2026    ",
+      "75945": "Fri Nov  6 01:36:40 2026    ",
+      "76313": "Fri Nov  6 01:36:48 2026    ",
+      "76318": "Fri Nov  6 01:36:48 2026    ",
+      "76324": "Fri Nov  6 01:36:48 2026    ",
+      "76325": "Fri Nov  6 01:36:48 2026    ",
+      "76326": "Fri Nov  6 01:36:48 2026    ",
+      "76593": "Fri Nov  6 01:36:58 2026    ",
+      "76598": "Fri Nov  6 01:36:58 2026    ",
+      "76601": "Fri Nov  6 01:36:58 2026    ",
+      "76602": "Fri Nov  6 01:36:58 2026    ",
+      "76605": "Fri Nov  6 01:36:58 2026    ",
+      "76883": "Fri Nov  6 01:37:07 2026    ",
+      "76887": "Fri Nov  6 01:37:07 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1575698432,
+    "elapsed_seconds": 113.989700916,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "diagnostic_path_observations": [
+    {
+      "variant": "candidate",
+      "paths": {
+        "href_text": true
+      }
+    },
+    {
+      "variant": "control",
+      "paths": {
+        "href_text": false
+      }
+    }
+  ],
+  "matched_observations": [
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29055580148,
+        "upper": 29055580148
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.62939453125,
+          9.5029296875,
+          8.73046875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          6.33837890625,
+          9.39453125,
+          8.69677734375
+        ]
+      },
+      "frame_checkpoints": 463
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 18543150603,
+        "upper": 18563046924
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.23095703125,
+          9.3212890625,
+          8.6748046875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.89208984375,
+          9.19970703125,
+          8.63525390625
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 19622410684,
+        "upper": 19641824510
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.8203125,
+          9.1298828125,
+          8.61376953125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.75439453125,
+          9.06103515625,
+          8.59228515625
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 28826962375,
+        "upper": 28826962375
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.75439453125,
+          9.06103515625,
+          8.59228515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.705078125,
+          8.94287109375,
+          8.5556640625
+        ]
+      },
+      "frame_checkpoints": 461
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 28348216390,
+        "upper": 28348216390
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.705078125,
+          8.94287109375,
+          8.5556640625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.728515625,
+          8.8935546875,
+          8.54052734375
+        ]
+      },
+      "frame_checkpoints": 473
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 19382135118,
+        "upper": 19391419381
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.669921875,
+          8.82861328125,
+          8.51953125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.4560546875,
+          8.7314453125,
+          8.48681640625
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 18169459985,
+        "upper": 18172865554
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.25927734375,
+          8.63623046875,
+          8.45458984375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.23828125,
+          8.57568359375,
+          8.43408203125
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 28166051765,
+        "upper": 28166051765
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.23828125,
+          8.57568359375,
+          8.43408203125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          4.880859375,
+          8.39111328125,
+          8.3701171875
+        ]
+      },
+      "frame_checkpoints": 470
+    }
+  ],
+  "diagnostic_valid": true,
+  "matched_valid": true,
+  "broad_required": false,
+  "broad": null,
+  "focused_component": {
+    "path": "docs/performance/chatgpt-href-text-20261106.json",
+    "sha256": "fe562b81b6aba1aa049e0aecbcf442a50ee470caa8224c83085c278e4a6272ce",
+    "bytes": 79648
+  },
+  "focused_selected_passed": true,
+  "overall_test_suite_pass_claimed": false,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "browser_captures": 12,
+  "development": [
+    {
+      "path": "docs/performance/chatgpt-href-text-development-20261106-evidence.zip",
+      "sha256": "ee869e37104cf6087c56ea5ff1394f4f5722ff2e5d5381a7a0c5e71d396fbd25",
+      "bytes": 24313
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-bootstrap-20261106-evidence.zip",
+      "sha256": "8fc1035c53cd506cee4a07ac54a11f31ea37539043b174bb0d806b15e0d36902",
+      "bytes": 10277452
+    }
+  ],
+  "manual_build_requests": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-href-text-production-20261106-evidence.zip",
+      "sha256": "d08ba4276d0cf710989f43dfb26c1618f0c866318bbf2aa3342ff74f09187717",
+      "bytes": 1368495
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-20261106-evidence.zip",
+      "sha256": "7b12fc643dc02cec3ad48124a72705c44f3746c4b15801913e7e73fef6435aa6",
+      "bytes": 58370939
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-development-20261106-evidence.zip",
+      "sha256": "ee869e37104cf6087c56ea5ff1394f4f5722ff2e5d5381a7a0c5e71d396fbd25",
+      "bytes": 24313
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-bootstrap-20261106-evidence.zip",
+      "sha256": "8fc1035c53cd506cee4a07ac54a11f31ea37539043b174bb0d806b15e0d36902",
+      "bytes": 10277452
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "c0693f61d0a352d49bd6bb0052c499bfdfc21e0fe71d3cb374fd0279050175b0",
+      "bytes": 1477965
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-production-r1-matched-20261106-evidence.zip",
+      "sha256": "b217837b9e4733e109b23cbabb7f3b7e03a67a2851e2170b5bb8c1da6538e8bf",
+      "bytes": 2882995
+    }
+  ],
+  "qualification": "The canonical bundle is pinned by a nonblocking shared publication lease through separate path diagnostics, unprofiled matched captures and the required 5000000-instruction broad checkpoint when triggered. Exact owned-source blobs at a completed receipt head, stable aggregate build-input hashes and available disassembly establish identity. The scalar URL transport uses the existing parser and USVString conversion, returning copied text without DOMURL or URL wrapper creation. Original value/owner/base handling and setters remain; native constructor/prototype/original href-getter witnesses guard the path. Author replacements, non-string inputs, invalid URLs and foreign owners retain their existing fallback behavior. All 304 final selected executions pass across both variants, ordinary GC, no GC, poisoned preallocation and ASan/UBSan. Initial serialization-signature compilation rejection and bootstrap-order integration failure are retained. The same-executable component uses runtime-loaded href values from the frozen body, includes JavaScriptCore evaluation/result delivery, exact output checks and 100-read workspace retirements, and excludes setup/startup/close and HTML ownership/replay/constructor guards. Its valid scenes improve 23-34 percent while invalid fallback regresses 27.46 percent; every observation remains retained and supplies no page credit. The original SOCKS capture, author scripts, references, fresh private profiles/caches, 1024x768 viewport, scale two, unfocused five-second settle and exclusive-coalition creation-through-encoded-PNG scope remain unchanged. OS filesystem/shader caches remain warm; GPU execution and outside-coalition services are excluded. Four pairs are diagnostic only, below seven-pair Brave acceptance. Host load and frame counts qualify attribution. No live-site, isolated rendering or scrolling claim.",
+  "inspected_build_attempts": [],
+  "control": [
+    {
+      "lower": 29055580148,
+      "upper": 29055580148
+    },
+    {
+      "lower": 28166051765,
+      "upper": 28166051765
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 28826962375,
+      "upper": 28826962375
+    },
+    {
+      "lower": 28348216390,
+      "upper": 28348216390
+    }
+  ],
+  "control_median": 28610815956.5,
+  "candidate_median": 28587589382.5,
+  "observed_median_reduction_percent": 0.08118109611174242,
+  "conservative_page_instruction_reduction": -660910610
+}

@@ -4491,3 +4491,113 @@ retain exact raw counts, all 12 captures and original PNGs, source/control proof
 commands, guards, audits, focused evidence and the complete broad checkpoint.
 The earlier document-envelope saving remains separate; no live-site, cross-browser
 pixel equality, isolated rendering or scrolling claim is added.
+
+
+## Scalar href URL text (2026-11-06)
+
+Implementation `b6463ad4c` lets the HTML href getter use the existing native URL
+parser and USVString conversion to return copied text without creating a DOMURL
+or JavaScript URL wrapper. Native constructor, prototype and original href-getter
+witnesses authenticate this path. Author replacements, non-string inputs and
+invalid URLs keep ordinary construction; foreign owners keep their existing
+native query. Value/owner/base handling and setters remain unchanged, including
+existing base-resolution limitations. There is no new URL or DOM identity cache.
+Temporary input/result storage retires only after the JavaScript string is copied.
+`VOX_RETAIN_HREF_URL_OBJECTS` retains ordinary construction. Bootstrap capture runs
+before element facades can invoke the new hook.
+
+All 24 final focused jobs pass: eight compilations and sixteen executions, with
+**304 authenticated test-function calls** across ordinary GC, no GC, poisoned
+preallocation and address/undefined-behavior sanitizers, in both modes. Cases
+compare native URL results across relative, absolute, escaped, Unicode, lone
+surrogate, opaque and invalid inputs; reject non-strings without coercion; verify
+unchanged URL wrapper/owner map sizes during repeated scalar reads; retire caller
+inputs and churn/evict parser entries; close independent runtimes; and exercise
+actual HTML href getters, pending writes, foreign adoption, replaced constructors,
+replaced accessor/data properties and exact constructor read counts. Existing URL,
+URLSearchParams, document, owner, identity, fragment and parent tests are included.
+Preallocation-specific ownership assertions remain conditional.
+
+The first compilation used the DOM URL serialization signature for a parser
+record; it rejects before running tests. That source and failure are retained.
+The next integration run exposes a bootstrap ordering error: element construction
+can invoke the hook before its captured constants initialize. Its failed execution,
+preceding successful jobs and generated C are preserved. Moving capture before
+facade construction fixes the ordering; every final focused job passes. The final
+focused controller and guard exit zero over 290.43 seconds, peaking at
+9,732,915,200 sampled RSS bytes under 12 GiB. Runtime guards use 3 GiB. After
+lossless archive readback and hash checks, 450,519,963 bytes of generated C
+duplicates are removed. No app bundle or source tree is copied.
+
+Tool `46d61a75e` loads inputs from a pinned manifest, including 108 href values
+extracted from the original frozen HTML. The same-executable JavaScriptCore
+component includes evaluation/result delivery, exact per-read output checks,
+parsing/serialization and scratch retirement every 100 reads. Oracle/setup,
+runtime startup/close and HTML ownership/replay/constructor guards are excluded.
+The oracle warms the existing parser for both modes before measurement. It uses
+production V conditions and single-unit C O3/LTO preallocation, distinct from the
+parallel browser, without poisoning or profiling. Two control and two candidate
+executions alternate, followed by separate path diagnostics:
+
+| Scene | Reads | Control median instructions | Candidate median instructions | Observed change |
+| --- | ---: | ---: | ---: | ---: |
+| Archived hrefs | 16,000 | 498,548,596 | 330,792,258 | 33.6489% fewer |
+| Relative and escaped | 8,000 | 237,281,830.5 | 168,369,853.5 | 29.0422% fewer |
+| Rotating bases | 8,000 | 335,225,803.5 | 257,762,346 | 23.1078% fewer |
+| Invalid fallback | 2,000 | 73,987,321.5 | 94,304,698 | 27.4606% more |
+
+Invalid inputs still take ordinary construction after scalar parsing refuses them;
+that regression is retained. Component results supply no page-level credit. The
+[focused/component receipt](performance/chatgpt-href-text-20261106.json) links all
+six component executions, exact output checksums, authenticated runners, source
+snapshots, guards, both failed development attempts and verified archives.
+
+### Scalar href production comparison
+
+The completed canonical executable SHA-256 is
+`04ea81d85142b2d71de231567d6e70ff4aa615d0def376e1bb7635667c916d6f`, using 33
+parallel C units. Its receipt starts at `44b8ffd4a32efa032c39f6f264ff1683b1ef103e`
+and verifies at `c82ce8a13e8d0ec094355778edf12cc5905ad4c8`: aggregate build-input
+hashes are identical, and the latter head contains exact final owned source blobs.
+Available disassembly and a separate candidate-only execution marker provide
+additional source/path evidence. A nonblocking shared publication lease pins all
+browser/native inputs through the entire comparison; no extra build is requested.
+
+All four diagnostic and eight unprofiled captures pass JavaScriptCore bootstrap,
+complete content/button identity, normal browser exits and unchanged per-engine
+pixels. The original SOCKS fixture, author scripts, references and tolerances,
+fresh private profiles/caches, 1024×768 viewport, scale two and unfocused five-second
+settle are unchanged. Scope remains exclusive-coalition creation through encoded
+document PNG, including startup and the documented per-engine capture/audit/delivery/
+teardown boundaries. OS filesystem/shader caches remain warm; GPU execution and
+services outside the owned coalition are excluded.
+
+| Vox variant | Observed launch-through-PNG instructions | Frame checkpoints |
+| --- | ---: | ---: |
+| Control 1 | 29,055,580,148 | 463 |
+| Candidate 1 | 28,826,962,375 | 461 |
+| Candidate 2 | 28,348,216,390 | 473 |
+| Control 2 | 28,166,051,765 | 470 |
+
+The control median is **28,610,815,956.5**, the candidate median
+**28,587,589,382.5**, an observed **0.0812% reduction**. Conservative separation
+`min(control) - max(candidate)` is **−660,910,610 instructions**. The observed
+ranges overlap substantially: **no whole-page saving is credited**. Broad carry
+remains zero and no additional 5,000,000-instruction broad checkpoint is due.
+The prior owner-read checkpoint remains complete and separate.
+
+One-minute host load spans about 4.88–6.63 on 18 CPUs. Frame counts are retained
+without normalization. Four pairs remain diagnostic only, below seven-pair
+acceptance. The highest observed Vox upper bound divided by the lowest Brave
+lower bound is 1.5991, far above 0.95. The **5%-below-Brave target remains unmet**.
+
+The controller and outer guard exit zero over 113.99 seconds, peaking at
+1,575,698,432 sampled RSS bytes and adopting 42 process identities without an
+adoption error. The publication lease is released. Finalization and independent
+verification exit zero and authenticate six archives. The
+[production receipt](performance/chatgpt-href-text-production-20261106.json)
+and [verification receipt](performance/chatgpt-href-text-production-verification-20261106.json)
+retain exact counters, commands, actual exits, audits, all 12 captures and original
+PNGs, source/control proofs, focused/component checks and development failures.
+No observation is dropped or repeated to improve the result, and no whole-page,
+Brave, live-site, isolated rendering or scrolling gain is claimed for this change.

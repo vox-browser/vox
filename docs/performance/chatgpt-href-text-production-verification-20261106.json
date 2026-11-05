@@ -1,0 +1,94 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-href-text-production-20261106-evidence.zip",
+      "sha256": "d08ba4276d0cf710989f43dfb26c1618f0c866318bbf2aa3342ff74f09187717",
+      "bytes": 1368495
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-20261106-evidence.zip",
+      "sha256": "7b12fc643dc02cec3ad48124a72705c44f3746c4b15801913e7e73fef6435aa6",
+      "bytes": 58370939
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-development-20261106-evidence.zip",
+      "sha256": "ee869e37104cf6087c56ea5ff1394f4f5722ff2e5d5381a7a0c5e71d396fbd25",
+      "bytes": 24313
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-bootstrap-20261106-evidence.zip",
+      "sha256": "8fc1035c53cd506cee4a07ac54a11f31ea37539043b174bb0d806b15e0d36902",
+      "bytes": 10277452
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "c0693f61d0a352d49bd6bb0052c499bfdfc21e0fe71d3cb374fd0279050175b0",
+      "bytes": 1477965
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-production-r1-matched-20261106-evidence.zip",
+      "sha256": "b217837b9e4733e109b23cbabb7f3b7e03a67a2851e2170b5bb8c1da6538e8bf",
+      "bytes": 2882995
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "04ea81d85142b2d71de231567d6e70ff4aa615d0def376e1bb7635667c916d6f",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available document query/reply function disassembly",
+      "proof_sha256": "bf76a1aa99e52bad2821eeaecb8df258154c5b320d74b46957d57a86489d4588",
+      "source_hashes": {
+        "browserjs/url_text_jsc.c.v": "9d3dde39cae28934c217f5a4fe184a91772139fd20f73fce18c6b332631f091e",
+        "browserjs/url_host_jsc.c.v": "8bca7e8a2b01b544d43cf56087ac7924d88d9948e671e79a2687f07b5f647189",
+        "main_compact_href_text.v": "5bb900b3a02e9c1949ce04c9af6e4db9be238c99cfc82ef3e7d82d07e0643404",
+        "main_compact_document.v": "cab626b623f751253c2453ff921d9e3efa0485024067eccd9150f0de994dced6",
+        "main.v": "d042bc992e29c9f641896801a431bc69d7618d043c54a8f0896c740b3360cf0b"
+      },
+      "qualification": "The native scalar URL transport uses the existing URLInputParser and USVString conversion and returns a copied JavaScript string without creating DOMURL or URL wrapper records. The HTML href getter retains its original value/owner/base handling. Exact constructor, prototype and original href-getter tokens guard the scalar call; author replacements, non-string inputs and invalid URLs retain ordinary construction. Original setters and foreign-document queries remain unchanged. Separate candidate-only execution markers establish consumption; source-proof work earns no instruction credit."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-href-text-production-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 586121216,
+    "elapsed_seconds": 1.004603125,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "browserjs/url_text_jsc.c.v": "9d3dde39cae28934c217f5a4fe184a91772139fd20f73fce18c6b332631f091e",
+    "browserjs/url_text_test.v": "c1f741f28466442574f66d53e41ede9e37d8cf4926f836a49cfcac16a71317fb",
+    "browserjs/url_host_jsc.c.v": "8bca7e8a2b01b544d43cf56087ac7924d88d9948e671e79a2687f07b5f647189",
+    "main_compact_href_text.v": "5bb900b3a02e9c1949ce04c9af6e4db9be238c99cfc82ef3e7d82d07e0643404",
+    "main_compact_href_text_test.v": "4301682e86bd82b4d0828f205e146930a54f4d941d95e61d9a79973decc95325",
+    "main_compact_document.v": "cab626b623f751253c2453ff921d9e3efa0485024067eccd9150f0de994dced6",
+    "main.v": "d042bc992e29c9f641896801a431bc69d7618d043c54a8f0896c740b3360cf0b"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 304,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 29055580148,
+    "min_brave_lower": 18169459985,
+    "numerator": 581111602960,
+    "denominator": 345219739715,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Raw control/candidate arithmetic and the required broad-check cadence are verified independently. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. Every observation, host load, frame count, initial rejection and the invalid-input component regression remains retained. Positive conservative page separation receives credit only with all 47 broad jobs passed. The 5%-below-Brave target remains unmet."
+}

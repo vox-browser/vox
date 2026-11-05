@@ -1,0 +1,1981 @@
+{
+  "complete": true,
+  "development_archives": [
+    {
+      "path": "docs/performance/chatgpt-href-text-development-20261106-evidence.zip",
+      "sha256": "ee869e37104cf6087c56ea5ff1394f4f5722ff2e5d5381a7a0c5e71d396fbd25",
+      "bytes": 24313
+    },
+    {
+      "path": "docs/performance/chatgpt-href-text-bootstrap-20261106-evidence.zip",
+      "sha256": "8fc1035c53cd506cee4a07ac54a11f31ea37539043b174bb0d806b15e0d36902",
+      "bytes": 10277452
+    }
+  ],
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-href-text-20261106-r3/component": "0e540af8f11460a77fd0392704e759352652f947166bce45605d1f1cc395a628",
+      "Build/chatgpt-href-text-20261106-r3/component.py": "b145bd1296d23931dc7631ce9cbdce2645c3c632cd34a56949fd7f15c9774637",
+      "Build/chatgpt-href-text-20261106-r3/cases.json": "8f41d2b95d81724059f6992cf9e61c129d3bf23241d882fb9793eb49c907a302",
+      "tools/href_url_text_benchmark.v": "0fb25325632d9afff7ce4bd793d8b38d285b92de8e9e96ef823f6cfccc87d5c2",
+      "browserjs/url_text_jsc.c.v": "9d3dde39cae28934c217f5a4fe184a91772139fd20f73fce18c6b332631f091e",
+      "browserjs/url_text_test.v": "c1f741f28466442574f66d53e41ede9e37d8cf4926f836a49cfcac16a71317fb",
+      "browserjs/url_host_jsc.c.v": "8bca7e8a2b01b544d43cf56087ac7924d88d9948e671e79a2687f07b5f647189",
+      "main_compact_href_text.v": "5bb900b3a02e9c1949ce04c9af6e4db9be238c99cfc82ef3e7d82d07e0643404",
+      "main_compact_href_text_test.v": "4301682e86bd82b4d0828f205e146930a54f4d941d95e61d9a79973decc95325",
+      "main_compact_document.v": "cab626b623f751253c2453ff921d9e3efa0485024067eccd9150f0de994dced6",
+      "main.v": "d042bc992e29c9f641896801a431bc69d7618d043c54a8f0896c740b3360cf0b"
+    },
+    "inputs_after": {
+      "Build/chatgpt-href-text-20261106-r3/component": "0e540af8f11460a77fd0392704e759352652f947166bce45605d1f1cc395a628",
+      "Build/chatgpt-href-text-20261106-r3/component.py": "b145bd1296d23931dc7631ce9cbdce2645c3c632cd34a56949fd7f15c9774637",
+      "Build/chatgpt-href-text-20261106-r3/cases.json": "8f41d2b95d81724059f6992cf9e61c129d3bf23241d882fb9793eb49c907a302",
+      "tools/href_url_text_benchmark.v": "0fb25325632d9afff7ce4bd793d8b38d285b92de8e9e96ef823f6cfccc87d5c2",
+      "browserjs/url_text_jsc.c.v": "9d3dde39cae28934c217f5a4fe184a91772139fd20f73fce18c6b332631f091e",
+      "browserjs/url_text_test.v": "c1f741f28466442574f66d53e41ede9e37d8cf4926f836a49cfcac16a71317fb",
+      "browserjs/url_host_jsc.c.v": "8bca7e8a2b01b544d43cf56087ac7924d88d9948e671e79a2687f07b5f647189",
+      "main_compact_href_text.v": "5bb900b3a02e9c1949ce04c9af6e4db9be238c99cfc82ef3e7d82d07e0643404",
+      "main_compact_href_text_test.v": "4301682e86bd82b4d0828f205e146930a54f4d941d95e61d9a79973decc95325",
+      "main_compact_document.v": "cab626b623f751253c2453ff921d9e3efa0485024067eccd9150f0de994dced6",
+      "main.v": "d042bc992e29c9f641896801a431bc69d7618d043c54a8f0896c740b3360cf0b"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793917925.945376,
+          "cpu_count": 18,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "host_after": {
+          "unix": 1793917926.647297,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 619803,
+            "instructions": 496635319,
+            "iterations": 16000,
+            "scene": "archived-hrefs"
+          },
+          {
+            "checksum": 338288,
+            "instructions": 236438314,
+            "iterations": 8000,
+            "scene": "relative-and-escaped"
+          },
+          {
+            "checksum": 278240,
+            "instructions": 334191454,
+            "iterations": 8000,
+            "scene": "rotating-bases"
+          },
+          {
+            "checksum": 29993,
+            "instructions": 73843082,
+            "iterations": 2000,
+            "scene": "invalid-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793917926.6802602,
+          "cpu_count": 18,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "host_after": {
+          "unix": 1793917926.88791,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 619803,
+            "instructions": 330541575,
+            "iterations": 16000,
+            "scene": "archived-hrefs"
+          },
+          {
+            "checksum": 338288,
+            "instructions": 168421225,
+            "iterations": 8000,
+            "scene": "relative-and-escaped"
+          },
+          {
+            "checksum": 278240,
+            "instructions": 257057303,
+            "iterations": 8000,
+            "scene": "rotating-bases"
+          },
+          {
+            "checksum": 29993,
+            "instructions": 94159475,
+            "iterations": 2000,
+            "scene": "invalid-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793917926.922412,
+          "cpu_count": 18,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "host_after": {
+          "unix": 1793917927.138582,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 619803,
+            "instructions": 331042941,
+            "iterations": 16000,
+            "scene": "archived-hrefs"
+          },
+          {
+            "checksum": 338288,
+            "instructions": 168318482,
+            "iterations": 8000,
+            "scene": "relative-and-escaped"
+          },
+          {
+            "checksum": 278240,
+            "instructions": 258467389,
+            "iterations": 8000,
+            "scene": "rotating-bases"
+          },
+          {
+            "checksum": 29993,
+            "instructions": 94449921,
+            "iterations": 2000,
+            "scene": "invalid-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793917927.1738582,
+          "cpu_count": 18,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "host_after": {
+          "unix": 1793917927.393954,
+          "load": [
+            14.44482421875,
+            11.1044921875,
+            8.85888671875
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 619803,
+            "instructions": 500461873,
+            "iterations": 16000,
+            "scene": "archived-hrefs"
+          },
+          {
+            "checksum": 338288,
+            "instructions": 238125347,
+            "iterations": 8000,
+            "scene": "relative-and-escaped"
+          },
+          {
+            "checksum": 278240,
+            "instructions": 336260153,
+            "iterations": 8000,
+            "scene": "rotating-bases"
+          },
+          {
+            "checksum": 29993,
+            "instructions": 74131561,
+            "iterations": 2000,
+            "scene": "invalid-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793917927.429675,
+          "cpu_count": 18,
+          "load": [
+            13.9287109375,
+            11.052734375,
+            8.853515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793917927.641881,
+          "load": [
+            13.9287109375,
+            11.052734375,
+            8.853515625
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 619803,
+            "instructions": 331150302,
+            "iterations": 16000,
+            "scene": "archived-hrefs"
+          },
+          {
+            "checksum": 338288,
+            "instructions": 169866126,
+            "iterations": 8000,
+            "scene": "relative-and-escaped"
+          },
+          {
+            "checksum": 278240,
+            "instructions": 257881023,
+            "iterations": 8000,
+            "scene": "rotating-bases"
+          },
+          {
+            "checksum": 29993,
+            "instructions": 94241466,
+            "iterations": 2000,
+            "scene": "invalid-fallback"
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/cases.json"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793917927.676927,
+          "cpu_count": 18,
+          "load": [
+            13.9287109375,
+            11.052734375,
+            8.853515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793917927.89806,
+          "load": [
+            13.9287109375,
+            11.052734375,
+            8.853515625
+          ]
+        },
+        "observations": [
+          {
+            "checksum": 619803,
+            "instructions": 500931001,
+            "iterations": 16000,
+            "scene": "archived-hrefs"
+          },
+          {
+            "checksum": 338288,
+            "instructions": 237564851,
+            "iterations": 8000,
+            "scene": "relative-and-escaped"
+          },
+          {
+            "checksum": 278240,
+            "instructions": 337290871,
+            "iterations": 8000,
+            "scene": "rotating-bases"
+          },
+          {
+            "checksum": 29993,
+            "instructions": 74470534,
+            "iterations": 2000,
+            "scene": "invalid-fallback"
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "archived-hrefs": {
+        "control": [
+          496635319,
+          500461873
+        ],
+        "candidate": [
+          330541575,
+          331042941
+        ],
+        "control_median": 498548596.0,
+        "candidate_median": 330792258.0,
+        "reduction_percent": 33.64894402390414,
+        "conservative_component_reduction": 165592378,
+        "checksum": 619803,
+        "iterations": 16000
+      },
+      "relative-and-escaped": {
+        "control": [
+          236438314,
+          238125347
+        ],
+        "candidate": [
+          168421225,
+          168318482
+        ],
+        "control_median": 237281830.5,
+        "candidate_median": 168369853.5,
+        "reduction_percent": 29.042247716476545,
+        "conservative_component_reduction": 68017089,
+        "checksum": 338288,
+        "iterations": 8000
+      },
+      "rotating-bases": {
+        "control": [
+          334191454,
+          336260153
+        ],
+        "candidate": [
+          257057303,
+          258467389
+        ],
+        "control_median": 335225803.5,
+        "candidate_median": 257762346.0,
+        "reduction_percent": 23.10784453082831,
+        "conservative_component_reduction": 75724065,
+        "checksum": 278240,
+        "iterations": 8000
+      },
+      "invalid-fallback": {
+        "control": [
+          73843082,
+          74131561
+        ],
+        "candidate": [
+          94159475,
+          94449921
+        ],
+        "control_median": 73987321.5,
+        "candidate_median": 94304698.0,
+        "reduction_percent": -27.460619046737623,
+        "conservative_component_reduction": -20606839,
+        "checksum": 29993,
+        "iterations": 2000
+      }
+    },
+    "qualification": "Same-executable unprofiled current-process retired instructions include JavaScriptCore evaluation and result delivery, URL parsing and serialization, exact JavaScript result checks and 100-read scratch batch retirements. Cases are loaded from a pinned manifest; archived href inputs come from the original frozen SOCKS body. Parser/reference setup and runtime startup/close are excluded. The control constructs ordinary native URL wrappers; candidate returns copied text through the existing parser and retains no additional URL wrappers. Real HTML facade ownership, dirty-edit replay and constructor/getter guards are outside this component. Both use production V conditions, single-unit C O3/LTO preallocation without poisoning or profiling, distinct from the parallel browser. All observations, including invalid-input fallback regressions, are retained. Separate path diagnostics follow the matched observations. No whole-page or Brave credit is assigned."
+  },
+  "implementation_commit": "b6463ad4c",
+  "tooling_commit": "46d61a75e",
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "browserjs/url_text_jsc.c.v": "9d3dde39cae28934c217f5a4fe184a91772139fd20f73fce18c6b332631f091e",
+      "browserjs/url_text_test.v": "c1f741f28466442574f66d53e41ede9e37d8cf4926f836a49cfcac16a71317fb",
+      "browserjs/url_host_jsc.c.v": "8bca7e8a2b01b544d43cf56087ac7924d88d9948e671e79a2687f07b5f647189",
+      "main_compact_href_text.v": "5bb900b3a02e9c1949ce04c9af6e4db9be238c99cfc82ef3e7d82d07e0643404",
+      "main_compact_href_text_test.v": "4301682e86bd82b4d0828f205e146930a54f4d941d95e61d9a79973decc95325",
+      "main_compact_document.v": "cab626b623f751253c2453ff921d9e3efa0485024067eccd9150f0de994dced6",
+      "main.v": "d042bc992e29c9f641896801a431bc69d7618d043c54a8f0896c740b3360cf0b"
+    },
+    "source_after": {
+      "browserjs/url_text_jsc.c.v": "9d3dde39cae28934c217f5a4fe184a91772139fd20f73fce18c6b332631f091e",
+      "browserjs/url_text_test.v": "c1f741f28466442574f66d53e41ede9e37d8cf4926f836a49cfcac16a71317fb",
+      "browserjs/url_host_jsc.c.v": "8bca7e8a2b01b544d43cf56087ac7924d88d9948e671e79a2687f07b5f647189",
+      "main_compact_href_text.v": "5bb900b3a02e9c1949ce04c9af6e4db9be238c99cfc82ef3e7d82d07e0643404",
+      "main_compact_href_text_test.v": "4301682e86bd82b4d0828f205e146930a54f4d941d95e61d9a79973decc95325",
+      "main_compact_document.v": "cab626b623f751253c2453ff921d9e3efa0485024067eccd9150f0de994dced6",
+      "main.v": "d042bc992e29c9f641896801a431bc69d7618d043c54a8f0896c740b3360cf0b"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-host-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-prealloc",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917691.1202419,
+          "cpu_count": 18,
+          "load": [
+            4.51416015625,
+            5.734375,
+            6.806640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917702.2424781,
+          "load": [
+            4.72265625,
+            5.7421875,
+            6.796875
+          ]
+        }
+      },
+      {
+        "label": "run-host-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917702.2501628,
+          "cpu_count": 18,
+          "load": [
+            4.72265625,
+            5.7421875,
+            6.796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917703.052233,
+          "load": [
+            4.58447265625,
+            5.6962890625,
+            6.7744140625
+          ]
+        }
+      },
+      {
+        "label": "run-host-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917703.059505,
+          "cpu_count": 18,
+          "load": [
+            4.58447265625,
+            5.6962890625,
+            6.7744140625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917703.608406,
+          "load": [
+            4.58447265625,
+            5.6962890625,
+            6.7744140625
+          ]
+        }
+      },
+      {
+        "label": "compile-native-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v,/Users/alex/code/vox2/main_compact_document_reply_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v,/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-prealloc",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917703.6155698,
+          "cpu_count": 18,
+          "load": [
+            4.58447265625,
+            5.6962890625,
+            6.7744140625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917722.584987,
+          "load": [
+            5.46728515625,
+            5.828125,
+            6.7958984375
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917722.592601,
+          "cpu_count": 18,
+          "load": [
+            5.46728515625,
+            5.828125,
+            6.7958984375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917723.15774,
+          "load": [
+            5.46728515625,
+            5.828125,
+            6.7958984375
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917723.165343,
+          "cpu_count": 18,
+          "load": [
+            5.46728515625,
+            5.828125,
+            6.7958984375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917723.4893289,
+          "load": [
+            5.46728515625,
+            5.828125,
+            6.7958984375
+          ]
+        }
+      },
+      {
+        "label": "compile-host-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-default",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917723.4970691,
+          "cpu_count": 18,
+          "load": [
+            5.46728515625,
+            5.828125,
+            6.7958984375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917755.030355,
+          "load": [
+            6.07080078125,
+            5.95166015625,
+            6.8076171875
+          ]
+        }
+      },
+      {
+        "label": "run-host-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917755.0390542,
+          "cpu_count": 18,
+          "load": [
+            6.07080078125,
+            5.95166015625,
+            6.8076171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917755.734144,
+          "load": [
+            6.07080078125,
+            5.95166015625,
+            6.8076171875
+          ]
+        }
+      },
+      {
+        "label": "run-host-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917755.741987,
+          "cpu_count": 18,
+          "load": [
+            6.07080078125,
+            5.95166015625,
+            6.8076171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917755.949023,
+          "load": [
+            6.07080078125,
+            5.95166015625,
+            6.8076171875
+          ]
+        }
+      },
+      {
+        "label": "compile-native-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v,/Users/alex/code/vox2/main_compact_document_reply_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v,/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-default",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917755.956838,
+          "cpu_count": 18,
+          "load": [
+            6.07080078125,
+            5.95166015625,
+            6.8076171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917779.02558,
+          "load": [
+            6.83056640625,
+            6.1328125,
+            6.84765625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917779.034888,
+          "cpu_count": 18,
+          "load": [
+            6.83056640625,
+            6.1328125,
+            6.84765625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917779.62263,
+          "load": [
+            6.83056640625,
+            6.1328125,
+            6.84765625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917779.6313138,
+          "cpu_count": 18,
+          "load": [
+            6.83056640625,
+            6.1328125,
+            6.84765625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917779.969835,
+          "load": [
+            6.83056640625,
+            6.1328125,
+            6.84765625
+          ]
+        }
+      },
+      {
+        "label": "compile-host-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-none",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917779.978265,
+          "cpu_count": 18,
+          "load": [
+            6.83056640625,
+            6.1328125,
+            6.84765625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917798.268756,
+          "load": [
+            10.39599609375,
+            6.9833984375,
+            7.13525390625
+          ]
+        }
+      },
+      {
+        "label": "run-host-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917798.2813718,
+          "cpu_count": 18,
+          "load": [
+            10.39599609375,
+            6.9833984375,
+            7.13525390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917798.82509,
+          "load": [
+            10.39599609375,
+            6.9833984375,
+            7.13525390625
+          ]
+        }
+      },
+      {
+        "label": "run-host-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917798.835701,
+          "cpu_count": 18,
+          "load": [
+            10.39599609375,
+            6.9833984375,
+            7.13525390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917799.113207,
+          "load": [
+            10.39599609375,
+            6.9833984375,
+            7.13525390625
+          ]
+        }
+      },
+      {
+        "label": "compile-native-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v,/Users/alex/code/vox2/main_compact_document_reply_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v,/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-none",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917799.1256928,
+          "cpu_count": 18,
+          "load": [
+            10.39599609375,
+            6.9833984375,
+            7.13525390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917848.557865,
+          "load": [
+            22.71533203125,
+            10.9853515625,
+            8.61181640625
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917848.570102,
+          "cpu_count": 18,
+          "load": [
+            22.71533203125,
+            10.9853515625,
+            8.61181640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917849.621603,
+          "load": [
+            22.71533203125,
+            10.9853515625,
+            8.61181640625
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917849.6338072,
+          "cpu_count": 18,
+          "load": [
+            22.71533203125,
+            10.9853515625,
+            8.61181640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917850.026421,
+          "load": [
+            22.71533203125,
+            10.9853515625,
+            8.61181640625
+          ]
+        }
+      },
+      {
+        "label": "compile-host-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-host-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-sanitized",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917850.0374532,
+          "cpu_count": 18,
+          "load": [
+            22.71533203125,
+            10.9853515625,
+            8.61181640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917913.7912362,
+          "load": [
+            15.7978515625,
+            11.24462890625,
+            8.88134765625
+          ]
+        }
+      },
+      {
+        "label": "run-host-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917913.802537,
+          "cpu_count": 18,
+          "load": [
+            15.7978515625,
+            11.24462890625,
+            8.88134765625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917915.400129,
+          "load": [
+            15.7978515625,
+            11.24462890625,
+            8.88134765625
+          ]
+        }
+      },
+      {
+        "label": "run-host-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-host-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/host-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917915.408897,
+          "cpu_count": 18,
+          "load": [
+            15.7978515625,
+            11.24462890625,
+            8.88134765625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917916.5142689,
+          "load": [
+            15.7978515625,
+            11.24462890625,
+            8.88134765625
+          ]
+        }
+      },
+      {
+        "label": "compile-native-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/compile-native-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v,/Users/alex/code/vox2/main_compact_document_reply_test.v,/Users/alex/code/vox2/main_compact_document_test.v,/Users/alex/code/vox2/main_compact_parent_cache_test.v,/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v,/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-sanitized",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793917916.525245,
+          "cpu_count": 18,
+          "load": [
+            15.7978515625,
+            11.24462890625,
+            8.88134765625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917979.843986,
+          "load": [
+            9.37060546875,
+            10.25537109375,
+            8.68212890625
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917979.8517802,
+          "cpu_count": 18,
+          "load": [
+            9.37060546875,
+            10.25537109375,
+            8.68212890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917980.99183,
+          "load": [
+            9.37060546875,
+            10.25537109375,
+            8.68212890625
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/run-native-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-href-text-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HREF_URL_OBJECTS": "1",
+          "VOX_HREF_URL_TEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793917980.999427,
+          "cpu_count": 18,
+          "load": [
+            9.37060546875,
+            10.25537109375,
+            8.68212890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793917981.429763,
+          "load": [
+            9.37060546875,
+            10.25537109375,
+            8.68212890625
+          ]
+        }
+      }
+    ]
+  },
+  "runner": {
+    "complete": true,
+    "runners": [
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/host-prealloc",
+        "binary_sha256": "1d527df0ed65415a44fd7cb325e26fc4c058ca1d082b37ae6e61feeb93d2360f",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/host-prealloc.c",
+        "generated_c_sha256": "2645a092eb35083323be943267cb6c3613011a5e6b9484a0f2a401f9b1dc9cca",
+        "tests": [
+          "/Users/alex/code/vox2/browserjs/url_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "calls": [
+          "test_url_text_matches_native_constructor_and_keeps_url_owner_maps_unchanged",
+          "test_url_text_does_not_coerce_non_strings_and_keeps_original_constructor_tokens",
+          "test_url_text_retired_inputs_eviction_and_separate_runtime_close_keep_live_urls",
+          "test_native_url_constructor_exposes_actual_source_record",
+          "test_native_url_static_operations_keep_optional_base_and_usv_conversion_order",
+          "test_native_url_direct_usv_encoding_preserves_pairs_invalid_runs_and_coercion",
+          "test_native_url_base_cache_preserves_coercion_reentry_and_fresh_objects",
+          "test_native_url_input_cache_keeps_coercion_and_query_owners_on_hits_and_close",
+          "test_native_url_same_object_query_and_live_iterator_share_genuine_owners",
+          "test_native_url_setters_validate_receivers_before_converting_and_keep_original_errors",
+          "test_native_url_metadata_subclass_alias_and_close_ownership",
+          "test_native_url_search_params_exposes_its_constructor",
+          "test_native_url_search_params_converts_usv_union_and_ordered_records",
+          "test_native_url_search_params_preserves_conversion_order_and_actual_exceptions",
+          "test_native_url_search_params_iterator_and_callback_observe_actual_live_owner",
+          "test_native_url_search_params_metadata_subclass_and_close_ownership",
+          "test_native_url_search_params_keeps_conversion_intrinsics_after_author_mutation"
+        ]
+      },
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/native-prealloc",
+        "binary_sha256": "5048dd40f272497ca12eb709f1d5a528d8675d677a33b8aa7b8151a568a6fe25",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/native-prealloc.c",
+        "generated_c_sha256": "ee766d3a7a22500a782f8b77c7081c845479010e4e270bae682afd1f5cbf07f0",
+        "tests": [
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_document_test.v",
+          "/Users/alex/code/vox2/main_compact_parent_cache_test.v",
+          "/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "calls": [
+          "test_href_text_bindings_preserve_native_urls_pending_writes_and_foreign_owners",
+          "test_href_text_bindings_preserve_author_constructor_getter_and_base_coercion_order",
+          "test_compact_document_owner_reads_registered_nodes_without_mutating_identity_maps",
+          "test_compact_document_owner_bootstrap_checks_pending_edits_and_captures_intrinsics",
+          "test_compact_document_owner_keeps_live_javascript_identity_and_flushes_unrelated_writes",
+          "test_compact_document_owner_replays_unrelated_edits_before_observing_reentrant_adoption",
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries"
+        ]
+      },
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/host-default",
+        "binary_sha256": "addf10ed4921ac73837c7ba1e586a2710c15c844bfb1df2c8c7a48fbb16280d4",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/host-default.c",
+        "generated_c_sha256": "9e63449466113644220c458498ebd75a9b9539c4b9b56f8a81dfc5b3e244964d",
+        "tests": [
+          "/Users/alex/code/vox2/browserjs/url_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "calls": [
+          "test_url_text_matches_native_constructor_and_keeps_url_owner_maps_unchanged",
+          "test_url_text_does_not_coerce_non_strings_and_keeps_original_constructor_tokens",
+          "test_url_text_retired_inputs_eviction_and_separate_runtime_close_keep_live_urls",
+          "test_native_url_constructor_exposes_actual_source_record",
+          "test_native_url_static_operations_keep_optional_base_and_usv_conversion_order",
+          "test_native_url_direct_usv_encoding_preserves_pairs_invalid_runs_and_coercion",
+          "test_native_url_base_cache_preserves_coercion_reentry_and_fresh_objects",
+          "test_native_url_input_cache_keeps_coercion_and_query_owners_on_hits_and_close",
+          "test_native_url_same_object_query_and_live_iterator_share_genuine_owners",
+          "test_native_url_setters_validate_receivers_before_converting_and_keep_original_errors",
+          "test_native_url_metadata_subclass_alias_and_close_ownership",
+          "test_native_url_search_params_exposes_its_constructor",
+          "test_native_url_search_params_converts_usv_union_and_ordered_records",
+          "test_native_url_search_params_preserves_conversion_order_and_actual_exceptions",
+          "test_native_url_search_params_iterator_and_callback_observe_actual_live_owner",
+          "test_native_url_search_params_metadata_subclass_and_close_ownership",
+          "test_native_url_search_params_keeps_conversion_intrinsics_after_author_mutation"
+        ]
+      },
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/native-default",
+        "binary_sha256": "03e2c16aa04590b50ee629eb6fd991e4e7831a384d308a21f29130bb98cdcfd9",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/native-default.c",
+        "generated_c_sha256": "57288d6688828f47f7e7e2d0a9d4349612798043798618d977eea0903ab23591",
+        "tests": [
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_document_test.v",
+          "/Users/alex/code/vox2/main_compact_parent_cache_test.v",
+          "/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "calls": [
+          "test_href_text_bindings_preserve_native_urls_pending_writes_and_foreign_owners",
+          "test_href_text_bindings_preserve_author_constructor_getter_and_base_coercion_order",
+          "test_compact_document_owner_reads_registered_nodes_without_mutating_identity_maps",
+          "test_compact_document_owner_bootstrap_checks_pending_edits_and_captures_intrinsics",
+          "test_compact_document_owner_keeps_live_javascript_identity_and_flushes_unrelated_writes",
+          "test_compact_document_owner_replays_unrelated_edits_before_observing_reentrant_adoption",
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries"
+        ]
+      },
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/host-none",
+        "binary_sha256": "a2d8eb799950fe9ebbd524b312ae710482feb013527d315dfab41ba77372e68a",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/host-none.c",
+        "generated_c_sha256": "ec01792b172d84b4d253733efc72eda399b627de377c41172a3612d9f1132e45",
+        "tests": [
+          "/Users/alex/code/vox2/browserjs/url_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "calls": [
+          "test_url_text_matches_native_constructor_and_keeps_url_owner_maps_unchanged",
+          "test_url_text_does_not_coerce_non_strings_and_keeps_original_constructor_tokens",
+          "test_url_text_retired_inputs_eviction_and_separate_runtime_close_keep_live_urls",
+          "test_native_url_constructor_exposes_actual_source_record",
+          "test_native_url_static_operations_keep_optional_base_and_usv_conversion_order",
+          "test_native_url_direct_usv_encoding_preserves_pairs_invalid_runs_and_coercion",
+          "test_native_url_base_cache_preserves_coercion_reentry_and_fresh_objects",
+          "test_native_url_input_cache_keeps_coercion_and_query_owners_on_hits_and_close",
+          "test_native_url_same_object_query_and_live_iterator_share_genuine_owners",
+          "test_native_url_setters_validate_receivers_before_converting_and_keep_original_errors",
+          "test_native_url_metadata_subclass_alias_and_close_ownership",
+          "test_native_url_search_params_exposes_its_constructor",
+          "test_native_url_search_params_converts_usv_union_and_ordered_records",
+          "test_native_url_search_params_preserves_conversion_order_and_actual_exceptions",
+          "test_native_url_search_params_iterator_and_callback_observe_actual_live_owner",
+          "test_native_url_search_params_metadata_subclass_and_close_ownership",
+          "test_native_url_search_params_keeps_conversion_intrinsics_after_author_mutation"
+        ]
+      },
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/native-none",
+        "binary_sha256": "2c06b7df9446b71cfcca14b7d918249332da5f77944c6265394ecdee9e71bc52",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/native-none.c",
+        "generated_c_sha256": "45752722e344a256af91eadaae0076fa514522d478037983d2421a01568d0e08",
+        "tests": [
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_document_test.v",
+          "/Users/alex/code/vox2/main_compact_parent_cache_test.v",
+          "/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "calls": [
+          "test_href_text_bindings_preserve_native_urls_pending_writes_and_foreign_owners",
+          "test_href_text_bindings_preserve_author_constructor_getter_and_base_coercion_order",
+          "test_compact_document_owner_reads_registered_nodes_without_mutating_identity_maps",
+          "test_compact_document_owner_bootstrap_checks_pending_edits_and_captures_intrinsics",
+          "test_compact_document_owner_keeps_live_javascript_identity_and_flushes_unrelated_writes",
+          "test_compact_document_owner_replays_unrelated_edits_before_observing_reentrant_adoption",
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries"
+        ]
+      },
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/host-sanitized",
+        "binary_sha256": "b692c008f0b18cfe522d9d3ed781dc88f07e5c6f662ccc2a22a057328e0500cf",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/host-sanitized.c",
+        "generated_c_sha256": "2645a092eb35083323be943267cb6c3613011a5e6b9484a0f2a401f9b1dc9cca",
+        "tests": [
+          "/Users/alex/code/vox2/browserjs/url_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_search_params_host_test.v",
+          "/Users/alex/code/vox2/browserjs/url_text_test.v"
+        ],
+        "calls": [
+          "test_url_text_matches_native_constructor_and_keeps_url_owner_maps_unchanged",
+          "test_url_text_does_not_coerce_non_strings_and_keeps_original_constructor_tokens",
+          "test_url_text_retired_inputs_eviction_and_separate_runtime_close_keep_live_urls",
+          "test_native_url_constructor_exposes_actual_source_record",
+          "test_native_url_static_operations_keep_optional_base_and_usv_conversion_order",
+          "test_native_url_direct_usv_encoding_preserves_pairs_invalid_runs_and_coercion",
+          "test_native_url_base_cache_preserves_coercion_reentry_and_fresh_objects",
+          "test_native_url_input_cache_keeps_coercion_and_query_owners_on_hits_and_close",
+          "test_native_url_same_object_query_and_live_iterator_share_genuine_owners",
+          "test_native_url_setters_validate_receivers_before_converting_and_keep_original_errors",
+          "test_native_url_metadata_subclass_alias_and_close_ownership",
+          "test_native_url_search_params_exposes_its_constructor",
+          "test_native_url_search_params_converts_usv_union_and_ordered_records",
+          "test_native_url_search_params_preserves_conversion_order_and_actual_exceptions",
+          "test_native_url_search_params_iterator_and_callback_observe_actual_live_owner",
+          "test_native_url_search_params_metadata_subclass_and_close_ownership",
+          "test_native_url_search_params_keeps_conversion_intrinsics_after_author_mutation"
+        ]
+      },
+      {
+        "binary": "Build/chatgpt-href-text-20261106-r3/native-sanitized",
+        "binary_sha256": "488bd70d4fc780078c6a9c798baa94482a6671d3119e5fad8b82d71f6beb1b1a",
+        "generated_c": "Build/chatgpt-href-text-20261106-r3/native-sanitized.c",
+        "generated_c_sha256": "ddc131f2fc41c07597d03c5b05e1e58f65535b707e75cc4f585b9c6edb699be9",
+        "tests": [
+          "/Users/alex/code/vox2/main_compact_document_owner_test.v",
+          "/Users/alex/code/vox2/main_compact_document_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_document_test.v",
+          "/Users/alex/code/vox2/main_compact_parent_cache_test.v",
+          "/Users/alex/code/vox2/main_compact_document_fragment_constructor_test.v",
+          "/Users/alex/code/vox2/main_compact_identity_reply_test.v",
+          "/Users/alex/code/vox2/main_compact_href_text_test.v"
+        ],
+        "calls": [
+          "test_href_text_bindings_preserve_native_urls_pending_writes_and_foreign_owners",
+          "test_href_text_bindings_preserve_author_constructor_getter_and_base_coercion_order",
+          "test_compact_document_owner_reads_registered_nodes_without_mutating_identity_maps",
+          "test_compact_document_owner_bootstrap_checks_pending_edits_and_captures_intrinsics",
+          "test_compact_document_owner_keeps_live_javascript_identity_and_flushes_unrelated_writes",
+          "test_compact_document_owner_replays_unrelated_edits_before_observing_reentrant_adoption",
+          "test_compact_document_reply_preserves_fields_and_registers_foreign_identity",
+          "test_compact_document_reply_queries_current_owner_after_native_adoption",
+          "test_compact_document_reply_keeps_javascript_identity_for_live_node_owners",
+          "test_compact_document_reply_survives_temporary_host_reply_retirement",
+          "test_compact_create_html_document_runs_the_pikabu_two_form_probe_in_a_separate_native_tree",
+          "test_compact_detached_factories_keep_owner_document_live_lists_base_url_and_adoption",
+          "test_compact_html_document_optional_title_conversion_and_receiver_checks",
+          "test_compact_tag_collection_does_not_reuse_another_documents_matching_version_after_adoption",
+          "test_compact_document_collection_clock_includes_detached_mutations_and_rejects_rounded_versions",
+          "test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes",
+          "test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners",
+          "test_compact_document_fragment_constructor_uses_native_identity_and_tree_operations",
+          "test_compact_identity_reply_keeps_first_hydration_and_escaped_keys",
+          "test_compact_identity_reply_preserves_non_element_node_states",
+          "test_compact_identity_reply_preserves_wrappers_across_live_queries"
+        ]
+      }
+    ],
+    "total_test_calls": 304
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-href-text-20261106-evidence.zip",
+    "sha256": "7b12fc643dc02cec3ad48124a72705c44f3746c4b15801913e7e73fef6435aa6",
+    "bytes": 58370939
+  },
+  "removed_verified_generated_c": [
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/native-none.c",
+      "sha256": "45752722e344a256af91eadaae0076fa514522d478037983d2421a01568d0e08",
+      "bytes": 43602328
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/native-sanitized.c",
+      "sha256": "ddc131f2fc41c07597d03c5b05e1e58f65535b707e75cc4f585b9c6edb699be9",
+      "bytes": 43896110
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/component.c",
+      "sha256": "be4d039caf77b318e17fd00f04614c6f7cc2c7e924bfe77d64ae213da19cd531",
+      "bytes": 171865776
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/native-default.c",
+      "sha256": "57288d6688828f47f7e7e2d0a9d4349612798043798618d977eea0903ab23591",
+      "bytes": 43693396
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/host-default.c",
+      "sha256": "9e63449466113644220c458498ebd75a9b9539c4b9b56f8a81dfc5b3e244964d",
+      "bytes": 25687017
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/native-prealloc.c",
+      "sha256": "ee766d3a7a22500a782f8b77c7081c845479010e4e270bae682afd1f5cbf07f0",
+      "bytes": 43896049
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/host-sanitized.c",
+      "sha256": "2645a092eb35083323be943267cb6c3613011a5e6b9484a0f2a401f9b1dc9cca",
+      "bytes": 26100732
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/host-prealloc.c",
+      "sha256": "2645a092eb35083323be943267cb6c3613011a5e6b9484a0f2a401f9b1dc9cca",
+      "bytes": 26100732
+    },
+    {
+      "path": "Build/chatgpt-href-text-20261106-r3/host-none.c",
+      "sha256": "ec01792b172d84b4d253733efc72eda399b627de377c41172a3612d9f1132e45",
+      "bytes": 25677823
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_cadence": 0,
+  "qualification": "The native scalar URL transport uses the existing URLInputParser and USVString conversion and returns a copied JavaScript string without creating DOMURL or URL wrapper records. The HTML href getter retains its original value/owner/base handling. Exact constructor, prototype and original href-getter tokens guard the scalar call; author replacements, non-string inputs and invalid URLs retain ordinary construction. Original setters and foreign-document queries remain unchanged. Separate candidate-only execution markers establish consumption; source-proof work earns no instruction credit. All final selected executions pass both variants across ordinary GC, no GC, poisoned preallocation and ASan/UBSan. The exact runner call sets and binary exits are authenticated; preallocation assertions remain conditional. Component observations include JavaScriptCore result delivery and omit HTML ownership/author-constructor guards. Every failed attempt and fallback regression is retained. Focused and component evidence supplies no whole-page or Brave credit."
+}
