@@ -1,3 +1,4 @@
+@[has_globals]
 module main
 
 import browserjs
@@ -51,6 +52,47 @@ struct BrowserChildDocumentRevision {
 	attributes u64
 }
 
+// Eager contentWindow reads and the embedding share one owner, including frames
+// removed before the next host poll and descendants created by child scripts.
+__global browser_child_document_hosts_ = map[voidptr]&BrowserChildDocumentHost{}
+
+fn browser_child_document_host(document &dom.Document, engine browserjs.Engine) &BrowserChildDocumentHost {
+	if host := browser_child_document_hosts_[voidptr(document)] { return host }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	host := &BrowserChildDocumentHost{
+		root:      document
+		engine:    engine
+		scripting: document.as_node().is_scripting_enabled()
+	}
+	browser_child_document_hosts_[voidptr(document)] = host
+	mut storage := document.native_storage()
+	if storage != unsafe { nil } {
+		storage.add_cleanup(fn [host] () {
+			mut owner := unsafe { &BrowserChildDocumentHost(host) }
+			owner.close()
+		})
+	}
+	return host
+}
+
+fn (mut host BrowserChildDocumentHost) ensure_child(element &dom.Element) !&html.NavigableModel {
+	if host.closed { return error('InvalidStateError: child document host is closed') }
+	for child in host.children {
+		if !child.closed && voidptr(child.element) == voidptr(element) { return child.navigable }
+	}
+	mut navigable := html.create_child_navigable_for_element(element)!
+	navigable.set_navigation_fetch_host(requestserver.native_resource_fetch_host())
+	navigable.set_document_created_hook(fn [host] (document &dom.Document) {
+		host.prepare_document(document)
+	})
+	if initial := navigable.active_document() {
+		browser_child_document_hosts_[voidptr(initial)] = &host
+	}
+	host.children << &BrowserChildDocument{ element: element, navigable: navigable }
+	return navigable
+}
+
 fn retire_hosted_browser_document(document &dom.Document) {
 	mut owner := unsafe { &dom.Document(document) }
 	if !owner.has_been_destroyed() { owner.destroy_a_document_and_its_descendants() }
@@ -60,6 +102,7 @@ fn retire_hosted_browser_document(document &dom.Document) {
 }
 
 fn (host &BrowserChildDocumentHost) prepare_document(document &dom.Document) {
+	browser_child_document_hosts_[voidptr(document)] = host
 	mut owner := unsafe { &dom.Document(document) }
 	install_browser_document_font_policies(mut owner)
 	install_browser_document_cookie_client(mut owner)
@@ -110,6 +153,11 @@ fn (mut host BrowserChildDocumentHost) close() {
 		host.children[index].close()
 	}
 	host.children = []&BrowserChildDocument{}
+	mut retired := []voidptr{}
+	for document, owner in browser_child_document_hosts_ {
+		if voidptr(owner) == voidptr(&host) { retired << document }
+	}
+	for document in retired { browser_child_document_hosts_.delete(document) }
 }
 
 fn (mut host BrowserChildDocumentHost) discover(document &dom.Document, mut messages []string) {
@@ -121,23 +169,10 @@ fn (mut host BrowserChildDocumentHost) discover(document &dom.Document, mut mess
 	host.scanned[key] = version
 	for element in css.query_selector_all(document.as_node(), 'iframe') {
 		if !element.is_html_element() || !element.as_node().is_connected() { continue }
-		mut existing := false
-		for child in host.children {
-			if !child.closed && voidptr(child.element) == voidptr(element) {
-				existing = true
-				break
-			}
-		}
-		if existing { continue }
-		mut navigable := html.create_child_navigable_for_element(element) or {
+		host.ensure_child(element) or {
 			messages << 'Child browsing context: ${err.msg()}'
 			continue
 		}
-		navigable.set_navigation_fetch_host(requestserver.native_resource_fetch_host())
-		navigable.set_document_created_hook(fn [host] (document &dom.Document) {
-			host.prepare_document(document)
-		})
-		host.children << &BrowserChildDocument{ element: element, navigable: navigable }
 	}
 }
 
@@ -346,13 +381,7 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 fn (mut app BrowserApp) poll_browser_child_documents() {
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil } { return }
 	if app.child_document_host == none {
-		persistent := platform.enter_persistent()
-		app.child_document_host = &BrowserChildDocumentHost{
-			root:      app.document
-			engine:    app.js_engine
-			scripting: app.document.as_node().is_scripting_enabled()
-		}
-		platform.leave_persistent(persistent)
+		app.child_document_host = browser_child_document_host(app.document, app.js_engine)
 	}
 	mut host := app.child_document_host or { return }
 	if host.poll(mut app.js_messages) {

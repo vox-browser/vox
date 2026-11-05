@@ -79,6 +79,7 @@ pub fn (mut runtime Runtime) install_message_event_binding() ! {
 }
 
 fn (runtime &Runtime) message_window(receiver voidptr) !&html.WindowModel {
+	if proxy := runtime.native_window_proxy(receiver) { return window_model_for_proxy(proxy) }
 	target := runtime.native_event_target(receiver)!
 	if target.data.kind != .window {
 		return runtime.event_binding_type_error('Illegal Window receiver')
@@ -187,8 +188,8 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 		'source' {
 			if source := message.source() {
 				if source is html.WindowMessageEventSource {
-					window := source.value.window() or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
-					return runtime.javascript_event_target(unsafe { &dom.EventTarget(window) }, none)
+					if source.value.window() == none { return C.vox_jsc_JSValueMakeNull(runtime.context) }
+					return runtime.javascript_window_proxy(source.value)
 				}
 				return error('MessagePort has no native wrapper')
 			}

@@ -3126,6 +3126,10 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		messages << 'JavaScript Window messaging bindings: ${err.msg()}'
 		return none
 	}
+	install_compact_iframe_windows(document, mut mutable_runtime) or {
+		messages << 'JavaScript frame Window bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_message_channel_binding() or {
 		messages << 'JavaScript MessageChannel bindings: ${err.msg()}'
 		return none
