@@ -3220,6 +3220,20 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
 		return none
 	}
+	mut idle_callback_host := browserjs.IdleCallbackHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
+		mutable_callback_runtime.mark_document_state_dirty()
+	}) or {
+		messages << 'JavaScript idle-callback bindings: ${err.msg()}'
+		return none
+	}
+	idle_callback_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript idle-callback bindings: ${err.msg()}'
+		return none
+	}
 	install_browser_page_storage(document, runtime) or {
 		messages << 'JavaScript storage bindings: ${err.msg()}'
 		return none
