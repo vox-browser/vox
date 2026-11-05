@@ -21,10 +21,18 @@ See [the ChatGPT report](../../../docs/CHATGPT_BRAVE_PARITY.md) for evidence.
 The [forum/news catalog](forum-news.json) has 16 entries, including Discord's
 guest homepage. The five new guest-page
 archives (TechCrunch, Engadget, The Register, Slate and WIRED) retain full-uBO
-source evidence and original encoded response bodies. Their strict pixel checks
-currently fail; see [the expansion report](../../../docs/FORUM_NEWS_EXPANSION.md)
-for the baseline and open gaps. Six original archives pass both strict gates;
+source evidence and original encoded response bodies. The Register passes all
+strict gates with cold and complete caches; WIRED passes under its recorded
+first-frame image policy. See [the expansion report](../../../docs/FORUM_NEWS_EXPANSION.md)
+for the pinned builds and remaining gaps. Six original archives pass both strict gates;
 CNN's source gate, Reddit access and the two deferred sites remain open.
+
+`hyphenation-closing-punctuation` covers automatic dictionary breaks before
+closing quotes and punctuation sequences, alongside manual, language and
+capitalization controls. Its 1024×768, scale-1 reference has exact full-uBO source
+fidelity and two agreeing fresh Brave replays. Commit `ef0a3531a` improves the
+native comparison from 4,094 pixels to zero. Run
+`python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_closing_punctuation_keeps_automatic_hyphenation_opportunities`.
 
 The registered CNN archive is pixel-exact against Brave with full uBO at
 1024×768, scale 1, when both browsers start fresh after complete encoded-response

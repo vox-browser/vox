@@ -1,0 +1,885 @@
+{
+  "version": 1,
+  "status": "strict-pass",
+  "scope": "Frozen guest viewport; 1024x768 logical pixels at scale 1; full uBlock Origin 1.75.0; zero RGBA tolerance",
+  "fix_commit": "ef0a3531a",
+  "candidate_commit": "678fc8e03",
+  "candidate": {
+    "path": "Tests/Browser/Brave/candidates/register-guest-20261105.zip",
+    "sha256": "96804c7b741da3f6f882a26d0490826f3542cffa73dd5b6ca2e36a9336a629a8",
+    "manifest_sha256": "304107f4486e357d7a83714e6be495e4adf972b9345ef390016bdcc068549543",
+    "files": 128
+  },
+  "before": {
+    "registered": {
+      "source": 110180,
+      "replay": 0,
+      "native": 2,
+      "path": "Build/register-resume-20261105-baseline/summary.json"
+    },
+    "candidate": {
+      "source": 0,
+      "replay": 0,
+      "native": 1165,
+      "path": "Build/register-resume-20261105-acquire-proxy/summary.json"
+    },
+    "regression": {
+      "source": 0,
+      "replay": 0,
+      "native": 4094,
+      "path": "Build/register-resume-20261105-punctuation-https-replay/summary.json"
+    }
+  },
+  "focused_checks": {
+    "punctuation-before": {
+      "path": "Build/register-resume-20261105-punctuation-before.guard.json",
+      "sha256": "c46ff62d87589bb40c409c97170f059e1dc75d44f69e398e3ee16307334097b3",
+      "data": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "test",
+          "platform/hyphenation_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 349143040,
+        "elapsed_seconds": 8.081885833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "punctuation-before2": {
+      "path": "Build/register-resume-20261105-punctuation-before2.guard.json",
+      "sha256": "3bc48611031a635c36e4d7a5f18540170b744ba0acbf845793761f30eceeb05d",
+      "data": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "test",
+          "platform/hyphenation_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 826654720,
+        "elapsed_seconds": 12.461655540999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "punctuation-default": {
+      "path": "Build/register-resume-20261105-punctuation-default.guard.json",
+      "sha256": "51c4504e1f59adc7409e54d1d947b617e02babde7a2670a827a130e1723f6ee3",
+      "data": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "test",
+          "platform/hyphenation_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 826294272,
+        "elapsed_seconds": 13.526586208,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "punctuation-none": {
+      "path": "Build/register-resume-20261105-punctuation-none.guard.json",
+      "sha256": "a03ace58783c5bfa0e141202c6110fbdcfdc9b58da72d8e5f30bece4cea176b4",
+      "data": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-gc",
+          "none",
+          "test",
+          "platform/hyphenation_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 784826368,
+        "elapsed_seconds": 19.095890167,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-default": {
+      "path": "Build/register-resume-20261105-layout-default.guard.json",
+      "sha256": "e40684f75a0bd9549fc603819dbd72a10384d2c25aad088d2f2801b63088310f",
+      "data": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "test",
+          "layout/automatic_hyphenation_test.v"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3348365312,
+        "elapsed_seconds": 26.308418874999997,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-default-compile": {
+      "path": "Build/register-resume-20261105-layout-default-compile.guard.json",
+      "sha256": "145143b3b9abb6f0ffbb7159f838843e3766fc0a708225de1f5a32b1da27bc10",
+      "data": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "Build/register-resume-20261105-layout-default-test",
+          "layout/automatic_hyphenation_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3618455552,
+        "elapsed_seconds": 58.793511291,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-default-run": {
+      "path": "Build/register-resume-20261105-layout-default-run.guard.json",
+      "sha256": "9c00db5a2faeb98ed5556cd05d59881cc1dd5578591f3689d05f0dfca8c57cfc",
+      "data": {
+        "command": [
+          "Build/register-resume-20261105-layout-default-test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 57524224,
+        "elapsed_seconds": 0.566067167,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-none-compile": {
+      "path": "Build/register-resume-20261105-layout-none-compile.guard.json",
+      "sha256": "ce59e0ccba3a2e58df1c1e0a78c75cd24dfbccefd6278462dc849709f0912792",
+      "data": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-gc",
+          "none",
+          "-o",
+          "Build/register-resume-20261105-layout-none-test",
+          "layout/automatic_hyphenation_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3590569984,
+        "elapsed_seconds": 59.564647582999996,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-none-run": {
+      "path": "Build/register-resume-20261105-layout-none-run.guard.json",
+      "sha256": "c0d24240b406625a89535fbfc57ca9e6f158b552ea39c2ea1e8fe7f329ca6dfe",
+      "data": {
+        "command": [
+          "Build/register-resume-20261105-layout-none-test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 245760,
+        "elapsed_seconds": 0.770485292,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "python": {
+      "path": "Build/register-resume-20261105-python.guard.json",
+      "sha256": "29dccac177e004b7f2993362c7beba41107f45405847a54688895a49e4cd6e2c",
+      "data": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "forum_news_pixels_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 59375616,
+        "elapsed_seconds": 0.710426333,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "archive-tests": {
+      "path": "Build/register-resume-20261105-archive-tests.guard.json",
+      "sha256": "afb1dda773dd50150368acef7b8c0775ecb79825e5791885550061915981c89a",
+      "data": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "page_archive_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 34095104,
+        "elapsed_seconds": 2.015173666,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "registered-unit": {
+      "path": "Build/register-resume-20261105-registered-unit.guard.json",
+      "sha256": "42b9f08ee0442d83154a3f65355c5bad1a9bad7593a0d2e932445d5a26405511",
+      "data": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "forum_news_pixels_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 60276736,
+        "elapsed_seconds": 0.9849933750000001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  },
+  "publication_validation": "Build/register-resume-20261105/publication-validation.json",
+  "notes": [
+    "Direct acquisition failed page coverage and was also invalidated by bundle replacement; proxy acquisition completed with stable browser identities.",
+    "An HTTP synthetic fixture could not replay through the HTTPS-only SOCKS endpoint; the HTTPS fixture retains exact source and fresh replay references.",
+    "The first V platform command omitted -enable-globals and did not compile. The corrected pre-fix test reproduces the dictionary assertion failure.",
+    "The initial combined layout compile/run reached the 3 GiB guard. Separate default-budget compilation and 3 GiB execution pass in both GC modes.",
+    "The original registered archive is preserved exactly in Tests/Browser/Brave/candidates/register-original-20261102.zip; the qualified 128-file candidate is registered unchanged.",
+    "The first cold-cache production attempt failed owned-process shutdown cleanup. Its complete fresh repeat passes every gate and is recorded separately; the failure is retained.",
+    "The 132-test broad run completes on one unchanged executable/runtime identity; its three image failures retain the earlier failing zero-tolerance gates."
+  ],
+  "complete_cache": {
+    "summary": {
+      "started_at": "2026-11-05T06:04:36+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "complete",
+      "sites": [
+        {
+          "id": "theregister",
+          "name": "The Register",
+          "url": "https://www.theregister.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "complete",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/register-resume-20261105-fixed-complete/theregister",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "304107f4486e357d7a83714e6be495e4adf972b9345ef390016bdcc068549543"
+        }
+      ],
+      "passed": 1
+    },
+    "summary_sha256": "553e78ce1d26cd04a86de7f4d77bc17a09ae05a989005159f49c12fc32f6de30",
+    "identity_unchanged": true,
+    "vox_sha256": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0"
+  },
+  "registration_commit": "94897c89a",
+  "registered_manifest": {
+    "path": "Tests/Browser/Brave/sites/theregister/manifest.json",
+    "sha256": "304107f4486e357d7a83714e6be495e4adf972b9345ef390016bdcc068549543"
+  },
+  "independent_rgba": [
+    {
+      "cache_policy": "complete",
+      "rgba_sha256": "b1db81df470ba9eff8147234f4e636be4b6fb9ce8be968f8fef9ffb2e35f2937",
+      "files": [
+        "Build/register-resume-20261105-proxy-fixtures/theregister/live.png",
+        "Build/register-resume-20261105-fixed-complete/theregister/brave.png",
+        "Build/register-resume-20261105-fixed-complete/theregister/brave-repeat.png",
+        "Build/register-resume-20261105-fixed-complete/theregister/vox.png"
+      ],
+      "vox_sha256": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0"
+    },
+    {
+      "cache_policy": "cold",
+      "rgba_sha256": "b1db81df470ba9eff8147234f4e636be4b6fb9ce8be968f8fef9ffb2e35f2937",
+      "files": [
+        "Build/register-resume-20261105-proxy-fixtures/theregister/live.png",
+        "Build/register-resume-20261105-cold-repeat/theregister/brave.png",
+        "Build/register-resume-20261105-cold-repeat/theregister/brave-repeat.png",
+        "Build/register-resume-20261105-cold-repeat/theregister/vox.png"
+      ],
+      "vox_sha256": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0"
+    }
+  ],
+  "cold_cache": {
+    "summary": {
+      "started_at": "2026-11-05T06:07:31+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "cold",
+      "sites": [
+        {
+          "id": "theregister",
+          "name": "The Register",
+          "url": "https://www.theregister.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/register-resume-20261105-cold-repeat/theregister",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "304107f4486e357d7a83714e6be495e4adf972b9345ef390016bdcc068549543"
+        }
+      ],
+      "passed": 1
+    },
+    "identities": [
+      {
+        "site": "theregister",
+        "identity": {
+          "vox": {
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "5244849a3124601a848dab8bc00c3cf542b4d5a565e5aa462288d60d9d2e2c99",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a8e4950d6e1bfd4cff37c3245ede159bed285250c59bb06283a1f9267db077c2",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+            "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+            "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+            "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+            "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+            "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+            "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+            "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+            "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+            "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+            "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+            "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+            "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+            "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+            "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+            "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+            "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+            "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+          },
+          "brave": {
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+          }
+        }
+      }
+    ]
+  },
+  "controls": {
+    "summary": {
+      "started_at": "2026-11-05T06:06:44+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "cold",
+      "sites": [
+        {
+          "id": "wired",
+          "name": "WIRED",
+          "url": "https://www.wired.com/",
+          "status": "pass",
+          "image_animation_policy": "none",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/register-resume-20261105-controls/wired",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "c70c845521149c08f0243e4529b8510581e47f9d7a56d4f3d9bb9ae4f9f90f7b"
+        },
+        {
+          "id": "hacker-news",
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/register-resume-20261105-controls/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        }
+      ],
+      "passed": 2
+    },
+    "identities": [
+      {
+        "site": "wired",
+        "identity": {
+          "vox": {
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "5244849a3124601a848dab8bc00c3cf542b4d5a565e5aa462288d60d9d2e2c99",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a8e4950d6e1bfd4cff37c3245ede159bed285250c59bb06283a1f9267db077c2",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+            "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+            "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+            "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+            "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+            "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+            "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+            "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+            "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+            "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+            "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+            "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+            "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+            "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+            "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+            "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+            "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+            "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+          },
+          "brave": {
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+          }
+        }
+      },
+      {
+        "site": "hacker-news",
+        "identity": {
+          "vox": {
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "5244849a3124601a848dab8bc00c3cf542b4d5a565e5aa462288d60d9d2e2c99",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a8e4950d6e1bfd4cff37c3245ede159bed285250c59bb06283a1f9267db077c2",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+            "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+            "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+            "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+            "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+            "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+            "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+            "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+            "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+            "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+            "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+            "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+            "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+            "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+            "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+            "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+            "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+            "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+          },
+          "brave": {
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+          }
+        }
+      }
+    ]
+  },
+  "publication_attempts": {
+    "status": "finished",
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel"
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-055644-f5ffd0f5/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "af926825d18afebfbb84ea14da1846df477307d64004c28854c2a2b86c21e7ec",
+        "dirty": true,
+        "head": "135e81868b3825cd422781ad852d9c9b56009602",
+        "repository_sha256": "11f36e14932d049cd197ed6ce60e7d9f441ef2d504530d74ecebc1db43922fe7"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "117ebe78cb7811eb47c29a9df5a3e261c4e3fd4bc00b022e10a0af0e4eaa2b4a",
+        "dirty": true,
+        "head": "001db6701be5c2975f620491d55e065bb65797c1",
+        "repository_sha256": "fa690f509b5bfa46a27f4775b361ad93783a5751201babd8d4e83a5a989b959d"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "135e81868b3825cd422781ad852d9c9b56009602",
+        "id": "18a4399bbe024a65b52748dec6741897"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "af926825d18afebfbb84ea14da1846df477307d64004c28854c2a2b86c21e7ec",
+        "dirty": true,
+        "head": "ef0a3531a028a5add48e706482bf74aa1ff1a6bc",
+        "repository_sha256": "b28c9cbf41ab1e90a91499c0cd9079d07d12e75ff2dfa30be401c9894d4b6048"
+      }
+    },
+    "source_verified": true,
+    "results": [
+      {
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-0.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-0.guard.json",
+          "--",
+          "python3",
+          "tools/forum_news_inline_pixels_test.py",
+          "ForumNewsInlinePixelsTests.test_closing_punctuation_keeps_automatic_hyphenation_opportunities",
+          "ForumNewsInlinePixelsTests.test_paragraph_final_words_wrap_before_automatic_hyphenation",
+          "ForumNewsInlinePixelsTests.test_svg_background_round_caps_and_curves_share_the_parent_picture",
+          "ForumNewsInlinePixelsTests.test_register_header_uses_block_content_alignment"
+        ],
+        "exit": 0,
+        "log": "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-0.log"
+      },
+      {
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-1.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-1.guard.json",
+          "--",
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--sites",
+          "theregister",
+          "--fixtures",
+          "Build/register-resume-20261105-proxy-fixtures",
+          "--cache-policy",
+          "complete",
+          "--output",
+          "Build/register-resume-20261105-fixed-complete"
+        ],
+        "exit": 0,
+        "log": "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-1.log"
+      },
+      {
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-2.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-2.guard.json",
+          "--",
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--sites",
+          "theregister",
+          "--fixtures",
+          "Build/register-resume-20261105-proxy-fixtures",
+          "--cache-policy",
+          "cold",
+          "--output",
+          "Build/register-resume-20261105-fixed-cold"
+        ],
+        "exit": 1,
+        "log": "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-2.log"
+      },
+      {
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-3.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-3.guard.json",
+          "--",
+          "python3",
+          "tools/forum_news_pixels.py",
+          "--extension",
+          "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+          "--checker",
+          "Build/wired-parity-20261104-inputs/adblock-check",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--sites",
+          "wired,hacker-news",
+          "--cache-policy",
+          "cold",
+          "--output",
+          "Build/register-resume-20261105-controls"
+        ],
+        "exit": 0,
+        "log": "/Users/alex/code/vox2/Build/register-resume-20261105/published-check-3.log"
+      }
+    ]
+  },
+  "evidence_archive": {
+    "path": "docs/evidence/register-punctuation-20261105.zip",
+    "sha256": "27321b4f515cf3919268e510fac39b896016d524907b3860c36cabac6749e986",
+    "files": 607,
+    "bytes": 14831349
+  },
+  "browser_regressions": [
+    {
+      "path": "Build/forum-news-inline-od3njla0",
+      "fixture": "hyphenation-closing-punctuation"
+    },
+    {
+      "path": "Build/forum-news-inline-vtb_d2xw",
+      "fixture": "block-content-alignment"
+    },
+    {
+      "path": "Build/forum-news-inline-7h5ourvz",
+      "fixture": "register-svg-stroke-recording"
+    },
+    {
+      "path": "Build/forum-news-inline-z_z_jw0x",
+      "fixture": "paragraph-final-hyphenation"
+    },
+    {
+      "path": "Build/forum-news-inline-yykjno8f",
+      "fixture": "hyphenation-closing-punctuation"
+    },
+    {
+      "path": "Build/forum-news-inline-qp7wrvog",
+      "fixture": "paragraph-final-hyphenation"
+    },
+    {
+      "path": "Build/forum-news-inline-681xrkxc",
+      "fixture": "block-content-alignment"
+    },
+    {
+      "path": "Build/forum-news-inline-mo7jvsne",
+      "fixture": "paragraph-final-hyphenation"
+    },
+    {
+      "path": "Build/forum-news-inline-8lamb20v",
+      "fixture": "pikabu-direct-composited-image"
+    },
+    {
+      "path": "Build/forum-news-inline-2ncj_s1w",
+      "fixture": "register-svg-stroke-recording"
+    },
+    {
+      "path": "Build/forum-news-inline-f1r0gae_",
+      "fixture": "register-svg-stroke-recording"
+    },
+    {
+      "path": "Build/forum-news-inline-x2e7a17n",
+      "fixture": "pikabu-hoisted-image-clip"
+    },
+    {
+      "path": "Build/forum-news-inline-3d59_cx6",
+      "fixture": "avif-yuv-sampling"
+    },
+    {
+      "path": "Build/forum-news-inline-wv6tlqnm",
+      "fixture": "block-content-alignment"
+    }
+  ],
+  "broad": {
+    "command": [
+      "python3",
+      "tools/forum_news_inline_pixels_test.py"
+    ],
+    "tests_exit": 1,
+    "identity_unchanged": true,
+    "vox_sha256": "2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0",
+    "tests": 132,
+    "passed": 129,
+    "failures": [
+      {
+        "fixture": "avif-yuv-sampling",
+        "different_pixels": 34796,
+        "maximum_channel_error": 17
+      },
+      {
+        "fixture": "pikabu-hoisted-image-clip",
+        "different_pixels": 1097,
+        "maximum_channel_error": 1
+      },
+      {
+        "fixture": "pikabu-direct-composited-image",
+        "different_pixels": 1097,
+        "maximum_channel_error": 1
+      }
+    ],
+    "seconds": 589.32,
+    "log": "Build/register-resume-20261105-broad.log",
+    "guard": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 420577280,
+      "elapsed_seconds": 590.0128301249999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "original_archive": {
+    "path": "Tests/Browser/Brave/candidates/register-original-20261102.zip",
+    "sha256": "40fb1d27955a4a7e07128091cfab4c57f80cd68991f747c18c1fb44ed57c1c95",
+    "manifest_sha256": "44f76a95632bb3a7f85df273cf4fa4bb59b34cad8ee9ae2786d2b86750a68b66",
+    "verified_responses": 117
+  }
+}

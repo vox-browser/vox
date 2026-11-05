@@ -1,10 +1,11 @@
-# Five additional news-site comparisons
+# Forum/news rendering comparisons
 
-The [forum/news catalog](../Tests/Browser/Brave/forum-news.json) now contains
-15 sites. TechCrunch, Engadget, The Register, Slate and WIRED have sealed guest
-DOM archives, original response bodies, full-uBlock Origin reports and source
-PNGs. They are registered as strict conformance tests; **none of the five has
-passed the complete pixel gate yet**.
+The [forum/news catalog](../Tests/Browser/Brave/forum-news.json) contains
+16 sites, including Discord. TechCrunch, Engadget, The Register, Slate and
+WIRED have sealed guest DOM archives, original response bodies, full-uBlock
+Origin reports and source PNGs. **The Register passes every strict pixel gate
+with cold and complete caches. WIRED passes with its explicit first-frame
+image policy.** The other additions retain the open gaps documented below.
 
 The original ten are also incomplete: six accessible archives pass both source
 fidelity and native equality; CNN matches frozen Brave but retains its separate
@@ -829,6 +830,62 @@ the new regression, the earlier controls, the Register candidate and Hacker News
 [measured candidate](../Build/register-parity-20261104/hyphen-fixed-candidate/summary.json),
 [completed follow-up validation](../Build/register-parity-20261104/followup-validation.json),
 [SVG-picture validation](../Build/register-parity-20261104/svg-followup-validation.json).
+
+## The Register: exact guest viewport (2026-11-05)
+
+Production executable
+`2983f4d0e5af714059b1a4bc4f3f79f00e1dafacedeb233a4aa591f230a9f5b0`
+passes **source/frozen Brave, independent fresh Brave replay, and Vox/Brave
+at zero differing RGBA pixels**, with both cold and complete encoded-response
+caches. This uses normal image animation policy, full uBlock Origin 1.75.0,
+the pinned lists, a 1024×768 guest viewport and scale 1. Independent Pillow
+RGBA-byte comparisons confirm all eight source/reference/native captures have
+the same decoded-pixel SHA-256, `b1db81df…`.
+
+The previously source-qualified candidate existed only under `Build/` and was
+unavailable on resumption. The original registered archive still had 110,180
+saved-source differences and two native header-edge differences; those remain
+historical failures, not optimization credit. It is preserved byte for byte in
+[`register-original-20261102.zip`](../Tests/Browser/Brave/candidates/register-original-20261102.zip).
+A new acquisition through the configured HTTP proxy passes source fidelity and
+independent replay exactly. Its initial native gap is **1,165 pixels**, all in
+two text fragments, with exact header and photo pixels.
+
+Commit `ef0a3531a` fixes the macOS dictionary search for words followed by closing
+punctuation. Starting CoreFoundation's backwards search inside the comma/quote
+suffix of `incident,'` returned no dictionary locations. Starting before that
+suffix preserves the original string, range and UTF-16 offsets while finding
+the expected breaks. All **three dictionary and nine layout checks pass in both
+GC modes**, covering original DOM text and zero-length inserted hyphen ranges.
+The new `hyphenation-closing-punctuation` browser regression improves from
+**4,094 pixels to zero** against two agreeing full-uBO Brave references with
+exact source fidelity. The earlier final-word, header-alignment and SVG-stroke
+browser regressions also pass at zero pixels. All 29 conformance and 18 archive
+Python checks pass.
+
+The sealed 128-file candidate is committed separately as
+[`register-guest-20261105.zip`](../Tests/Browser/Brave/candidates/register-guest-20261105.zip)
+in `678fc8e03`. Registration commit `94897c89a` installs those exact bytes;
+manifest SHA-256 is `304107f4…`. No existing focused golden or tolerance changed.
+The initial direct acquisition failed document coverage and crossed a bundle
+publication. An HTTP synthetic fixture could not use the HTTPS-only SOCKS
+replay endpoint; its HTTPS replacement qualifies. The first V invocation omitted
+`-enable-globals`, and a combined layout compile/run reached its 3 GiB guard;
+separate compilation and capped execution pass. The first cold-cache production
+attempt failed Brave shutdown cleanup; the complete fresh repeat passes every
+gate. These failures remain in the evidence.
+
+WIRED and Hacker News controls also pass every strict gate at zero pixels on
+the same executable. The full rendering run completes **132 tests, with 129
+passing and the same three retained image failures**: AVIF YUV sampling and
+the two Pikabu image-clip cases. The executable and runtime-asset identities
+remain unchanged across the entire 589-second run. This supplies an
+uninterrupted broad checkpoint after the earlier WIRED runs crossed shared
+bundle publications. Raw PNGs, commands, checks and failures are preserved in
+the [evidence archive](evidence/register-punctuation-20261105.zip).
+This is frozen-viewport parity; live scripting, interactions, scrolling and
+whole-site behavior remain outside the claim.
+[Durable evidence](evidence/register-punctuation-20261105.json).
 
 ## Slate: AVIF image decoding (2026-11-04)
 
