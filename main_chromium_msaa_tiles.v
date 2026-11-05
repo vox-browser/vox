@@ -6,6 +6,7 @@ import painting
 import os
 
 fn C.native_set_chromium_raster_layer_size(f64, f64)
+fn C.native_set_chromium_save_layer_image_raster(f64, f64, f64, f64, i32)
 fn C.native_set_chromium_paint_origin(f64, f64, i32)
 
 // Chromium rasterizes the root layer on the GPU in tiles as wide as the
@@ -508,6 +509,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		app.chromium_raster_grids = app.chromium_msaa_storage.grids[..count]
 		C.native_set_chromium_raster_scroll_y(app.scroll_y)
 		C.native_set_chromium_raster_layer(0, 0, 1)
+		C.native_set_chromium_save_layer_image_raster(0, 0, 0, 0, 0)
 		C.native_set_chromium_msaa_tiles(unsafe { nil }, 0,
 			chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale))))
 	}
@@ -547,6 +549,15 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &i32(nil) } }
 		rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
 		C.native_set_chromium_msaa_tiles(pointer, tiles.len, rows)
+		C.native_set_chromium_save_layer_image_raster(0, 0, 0, 0, 0)
+		if app.chromium_raster_grids.len > 0 {
+			root_grid := app.chromium_raster_grids[0]
+			if bounds := chromium_save_layer_image_bounds(app.paint_commands,
+				app.chromium_raster_plan, raster_index, root_grid, scale) {
+				C.native_set_chromium_save_layer_image_raster(bounds.x, bounds.y,
+					bounds.width, bounds.height, i32(root_grid.tile_height))
+			}
+		}
 		if raster_index < app.chromium_raster_grids.len {
 			grid := app.chromium_raster_grids[raster_index]
 			if grid.columns > 0 {

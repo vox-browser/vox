@@ -3101,6 +3101,16 @@ void native_set_chromium_raster_layer_size(double width, double height) {
 #endif
 }
 
+void native_set_chromium_save_layer_image_raster(double x, double y,
+    double width, double height, int tile_rows) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern void ladybird_v_skia_set_save_layer_image_raster(double, double, double, double, int);
+    ladybird_v_skia_set_save_layer_image_raster(x, y, width, height, tile_rows);
+#else
+    (void)x; (void)y; (void)width; (void)height; (void)tile_rows;
+#endif
+}
+
 void native_set_chromium_msaa_tiles(const int *tiles, int count, int tile_rows) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	ladybird_v_skia_set_msaa_tiles(tiles, count, tile_rows);

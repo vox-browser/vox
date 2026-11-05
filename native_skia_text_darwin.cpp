@@ -6363,6 +6363,8 @@ static long chromium_raster_tile_for_row(long row)
     return row <= spacing ? 0 : (row - 1) / spacing;
 }
 
+#include "native_skia_save_layer_image.h"
+
 static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
     int raster_width, int raster_height, RasterRegion const& region,
     float scale, float page_x, float page_y, float scroll_y,
@@ -6370,6 +6372,9 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
 {
     auto draw = graphite_image_draw();
     auto draw_region = graphite_image_region_draw();
+    if (!has_background && draw_chromium_save_layer_image_slices(draw, pixels,
+            raster_width, raster_height, region, scale, page_x, page_y, scroll_y, descriptor))
+        return true;
     if (std::getenv("VOX_IMAGE_BATCH_DIAGNOSTICS")) {
         using Clock = double (*)();
         static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
