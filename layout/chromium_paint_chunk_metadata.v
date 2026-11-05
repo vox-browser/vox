@@ -28,7 +28,7 @@ enum ChromiumPaintMetadataMode {
 fn chromium_root_paint_cull(viewport LayoutRect, contents LayoutRect, scale f64,
 	plan &ChromiumRasterLayerPlan) ?LayoutRect {
 	if scale != 1 || viewport.x != 0 || viewport.width <= 0 || viewport.height <= 0
-		|| viewport.y < 0 || contents.x < 0 || contents.width > viewport.width
+		|| viewport.y < 0 || contents.x < 0
 		|| contents.width <= 0 || contents.height <= 0 {
 		return none
 	}
@@ -235,11 +235,10 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 	// An unculled plan retains its established scrolling/image policy. Only
 	// fixed-container geometry is added when root culling cannot be projected.
 	if cull == none { return if has_fixed_metadata { .fixed_bounds } else { .none } }
-	// A scrolling document with fixed overlays still records root hit-test
-	// geometry even without a nested accelerated scroller. Keeping only fixed
-	// containers here made sparse ink on a transparent root acquire separate
-	// rasters: the unpainted document bounds must participate in layerization.
-	root_hit_test_geometry := has_fixed_metadata && chromium_scrollport_has_range(&result.paint_tree)
+	// Root hit-test bounds participate in PendingLayer merging even when
+	// the root paints no background. Sparse ordinary ink must not acquire a
+	// new raster origin merely because it follows a disjoint atomic SVG clip.
+	root_hit_test_geometry := commands.len > 0 && chromium_scrollport_has_range(&result.paint_tree)
 	// A rounded image's ancestor can contribute a metadata-only chunk before
 	// its overflow clip. It still determines the picture's common clip state,
 	// even when the document has no independently scrolling contents.
@@ -401,12 +400,13 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			scope = u64(parent)
 		}
 	}
-	// Captured masks and filters already form balanced atomic chunks. Their
+	// Captured masks, filters and normal opacity form balanced atomic chunks. Their
 	// descendants' metadata is skipped below, just like their enclosed paint;
 	// ordinary siblings still need their own hit-test geometry and tile origin.
 	// Other legacy effects retain the preceding planner.
 	for chunk in scratch.chunks {
 		if chunk.state.legacy_effect && chromium_paint_chunk_is_interested(chunk, cull)
+			&& !chunk.state.atomic_opacity
 			&& commands[chunk.command_index].kind !in ['begin_svg_mask_layer', 'begin_css_filter_layer'] {
 			chromium_layerize_chunks_into(scratch.chunks, commands.len, scale, mut plan, mut scratch.layer_states)
 			return

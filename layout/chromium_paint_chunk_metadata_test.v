@@ -21,10 +21,10 @@ fn test_root_paint_cull_retains_its_interest_rect_until_an_edge_moves_512_pixels
 		LayoutRect{0, 0, 1280, 4800}
 	assert chromium_root_paint_cull(LayoutRect{0, 17200, 1280, 800}, contents, 1, &plan)? ==
 		LayoutRect{0, 13200, 1280, 4800}
-	// Root configurations whose transform expansion is not yet projected keep
-	// the preceding planner, including their complete command mapping.
+	// Other backing scales keep the preceding planner. Horizontal overflow
+	// still permits the finite vertical root projection at scale one.
 	assert chromium_root_paint_cull(LayoutRect{0, 6400, 1280, 800}, contents, 2, &plan) == none
-	assert chromium_root_paint_cull(LayoutRect{0, 6400, 1280, 800}, LayoutRect{0, 0, 1600, 18000}, 1, &plan) == none
+	assert chromium_root_paint_cull(LayoutRect{0, 6400, 1280, 800}, LayoutRect{0, 0, 1600, 18000}, 1, &plan)? == LayoutRect{0, 2400, 1600, 8800}
 	assert chromium_root_paint_cull(LayoutRect{0, 0, 1280, 800}, LayoutRect{0, 0, 1280, 600}, 1, &plan)? ==
 		LayoutRect{0, 0, 1280, 600}
 	assert chromium_root_paint_cull(LayoutRect{0, 0, 1280, 800}, LayoutRect{0, 0, 1280, 600}, 2, &plan) == none
@@ -82,9 +82,11 @@ fn test_empty_scroll_hit_test_metadata_keeps_overlapping_grid_paint_on_one_raste
 	assert chromium_raster_cull_changed(document, LayoutRect{0, 0, 1280, 800}, 1, &plan)
 	update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
 		LayoutRect{0, 0, 1280, 800}, mut plan)
+	// Normal opacity scopes remain atomic without disabling viewport culling
+	// of ordinary content far below the root's current interest rectangle.
 	for index, command in commands {
 		if command.kind == 'fill_gradient' {
-			assert plan.command_layers[index] == 0
+			assert plan.command_layers[index] == -1
 		}
 	}
 }

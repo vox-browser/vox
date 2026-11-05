@@ -21,7 +21,7 @@ fn test_collapsed_clip_paths_exclude_hit_test_metadata_but_keep_thin_visible_cli
 	}
 }
 
-fn test_fully_clipped_fixed_boxes_do_not_enable_root_hit_test_geometry() {
+fn test_fully_clipped_fixed_boxes_do_not_contribute_hit_test_geometry() {
 	mut document := html.parse_document('<!doctype html><style>
 		body{margin:0;height:2000px}aside{position:fixed;inset:0;clip-path:inset(50%)}
 		</style><aside><div>Clipped fixed descendants</div></aside>')
@@ -31,7 +31,9 @@ fn test_fully_clipped_fixed_boxes_do_not_enable_root_hit_test_geometry() {
 	commands := display_list_commands(document.record_display_list() or { panic('paint') })
 	mut plan := ChromiumRasterLayerPlan{}
 	update_chromium_raster_layer_plan_for_viewport(document, commands, 1, LayoutRect{0, 0, 800, 600}, mut plan)
-	assert !plan.has_paint_metadata
+	assert plan.has_paint_metadata
+	scratch := unsafe { &chromium_raster_plan_scratch_ }
+	assert !scratch.paint_metadata.any(it.state.fixed_to_viewport)
 }
 
 fn test_collapsed_accessibility_label_does_not_expand_its_fixed_header_raster() {

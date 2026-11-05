@@ -31,7 +31,9 @@ fn test_zero_opacity_scroll_metadata_does_not_promote_visible_root_gradients() {
 		mut plan := ChromiumRasterLayerPlan{}
 		update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
 			LayoutRect{0, 0, 1024, 768}, mut plan)
-		assert !plan.has_paint_metadata
+		assert plan.has_paint_metadata
+		scratch := unsafe { &chromium_raster_plan_scratch_ }
+		assert !scratch.paint_metadata.any(it.state.scroll_hit_test > 0)
 		mut gradients := 0
 		for index, command in commands {
 			if command.kind != 'fill_gradient' { continue }
@@ -66,6 +68,8 @@ fn test_scroll_metadata_returns_after_zero_opacity_is_removed() {
 		commands := display_list_commands(document.record_display_list() or { panic('paint') })
 		update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
 			LayoutRect{0, 0, 1024, 768}, mut plan)
-		assert plan.has_paint_metadata == (opacity != '0')
+		assert plan.has_paint_metadata
+		scratch := unsafe { &chromium_raster_plan_scratch_ }
+		assert scratch.paint_metadata.any(it.state.scroll_hit_test > 0) == (opacity != '0')
 	}
 }
