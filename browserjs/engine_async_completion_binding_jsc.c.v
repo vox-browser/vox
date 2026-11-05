@@ -8,6 +8,7 @@ module browserjs
 
 pub fn (mut runtime Runtime) install_engine_async_completion_binding() ! {
 	runtime.require_javascript_value_context()!
+	if runtime.engine_async_completion_installed_ { return }
 	owner := voidptr(&runtime)
 	notify := runtime.make_value_host_function(fn [owner] (_ voidptr, _ []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
@@ -19,6 +20,7 @@ pub fn (mut runtime Runtime) install_engine_async_completion_binding() ! {
 	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
 		notify,
 	])!
+	runtime.engine_async_completion_installed_ = true
 }
 
 const engine_async_completion_bootstrap = r'(function(notify){

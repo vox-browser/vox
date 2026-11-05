@@ -68,6 +68,7 @@ mut:
 	worker_module_global bool
 	context                   voidptr
 	closed                    bool
+	engine_async_completion_installed_ bool
 	host_functions_           []&HostFunctionRecord
 	value_host_functions_     []&ValueHostFunctionRecord
 	native_stream_wrapper_records_ map[voidptr]voidptr

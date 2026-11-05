@@ -3,6 +3,21 @@ module browserjs
 import platform
 import time
 
+fn test_webassembly_completion_binding_installs_once_and_preserves_page_overrides() {
+	$if !darwin { return }
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	runtime.install_engine_async_completion_binding()!
+	runtime.evaluate_host(r'globalThis.firstCompile=WebAssembly.compile;
+ globalThis.firstInstantiate=WebAssembly.instantiate;')!
+	runtime.install_engine_async_completion_binding()!
+	assert runtime.evaluate_host('WebAssembly.compile===firstCompile&&WebAssembly.instantiate===firstInstantiate')! == 'true'
+	runtime.evaluate_host(r'globalThis.pageCompile=function pageCompile(){return "page override"};
+ WebAssembly.compile=pageCompile;')!
+	runtime.install_engine_async_completion_binding()!
+	assert runtime.evaluate_host('WebAssembly.compile===pageCompile&&WebAssembly.compile()==="page override"')! == 'true'
+}
+
 fn test_webassembly_settlement_marks_the_document_state_dirty() {
 	$if !darwin { return }
 	mut runtime := Runtime.create()
