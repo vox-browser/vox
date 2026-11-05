@@ -945,6 +945,42 @@ the old failure is not attributed to this renderer fix.
 [Commands, identities and verdicts](evidence/engadget-degenerate-arcs-20261105.json),
 [raw results and failed attempts](evidence/engadget-degenerate-arcs-20261105.zip).
 
+### Remaining source backgrounds
+
+The 295 saved-source differences occupy rounded photo edges and borders within
+`(24,88)`–`(999,544)`, with maximum channel error 4. Two separate diagnostic
+variants make only the photo-holder backgrounds transparent or absent. Each
+then matches the retained source at **zero pixels** and differs from the
+unchanged frozen reference at **295 pixels**. These variants alter page CSS;
+they establish a pixel effect, not a production correction or acceptance result.
+
+A read-only preload records computed styles and rectangles from fresh full-uBO
+live and frozen processes. All **eight inspected photo holders and their
+descendants agree** in the recorded fields, including background, borders,
+clipping, transforms and opacity. The frozen diagnostic retains all original
+295 differing samples. The live diagnostic differs from the original source
+at 24 of those samples and from the old frozen frame at 294; image-state
+variation remains relevant. Background occlusion is consistent with these
+observations, but its internal Brave call path is not established.
+
+A small RGB-PNG control does not reproduce the source behavior when image
+insertion, picture reattachment or stylesheet insertion is delayed. Giving
+the picture its actual block display and the holder its actual background
+also leaves Brave and Vox exact. This prevents treating a generic missing
+background rule as a justified renderer fix.
+
+The ordinary fresh complete-cache acquisition reaches a stable live warmup
+frame but fails owned-process shutdown. Its cleanup also raises a permission
+error and leaves an empty inner memory-guard report. The acquisition receives
+no acceptance credit and creates no replacement archive. The instrumented
+style probes exit normally but remain diagnostics. Earlier diagnostic launcher
+failures, all frames and logs are retained. The registered archive, candidate,
+existing goldens and tolerances are unchanged; strict source fidelity remains
+open.
+
+[Diagnostic verdicts and limits](evidence/engadget-source-background-20261105.json),
+[raw probes and failed attempts](evidence/engadget-source-background-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
