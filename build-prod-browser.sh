@@ -257,7 +257,8 @@ set -- -b c -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-glo
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 # gg.canvas is being developed upstream. Keep ordinary V builds independent
 # of that optional module; a compiler containing it enables the opt-in adapters.
-if [ -d "$("$v_compiler" root)/vlib/gg/canvas" ]; then
+has_gg_canvas=$(python3 "$repo_dir/tools/gg_canvas_build.py" "$v_compiler")
+if [ "$has_gg_canvas" = 1 ]; then
     set -- "$@" -d vox_gg_canvas
 fi
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
