@@ -752,6 +752,92 @@ owned-process shutdown.
 [Evidence and exact commands](evidence/engadget-oracle-lifecycle-20261105.json),
 [raw diagnostics and failed source captures](evidence/engadget-oracle-lifecycle-20261105.zip).
 
+## Engadget: border-box ratio blocks (2026-11-05)
+
+A fresh complete-cache acquisition now completes uBO initialization, capture,
+both independent Brave replays and owned-process shutdown. Candidate manifest
+`fa56c7ca…` has **295 source/frozen differences**, **zero independent Brave
+replay differences**, and **202,684 native differences** on executable
+`8a1e86fa…`. Its 70 files are preserved byte for byte in
+[`engadget-guest-20261105.zip`](../Tests/Browser/Brave/candidates/engadget-guest-20261105.zip).
+It remains separate from the registered archive. The 295 source differences
+lie around rounded photo corners and adjacent borders, with maximum channel
+error 4; their cause remains open. The historical 221-pixel source gap and
+cross-process image variation are retained.
+
+The native page exposes an independent layout error. Brave's hero image is
+462×259 inside a 464×261 border box; Vox produces 460×258.75. Secondary images
+are 208×117 instead of 210×117.25. Normal-flow blocks with a concrete CSS width
+and preferred ratio pass through translated replaced-element sizing, deducting
+inline borders twice. A later automatic-height resolution also divides the
+content width by the ratio without accounting for the ratio's box model.
+
+Commit `7b9e6a8ab` converts these Chromium CSS ratio blocks once, transfers the
+final width through the existing aspect-ratio box-model helper and applies
+block-size constraints before percentage descendants resolve their height.
+Natural replaced boxes keep their existing path. The translated LibWeb policy
+retains its recorded behavior. All **three focused test functions / eleven
+style and policy cases pass with default GC and GC disabled**. All **315 existing
+formatting-context tests pass**, including the replaced-size and constraint
+controls. The original code
+fails the width regression; an intermediate width-only correction fails height.
+Those failures and an accidental runtime launch before compilation completed
+remain in the evidence.
+
+The authored `block-border-box-aspect-ratio` browser fixture checks full-width,
+small, padded, min/max-clamped and explicitly sized blocks with percentage
+children. Two fresh ordinary Brave file captures exit zero and match each other
+and a clean full-uBO source capture exactly. Several attempts to replay the
+reducer with full uBO fail browser cleanup and receive no acceptance credit.
+The fixture contains no scripts, ads or fetched image assets. Its preceding
+native result is **9,950 differing pixels**. The new input, expected PNG and
+suite registration are committed; existing references and tolerances are
+unchanged.
+
+Production executable `557eb0c8…` contains both sizing changes in its sealed
+compiler input. All **five focused browser regressions pass at zero pixels**,
+including the new ratio fixture, SVG natural sizing, SVG min/max clamping,
+intrinsic button baselines and the Engadget header. The full candidate improves
+from **202,684 to 22 native pixels**, with maximum channel error 2. They lie at
+the bottom corners of the two lower photos. The source/frozen gate still differs
+at **295 pixels** and the two fresh Brave replays agree exactly. All three
+controls—Hacker News, WIRED and The Register—pass every strict gate at zero
+pixels with complete caches; WIRED retains its first-frame image policy.
+Executable, library and runtime-asset identities remain unchanged within and
+across these checks. The separate candidate source-fidelity failure prevents
+strict Engadget acceptance.
+
+The uninterrupted broad run completes **133 tests / 139 captures**, with
+**136 captures exact** and unchanged executable, library, fixture and tool
+inputs. It retains the same three preceding failures: AVIF YUV sampling
+(34,796 pixels), Pikabu hoisted image clip (1,097), and Pikabu direct composited
+image (1,097). There are no additional pixel failures or process errors.
+
+The remaining 22 pixels are sensitive to multisampling: adding a visible SVG
+changes those same corner samples in both browsers. Removing the surrounding
+page makes both browsers agree at all 22 samples, although the reduced photo
+page has separate interior sampling differences and earns no acceptance credit.
+Adding an offscreen SVG changes neither browser, so the initial geometry-grid
+hypothesis is not supported by that reducer. Its temporary unit-test patch and
+intentionally interrupted compile are retained; no grid implementation change
+is kept. Disabling the optional GPU-canvas path also leaves the 22 pixels.
+The separate no-image offscreen-corner control has exact full-uBO source and
+two fresh replay references and already matches Vox. These diagnostic controls
+do not replace the failing full-page source or native results.
+
+A corrected native interposition probe preserves the 22-pixel result and
+records root-grid cells `0,1,2,3,5,7,8,9,10,12,13` at 1024×256. Disabling all
+root MSAA removes those samples but introduces **109 other differences**.
+Explicitly dropping only root cell 2 makes the native PNG exact. That override
+is a workload-specific diagnostic, **not an implementation fix or acceptance
+result**; the production result remains 22. The initial `RTLD_NEXT` probe times
+out without a PNG and remains recorded. The next renderer investigation is
+the eligibility of draws entering root cell 2, including retained menu layers;
+the source-fidelity gap remains independent.
+
+[Exact commands, identities and checks](evidence/engadget-ratio-sizing-20261105.json),
+[retained screenshots, logs and failed attempts](evidence/engadget-ratio-sizing-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged

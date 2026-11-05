@@ -34,6 +34,16 @@ fidelity and two agreeing fresh Brave replays. Commit `ef0a3531a` improves the
 native comparison from 4,094 pixels to zero. Run
 `python3 tools/forum_news_inline_pixels_test.py ForumNewsInlinePixelsTests.test_closing_punctuation_keeps_automatic_hyphenation_opportunities`.
 
+`block-border-box-aspect-ratio` covers normal-flow CSS ratio blocks with
+border-box sizing, padding, min/max constraints and percentage-height children.
+Two fresh ordinary Brave file captures agree with each other and with a clean
+full-uBO source capture at 1024×768, scale 1. Full-uBO frozen reducer attempts
+failed process cleanup and remain unqualified. The preceding browser differs
+by 9,950 pixels. Commit `7b9e6a8ab` corrects the repeated edge deduction and
+transfers the final content height to descendants. The production fixture is
+pixel-exact on `557eb0c8…`, alongside four SVG, percentage-height and header
+controls. See the [Engadget sizing evidence](../../../docs/evidence/engadget-ratio-sizing-20261105.json).
+
 The registered CNN archive is pixel-exact against Brave with full uBO at
 1024×768, scale 1, when both browsers start fresh after complete encoded-response
 cache warmups. The separate saved-live/frozen-reference gate remains open.
