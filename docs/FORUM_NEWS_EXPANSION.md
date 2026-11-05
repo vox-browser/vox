@@ -1372,6 +1372,69 @@ pass is claimed.
 [Receipts, comparisons and limitations](evidence/techcrunch-completed-transitions-20261105.json),
 [retained checks and diagnostics](evidence/techcrunch-completed-transitions-20261105.zip).
 
+## TechCrunch: primary generated pseudo bridges (2026-11-05)
+
+Commit `abeda448a` keeps the DOM style-update target on the styled root of a
+generated pseudo-element. Its text and image children share the pseudo identity,
+but must not overwrite that root during recursive DOM attachment. Continuations
+also retain their original primary target; a replaced-image root remains valid.
+
+The preceding section's geometry inference used a different native process
+from the failing PNG. **Three same-process screenshot/layout audits correct
+that finding:** the title tops are 595.25 and 347.53125 pixels, versus Brave's
+599.453125 and 351.734375. The byline is 26.59375 pixels high despite a computed
+16px font and 22.390625px line height. Its generated separator still uses a
+19px style because later style updates reach the registered text child instead
+of the styled pseudo root. Rebuilding the private diagnostic's layout after
+all four author fonts load restores the correct byline and title positions.
+That private O0 build supplies layout diagnostics, not pixel qualification.
+
+Both new regressions fail before the fix: the pseudo bridge resolves to text,
+and a live font-size update leaves 19px instead of 16px. They pass with default
+GC, GC disabled and poisoned preallocation. Coverage includes `::before` and
+`::after`, text, mixed generated image/text, replaced-image roots, retained node
+identity and agreement with a fresh layout tree. All **32 related attachment,
+first-letter, animation and text-cache controls** pass in both GC modes.
+
+The wider `dom_layout_bridge_test.v` still panics in the hidden-descendant style
+case with “missing target style.” Removing only this correction reproduces the
+same panic in both GC modes, but unrelated source inputs change during that
+experiment. A fully matched attribution is not established. The failed tests
+remain recorded with their actual nonzero exits, including where their
+diagnostic controller exits zero. No expectation is weakened.
+
+The new scripted browser fixture forces an initial layout before changing its
+host font size. Its unchanged full-uBO source PNG agrees with two independent
+Brave replays. The older production browser differs at **4,495 pixels** when
+running the original scripted fixture; bundle `19d7298d…`, whose receipt verifies
+`abeda448a`, renders it exactly. All **seven focused browser fixtures** pass on
+that same bundle, as do Hacker News, first-frame WIRED and the SVG source-switch
+control. Registered TechCrunch remains a strict failure:
+
+| Encoded cache | Saved source → Brave | Independent Brave replay | Vox → Brave |
+| --- | ---: | ---: | ---: |
+| Cold | 0 | 0 | **51,969** |
+| Complete | 0 | 0 | **34,838** |
+
+The main title's white interior pixels now agree without a vertical shift.
+The warmed capture retains 34,182 one-level differences in the article/image
+regions and 656 header pixels. The cold capture additionally differs at 17,131
+headline pixels. A private trace observes retained fallback chunks beside an
+already loaded author-font cascade; a fresh tree replaces those chunks. This
+narrows the next cache investigation without establishing a second correction.
+Every original archive byte, reference and zero-pixel gate stays unchanged.
+
+A separate coherent cohort on production executable `f3b3f57c…`, also proven to
+contain this commit, passes the **complete 135-test rendering suite with all
+141 captures exact**. Its executable, native libraries, canonical tools,
+fixtures and references remain unchanged throughout its finite bundle lease.
+That suite is distinct from the earlier `19d7298d…` site/focused cohort.
+TechCrunch's full native parity, the hidden-descendant check and previously
+reported site limitations remain open.
+
+[Receipts, corrections and remaining gaps](evidence/techcrunch-pseudo-bridge-20261105.json),
+[all attempts and rendering captures](evidence/techcrunch-pseudo-bridge-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
