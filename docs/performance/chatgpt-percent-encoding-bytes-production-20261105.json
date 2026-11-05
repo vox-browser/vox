@@ -1,331 +1,866 @@
 {
   "version": 1,
-  "complete": false,
-  "status": "pending-final-source-proof",
-  "recorded_unix": 1793883868.338478,
+  "complete": true,
+  "status": "complete",
+  "recorded_unix": 1793886710.511596,
   "implementation_commits": [
     "3d1dba1a8",
     "78a6b88be"
   ],
-  "availability_preflight": {
-    "unix": 1793883638.580398,
-    "production": {
-      "c_compile": {
-        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
-        "mode": "parallel",
-        "requested": "parallel",
-        "units": 33
-      },
-      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
-      "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
-      "exit": 0,
-      "inputs": {
-        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
-        "dirty": true,
-        "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
-        "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
-      },
-      "request": {
-        "c_mode": "parallel",
-        "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
-        "id": "1b43c5971b0d41c2b49b36a83be6a96e"
-      },
-      "verified_inputs": {
-        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
-        "dirty": true,
-        "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
-        "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
-      }
-    },
-    "observed_executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
-    "marker": true,
-    "source_proof": [
-      {
-        "path": "url/percent_encoding.v",
-        "exists_at_head": true,
-        "matches": false,
-        "current_sha256": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2"
-      },
-      {
-        "path": "url/percent_encoding_bytes.v",
-        "exists_at_head": false,
-        "matches": false,
-        "current_sha256": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668"
-      },
-      {
-        "path": "url/ascii_membership.v",
-        "exists_at_head": true,
-        "matches": true,
-        "current_sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68"
-      },
-      {
-        "path": "domurl/url_input_parser.v",
-        "exists_at_head": true,
-        "matches": false,
-        "current_sha256": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792"
-      }
+  "previous_pending": {
+    "version": 1,
+    "complete": false,
+    "status": "pending-final-source-proof",
+    "recorded_unix": 1793883868.338478,
+    "implementation_commits": [
+      "3d1dba1a8",
+      "78a6b88be"
     ],
-    "locks": {
-      "build": "busy",
-      "bundle": "free"
+    "availability_preflight": {
+      "unix": 1793883638.580398,
+      "production": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+          "dirty": true,
+          "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
+          "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
+          "id": "1b43c5971b0d41c2b49b36a83be6a96e"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+          "dirty": true,
+          "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
+          "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
+        }
+      },
+      "observed_executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+      "marker": true,
+      "source_proof": [
+        {
+          "path": "url/percent_encoding.v",
+          "exists_at_head": true,
+          "matches": false,
+          "current_sha256": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2"
+        },
+        {
+          "path": "url/percent_encoding_bytes.v",
+          "exists_at_head": false,
+          "matches": false,
+          "current_sha256": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668"
+        },
+        {
+          "path": "url/ascii_membership.v",
+          "exists_at_head": true,
+          "matches": true,
+          "current_sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68"
+        },
+        {
+          "path": "domurl/url_input_parser.v",
+          "exists_at_head": true,
+          "matches": false,
+          "current_sha256": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792"
+        }
+      ],
+      "locks": {
+        "build": "busy",
+        "bundle": "free"
+      },
+      "browser_captures": 0,
+      "manual_build_requests": 0,
+      "current_build_inputs_before": {
+        "head": "754372bf0dac2f7299065e185b3ab5a8bb84b689",
+        "repository_sha256": "c01152d78d320734cd73d9ab5b49339c0f54f13aa733291d15946937bec08b87",
+        "build_inputs_sha256": "733789d21b08d106d58e527b4cdb98d3313f5db96fada18ac7c7086b00fc60a0",
+        "dirty": true
+      },
+      "current_build_inputs_after": {
+        "head": "754372bf0dac2f7299065e185b3ab5a8bb84b689",
+        "repository_sha256": "c01152d78d320734cd73d9ab5b49339c0f54f13aa733291d15946937bec08b87",
+        "build_inputs_sha256": "733789d21b08d106d58e527b4cdb98d3313f5db96fada18ac7c7086b00fc60a0",
+        "dirty": true
+      },
+      "aggregate_source_stable": true,
+      "aggregate_matches_completed_build": false
+    },
+    "host": {
+      "cpu_count": 18,
+      "load": [
+        110.91259765625,
+        138.818359375,
+        130.99609375
+      ]
     },
     "browser_captures": 0,
     "manual_build_requests": 0,
-    "current_build_inputs_before": {
-      "head": "754372bf0dac2f7299065e185b3ab5a8bb84b689",
-      "repository_sha256": "c01152d78d320734cd73d9ab5b49339c0f54f13aa733291d15946937bec08b87",
-      "build_inputs_sha256": "733789d21b08d106d58e527b4cdb98d3313f5db96fada18ac7c7086b00fc60a0",
-      "dirty": true
+    "acceptance": false,
+    "page_instruction_credit": 0,
+    "broad_cadence_before": 0,
+    "broad_cadence_after": 0,
+    "qualification": "The latest completed executable contains the byte-encoder marker, but its recorded Git head does not contain the final owned source and its stable aggregate build-input hash differs from the current source. It cannot validate the final encoder plus nested cache initialization fix. Another shared build is active. No browser capture, page instruction comparison, copied app or separate manual production build was launched. Prepared eligibility/control/matched/broad scripts retain the same SOCKS fixture, original author bytes and unchanged references. Focused/component checks are complete in their separate receipts; no whole-page or Brave credit.",
+    "evidence": {
+      "path": "docs/performance/chatgpt-percent-encoding-bytes-production-pending-20261105-evidence.zip",
+      "sha256": "04e2fcd14311d8516fc902b7bcf363700b3da7f9c2bbe3e41ea8ea9896a600f9",
+      "bytes": 14215,
+      "entries": 5
     },
-    "current_build_inputs_after": {
-      "head": "754372bf0dac2f7299065e185b3ab5a8bb84b689",
-      "repository_sha256": "c01152d78d320734cd73d9ab5b49339c0f54f13aa733291d15946937bec08b87",
-      "build_inputs_sha256": "733789d21b08d106d58e527b4cdb98d3313f5db96fada18ac7c7086b00fc60a0",
-      "dirty": true
-    },
-    "aggregate_source_stable": true,
-    "aggregate_matches_completed_build": false
-  },
-  "host": {
-    "cpu_count": 18,
-    "load": [
-      110.91259765625,
-      138.818359375,
-      130.99609375
+    "availability_followups": [
+      {
+        "preflight": {
+          "unix": 1793885242.225284,
+          "latest": {
+            "c_compile": {
+              "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "mode": "parallel",
+              "requested": "parallel",
+              "units": 33
+            },
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+            "exit": 0,
+            "inputs": {
+              "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+              "dirty": true,
+              "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
+              "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
+            },
+            "request": {
+              "c_mode": "parallel",
+              "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
+              "id": "1b43c5971b0d41c2b49b36a83be6a96e"
+            },
+            "verified_inputs": {
+              "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+              "dirty": true,
+              "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
+              "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
+            }
+          },
+          "active_receipt": "Build/production-build/receipts/20261105-161719-ecc3f04f",
+          "active_inputs": {
+            "build_inputs_sha256": "163b554da4aa8d0c790f676e1a9ddbd94f2cb92ddfd7394a82b10ddfca761daf",
+            "dirty": true,
+            "head": "80704a86bb8a23688f96df7ca6fc55d1fc5d0e84",
+            "repository_sha256": "b5818bdd1856cade04ccc968b79871d72362edcacfee6ddbe691ebf7e5d17c95"
+          },
+          "source_proofs": [
+            {
+              "path": "url/percent_encoding.v",
+              "current_sha256": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2",
+              "matches_completed_head": false,
+              "matches_building_head": true
+            },
+            {
+              "path": "url/percent_encoding_bytes.v",
+              "current_sha256": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668",
+              "matches_completed_head": false,
+              "matches_building_head": true
+            },
+            {
+              "path": "url/ascii_membership.v",
+              "current_sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
+              "matches_completed_head": true,
+              "matches_building_head": true
+            },
+            {
+              "path": "domurl/url_input_parser.v",
+              "current_sha256": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792",
+              "matches_completed_head": false,
+              "matches_building_head": true
+            }
+          ],
+          "locks": {
+            "build": "busy",
+            "bundle": "busy"
+          },
+          "browser_captures": 0,
+          "manual_build_requests": 0,
+          "qualification": "Read-only follow-up. The completed bundle remains unproven for final owned source. The active build head contains the final owned files but is not a completed browser. No duplicate build request or browser measurement."
+        },
+        "evidence": {
+          "path": "docs/performance/chatgpt-percent-encoding-bytes-production-availability-r2-20261105-evidence.zip",
+          "sha256": "d461b9774adf746b0c88fd355b7fb7ccd1c0f6aa80c36f89f03617aa006af871",
+          "bytes": 3547,
+          "entries": 4
+        }
+      },
+      {
+        "preflight": {
+          "unix": 1793885499.907084,
+          "latest": {
+            "c_compile": {
+              "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "mode": "parallel",
+              "requested": "parallel",
+              "units": 33
+            },
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+            "exit": 0,
+            "inputs": {
+              "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+              "dirty": true,
+              "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
+              "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
+            },
+            "request": {
+              "c_mode": "parallel",
+              "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
+              "id": "1b43c5971b0d41c2b49b36a83be6a96e"
+            },
+            "verified_inputs": {
+              "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+              "dirty": true,
+              "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
+              "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
+            }
+          },
+          "observed_executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+          "locks": {
+            "build": "busy",
+            "bundle": "shared-lease-acquired"
+          },
+          "completed_attempts": [
+            {
+              "receipt": "Build/production-build/receipts/20261105-161719-ecc3f04f",
+              "result": {
+                "c_compile": {
+                  "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "mode": "parallel",
+                  "requested": "parallel",
+                  "units": 33
+                },
+                "exit": 0,
+                "inputs": {
+                  "build_inputs_sha256": "163b554da4aa8d0c790f676e1a9ddbd94f2cb92ddfd7394a82b10ddfca761daf",
+                  "dirty": true,
+                  "head": "80704a86bb8a23688f96df7ca6fc55d1fc5d0e84",
+                  "repository_sha256": "b5818bdd1856cade04ccc968b79871d72362edcacfee6ddbe691ebf7e5d17c95"
+                },
+                "request": {
+                  "c_mode": "parallel",
+                  "head": "80704a86bb8a23688f96df7ca6fc55d1fc5d0e84",
+                  "id": "81f1221b485642a5869b0e0e54f142da"
+                },
+                "superseded": true,
+                "verified_inputs": {
+                  "build_inputs_sha256": "40ce4ddb1ef184bbc2c8f9250ff05246d9fa5a3a02e5815c8db759795aee0705",
+                  "dirty": true,
+                  "head": "b0034615c0119127259714a5a27629a4faec2528",
+                  "repository_sha256": "f4d493d86497714d8096743337f2cd3b0b24c62b0dafd0f5a48ff4b9d936b629"
+                }
+              }
+            },
+            {
+              "receipt": "Build/production-build/receipts/20261105-162937-83d907e0",
+              "result": {
+                "exit": 1,
+                "inputs": {
+                  "build_inputs_sha256": "81e2132167f8da2eab31510be10b37befe01854302dc5c08950d24996db7878d",
+                  "dirty": true,
+                  "head": "b0034615c0119127259714a5a27629a4faec2528",
+                  "repository_sha256": "40a29a85b6f7917b3eb67b0b20131c331698fe96a9131c27b44d0655e12c938a"
+                },
+                "request": {
+                  "c_mode": "parallel",
+                  "head": "b0034615c0119127259714a5a27629a4faec2528",
+                  "id": "881633a8a31e40a9bee928eba3f2357e"
+                }
+              }
+            }
+          ],
+          "source_proofs": [
+            {
+              "path": "url/percent_encoding.v",
+              "current_sha256": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2",
+              "matches_completed_head": false
+            },
+            {
+              "path": "url/percent_encoding_bytes.v",
+              "current_sha256": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668",
+              "matches_completed_head": false
+            },
+            {
+              "path": "url/ascii_membership.v",
+              "current_sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
+              "matches_completed_head": true
+            },
+            {
+              "path": "domurl/url_input_parser.v",
+              "current_sha256": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792",
+              "matches_completed_head": false
+            }
+          ],
+          "host": {
+            "cpu_count": 18,
+            "load": [
+              110.82470703125,
+              124.404296875,
+              123.50927734375
+            ]
+          },
+          "browser_captures": 0,
+          "manual_build_requests": 0,
+          "qualification": "The next shared parallel build completed compilation/smoke but was superseded because source inputs changed. Its successor failed in native_graphite_canvas.h: SkCanvas::writePixels(SkPixmap,int,int) has no matching overload. That unrelated graphics file is actively modified by another session and is not edited here. The available completed receipt still cannot prove the final encoder/cache sources. No browser trial, app copy or duplicate production build request."
+        },
+        "evidence": {
+          "path": "docs/performance/chatgpt-percent-encoding-bytes-production-availability-r3-20261105-evidence.zip",
+          "sha256": "846216b2fd65e2552396fbb15f5124ce750a9b0c084b25ae3baa50f714ffc98c",
+          "bytes": 13010,
+          "entries": 10
+        },
+        "record_guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-percent-encoding-bytes-production-availability-20261105-r3/record.py"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 45301760,
+          "elapsed_seconds": 0.463029583,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      }
     ]
   },
-  "browser_captures": 0,
-  "manual_build_requests": 0,
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "4cd3e2050a02a7bead8658f1c6dbe031cb1dd446feddd757a31c3cb12fe45d35",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "3994d4fbad9b1fe355ed42d573eed17532a8d0e8e9b3256558cf70c2b5cb41a7",
+      "dirty": true,
+      "head": "bc2764e8487668ad6cb42f4a5b676ad158dfc778",
+      "repository_sha256": "c1e8d1c4c5983fde2f76b7250c18913989180d5a8fe9730852ea7dc46e92a6ec"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "bc2764e8487668ad6cb42f4a5b676ad158dfc778",
+      "id": "b1af187f47a4473488d71e539088467f"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "3994d4fbad9b1fe355ed42d573eed17532a8d0e8e9b3256558cf70c2b5cb41a7",
+      "dirty": true,
+      "head": "bc2764e8487668ad6cb42f4a5b676ad158dfc778",
+      "repository_sha256": "c1e8d1c4c5983fde2f76b7250c18913989180d5a8fe9730852ea7dc46e92a6ec"
+    }
+  },
+  "controller": {
+    "path": "docs/performance/chatgpt-percent-encoding-bytes-production-r1-controller-20261105.json",
+    "sha256": "9f223ce6793532333d0f02fb3e99e70d3bdfdbac6ce65de585428e8b2e9b039f",
+    "bytes": 3334
+  },
+  "diagnostic": {
+    "path": "docs/performance/chatgpt-percent-encoding-bytes-production-r1-diagnostic-20261105.json",
+    "sha256": "97458d3fc7b841b075428e2d5f6816e462be54c4ff801d574f2e96f994633f90",
+    "bytes": 1491082
+  },
+  "matched": {
+    "path": "docs/performance/chatgpt-percent-encoding-bytes-production-r1-matched-20261105.json",
+    "sha256": "fd96e7cbaac9653a220e22c334170a16500fd2fda539c5470887b4db0afc2242",
+    "bytes": 2182215
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-percent-encoding-bytes-production-20261105-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "13175": "Thu Nov  5 16:46:51 2026    ",
+      "13177": "Thu Nov  5 16:46:51 2026    ",
+      "14100": "Thu Nov  5 16:47:05 2026    ",
+      "14106": "Thu Nov  5 16:47:05 2026    ",
+      "14121": "Thu Nov  5 16:47:05 2026    ",
+      "14122": "Thu Nov  5 16:47:05 2026    ",
+      "14123": "Thu Nov  5 16:47:05 2026    ",
+      "14162": "Thu Nov  5 16:47:06 2026    ",
+      "14169": "Thu Nov  5 16:47:06 2026    ",
+      "14868": "Thu Nov  5 16:47:20 2026    ",
+      "14875": "Thu Nov  5 16:47:20 2026    ",
+      "14890": "Thu Nov  5 16:47:20 2026    ",
+      "14891": "Thu Nov  5 16:47:20 2026    ",
+      "14893": "Thu Nov  5 16:47:20 2026    ",
+      "15841": "Thu Nov  5 16:47:37 2026    ",
+      "15844": "Thu Nov  5 16:47:37 2026    ",
+      "18193": "Thu Nov  5 16:48:07 2026    ",
+      "18196": "Thu Nov  5 16:48:07 2026    ",
+      "19684": "Thu Nov  5 16:48:24 2026    ",
+      "19691": "Thu Nov  5 16:48:24 2026    ",
+      "19721": "Thu Nov  5 16:48:24 2026    ",
+      "19722": "Thu Nov  5 16:48:24 2026    ",
+      "19724": "Thu Nov  5 16:48:24 2026    ",
+      "19809": "Thu Nov  5 16:48:25 2026    ",
+      "19821": "Thu Nov  5 16:48:25 2026    ",
+      "21209": "Thu Nov  5 16:48:43 2026    ",
+      "21212": "Thu Nov  5 16:48:43 2026    ",
+      "21220": "Thu Nov  5 16:48:43 2026    ",
+      "21221": "Thu Nov  5 16:48:43 2026    ",
+      "21223": "Thu Nov  5 16:48:43 2026    ",
+      "22406": "Thu Nov  5 16:49:04 2026    ",
+      "22409": "Thu Nov  5 16:49:04 2026    ",
+      "23607": "Thu Nov  5 16:49:21 2026    ",
+      "23610": "Thu Nov  5 16:49:21 2026    ",
+      "24749": "Thu Nov  5 16:49:40 2026    ",
+      "24759": "Thu Nov  5 16:49:40 2026    ",
+      "24780": "Thu Nov  5 16:49:41 2026    ",
+      "24781": "Thu Nov  5 16:49:41 2026    ",
+      "24782": "Thu Nov  5 16:49:41 2026    ",
+      "26038": "Thu Nov  5 16:50:01 2026    ",
+      "26042": "Thu Nov  5 16:50:01 2026    ",
+      "26057": "Thu Nov  5 16:50:02 2026    ",
+      "26058": "Thu Nov  5 16:50:02 2026    ",
+      "26062": "Thu Nov  5 16:50:02 2026    ",
+      "26063": "Thu Nov  5 16:50:02 2026    ",
+      "27174": "Thu Nov  5 16:50:21 2026    ",
+      "27180": "Thu Nov  5 16:50:21 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1739374592,
+    "elapsed_seconds": 237.403154167,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "diagnostic_path_observations": [
+    {
+      "variant": "candidate",
+      "paths": {
+        "byte_encoder": true
+      }
+    },
+    {
+      "variant": "control",
+      "paths": {
+        "byte_encoder": false
+      }
+    }
+  ],
+  "matched_observations": [
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29659100317,
+        "upper": 29659100317
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          82.34716796875,
+          94.20654296875,
+          104.552734375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          83.728515625,
+          94.12890625,
+          104.4052734375
+        ]
+      },
+      "frame_checkpoints": 362
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16335176830,
+        "upper": 16358539431
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          83.68994140625,
+          93.7783203125,
+          104.16064453125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          84.6787109375,
+          93.6806640625,
+          104.005859375
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16270617550,
+        "upper": 16284160168
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          87.6669921875,
+          94.150390625,
+          104.11083984375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          96.462890625,
+          95.814453125,
+          104.5322265625
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29697680502,
+        "upper": 29697680502
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          97.16357421875,
+          95.9716796875,
+          104.48486328125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          100.302734375,
+          96.66748046875,
+          104.63134765625
+        ]
+      },
+      "frame_checkpoints": 363
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29246617410,
+        "upper": 29246617410
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          104.9228515625,
+          97.685546875,
+          104.94384765625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          110.7958984375,
+          99.177734375,
+          105.38818359375
+        ]
+      },
+      "frame_checkpoints": 359
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16096373487,
+        "upper": 16130525784
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          120.05126953125,
+          101.5419921875,
+          106.154296875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          124.7158203125,
+          103.17919921875,
+          106.68310546875
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16164397412,
+        "upper": 16177795845
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          128.66015625,
+          104.72265625,
+          107.18896484375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          132.75439453125,
+          106.353515625,
+          107.736328125
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29672904438,
+        "upper": 29672904438
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          132.45556640625,
+          107.12353515625,
+          107.9912109375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          131.82763671875,
+          107.8388671875,
+          108.23583984375
+        ]
+      },
+      "frame_checkpoints": 361
+    }
+  ],
+  "diagnostic_valid": true,
+  "matched_valid": true,
+  "broad_required": false,
+  "broad": null,
+  "focused_component": {
+    "path": "docs/performance/chatgpt-percent-encoding-bytes-20261105.json",
+    "sha256": "552af2fef4f639bbcb4eab07d652f3244bf61d0510373814f07dfd9809550923",
+    "bytes": 136627
+  },
+  "cache_correctness": {
+    "path": "docs/performance/url-input-slot-initialization-20261105.json",
+    "sha256": "9cc0ff2515022754df1e25ba094ce6a2d16654394f3c3866dbb7c903e3187204",
+    "bytes": 44106
+  },
   "acceptance": false,
   "page_instruction_credit": 0,
   "broad_cadence_before": 0,
   "broad_cadence_after": 0,
-  "qualification": "The latest completed executable contains the byte-encoder marker, but its recorded Git head does not contain the final owned source and its stable aggregate build-input hash differs from the current source. It cannot validate the final encoder plus nested cache initialization fix. Another shared build is active. No browser capture, page instruction comparison, copied app or separate manual production build was launched. Prepared eligibility/control/matched/broad scripts retain the same SOCKS fixture, original author bytes and unchanged references. Focused/component checks are complete in their separate receipts; no whole-page or Brave credit.",
-  "evidence": {
-    "path": "docs/performance/chatgpt-percent-encoding-bytes-production-pending-20261105-evidence.zip",
-    "sha256": "04e2fcd14311d8516fc902b7bcf363700b3da7f9c2bbe3e41ea8ea9896a600f9",
-    "bytes": 14215,
-    "entries": 5
-  },
-  "availability_followups": [
+  "browser_captures": 12,
+  "manual_build_requests": 0,
+  "evidence": [
     {
-      "preflight": {
-        "unix": 1793885242.225284,
-        "latest": {
-          "c_compile": {
-            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
-            "mode": "parallel",
-            "requested": "parallel",
-            "units": 33
-          },
-          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
-          "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
-          "exit": 0,
-          "inputs": {
-            "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
-            "dirty": true,
-            "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
-            "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
-          },
-          "request": {
-            "c_mode": "parallel",
-            "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
-            "id": "1b43c5971b0d41c2b49b36a83be6a96e"
-          },
-          "verified_inputs": {
-            "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
-            "dirty": true,
-            "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
-            "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
-          }
+      "path": "docs/performance/chatgpt-percent-encoding-bytes-production-20261105-evidence.zip",
+      "sha256": "dbe905b14e43fe2bef89fe3e532a715c5ed157ba6ea69967fc0c810527c8aa34",
+      "bytes": 1331904
+    },
+    {
+      "path": "docs/performance/chatgpt-percent-encoding-bytes-production-pending-20261105-evidence.zip",
+      "sha256": "04e2fcd14311d8516fc902b7bcf363700b3da7f9c2bbe3e41ea8ea9896a600f9",
+      "bytes": 14215
+    },
+    {
+      "path": "docs/performance/chatgpt-percent-encoding-bytes-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "243a1223f9971561fd93362b5b73ecdda4116b2bc881a5c383f5550fbc617c70",
+      "bytes": 1288966
+    },
+    {
+      "path": "docs/performance/chatgpt-percent-encoding-bytes-production-r1-matched-20261105-evidence.zip",
+      "sha256": "c390cc059a8479b533d2174a15ba7ed414a00bba316d7520cfdfc749851fd9b6",
+      "bytes": 2618388
+    },
+    {
+      "path": "docs/performance/chatgpt-percent-encoding-bytes-production-availability-r2-20261105-evidence.zip",
+      "sha256": "d461b9774adf746b0c88fd355b7fb7ccd1c0f6aa80c36f89f03617aa006af871",
+      "bytes": 3547
+    },
+    {
+      "path": "docs/performance/chatgpt-percent-encoding-bytes-production-availability-r3-20261105-evidence.zip",
+      "sha256": "846216b2fd65e2552396fbb15f5124ce750a9b0c084b25ae3baa50f714ffc98c",
+      "bytes": 13010
+    }
+  ],
+  "qualification": "The canonical latest completed bundle is pinned with a nonblocking shared publication lease. Source proof and separate execution diagnostics must pass before any attribution. Original SOCKS capture and author bytes, unchanged content/pixel references, private profiles/caches, unfocused five-second settle, 1024x768 viewport, backing scale 2 and exclusive-coalition creation-through-encoded-document-PNG counts remain in force. OS filesystem/shader caches are retained; GPU and outside-coalition service work are excluded. Four matched pairs provide two observations per encoder mode and do not meet seven-pair Brave acceptance. The nested cache initialization fix is enabled in both modes and earns no encoder attribution. Frame counts and host load qualify causal attribution. No live-site, isolated-rendering or scrolling claim. Every previous unavailable-bundle, superseded-build and compiler failure receipt remains retained.",
+  "inspected_build_attempts": [
+    {
+      "receipt": "Build/production-build/receipts/20261105-163036-60b1f5a1",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
         },
-        "active_receipt": "Build/production-build/receipts/20261105-161719-ecc3f04f",
-        "active_inputs": {
-          "build_inputs_sha256": "163b554da4aa8d0c790f676e1a9ddbd94f2cb92ddfd7394a82b10ddfca761daf",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "f844d0645162d26db9ec8c14f0657000f4cf6046065f8169a1682d777ebdc420",
           "dirty": true,
-          "head": "80704a86bb8a23688f96df7ca6fc55d1fc5d0e84",
-          "repository_sha256": "b5818bdd1856cade04ccc968b79871d72362edcacfee6ddbe691ebf7e5d17c95"
+          "head": "b0034615c0119127259714a5a27629a4faec2528",
+          "repository_sha256": "52ad5f68e1f3fbf0e8ca37eea49f1311002a90a2d9d6526e42ac5c5ae1f78810"
         },
-        "source_proofs": [
-          {
-            "path": "url/percent_encoding.v",
-            "current_sha256": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2",
-            "matches_completed_head": false,
-            "matches_building_head": true
-          },
-          {
-            "path": "url/percent_encoding_bytes.v",
-            "current_sha256": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668",
-            "matches_completed_head": false,
-            "matches_building_head": true
-          },
-          {
-            "path": "url/ascii_membership.v",
-            "current_sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
-            "matches_completed_head": true,
-            "matches_building_head": true
-          },
-          {
-            "path": "domurl/url_input_parser.v",
-            "current_sha256": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792",
-            "matches_completed_head": false,
-            "matches_building_head": true
-          }
-        ],
-        "locks": {
-          "build": "busy",
-          "bundle": "busy"
+        "request": {
+          "c_mode": "parallel",
+          "head": "b0034615c0119127259714a5a27629a4faec2528",
+          "id": "881633a8a31e40a9bee928eba3f2357e"
         },
-        "browser_captures": 0,
-        "manual_build_requests": 0,
-        "qualification": "Read-only follow-up. The completed bundle remains unproven for final owned source. The active build head contains the final owned files but is not a completed browser. No duplicate build request or browser measurement."
-      },
-      "evidence": {
-        "path": "docs/performance/chatgpt-percent-encoding-bytes-production-availability-r2-20261105-evidence.zip",
-        "sha256": "d461b9774adf746b0c88fd355b7fb7ccd1c0f6aa80c36f89f03617aa006af871",
-        "bytes": 3547,
-        "entries": 4
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "3994d4fbad9b1fe355ed42d573eed17532a8d0e8e9b3256558cf70c2b5cb41a7",
+          "dirty": true,
+          "head": "bc2764e8487668ad6cb42f4a5b676ad158dfc778",
+          "repository_sha256": "c1e8d1c4c5983fde2f76b7250c18913989180d5a8fe9730852ea7dc46e92a6ec"
+        }
       }
     },
     {
-      "preflight": {
-        "unix": 1793885499.907084,
-        "latest": {
-          "c_compile": {
-            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
-            "mode": "parallel",
-            "requested": "parallel",
-            "units": 33
-          },
-          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
-          "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
-          "exit": 0,
-          "inputs": {
-            "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
-            "dirty": true,
-            "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
-            "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
-          },
-          "request": {
-            "c_mode": "parallel",
-            "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
-            "id": "1b43c5971b0d41c2b49b36a83be6a96e"
-          },
-          "verified_inputs": {
-            "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
-            "dirty": true,
-            "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
-            "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
-          }
+      "receipt": "Build/production-build/receipts/20261105-163620-aaf4a013",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
         },
-        "observed_executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
-        "locks": {
-          "build": "busy",
-          "bundle": "shared-lease-acquired"
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "4cd3e2050a02a7bead8658f1c6dbe031cb1dd446feddd757a31c3cb12fe45d35",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "3994d4fbad9b1fe355ed42d573eed17532a8d0e8e9b3256558cf70c2b5cb41a7",
+          "dirty": true,
+          "head": "bc2764e8487668ad6cb42f4a5b676ad158dfc778",
+          "repository_sha256": "c1e8d1c4c5983fde2f76b7250c18913989180d5a8fe9730852ea7dc46e92a6ec"
         },
-        "completed_attempts": [
-          {
-            "receipt": "Build/production-build/receipts/20261105-161719-ecc3f04f",
-            "result": {
-              "c_compile": {
-                "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
-                "mode": "parallel",
-                "requested": "parallel",
-                "units": 33
-              },
-              "exit": 0,
-              "inputs": {
-                "build_inputs_sha256": "163b554da4aa8d0c790f676e1a9ddbd94f2cb92ddfd7394a82b10ddfca761daf",
-                "dirty": true,
-                "head": "80704a86bb8a23688f96df7ca6fc55d1fc5d0e84",
-                "repository_sha256": "b5818bdd1856cade04ccc968b79871d72362edcacfee6ddbe691ebf7e5d17c95"
-              },
-              "request": {
-                "c_mode": "parallel",
-                "head": "80704a86bb8a23688f96df7ca6fc55d1fc5d0e84",
-                "id": "81f1221b485642a5869b0e0e54f142da"
-              },
-              "superseded": true,
-              "verified_inputs": {
-                "build_inputs_sha256": "40ce4ddb1ef184bbc2c8f9250ff05246d9fa5a3a02e5815c8db759795aee0705",
-                "dirty": true,
-                "head": "b0034615c0119127259714a5a27629a4faec2528",
-                "repository_sha256": "f4d493d86497714d8096743337f2cd3b0b24c62b0dafd0f5a48ff4b9d936b629"
-              }
-            }
-          },
-          {
-            "receipt": "Build/production-build/receipts/20261105-162937-83d907e0",
-            "result": {
-              "exit": 1,
-              "inputs": {
-                "build_inputs_sha256": "81e2132167f8da2eab31510be10b37befe01854302dc5c08950d24996db7878d",
-                "dirty": true,
-                "head": "b0034615c0119127259714a5a27629a4faec2528",
-                "repository_sha256": "40a29a85b6f7917b3eb67b0b20131c331698fe96a9131c27b44d0655e12c938a"
-              },
-              "request": {
-                "c_mode": "parallel",
-                "head": "b0034615c0119127259714a5a27629a4faec2528",
-                "id": "881633a8a31e40a9bee928eba3f2357e"
-              }
-            }
-          }
-        ],
-        "source_proofs": [
-          {
-            "path": "url/percent_encoding.v",
-            "current_sha256": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2",
-            "matches_completed_head": false
-          },
-          {
-            "path": "url/percent_encoding_bytes.v",
-            "current_sha256": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668",
-            "matches_completed_head": false
-          },
-          {
-            "path": "url/ascii_membership.v",
-            "current_sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
-            "matches_completed_head": true
-          },
-          {
-            "path": "domurl/url_input_parser.v",
-            "current_sha256": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792",
-            "matches_completed_head": false
-          }
-        ],
-        "host": {
-          "cpu_count": 18,
-          "load": [
-            110.82470703125,
-            124.404296875,
-            123.50927734375
-          ]
+        "request": {
+          "c_mode": "parallel",
+          "head": "bc2764e8487668ad6cb42f4a5b676ad158dfc778",
+          "id": "b1af187f47a4473488d71e539088467f"
         },
-        "browser_captures": 0,
-        "manual_build_requests": 0,
-        "qualification": "The next shared parallel build completed compilation/smoke but was superseded because source inputs changed. Its successor failed in native_graphite_canvas.h: SkCanvas::writePixels(SkPixmap,int,int) has no matching overload. That unrelated graphics file is actively modified by another session and is not edited here. The available completed receipt still cannot prove the final encoder/cache sources. No browser trial, app copy or duplicate production build request."
-      },
-      "evidence": {
-        "path": "docs/performance/chatgpt-percent-encoding-bytes-production-availability-r3-20261105-evidence.zip",
-        "sha256": "846216b2fd65e2552396fbb15f5124ce750a9b0c084b25ae3baa50f714ffc98c",
-        "bytes": 13010,
-        "entries": 10
-      },
-      "record_guard": {
-        "command": [
-          "python3",
-          "Build/chatgpt-percent-encoding-bytes-production-availability-20261105-r3/record.py"
-        ],
-        "reason": "completed",
-        "child_exit_code": 0,
-        "adopted_processes": {},
-        "adoption_error": null,
-        "limit_bytes": 3221225472,
-        "observed_peak_rss_bytes": 45301760,
-        "elapsed_seconds": 0.463029583,
-        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        "verified_inputs": {
+          "build_inputs_sha256": "3994d4fbad9b1fe355ed42d573eed17532a8d0e8e9b3256558cf70c2b5cb41a7",
+          "dirty": true,
+          "head": "bc2764e8487668ad6cb42f4a5b676ad158dfc778",
+          "repository_sha256": "c1e8d1c4c5983fde2f76b7250c18913989180d5a8fe9730852ea7dc46e92a6ec"
+        }
       }
     }
-  ]
+  ],
+  "control": [
+    {
+      "lower": 29659100317,
+      "upper": 29659100317
+    },
+    {
+      "lower": 29672904438,
+      "upper": 29672904438
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 29697680502,
+      "upper": 29697680502
+    },
+    {
+      "lower": 29246617410,
+      "upper": 29246617410
+    }
+  ],
+  "control_median": 29666002377.5,
+  "candidate_median": 29472148956.0,
+  "observed_median_reduction_percent": 0.6534531314102063,
+  "conservative_page_instruction_reduction": -38580185,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-percent-encoding-bytes-production-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 44482560,
+    "elapsed_seconds": 1.2897410409999999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "host_contention": {
+    "cpu_count": 18,
+    "one_minute_load_range": [
+      82.34716796875,
+      132.75439453125
+    ],
+    "qualification": "Heavy and increasing host contention; frame checkpoints also vary. The overlapping cohort establishes no conservative page saving or isolated causal timing result."
+  },
+  "verification_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-percent-encoding-bytes-production-20261105-r1/verify.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 35209216,
+    "elapsed_seconds": 0.395890291,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
 }

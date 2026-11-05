@@ -2493,3 +2493,56 @@ copied and no browser trial is launched. The 48 focused jobs and component
 results remain valid in their separate receipts; final production comparison
 is pending. No whole-page saving is credited, broad-check cadence stays at
 zero, and the requested **5% advantage over Brave remains unmet**.
+
+
+## November 5: completed byte-encoder production comparison
+
+Completed parallel executable
+`4cd3e2050a02a7bead8658f1c6dbe031cb1dd446feddd757a31c3cb12fe45d35`
+contains the final byte encoder and nested URL-cache initialization fix. Its
+33-unit receipt has matching before/after aggregate build-input hashes. The
+four owned source blobs match the receipt's recorded Git head; available
+encoder disassembly is retained. A nonblocking shared publication lease pins
+the canonical bundle throughout the comparison. No app is copied or separate
+production build requested.
+
+All **12 fresh captures pass bootstrap, complete content and exact unchanged
+pixels**. Separate diagnostics show the byte-encoder marker only in the
+candidate. The matched captures disable that marker and keep the original
+rune encoder as the control. The cache initialization fix remains enabled in
+both variants and receives no encoder performance attribution.
+
+| Unprofiled frozen-page variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Rune control 1 | 29,659,100,317 |
+| Byte candidate 1 | 29,697,680,502 |
+| Byte candidate 2 | 29,246,617,410 |
+| Rune control 2 | 29,672,904,438 |
+| Control median | 29,666,002,377.5 |
+| Candidate median | 29,472,148,956 |
+
+The median is **0.653% lower**, but the observed ranges overlap: the conservative
+separation is **−38,580,185 instructions**. One candidate regresses against both
+controls. Therefore **no whole-page saving is credited**, no broad checkpoint
+is triggered and the cadence stays at zero. Frame checkpoints are 362/361 for
+controls and 363/359 for candidates. Host one-minute load rises from 82.35 to
+132.75 on 18 CPUs; that contention and frame variation further limit attribution.
+The four Brave references range from 16,096,373,487 to 16,358,539,431 observed
+instructions across their lower/upper bounds. Four matched pairs are below
+seven-pair acceptance and remain far from the requested 5% advantage.
+
+The original frozen SOCKS capture and author bytes, private profiles/caches,
+five-second unfocused settle, 1024×768 viewport, backing scale 2 and exclusive
+coalition creation-through-encoded-document-PNG scope remain unchanged. OS
+filesystem/shader caches are retained; GPU and outside-coalition service work
+are excluded. This is frozen-page evidence, with no live-site, isolated-rendering
+or scrolling claim. The outer guard exits zero, adopts 47 process identities
+without errors and peaks at 1,739,374,592 sampled RSS bytes under 12 GiB. Both
+phase controllers exit zero; the browser comparison driver's separate exit one
+records the unmet Brave gate.
+
+The [completed receipt](performance/chatgpt-percent-encoding-bytes-production-20261105.json)
+links counters, audits, PNGs, commands, source proofs, actual exits and six
+verified archives. It preserves the earlier pending receipt and all inspected
+superseded/failed build attempts. The publication lease is released. **The
+requested 5%-below-Brave target remains unmet**.
