@@ -744,12 +744,98 @@ int vox_graphite_canvas_read_direct(VoxGraphitePixelRegion const* views, int cou
     return 1;
 }
 
+// Stage all damaged rectangles in one Metal submission. getBytes() on a
+// compressed render target otherwise expands its tiles on the calling thread.
+// The GPU blit resolves that storage before one wait and an ordinary row copy.
+#ifdef VOX_TEST_CANVAS_BLIT_FAILURE
+static int vox_test_canvas_blit_fail_after = -1;
+static unsigned vox_test_canvas_blit_calls;
+#endif
+static int canvas_read_blit(VoxGraphitePixelRegion const* views, int count)
+{ @autoreleasepool {
+    auto* gpu = context();
+    id<MTLDevice> device = vox_shared_metal_device(canvas_recorder.get());
+    if (!gpu || !device || !gpu_frame_queue || !views || count <= 0
+        || count != int(canvas_tiles.size())) return 0;
+    NSMutableArray<id<MTLBuffer>>* buffers = [NSMutableArray array];
+    std::vector<id<MTLTexture>> textures;
+    std::vector<size_t> pitches;
+    size_t bytes = 0;
+    constexpr size_t limit = 64 * 1024 * 1024;
+    // Validate and allocate everything before submitting or touching output.
+    for (int index = 0; index < count; ++index) {
+        auto const& tile = canvas_tiles[size_t(index)];
+        auto const& view = views[index];
+        if (!view.pixels || view.x < 0 || view.y < 0 || view.width <= 0 || view.height <= 0
+            || view.width > tile.width || view.x > tile.width - view.width
+            || view.height > tile.height || view.y > tile.height - view.height
+            || view.width > INT_MAX / 4 || view.pitch < view.width * 4) return 0;
+        auto texture = vox_shared_metal_texture(tile.surface.get());
+        if (!texture) return 0;
+        size_t pitch = (size_t(view.width) * 4 + 255) & ~size_t(255);
+        if (pitch > (limit - bytes) / size_t(view.height)) return 0;
+        size_t length = pitch * size_t(view.height);
+        id<MTLBuffer> buffer = [device newBufferWithLength:length options:MTLResourceStorageModeShared];
+        if (!buffer) return 0;
+        [buffers addObject:buffer]; [buffer release];
+        textures.push_back(texture); pitches.push_back(pitch); bytes += length;
+#ifdef VOX_TEST_CANVAS_BLIT_FAILURE
+        if (vox_test_canvas_blit_fail_after == index) return 0;
+#endif
+    }
+    id<MTLCommandBuffer> commands = [gpu_frame_queue commandBuffer];
+    id<MTLBlitCommandEncoder> encoder = [commands blitCommandEncoder];
+    if (!encoder) return 0;
+    for (int index = 0; index < count; ++index) {
+        auto const& view = views[index];
+        [encoder copyFromTexture:textures[size_t(index)] sourceSlice:0 sourceLevel:0
+            sourceOrigin:MTLOriginMake(view.x, view.y, 0)
+            sourceSize:MTLSizeMake(view.width, view.height, 1)
+            toBuffer:buffers[index] destinationOffset:0 destinationBytesPerRow:pitches[size_t(index)]
+            destinationBytesPerImage:pitches[size_t(index)] * size_t(view.height)];
+    }
+    [encoder endEncoding];
+    auto recording = canvas_recorder->snap();
+    if (recording) {
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording = recording.get();
+        if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    }
+    // Both command buffers use VoxFrameMetalQueue; source writers commit first.
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kNo))) return 0;
+    [commands commit]; [commands waitUntilCompleted];
+    gpu->checkAsyncWorkCompletion();
+    if (commands.status != MTLCommandBufferStatusCompleted) return 0;
+    for (int index = 0; index < count; ++index) {
+        auto const& view = views[index];
+        auto* source = static_cast<uint8_t const*>(buffers[index].contents);
+        for (int row = 0; row < view.height; ++row)
+            std::memcpy(view.pixels + size_t(row) * view.pitch,
+                source + size_t(row) * pitches[size_t(index)], size_t(view.width) * 4);
+    }
+    if (std::getenv("VOX_GPU_CANVAS_BLIT_READBACK_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_GPU_BLIT_READBACK regions=%d bytes=%zu\n", count, bytes);
+#ifdef VOX_TEST_CANVAS_BLIT_FAILURE
+    ++vox_test_canvas_blit_calls;
+#endif
+    return 1;
+} }
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_read(VoxGraphitePixelRegion const* views, int count)
 {
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu || !views || count != int(canvas_tiles.size()) || !canvas_recorder) return 0;
+    for (int index = 0; index < count; ++index) {
+        auto const& tile = canvas_tiles[size_t(index)];
+        auto const& view = views[index];
+        if (!view.pixels || view.x < 0 || view.y < 0 || view.width <= 0 || view.height <= 0
+            || view.width > tile.width || view.x > tile.width - view.width
+            || view.height > tile.height || view.y > tile.height - view.height
+            || view.width > INT_MAX / 4 || view.pitch < view.width * 4) return 0;
+    }
+    if (std::getenv("VOX_GPU_CANVAS_BLIT_READBACK") && canvas_read_blit(views, count)) return 1;
     auto recording = canvas_recorder->snap();
     if (recording) {
         skgpu::graphite::InsertRecordingInfo insertion;
@@ -759,8 +845,6 @@ int vox_graphite_canvas_read(VoxGraphitePixelRegion const* views, int count)
     for (int index = 0; index < count; ++index) {
         auto const& tile = canvas_tiles[size_t(index)];
         auto const& view = views[index];
-        if (!view.pixels || view.x < 0 || view.y < 0 || view.width <= 0 || view.height <= 0
-            || view.x + view.width > tile.width || view.y + view.height > tile.height) return 0;
         std::unique_ptr<const SkImage::AsyncReadResult> result;
         auto info = canvas_info(view.width, view.height);
         vox_shared_readback(gpu, tile.surface.get(), info,
