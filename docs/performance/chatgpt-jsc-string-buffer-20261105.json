@@ -1,0 +1,1457 @@
+{
+  "complete": true,
+  "implementation_commit": "a91326b15",
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "browserjs/runtime_jsc.c.v": "a94aa5a1841af483238b250c50ddeebe899811478d42648d441755a338131e89",
+      "browserjs/jsc_string_buffer.v": "80bfc3f07bda5691a91c1575e2be6d6d8e16fd48e19398b8b87b878b7946eb0a",
+      "browserjs/jsc_string_buffer_test.v": "f16ecdb2e9e2a797d38e3a94f58c8a6c148b39b3cde43c29423a5c996416beea"
+    },
+    "source_after": {
+      "browserjs/runtime_jsc.c.v": "a94aa5a1841af483238b250c50ddeebe899811478d42648d441755a338131e89",
+      "browserjs/jsc_string_buffer.v": "80bfc3f07bda5691a91c1575e2be6d6d8e16fd48e19398b8b87b878b7946eb0a",
+      "browserjs/jsc_string_buffer_test.v": "f16ecdb2e9e2a797d38e3a94f58c8a6c148b39b3cde43c29423a5c996416beea"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/source_string_darwin_test.v,/Users/alex/code/vox2/browserjs/jsc_abi_test.v,/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v,/Users/alex/code/vox2/browserjs/temporary_host_input_test.v,/Users/alex/code/vox2/browserjs/temporary_host_reply_test.v,/Users/alex/code/vox2/browserjs/temporary_text_test.v,/Users/alex/code/vox2/browserjs/webidl_exception_values_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-prealloc",
+          "/Users/alex/code/vox2/browserjs/jsc_string_buffer_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793907712.200304,
+          "cpu_count": 18,
+          "load": [
+            3.26171875,
+            6.4013671875,
+            6.36474609375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907722.013077,
+          "load": [
+            3.3623046875,
+            6.3212890625,
+            6.33642578125
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907722.0196888,
+          "cpu_count": 18,
+          "load": [
+            3.3623046875,
+            6.3212890625,
+            6.33642578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907722.45975,
+          "load": [
+            3.3623046875,
+            6.3212890625,
+            6.33642578125
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "1",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907722.46634,
+          "cpu_count": 18,
+          "load": [
+            3.3623046875,
+            6.3212890625,
+            6.33642578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907722.656957,
+          "load": [
+            3.3623046875,
+            6.3212890625,
+            6.33642578125
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/source_string_darwin_test.v,/Users/alex/code/vox2/browserjs/jsc_abi_test.v,/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v,/Users/alex/code/vox2/browserjs/temporary_host_input_test.v,/Users/alex/code/vox2/browserjs/temporary_host_reply_test.v,/Users/alex/code/vox2/browserjs/temporary_text_test.v,/Users/alex/code/vox2/browserjs/webidl_exception_values_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-default",
+          "/Users/alex/code/vox2/browserjs/jsc_string_buffer_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793907722.663834,
+          "cpu_count": 18,
+          "load": [
+            3.3623046875,
+            6.3212890625,
+            6.33642578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907748.994407,
+          "load": [
+            3.802734375,
+            6.169921875,
+            6.279296875
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907749.0007622,
+          "cpu_count": 18,
+          "load": [
+            3.802734375,
+            6.169921875,
+            6.279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907749.5796978,
+          "load": [
+            3.658203125,
+            6.1005859375,
+            6.25390625
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "1",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907749.5860312,
+          "cpu_count": 18,
+          "load": [
+            3.658203125,
+            6.1005859375,
+            6.25390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907749.7789671,
+          "load": [
+            3.658203125,
+            6.1005859375,
+            6.25390625
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/source_string_darwin_test.v,/Users/alex/code/vox2/browserjs/jsc_abi_test.v,/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v,/Users/alex/code/vox2/browserjs/temporary_host_input_test.v,/Users/alex/code/vox2/browserjs/temporary_host_reply_test.v,/Users/alex/code/vox2/browserjs/temporary_text_test.v,/Users/alex/code/vox2/browserjs/webidl_exception_values_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-none",
+          "/Users/alex/code/vox2/browserjs/jsc_string_buffer_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793907749.785305,
+          "cpu_count": 18,
+          "load": [
+            3.658203125,
+            6.1005859375,
+            6.25390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907759.498571,
+          "load": [
+            3.79052734375,
+            6.04736328125,
+            6.23291015625
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907759.505462,
+          "cpu_count": 18,
+          "load": [
+            3.79052734375,
+            6.04736328125,
+            6.23291015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907759.947063,
+          "load": [
+            3.79052734375,
+            6.04736328125,
+            6.23291015625
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "1",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907759.953737,
+          "cpu_count": 18,
+          "load": [
+            3.79052734375,
+            6.04736328125,
+            6.23291015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907760.150749,
+          "load": [
+            3.79052734375,
+            6.04736328125,
+            6.23291015625
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/source_string_darwin_test.v,/Users/alex/code/vox2/browserjs/jsc_abi_test.v,/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v,/Users/alex/code/vox2/browserjs/temporary_host_input_test.v,/Users/alex/code/vox2/browserjs/temporary_host_reply_test.v,/Users/alex/code/vox2/browserjs/temporary_text_test.v,/Users/alex/code/vox2/browserjs/webidl_exception_values_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-sanitized",
+          "/Users/alex/code/vox2/browserjs/jsc_string_buffer_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793907760.157353,
+          "cpu_count": 18,
+          "load": [
+            3.79052734375,
+            6.04736328125,
+            6.23291015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907797.220775,
+          "load": [
+            3.150390625,
+            5.63134765625,
+            6.072265625
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907797.227539,
+          "cpu_count": 18,
+          "load": [
+            3.150390625,
+            5.63134765625,
+            6.072265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907797.906379,
+          "load": [
+            3.150390625,
+            5.63134765625,
+            6.072265625
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "1",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793907797.9130611,
+          "cpu_count": 18,
+          "load": [
+            3.150390625,
+            5.63134765625,
+            6.072265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793907798.234449,
+          "load": [
+            3.150390625,
+            5.63134765625,
+            6.072265625
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-jsc-string-buffer-20261105-r2/component": "accb16bb68c5009316bd1e36a447c4d59f801f3c95189f44c28fb2f43f906a85",
+      "Build/chatgpt-jsc-string-buffer-20261105-r2/component_test.v": "d1856f6b46ba8f2f6b6968380aea054f7b6d02c47ce26a8ad11add789849bfa3",
+      "browserjs/runtime_jsc.c.v": "a94aa5a1841af483238b250c50ddeebe899811478d42648d441755a338131e89",
+      "browserjs/jsc_string_buffer.v": "80bfc3f07bda5691a91c1575e2be6d6d8e16fd48e19398b8b87b878b7946eb0a",
+      "browserjs/jsc_string_buffer_test.v": "f16ecdb2e9e2a797d38e3a94f58c8a6c148b39b3cde43c29423a5c996416beea"
+    },
+    "inputs_after": {
+      "Build/chatgpt-jsc-string-buffer-20261105-r2/component": "accb16bb68c5009316bd1e36a447c4d59f801f3c95189f44c28fb2f43f906a85",
+      "Build/chatgpt-jsc-string-buffer-20261105-r2/component_test.v": "d1856f6b46ba8f2f6b6968380aea054f7b6d02c47ce26a8ad11add789849bfa3",
+      "browserjs/runtime_jsc.c.v": "a94aa5a1841af483238b250c50ddeebe899811478d42648d441755a338131e89",
+      "browserjs/jsc_string_buffer.v": "80bfc3f07bda5691a91c1575e2be6d6d8e16fd48e19398b8b87b878b7946eb0a",
+      "browserjs/jsc_string_buffer_test.v": "f16ecdb2e9e2a797d38e3a94f58c8a6c148b39b3cde43c29423a5c996416beea"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "1",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793907914.858753,
+          "cpu_count": 18,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793907915.419895,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "empty",
+            "instructions": 19982850,
+            "checksum": 0,
+            "iterations": 20000,
+            "capacity": 1
+          },
+          {
+            "scene": "short-ascii",
+            "instructions": 39723772,
+            "checksum": 400000,
+            "iterations": 20000,
+            "capacity": 61
+          },
+          {
+            "scene": "query-envelope",
+            "instructions": 56301141,
+            "checksum": 1460000,
+            "iterations": 20000,
+            "capacity": 220
+          },
+          {
+            "scene": "nul-unicode",
+            "instructions": 40367046,
+            "checksum": 200000,
+            "iterations": 20000,
+            "capacity": 16
+          },
+          {
+            "scene": "inline-boundary",
+            "instructions": 60256030,
+            "checksum": 1700000,
+            "iterations": 20000,
+            "capacity": 256
+          },
+          {
+            "scene": "heap-boundary",
+            "instructions": 60817732,
+            "checksum": 1720000,
+            "iterations": 20000,
+            "capacity": 259
+          },
+          {
+            "scene": "long-fallback",
+            "instructions": 170610726,
+            "checksum": 13312000,
+            "iterations": 2000,
+            "capacity": 15361
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793907915.447666,
+          "cpu_count": 18,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793907915.6406982,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "empty",
+            "instructions": 16360362,
+            "checksum": 0,
+            "iterations": 20000,
+            "capacity": 1
+          },
+          {
+            "scene": "short-ascii",
+            "instructions": 36060504,
+            "checksum": 400000,
+            "iterations": 20000,
+            "capacity": 61
+          },
+          {
+            "scene": "query-envelope",
+            "instructions": 51008483,
+            "checksum": 1460000,
+            "iterations": 20000,
+            "capacity": 220
+          },
+          {
+            "scene": "nul-unicode",
+            "instructions": 36602719,
+            "checksum": 200000,
+            "iterations": 20000,
+            "capacity": 16
+          },
+          {
+            "scene": "inline-boundary",
+            "instructions": 54669986,
+            "checksum": 1700000,
+            "iterations": 20000,
+            "capacity": 256
+          },
+          {
+            "scene": "heap-boundary",
+            "instructions": 60766692,
+            "checksum": 1720000,
+            "iterations": 20000,
+            "capacity": 259
+          },
+          {
+            "scene": "long-fallback",
+            "instructions": 170649386,
+            "checksum": 13312000,
+            "iterations": 2000,
+            "capacity": 15361
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793907915.668288,
+          "cpu_count": 18,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793907915.876529,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "empty",
+            "instructions": 16360288,
+            "checksum": 0,
+            "iterations": 20000,
+            "capacity": 1
+          },
+          {
+            "scene": "short-ascii",
+            "instructions": 36051897,
+            "checksum": 400000,
+            "iterations": 20000,
+            "capacity": 61
+          },
+          {
+            "scene": "query-envelope",
+            "instructions": 51022624,
+            "checksum": 1460000,
+            "iterations": 20000,
+            "capacity": 220
+          },
+          {
+            "scene": "nul-unicode",
+            "instructions": 36602744,
+            "checksum": 200000,
+            "iterations": 20000,
+            "capacity": 16
+          },
+          {
+            "scene": "inline-boundary",
+            "instructions": 54630169,
+            "checksum": 1700000,
+            "iterations": 20000,
+            "capacity": 256
+          },
+          {
+            "scene": "heap-boundary",
+            "instructions": 60842657,
+            "checksum": 1720000,
+            "iterations": 20000,
+            "capacity": 259
+          },
+          {
+            "scene": "long-fallback",
+            "instructions": 170634690,
+            "checksum": 13312000,
+            "iterations": 2000,
+            "capacity": 15361
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "1",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793907915.905097,
+          "cpu_count": 18,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793907916.0982301,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "empty",
+            "instructions": 19939611,
+            "checksum": 0,
+            "iterations": 20000,
+            "capacity": 1
+          },
+          {
+            "scene": "short-ascii",
+            "instructions": 39728949,
+            "checksum": 400000,
+            "iterations": 20000,
+            "capacity": 61
+          },
+          {
+            "scene": "query-envelope",
+            "instructions": 56324823,
+            "checksum": 1460000,
+            "iterations": 20000,
+            "capacity": 220
+          },
+          {
+            "scene": "nul-unicode",
+            "instructions": 40340524,
+            "checksum": 200000,
+            "iterations": 20000,
+            "capacity": 16
+          },
+          {
+            "scene": "inline-boundary",
+            "instructions": 60250855,
+            "checksum": 1700000,
+            "iterations": 20000,
+            "capacity": 256
+          },
+          {
+            "scene": "heap-boundary",
+            "instructions": 60869090,
+            "checksum": 1720000,
+            "iterations": 20000,
+            "capacity": 259
+          },
+          {
+            "scene": "long-fallback",
+            "instructions": 170664780,
+            "checksum": 13312000,
+            "iterations": 2000,
+            "capacity": 15361
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793907916.125696,
+          "cpu_count": 18,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793907916.3195431,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "empty",
+            "instructions": 16480356,
+            "checksum": 0,
+            "iterations": 20000,
+            "capacity": 1
+          },
+          {
+            "scene": "short-ascii",
+            "instructions": 36173467,
+            "checksum": 400000,
+            "iterations": 20000,
+            "capacity": 61
+          },
+          {
+            "scene": "query-envelope",
+            "instructions": 51125336,
+            "checksum": 1460000,
+            "iterations": 20000,
+            "capacity": 220
+          },
+          {
+            "scene": "nul-unicode",
+            "instructions": 36722723,
+            "checksum": 200000,
+            "iterations": 20000,
+            "capacity": 16
+          },
+          {
+            "scene": "inline-boundary",
+            "instructions": 54786849,
+            "checksum": 1700000,
+            "iterations": 20000,
+            "capacity": 256
+          },
+          {
+            "scene": "heap-boundary",
+            "instructions": 60758002,
+            "checksum": 1720000,
+            "iterations": 20000,
+            "capacity": 259
+          },
+          {
+            "scene": "long-fallback",
+            "instructions": 170576248,
+            "checksum": 13312000,
+            "iterations": 2000,
+            "capacity": 15361
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-jsc-string-buffer-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_HEAP_JSC_STRING_BUFFER": "1",
+          "VOX_INLINE_JSC_STRING_BUFFER_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793907916.347054,
+          "cpu_count": 18,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793907916.539236,
+          "load": [
+            16.20361328125,
+            9.1103515625,
+            7.3642578125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "empty",
+            "instructions": 19965211,
+            "checksum": 0,
+            "iterations": 20000,
+            "capacity": 1
+          },
+          {
+            "scene": "short-ascii",
+            "instructions": 39720989,
+            "checksum": 400000,
+            "iterations": 20000,
+            "capacity": 61
+          },
+          {
+            "scene": "query-envelope",
+            "instructions": 56277247,
+            "checksum": 1460000,
+            "iterations": 20000,
+            "capacity": 220
+          },
+          {
+            "scene": "nul-unicode",
+            "instructions": 40356659,
+            "checksum": 200000,
+            "iterations": 20000,
+            "capacity": 16
+          },
+          {
+            "scene": "inline-boundary",
+            "instructions": 60226460,
+            "checksum": 1700000,
+            "iterations": 20000,
+            "capacity": 256
+          },
+          {
+            "scene": "heap-boundary",
+            "instructions": 60794393,
+            "checksum": 1720000,
+            "iterations": 20000,
+            "capacity": 259
+          },
+          {
+            "scene": "long-fallback",
+            "instructions": 170488414,
+            "checksum": 13312000,
+            "iterations": 2000,
+            "capacity": 15361
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "empty": {
+        "control": [
+          19982850,
+          19939611
+        ],
+        "candidate": [
+          16360362,
+          16360288
+        ],
+        "control_median": 19961230.5,
+        "candidate_median": 16360325.0,
+        "reduction_percent": 18.03949661319727,
+        "conservative_component_reduction": 3579249,
+        "checksum": 0,
+        "iterations": 20000,
+        "capacity": 1
+      },
+      "short-ascii": {
+        "control": [
+          39723772,
+          39728949
+        ],
+        "candidate": [
+          36060504,
+          36051897
+        ],
+        "control_median": 39726360.5,
+        "candidate_median": 36056200.5,
+        "reduction_percent": 9.238601155018971,
+        "conservative_component_reduction": 3663268,
+        "checksum": 400000,
+        "iterations": 20000,
+        "capacity": 61
+      },
+      "query-envelope": {
+        "control": [
+          56301141,
+          56324823
+        ],
+        "candidate": [
+          51008483,
+          51022624
+        ],
+        "control_median": 56312982.0,
+        "candidate_median": 51015553.5,
+        "reduction_percent": 9.407117705114604,
+        "conservative_component_reduction": 5278517,
+        "checksum": 1460000,
+        "iterations": 20000,
+        "capacity": 220
+      },
+      "nul-unicode": {
+        "control": [
+          40367046,
+          40340524
+        ],
+        "candidate": [
+          36602719,
+          36602744
+        ],
+        "control_median": 40353785.0,
+        "candidate_median": 36602731.5,
+        "reduction_percent": 9.295419252493911,
+        "conservative_component_reduction": 3737780,
+        "checksum": 200000,
+        "iterations": 20000,
+        "capacity": 16
+      },
+      "inline-boundary": {
+        "control": [
+          60256030,
+          60250855
+        ],
+        "candidate": [
+          54669986,
+          54630169
+        ],
+        "control_median": 60253442.5,
+        "candidate_median": 54650077.5,
+        "reduction_percent": 9.299659517379443,
+        "conservative_component_reduction": 5580869,
+        "checksum": 1700000,
+        "iterations": 20000,
+        "capacity": 256
+      },
+      "heap-boundary": {
+        "control": [
+          60817732,
+          60869090
+        ],
+        "candidate": [
+          60766692,
+          60842657
+        ],
+        "control_median": 60843411.0,
+        "candidate_median": 60804674.5,
+        "reduction_percent": 0.06366589144714455,
+        "conservative_component_reduction": -24925,
+        "checksum": 1720000,
+        "iterations": 20000,
+        "capacity": 259
+      },
+      "long-fallback": {
+        "control": [
+          170610726,
+          170664780
+        ],
+        "candidate": [
+          170649386,
+          170634690
+        ],
+        "control_median": 170637753.0,
+        "candidate_median": 170642038.0,
+        "reduction_percent": -0.002511167619512664,
+        "conservative_component_reduction": -38660,
+        "checksum": 13312000,
+        "iterations": 2000,
+        "capacity": 15361
+      }
+    },
+    "qualification": "Unprofiled current-process instruction intervals include actual JSC-to-V conversion and complete output comparisons. Setup and teardown are excluded; reference bytes and checksums are identical in every observation. Canonical V sources compile with production source conditions, C O3, explicit runtime overlay and poisoned preallocation; this component executable is a single C unit and does not represent the parallel production browser. Four matched control/candidate/candidate/control observations retain every result, followed by separate path diagnostics. No whole-page, live-site, scrolling or Brave credit."
+  },
+  "runner": {
+    "complete": true,
+    "runners": {
+      "checks-default.c": {
+        "sha256": "eff6d55d6945e8c510525b23b71bd00e98d1492efe53dcbba6ae7e5b53c228db",
+        "tests": [
+          "test_jsc_string_buffer_matches_the_heap_path_for_every_utf16_unit_and_size_boundary",
+          "test_jsc_string_buffer_result_owns_exact_bytes_after_stack_reuse_and_context_release",
+          "test_jsc_string_buffer_uses_the_callers_arena_without_a_temporary_heap_array",
+          "test_native_source_strings_match_the_existing_decoder_and_empty_string_identity",
+          "test_native_source_strings_own_their_storage_after_the_input_is_released",
+          "test_native_source_conversion_preserves_actual_script_nuls_and_supplementary_text",
+          "test_jsc_abi_exception_outputs_preserve_identity_and_accept_null",
+          "test_jsc_abi_promise_output_functions_resolve_and_reject",
+          "test_jsc_abi_typed_array_outputs_preserve_view_bounds",
+          "test_jsc_abi_error_and_function_argument_arrays_keep_order",
+          "test_jsc_abi_value_callbacks_keep_large_argument_lists_and_exceptions",
+          "test_jsc_abi_string_callback_preserves_data_and_recovers_after_errors",
+          "test_host_function_executes_synchronously_and_preserves_string_data",
+          "test_host_functions_keep_context_identity_and_resume_after_exception",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_temporary_input_can_supply_the_reply_and_publish_owned_native_state",
+          "test_temporary_input_conversion_keeps_object_coercion_and_reentry_outside_scratch",
+          "test_temporary_input_exception_is_copied_before_retirement_and_host_resumes",
+          "test_temporary_input_conversion_does_not_retain_request_sized_buffers",
+          "test_temporary_host_reply_is_copied_before_its_storage_retires",
+          "test_temporary_host_reply_exception_preserves_the_runtime_and_other_hosts",
+          "test_temporary_evaluation_text_keeps_script_and_coercion_side_effects_owned",
+          "test_temporary_evaluation_preserves_errors_and_closed_runtime_checks",
+          "test_temporary_evaluated_text_retires_the_native_conversion_buffers",
+          "test_webidl_callback_throw_and_promise_reaction_retain_actual_jsc_value"
+        ],
+        "buffer_body_sha256": "b0540cec20e5cbd15c2aedbd1b33c8311fa874893d70455e442bf40d2e9732c3"
+      },
+      "checks-sanitized.c": {
+        "sha256": "be2ddf3ee3957bc186914e9fcaf688260ac7b5aa04459508770bf7a920296622",
+        "tests": [
+          "test_jsc_string_buffer_matches_the_heap_path_for_every_utf16_unit_and_size_boundary",
+          "test_jsc_string_buffer_result_owns_exact_bytes_after_stack_reuse_and_context_release",
+          "test_jsc_string_buffer_uses_the_callers_arena_without_a_temporary_heap_array",
+          "test_native_source_strings_match_the_existing_decoder_and_empty_string_identity",
+          "test_native_source_strings_own_their_storage_after_the_input_is_released",
+          "test_native_source_conversion_preserves_actual_script_nuls_and_supplementary_text",
+          "test_jsc_abi_exception_outputs_preserve_identity_and_accept_null",
+          "test_jsc_abi_promise_output_functions_resolve_and_reject",
+          "test_jsc_abi_typed_array_outputs_preserve_view_bounds",
+          "test_jsc_abi_error_and_function_argument_arrays_keep_order",
+          "test_jsc_abi_value_callbacks_keep_large_argument_lists_and_exceptions",
+          "test_jsc_abi_string_callback_preserves_data_and_recovers_after_errors",
+          "test_host_function_executes_synchronously_and_preserves_string_data",
+          "test_host_functions_keep_context_identity_and_resume_after_exception",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_temporary_input_can_supply_the_reply_and_publish_owned_native_state",
+          "test_temporary_input_conversion_keeps_object_coercion_and_reentry_outside_scratch",
+          "test_temporary_input_exception_is_copied_before_retirement_and_host_resumes",
+          "test_temporary_input_conversion_does_not_retain_request_sized_buffers",
+          "test_temporary_host_reply_is_copied_before_its_storage_retires",
+          "test_temporary_host_reply_exception_preserves_the_runtime_and_other_hosts",
+          "test_temporary_evaluation_text_keeps_script_and_coercion_side_effects_owned",
+          "test_temporary_evaluation_preserves_errors_and_closed_runtime_checks",
+          "test_temporary_evaluated_text_retires_the_native_conversion_buffers",
+          "test_webidl_callback_throw_and_promise_reaction_retain_actual_jsc_value"
+        ],
+        "buffer_body_sha256": "8009fb242ea433ed90e35e7c5cbaf03502b0ee1a88f3414b4529a262a5ec9c3b"
+      },
+      "checks-prealloc.c": {
+        "sha256": "cd8812568a38fea6e71a12e4055063043d6dd30c1df5a30d15a0d7442adb8a82",
+        "tests": [
+          "test_jsc_string_buffer_matches_the_heap_path_for_every_utf16_unit_and_size_boundary",
+          "test_jsc_string_buffer_result_owns_exact_bytes_after_stack_reuse_and_context_release",
+          "test_jsc_string_buffer_uses_the_callers_arena_without_a_temporary_heap_array",
+          "test_native_source_strings_match_the_existing_decoder_and_empty_string_identity",
+          "test_native_source_strings_own_their_storage_after_the_input_is_released",
+          "test_native_source_conversion_preserves_actual_script_nuls_and_supplementary_text",
+          "test_jsc_abi_exception_outputs_preserve_identity_and_accept_null",
+          "test_jsc_abi_promise_output_functions_resolve_and_reject",
+          "test_jsc_abi_typed_array_outputs_preserve_view_bounds",
+          "test_jsc_abi_error_and_function_argument_arrays_keep_order",
+          "test_jsc_abi_value_callbacks_keep_large_argument_lists_and_exceptions",
+          "test_jsc_abi_string_callback_preserves_data_and_recovers_after_errors",
+          "test_host_function_executes_synchronously_and_preserves_string_data",
+          "test_host_functions_keep_context_identity_and_resume_after_exception",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_temporary_input_can_supply_the_reply_and_publish_owned_native_state",
+          "test_temporary_input_conversion_keeps_object_coercion_and_reentry_outside_scratch",
+          "test_temporary_input_exception_is_copied_before_retirement_and_host_resumes",
+          "test_temporary_input_conversion_does_not_retain_request_sized_buffers",
+          "test_temporary_host_reply_is_copied_before_its_storage_retires",
+          "test_temporary_host_reply_exception_preserves_the_runtime_and_other_hosts",
+          "test_temporary_evaluation_text_keeps_script_and_coercion_side_effects_owned",
+          "test_temporary_evaluation_preserves_errors_and_closed_runtime_checks",
+          "test_temporary_evaluated_text_retires_the_native_conversion_buffers",
+          "test_webidl_callback_throw_and_promise_reaction_retain_actual_jsc_value"
+        ],
+        "buffer_body_sha256": "05c4008413539e6443e9c93d56393e9057341de6033511d86b496b23436f9e45"
+      },
+      "checks-none.c": {
+        "sha256": "c653612f810a3a1fbb799a64f324dfb6ae6399315b12e628d69d31666a5e2357",
+        "tests": [
+          "test_jsc_string_buffer_matches_the_heap_path_for_every_utf16_unit_and_size_boundary",
+          "test_jsc_string_buffer_result_owns_exact_bytes_after_stack_reuse_and_context_release",
+          "test_jsc_string_buffer_uses_the_callers_arena_without_a_temporary_heap_array",
+          "test_native_source_strings_match_the_existing_decoder_and_empty_string_identity",
+          "test_native_source_strings_own_their_storage_after_the_input_is_released",
+          "test_native_source_conversion_preserves_actual_script_nuls_and_supplementary_text",
+          "test_jsc_abi_exception_outputs_preserve_identity_and_accept_null",
+          "test_jsc_abi_promise_output_functions_resolve_and_reject",
+          "test_jsc_abi_typed_array_outputs_preserve_view_bounds",
+          "test_jsc_abi_error_and_function_argument_arrays_keep_order",
+          "test_jsc_abi_value_callbacks_keep_large_argument_lists_and_exceptions",
+          "test_jsc_abi_string_callback_preserves_data_and_recovers_after_errors",
+          "test_host_function_executes_synchronously_and_preserves_string_data",
+          "test_host_functions_keep_context_identity_and_resume_after_exception",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_temporary_input_can_supply_the_reply_and_publish_owned_native_state",
+          "test_temporary_input_conversion_keeps_object_coercion_and_reentry_outside_scratch",
+          "test_temporary_input_exception_is_copied_before_retirement_and_host_resumes",
+          "test_temporary_input_conversion_does_not_retain_request_sized_buffers",
+          "test_temporary_host_reply_is_copied_before_its_storage_retires",
+          "test_temporary_host_reply_exception_preserves_the_runtime_and_other_hosts",
+          "test_temporary_evaluation_text_keeps_script_and_coercion_side_effects_owned",
+          "test_temporary_evaluation_preserves_errors_and_closed_runtime_checks",
+          "test_temporary_evaluated_text_retires_the_native_conversion_buffers",
+          "test_webidl_callback_throw_and_promise_reaction_retain_actual_jsc_value"
+        ],
+        "buffer_body_sha256": "e3357b66575a5674675fd3f17abe1088ac4bb004da89aa4e4cffe7b8b71ff56d"
+      }
+    },
+    "test_calls_per_execution": 30,
+    "executions": 8,
+    "total_test_calls": 240
+  },
+  "rejected_selection": {
+    "path": "Build/chatgpt-jsc-string-buffer-20261105-r1",
+    "candidate_exit": 1,
+    "control_exit": 1,
+    "reason": "Unrelated runtime_json_test.v:63 expects script execution depth 1 but observes 2 in both variants. Failure retained; final focused selection omits this unrelated test without changing it."
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-jsc-string-buffer-20261105-evidence.zip",
+    "sha256": "1aa22949d569fb73c6f2d81ba648683c55da41a5aeccc9c98e1741f7ce009a35",
+    "bytes": 39182842,
+    "entries": 75
+  },
+  "removed_verified_generated_c": [
+    {
+      "path": "Build/chatgpt-jsc-string-buffer-20261105-r1/checks-prealloc.c",
+      "sha256": "9968b088b0fdf093ae1c3cbaa27c2295344bd9afa73b4aef1afd6e05bbc56b95",
+      "bytes": 26207411
+    },
+    {
+      "path": "Build/chatgpt-jsc-string-buffer-20261105-r2/component.c",
+      "sha256": "56a36cc16ea16cf3eddb12073a4652ee594515e43d8c46c4b544f42dbc5b28da",
+      "bytes": 170787203
+    },
+    {
+      "path": "Build/chatgpt-jsc-string-buffer-20261105-r2/checks-default.c",
+      "sha256": "eff6d55d6945e8c510525b23b71bd00e98d1492efe53dcbba6ae7e5b53c228db",
+      "bytes": 23927545
+    },
+    {
+      "path": "Build/chatgpt-jsc-string-buffer-20261105-r2/checks-sanitized.c",
+      "sha256": "be2ddf3ee3957bc186914e9fcaf688260ac7b5aa04459508770bf7a920296622",
+      "bytes": 24638873
+    },
+    {
+      "path": "Build/chatgpt-jsc-string-buffer-20261105-r2/checks-prealloc.c",
+      "sha256": "cd8812568a38fea6e71a12e4055063043d6dd30c1df5a30d15a0d7442adb8a82",
+      "bytes": 24635458
+    },
+    {
+      "path": "Build/chatgpt-jsc-string-buffer-20261105-r2/checks-none.c",
+      "sha256": "c653612f810a3a1fbb799a64f324dfb6ae6399315b12e628d69d31666a5e2357",
+      "bytes": 23918295
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_cadence": 0,
+  "qualification": "Focused correctness and component evidence only. The result retains all failed attempts and fallback regressions; no page, Brave, live-site or scrolling claim. Raw generated C is authenticated in the content-addressed archive before deleting redundant Build outputs."
+}

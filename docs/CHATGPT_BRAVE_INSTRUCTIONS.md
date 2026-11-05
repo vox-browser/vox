@@ -3629,3 +3629,55 @@ authenticate raw rows, all development attempts, source revisions, commands,
 guards, original PNGs and audits in content-addressed ZIP archives. Whole-page
 credit and the broad cadence remain zero. The 5%-below-Brave target remains
 unmet; no live-site, rendering-time or scrolling improvement is claimed.
+
+### Bounded stack storage for JSC string conversion (2026-11-05)
+
+`a91326b15` avoids a temporary heap array when JavaScriptCore reports that a
+string's maximum UTF-8 C-string capacity fits in 256 bytes. JSC writes into a
+fixed stack buffer; the exact result is copied into the caller's allocation
+owner before returning. Longer strings retain the old heap-array conversion.
+The returned string has no stack dependency or extra retained capacity.
+ToString ordering, original conversion failures, embedded NULs and JSC's
+Unicode handling are unchanged. There is no retained cache or JS root.
+
+All 12 final focused compile/runtime jobs pass. Generated runners authenticate
+30 selected test calls in candidate/control under ordinary GC, no-GC, poisoned
+preallocation and ASan/UBSan: 240 function executions. Three new cases compare
+every UTF-16 unit, empty and large values, NULs, surrogates and the 85/86-unit
+capacity boundary against an independent copy of the old path. They also verify
+results after stack reuse and context release and the caller-arena allocation.
+Existing native ABI, raw-value, coercion/reentry, temporary input/reply and
+exception ownership tests pass in the same selection. Generated C confirms
+`u8 buffer[256]` on the stack and a cloned result before `JSStringRelease`.
+
+An earlier broader selection failed `runtime_json_test.v:63`: script depth is
+2 where the test expects 1. The same executable with the original heap control
+fails identically. Both failures are retained; this unrelated test was omitted
+from the final focused selection without changing its assertion.
+
+The unprofiled component uses one executable with production source conditions,
+C O3 and poisoned preallocation. Setup/teardown are excluded; each measured
+conversion compares every output byte and contributes to an invariant checksum.
+Two observations per variant run control/candidate/candidate/control, followed
+by separate path diagnostics. Small scenes use 20,000 conversions and the long
+fallback uses 2,000. This single-C-unit component differs from the parallel
+production browser and receives no page credit.
+
+| Component median | Control instructions | Candidate instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| empty | 19,961,230.5 | 16,360,325.0 | 18.0395% |
+| short-ascii | 39,726,360.5 | 36,056,200.5 | 9.2386% |
+| query-envelope | 56,312,982.0 | 51,015,553.5 | 9.4071% |
+| nul-unicode | 40,353,785.0 | 36,602,731.5 | 9.2954% |
+| inline-boundary | 60,253,442.5 | 54,650,077.5 | 9.2997% |
+| heap-boundary | 60,843,411.0 | 60,804,674.5 | 0.0637% |
+| long-fallback | 170,637,753.0 | 170,642,038.0 | -0.0025% |
+
+The heap-boundary ranges overlap; the long fallback has a 0.0025% higher median.
+Neither is represented as an improvement. The
+[focused/component receipt](performance/chatgpt-jsc-string-buffer-20261105.json)
+links all raw counts, failed selections, commands, guards, source and generated
+runners. Its content-addressed archive is fully verified before removing
+294,114,785 bytes of redundant generated C from Build. Whole-page credit and
+the broad cadence remain zero pending the production comparison below. The
+5%-below-Brave target remains unmet.
