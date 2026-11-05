@@ -1207,6 +1207,56 @@ remain open.
 [Check receipts, identities and limitations](evidence/forum-news-subtree-invalidation-20261105.json),
 [all retained raw attempts](evidence/forum-news-subtree-invalidation-20261105.zip).
 
+## TechCrunch: transition registration storage (2026-11-05)
+
+Commit `3d2f0b867` reuses one cleared CSS transition registration table per
+storage owner. Style recomputation previously discarded its arrays and property
+index on every replacement. The reusable table keeps inactive indexes separate
+from current registrations, preserving first-property order, last matching
+timing, pseudo-element ownership and previously returned values.
+
+The new repeated-registration regression fails before the fix with
+**1,658,880 bytes** accumulated over 64 replacements after warm-up. An initial
+reuse attempt still allocates **548,864 bytes** through map clearing and remains
+recorded as a failure. The final implementation passes the unchanged **64 KiB**
+bound. Both new cases pass with default GC, GC disabled and poisoned
+preallocation. All **eleven existing transition cases** pass in both GC modes
+and with poisoned preallocation; both bounded-animation cases also pass with
+normal preallocation, retaining their original memory and scene-count limits.
+
+The additional native document-scratch control fails at **76,800 bytes** against
+its unchanged 65,536-byte limit. A controlled run removing only this transition
+change produces exactly the same failure, with all other build inputs unchanged
+and the candidate source restored byte for byte. This existing bound remains
+open. No whole-control-batch pass is claimed.
+
+Fresh native TechCrunch captures still exceed 3 GiB on `53c04f93…` and the later
+completed `25c6fc5a…`. A private windowed build containing the transition fix
+also exceeds the guard before capture. Its root-document arena reaches about
+987 MiB, but source/build differences prevent matched memory or timing credit.
+No production site acceptance or engine-wide memory saving is inferred.
+
+The native mapping probe identifies transition registration and keyframe
+computation among its large Vox callers. These are **anonymous mapping
+capacities**, not resident or live-allocation bytes. Attribution uses Vox's
+verified text range and the final allocator exec epoch; the injected probe can
+occupy dyld image zero. Rejected symbolization attempts remain in the evidence.
+
+On `25c6fc5a…`, Hacker News's cold-cache strict comparison and the native
+same-size SVG source-switch reftest pass at zero pixels. This bundle's receipt
+contains both earlier frame/image fixes. WIRED's first Brave replay instead
+varies by **8,700 image pixels**, invalidating its strict gate. Independent RGBA
+hashes show that the saved source, second Brave replay and Vox are identical;
+that does not override the failed reference-stability check. The registered
+fixture and all reference pixels remain unchanged.
+
+Production screenshot validation of `3d2f0b867` remains pending a completed
+bundle with verified input provenance. The shared build is already queued;
+no duplicate build is started. No new site or broad-suite pass is claimed.
+
+[Receipts, source seals and limitations](evidence/techcrunch-transition-storage-20261105.json),
+[retained traces and attempts](evidence/techcrunch-transition-storage-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged

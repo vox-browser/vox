@@ -1,0 +1,3685 @@
+{
+  "status": "Transition registration reuse is committed with focused checks. TechCrunch still exceeds the native runtime memory guard. No new site or broad-suite pass is claimed.",
+  "commit": "3d2f0b867",
+  "raw_root": "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105",
+  "implementation": "Keep at most one cleared registration table per CSSTransitionStorage. Reuse array and hash capacity; negative hash indexes denote inactive properties. Keep public property order, last matching timing, snapshots, clear behavior and target ownership.",
+  "focused": {
+    "new_cases": 2,
+    "modes": [
+      "default GC",
+      "GC disabled",
+      "prealloc with VOX_ARENA_POISON=1"
+    ],
+    "new_results": "transition-focused",
+    "feature_pins": {
+      "commit": "3d2f0b867",
+      "files": {
+        "css/screen_animation.v": "078e551dbc718f95b99b00b971f2f5f5f90da140ef0eb146d0c5a2c4e6a6973e",
+        "css/transition_registration_reuse_test.v": "4c06881f1e2d3105efaeceae0e72f7f2a5ceba03bffab8ab08b00bb56d030617"
+      }
+    },
+    "existing_transition_cases_per_gc_mode": 11,
+    "transition_controls": "transition-controls",
+    "prealloc_controls": "transition-prealloc-controls: eleven transition cases pass with poison; two bounded-animation cases pass without poison so their original growth and scene budgets are enforced",
+    "negative": "transition-negative-v2: 1,658,880 bytes over 64 registration replacements, fails the unchanged 64 KiB limit",
+    "first_candidate": "transition-pool-first: map.clear still grows by 548,864 bytes; retained as a failed prototype",
+    "final_candidate": "The same unchanged memory assertion passes. No exact browser-memory or performance saving is inferred from this focused bound."
+  },
+  "existing_failure": {
+    "case": "layout/native_document_scratch_test.v",
+    "candidate": "76,800 bytes against the unchanged 65,536 byte limit; test exit 1",
+    "baseline": "Controlled removal of only the transition-reuse source change gives the identical 76,800 byte failure",
+    "seal": {
+      "candidate_sha256": "078e551dbc718f95b99b00b971f2f5f5f90da140ef0eb146d0c5a2c4e6a6973e",
+      "baseline_sha256": "25a7ef8b107f378d0cbdb6d5919ed1944a71bcfd6577df3efff555c22ab3b633",
+      "restored_sha256": "078e551dbc718f95b99b00b971f2f5f5f90da140ef0eb146d0c5a2c4e6a6973e",
+      "wrapper_exit": 1,
+      "inputs_before": {
+        "head": "a76fd7d256b03167466cb3e71d031888e120c05a",
+        "repository_sha256": "745270030c8ff39ea77bcf277b95dbfd63c7c581d99dc14fee8778de6cf67cff",
+        "build_inputs_sha256": "78baad007ae09717b356811abd60da5a8c61a8f93ff8f5ed43286bcfa06e5028",
+        "dirty": true
+      },
+      "inputs_after": {
+        "head": "a76fd7d256b03167466cb3e71d031888e120c05a",
+        "repository_sha256": "745270030c8ff39ea77bcf277b95dbfd63c7c581d99dc14fee8778de6cf67cff",
+        "build_inputs_sha256": "78baad007ae09717b356811abd60da5a8c61a8f93ff8f5ed43286bcfa06e5028",
+        "dirty": true
+      },
+      "inputs_unchanged": true
+    },
+    "status": "Pre-existing under the pinned sources; retained open, neither threshold nor assertions changed"
+  },
+  "native": {
+    "first": {
+      "browser": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "53c04f93d44a4761c4f1a10d818c72108c04382212ff70201b33af9282c8b1f3",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "dc7a1bde0b7551e40138bd361c589e840071b6352eb5ba9a7e310e4e34c5d047",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "2a09479b2f1b14fe92e2d73deac6a0af242408d9a1b4c8682dd623f624b4b063",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "files": {
+        "Tests/Browser/Brave/sites/techcrunch/bodies/0019e4557989f0b4a817f41861ed5a5017da09f18683b68e49a208d737363f21": "0019e4557989f0b4a817f41861ed5a5017da09f18683b68e49a208d737363f21",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/06e818bf18a039b1db8024aeac0e71c15a7a292b54a20aee58732180ef860181": "06e818bf18a039b1db8024aeac0e71c15a7a292b54a20aee58732180ef860181",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/1246fdee4845cb5cf4a9dc70d7c08999e8b8cee813520c744dfbefd528d68845": "1246fdee4845cb5cf4a9dc70d7c08999e8b8cee813520c744dfbefd528d68845",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/165572f1425341696cd617b402457cf439bb77f70827822c1e169bc6989f812c": "165572f1425341696cd617b402457cf439bb77f70827822c1e169bc6989f812c",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/17b544f84ce1d1288dc2dc80e0b88e3fca8146a1e708c609cba315d96af63044": "17b544f84ce1d1288dc2dc80e0b88e3fca8146a1e708c609cba315d96af63044",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/1a2a58219abc3305d7f24fc2032d5ef7fd83414b5d5602b1407fbdc3f31eabe8": "1a2a58219abc3305d7f24fc2032d5ef7fd83414b5d5602b1407fbdc3f31eabe8",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/1d8de438aba0eb49a4ad3384b2b0f84aa3d205142e892e66a5dcceec8a68d1d2": "1d8de438aba0eb49a4ad3384b2b0f84aa3d205142e892e66a5dcceec8a68d1d2",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/222102c59fbeb8df4f97e143c264d83d794d74a6123486b03b9ecf32a5471918": "222102c59fbeb8df4f97e143c264d83d794d74a6123486b03b9ecf32a5471918",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/225a2482df41a9a7e6f3504adb63f34b52c5625cae219fafd3c4c8130e2f5059": "225a2482df41a9a7e6f3504adb63f34b52c5625cae219fafd3c4c8130e2f5059",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/230b0ce51aa6c1d97d79b35ab57e7bb0500c7ed12aab35b43f151e1f9bc9d3b9": "230b0ce51aa6c1d97d79b35ab57e7bb0500c7ed12aab35b43f151e1f9bc9d3b9",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/26ddc3f8a8a2427b8e3ab0987e35aa802e6369d17836f1e4b242cc0ca85e32b7": "26ddc3f8a8a2427b8e3ab0987e35aa802e6369d17836f1e4b242cc0ca85e32b7",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/296a25fdedf4e790499c1ab4db27c32d629fc748a461812642347740bea775af": "296a25fdedf4e790499c1ab4db27c32d629fc748a461812642347740bea775af",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/2f398590443018fdb91cb0be09dd8d93831b8a335cafa59dcebe458eb21f3f7b": "2f398590443018fdb91cb0be09dd8d93831b8a335cafa59dcebe458eb21f3f7b",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/3153771872423d56f8cad704d93490cba4e96b382c214f5fc130af8730827908": "3153771872423d56f8cad704d93490cba4e96b382c214f5fc130af8730827908",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/35357cbc233d8557b2ce25b9a3d7e794b95bc753f5d931961d28a6693042c1f7": "35357cbc233d8557b2ce25b9a3d7e794b95bc753f5d931961d28a6693042c1f7",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/3598da0413efb545f388773186fad4a8df49d1cbfb5f346db47fae94e858eb89": "3598da0413efb545f388773186fad4a8df49d1cbfb5f346db47fae94e858eb89",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/376f83cfdfc05c8b4f7b668b38266b3687136391cb35fe4685af1d56f0d2fa81": "376f83cfdfc05c8b4f7b668b38266b3687136391cb35fe4685af1d56f0d2fa81",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/3dfd02f68c31ee52107d4442abe20fbe9bb5fb31e0b1f5e21f5912946ff8af95": "3dfd02f68c31ee52107d4442abe20fbe9bb5fb31e0b1f5e21f5912946ff8af95",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4057695459e9ed36b0ba19a0f221dbe6b07d3b30f9f1ee9ccbd158a372b5dbf1": "4057695459e9ed36b0ba19a0f221dbe6b07d3b30f9f1ee9ccbd158a372b5dbf1",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/41459057f6032c50e95f905b44e54b524a4ff6b408be9a390dd999ea1fde8831": "41459057f6032c50e95f905b44e54b524a4ff6b408be9a390dd999ea1fde8831",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/43b415b1b1827e6673d127ba8a672a0e11355b27fca9ee431cc11dc125cba48f": "43b415b1b1827e6673d127ba8a672a0e11355b27fca9ee431cc11dc125cba48f",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/43bbd6ee6710ac9106801f79870c846160a6f5bd0124f7e5d715c7c1516b551f": "43bbd6ee6710ac9106801f79870c846160a6f5bd0124f7e5d715c7c1516b551f",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/454e469f584d84800fbf5a4a4041660eff90f8ab6a7a52ba33c3f9725cad0370": "454e469f584d84800fbf5a4a4041660eff90f8ab6a7a52ba33c3f9725cad0370",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4716cb9cb6d1a285187305dba2a6e2be6e2cba09a997d24a32be091aa1c452ec": "4716cb9cb6d1a285187305dba2a6e2be6e2cba09a997d24a32be091aa1c452ec",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/481e93412fee04b0480f2eed81fc9634ecaf2b16145e2be12b5c09ac3b615ba8": "481e93412fee04b0480f2eed81fc9634ecaf2b16145e2be12b5c09ac3b615ba8",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/488fe4423d3e2fa197db201d2daf0134aeeb694e265e4d3339ce853f6110c8d7": "488fe4423d3e2fa197db201d2daf0134aeeb694e265e4d3339ce853f6110c8d7",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4b76b003eddf7f1f86f899d8a75618eb604945ca732f7a7eef3534f700e05dae": "4b76b003eddf7f1f86f899d8a75618eb604945ca732f7a7eef3534f700e05dae",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4dae12c6fefdfb83b01efc87873a3abe06ae7e73c508d16504afa2bc773e47a6": "4dae12c6fefdfb83b01efc87873a3abe06ae7e73c508d16504afa2bc773e47a6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/5426d35ba37e06ed5a4213ea9b0862b809a4ec48abfdc589cd48d3089305a4f1": "5426d35ba37e06ed5a4213ea9b0862b809a4ec48abfdc589cd48d3089305a4f1",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/5653ad7b55bdbf5f3bfe2ba676d50c0642d7017322700ab1369149f231efd417": "5653ad7b55bdbf5f3bfe2ba676d50c0642d7017322700ab1369149f231efd417",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/5e56afbe861cc139a338711436b1fc5fa88d74656c87333d61357ef33d7c82cf": "5e56afbe861cc139a338711436b1fc5fa88d74656c87333d61357ef33d7c82cf",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/63c93875e2df3441dac7dd8a0d2d5b63cb31386113a21e5d8b96cb819681b5bd": "63c93875e2df3441dac7dd8a0d2d5b63cb31386113a21e5d8b96cb819681b5bd",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/65373deff65a6766866c6e4dd37cfee73eae8fa1a71b50c34243605f76797587": "65373deff65a6766866c6e4dd37cfee73eae8fa1a71b50c34243605f76797587",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/65433802260eba9a7ba737a21be6f679ab25480a3c6cc4e7f109041360cfb52e": "65433802260eba9a7ba737a21be6f679ab25480a3c6cc4e7f109041360cfb52e",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/666570bb7ac88a83bf11ede14a09166cd5cc1d83c4e2610f6b207e8a4596f6b6": "666570bb7ac88a83bf11ede14a09166cd5cc1d83c4e2610f6b207e8a4596f6b6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/6a0c2fdabfa96d65f7c580324a04ede3168cc530947efc0f587127302a4e58c6": "6a0c2fdabfa96d65f7c580324a04ede3168cc530947efc0f587127302a4e58c6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/6c0a0b779fb97ddb14c499e0b56a56b9a78166d30cb7801c9319968c74da5957": "6c0a0b779fb97ddb14c499e0b56a56b9a78166d30cb7801c9319968c74da5957",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/6d961e09ad1ef3bba6ed00b89b8895bdb7733cb79ab87451b9e4f4d64d13cf52": "6d961e09ad1ef3bba6ed00b89b8895bdb7733cb79ab87451b9e4f4d64d13cf52",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/7539f7d50824fb6721e43ee5b3a4db2a14838d0b2a767bf81d94845ace4cbec5": "7539f7d50824fb6721e43ee5b3a4db2a14838d0b2a767bf81d94845ace4cbec5",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/827421de23eced1e44f91ece26cc71838c8d49d1f0af454f8c95c59d69c90dc9": "827421de23eced1e44f91ece26cc71838c8d49d1f0af454f8c95c59d69c90dc9",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/8dd8533a009cc53a4262e3a18bb69f18ddbb17f9201983845c14173d5f54a323": "8dd8533a009cc53a4262e3a18bb69f18ddbb17f9201983845c14173d5f54a323",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/92ecf93a0b93c68190dc845775eb89870a106a8597d22cb471bdaa8cc503a55e": "92ecf93a0b93c68190dc845775eb89870a106a8597d22cb471bdaa8cc503a55e",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9b3ab5cb246ad34da105fa92ea4347ed06f2d51db0ff1734c7a30f058a84f807": "9b3ab5cb246ad34da105fa92ea4347ed06f2d51db0ff1734c7a30f058a84f807",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9c33084bf68a664cfa82a314bd2e006a7d9fc31f95242dc3eaf13a1b553a8436": "9c33084bf68a664cfa82a314bd2e006a7d9fc31f95242dc3eaf13a1b553a8436",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9e3648e9c5a9d6f35751520d763cf58e31c915fde443f30c3fb4cb4bfe465b9b": "9e3648e9c5a9d6f35751520d763cf58e31c915fde443f30c3fb4cb4bfe465b9b",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9f0942e5f6dc8ff2d1e4e78d95278f35df56769eff40bf14ae96c98b129c8a19": "9f0942e5f6dc8ff2d1e4e78d95278f35df56769eff40bf14ae96c98b129c8a19",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/a4cbe02b6564b972af80d47b61a4048d5ee5809f6064b2e775ef2660a90b807b": "a4cbe02b6564b972af80d47b61a4048d5ee5809f6064b2e775ef2660a90b807b",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/a7a9d261041d854224c2701cb4d2e49a43116c411f8b802d256c0ed1f3679f06": "a7a9d261041d854224c2701cb4d2e49a43116c411f8b802d256c0ed1f3679f06",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/a927eaef349d9b6a58f1ebfd9aa60416cae8ef22ed9da640b8b3694829d88373": "a927eaef349d9b6a58f1ebfd9aa60416cae8ef22ed9da640b8b3694829d88373",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/ae4cf69324e3f4f08436a2151a6e147cde484641ec8a2bb16d8ea7e20f004a34": "ae4cf69324e3f4f08436a2151a6e147cde484641ec8a2bb16d8ea7e20f004a34",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/b8014a6d259cc22bbfb2f7a2a142e134f7703a71acfcb6482de06a088a5033a0": "b8014a6d259cc22bbfb2f7a2a142e134f7703a71acfcb6482de06a088a5033a0",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/b905ebf7cd7a155a7e02947167da942e68639cf110c68cd3683183e0ae8eec23": "b905ebf7cd7a155a7e02947167da942e68639cf110c68cd3683183e0ae8eec23",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/bc303f899979b3739a5285ee43abc482320eea0300a556d85fa02a65896d34bc": "bc303f899979b3739a5285ee43abc482320eea0300a556d85fa02a65896d34bc",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/bf01b55fc6e69854724acb5d4d635ce9db632a457fff78f722f2b3be4c7caa45": "bf01b55fc6e69854724acb5d4d635ce9db632a457fff78f722f2b3be4c7caa45",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/c0c38f83346d3840129858e3d55b68ae0d758e203e821efbd3e9c4466ec8dc81": "c0c38f83346d3840129858e3d55b68ae0d758e203e821efbd3e9c4466ec8dc81",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/c211f4804b077b4bd1e3f5b80570099f2190f309565bd2e9ee932439f7525508": "c211f4804b077b4bd1e3f5b80570099f2190f309565bd2e9ee932439f7525508",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/cb1be8a2ec802c12d894d41716be16ad35ef8e8eaab7135d5579a3398889f74d": "cb1be8a2ec802c12d894d41716be16ad35ef8e8eaab7135d5579a3398889f74d",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/d2250c8ef38501e9c8d179a29ec247c1f81f114bde5291d8c86ce164cfee889f": "d2250c8ef38501e9c8d179a29ec247c1f81f114bde5291d8c86ce164cfee889f",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/d4efe709c65438ae90dff385486421fea45762880f21fc4e0dca3fa96210f428": "d4efe709c65438ae90dff385486421fea45762880f21fc4e0dca3fa96210f428",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/e22aa77500039ebeff26f19efa3943b154c65c3306e22b9be3bf8835ccd50bb6": "e22aa77500039ebeff26f19efa3943b154c65c3306e22b9be3bf8835ccd50bb6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/e658947517f534b0506bef4499b4a9f5cfb7aba2de0e518d944ff0e04a3d9ca2": "e658947517f534b0506bef4499b4a9f5cfb7aba2de0e518d944ff0e04a3d9ca2",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/ebeb6689da05106edb8e7311e65d305092644223af5b864b53490d919c1481da": "ebeb6689da05106edb8e7311e65d305092644223af5b864b53490d919c1481da",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/ecf7723a32533007ede558c546fc8ba30f508283223b6e7f49c297b7c63c8b50": "ecf7723a32533007ede558c546fc8ba30f508283223b6e7f49c297b7c63c8b50",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/eeddaae7934b3c33a58687b313a04e1e375a7be9bc247026487ef7f4db724a76": "eeddaae7934b3c33a58687b313a04e1e375a7be9bc247026487ef7f4db724a76",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/efb6cbe55c83d855a08b9f9f922b83dbe078d9544a5804ab8f1a205472eb4d1c": "efb6cbe55c83d855a08b9f9f922b83dbe078d9544a5804ab8f1a205472eb4d1c",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/f47d0bc81fbe72090183b8bcb2eb216c2eb2c817457ed2d5225e2cccbd13882e": "f47d0bc81fbe72090183b8bcb2eb216c2eb2c817457ed2d5225e2cccbd13882e",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/f80f22ed62e49f86bc87940bca68ab3e9be6128b97414a80914a871979c850e6": "f80f22ed62e49f86bc87940bca68ab3e9be6128b97414a80914a871979c850e6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/fcdd6d937d45e4156ef45378c5ffc40f8d131eea0fe075e2ecc85c1ca22a6988": "fcdd6d937d45e4156ef45378c5ffc40f8d131eea0fe075e2ecc85c1ca22a6988",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/fd59b0ebf6282ed71647bf2f6e0d1925bbfd1f270865a832079ebb60259aabca": "fd59b0ebf6282ed71647bf2f6e0d1925bbfd1f270865a832079ebb60259aabca",
+        "Tests/Browser/Brave/sites/techcrunch/capture.json": "4a70461b7cae0df890cd4c4e948216f1992eaf94dc3800d0a8ab2b78e77cc05f",
+        "Tests/Browser/Brave/sites/techcrunch/live.png": "48076db4a61f97844d1cdcc7578e04ddac0f4dad273f33a3b9c0ec5a7a2f8a5e",
+        "Tests/Browser/Brave/sites/techcrunch/manifest.json": "e96b9b2571dd513f4294a479b2b4258bd6864769c0f623e1e3a6f0ddc95f0442",
+        "tools/page_archive.py": "05d2b13aba6e42c66fea166cf2035263579a47828b7627ad112720755d328524",
+        "tools/forum_news_pixels.py": "07f65da5ce936214e4cd6398ae368599c3811a26f6bd2a08e9772ef80f49ec4a",
+        "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+        "tools/browser_bundle_lease.py": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+        "Build/techcrunch-allocation-20261105/native_regions.py": "2ced1ba3e04d00950bdbfd6039361a259e0dbd60c77fe7257623e96c8cc68e38",
+        "Build/techcrunch-allocation-20261105/region-probe.dylib": "0f44de15f3c07f6e2cbef2725d920c2a7bfabe5fbf4f2617a1faa1406568ad0d",
+        "tools/prealloc_region_probe.c": "ec8c8ca8111cb8470164196fa64c1e46363471b6a568d35de21aad0e66b9661f"
+      },
+      "receipt": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "53c04f93d44a4761c4f1a10d818c72108c04382212ff70201b33af9282c8b1f3",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "5bab8c78f8a8768612afa6259e75d568521f2d5d7b292513b58042876c514863",
+          "dirty": true,
+          "head": "6200f65249a85cd2b7041150239f19cdf1364ff6",
+          "repository_sha256": "7897a1f247639eea1cf9c72a8396626d4f5b780ede274af07c79b5112b0ec329"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "6200f65249a85cd2b7041150239f19cdf1364ff6",
+          "id": "80a8270b66b645498a8f01ff856c6a85"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "5bab8c78f8a8768612afa6259e75d568521f2d5d7b292513b58042876c514863",
+          "dirty": true,
+          "head": "40fd1d3e0c7740ed87bc3f6446d7c37a2e40aacb",
+          "repository_sha256": "7897a1f247639eea1cf9c72a8396626d4f5b780ede274af07c79b5112b0ec329"
+        }
+      },
+      "host": {
+        "load_average": [
+          9.01806640625,
+          7.6982421875,
+          15.89599609375
+        ],
+        "cpu_count": 18
+      }
+    },
+    "first_guards": {
+      "baseline": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/baseline/vox.png",
+          "https://techcrunch.com/"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3351691264,
+        "elapsed_seconds": 3.396443209,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "regions": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/regions/vox.png",
+          "https://techcrunch.com/"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3327705088,
+        "elapsed_seconds": 3.099584208,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "second": {
+      "browser": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "25c6fc5a0763e211baa538fe8746649a58381e25b62ab603e5dc1ee45b5e081e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "63d9e5d7f47ba8ad9cac93dd6ecc81381822d2afefb667215defa73f14bcda3c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "2a09479b2f1b14fe92e2d73deac6a0af242408d9a1b4c8682dd623f624b4b063",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "files": {
+        "Tests/Browser/Brave/sites/techcrunch/bodies/0019e4557989f0b4a817f41861ed5a5017da09f18683b68e49a208d737363f21": "0019e4557989f0b4a817f41861ed5a5017da09f18683b68e49a208d737363f21",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/06e818bf18a039b1db8024aeac0e71c15a7a292b54a20aee58732180ef860181": "06e818bf18a039b1db8024aeac0e71c15a7a292b54a20aee58732180ef860181",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/1246fdee4845cb5cf4a9dc70d7c08999e8b8cee813520c744dfbefd528d68845": "1246fdee4845cb5cf4a9dc70d7c08999e8b8cee813520c744dfbefd528d68845",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/165572f1425341696cd617b402457cf439bb77f70827822c1e169bc6989f812c": "165572f1425341696cd617b402457cf439bb77f70827822c1e169bc6989f812c",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/17b544f84ce1d1288dc2dc80e0b88e3fca8146a1e708c609cba315d96af63044": "17b544f84ce1d1288dc2dc80e0b88e3fca8146a1e708c609cba315d96af63044",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/1a2a58219abc3305d7f24fc2032d5ef7fd83414b5d5602b1407fbdc3f31eabe8": "1a2a58219abc3305d7f24fc2032d5ef7fd83414b5d5602b1407fbdc3f31eabe8",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/1d8de438aba0eb49a4ad3384b2b0f84aa3d205142e892e66a5dcceec8a68d1d2": "1d8de438aba0eb49a4ad3384b2b0f84aa3d205142e892e66a5dcceec8a68d1d2",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/222102c59fbeb8df4f97e143c264d83d794d74a6123486b03b9ecf32a5471918": "222102c59fbeb8df4f97e143c264d83d794d74a6123486b03b9ecf32a5471918",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/225a2482df41a9a7e6f3504adb63f34b52c5625cae219fafd3c4c8130e2f5059": "225a2482df41a9a7e6f3504adb63f34b52c5625cae219fafd3c4c8130e2f5059",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/230b0ce51aa6c1d97d79b35ab57e7bb0500c7ed12aab35b43f151e1f9bc9d3b9": "230b0ce51aa6c1d97d79b35ab57e7bb0500c7ed12aab35b43f151e1f9bc9d3b9",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/26ddc3f8a8a2427b8e3ab0987e35aa802e6369d17836f1e4b242cc0ca85e32b7": "26ddc3f8a8a2427b8e3ab0987e35aa802e6369d17836f1e4b242cc0ca85e32b7",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/296a25fdedf4e790499c1ab4db27c32d629fc748a461812642347740bea775af": "296a25fdedf4e790499c1ab4db27c32d629fc748a461812642347740bea775af",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/2f398590443018fdb91cb0be09dd8d93831b8a335cafa59dcebe458eb21f3f7b": "2f398590443018fdb91cb0be09dd8d93831b8a335cafa59dcebe458eb21f3f7b",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/3153771872423d56f8cad704d93490cba4e96b382c214f5fc130af8730827908": "3153771872423d56f8cad704d93490cba4e96b382c214f5fc130af8730827908",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/35357cbc233d8557b2ce25b9a3d7e794b95bc753f5d931961d28a6693042c1f7": "35357cbc233d8557b2ce25b9a3d7e794b95bc753f5d931961d28a6693042c1f7",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/3598da0413efb545f388773186fad4a8df49d1cbfb5f346db47fae94e858eb89": "3598da0413efb545f388773186fad4a8df49d1cbfb5f346db47fae94e858eb89",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/376f83cfdfc05c8b4f7b668b38266b3687136391cb35fe4685af1d56f0d2fa81": "376f83cfdfc05c8b4f7b668b38266b3687136391cb35fe4685af1d56f0d2fa81",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/3dfd02f68c31ee52107d4442abe20fbe9bb5fb31e0b1f5e21f5912946ff8af95": "3dfd02f68c31ee52107d4442abe20fbe9bb5fb31e0b1f5e21f5912946ff8af95",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4057695459e9ed36b0ba19a0f221dbe6b07d3b30f9f1ee9ccbd158a372b5dbf1": "4057695459e9ed36b0ba19a0f221dbe6b07d3b30f9f1ee9ccbd158a372b5dbf1",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/41459057f6032c50e95f905b44e54b524a4ff6b408be9a390dd999ea1fde8831": "41459057f6032c50e95f905b44e54b524a4ff6b408be9a390dd999ea1fde8831",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/43b415b1b1827e6673d127ba8a672a0e11355b27fca9ee431cc11dc125cba48f": "43b415b1b1827e6673d127ba8a672a0e11355b27fca9ee431cc11dc125cba48f",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/43bbd6ee6710ac9106801f79870c846160a6f5bd0124f7e5d715c7c1516b551f": "43bbd6ee6710ac9106801f79870c846160a6f5bd0124f7e5d715c7c1516b551f",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/454e469f584d84800fbf5a4a4041660eff90f8ab6a7a52ba33c3f9725cad0370": "454e469f584d84800fbf5a4a4041660eff90f8ab6a7a52ba33c3f9725cad0370",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4716cb9cb6d1a285187305dba2a6e2be6e2cba09a997d24a32be091aa1c452ec": "4716cb9cb6d1a285187305dba2a6e2be6e2cba09a997d24a32be091aa1c452ec",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/481e93412fee04b0480f2eed81fc9634ecaf2b16145e2be12b5c09ac3b615ba8": "481e93412fee04b0480f2eed81fc9634ecaf2b16145e2be12b5c09ac3b615ba8",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/488fe4423d3e2fa197db201d2daf0134aeeb694e265e4d3339ce853f6110c8d7": "488fe4423d3e2fa197db201d2daf0134aeeb694e265e4d3339ce853f6110c8d7",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4b76b003eddf7f1f86f899d8a75618eb604945ca732f7a7eef3534f700e05dae": "4b76b003eddf7f1f86f899d8a75618eb604945ca732f7a7eef3534f700e05dae",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/4dae12c6fefdfb83b01efc87873a3abe06ae7e73c508d16504afa2bc773e47a6": "4dae12c6fefdfb83b01efc87873a3abe06ae7e73c508d16504afa2bc773e47a6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/5426d35ba37e06ed5a4213ea9b0862b809a4ec48abfdc589cd48d3089305a4f1": "5426d35ba37e06ed5a4213ea9b0862b809a4ec48abfdc589cd48d3089305a4f1",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/5653ad7b55bdbf5f3bfe2ba676d50c0642d7017322700ab1369149f231efd417": "5653ad7b55bdbf5f3bfe2ba676d50c0642d7017322700ab1369149f231efd417",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/5e56afbe861cc139a338711436b1fc5fa88d74656c87333d61357ef33d7c82cf": "5e56afbe861cc139a338711436b1fc5fa88d74656c87333d61357ef33d7c82cf",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/63c93875e2df3441dac7dd8a0d2d5b63cb31386113a21e5d8b96cb819681b5bd": "63c93875e2df3441dac7dd8a0d2d5b63cb31386113a21e5d8b96cb819681b5bd",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/65373deff65a6766866c6e4dd37cfee73eae8fa1a71b50c34243605f76797587": "65373deff65a6766866c6e4dd37cfee73eae8fa1a71b50c34243605f76797587",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/65433802260eba9a7ba737a21be6f679ab25480a3c6cc4e7f109041360cfb52e": "65433802260eba9a7ba737a21be6f679ab25480a3c6cc4e7f109041360cfb52e",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/666570bb7ac88a83bf11ede14a09166cd5cc1d83c4e2610f6b207e8a4596f6b6": "666570bb7ac88a83bf11ede14a09166cd5cc1d83c4e2610f6b207e8a4596f6b6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/6a0c2fdabfa96d65f7c580324a04ede3168cc530947efc0f587127302a4e58c6": "6a0c2fdabfa96d65f7c580324a04ede3168cc530947efc0f587127302a4e58c6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/6c0a0b779fb97ddb14c499e0b56a56b9a78166d30cb7801c9319968c74da5957": "6c0a0b779fb97ddb14c499e0b56a56b9a78166d30cb7801c9319968c74da5957",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/6d961e09ad1ef3bba6ed00b89b8895bdb7733cb79ab87451b9e4f4d64d13cf52": "6d961e09ad1ef3bba6ed00b89b8895bdb7733cb79ab87451b9e4f4d64d13cf52",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/7539f7d50824fb6721e43ee5b3a4db2a14838d0b2a767bf81d94845ace4cbec5": "7539f7d50824fb6721e43ee5b3a4db2a14838d0b2a767bf81d94845ace4cbec5",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/827421de23eced1e44f91ece26cc71838c8d49d1f0af454f8c95c59d69c90dc9": "827421de23eced1e44f91ece26cc71838c8d49d1f0af454f8c95c59d69c90dc9",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/8dd8533a009cc53a4262e3a18bb69f18ddbb17f9201983845c14173d5f54a323": "8dd8533a009cc53a4262e3a18bb69f18ddbb17f9201983845c14173d5f54a323",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/92ecf93a0b93c68190dc845775eb89870a106a8597d22cb471bdaa8cc503a55e": "92ecf93a0b93c68190dc845775eb89870a106a8597d22cb471bdaa8cc503a55e",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9b3ab5cb246ad34da105fa92ea4347ed06f2d51db0ff1734c7a30f058a84f807": "9b3ab5cb246ad34da105fa92ea4347ed06f2d51db0ff1734c7a30f058a84f807",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9c33084bf68a664cfa82a314bd2e006a7d9fc31f95242dc3eaf13a1b553a8436": "9c33084bf68a664cfa82a314bd2e006a7d9fc31f95242dc3eaf13a1b553a8436",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9e3648e9c5a9d6f35751520d763cf58e31c915fde443f30c3fb4cb4bfe465b9b": "9e3648e9c5a9d6f35751520d763cf58e31c915fde443f30c3fb4cb4bfe465b9b",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/9f0942e5f6dc8ff2d1e4e78d95278f35df56769eff40bf14ae96c98b129c8a19": "9f0942e5f6dc8ff2d1e4e78d95278f35df56769eff40bf14ae96c98b129c8a19",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/a4cbe02b6564b972af80d47b61a4048d5ee5809f6064b2e775ef2660a90b807b": "a4cbe02b6564b972af80d47b61a4048d5ee5809f6064b2e775ef2660a90b807b",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/a7a9d261041d854224c2701cb4d2e49a43116c411f8b802d256c0ed1f3679f06": "a7a9d261041d854224c2701cb4d2e49a43116c411f8b802d256c0ed1f3679f06",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/a927eaef349d9b6a58f1ebfd9aa60416cae8ef22ed9da640b8b3694829d88373": "a927eaef349d9b6a58f1ebfd9aa60416cae8ef22ed9da640b8b3694829d88373",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/ae4cf69324e3f4f08436a2151a6e147cde484641ec8a2bb16d8ea7e20f004a34": "ae4cf69324e3f4f08436a2151a6e147cde484641ec8a2bb16d8ea7e20f004a34",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/b8014a6d259cc22bbfb2f7a2a142e134f7703a71acfcb6482de06a088a5033a0": "b8014a6d259cc22bbfb2f7a2a142e134f7703a71acfcb6482de06a088a5033a0",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/b905ebf7cd7a155a7e02947167da942e68639cf110c68cd3683183e0ae8eec23": "b905ebf7cd7a155a7e02947167da942e68639cf110c68cd3683183e0ae8eec23",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/bc303f899979b3739a5285ee43abc482320eea0300a556d85fa02a65896d34bc": "bc303f899979b3739a5285ee43abc482320eea0300a556d85fa02a65896d34bc",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/bf01b55fc6e69854724acb5d4d635ce9db632a457fff78f722f2b3be4c7caa45": "bf01b55fc6e69854724acb5d4d635ce9db632a457fff78f722f2b3be4c7caa45",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/c0c38f83346d3840129858e3d55b68ae0d758e203e821efbd3e9c4466ec8dc81": "c0c38f83346d3840129858e3d55b68ae0d758e203e821efbd3e9c4466ec8dc81",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/c211f4804b077b4bd1e3f5b80570099f2190f309565bd2e9ee932439f7525508": "c211f4804b077b4bd1e3f5b80570099f2190f309565bd2e9ee932439f7525508",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/cb1be8a2ec802c12d894d41716be16ad35ef8e8eaab7135d5579a3398889f74d": "cb1be8a2ec802c12d894d41716be16ad35ef8e8eaab7135d5579a3398889f74d",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/d2250c8ef38501e9c8d179a29ec247c1f81f114bde5291d8c86ce164cfee889f": "d2250c8ef38501e9c8d179a29ec247c1f81f114bde5291d8c86ce164cfee889f",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/d4efe709c65438ae90dff385486421fea45762880f21fc4e0dca3fa96210f428": "d4efe709c65438ae90dff385486421fea45762880f21fc4e0dca3fa96210f428",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/e22aa77500039ebeff26f19efa3943b154c65c3306e22b9be3bf8835ccd50bb6": "e22aa77500039ebeff26f19efa3943b154c65c3306e22b9be3bf8835ccd50bb6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/e658947517f534b0506bef4499b4a9f5cfb7aba2de0e518d944ff0e04a3d9ca2": "e658947517f534b0506bef4499b4a9f5cfb7aba2de0e518d944ff0e04a3d9ca2",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/ebeb6689da05106edb8e7311e65d305092644223af5b864b53490d919c1481da": "ebeb6689da05106edb8e7311e65d305092644223af5b864b53490d919c1481da",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/ecf7723a32533007ede558c546fc8ba30f508283223b6e7f49c297b7c63c8b50": "ecf7723a32533007ede558c546fc8ba30f508283223b6e7f49c297b7c63c8b50",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/eeddaae7934b3c33a58687b313a04e1e375a7be9bc247026487ef7f4db724a76": "eeddaae7934b3c33a58687b313a04e1e375a7be9bc247026487ef7f4db724a76",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/efb6cbe55c83d855a08b9f9f922b83dbe078d9544a5804ab8f1a205472eb4d1c": "efb6cbe55c83d855a08b9f9f922b83dbe078d9544a5804ab8f1a205472eb4d1c",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/f47d0bc81fbe72090183b8bcb2eb216c2eb2c817457ed2d5225e2cccbd13882e": "f47d0bc81fbe72090183b8bcb2eb216c2eb2c817457ed2d5225e2cccbd13882e",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/f80f22ed62e49f86bc87940bca68ab3e9be6128b97414a80914a871979c850e6": "f80f22ed62e49f86bc87940bca68ab3e9be6128b97414a80914a871979c850e6",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/fcdd6d937d45e4156ef45378c5ffc40f8d131eea0fe075e2ecc85c1ca22a6988": "fcdd6d937d45e4156ef45378c5ffc40f8d131eea0fe075e2ecc85c1ca22a6988",
+        "Tests/Browser/Brave/sites/techcrunch/bodies/fd59b0ebf6282ed71647bf2f6e0d1925bbfd1f270865a832079ebb60259aabca": "fd59b0ebf6282ed71647bf2f6e0d1925bbfd1f270865a832079ebb60259aabca",
+        "Tests/Browser/Brave/sites/techcrunch/capture.json": "4a70461b7cae0df890cd4c4e948216f1992eaf94dc3800d0a8ab2b78e77cc05f",
+        "Tests/Browser/Brave/sites/techcrunch/live.png": "48076db4a61f97844d1cdcc7578e04ddac0f4dad273f33a3b9c0ec5a7a2f8a5e",
+        "Tests/Browser/Brave/sites/techcrunch/manifest.json": "e96b9b2571dd513f4294a479b2b4258bd6864769c0f623e1e3a6f0ddc95f0442",
+        "tools/page_archive.py": "05d2b13aba6e42c66fea166cf2035263579a47828b7627ad112720755d328524",
+        "tools/forum_news_pixels.py": "07f65da5ce936214e4cd6398ae368599c3811a26f6bd2a08e9772ef80f49ec4a",
+        "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+        "tools/browser_bundle_lease.py": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+        "Build/techcrunch-allocation-20261105/native_regions_second.py": "69a2c12a128996a14c8ff12774e1db020f649acb319eb37fd1ce613841242dc4",
+        "Build/techcrunch-allocation-20261105/region-probe.dylib": "0f44de15f3c07f6e2cbef2725d920c2a7bfabe5fbf4f2617a1faa1406568ad0d",
+        "tools/prealloc_region_probe.c": "ec8c8ca8111cb8470164196fa64c1e46363471b6a568d35de21aad0e66b9661f"
+      },
+      "receipt": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "25c6fc5a0763e211baa538fe8746649a58381e25b62ab603e5dc1ee45b5e081e",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "40a0dbe2346c94f5671fc6539f4813f781106ecd24118001a76728347e02a4e0",
+          "dirty": true,
+          "head": "106ad0968996d6ca891ba1b302172cb45c99253d",
+          "repository_sha256": "3dfb68665475ebc852fff5b0717b81b892b0e4351230ee69cb1d41ddb172ea3d"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "106ad0968996d6ca891ba1b302172cb45c99253d",
+          "id": "f874f49f78b84c6ebc5396595b97ce5f"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "40a0dbe2346c94f5671fc6539f4813f781106ecd24118001a76728347e02a4e0",
+          "dirty": true,
+          "head": "106ad0968996d6ca891ba1b302172cb45c99253d",
+          "repository_sha256": "3dfb68665475ebc852fff5b0717b81b892b0e4351230ee69cb1d41ddb172ea3d"
+        }
+      },
+      "host": {
+        "load_average": [
+          11.30224609375,
+          8.1640625,
+          15.439453125
+        ],
+        "cpu_count": 18
+      }
+    },
+    "second_guards": {
+      "baseline": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/second/baseline/vox.png",
+          "https://techcrunch.com/"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3266772992,
+        "elapsed_seconds": 4.026643334,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "regions": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/second/regions/vox.png",
+          "https://techcrunch.com/"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3255877632,
+        "elapsed_seconds": 4.035600291,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "private_candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/instrumented-transition-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/instrumented-transition/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3229564928,
+      "elapsed_seconds": 21.664158875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "private_candidate_inputs_unchanged": true,
+    "qualification": "All browser memory-limit attempts retain exit -9, even when their controller exits zero. Private O0/test-mode and injected runs are diagnostic only, with no matched memory, instruction or timing credit."
+  },
+  "mapping_diagnostic": {
+    "result": "second/vox-mapping-stacks.json",
+    "interpretation": "Writable anonymous mmap capacities with Vox TEXT callers; not resident bytes, live allocations, or per-site memory savings.",
+    "ownership": "The injected probe can be dyld image zero. Focused attribution locates Vox by exact executable path and __TEXT range; it selects the final native allocator exec epoch.",
+    "rejected_attempts": [
+      "First symbolization rejects a changed canonical bundle before interpreting its stacks",
+      "First focused symbolization rejects the two allocator exec epochs; the second selects the final one"
+    ],
+    "retained_notes": "The all-image report includes both allocator exec epochs and is a cumulative capacity diagnostic. It cannot establish final live mappings or physical memory."
+  },
+  "browser_controls": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "25c6fc5a0763e211baa538fe8746649a58381e25b62ab603e5dc1ee45b5e081e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "63d9e5d7f47ba8ad9cac93dd6ecc81381822d2afefb667215defa73f14bcda3c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "2a09479b2f1b14fe92e2d73deac6a0af242408d9a1b4c8682dd623f624b4b063",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "25c6fc5a0763e211baa538fe8746649a58381e25b62ab603e5dc1ee45b5e081e",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "40a0dbe2346c94f5671fc6539f4813f781106ecd24118001a76728347e02a4e0",
+        "dirty": true,
+        "head": "106ad0968996d6ca891ba1b302172cb45c99253d",
+        "repository_sha256": "3dfb68665475ebc852fff5b0717b81b892b0e4351230ee69cb1d41ddb172ea3d"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "106ad0968996d6ca891ba1b302172cb45c99253d",
+        "id": "f874f49f78b84c6ebc5396595b97ce5f"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "40a0dbe2346c94f5671fc6539f4813f781106ecd24118001a76728347e02a4e0",
+        "dirty": true,
+        "head": "106ad0968996d6ca891ba1b302172cb45c99253d",
+        "repository_sha256": "3dfb68665475ebc852fff5b0717b81b892b0e4351230ee69cb1d41ddb172ea3d"
+      }
+    },
+    "inputs_unchanged": true,
+    "summary": {
+      "started_at": "2026-11-05T19:04:27+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "cold",
+      "sites": [
+        {
+          "id": "hacker-news",
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        },
+        {
+          "id": "wired",
+          "name": "WIRED",
+          "url": "https://www.wired.com/",
+          "status": "reference-replay-mismatch",
+          "image_animation_policy": "none",
+          "cache_policy": "cold",
+          "different_pixels": 8700,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired",
+          "live_to_frozen_different_pixels": 8700,
+          "reference_replay_different_pixels": 8700,
+          "manifest_sha256": "c70c845521149c08f0243e4529b8510581e47f9d7a56d4f3d9bb9ae4f9f90f7b"
+        }
+      ],
+      "passed": 1
+    },
+    "results": [
+      {
+        "name": "sites",
+        "exit": 1
+      },
+      {
+        "name": "svg-source-switch",
+        "exit": 0
+      }
+    ],
+    "wired_independent_rgba": {
+      "Tests/Browser/Brave/sites/wired/live.png": {
+        "size": [
+          1024,
+          768
+        ],
+        "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+      },
+      "Build/techcrunch-allocation-20261105/browser-controls/sites/wired/brave.png": {
+        "size": [
+          1024,
+          768
+        ],
+        "rgba_sha256": "e07d97cb1f06726209c5bb8bc184e7c7cfa034f2250726cd7a30c33f399afde6"
+      },
+      "Build/techcrunch-allocation-20261105/browser-controls/sites/wired/brave-repeat.png": {
+        "size": [
+          1024,
+          768
+        ],
+        "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+      },
+      "Build/techcrunch-allocation-20261105/browser-controls/sites/wired/vox.png": {
+        "size": [
+          1024,
+          768
+        ],
+        "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+      }
+    },
+    "qualification": "Hacker News and the same-size SVG reftest pass on 25c6fc5a. WIRED fails the strict reference stability gate: the first Brave replay differs by 8,700 pixels while saved source, second replay and Vox have identical RGBA. No reference is replaced; no WIRED strict pass is claimed for this cohort."
+  },
+  "other_failures": [
+    "Initial regression fixture fails compilation because it used a nonexistent EasingFunction.steps constructor. The corrected fixture uses the real StepsEasingFunction record."
+  ],
+  "pending": [
+    "Production validation of 3d2f0b867 on a completed bundle with verified input provenance",
+    "TechCrunch native capture under 3 GiB and exact source/reference/native checks",
+    "WIRED cold-reference image stability",
+    "Existing document-scratch growth bound",
+    "Engadget readiness, Slate source fidelity, ordinary WIRED animation parity"
+  ],
+  "archive": {
+    "path": "docs/evidence/techcrunch-transition-storage-20261105.zip",
+    "sha256": "c27e70413a586877cf201193bd796ce06176190e4a64b8c194c0890fee69c7ff",
+    "bytes": 2321947,
+    "files": [
+      {
+        "path": "baseline/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "baseline/browser.guard.json",
+        "bytes": 580,
+        "sha256": "fe913ac12fbf8cbad0dcc007d941547e5090ed3f92cee3d4600f3e24b7a5afd6"
+      },
+      {
+        "path": "baseline/browser.log",
+        "bytes": 746,
+        "sha256": "142d54b787e6033d08da72fb1c307c55783485cca0564b49c6b20ec4a5e1a7ac"
+      },
+      {
+        "path": "baseline/command.json",
+        "bytes": 602,
+        "sha256": "ab70f5363368bc3ef5d386e4797a12034505bdf823a8fb29729a403172786afc"
+      },
+      {
+        "path": "baseline/environment.json",
+        "bytes": 717,
+        "sha256": "6c17c849599d06fe98277c3652048a8e6e9583c6ab0ec7aee20de67443c9d4d8"
+      },
+      {
+        "path": "baseline/replay/openssl.log",
+        "bytes": 1137,
+        "sha256": "c54cdd5ca1598013d0bce5059f3299907152ec4280e4d9eeb1dc73d47884069a"
+      },
+      {
+        "path": "baseline/replay/ready.json",
+        "bytes": 453,
+        "sha256": "53a6214655a7f33b5b3130e7d87f62f88a2e822ed1219380bb7a3d50676e919c"
+      },
+      {
+        "path": "baseline/replay/requests.jsonl",
+        "bytes": 11811,
+        "sha256": "c1012b1b6b40f1fb8ae2f055b68ddd63be41d201cd2d804f3688b6eea765afab"
+      },
+      {
+        "path": "baseline/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "94cfd3d4b451d0dc1ab02a204fd0cddd69e79e2dfc228074e61acf468d7a939b"
+      },
+      {
+        "path": "browser-controls/inputs-after.json",
+        "bytes": 158882,
+        "sha256": "516ea31cbb9a49f183d6f21c0e62c02ae756f75533c1ee0e020e7ebb3472c355"
+      },
+      {
+        "path": "browser-controls/inputs.json",
+        "bytes": 160189,
+        "sha256": "13aa68ce66f365b18fbdc1ec79dc96b6545cd42820a26286852d79deedff6014"
+      },
+      {
+        "path": "browser-controls/results.json",
+        "bytes": 103,
+        "sha256": "4caba4511b320e4809ec26eb076bcae8696fc84c7437bb98bdf87448b84a5c80"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/audit-config.json",
+        "bytes": 184,
+        "sha256": "ec0e24fdf228276dc26545141fdceb554435b06f2e74eb6bbbde89b49bb481d3"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.command.json",
+        "bytes": 1357,
+        "sha256": "f3a5b9b2b4596b430eb45101233edef6fa4bac3dabf0666bdaf84dbc70828f91"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.guard.json",
+        "bytes": 1283,
+        "sha256": "51d3b6098e3e2db31481b0185ee290facb06627dfbdcafad1b18d1cd04c2e302"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.json",
+        "bytes": 133739,
+        "sha256": "7e8a71dc02c57b6dff5a1557397b30cc20060f99de4f3ce075fd544657616252"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "6db0e92cbed9decb9ddcc3ffc20216058e901d80c5058a65ce58885498d0d184"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.log",
+        "bytes": 1581,
+        "sha256": "d38dac38fa284185a068c362bde40222eadfa9c046c501f2a5c206b051b348c7"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.png",
+        "bytes": 200558,
+        "sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave-repeat.png.json",
+        "bytes": 134330,
+        "sha256": "f97593a35d31d350a6c1597131ae2cb94a9921f76db8c2696f8f5145686af75a"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.command.json",
+        "bytes": 1329,
+        "sha256": "96049611b170cbcf1bd622157da573c611872abec122ba0e8d5d4c2da93fa967"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.guard.json",
+        "bytes": 1269,
+        "sha256": "76fd43000f8ebc0229df4e1e6028de5fe853788f0785e88a4090777eb6b46252"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.json",
+        "bytes": 133729,
+        "sha256": "e3c1f807cc447023b844d1ffd33b3808463e2e28141da6ddb9d7ba030a10eeb7"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "c17d4e0ad60793b8072d53140d080f43a5f08d264316185088150d9408a208cd"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.log",
+        "bytes": 1560,
+        "sha256": "8fe927c3d882efa8d8547758eb2c3cdb879f32db6d8c16fd94ca1e0c7c4d6c16"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.png",
+        "bytes": 200558,
+        "sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/brave.png.json",
+        "bytes": 134330,
+        "sha256": "f97593a35d31d350a6c1597131ae2cb94a9921f76db8c2696f8f5145686af75a"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/browser-identities-after.json",
+        "bytes": 10824,
+        "sha256": "2163fd32d81722125df9ac4e5c978dd4496cf1f0ff7b5e21ac271caeaab89dd5"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/browser-identities.json",
+        "bytes": 10824,
+        "sha256": "2163fd32d81722125df9ac4e5c978dd4496cf1f0ff7b5e21ac271caeaab89dd5"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/cache-policy.json",
+        "bytes": 52,
+        "sha256": "6b48c39b387bc1d8591ae9e70eb9b4aef6acc78ed28286515bf5fcc806c4d57b"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/identity.json",
+        "bytes": 3641,
+        "sha256": "ade5a5738463e533e37789bcd96d624b186f322a04ea891bba8b042c5fba0716"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/live-to-frozen.diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/live-to-frozen.json",
+        "bytes": 754,
+        "sha256": "ae7dff7ba1cbfba6816347b81643ad6b2dcee3798f9b6e47a4f64d75e8eb7aae"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/pixels.json",
+        "bytes": 757,
+        "sha256": "67642606efe43ad535912594ef44af63293315a1888857253203c50f15cd4414"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/reference-replay.diff.png",
+        "bytes": 31707,
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/reference-replay.json",
+        "bytes": 800,
+        "sha256": "09541f19ea2626e86251e3751cd785a5bb872a656b3a7862f903b888cfd02da2"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/replay/openssl.log",
+        "bytes": 1100,
+        "sha256": "dc0d9edd87d465950963869ab5c107c28caa7940e3f3816756e6d15373a479ce"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/replay/ready.json",
+        "bytes": 486,
+        "sha256": "a3373f32881c2d7c0224e7e10ae1143c94b60045bf04f1d073d8820881280bdb"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/replay/requests.jsonl",
+        "bytes": 6261,
+        "sha256": "5759ff8b31f7d9fcab04072ba6a03003a0b2ece12a9991e340802e5f07688b22"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.audit.json",
+        "bytes": 5968,
+        "sha256": "ff3bbc5522a3810d473356d78e7db6811fb8908e9cbef557cd4fa8c06a9eef56"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.command.json",
+        "bytes": 701,
+        "sha256": "33bc6d95cc90db28dfdb739d4ebed1bc2062d1e2912514c8e0d7ddfa765d76e1"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.guard.json",
+        "bytes": 604,
+        "sha256": "81d315832822915db973dbbfd7a3af901b19edbc37614956d2a7845f7c686db6"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.log",
+        "bytes": 908,
+        "sha256": "9029b546e895a2f8fa114f997a2fbd2db2863a3b31b167482b803ef80480ffab"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.png",
+        "bytes": 490277,
+        "sha256": "75423e1774abde26ee131961d08a7a73fd2833564cfd884964898be1230ef889"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.requests.jsonl",
+        "bytes": 12041,
+        "sha256": "d442f54ee74fbf0a1196dd6a33df758ecd32e32561bc9fd8b3fcb678bee7cba8"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.command.json",
+        "bytes": 1217,
+        "sha256": "32320f8ce77cef485e60fa8b9eef72c36f96e5081158600a148a9444446c9918"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.guard.json",
+        "bytes": 1145,
+        "sha256": "5cd0abc01302ffe1ef37d1f868e679a2a3fdc2037e2756cefe09d162b12a10c7"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.json",
+        "bytes": 20460,
+        "sha256": "aff5c8549e71ecdcc61e141871956f00f98b5c5bd70bc56971a1235507167e5d"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "055bb075224b445c943a32789cacee566a83be1c194c5e84f258a3bb7aa3ec4e"
+      },
+      {
+        "path": "browser-controls/sites/hacker-news/vox.ubo.log",
+        "bytes": 1325,
+        "sha256": "7ba5c143b6da01d27d02f98c9a3f8aae5935ba8d3d329b3bdbbbaa3d176eee99"
+      },
+      {
+        "path": "browser-controls/sites/summary.json",
+        "bytes": 1304,
+        "sha256": "7a7349cadafa87b7b0d21dd65a44d4892dd215b92fb8c473784b42ec394f1077"
+      },
+      {
+        "path": "browser-controls/sites/wired/audit-config.json",
+        "bytes": 184,
+        "sha256": "ec0e24fdf228276dc26545141fdceb554435b06f2e74eb6bbbde89b49bb481d3"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.command.json",
+        "bytes": 1323,
+        "sha256": "36480a20d7d661f0edd91a94a2290252b8b7fd03eb9c35057a67bc1009f25f61"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.guard.json",
+        "bytes": 1267,
+        "sha256": "5ce486cdd213c47565b146d0cb69dae1efaacd0f8cd4e062dc4d376074b55786"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.json",
+        "bytes": 244791,
+        "sha256": "097a65ae64bc0b6c6c7b6f95605ba0a3f8c66fc7869cd01c2ebad9eb562e105b"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "5cfd82d2eaf6299a46ab453aee0882a8a07a0fa7b7145d90ccf97d82e7eedbe7"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.log",
+        "bytes": 1620,
+        "sha256": "9584203210bf4b65493471a7a8f791365052fd7a8877902c853e91b62d3d7f71"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.png",
+        "bytes": 188422,
+        "sha256": "bad89a2bdbde652b63c25dc244a571ae9ab390831b06ea69f71fe0266e0f88b0"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave-repeat.png.json",
+        "bytes": 647804,
+        "sha256": "f2adef83d73593c109f1567e5b4385e072ec0130971081b35d8a7a7d0da02f6a"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.command.json",
+        "bytes": 1295,
+        "sha256": "8c1253348fa3f56fa989fe1b00d0d7da4bcd9a0f6f918aba0421e87abec2aa04"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.guard.json",
+        "bytes": 1253,
+        "sha256": "52d885819e28117d6df7473c31683be3fb46dbe22f7d1c3454b67904307d0ab8"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.json",
+        "bytes": 244784,
+        "sha256": "5a80cb0c61fd1b584d1aecff3c1d562608fdb133e8fdd7835c2a97863e239afb"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "437d897a37f90aeccb43b968356a265e52411a2dabf805d13a6243c3729ed059"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.log",
+        "bytes": 1599,
+        "sha256": "6a8b3bc59db2e9bb99fd4f1f53087943692fcbed8f2c3f4a5d106d61b586135d"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.png",
+        "bytes": 188503,
+        "sha256": "49e4b459d7c9770d8fd44b228d22efd2405905453335cb91fa5d8608e7c27c82"
+      },
+      {
+        "path": "browser-controls/sites/wired/brave.png.json",
+        "bytes": 647804,
+        "sha256": "f2adef83d73593c109f1567e5b4385e072ec0130971081b35d8a7a7d0da02f6a"
+      },
+      {
+        "path": "browser-controls/sites/wired/browser-identities-after.json",
+        "bytes": 10824,
+        "sha256": "2163fd32d81722125df9ac4e5c978dd4496cf1f0ff7b5e21ac271caeaab89dd5"
+      },
+      {
+        "path": "browser-controls/sites/wired/browser-identities.json",
+        "bytes": 10824,
+        "sha256": "2163fd32d81722125df9ac4e5c978dd4496cf1f0ff7b5e21ac271caeaab89dd5"
+      },
+      {
+        "path": "browser-controls/sites/wired/cache-policy.json",
+        "bytes": 52,
+        "sha256": "6b48c39b387bc1d8591ae9e70eb9b4aef6acc78ed28286515bf5fcc806c4d57b"
+      },
+      {
+        "path": "browser-controls/sites/wired/diff.png",
+        "bytes": 42347,
+        "sha256": "d4429b9879824fc48e216485d17b98981d228e30a7a62df35f86fb34dce6441a"
+      },
+      {
+        "path": "browser-controls/sites/wired/identity.json",
+        "bytes": 3641,
+        "sha256": "ade5a5738463e533e37789bcd96d624b186f322a04ea891bba8b042c5fba0716"
+      },
+      {
+        "path": "browser-controls/sites/wired/independent-rgba.json",
+        "bytes": 841,
+        "sha256": "e91813b60d076d20cb6847f6ddc98049f0090e645d1f5fb4304c73990fb252c8"
+      },
+      {
+        "path": "browser-controls/sites/wired/live-to-frozen.diff.png",
+        "bytes": 42347,
+        "sha256": "d4429b9879824fc48e216485d17b98981d228e30a7a62df35f86fb34dce6441a"
+      },
+      {
+        "path": "browser-controls/sites/wired/live-to-frozen.json",
+        "bytes": 848,
+        "sha256": "847d6d40970fd65c45b3fb6167c2780f63995b555ae1555235d889c1bc571918"
+      },
+      {
+        "path": "browser-controls/sites/wired/pixels.json",
+        "bytes": 851,
+        "sha256": "9b686df66614c2b17a0b6ebcc442376114802079cbc9c7474c7709bc588b9af4"
+      },
+      {
+        "path": "browser-controls/sites/wired/reference-replay.diff.png",
+        "bytes": 42347,
+        "sha256": "d4429b9879824fc48e216485d17b98981d228e30a7a62df35f86fb34dce6441a"
+      },
+      {
+        "path": "browser-controls/sites/wired/reference-replay.json",
+        "bytes": 894,
+        "sha256": "4b74cbc51cc7ed95752c35df7e2627ac44ece6bb33a20b72a9508ae763a7e308"
+      },
+      {
+        "path": "browser-controls/sites/wired/replay/openssl.log",
+        "bytes": 1201,
+        "sha256": "6968dbde183fbb9e0c4399d4b0df592653684c63a8b687cd948f7805614d1d8c"
+      },
+      {
+        "path": "browser-controls/sites/wired/replay/ready.json",
+        "bytes": 467,
+        "sha256": "b558f10c0a1575a022cac41f127aa8e53609e71968893a6eaab03f264b7c2aed"
+      },
+      {
+        "path": "browser-controls/sites/wired/replay/requests.jsonl",
+        "bytes": 42111,
+        "sha256": "66b4637fe94642967deb5a2127c032aade4bf2b585ae4e1122a68a2efcc628b2"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.audit.json",
+        "bytes": 74043,
+        "sha256": "fd59d0b02b78af05670069ef96c2a33d314a9e24400a99537c6a3683ffaa18f2"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.command.json",
+        "bytes": 676,
+        "sha256": "d26d440a9e83d7b8a012aa12a1632e80c89e9994ab87bccd0718b3c34a9db4d8"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.guard.json",
+        "bytes": 600,
+        "sha256": "428d1b57fab50e5c9dc761c06558c7ba0a13d5b638c881efb91d1663184fc202"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.log",
+        "bytes": 898,
+        "sha256": "9393d017b23632c077e4612cfd93ab1a7b551a929c1c45b79d2619324d719ea5"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.png",
+        "bytes": 641922,
+        "sha256": "e0602eabb97ac56af87f02e6225da3bcfeecffab0838e06da46dcee29e40d885"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.requests.jsonl",
+        "bytes": 172524,
+        "sha256": "f26f329e95ede967a85bdef4e58016f64d1b9149bf53ed102f586da84fc95cf8"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.command.json",
+        "bytes": 1183,
+        "sha256": "732ba35e96851e55beab3622c1b4d2fe1eb895c8afee98424d94d92a5a064b2a"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.guard.json",
+        "bytes": 1122,
+        "sha256": "aec17730e432c1aab2d3f1a120251ae6316d93b55d1d2c52a34cd9b8a47fcdb6"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.json",
+        "bytes": 156657,
+        "sha256": "2cfe55241ef46be8c6d3fd4fe2b687097fb516a3f5df281ed84b14b8dbb04e69"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.json.list-identity.json",
+        "bytes": 3820,
+        "sha256": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.json.shutdown.json",
+        "bytes": 2361,
+        "sha256": "f9b011824131b001238811a79de9a274a99450b09afaaf0ef915bd3c3f0c64cd"
+      },
+      {
+        "path": "browser-controls/sites/wired/vox.ubo.log",
+        "bytes": 1297,
+        "sha256": "09a0583b5d742b538c5bde84bd7c137035df9631f14e1ed90ad95bd1105ef3f1"
+      },
+      {
+        "path": "browser-controls/sites.command.json",
+        "bytes": 777,
+        "sha256": "5d66c182d60b6f9236bc01b440036c60f2bc76f680f59e8ee5378dd2f9ef469a"
+      },
+      {
+        "path": "browser-controls/sites.guard.json",
+        "bytes": 801,
+        "sha256": "0653d61e395d48c0344507c71d6db11463aa04d957a39ffa268629c72f06f6b9"
+      },
+      {
+        "path": "browser-controls/sites.log",
+        "bytes": 1722,
+        "sha256": "e6f2ee3fc7cc6efd612ae3e4b14b3af3d4344bdc5e73714e530b8a9d12e2972d"
+      },
+      {
+        "path": "browser-controls/svg-browser-logs/browser.log",
+        "bytes": 303,
+        "sha256": "2509df4da0d0ea48660053e1df45838e3ab9af6ae6eb1617280a98228c4a9622"
+      },
+      {
+        "path": "browser-controls/svg-source-switch/svg-image-source-switch-same-size.actual.png",
+        "bytes": 11124,
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      },
+      {
+        "path": "browser-controls/svg-source-switch/svg-image-source-switch-same-size.diff.png",
+        "bytes": 19598,
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "browser-controls/svg-source-switch/svg-image-source-switch-same-size.expected.png",
+        "bytes": 11124,
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      },
+      {
+        "path": "browser-controls/svg-source-switch.command.json",
+        "bytes": 440,
+        "sha256": "ba9111dcfda4c9b57526fbf76b5651b4d096a9c47a62caecb6c40083330b306b"
+      },
+      {
+        "path": "browser-controls/svg-source-switch.guard.json",
+        "bytes": 390,
+        "sha256": "a59c7951c3a2e41a925cd4006728d7a8b06752538059e1f9ad8b898f24246d8e"
+      },
+      {
+        "path": "browser-controls/svg-source-switch.log",
+        "bytes": 1308,
+        "sha256": "250139ce9af45b140028f29f272eacf89d5b3a530cb9235d25ed72c783c39898"
+      },
+      {
+        "path": "browser_controls.py",
+        "bytes": 3375,
+        "sha256": "e1b62ad460cabaf7acc14939673816b66ccb8b2cbdc295e158f446a39e13bfaf"
+      },
+      {
+        "path": "compile_instrumented_transition.py",
+        "bytes": 2038,
+        "sha256": "9332750e4fc45014f0d8e64859388a18a60c66f205258d8f3aa937bcbea920f6"
+      },
+      {
+        "path": "controller.guard.json",
+        "bytes": 395,
+        "sha256": "dd00bb680d67526e2572d973356afd45c352f70868440aeb0ced30cc3b8545df"
+      },
+      {
+        "path": "final-feature-pins.json",
+        "bytes": 259,
+        "sha256": "8cc133c4fd906e9bad4035adb120f29ff087cb97576b85a946bb6f36025601e1"
+      },
+      {
+        "path": "focus-symbolize-v2.guard.json",
+        "bytes": 398,
+        "sha256": "6ccf469a08674f2146454d4f5a0d4186f5022f3de97f123bf734d80b63307400"
+      },
+      {
+        "path": "focus-symbolize.guard.json",
+        "bytes": 394,
+        "sha256": "4267e3cdf242013f234d8f7a9f36efc29121bad643a43a69fe94170269ad7f11"
+      },
+      {
+        "path": "focus_symbolize.py",
+        "bytes": 2096,
+        "sha256": "49d07b1e0020aa42a5cee45f75765c1ae487674f24034960abd1b4650dff755f"
+      },
+      {
+        "path": "focus_symbolize_v2.py",
+        "bytes": 2190,
+        "sha256": "05ee2946547156f9af9ba3b9caf0a7f74b70f43c728a807a65f80ad6bc35f63b"
+      },
+      {
+        "path": "instrumented-transition/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "instrumented-transition/browser.guard.json",
+        "bytes": 635,
+        "sha256": "ff9dd5f6eecf26cdd43cece653f9b08844cc2d1e3a4484bf3f5e54ba22eb5452"
+      },
+      {
+        "path": "instrumented-transition/browser.log",
+        "bytes": 42037,
+        "sha256": "9839f68153b076da6a39c193a9046202302830a0419281ca20f532fa0b99c768"
+      },
+      {
+        "path": "instrumented-transition/command.json",
+        "bytes": 686,
+        "sha256": "97cacfb35cebe7f2929dd3fdc9ad83ef9306b1fa94a3dae8a6fa0dbe17740864"
+      },
+      {
+        "path": "instrumented-transition/replay/openssl.log",
+        "bytes": 707,
+        "sha256": "99e4fa22e59a7e27fc1e18bf63498aa7a059997a6f1c2754f7c9cefa683030b6"
+      },
+      {
+        "path": "instrumented-transition/replay/ready.json",
+        "bytes": 468,
+        "sha256": "258241b65368b88438547ea9cf786ce2fdfad5afd7479a4c475fa4dc6462844d"
+      },
+      {
+        "path": "instrumented-transition/replay/requests.jsonl",
+        "bytes": 11817,
+        "sha256": "b1905c9f87a700b970d5b253ec3368f856f31b540885e0a4a242ba31512bf885"
+      },
+      {
+        "path": "instrumented-transition/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "6b49dead95f722025d7675a7555ead3498401a706015d15d438761c7e1878efa"
+      },
+      {
+        "path": "instrumented-transition-compile/inputs-after.json",
+        "bytes": 279,
+        "sha256": "261c8abba9bfda6fc2275a47a9630607cca214b8c79a559eec6da0a06698a913"
+      },
+      {
+        "path": "instrumented-transition-compile/inputs.json",
+        "bytes": 258,
+        "sha256": "9456a64291c60704a8597a06c8b2983b8f01e37a40ffcdb08f92cd85697f6925"
+      },
+      {
+        "path": "instrumented-transition-compile/none-compile.command.json",
+        "bytes": 1381,
+        "sha256": "12000e2d03cf1133bdfb0b93764a8726b8a0097590e69e8944a53eb6f77a1826"
+      },
+      {
+        "path": "instrumented-transition-compile/none-compile.guard.json",
+        "bytes": 1374,
+        "sha256": "90ce47eac02c5e2bd32fc351afa819d951891a1c66f31b1b8159a0bacd2c474c"
+      },
+      {
+        "path": "instrumented-transition-compile/none-compile.log",
+        "bytes": 68798,
+        "sha256": "5a580488a91e56efb4f6066493ae915dc7603143ebd21d56c620d48a0284856d"
+      },
+      {
+        "path": "instrumented-transition-controller.guard.json",
+        "bytes": 398,
+        "sha256": "9c8cdeac30d8121e85d1da6353d8c6bea74977332841438281ecc1dabdbcf766"
+      },
+      {
+        "path": "instrumented-transition-inputs-after.json",
+        "bytes": 17625,
+        "sha256": "a3c7b7a32b0a9efce7643af07e481cd4c5d65ec329d4826421898512495108aa"
+      },
+      {
+        "path": "instrumented-transition-inputs.json",
+        "bytes": 18932,
+        "sha256": "c381746a0e6634451629bfb1fd69e9076fde4541e959695707259d3ec4e741c1"
+      },
+      {
+        "path": "instrumented_transition.py",
+        "bytes": 2739,
+        "sha256": "333418ff329f4d83bbe78d625249b50da30b28ae279023e7df64aa35001ab1d9"
+      },
+      {
+        "path": "latest-native-inputs-after.json",
+        "bytes": 17593,
+        "sha256": "d37dd5ec42a96d6299df8d70161b464de5814c1df005808700b40a3c7c816212"
+      },
+      {
+        "path": "latest-native-inputs.json",
+        "bytes": 18902,
+        "sha256": "6d005aa1dbe5dac3bed088313ebd20902881448301365ab5a1ecc53abbb7ce23"
+      },
+      {
+        "path": "main_memory_isolation_probe_test.v",
+        "bytes": 1429,
+        "sha256": "96e4105718fbe22ca69da7b48c5cc11787eec9482d9b5b558813e5f8cf6cb08d"
+      },
+      {
+        "path": "native_regions.py",
+        "bytes": 2856,
+        "sha256": "2ced1ba3e04d00950bdbfd6039361a259e0dbd60c77fe7257623e96c8cc68e38"
+      },
+      {
+        "path": "native_regions_second.py",
+        "bytes": 3740,
+        "sha256": "69a2c12a128996a14c8ff12774e1db020f649acb319eb37fd1ce613841242dc4"
+      },
+      {
+        "path": "region-compile.guard.json",
+        "bytes": 469,
+        "sha256": "bc048974a245553bfe891ed185a4aba4c64dac468a6c29e619eea30fc0f639cd"
+      },
+      {
+        "path": "regions/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "regions/browser.guard.json",
+        "bytes": 579,
+        "sha256": "71256db01c2dbb49fe602874a5ca2131082af5b119272aaeb8714d6410b1678d"
+      },
+      {
+        "path": "regions/browser.log",
+        "bytes": 745,
+        "sha256": "ec87833029a4c49d735ae15249d2afd459bc1f78aacf956b81ce6f8adf9523db"
+      },
+      {
+        "path": "regions/command.json",
+        "bytes": 599,
+        "sha256": "b93065e92a4bc438130f7bda9d3aaf4347cac6f34fe6dc6513f92a06d36fdab3"
+      },
+      {
+        "path": "regions/environment.json",
+        "bytes": 930,
+        "sha256": "f44e5cbe0aecb3bda333c07e1d0d85afd5d396600ce2e1064c9fd268330d04a0"
+      },
+      {
+        "path": "regions/mappings.txt",
+        "bytes": 1285383,
+        "sha256": "029793408ecf70ad01c50f2410dd757d27048e7763edf6d70f45ddd4ea2bf709"
+      },
+      {
+        "path": "regions/replay/openssl.log",
+        "bytes": 1059,
+        "sha256": "f2386beeb9558636ac7c7b1d8918000ff2554c36fca6e62d4e1b676644163655"
+      },
+      {
+        "path": "regions/replay/ready.json",
+        "bytes": 452,
+        "sha256": "4923c3ae2595447b46dcf9759fdca7afd0a9c8411e1afbb72d72fa26676e4e00"
+      },
+      {
+        "path": "regions/replay/requests.jsonl",
+        "bytes": 11814,
+        "sha256": "bef539f21613cd11af979c13e6ab49f79aeafbd6d366a62f56d2145c5ebf8da1"
+      },
+      {
+        "path": "regions/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "bb5ab6ba73a993d84d416ff05747c8209e50c5c02cb574b9587661a4799af377"
+      },
+      {
+        "path": "regions-active.txt",
+        "bytes": 1184003,
+        "sha256": "dedd3171af04d9e33a84f61df33264657b70bd68c4c661e717a445dc2a82a43a"
+      },
+      {
+        "path": "regions-all.txt",
+        "bytes": 1213950,
+        "sha256": "c0b72f6df0acd06d3e211682718ddafd1d7c1390c9b9a5e2fa6039b5ee7e3774"
+      },
+      {
+        "path": "scratch-baseline/feature-inputs.json",
+        "bytes": 213,
+        "sha256": "7b25a059dddea780e69b93fff3759774c8e9f690617a486762a63ac1a47d323b"
+      },
+      {
+        "path": "scratch-baseline/inputs.json",
+        "bytes": 258,
+        "sha256": "3272f87beaef6ba4423bf23ea5bfbe77db7ffb69c246b272f20e44c9a4bed830"
+      },
+      {
+        "path": "scratch-baseline/native_document_scratch_test-prealloc-compile.command.json",
+        "bytes": 1438,
+        "sha256": "279d3f2a78d779016976de3aa9dcf1a12d3fecb87a6c74fbe12a9b2963d500b0"
+      },
+      {
+        "path": "scratch-baseline/native_document_scratch_test-prealloc-compile.guard.json",
+        "bytes": 1387,
+        "sha256": "03d714f557b1a2e1402578a3129fe864892523e7bdc51ebeaa1105721bce2e56"
+      },
+      {
+        "path": "scratch-baseline/native_document_scratch_test-prealloc-compile.log",
+        "bytes": 8360,
+        "sha256": "14e6d84f2fbcde186f83a416314ec36ef4616ab8861b3c1319d3e762b1f368d6"
+      },
+      {
+        "path": "scratch-baseline/native_document_scratch_test-prealloc-run.command.json",
+        "bytes": 554,
+        "sha256": "cb46706cce942fc86bb37018fae352e996f4a4fa87f4a57ee5461665c5eef5f0"
+      },
+      {
+        "path": "scratch-baseline/native_document_scratch_test-prealloc-run.guard.json",
+        "bytes": 436,
+        "sha256": "598c9fe648c476ef659422e532390f6b747bc7d00d0c8276750d73f124172e14"
+      },
+      {
+        "path": "scratch-baseline/native_document_scratch_test-prealloc-run.log",
+        "bytes": 765,
+        "sha256": "eedd8d50364055072ab1e1f4ffc3048d3052436b3ea9892c08136e76491d3465"
+      },
+      {
+        "path": "scratch-baseline-source-seal.json",
+        "bytes": 895,
+        "sha256": "3eb5e54cc3c3624863fc24980954a92d584c00b645b776ef6416514f2bbed36f"
+      },
+      {
+        "path": "scratch_baseline.py",
+        "bytes": 1118,
+        "sha256": "dd4f9607f4788b047b4e772aa3ac7f510f206c64d4df3f96e858dd0a4f105da4"
+      },
+      {
+        "path": "scratch_baseline_check.py",
+        "bytes": 3143,
+        "sha256": "0809aeed48c7d17c72f2aee784be9c1aa8d69696162c0e31ddad1ccddfc4cb0f"
+      },
+      {
+        "path": "seal.py",
+        "bytes": 6076,
+        "sha256": "31ef3be54916808e9c6d90d1b796c85c671cfe07c0c19b1f7c338bf7c349be9c"
+      },
+      {
+        "path": "second/baseline/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "second/baseline/browser.guard.json",
+        "bytes": 587,
+        "sha256": "fc578d4ca916e7068a779106656f328c83616e5e5aa0fd19e5bf88d1f6adb191"
+      },
+      {
+        "path": "second/baseline/browser.log",
+        "bytes": 753,
+        "sha256": "d49e23597134e82b27cd5a11d1663b4dded21743143b6bb48f6f60d564a491e4"
+      },
+      {
+        "path": "second/baseline/command.json",
+        "bytes": 623,
+        "sha256": "b19324b430d9312af7448275cd79a65bc3bcc65900d818c5015307222340ea3b"
+      },
+      {
+        "path": "second/baseline/environment.json",
+        "bytes": 752,
+        "sha256": "56ca1f8591e0733b56cbc8f74032ab7d7058cf8288d66eb1e064127e90bf7e89"
+      },
+      {
+        "path": "second/baseline/replay/openssl.log",
+        "bytes": 1386,
+        "sha256": "eb6df3a256f835d6ced6596d31421fc9e3d9add7687e0858aacb56112b5dfc6a"
+      },
+      {
+        "path": "second/baseline/replay/ready.json",
+        "bytes": 460,
+        "sha256": "533957f8b4c03d02516b35e37d7f4ef348d558386ac5e799d7fa1288bf30b58e"
+      },
+      {
+        "path": "second/baseline/replay/requests.jsonl",
+        "bytes": 11813,
+        "sha256": "e359af3317484839cab3ba30c416eda39d20fd4542914f6b339aab4098bbab46"
+      },
+      {
+        "path": "second/baseline/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "33beb29587ea5d0c0dd86156a762423733084174d5feb18b40f88ceb344e7dda"
+      },
+      {
+        "path": "second/latest-native-inputs-after.json",
+        "bytes": 17600,
+        "sha256": "ed5d51356fa661d2acd49a519677dcdc65bead3accd0aee0c0dd730567fa15a9"
+      },
+      {
+        "path": "second/latest-native-inputs.json",
+        "bytes": 18905,
+        "sha256": "e428d31e7da02e8a1bdee07b83658b43c07753d2c10ca002b04de13f40a2cf8d"
+      },
+      {
+        "path": "second/regions/audit-config.json",
+        "bytes": 102,
+        "sha256": "a32cd87f8ec6405bfcf3384f4089aeecf16dde1d1e97a4fde8618ed3c9c5b3a2"
+      },
+      {
+        "path": "second/regions/browser.guard.json",
+        "bytes": 586,
+        "sha256": "68c350b30af3a84b6b68b52bf4e88d343d8c31b372cdb76dc08f66a2be88c15a"
+      },
+      {
+        "path": "second/regions/browser.log",
+        "bytes": 752,
+        "sha256": "1d9beb24b6ba9abd2071e47f43a3a4fca833f6ca66df9f7b645d9e4835a1d641"
+      },
+      {
+        "path": "second/regions/command.json",
+        "bytes": 620,
+        "sha256": "6a9b7af8176ec1a94dc2f79001d22a80a46c7b7122748bed16d58cf091593f94"
+      },
+      {
+        "path": "second/regions/environment.json",
+        "bytes": 972,
+        "sha256": "efefb188cb78a0b9bb1a58204c9756046efa20d7b7e4f7bad3040e7d9515995f"
+      },
+      {
+        "path": "second/regions/mappings.txt",
+        "bytes": 1264779,
+        "sha256": "a66e30e38208def09f2ddc34347c25264ece9f234b926397cb5f1a4ecc46a05a"
+      },
+      {
+        "path": "second/regions/replay/openssl.log",
+        "bytes": 1915,
+        "sha256": "06e40c4a383ca228f4026094d1388f2d180ec04a8d21b1c7bc6dc846e3ecd654"
+      },
+      {
+        "path": "second/regions/replay/ready.json",
+        "bytes": 459,
+        "sha256": "2106cb9112dabdf71c6ff918b5dce9585e4899f0898eb0543c591fe092eac692"
+      },
+      {
+        "path": "second/regions/replay/requests.jsonl",
+        "bytes": 11812,
+        "sha256": "e669b75be62c6e0493625e157cd17b0fa4ccd62b5d78123ef47f366fb64c541c"
+      },
+      {
+        "path": "second/regions/requests.jsonl",
+        "bytes": 161433,
+        "sha256": "c0b2b0b9403d8c44ee9f1ae92ae664d700a1b43401eb70da181b8c7b0affa336"
+      },
+      {
+        "path": "second/regions-active-site.log",
+        "bytes": 1704,
+        "sha256": "729a51c6869cab8c4bdc27352b17abe18f87b50013a24ad01355372f245a6993"
+      },
+      {
+        "path": "second/regions-active-stack.log",
+        "bytes": 6368,
+        "sha256": "181cb4bcb3755773a614d6c658cf9efee339043a5d9a4e70f4644809f8f1301a"
+      },
+      {
+        "path": "second/regions-active.txt",
+        "bytes": 1164681,
+        "sha256": "72de57bcab48fe3f2d2a48d9c4beb77a26d19bdd1e4bd925671376448bb86a7d"
+      },
+      {
+        "path": "second/regions-all-site.log",
+        "bytes": 1699,
+        "sha256": "68dd2950e756ddd1be12b926e3111a0d96e79ee8afcb15b7f0616a075ebbba62"
+      },
+      {
+        "path": "second/regions-all-stack.log",
+        "bytes": 6409,
+        "sha256": "01963d7065dbdebbb099fca22091d76287eb0898c9c6dd7ffaacdd5fd45e4a32"
+      },
+      {
+        "path": "second/regions-all.txt",
+        "bytes": 1194628,
+        "sha256": "eeca6c988006fd527888eff578bfb9b657b3f29198d73837253e47deed4ba102"
+      },
+      {
+        "path": "second/vox-mapping-stacks.json",
+        "bytes": 20045,
+        "sha256": "276ba385bcd554499171d34207e08830e13b821f05a59a5b1235ca54575543ee"
+      },
+      {
+        "path": "second-controller.guard.json",
+        "bytes": 402,
+        "sha256": "e3ea41c644acec95bc8f0479564e343c1ebb9d38edace2695e722b493095ded9"
+      },
+      {
+        "path": "symbolize.guard.json",
+        "bytes": 380,
+        "sha256": "ad429e4f9c66be08a03690a0200f1b184a525515c32043ff5767c05fd7cc1337"
+      },
+      {
+        "path": "symbolize.py",
+        "bytes": 1552,
+        "sha256": "b27a8491a9beb029a793a9976eab3662e87dc15d4b6674c3ddd3dff9ea06d91f"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-default-compile.command.json",
+        "bytes": 1411,
+        "sha256": "7c0f0a877d7d898deb4d5b14dac3b6cf4d2c1ddd781ec5e9b37922bda2e30c43"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-default-compile.guard.json",
+        "bytes": 1356,
+        "sha256": "e430b06b9c122a72528e2138d72343cafc29e914c2624dc2da3eaca296d66ca8"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-default-compile.log",
+        "bytes": 3816,
+        "sha256": "b8acb188f42ea94139a3516bb64b14dae633884b44b29b1cabbfe1f495df83d5"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-default-run.command.json",
+        "bytes": 563,
+        "sha256": "c4017fce297243892414a5d6dd29284adcb279e3a955b64bee8470af7d563cc0"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-default-run.guard.json",
+        "bytes": 430,
+        "sha256": "392f1a68f69deaf64364b7d57ae0243d5bdc0a221391ee51ee99d9dcbd6a839b"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-default-run.log",
+        "bytes": 402,
+        "sha256": "009b10e43a44115f129d3dbbc7684a3ba07d15de5a2f1a50d452831bbaac1e96"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-none-compile.command.json",
+        "bytes": 1421,
+        "sha256": "417af5a87e2b703220a4066ef7a69c97a2d089e132757bf452241a9f74b74a01"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-none-compile.guard.json",
+        "bytes": 1376,
+        "sha256": "0d846e86249265b03733d1a8e78094f4855eec94d90b0b655724923ce403c216"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-none-compile.log",
+        "bytes": 5088,
+        "sha256": "fb0133f7012471036cf2bb0886f983ceb9ecbec69d8bee099fc0ad6f7dbca84c"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-none-run.command.json",
+        "bytes": 554,
+        "sha256": "150de6a8859b75f47dbfa7a55fb23dba755e89f952ffd17325bd7f26da25987c"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-none-run.guard.json",
+        "bytes": 426,
+        "sha256": "44d44f0bd185060d1b705165f045fdcf0d816665c44abafc484d7d9f7ba6ab34"
+      },
+      {
+        "path": "transition-controls/css_transition_shorthand_test-none-run.log",
+        "bytes": 398,
+        "sha256": "88d2319a45d6964624aeae84c1c0b9ccb9d3d26851b520ac0fb2c7852642c898"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-default-compile.command.json",
+        "bytes": 1399,
+        "sha256": "cc3b352f2e105e1548b8b3cb58b2d821a24820f8d37528f0b3e8264cf42d817f"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-default-compile.guard.json",
+        "bytes": 1343,
+        "sha256": "eb8727ade3cdf84a817ed4f930abd78e5aadf952f3f754b6b6da10d365f3df16"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-default-compile.log",
+        "bytes": 3803,
+        "sha256": "5bb68694af7bcdadfa189b95e59f9cbcce4cf45d9afb2add0e46608bc4558e54"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-default-run.command.json",
+        "bytes": 554,
+        "sha256": "57d24c5200a95e52f3ecd29a9742fdc42fb8f61f0ede948c93f09f96dd9bcc5f"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-default-run.guard.json",
+        "bytes": 426,
+        "sha256": "ab08dbb7bd28c967bed4f8e40b5346781181f6420762842455efe70b30889877"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-default-run.log",
+        "bytes": 398,
+        "sha256": "22a552393af6eb2269df7db1ee6242e49f34636864bb743a65d724c301409f7a"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-none-compile.command.json",
+        "bytes": 1409,
+        "sha256": "cf7c9b460cd251364c24c9c800bb7d30e66547d06b424d8d87d7fea7192ad748"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-none-compile.guard.json",
+        "bytes": 1363,
+        "sha256": "c9c11116dd0253d4d0401570968d5cf268d0b5992bc873b319c581d9894f52f2"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-none-compile.log",
+        "bytes": 5075,
+        "sha256": "cf77b7f1a21e21786ccba4c85281ad018802d5810a55bb0c333e8bd2214741e5"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-none-run.command.json",
+        "bytes": 545,
+        "sha256": "c9756a75af307da09655a2fcdbdaaf53c412938f7c89b5e5701dd479af472dff"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-none-run.guard.json",
+        "bytes": 423,
+        "sha256": "d94df24a43ec862ee05026fd237b6671e2d4afd8723b0f326457bcecb7327dee"
+      },
+      {
+        "path": "transition-controls/css_transition_timing_test-none-run.log",
+        "bytes": 395,
+        "sha256": "3c5b16076d5164eb3c085cf93b7511fc3cd5168a94f6eb08e4a284570e9f1f61"
+      },
+      {
+        "path": "transition-controls/feature-inputs-after.json",
+        "bytes": 213,
+        "sha256": "2ac6a36ae0daac1616b7f0ff4cba4c3c9bd01cafcc5bf1951b70ce0ca47cd21e"
+      },
+      {
+        "path": "transition-controls/feature-inputs.json",
+        "bytes": 213,
+        "sha256": "2ac6a36ae0daac1616b7f0ff4cba4c3c9bd01cafcc5bf1951b70ce0ca47cd21e"
+      },
+      {
+        "path": "transition-controls/inputs-after.json",
+        "bytes": 279,
+        "sha256": "db1df01d50b5d7593d0bc98828dfa126e73ddcab1106cfe18078c984077b8495"
+      },
+      {
+        "path": "transition-controls/inputs.json",
+        "bytes": 258,
+        "sha256": "3586c928c775d23cf91a2bd468263b66dcd87582576790e2d7d6b2fc20d2dcb4"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-default-compile.command.json",
+        "bytes": 1439,
+        "sha256": "7ae4de670e4abf44876d206150d3d5e0ba7b5b375e3cc2e732f6adbc34177042"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-default-compile.guard.json",
+        "bytes": 1363,
+        "sha256": "a359389186919642db642b73bb40571f64fdf28c83a4009acc9139bab7c860da"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-default-compile.log",
+        "bytes": 3823,
+        "sha256": "8ae042a22a7bfe54ba4ac606796a5c45ae6ee7181173df60d1aa880c0265427f"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-default-run.command.json",
+        "bytes": 584,
+        "sha256": "ea624e97c31326c38ef71b70204dfeb2ab5503fe00e930f44e9da4b15cbd5dce"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-default-run.guard.json",
+        "bytes": 435,
+        "sha256": "5081014d01dfd1c7036ed360ca49083580beb1fa4be480b6690fa507708ebf68"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-default-run.log",
+        "bytes": 407,
+        "sha256": "724be86c3d416480bf20c38fe7bfdb31a3d2de574f4cd5c88d75aff4baee072b"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-none-compile.command.json",
+        "bytes": 1449,
+        "sha256": "26d4e5524dd19b01f997cf22ee4c05dbd20b642bcbb19e39caf65a908fc511b9"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-none-compile.guard.json",
+        "bytes": 1390,
+        "sha256": "aa27b769295877d093bdf68f45d7abffd916157cf6c092c2f2bf5a10b7a0965d"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-none-compile.log",
+        "bytes": 5102,
+        "sha256": "d7868701758ecc8d8093ea107fe22967e4c4283c33483346aaf784fe11ba10e2"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-none-run.command.json",
+        "bytes": 575,
+        "sha256": "50acf0797761109dfe0a1ae8229718679692f763c8788f5228f56783366c9ef0"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-none-run.guard.json",
+        "bytes": 433,
+        "sha256": "0845934e4286d9744abd49a5bceee0bf6155f358c9f371076c6c39fbc58bfc7b"
+      },
+      {
+        "path": "transition-controls/transition_registration_storage_test-none-run.log",
+        "bytes": 405,
+        "sha256": "22e54a622b1dda4164f90a9ca9d567431d05f52bdd0af736fcda6c99a12faaa6"
+      },
+      {
+        "path": "transition-focused/feature-inputs-after.json",
+        "bytes": 213,
+        "sha256": "2ac6a36ae0daac1616b7f0ff4cba4c3c9bd01cafcc5bf1951b70ce0ca47cd21e"
+      },
+      {
+        "path": "transition-focused/feature-inputs.json",
+        "bytes": 213,
+        "sha256": "2ac6a36ae0daac1616b7f0ff4cba4c3c9bd01cafcc5bf1951b70ce0ca47cd21e"
+      },
+      {
+        "path": "transition-focused/inputs-after.json",
+        "bytes": 279,
+        "sha256": "475dfd1e688626a17b10b3c140163f9f232e5e75b6bb0f11d4d1f131366499c7"
+      },
+      {
+        "path": "transition-focused/inputs.json",
+        "bytes": 258,
+        "sha256": "3586c928c775d23cf91a2bd468263b66dcd87582576790e2d7d6b2fc20d2dcb4"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-default-compile.command.json",
+        "bytes": 1428,
+        "sha256": "2718801655b86fea6de1a30a99d56990ac4e02c1819ebc3c106f22e94e94af9a"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-default-compile.guard.json",
+        "bytes": 1359,
+        "sha256": "aaecb8c01491eefc70f1373447ae1ac12efe60c88a84405fb0a9465519ce6dc0"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-default-compile.log",
+        "bytes": 3819,
+        "sha256": "ac73212cbc350c054c83aacc170b61ff68e8b6e6628871e55f0d90e4d2461cbc"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-default-run.command.json",
+        "bytes": 575,
+        "sha256": "07206d6e3e615312c5b3fa7be2d8ab73b7f3e8c20af4b45ab0b626a10e7cac6b"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-default-run.guard.json",
+        "bytes": 433,
+        "sha256": "25418ad8ee0f356259305a0ced435a25cf97e98dbb90b375583651f124a470dd"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-default-run.log",
+        "bytes": 405,
+        "sha256": "8c486cd7f512ab382702e312ff871d9d729268a179bc2e3e9b6aff8ec7b27dd0"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-none-compile.command.json",
+        "bytes": 1438,
+        "sha256": "1a62914147201fef19dcf353c17e9c4e8cc719b2dc67305af7aade42567a2bca"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-none-compile.guard.json",
+        "bytes": 1379,
+        "sha256": "b90a08267bdbe9bdd89bedc50b9ae36767c2f0e4942c0eb683798dee60da3d97"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-none-compile.log",
+        "bytes": 5091,
+        "sha256": "abd7bf603bb026bff33a151253b87a082bf9a107706e6701fbfc34a5e571e69f"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-none-run.command.json",
+        "bytes": 566,
+        "sha256": "b574dbe2fc7813d69b755fa952011278c46a01d4449aa6cbf75644223522bce2"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-none-run.guard.json",
+        "bytes": 430,
+        "sha256": "cd2ec10a35e301522644040c337a3e1dbdb6736d142f326adc09634fce016289"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-none-run.log",
+        "bytes": 402,
+        "sha256": "39c0346ac44a1c3b2e0b3d5ffa439a8c30a86b3ab478c57b2a2d23222f6d907e"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-prealloc-compile.command.json",
+        "bytes": 1465,
+        "sha256": "952b5d96be0801b507a73bd2abc642e36ff895668ba8920f1b4d52b79377c822"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-prealloc-compile.guard.json",
+        "bytes": 1400,
+        "sha256": "4d28319670729d2c60b101d3168e793543bb7f6951262d6bb0d50265482df476"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-prealloc-compile.log",
+        "bytes": 6012,
+        "sha256": "52b4aef9b9ec78d668c1a72085de3d2001067275cb70df3754aa299eae02d05f"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-prealloc-run.command.json",
+        "bytes": 578,
+        "sha256": "4e64be6047f77fb6b148e63e4f4766d2074b7b6405251acd0311cb5e89985935"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-prealloc-run.guard.json",
+        "bytes": 434,
+        "sha256": "0c0e86757acb0451345ae9a651f6656459b7a1645984a5e4fa36ece8524c3078"
+      },
+      {
+        "path": "transition-focused/transition_registration_reuse_test-prealloc-run.log",
+        "bytes": 406,
+        "sha256": "34af5423322a5a5f0105c3415d47350174e7e44fad41fa8caf1f7acd0ec89afa"
+      },
+      {
+        "path": "transition-negative/feature-inputs.json",
+        "bytes": 213,
+        "sha256": "a2eb67900d4908a34db63a87e629829f3e50802e07feece8a6f06340016efff0"
+      },
+      {
+        "path": "transition-negative/inputs.json",
+        "bytes": 258,
+        "sha256": "7ca55c76abe53716f35921c46db199442a9340fb4b4276e975c78064383a471f"
+      },
+      {
+        "path": "transition-negative/transition_registration_reuse_test-prealloc-compile.command.json",
+        "bytes": 1468,
+        "sha256": "ee87a670d8c7572be12fe2f502881794a13dd930f7754c59b840328165c780ec"
+      },
+      {
+        "path": "transition-negative/transition_registration_reuse_test-prealloc-compile.guard.json",
+        "bytes": 1400,
+        "sha256": "f64067e74d0c44100c8403b57af54137add4a6d3c0152f210720e96944344233"
+      },
+      {
+        "path": "transition-negative/transition_registration_reuse_test-prealloc-compile.log",
+        "bytes": 6840,
+        "sha256": "233796020653f2a2bc321930e3c7ea4276f664d033e07dce832ada169e9ffa78"
+      },
+      {
+        "path": "transition-negative-v2/feature-inputs.json",
+        "bytes": 213,
+        "sha256": "7b25a059dddea780e69b93fff3759774c8e9f690617a486762a63ac1a47d323b"
+      },
+      {
+        "path": "transition-negative-v2/inputs.json",
+        "bytes": 258,
+        "sha256": "440bbda8007132da90e59a1257891741e369687d4d227b044a1a1843a3006e0c"
+      },
+      {
+        "path": "transition-negative-v2/transition_registration_reuse_test-prealloc-compile.command.json",
+        "bytes": 1477,
+        "sha256": "e4853f7637b003dcf482238f73bad36490b8c5513d30092c57bc3a9e3226270c"
+      },
+      {
+        "path": "transition-negative-v2/transition_registration_reuse_test-prealloc-compile.guard.json",
+        "bytes": 1402,
+        "sha256": "d8fdf16e9bcd1c60b964a66c518a165429627684771e1be23dd25128f6c36aa7"
+      },
+      {
+        "path": "transition-negative-v2/transition_registration_reuse_test-prealloc-compile.log",
+        "bytes": 6014,
+        "sha256": "ee02ad194841acb771306e4b5de4310dd4409122a37d892ca3fb9a82c7710ee4"
+      },
+      {
+        "path": "transition-negative-v2/transition_registration_reuse_test-prealloc-run.command.json",
+        "bytes": 590,
+        "sha256": "94f7a173bbe390d32dffa4362c48198d7d1631283f3c171ae0cd804668885a3a"
+      },
+      {
+        "path": "transition-negative-v2/transition_registration_reuse_test-prealloc-run.guard.json",
+        "bytes": 441,
+        "sha256": "5b779cb8b98ae56e5c49cc4b2d58aa9f520fbd98d66a866d29506afa23a56119"
+      },
+      {
+        "path": "transition-negative-v2/transition_registration_reuse_test-prealloc-run.log",
+        "bytes": 810,
+        "sha256": "626e8d783f9b2d1161c6a4bc0183958dba6d708d12d04e8d821ba67a125417b6"
+      },
+      {
+        "path": "transition-pool-first/feature-inputs.json",
+        "bytes": 213,
+        "sha256": "fa744fb1b6bf29158131ac38a5135d60ed47593565b833adad1eb879a86b35d3"
+      },
+      {
+        "path": "transition-pool-first/inputs.json",
+        "bytes": 258,
+        "sha256": "a343d114e24c789fe5d939ea24c7c741f0ba18fc1142985754b235bfdf89348a"
+      },
+      {
+        "path": "transition-pool-first/transition_registration_reuse_test-prealloc-compile.command.json",
+        "bytes": 1474,
+        "sha256": "101f6322c235c91ee5999fe5f64cfde1d7512b8ed0cf2292151b889e4a3b0d49"
+      },
+      {
+        "path": "transition-pool-first/transition_registration_reuse_test-prealloc-compile.guard.json",
+        "bytes": 1403,
+        "sha256": "c0841fbbe6bf15869c15d28048350489bd6738dfde09d9aba1db6ac1a008b46a"
+      },
+      {
+        "path": "transition-pool-first/transition_registration_reuse_test-prealloc-compile.log",
+        "bytes": 6015,
+        "sha256": "d280aa9c066ea9c0f112ab5359fc1c1db17ba80f929fda5a744a28cf2e65febd"
+      },
+      {
+        "path": "transition-pool-first/transition_registration_reuse_test-prealloc-run.command.json",
+        "bytes": 587,
+        "sha256": "19b9ef6e56954c7c88904e3d5f8bf9f4ae096122b5ad7a3c94732a8f2f606aee"
+      },
+      {
+        "path": "transition-pool-first/transition_registration_reuse_test-prealloc-run.guard.json",
+        "bytes": 440,
+        "sha256": "841b047903310f832604400c4ad916e896725291de4ce004fbd787bca4f77209"
+      },
+      {
+        "path": "transition-pool-first/transition_registration_reuse_test-prealloc-run.log",
+        "bytes": 807,
+        "sha256": "b533b077d8c415fa4c232ef128868b53ed6ccc0c9508db38619df6d3d34e6c71"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_shorthand_test-prealloc-compile.command.json",
+        "bytes": 1475,
+        "sha256": "51a4587f0efc2b327e43279f03a32a33fece2fc3540fa7df08120618657f47ad"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_shorthand_test-prealloc-compile.guard.json",
+        "bytes": 1399,
+        "sha256": "937bad4f3f866142ca00b02eb0c05a5237341a19f7d41bc3248852831a86910c"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_shorthand_test-prealloc-compile.log",
+        "bytes": 6011,
+        "sha256": "53d64e1d79c1c2690fd7b016350bc37dffc4ce1e15166de333841590b00cdf81"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_shorthand_test-prealloc-run.command.json",
+        "bytes": 593,
+        "sha256": "356f8520f06862279282bed4ae5982db74a0f79b36a11406f426cc17a5feb20a"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_shorthand_test-prealloc-run.guard.json",
+        "bytes": 448,
+        "sha256": "7b327950026979660b63054b566448dc6b72adbc8d102d8c98796ae68bc303b5"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_shorthand_test-prealloc-run.log",
+        "bytes": 420,
+        "sha256": "55bce4daf8b1e3c567d959016e56f5d9284db9555974dff2fc42993a31b6d328"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_timing_test-prealloc-compile.command.json",
+        "bytes": 1463,
+        "sha256": "24f17d479e5a3f78fda86a8498b4f20d76ff75f12b57fd8e9f53eedd407be678"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_timing_test-prealloc-compile.guard.json",
+        "bytes": 1393,
+        "sha256": "f8d53d960132246f9c5d4ec35a5503e7395ad369d7f4b0ff6e166a69131df47e"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_timing_test-prealloc-compile.log",
+        "bytes": 6005,
+        "sha256": "22b2302457164055e7d79a30a963a2b4992433baea5ee6e9d710de29b53252b1"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_timing_test-prealloc-run.command.json",
+        "bytes": 584,
+        "sha256": "884d158ea2340df16e37a6546a85e866cdc85f99bbed65750e50b8faadd14e3f"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_timing_test-prealloc-run.guard.json",
+        "bytes": 444,
+        "sha256": "503a05e5f7486be6d3abe7bf22606d04e98f9d521daf77c3f1b51f1b1ffdbee6"
+      },
+      {
+        "path": "transition-prealloc-controls/css_transition_timing_test-prealloc-run.log",
+        "bytes": 416,
+        "sha256": "5d3ea208bc0cdd080959d58da803add7626b0ec58075251332d32027876049b8"
+      },
+      {
+        "path": "transition-prealloc-controls/feature-inputs.json",
+        "bytes": 213,
+        "sha256": "2ac6a36ae0daac1616b7f0ff4cba4c3c9bd01cafcc5bf1951b70ce0ca47cd21e"
+      },
+      {
+        "path": "transition-prealloc-controls/inputs.json",
+        "bytes": 258,
+        "sha256": "f31c57386b0bb0ae5117747dcbd99ff9c80b0afc4f584d11569068bf3fae12a3"
+      },
+      {
+        "path": "transition-prealloc-controls/native_document_scratch_test-prealloc-compile.command.json",
+        "bytes": 1474,
+        "sha256": "4aa601bc23d155ff1c3a8f2625ee579a7d698df5151d03aee16cf320eff11fcb"
+      },
+      {
+        "path": "transition-prealloc-controls/native_document_scratch_test-prealloc-compile.guard.json",
+        "bytes": 1401,
+        "sha256": "741997f26eecd3f9eb70b56def1ce6d3dc53ddcf19d8df1ede14887c36470ee9"
+      },
+      {
+        "path": "transition-prealloc-controls/native_document_scratch_test-prealloc-compile.log",
+        "bytes": 8374,
+        "sha256": "c08b6fa278309843af788d4355a0bf826c97bfe920d32fea9f4b69eb1aa357dd"
+      },
+      {
+        "path": "transition-prealloc-controls/native_document_scratch_test-prealloc-run.command.json",
+        "bytes": 590,
+        "sha256": "46e9e0cb8b4e091c02d645beaa74027faa0e83d6affba5769517845c6ef0c7f7"
+      },
+      {
+        "path": "transition-prealloc-controls/native_document_scratch_test-prealloc-run.guard.json",
+        "bytes": 439,
+        "sha256": "6d6c006afb294ed5606d92826f49e806322f30212c889659d4c5da73df1496b4"
+      },
+      {
+        "path": "transition-prealloc-controls/native_document_scratch_test-prealloc-run.log",
+        "bytes": 768,
+        "sha256": "9229b8a4e985148bda6ac07a404161a17cc7a133721fea357afd805ad8b55ec0"
+      },
+      {
+        "path": "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-compile.command.json",
+        "bytes": 1474,
+        "sha256": "236df74ff84b4f1b02c11d8fd109b80e499ae5cdefa81bd7b1af9188424dc4b7"
+      },
+      {
+        "path": "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-compile.guard.json",
+        "bytes": 1401,
+        "sha256": "782f61100658cec2447728555ee32bcfab8ab925011487569a3645d8fecc8b83"
+      },
+      {
+        "path": "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-compile.log",
+        "bytes": 8374,
+        "sha256": "5030c306d61d1a40483818a3903faaa07e4d079bc49585348109307197a977be"
+      },
+      {
+        "path": "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-run.command.json",
+        "bytes": 590,
+        "sha256": "7a8d83411277b4d8c30f6d6204bb11dd7cd32363b8bff7c1ed68c3fb9d107fea"
+      },
+      {
+        "path": "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-run.guard.json",
+        "bytes": 441,
+        "sha256": "5d4438014e0e9c22cb0a829f7c23008d772466b63daa3fe3f1fde2236bba0566"
+      },
+      {
+        "path": "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-run.log",
+        "bytes": 413,
+        "sha256": "395e6e0d9ba8db6d0ed3dab634432489c9d27f1d6e06ee0a1fccbe40dc2c26c0"
+      },
+      {
+        "path": "transition-prealloc-controls/transition_registration_storage_test-prealloc-compile.command.json",
+        "bytes": 1503,
+        "sha256": "e398c2cc2698ab86bfcb919452cad84294add03681c133c74f2fbcd9ca6b68c9"
+      },
+      {
+        "path": "transition-prealloc-controls/transition_registration_storage_test-prealloc-compile.guard.json",
+        "bytes": 1419,
+        "sha256": "697c39b5c4b77f12c3f880e46900c64dbee98c549b458b348916def50502f3c9"
+      },
+      {
+        "path": "transition-prealloc-controls/transition_registration_storage_test-prealloc-compile.log",
+        "bytes": 6031,
+        "sha256": "e0be2c19c4157965fefbc3b9d242491e02870e9361f42f5016f207e68c50d26c"
+      },
+      {
+        "path": "transition-prealloc-controls/transition_registration_storage_test-prealloc-run.command.json",
+        "bytes": 614,
+        "sha256": "e8fbcd6d4b7cb8218336912c100515700db756e71da0380178663052b7a9c88b"
+      },
+      {
+        "path": "transition-prealloc-controls/transition_registration_storage_test-prealloc-run.guard.json",
+        "bytes": 446,
+        "sha256": "479bf49afc47fbced1dd6bc2c2982c352112f3000f5a0cb4dfdc507cc7e4075e"
+      },
+      {
+        "path": "transition-prealloc-controls/transition_registration_storage_test-prealloc-run.log",
+        "bytes": 418,
+        "sha256": "2bc7a79ef678b9c9f076d081fd8f06742afc9a6653ecd01ca0b5546a1ee229f3"
+      },
+      {
+        "path": "transition_controls.py",
+        "bytes": 3230,
+        "sha256": "df466693d8b508c4c305fc746cf107120e60cfbca22691437c373db3db32f99b"
+      },
+      {
+        "path": "transition_focused.py",
+        "bytes": 3165,
+        "sha256": "4f9e70df6816a431f665b0834e692fbf6909cd3b43a4accce09b761dcd6b9c63"
+      },
+      {
+        "path": "transition_negative.py",
+        "bytes": 3149,
+        "sha256": "8112a6da303e8b2af27424b8a34d83364e0442c0b20597b4eefb9f68c77f0014"
+      },
+      {
+        "path": "transition_negative_v2.py",
+        "bytes": 3152,
+        "sha256": "604f5f58ccfd8b3cdf1bc3e69d9e8d8430c3fcf7ec00536ecde1a8d6dfc4407c"
+      },
+      {
+        "path": "transition_pool_first.py",
+        "bytes": 3151,
+        "sha256": "6fdd2a5101ee9943ce8eda4b273f7bca3b38b0c78b6eb7f83b45c325a64257d9"
+      },
+      {
+        "path": "transition_prealloc_controls.py",
+        "bytes": 3370,
+        "sha256": "e8b1f312bcbac4ab75265570c998043e3e5299456c1e1761a9450b884d8294a3"
+      }
+    ],
+    "extraction_verified": true
+  },
+  "guards": {
+    "baseline/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/baseline/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3351691264,
+      "elapsed_seconds": 3.396443209,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:61849",
+        "--replay-spki",
+        "S29aby2tnuwBciF7TcCPYJmDp8rS60yse1ANnL34ENM="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1732689920,
+      "elapsed_seconds": 15.327130208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:61849",
+        "--replay-spki",
+        "S29aby2tnuwBciF7TcCPYJmDp8rS60yse1ANnL34ENM="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1702215680,
+      "elapsed_seconds": 15.551581083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news/vox.png",
+        "https://news.ycombinator.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 168542208,
+      "elapsed_seconds": 5.921531,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/hacker-news/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/hacker-news/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1741012992,
+      "elapsed_seconds": 11.717712792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:62033",
+        "--replay-spki",
+        "4LdjodBonKg3vrrBLQaQN6pcfnIcIhBBgb+TugtG1b4="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1695531008,
+      "elapsed_seconds": 17.997999708000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:62033",
+        "--replay-spki",
+        "4LdjodBonKg3vrrBLQaQN6pcfnIcIhBBgb+TugtG1b4="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1711292416,
+      "elapsed_seconds": 15.316031500000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired/vox.png",
+        "https://www.wired.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 838467584,
+      "elapsed_seconds": 7.191765332999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites/wired/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites/wired/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1758314496,
+      "elapsed_seconds": 5.736806625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/sites.guard.json": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "tools/forum_news_pixels.py",
+        "--sites",
+        "hacker-news,wired",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/browser-controls/sites",
+        "--extension",
+        "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "Build/wired-parity-20261104-inputs/adblock-check",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--cache-policy",
+        "cold"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2169733120,
+      "elapsed_seconds": 102.024472625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser-controls/svg-source-switch.guard.json": {
+      "command": [
+        "sh",
+        "compare_screenshots.sh",
+        "svg-image-source-switch-same-size"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 210747392,
+      "elapsed_seconds": 5.182777583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-allocation-20261105/native_regions.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3438510080,
+      "elapsed_seconds": 7.3192326670000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focus-symbolize-v2.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-allocation-20261105/focus_symbolize_v2.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 134037504,
+      "elapsed_seconds": 3.1181695830000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focus-symbolize.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-allocation-20261105/focus_symbolize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2801664,
+      "elapsed_seconds": 0.28822495800000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented-transition/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/instrumented-transition-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/instrumented-transition/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3229564928,
+      "elapsed_seconds": 21.664158875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented-transition-compile/none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/instrumented-transition-compile/none",
+        "/Users/alex/code/vox2/main_memory_isolation_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5589647360,
+      "elapsed_seconds": 19.872691041000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented-transition-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-allocation-20261105/instrumented_transition.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3316744192,
+      "elapsed_seconds": 22.418733667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "region-compile.guard.json": {
+      "command": [
+        "clang",
+        "-dynamiclib",
+        "-O2",
+        "-o",
+        "Build/techcrunch-allocation-20261105/region-probe.dylib",
+        "tools/prealloc_region_probe.c"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3522560,
+      "elapsed_seconds": 0.19820479200000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regions/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/regions/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3327705088,
+      "elapsed_seconds": 3.099584208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "scratch-baseline/native_document_scratch_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/scratch-baseline/native_document_scratch_test-prealloc",
+        "/Users/alex/code/vox2/layout/native_document_scratch_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3541794816,
+      "elapsed_seconds": 10.7747435,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "scratch-baseline/native_document_scratch_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/scratch-baseline/native_document_scratch_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 45203456,
+      "elapsed_seconds": 0.6454449170000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "second/baseline/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/second/baseline/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3266772992,
+      "elapsed_seconds": 4.026643334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "second/regions/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/second/regions/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3255877632,
+      "elapsed_seconds": 4.035600291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "second-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-allocation-20261105/native_regions_second.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3377987584,
+      "elapsed_seconds": 152.80825554199998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "symbolize.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-allocation-20261105/symbolize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3112960,
+      "elapsed_seconds": 0.171748875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_shorthand_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_shorthand_test-default",
+        "/Users/alex/code/vox2/css/css_transition_shorthand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1990180864,
+      "elapsed_seconds": 13.143287166999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_shorthand_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_shorthand_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 294912,
+      "elapsed_seconds": 0.418012667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_shorthand_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_shorthand_test-none",
+        "/Users/alex/code/vox2/css/css_transition_shorthand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1997373440,
+      "elapsed_seconds": 6.6831542090000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_shorthand_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_shorthand_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.429816375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_timing_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_timing_test-default",
+        "/Users/alex/code/vox2/css/css_transition_timing_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2007105536,
+      "elapsed_seconds": 6.187454791,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_timing_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_timing_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.421836375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_timing_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_timing_test-none",
+        "/Users/alex/code/vox2/css/css_transition_timing_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1944289280,
+      "elapsed_seconds": 6.085953833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/css_transition_timing_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/css_transition_timing_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.305090584,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/transition_registration_storage_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/transition_registration_storage_test-default",
+        "/Users/alex/code/vox2/css/transition_registration_storage_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1922924544,
+      "elapsed_seconds": 9.604863209,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/transition_registration_storage_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/transition_registration_storage_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.48170775,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/transition_registration_storage_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/transition_registration_storage_test-none",
+        "/Users/alex/code/vox2/css/transition_registration_storage_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1967423488,
+      "elapsed_seconds": 16.180308832999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-controls/transition_registration_storage_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-controls/transition_registration_storage_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 23838720,
+      "elapsed_seconds": 0.374924,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-focused/transition_registration_reuse_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-focused/transition_registration_reuse_test-default",
+        "/Users/alex/code/vox2/css/transition_registration_reuse_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1978073088,
+      "elapsed_seconds": 10.072314916,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-focused/transition_registration_reuse_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-focused/transition_registration_reuse_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.365386375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-focused/transition_registration_reuse_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-focused/transition_registration_reuse_test-none",
+        "/Users/alex/code/vox2/css/transition_registration_reuse_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1951105024,
+      "elapsed_seconds": 15.874832458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-focused/transition_registration_reuse_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-focused/transition_registration_reuse_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 16564224,
+      "elapsed_seconds": 0.358522,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-focused/transition_registration_reuse_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-focused/transition_registration_reuse_test-prealloc",
+        "/Users/alex/code/vox2/css/transition_registration_reuse_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2017214464,
+      "elapsed_seconds": 13.842940125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-focused/transition_registration_reuse_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-focused/transition_registration_reuse_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.439511375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-negative/transition_registration_reuse_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-negative/transition_registration_reuse_test-prealloc",
+        "/Users/alex/code/vox2/css/transition_registration_reuse_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1285292032,
+      "elapsed_seconds": 1.877068292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-negative-v2/transition_registration_reuse_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-negative-v2/transition_registration_reuse_test-prealloc",
+        "/Users/alex/code/vox2/css/transition_registration_reuse_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2006646784,
+      "elapsed_seconds": 9.85539875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-negative-v2/transition_registration_reuse_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-negative-v2/transition_registration_reuse_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 17006592,
+      "elapsed_seconds": 0.426315167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-pool-first/transition_registration_reuse_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-pool-first/transition_registration_reuse_test-prealloc",
+        "/Users/alex/code/vox2/css/transition_registration_reuse_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1947516928,
+      "elapsed_seconds": 15.314414667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-pool-first/transition_registration_reuse_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-pool-first/transition_registration_reuse_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 16449536,
+      "elapsed_seconds": 0.474932625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/css_transition_shorthand_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/css_transition_shorthand_test-prealloc",
+        "/Users/alex/code/vox2/css/css_transition_shorthand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1905786880,
+      "elapsed_seconds": 6.178241625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/css_transition_shorthand_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/css_transition_shorthand_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 933888,
+      "elapsed_seconds": 0.41372533300000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/css_transition_timing_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/css_transition_timing_test-prealloc",
+        "/Users/alex/code/vox2/css/css_transition_timing_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1962229760,
+      "elapsed_seconds": 6.178642334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/css_transition_timing_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/css_transition_timing_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.40258008300000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/native_document_scratch_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/native_document_scratch_test-prealloc",
+        "/Users/alex/code/vox2/layout/native_document_scratch_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3593125888,
+      "elapsed_seconds": 10.427675625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/native_document_scratch_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/native_document_scratch_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 35962880,
+      "elapsed_seconds": 0.6355415,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/prealloc_bounded_frames_test-prealloc",
+        "/Users/alex/code/vox2/layout/prealloc_bounded_frames_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3576446976,
+      "elapsed_seconds": 10.367072084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/prealloc_bounded_frames_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/prealloc_bounded_frames_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 93192192,
+      "elapsed_seconds": 0.789008042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/transition_registration_storage_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/transition_registration_storage_test-prealloc",
+        "/Users/alex/code/vox2/css/transition_registration_storage_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1860435968,
+      "elapsed_seconds": 6.583044416000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-prealloc-controls/transition_registration_storage_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-allocation-20261105/transition-prealloc-controls/transition_registration_storage_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.424634292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}
