@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { captureArchive, captureEncodedResponseCache, installCSSOMAuthorRecorder } from './capture_archive.mjs';
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
 import {closeOracleBrowser} from './oracle_shutdown.mjs';
+import {recordOracleFailure} from './oracle_failure.mjs';
 import {parseArchiveFocus,restoreArchiveFocus} from './archive_focus.mjs';
 import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
 import { navigationObservation } from './navigation.mjs';
@@ -456,6 +457,9 @@ try {
     if (mismatches.length || oracleDisagreements.length || !capture.common_stream.matches || (visibility && !visibility.matches) || (cosmeticComparison && (!cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match))) process.exitCode = 1;
     else if (!requests.length || (navigation && navigation.coverage !== 'page')) process.exitCode = 2;
     completed = !process.exitCode;
+} catch (error) {
+    await recordOracleFailure(options.output, error);
+    throw error;
 } finally {
     try {
         await closeOracleBrowser(browser,()=>browserControl
