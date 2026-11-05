@@ -277,6 +277,34 @@ path descriptors (all exact), and a different SVG gradient cohort: 590 of 800
 exact, 210 declines, zero differences or original-backend failures. Coverage
 counts belong to their particular seeds and flags; they are not interchangeable.
 
+Canonical Vox `09d135d80` adds affine non-scaling strokes, including SVG image
+and region draws. The adapter transforms the completed path's points and conics
+like SkPath, retains oval classification for axis-aligned transforms, and leaves
+the original clips in device space. Standalone strokes reset the draw matrix;
+embedded SVG strokes concatenate SkMatrix's inverse so only the path's user-space
+transform is cancelled, preserving the parent transform and SkM44 rounding.
+Singular intersect clips and non-invertible SVG matrices follow Skia's no-op
+behavior. Perspective and other unsupported draws still fall back atomically.
+
+Focused checks against the original `libVoxGraphite` with `--non-scaling`
+(mixed fills and strokes; the flag changes strokes without consuming random values):
+
+| Cohort | Comparisons | Exact | Declined | Different / original failed |
+| --- | ---: | ---: | ---: | --- |
+| Paths, seed 20261105 | 2000 | 2000 | 0 | 0 / 0 |
+| Gradient paths, seed 20261105 | 2000 | 1741 | 259 | 0 / 0 |
+| SVG images and regions, seed 1 | 800 | 800 | 0 | 0 / 0 |
+| SVG images and regions with gradients, seed 2 | 800 | 596 | 204 | 0 / 0 |
+
+The solid path and SVG-gradient cohorts also pass through an optimized C-O3/LTO driver.
+Both GG adapter test files pass normally and with `-prod -gc none`, including
+original-backend comparisons for clips, affine SVG parents, singular matrices,
+row padding and unchanged pixels after an unsupported batch. The assembly audit
+finds zero fused multiply-adds in `ggshape__*`. See the
+[non-scaling stroke receipt](gg-migration/non-scaling-20261105.json) for pins,
+commands, exits, retained failed attempts and raw evidence. These checks exercise
+the adapter directly and do not establish browser acceptance.
+
 Historical browser A/B results with text, shapes and paths enabled:
 
 | Bundle | Fixtures | Pixel-equal | Different / unstable / failed |
@@ -308,6 +336,17 @@ native-library and fixture/resource hashes throughout, retains actual exits,
 and fails on changed inputs or rendering failures. The canonical input directory
 now has more than 262 fixtures; use the recorded historical fixture list when
 continuing that cohort. See [the tool instructions](../tools/gg_migration/README.md).
+
+The recompare fix `fcfceaebc` retains interrupted-run exit codes and provenance,
+rejects missing registration proof and unknown exits, and keeps incomplete cohorts
+from passing despite equal PNGs. All 11 Python checks pass. A newer completed
+shared bundle (`49a4b05f`, receipt `20261105-100658-c415fb0f`) still compiles without
+`-d vox_gg_canvas`; the shared build guard remains occupied. It cannot validate
+either the per-edge port or the new non-scaling adapter, so the diagnostics A/B
+continues to be pending.
+Fresh process PID 61042 captured `svg-image-non-scaling-stroke.html` successfully
+with this bundle; browser/guard exits were zero and executable, libraries and
+fixture hashes stayed unchanged. The retained PNG is baseline evidence only.
 
 ### Brave fixture inventory
 

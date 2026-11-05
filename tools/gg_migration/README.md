@@ -75,12 +75,20 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   outside the status bar's live RAM readout, captures the control again when
   they differ, and classifies each fixture as `equal`, `equal_to_repeat`,
   `different`, `unstable` or `failed`. `--recompare` rebuilds the summary
-  from existing captures.
+  from existing captures, preserving recorded exits, candidate environment,
+  capture mask and validation failures. Missing exits or registration proof and
+  interrupted/incomplete cohorts cannot pass recomparison.
   Each run needs a new output directory. The runner pins the executable, native
   libraries, input fixtures, assets and resources before every launch, verifies
   adapter registration, retains partial results and actual exits, and exits
   nonzero on rendering differences, unstable/failed captures or changed inputs.
   `--fixture-list FILE` selects one fixture stem per line for a historical cohort.
+
+For non-scaling strokes, add `--non-scaling` to `path_bridge_check`: it flags
+every generated stroke without changing the random stream, including when
+combined with `--svg` and `--gradients`. The adapter transforms the finished path
+like SkPath, preserves its original clips, and cancels only the SVG path matrix
+using SkMatrix's inverse and SkM44 concatenation. Perspective strokes still decline.
 
 The adapters on master require `-d vox_gg_canvas` and a V compiler containing
 `gg.canvas`. `build-prod-browser.sh` detects that module in the selected compiler
