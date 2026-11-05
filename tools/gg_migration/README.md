@@ -82,7 +82,16 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   libraries, input fixtures, assets and resources before every launch, verifies
   adapter registration, retains partial results and actual exits, and exits
   nonzero on rendering differences, unstable/failed captures or changed inputs.
+  Runs against canonical `Build/v/Vox.app` hold a shared publication lease.
+  The production builder can compile while captures run, then waits to publish
+  its bundle until the captures release the lease. Hash checks still reject
+  fixture/resource changes and replacements by publishers that lack the lease.
   `--fixture-list FILE` selects one fixture stem per line for a historical cohort.
+  The runner and fixture list are hashed too. Repeat `--resource FILE` for
+  resources outside `input`, `assets` and `resources`; a missing file fails
+  before capture, and a changed file invalidates the cohort. For the 262-fixture
+  cohort, include the local font used by `guardian-intrinsic-font-width.html`,
+  as in the browser command below.
 
 For non-scaling strokes, add `--non-scaling` to `path_bridge_check`: it flags
 every generated stroke without changing the random stream, including when
@@ -92,8 +101,10 @@ using SkMatrix's inverse and SkM44 concatenation. Perspective strokes still decl
 
 The adapters on master require `-d vox_gg_canvas` and a V compiler containing
 `gg.canvas`. `build-prod-browser.sh` detects that module in the selected compiler
-and supplies the flag; normal V builds keep the original renderer. Renderer
-selection remains opt-in at runtime (`VOX_GG_TEXT`, `VOX_GG_SHAPES`, `VOX_GG_PATHS`).
+through the existing `@VEXEROOT` library probe and supplies the flag. This also
+works with the GG compiler, which predates `v root`. Normal V builds keep the
+original renderer. Renderer selection remains opt-in at runtime (`VOX_GG_TEXT`,
+`VOX_GG_SHAPES`, `VOX_GG_PATHS`).
 Build and test from the canonical Vox checkout, following its shared-build rules:
 
 ```sh
@@ -137,9 +148,11 @@ Build/gg-oracle/text-scene $OUT/script.txt $OUT
 Browser A/B (a bundle built with `V_BIN` from the gg branch):
 
 ```sh
+gg_font_root=Tests/Browser/Brave/sites/guardian/bodies
 python3 tools/run_memory_bounded.py --timeout 7200 --lock Build/gg-ab.lock \
   --report Build/gg-ab-guard.json -- python3 tools/gg_migration/capture_ab.py \
   --bundle Build/v/Vox.app --inputs Tests/Browser/Brave/input --output $OUT \
+  --resource "$gg_font_root/bf672dbc2fe3d05096cb045691ec7a9dc00e3470458665d42d0b7aabd07bb990" \
   --candidate-env VOX_GG_TEXT=1 --candidate-env VOX_GG_SHAPES=1 \
   --candidate-env VOX_GG_PATHS=1 --candidate-env VOX_GG_DIAGNOSTICS=1
 ```

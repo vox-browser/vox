@@ -53,6 +53,11 @@ recognizes `vlib/gg/canvas` and supplies `-d vox_gg_canvas`; ordinary V builds
 exclude the adapters. Runtime selection remains `VOX_GG_TEXT=1`,
 `VOX_GG_SHAPES=1`, and `VOX_GG_PATHS=1`. Unsupported draws retain Skia fallback.
 
+The GG compiler predates `v root`. Build detection now uses the existing
+`@VEXEROOT` library probe (`aa03e9ba8`), including for moved compilers and
+staged runtimes. Three focused checks pass; real compiler probes detect the
+GG module and leave it disabled for the standard shared V compiler.
+
 Implemented in `gg.canvas`:
 
 - sokol: integer vertex formats; synchronous image upload/readback and flush;
@@ -305,7 +310,7 @@ finds zero fused multiply-adds in `ggshape__*`. See the
 commands, exits, retained failed attempts and raw evidence. These checks exercise
 the adapter directly and do not establish browser acceptance.
 
-Historical browser A/B results with text, shapes and paths enabled:
+Browser A/B results with text, shapes and paths enabled:
 
 | Bundle | Fixtures | Pixel-equal | Different / unstable / failed |
 | --- | ---: | ---: | --- |
@@ -313,7 +318,7 @@ Historical browser A/B results with text, shapes and paths enabled:
 | stage19 | 262 | 262 | 0 / 0 / 0 |
 | stage20 | 262 | 262 | 0 / 0 / 0 |
 | stage21 | 262 | 262 | 0 / 0 / 0 |
-| stage22 | pending | pending | not run |
+| stage22 (`ff4cd6dc66`, canonical integration) | 262 | 262 | 0 / 0 / 0 |
 
 Stage21 used Vox `60516f48f`, V `276636673e`, executable
 `54eedf139a745d9daadffe4a3a75a99d6089550ed3f0f80dd3c65d7375f6f91c`, unchanged
@@ -321,14 +326,40 @@ before and after. The older rows retain their capture logs; superseded bundles
 and PNG directories were removed in the earlier disk cleanup. These captures
 mask only the status bar's live RAM readout and do not establish parity with Brave.
 
-Stage22 originally failed with ENOSPC before compilation. No available bundle
-contains the inverse-fill/diagnostics pair (`177c55bb4b` / `7377e0384`) or the
-new per-edge renderer. During this continuation the canonical production build
-guard was already occupied, so no duplicate build was submitted and no old
-bundle was used to claim validation of the new code. The 262-fixture A/B and
-its drawn/declined coverage summary remain pending a GG-enabled shared bundle.
-The last stage17 diagnostic counted 394 shapes drawn / 4 declined and 205 paths
-drawn / 103 declined (102 gradients); those are historical counts.
+Stage22 originally failed with ENOSPC before compilation. The continuation
+completed a GG-enabled canonical production build, including the inverse-fill,
+per-edge AA and non-scaling stroke work. Receipt `20261105-112409-8bb6c959`
+pins executable
+`58129def664e8367a17cd04b3f8e8e313d3665ac31187ba71fe475b33a920ef9`
+and V `ff4cd6dc66`. The frozen source record is based on canonical HEAD
+`6835e42ea`, with dirty shared changes recorded by its input hashes; it is not
+a clean-commit build. The GG compiler lacks native-header splitting, so this
+build uses one C unit despite requesting parallel compilation. It supplies no
+performance comparison with the standard compiler's split builds.
+
+With `VOX_GG_DIAGNOSTICS=1`, all 262 historical fixture names, using their
+current canonical contents, matched on their first control/candidate pair.
+No repeats were needed. All 524 browser launches and the memory guard exited
+zero; executable, native libraries, fixtures, runner, manifest and the Guardian
+font hashes stayed unchanged. Captures used a 1024x852 window and the existing
+224x24 RAM-readout exclusion, private profiles and fresh browser processes.
+
+Candidate-log descriptor counts for this cohort:
+
+| Adapter | Drawn | Declined | Fixtures with calls |
+| --- | ---: | ---: | ---: |
+| Shapes | 535 | 0 | 87 |
+| Paths | 436 | 3 | 81 |
+| SVG vector batches | 57 | 0 | 14 |
+
+The three declines are gradient descriptors in `css-gradient-masks` (one) and
+`svg-path-coverage` (two); their Skia fallback preserves the matching pixels.
+`device-layout-svg-user-space` executes one non-scaling stroke through GG.
+These counts include repeated paint calls; they count adapter descriptors,
+not all primitives or all Skia work. Text registration is verified, but these
+diagnostics do not count glyph runs. Recording canvases, GPU picture playback
+and other bypasses still use Skia. The historical stage17 counts (394/4 shapes
+and 205/103 paths drawn/declined) belong to a different bundle and workload.
 
 The current runner automatically enables `VOX_GG_DIAGNOSTICS=1`, verifies the
 requested adapters registered in each candidate process, pins executable,
@@ -337,16 +368,25 @@ and fails on changed inputs or rendering failures. The canonical input directory
 now has more than 262 fixtures; use the recorded historical fixture list when
 continuing that cohort. See [the tool instructions](../tools/gg_migration/README.md).
 
-The recompare fix `fcfceaebc` retains interrupted-run exit codes and provenance,
-rejects missing registration proof and unknown exits, and keeps incomplete cohorts
-from passing despite equal PNGs. All 11 Python checks pass. A newer completed
-shared bundle (`49a4b05f`, receipt `20261105-100658-c415fb0f`) still compiles without
-`-d vox_gg_canvas`; the shared build guard remains occupied. It cannot validate
-either the per-edge port or the new non-scaling adapter, so the diagnostics A/B
-continues to be pending.
-Fresh process PID 61042 captured `svg-image-non-scaling-stroke.html` successfully
-with this bundle; browser/guard exits were zero and executable, libraries and
-fixture hashes stayed unchanged. The retained PNG is baseline evidence only.
+The first continuation run was correctly rejected after 58 matching pairs when
+the shared builder replaced the executable and libraries. `4415f3e07` adds a
+shared bundle publication lease: captures retain the canonical app while builds
+can compile, then publication waits for readers to finish. Five lease checks
+and 22 build-supervisor checks pass. During the successful full run, a completed
+standard build actually waited at publication and installed after the lease
+released. The shared app may therefore differ from this tested GG bundle now;
+the receipt and capture hashes identify the accepted result.
+
+The recompare fix `fcfceaebc` preserves interrupted-run exits and provenance,
+rejects missing registration proof and unknown exits, and keeps incomplete
+cohorts from passing despite equal PNGs. The runner also supports explicit
+resource files and automatically pins its source and fixture manifest
+(`1fac432a7`); all 14 capture-tool checks pass. The full browser run preceded
+that final tool change and used an equivalent per-launch hash extension for
+its font, runner and manifest. See the
+[stage22 receipt](gg-migration/stage22-20261105.json) for commands, build
+identities, coverage, actual exits, rejected attempts and retained raw evidence.
+The older `49a4b05f` capture remains baseline evidence in the non-scaling receipt.
 
 ### Brave fixture inventory
 
@@ -371,11 +411,11 @@ bridge as well.
 
 ## Remaining work
 
-First validate a fresh GG-enabled `Build/v/Vox.app` with the 262-fixture cohort
-and `VOX_GG_DIAGNOSTICS=1`, then run `summarize_gg_diagnostics.py` on its candidate
-logs. Reuse the shared build protocol and preserve the memory guards. An older
-bundle supplies baseline evidence only. Do not delete the old GG worktree until
-its committed logic and retained evidence have been incorporated and verified.
+Stage22's GG-enabled browser comparison and drawn/declined summary are complete.
+Keep using the shared build protocol, publication lease and memory guards for
+later cohorts. Pin resources outside the default directories explicitly. Do not
+delete the old GG worktree until its committed logic and retained evidence have
+been incorporated and verified.
 
 Next renderer gaps: general image entry points and texture sampling; true
 two-point conical gradients; gradients with more than eight stops and linear
