@@ -4134,3 +4134,135 @@ authenticate eight archives, all 1,392 focused calls, every failed development a
 infrastructure attempt, all component scenes, 12 valid captures, raw commands and
 counters, source/control proof, original PNGs, audits and exact comparison
 arithmetic. No whole-page, Brave, live-site or scrolling improvement is claimed.
+
+
+### Singleton media-rule groups (2026-11-06)
+
+The retained all-function profile records 399,601 recursive
+`CSSRuleList.evaluate_media_queries` calls. Instrumentation changes scheduling and
+includes waits; these counts are a lead, not current production cost or instruction
+credit. Inspection shows that container, function, layer, scope and style groups
+are unconditional during media evaluation, while media/supports conditions and
+imported stylesheet evaluation are observable live gates.
+
+`e372241a6` initially flattens unconditional groups with a 256-slot expansion
+limit. Its 576 focused calls pass, but the component's deep summary-rebuild case
+regresses 15.16% despite 17.01% lower warmed instructions. The original archived
+CSS shows only a 0.3192% warm reduction and a 0.1373% rebuild regression. These
+results, the initial source, generated C and all raw observations remain retained.
+
+The refinement `7b39ce38d` replaces only an unconditional group with exactly one
+candidate by that live descendant. It never widens a candidate vector. Wider
+groups keep recursive evaluation, and order, duplicate/shared rule identities,
+live media/supports/import gates, delayed first evaluation and the existing
+structural epoch remain intact. Existing reusable buffers and retained/persistent
+owners are unchanged. No match-result cache or new allocation owner is added.
+The independent `VOX_RETAIN_MEDIA_GROUP_RECURSION` control retains recursion while
+leaving candidate filtering enabled; `VOX_DISABLE_MEDIA_RULE_CANDIDATES` supplies
+a separate full-traversal correctness control. A consumer-side diagnostic marker
+confirms that a flattened list actually reaches evaluation.
+
+All 16 final compile/runtime jobs pass. Forty-eight test functions execute in
+ordinary GC, no GC, poisoned preallocation and ASan/UBSan under all three variants:
+**576 authenticated calls**. Five new cases cover every unconditional group type,
+ordered single-candidate chains and wider boundaries, current viewport/preferences,
+inactive supports and media ancestors, delayed first evaluation, nested CSSOM
+replacement, late imports and imported-sheet media, retained owner lifetime and
+allocation-free warmed lookup. Existing candidate, empty-list, media precision,
+font/viewport-cache, display-density, link mutation and registered shadow/adoption
+checks pass in the same selection. Generated C verifies all selected runner calls.
+
+The benchmark tool `a549c1474` uses the two unchanged original archived CSS bodies
+and fixed synthetic grouping shapes. Its unprofiled C O3/LTO single-unit executable
+measures warmed evaluation or explicit same-rule CSSOM replacement, summary rebuild
+and evaluation. Parsing, first evaluation, match-state checks, startup and teardown
+are excluded. Match-state checksums and zero-change results agree across every
+control/candidate/candidate/control observation. Poisoning and profiling are off;
+separate execution diagnostics follow. This component differs from the parallel
+production browser.
+
+| Refined component median | Recursive control instructions | Candidate instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| archived-warm | 97,424,046.5 | 97,386,473.5 | 0.03857% |
+| archived-rebuild | 349,672,043.5 | 349,606,694.5 | 0.01869% |
+| flat-warm | 1,544,013.0 | 1,544,000.5 | 0.00081% |
+| deep-warm | 1,860,428.5 | 1,570,385.5 | 15.59012% |
+| deep-rebuild | 2,986,393.5 | 2,951,168.5 | 1.17952% |
+| oversized-warm | 12,458,846.0 | 12,168,723.0 | 2.32865% |
+| oversized-rebuild | 19,406,359.0 | 19,369,564.5 | 0.18960% |
+
+The deep synthetic case now uses 15.59% fewer warmed instructions and 1.18% fewer
+rebuild instructions. The original archived CSS improvement is only 0.0386% warm;
+its rebuild ranges overlap, as do the unchanged flat warm ranges. The oversized
+nested shape still bypasses single-candidate ancestors while retaining its wide
+leaf boundary; it is not an ineligible control. Every observation is retained,
+including the initial deep-rebuild regression; no component supplies page credit.
+
+The first compile rejected a mutable-array descriptor and an incorrect stylesheet
+media accessor. A later new fixture incorrectly expected an imported-sheet media
+edit to report a change instead of resetting its baseline; both candidate and
+recursive control reject that expectation. The corrected test independently
+checks later import-gate transitions. A final component build exhausts disk before
+runtime; its controller rejects without samples. The unchanged final sources then
+compile and run successfully. Generated C from completed jobs is archived and
+verified before removing duplicates; counters, raw logs, fixtures, audits and
+references remain intact.
+
+The [focused/component receipt](performance/chatgpt-media-groups-20261106.json)
+and [initial receipt](performance/chatgpt-media-groups-initial-20261106.json)
+authenticate both policies, every rejected attempt, commands, guards, source
+revisions, generated runners, raw measurements, host load and verified cleanup.
+
+### Singleton media groups: production comparison (2026-11-06)
+
+The source-matched 33-unit parallel bundle has executable SHA-256
+`25daa7b67a9a345998128325be4795c68bd552fc8439f6e8717cbeec22690c8d` at recorded
+source head `a549c1474e017cd9860d1515efb555e3d2462ba8`. Exact owned-source Git
+blobs, stable aggregate build-input hashes and available media candidate/evaluation
+disassembly authenticate the final code and recursive control. A nonblocking shared
+publication lease pins the canonical executable, native libraries, tools, fixture
+and references throughout. No bundle is copied, additional production build is
+manually queued or page downloaded.
+
+Four separate diagnostic captures verify candidate-only consumption of flattened
+groups. Eight subsequent unprofiled captures form four alternating Vox/Brave pairs,
+with Vox control/candidate/candidate/control order. All 12 pass script bootstrap,
+complete content and button identity, unchanged per-engine exact pixel references
+and normal browser/kernel exits. Cross-browser pixel equality is not claimed.
+
+The original SOCKS fixture and author scripts remain unchanged. The scope remains
+fresh exclusive-coalition creation through completed encoded document PNG capture,
+including startup and native window/target setup, with the established audit,
+delivery and teardown endpoints. Each process has a fresh private profile/cache,
+1024 by 768 CSS-pixel viewport, backing scale two and unfocused five-second settle.
+OS filesystem/shader caches remain retained; GPU execution and services outside
+the owned coalition remain excluded. These are frozen-page observations.
+
+| Unprofiled Vox observation | Recursive control instructions | Candidate instructions |
+| --- | ---: | ---: |
+| First | 30,482,784,771 | 30,212,061,756 |
+| Second | 30,256,143,599 | 30,561,870,363 |
+| Median | 30,369,464,185.0 | 30,386,966,059.5 |
+
+The candidate median is **0.05763% higher** and the ranges overlap. The highest
+candidate exceeds the lowest control by 305,726,764 instructions, so conservative
+separation is **-305,726,764**. Whole-page credit and broad cadence remain zero;
+no 5,000,000-instruction broad checkpoint is due. No attempt is dropped or repeated
+to improve the comparison.
+
+Controls complete 458 and 475 frame checkpoints; candidates complete 465 and 459.
+Counts are not normalized by frame count. One-minute host load spans about 6.0–8.9
+on 18 CPUs. The highest observed Vox upper bound divided by the lowest Brave lower
+bound is 1.7227, far above the requested 0.95. Four pairs also remain below seven-pair
+acceptance. The **5%-below-Brave target remains unmet**.
+
+The controller and outer guard exit zero over 113.43 seconds, peak at
+1,691,910,144 sampled RSS bytes and adopt 46 process identities without an adoption
+error. The publication lease is released. Finalization and independent verification
+exit zero and authenticate eight archives. The
+[production receipt](performance/chatgpt-media-groups-production-20261106.json)
+and [verification receipt](performance/chatgpt-media-groups-production-verification-20261106.json)
+preserve all focused/component evidence, the initial regression, failed attempts,
+12 valid captures, original PNGs, commands, counters, audits, source/control proofs
+and exact comparison arithmetic. No whole-page, Brave, live-site, isolated rendering
+or scrolling improvement is claimed.

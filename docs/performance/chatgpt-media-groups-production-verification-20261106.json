@@ -1,0 +1,100 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-media-groups-production-20261106-evidence.zip",
+      "sha256": "5440df5f5fff8fedad7acd6bb153779f00704050fe56b6070b429ddf170a9a16",
+      "bytes": 1376610
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-20261106-evidence.zip",
+      "sha256": "425b9f49e68864958b9afc97f72d9d126b8407e0f9c5cdf5a5edabb8e115a12c",
+      "bytes": 19643303
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-focused-20261106-evidence.zip",
+      "sha256": "b6b1e1d54a1fc0c66533a409998a88b871886f186b280341b96465a2c6057fc7",
+      "bytes": 28338675
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-development-20261106.zip",
+      "sha256": "b0476b5ce79bc0e6fab05cee692d28f9db456a45133899d16738470a4a667b9c",
+      "bytes": 2257137
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-initial-20261106-evidence.zip",
+      "sha256": "100706ed2bf66ecedeeae6eea15d8b293ebd241fc7701542d655d8a19afbbae7",
+      "bytes": 26147611
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-retirement-20261106.zip",
+      "sha256": "360c28921773bd837fe33f9b132a50e783d6bf0c96ead39035812f18be3f7c3a",
+      "bytes": 100526010
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "f8321627cdf741bd9216dbee6c7990987172d70091d56b4a6fc8cffd76bd205c",
+      "bytes": 1348620
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-production-r1-matched-20261106-evidence.zip",
+      "sha256": "097ac5a5d292f7ef976783047cde929318b5a33c1525c699cca4b68b52c1fc61",
+      "bytes": 2744596
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "25daa7b67a9a345998128325be4795c68bd552fc8439f6e8717cbeec22690c8d",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available media candidate/evaluation function disassembly",
+      "proof_sha256": "2858cb98feb4e96da6e5ed3dfbfa0df06ea9f976c9081eb8b0fdd440d3c45c6e",
+      "source_hashes": {
+        "css/cssom_rules.v": "94ba4849d80c370ec09cece8e7fa10247a366875943e64296293959da423605f",
+        "css/media_evaluation_candidates.v": "8f36a1169059a41c4dfa92796a56e8c9125b7504e6f0f80089ef12e844abc359",
+        "css/media_unconditional_groups.v": "bd9948012e657fb84f41a56336a9c76ee70784a2c82051146d494133e90a92ad"
+      },
+      "qualification": "The media candidate producer flattens only unconditional container, function, layer, scope and style groups while preserving ordered rule identities. Only one-candidate chains collapse; no vector expands and wider groups retain recursive evaluation. Media/supports gates and imported stylesheet evaluation remain live. The existing structural epoch invalidates all summaries before callbacks; ownership and reusable buffers are unchanged. Control retains recursive candidate groups, with candidate filtering and all other optimizations enabled in both variants. A separate consumer marker proves actual use. No match-result cache or new owner is introduced."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-media-groups-production-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 1393410048,
+    "elapsed_seconds": 2.043379792,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "css/cssom_rules.v": "94ba4849d80c370ec09cece8e7fa10247a366875943e64296293959da423605f",
+    "css/media_evaluation_candidates.v": "8f36a1169059a41c4dfa92796a56e8c9125b7504e6f0f80089ef12e844abc359",
+    "css/media_unconditional_groups.v": "bd9948012e657fb84f41a56336a9c76ee70784a2c82051146d494133e90a92ad",
+    "css/media_unconditional_groups_test.v": "3d6697ca5d1c654df2904d9e2b5bfdcd9a23ce94514d0566edab1063ceeb1a1c",
+    "css/media_evaluation_candidates_test.v": "c14e880170cf6e42f34e4cfc2d55ebe0f414b45ae07182ab5754f4f457f3e7fb"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 576,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 30561870363,
+    "min_brave_lower": 17740439769,
+    "numerator": 611237407260,
+    "denominator": 337068355611,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Raw control/candidate arithmetic and the required broad-check cadence are verified independently. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. Initial and refined component results, including the initial deep-rebuild regression and every rejected attempt, remain retained. The 5%-below-Brave target remains unmet."
+}

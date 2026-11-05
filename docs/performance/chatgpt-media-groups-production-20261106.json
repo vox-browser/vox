@@ -1,0 +1,443 @@
+{
+  "version": 1,
+  "complete": true,
+  "status": "complete",
+  "recorded_unix": 1793913244.101061,
+  "implementation_commits": [
+    "e372241a6",
+    "7b39ce38d"
+  ],
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "25daa7b67a9a345998128325be4795c68bd552fc8439f6e8717cbeec22690c8d",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "d8fef19a0001b3f26304da0a40963d232e204695a8ce27465f49ccdf357e032f",
+      "dirty": true,
+      "head": "a549c1474e017cd9860d1515efb555e3d2462ba8",
+      "repository_sha256": "3c48c2f0554082dde7cbb2d69789b2545098496c0e92e1b38bb99472f833fc5c"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "a549c1474e017cd9860d1515efb555e3d2462ba8",
+      "id": "743544abf7174f4c87300237761843b9"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "d8fef19a0001b3f26304da0a40963d232e204695a8ce27465f49ccdf357e032f",
+      "dirty": true,
+      "head": "a549c1474e017cd9860d1515efb555e3d2462ba8",
+      "repository_sha256": "afe38a45af97f3885400eb23fbbb866f8ff2242652d992bd8ba060551f12eb67"
+    }
+  },
+  "controller": {
+    "path": "docs/performance/chatgpt-media-groups-production-r1-controller-20261106.json",
+    "sha256": "33b91212416f9a06a8278584693d3bb92de63902a4c786b1a9fec13bad89131b",
+    "bytes": 3314
+  },
+  "diagnostic": {
+    "path": "docs/performance/chatgpt-media-groups-production-r1-diagnostic-20261106.json",
+    "sha256": "34da9d99838bfda3c71fd3e94962a77d026fb3218c3c3498b7fe21c01bc2cb5e",
+    "bytes": 1743161
+  },
+  "matched": {
+    "path": "docs/performance/chatgpt-media-groups-production-r1-matched-20261106.json",
+    "sha256": "068e1cde3bb7d872b87f1a72fad703dc11f25ebaed68aa1a392d52ecf25448d5",
+    "bytes": 2707247
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-media-groups-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "16968": "Fri Nov  6 00:11:29 2026    ",
+      "16970": "Fri Nov  6 00:11:29 2026    ",
+      "17421": "Fri Nov  6 00:11:37 2026    ",
+      "17426": "Fri Nov  6 00:11:37 2026    ",
+      "17431": "Fri Nov  6 00:11:37 2026    ",
+      "17432": "Fri Nov  6 00:11:37 2026    ",
+      "17433": "Fri Nov  6 00:11:37 2026    ",
+      "17699": "Fri Nov  6 00:11:46 2026    ",
+      "17703": "Fri Nov  6 00:11:46 2026    ",
+      "17706": "Fri Nov  6 00:11:46 2026    ",
+      "17707": "Fri Nov  6 00:11:46 2026    ",
+      "17710": "Fri Nov  6 00:11:46 2026    ",
+      "17726": "Fri Nov  6 00:11:47 2026    ",
+      "17728": "Fri Nov  6 00:11:47 2026    ",
+      "17949": "Fri Nov  6 00:11:55 2026    ",
+      "17952": "Fri Nov  6 00:11:55 2026    ",
+      "18537": "Fri Nov  6 00:12:08 2026    ",
+      "18539": "Fri Nov  6 00:12:08 2026    ",
+      "18889": "Fri Nov  6 00:12:16 2026    ",
+      "18893": "Fri Nov  6 00:12:16 2026    ",
+      "18900": "Fri Nov  6 00:12:16 2026    ",
+      "18901": "Fri Nov  6 00:12:16 2026    ",
+      "18902": "Fri Nov  6 00:12:16 2026    ",
+      "19162": "Fri Nov  6 00:12:25 2026    ",
+      "19166": "Fri Nov  6 00:12:25 2026    ",
+      "19169": "Fri Nov  6 00:12:25 2026    ",
+      "19170": "Fri Nov  6 00:12:25 2026    ",
+      "19173": "Fri Nov  6 00:12:25 2026    ",
+      "19189": "Fri Nov  6 00:12:25 2026    ",
+      "19193": "Fri Nov  6 00:12:25 2026    ",
+      "19432": "Fri Nov  6 00:12:34 2026    ",
+      "19434": "Fri Nov  6 00:12:34 2026    ",
+      "19782": "Fri Nov  6 00:12:42 2026    ",
+      "19785": "Fri Nov  6 00:12:42 2026    ",
+      "20187": "Fri Nov  6 00:12:50 2026    ",
+      "20191": "Fri Nov  6 00:12:50 2026    ",
+      "20201": "Fri Nov  6 00:12:50 2026    ",
+      "20202": "Fri Nov  6 00:12:50 2026    ",
+      "20203": "Fri Nov  6 00:12:50 2026    ",
+      "20440": "Fri Nov  6 00:12:59 2026    ",
+      "20443": "Fri Nov  6 00:12:59 2026    ",
+      "20447": "Fri Nov  6 00:13:00 2026    ",
+      "20448": "Fri Nov  6 00:13:00 2026    ",
+      "20449": "Fri Nov  6 00:13:00 2026    ",
+      "20586": "Fri Nov  6 00:13:09 2026    ",
+      "20588": "Fri Nov  6 00:13:09 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1691910144,
+    "elapsed_seconds": 113.433413166,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "diagnostic_path_observations": [
+    {
+      "variant": "candidate",
+      "paths": {
+        "media_groups": true
+      }
+    },
+    {
+      "variant": "control",
+      "paths": {
+        "media_groups": false
+      }
+    }
+  ],
+  "matched_observations": [
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30482784771,
+        "upper": 30482784771
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.88525390625,
+          7.45458984375,
+          6.8603515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.65380859375,
+          7.43017578125,
+          6.85498046875
+        ]
+      },
+      "frame_checkpoints": 458
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 19559003526,
+        "upper": 19606524496
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.65380859375,
+          7.43017578125,
+          6.85498046875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.177734375,
+          7.36669921875,
+          6.83837890625
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 19050696865,
+        "upper": 19096164172
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.177734375,
+          7.36669921875,
+          6.83837890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          7.67578125,
+          7.28759765625,
+          6.81591796875
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30212061756,
+        "upper": 30212061756
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          7.67578125,
+          7.28759765625,
+          6.81591796875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          7.30126953125,
+          7.21630859375,
+          6.79345703125
+        ]
+      },
+      "frame_checkpoints": 465
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30561870363,
+        "upper": 30561870363
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          7.11669921875,
+          7.17919921875,
+          6.78271484375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          6.70654296875,
+          7.0927734375,
+          6.75439453125
+        ]
+      },
+      "frame_checkpoints": 459
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 18949109853,
+        "upper": 18966988807
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.70654296875,
+          7.0927734375,
+          6.75439453125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          6.8251953125,
+          7.10546875,
+          6.76220703125
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 17740439769,
+        "upper": 17787891094
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.8251953125,
+          7.10546875,
+          6.76220703125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          6.31640625,
+          6.986328125,
+          6.7236328125
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30256143599,
+        "upper": 30256143599
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.31640625,
+          6.986328125,
+          6.7236328125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.970703125,
+          6.9033203125,
+          6.69580078125
+        ]
+      },
+      "frame_checkpoints": 475
+    }
+  ],
+  "diagnostic_valid": true,
+  "matched_valid": true,
+  "broad_required": false,
+  "broad": null,
+  "focused_component": {
+    "path": "docs/performance/chatgpt-media-groups-20261106.json",
+    "sha256": "7cce9e90f18ad1739ce2cda43ffe0357a873e40e525261a7723dc8a7cd1870c1",
+    "bytes": 69493
+  },
+  "focused_selected_passed": true,
+  "overall_css_suite_pass_claimed": false,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "browser_captures": 12,
+  "manual_build_requests": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-media-groups-production-20261106-evidence.zip",
+      "sha256": "5440df5f5fff8fedad7acd6bb153779f00704050fe56b6070b429ddf170a9a16",
+      "bytes": 1376610
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-20261106-evidence.zip",
+      "sha256": "425b9f49e68864958b9afc97f72d9d126b8407e0f9c5cdf5a5edabb8e115a12c",
+      "bytes": 19643303
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-focused-20261106-evidence.zip",
+      "sha256": "b6b1e1d54a1fc0c66533a409998a88b871886f186b280341b96465a2c6057fc7",
+      "bytes": 28338675
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-development-20261106.zip",
+      "sha256": "b0476b5ce79bc0e6fab05cee692d28f9db456a45133899d16738470a4a667b9c",
+      "bytes": 2257137
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-initial-20261106-evidence.zip",
+      "sha256": "100706ed2bf66ecedeeae6eea15d8b293ebd241fc7701542d655d8a19afbbae7",
+      "bytes": 26147611
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-retirement-20261106.zip",
+      "sha256": "360c28921773bd837fe33f9b132a50e783d6bf0c96ead39035812f18be3f7c3a",
+      "bytes": 100526010
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "f8321627cdf741bd9216dbee6c7990987172d70091d56b4a6fc8cffd76bd205c",
+      "bytes": 1348620
+    },
+    {
+      "path": "docs/performance/chatgpt-media-groups-production-r1-matched-20261106-evidence.zip",
+      "sha256": "097ac5a5d292f7ef976783047cde929318b5a33c1525c699cca4b68b52c1fc61",
+      "bytes": 2744596
+    }
+  ],
+  "qualification": "The canonical parallel bundle is pinned by a nonblocking shared publication lease across separate execution diagnostics and matched unprofiled captures. Stable aggregate build-input hashes, exact owned-source Git blobs and available media candidate/evaluation disassembly establish identity. Only unconditional one-candidate groups collapse, preserving rule order and live media/supports/import gates. Wider groups retain recursion; no vector expands and no match-result cache or owner is added. Existing structural epochs and reusable buffers remain unchanged. All 576 final focused calls pass across four modes and three variants, including poisoned preallocation and ASan/UBSan. Initial expansion-policy measurements, its deep-rebuild regression, compile errors, fixture rejection and disk-exhaustion failure are retained. Refined production-condition single-unit C O3/LTO components cover warmed evaluation or CSSOM replacement/rebuild; parsing, first evaluation, state checks, startup and teardown are excluded. Components differ from the production browser and receive no browser credit. Original frozen SOCKS fixture, author scripts, references, fresh private profiles/caches, 1024x768 viewport, scale two, unfocused five-second settle and exclusive-coalition creation-through-encoded-PNG scope remain unchanged. OS filesystem/shader caches are retained; GPU execution and outside-coalition services excluded. Four pairs remain below seven-pair Brave acceptance. Host load and frame checkpoints qualify attribution. No live-site, isolated rendering or scrolling claim.",
+  "inspected_build_attempts": [],
+  "control": [
+    {
+      "lower": 30482784771,
+      "upper": 30482784771
+    },
+    {
+      "lower": 30256143599,
+      "upper": 30256143599
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 30212061756,
+      "upper": 30212061756
+    },
+    {
+      "lower": 30561870363,
+      "upper": 30561870363
+    }
+  ],
+  "control_median": 30369464185.0,
+  "candidate_median": 30386966059.5,
+  "observed_median_reduction_percent": -0.0576298429020176,
+  "conservative_page_instruction_reduction": -305726764
+}

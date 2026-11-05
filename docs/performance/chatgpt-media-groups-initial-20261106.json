@@ -1,0 +1,1696 @@
+{
+  "complete": true,
+  "implementation_commit": "e372241a6",
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/cssom_rules.v": "94ba4849d80c370ec09cece8e7fa10247a366875943e64296293959da423605f",
+      "css/media_evaluation_candidates.v": "6d0faaafb9c602c52d895f41f57f2182967d010f6828ca4016111a325b970265",
+      "css/media_unconditional_groups.v": "af90f033794ca85e21c0c3be98993264ddfb9815c9ad5b4c75e73d53d4a2de64",
+      "css/media_unconditional_groups_test.v": "c3389f29e24955130d5ba3dad20b813924044ef9b6dca93b4a32b800dc30e576",
+      "css/media_evaluation_candidates_test.v": "c14e880170cf6e42f34e4cfc2d55ebe0f414b45ae07182ab5754f4f457f3e7fb"
+    },
+    "source_after": {
+      "css/cssom_rules.v": "94ba4849d80c370ec09cece8e7fa10247a366875943e64296293959da423605f",
+      "css/media_evaluation_candidates.v": "6d0faaafb9c602c52d895f41f57f2182967d010f6828ca4016111a325b970265",
+      "css/media_unconditional_groups.v": "af90f033794ca85e21c0c3be98993264ddfb9815c9ad5b4c75e73d53d4a2de64",
+      "css/media_unconditional_groups_test.v": "c3389f29e24955130d5ba3dad20b813924044ef9b6dca93b4a32b800dc30e576",
+      "css/media_evaluation_candidates_test.v": "c14e880170cf6e42f34e4cfc2d55ebe0f414b45ae07182ab5754f4f457f3e7fb"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v,/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-prealloc",
+          "/Users/alex/code/vox2/css/media_unconditional_groups_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793912574.549717,
+          "cpu_count": 18,
+          "load": [
+            4.72216796875,
+            4.64990234375,
+            6.35302734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912579.9627578,
+          "load": [
+            4.50390625,
+            4.60546875,
+            6.3271484375
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912579.969055,
+          "cpu_count": 18,
+          "load": [
+            4.50390625,
+            4.60546875,
+            6.3271484375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912580.541505,
+          "load": [
+            4.50390625,
+            4.60546875,
+            6.3271484375
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "1",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912580.547779,
+          "cpu_count": 18,
+          "load": [
+            4.50390625,
+            4.60546875,
+            6.3271484375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912580.862699,
+          "load": [
+            4.50390625,
+            4.60546875,
+            6.3271484375
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-all-rules",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-prealloc-all-rules.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-prealloc-all-rules-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "1",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912580.86903,
+          "cpu_count": 18,
+          "load": [
+            4.50390625,
+            4.60546875,
+            6.3271484375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912581.1879191,
+          "load": [
+            4.22314453125,
+            4.54541015625,
+            6.2958984375
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v,/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-default",
+          "/Users/alex/code/vox2/css/media_unconditional_groups_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793912581.194175,
+          "cpu_count": 18,
+          "load": [
+            4.22314453125,
+            4.54541015625,
+            6.2958984375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912586.435209,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912586.441515,
+          "cpu_count": 18,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912586.891874,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "1",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912586.898269,
+          "cpu_count": 18,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912587.094939,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        }
+      },
+      {
+        "label": "run-default-all-rules",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-default-all-rules.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-default-all-rules-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "1",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912587.101234,
+          "cpu_count": 18,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912587.296723,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v,/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-none",
+          "/Users/alex/code/vox2/css/media_unconditional_groups_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793912587.303226,
+          "cpu_count": 18,
+          "load": [
+            4.4453125,
+            4.5859375,
+            6.2998046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912592.571562,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912592.578012,
+          "cpu_count": 18,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912593.033334,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "1",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912593.039785,
+          "cpu_count": 18,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912593.239431,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        }
+      },
+      {
+        "label": "run-none-all-rules",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-none-all-rules.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-none-all-rules-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "1",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912593.2458072,
+          "cpu_count": 18,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912593.442292,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/media_feature_lookup_test.v,/Users/alex/code/vox2/css/media_evaluation_test.v,/Users/alex/code/vox2/css/media_query_precision_test.v,/Users/alex/code/vox2/css/media_feature_owned_value_test.v,/Users/alex/code/vox2/css/media_query_literal_environment_test.v,/Users/alex/code/vox2/css/media_query_viewport_cache_test.v,/Users/alex/code/vox2/css/media_evaluation_candidates_test.v,/Users/alex/code/vox2/css/empty_media_query_lists_test.v,/Users/alex/code/vox2/css/registered_shadow_media_test.v,/Users/alex/code/vox2/css/link_media_mutation_test.v,/Users/alex/code/vox2/css/media_query_parse_retention_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-sanitized",
+          "/Users/alex/code/vox2/css/media_unconditional_groups_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793912593.448823,
+          "cpu_count": 18,
+          "load": [
+            4.3291015625,
+            4.5595703125,
+            6.2802734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912604.907382,
+          "load": [
+            4.2109375,
+            4.5244140625,
+            6.2470703125
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912604.914721,
+          "cpu_count": 18,
+          "load": [
+            4.2109375,
+            4.5244140625,
+            6.2470703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912605.84064,
+          "load": [
+            4.2109375,
+            4.5244140625,
+            6.2470703125
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "1",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912605.8475451,
+          "cpu_count": 18,
+          "load": [
+            4.2109375,
+            4.5244140625,
+            6.2470703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912606.274524,
+          "load": [
+            4.35400390625,
+            4.548828125,
+            6.24560546875
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-all-rules",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-sanitized-all-rules.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/run-sanitized-all-rules-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_DISABLE_MEDIA_RULE_CANDIDATES": "1",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793912606.281596,
+          "cpu_count": 18,
+          "load": [
+            4.35400390625,
+            4.548828125,
+            6.24560546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793912606.720756,
+          "load": [
+            4.35400390625,
+            4.548828125,
+            6.24560546875
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-media-groups-20261106-r3/component": "e352e2183e720448c410fc4a920b90746544c0b7c9c0feb07e4410b3c955bf20",
+      "Build/chatgpt-media-groups-20261106-r3/component.py": "e6e03a780ed9bb5db2aa47ef21a83517a0ad90f1ba9c195a294072e7425ca94e",
+      "tools/media_group_benchmark.v": "be32a40081b35e8737204e0a55c599672e63d671811800c217ce30b8c3df1b84",
+      "Build/chatgpt-media-groups-20261106-r3/css-paths.txt": "6e3b00324342629577aae3bf4e5a86447b3b33d5cdf98d7bed91ece0e1376f10",
+      "css/cssom_rules.v": "94ba4849d80c370ec09cece8e7fa10247a366875943e64296293959da423605f",
+      "css/media_evaluation_candidates.v": "6d0faaafb9c602c52d895f41f57f2182967d010f6828ca4016111a325b970265",
+      "css/media_unconditional_groups.v": "af90f033794ca85e21c0c3be98993264ddfb9815c9ad5b4c75e73d53d4a2de64",
+      "css/media_unconditional_groups_test.v": "c3389f29e24955130d5ba3dad20b813924044ef9b6dca93b4a32b800dc30e576",
+      "css/media_evaluation_candidates_test.v": "c14e880170cf6e42f34e4cfc2d55ebe0f414b45ae07182ab5754f4f457f3e7fb",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8": "670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b": "f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b"
+    },
+    "inputs_after": {
+      "Build/chatgpt-media-groups-20261106-r3/component": "e352e2183e720448c410fc4a920b90746544c0b7c9c0feb07e4410b3c955bf20",
+      "Build/chatgpt-media-groups-20261106-r3/component.py": "e6e03a780ed9bb5db2aa47ef21a83517a0ad90f1ba9c195a294072e7425ca94e",
+      "tools/media_group_benchmark.v": "be32a40081b35e8737204e0a55c599672e63d671811800c217ce30b8c3df1b84",
+      "Build/chatgpt-media-groups-20261106-r3/css-paths.txt": "6e3b00324342629577aae3bf4e5a86447b3b33d5cdf98d7bed91ece0e1376f10",
+      "css/cssom_rules.v": "94ba4849d80c370ec09cece8e7fa10247a366875943e64296293959da423605f",
+      "css/media_evaluation_candidates.v": "6d0faaafb9c602c52d895f41f57f2182967d010f6828ca4016111a325b970265",
+      "css/media_unconditional_groups.v": "af90f033794ca85e21c0c3be98993264ddfb9815c9ad5b4c75e73d53d4a2de64",
+      "css/media_unconditional_groups_test.v": "c3389f29e24955130d5ba3dad20b813924044ef9b6dca93b4a32b800dc30e576",
+      "css/media_evaluation_candidates_test.v": "c14e880170cf6e42f34e4cfc2d55ebe0f414b45ae07182ab5754f4f457f3e7fb",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8": "670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b": "f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/css-paths.txt"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "1",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793912694.98818,
+          "cpu_count": 18,
+          "load": [
+            13.0576171875,
+            6.49658203125,
+            6.7802734375
+          ]
+        },
+        "host_after": {
+          "unix": 1793912695.786081,
+          "load": [
+            13.0576171875,
+            6.49658203125,
+            6.7802734375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "archived-warm",
+            "instructions": 97387628,
+            "evaluations": 512,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "archived-rebuild",
+            "instructions": 349309900,
+            "evaluations": 64,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "flat-warm",
+            "instructions": 1543838,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751264209
+          },
+          {
+            "scene": "deep-warm",
+            "instructions": 1860254,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "deep-rebuild",
+            "instructions": 2986334,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "oversized-warm",
+            "instructions": 12458654,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          },
+          {
+            "scene": "oversized-rebuild",
+            "instructions": 19395134,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/css-paths.txt"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793912695.81224,
+          "cpu_count": 18,
+          "load": [
+            13.0576171875,
+            6.49658203125,
+            6.7802734375
+          ]
+        },
+        "host_after": {
+          "unix": 1793912696.129361,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "archived-warm",
+            "instructions": 97094544,
+            "evaluations": 512,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "archived-rebuild",
+            "instructions": 349781749,
+            "evaluations": 64,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "flat-warm",
+            "instructions": 1543838,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751264209
+          },
+          {
+            "scene": "deep-warm",
+            "instructions": 1543838,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "deep-rebuild",
+            "instructions": 3439070,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "oversized-warm",
+            "instructions": 12168606,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          },
+          {
+            "scene": "oversized-rebuild",
+            "instructions": 19374348,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/css-paths.txt"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793912696.155513,
+          "cpu_count": 18,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "host_after": {
+          "unix": 1793912696.475301,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "archived-warm",
+            "instructions": 97095465,
+            "evaluations": 512,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "archived-rebuild",
+            "instructions": 349797185,
+            "evaluations": 64,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "flat-warm",
+            "instructions": 1543838,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751264209
+          },
+          {
+            "scene": "deep-warm",
+            "instructions": 1543838,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "deep-rebuild",
+            "instructions": 3439070,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "oversized-warm",
+            "instructions": 12168606,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          },
+          {
+            "scene": "oversized-rebuild",
+            "instructions": 19388994,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/css-paths.txt"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "1",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793912696.50124,
+          "cpu_count": 18,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "host_after": {
+          "unix": 1793912696.817416,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "archived-warm",
+            "instructions": 97424123,
+            "evaluations": 512,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "archived-rebuild",
+            "instructions": 349310034,
+            "evaluations": 64,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "flat-warm",
+            "instructions": 1543838,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751264209
+          },
+          {
+            "scene": "deep-warm",
+            "instructions": 1860254,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "deep-rebuild",
+            "instructions": 2986334,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "oversized-warm",
+            "instructions": 12458654,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          },
+          {
+            "scene": "oversized-rebuild",
+            "instructions": 19409722,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/css-paths.txt"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793912696.843529,
+          "cpu_count": 18,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "host_after": {
+          "unix": 1793912697.1593401,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "archived-warm",
+            "instructions": 98775554,
+            "evaluations": 512,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "archived-rebuild",
+            "instructions": 350068418,
+            "evaluations": 64,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "flat-warm",
+            "instructions": 1546142,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751264209
+          },
+          {
+            "scene": "deep-warm",
+            "instructions": 1547678,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "deep-rebuild",
+            "instructions": 3439550,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "oversized-warm",
+            "instructions": 12174750,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          },
+          {
+            "scene": "oversized-rebuild",
+            "instructions": 19375261,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/component",
+          "/Users/alex/code/vox2/Build/chatgpt-media-groups-20261106-r3/css-paths.txt"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_MEDIA_GROUP_RECURSION": "1",
+          "VOX_MEDIA_GROUP_EVALUATION_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793912697.18557,
+          "cpu_count": 18,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "host_after": {
+          "unix": 1793912697.502461,
+          "load": [
+            12.171875,
+            6.421875,
+            6.751953125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "archived-warm",
+            "instructions": 98536877,
+            "evaluations": 512,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "archived-rebuild",
+            "instructions": 349493241,
+            "evaluations": 64,
+            "changes": 0,
+            "checksum": 16171840336419880008
+          },
+          {
+            "scene": "flat-warm",
+            "instructions": 1545399,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751264209
+          },
+          {
+            "scene": "deep-warm",
+            "instructions": 1880222,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "deep-rebuild",
+            "instructions": 2992308,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 14533714902751270533
+          },
+          {
+            "scene": "oversized-warm",
+            "instructions": 12492997,
+            "evaluations": 256,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          },
+          {
+            "scene": "oversized-rebuild",
+            "instructions": 19397689,
+            "evaluations": 32,
+            "changes": 0,
+            "checksum": 5488164822216787699
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "archived-warm": {
+        "control": [
+          97387628,
+          97424123
+        ],
+        "candidate": [
+          97094544,
+          97095465
+        ],
+        "control_median": 97405875.5,
+        "candidate_median": 97095004.5,
+        "reduction_percent": 0.31915015229240457,
+        "conservative_component_reduction": 292163,
+        "checksum": 16171840336419880008,
+        "evaluations": 512
+      },
+      "archived-rebuild": {
+        "control": [
+          349309900,
+          349310034
+        ],
+        "candidate": [
+          349781749,
+          349797185
+        ],
+        "control_median": 349309967.0,
+        "candidate_median": 349789467.0,
+        "reduction_percent": -0.137270632188975,
+        "conservative_component_reduction": -487285,
+        "checksum": 16171840336419880008,
+        "evaluations": 64
+      },
+      "flat-warm": {
+        "control": [
+          1543838,
+          1543838
+        ],
+        "candidate": [
+          1543838,
+          1543838
+        ],
+        "control_median": 1543838.0,
+        "candidate_median": 1543838.0,
+        "reduction_percent": 0.0,
+        "conservative_component_reduction": 0,
+        "checksum": 14533714902751264209,
+        "evaluations": 256
+      },
+      "deep-warm": {
+        "control": [
+          1860254,
+          1860254
+        ],
+        "candidate": [
+          1543838,
+          1543838
+        ],
+        "control_median": 1860254.0,
+        "candidate_median": 1543838.0,
+        "reduction_percent": 17.00929012919741,
+        "conservative_component_reduction": 316416,
+        "checksum": 14533714902751270533,
+        "evaluations": 256
+      },
+      "deep-rebuild": {
+        "control": [
+          2986334,
+          2986334
+        ],
+        "candidate": [
+          3439070,
+          3439070
+        ],
+        "control_median": 2986334.0,
+        "candidate_median": 3439070.0,
+        "reduction_percent": -15.160260037892613,
+        "conservative_component_reduction": -452736,
+        "checksum": 14533714902751270533,
+        "evaluations": 32
+      },
+      "oversized-warm": {
+        "control": [
+          12458654,
+          12458654
+        ],
+        "candidate": [
+          12168606,
+          12168606
+        ],
+        "control_median": 12458654.0,
+        "candidate_median": 12168606.0,
+        "reduction_percent": 2.328084558733231,
+        "conservative_component_reduction": 290048,
+        "checksum": 5488164822216787699,
+        "evaluations": 256
+      },
+      "oversized-rebuild": {
+        "control": [
+          19395134,
+          19409722
+        ],
+        "candidate": [
+          19374348,
+          19388994
+        ],
+        "control_median": 19402428.0,
+        "candidate_median": 19381671.0,
+        "reduction_percent": 0.10698145613528369,
+        "conservative_component_reduction": 6140,
+        "checksum": 5488164822216787699,
+        "evaluations": 32
+      }
+    },
+    "qualification": "Unprofiled same-executable current-process retired instructions cover warmed evaluation or explicit same-rule CSSOM replacement plus candidate-summary rebuild and evaluation. Original archived CSS bytes and synthetic flat, deep and expansion-bounded shapes are unchanged. Parsing, first evaluation, output/state checks, startup and teardown are excluded. Match-state checksums and zero-change results match across all observations. Canonical source and runtime overlay use production V source conditions with C O3/LTO, single C unit, preallocation without poisoning or profiling. Controls retain recursive candidate groups; all other optimized paths remain enabled. Every observation/regression and failed development attempt is retained. Components differ from the 33-unit production browser and establish no browser/Brave, live-site or scrolling gain."
+  },
+  "runner": {
+    "complete": true,
+    "runners": {
+      "Build/chatgpt-media-groups-20261106-r3/checks-default.c": {
+        "sha256": "056ef2d47d862423c33b8ad89e0a981cf60346193a32eb6241f282e5bf6072ae",
+        "tests": [
+          "test_media_group_candidates_flatten_all_unconditional_types_in_order",
+          "test_media_group_flattening_preserves_live_guards_and_delayed_first_evaluation",
+          "test_media_group_flattening_bounds_expansion_and_rechecks_nested_replacement",
+          "test_media_group_flattening_keeps_import_media_and_late_sheet_identity",
+          "test_media_group_candidate_vector_keeps_owner_and_reuses_warm_storage",
+          "test_media_feature_lookup_covers_every_supported_identifier",
+          "test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+          "test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+          "test_media_feature_name_classification_does_not_retain_caller_storage",
+          "test_media_feature_lookup_tracks_direct_expression_name_edits",
+          "test_first_media_rule_evaluation_establishes_a_baseline",
+          "test_prefers_color_scheme_uses_an_svg_image_document_override",
+          "test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+          "test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+          "test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+          "test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+          "test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+          "test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+          "test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+          "test_fractional_media_breakpoint_changes_live_styles",
+          "test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+          "test_parsed_media_values_survive_parser_churn_and_environment_changes",
+          "test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+          "test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+          "test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+          "test_literal_viewport_media_results_track_size_policy_and_text_changes",
+          "test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+          "test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+          "test_one_media_list_can_follow_distinct_document_viewports",
+          "test_media_candidates_filter_only_branches_without_media_effects",
+          "test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+          "test_media_candidates_same_length_replacement_discards_removed_rules",
+          "test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+          "test_media_candidates_keep_imports_before_the_sheet_arrives",
+          "test_media_candidates_preserve_ignored_grouping_rule_types",
+          "test_media_candidates_invalidate_before_change_callbacks",
+          "test_media_candidate_storage_survives_scratch_and_document_retirement",
+          "test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+          "test_empty_style_children_receive_later_insertions_and_removals",
+          "test_inactive_supports_preserves_delayed_child_media_baselines",
+          "test_imported_empty_sheet_still_updates_its_media_match_state",
+          "test_registered_shadow_media_visits_nested_connected_scopes",
+          "test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+          "test_registered_shadow_media_moves_with_adopted_host",
+          "test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+          "test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+          "test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+          "test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+        ]
+      },
+      "Build/chatgpt-media-groups-20261106-r3/checks-none.c": {
+        "sha256": "d5d80fb48361cf910262185b5729d470e426468d1f221ec3a4bb68946fced96c",
+        "tests": [
+          "test_media_group_candidates_flatten_all_unconditional_types_in_order",
+          "test_media_group_flattening_preserves_live_guards_and_delayed_first_evaluation",
+          "test_media_group_flattening_bounds_expansion_and_rechecks_nested_replacement",
+          "test_media_group_flattening_keeps_import_media_and_late_sheet_identity",
+          "test_media_group_candidate_vector_keeps_owner_and_reuses_warm_storage",
+          "test_media_feature_lookup_covers_every_supported_identifier",
+          "test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+          "test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+          "test_media_feature_name_classification_does_not_retain_caller_storage",
+          "test_media_feature_lookup_tracks_direct_expression_name_edits",
+          "test_first_media_rule_evaluation_establishes_a_baseline",
+          "test_prefers_color_scheme_uses_an_svg_image_document_override",
+          "test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+          "test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+          "test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+          "test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+          "test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+          "test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+          "test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+          "test_fractional_media_breakpoint_changes_live_styles",
+          "test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+          "test_parsed_media_values_survive_parser_churn_and_environment_changes",
+          "test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+          "test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+          "test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+          "test_literal_viewport_media_results_track_size_policy_and_text_changes",
+          "test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+          "test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+          "test_one_media_list_can_follow_distinct_document_viewports",
+          "test_media_candidates_filter_only_branches_without_media_effects",
+          "test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+          "test_media_candidates_same_length_replacement_discards_removed_rules",
+          "test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+          "test_media_candidates_keep_imports_before_the_sheet_arrives",
+          "test_media_candidates_preserve_ignored_grouping_rule_types",
+          "test_media_candidates_invalidate_before_change_callbacks",
+          "test_media_candidate_storage_survives_scratch_and_document_retirement",
+          "test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+          "test_empty_style_children_receive_later_insertions_and_removals",
+          "test_inactive_supports_preserves_delayed_child_media_baselines",
+          "test_imported_empty_sheet_still_updates_its_media_match_state",
+          "test_registered_shadow_media_visits_nested_connected_scopes",
+          "test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+          "test_registered_shadow_media_moves_with_adopted_host",
+          "test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+          "test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+          "test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+          "test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+        ]
+      },
+      "Build/chatgpt-media-groups-20261106-r3/checks-prealloc.c": {
+        "sha256": "f8c9880e365e368dd197e36721d48eb4fd41a9ae590f969c298dfd0ab79cb294",
+        "tests": [
+          "test_media_group_candidates_flatten_all_unconditional_types_in_order",
+          "test_media_group_flattening_preserves_live_guards_and_delayed_first_evaluation",
+          "test_media_group_flattening_bounds_expansion_and_rechecks_nested_replacement",
+          "test_media_group_flattening_keeps_import_media_and_late_sheet_identity",
+          "test_media_group_candidate_vector_keeps_owner_and_reuses_warm_storage",
+          "test_media_feature_lookup_covers_every_supported_identifier",
+          "test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+          "test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+          "test_media_feature_name_classification_does_not_retain_caller_storage",
+          "test_media_feature_lookup_tracks_direct_expression_name_edits",
+          "test_first_media_rule_evaluation_establishes_a_baseline",
+          "test_prefers_color_scheme_uses_an_svg_image_document_override",
+          "test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+          "test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+          "test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+          "test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+          "test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+          "test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+          "test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+          "test_fractional_media_breakpoint_changes_live_styles",
+          "test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+          "test_parsed_media_values_survive_parser_churn_and_environment_changes",
+          "test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+          "test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+          "test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+          "test_literal_viewport_media_results_track_size_policy_and_text_changes",
+          "test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+          "test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+          "test_one_media_list_can_follow_distinct_document_viewports",
+          "test_media_candidates_filter_only_branches_without_media_effects",
+          "test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+          "test_media_candidates_same_length_replacement_discards_removed_rules",
+          "test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+          "test_media_candidates_keep_imports_before_the_sheet_arrives",
+          "test_media_candidates_preserve_ignored_grouping_rule_types",
+          "test_media_candidates_invalidate_before_change_callbacks",
+          "test_media_candidate_storage_survives_scratch_and_document_retirement",
+          "test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+          "test_empty_style_children_receive_later_insertions_and_removals",
+          "test_inactive_supports_preserves_delayed_child_media_baselines",
+          "test_imported_empty_sheet_still_updates_its_media_match_state",
+          "test_registered_shadow_media_visits_nested_connected_scopes",
+          "test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+          "test_registered_shadow_media_moves_with_adopted_host",
+          "test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+          "test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+          "test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+          "test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+        ]
+      },
+      "Build/chatgpt-media-groups-20261106-r3/checks-sanitized.c": {
+        "sha256": "f8c9880e365e368dd197e36721d48eb4fd41a9ae590f969c298dfd0ab79cb294",
+        "tests": [
+          "test_media_group_candidates_flatten_all_unconditional_types_in_order",
+          "test_media_group_flattening_preserves_live_guards_and_delayed_first_evaluation",
+          "test_media_group_flattening_bounds_expansion_and_rechecks_nested_replacement",
+          "test_media_group_flattening_keeps_import_media_and_late_sheet_identity",
+          "test_media_group_candidate_vector_keeps_owner_and_reuses_warm_storage",
+          "test_media_feature_lookup_covers_every_supported_identifier",
+          "test_media_feature_lookup_reads_current_viewport_preferences_and_density",
+          "test_media_feature_lookup_rejects_arbitrary_and_case_sensitive_names",
+          "test_media_feature_name_classification_does_not_retain_caller_storage",
+          "test_media_feature_lookup_tracks_direct_expression_name_edits",
+          "test_first_media_rule_evaluation_establishes_a_baseline",
+          "test_prefers_color_scheme_uses_an_svg_image_document_override",
+          "test_media_numeric_environment_values_keep_fractional_units_and_query_serialization",
+          "test_resolution_media_queries_use_display_density_independent_of_layout_scale",
+          "test_display_density_change_recomputes_media_styles_without_a_viewport_resize",
+          "test_chromium_inclusive_media_lengths_allow_one_layout_unit",
+          "test_chromium_strict_media_comparisons_keep_unrounded_lengths",
+          "test_media_length_precision_is_css_pixels_and_tracks_viewport_changes",
+          "test_media_length_precision_preserves_other_policies_features_and_negative_queries",
+          "test_fractional_media_breakpoint_changes_live_styles",
+          "test_media_feature_retains_its_own_value_after_the_callers_union_changes",
+          "test_parsed_media_values_survive_parser_churn_and_environment_changes",
+          "test_cached_literal_font_and_viewport_lengths_match_fresh_evaluation",
+          "test_cached_boolean_media_expressions_track_cssom_viewport_and_live_preferences",
+          "test_shared_media_cache_retains_only_values_after_document_storage_is_released",
+          "test_literal_viewport_media_results_track_size_policy_and_text_changes",
+          "test_height_orientation_ranges_and_cssom_edits_keep_live_results",
+          "test_calculated_container_and_preference_queries_keep_ordinary_evaluation",
+          "test_one_media_list_can_follow_distinct_document_viewports",
+          "test_media_candidates_filter_only_branches_without_media_effects",
+          "test_media_candidates_invalidate_detached_shared_ancestors_after_nested_edits",
+          "test_media_candidates_same_length_replacement_discards_removed_rules",
+          "test_media_candidates_keep_inactive_ancestors_and_live_condition_changes",
+          "test_media_candidates_keep_imports_before_the_sheet_arrives",
+          "test_media_candidates_preserve_ignored_grouping_rule_types",
+          "test_media_candidates_invalidate_before_change_callbacks",
+          "test_media_candidate_storage_survives_scratch_and_document_retirement",
+          "test_empty_media_group_still_evaluates_its_own_condition_and_transitions",
+          "test_empty_style_children_receive_later_insertions_and_removals",
+          "test_inactive_supports_preserves_delayed_child_media_baselines",
+          "test_imported_empty_sheet_still_updates_its_media_match_state",
+          "test_registered_shadow_media_visits_nested_connected_scopes",
+          "test_registered_shadow_media_keeps_disconnected_scopes_unevaluated_until_connection",
+          "test_registered_shadow_media_moves_with_adopted_host",
+          "test_local_link_media_mutations_keep_the_live_sheet_and_cssom_edits",
+          "test_media_list_retains_parsed_queries_while_rechecking_live_viewport_values",
+          "test_media_list_reparses_changed_text_and_caches_failed_single_query_parses",
+          "test_parsed_media_entries_keep_their_tree_and_evaluate_each_document_environment"
+        ]
+      }
+    },
+    "total_test_calls": 576
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-media-groups-initial-20261106-evidence.zip",
+    "sha256": "100706ed2bf66ecedeeae6eea15d8b293ebd241fc7701542d655d8a19afbbae7",
+    "bytes": 26147611
+  },
+  "removed_verified_generated_c": [
+    {
+      "path": "Build/chatgpt-media-groups-20261106-r3/component.c",
+      "sha256": "7246a50756223d110d512771a8718f4130869e809bdfc6408bea26d31c884cfe",
+      "bytes": 160384710
+    },
+    {
+      "path": "Build/chatgpt-media-groups-20261106-r3/checks-default.c",
+      "sha256": "056ef2d47d862423c33b8ad89e0a981cf60346193a32eb6241f282e5bf6072ae",
+      "bytes": 14872948
+    },
+    {
+      "path": "Build/chatgpt-media-groups-20261106-r3/checks-sanitized.c",
+      "sha256": "f8c9880e365e368dd197e36721d48eb4fd41a9ae590f969c298dfd0ab79cb294",
+      "bytes": 15083620
+    },
+    {
+      "path": "Build/chatgpt-media-groups-20261106-r3/checks-prealloc.c",
+      "sha256": "f8c9880e365e368dd197e36721d48eb4fd41a9ae590f969c298dfd0ab79cb294",
+      "bytes": 15083620
+    },
+    {
+      "path": "Build/chatgpt-media-groups-20261106-r3/checks-none.c",
+      "sha256": "d5d80fb48361cf910262185b5729d470e426468d1f221ec3a4bb68946fced96c",
+      "bytes": 14863828
+    }
+  ],
+  "qualification": "Initial bounded expansion: all focused checks pass, but the deep-rebuild component regresses about 15%. All observations are retained before narrowing the policy. No page credit."
+}
