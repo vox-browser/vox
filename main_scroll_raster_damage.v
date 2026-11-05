@@ -79,6 +79,7 @@ struct ScrollRasterKeyFrame {
 mut:
 	valid    bool
 	document u64
+	paint_generation u64
 	scroll   f64
 	width    f64
 	height   f64

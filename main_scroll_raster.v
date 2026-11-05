@@ -21,17 +21,27 @@ const bound_pointwise_filter_outputs = os.getenv('VOX_BOUND_POINTWISE_FILTER_OUT
 
 fn C.native_bound_pointwise_filter_output(f64, f64, f64, f64)
 
+fn (app &BrowserApp) pointwise_filter_output_bounds(index int) ?layout.LayoutRect {
+	if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium
+		|| app.page_zoom != 1 || !app.scroll_raster_keys.valid
+		|| app.scroll_raster_keys.document != u64(app.document.unique_id().value())
+		|| app.scroll_raster_keys.paint_generation != app.paint_generation
+		|| app.scroll_raster_keys.scroll != app.scroll_y
+		|| app.scroll_raster_keys.width != app.viewport_width
+		|| app.scroll_raster_keys.height != app.viewport_height
+		|| app.scroll_raster_keys.keys.len != app.paint_commands.len
+		|| index < 0 || index >= app.paint_commands.len
+		|| !layout.scroll_raster_filter_is_pointwise(&app.paint_commands[index]) { return none }
+	key := &app.scroll_raster_keys.keys[index]
+	if key.group_end <= index || !key.has_ink || !scroll_raster_rect_valid(key.ink) { return none }
+	return key.ink
+}
+
 fn (app &BrowserApp) bound_pointwise_filter_output(index int) {
 	$if macos {
-		if !bound_pointwise_filter_outputs || app.page_zoom != 1
-			|| !app.scroll_raster_keys.valid || app.scroll_raster_keys.scroll != app.scroll_y
-			|| app.scroll_raster_keys.keys.len != app.paint_commands.len
-			|| index < 0 || index >= app.paint_commands.len
-			|| !layout.scroll_raster_filter_is_pointwise(&app.paint_commands[index]) { return }
-		key := &app.scroll_raster_keys.keys[index]
-		if key.group_end <= index || !key.has_ink || !scroll_raster_rect_valid(key.ink) { return }
-		C.native_bound_pointwise_filter_output(key.ink.x, key.ink.y + app.page_top(),
-			key.ink.width, key.ink.height)
+		if !bound_pointwise_filter_outputs { return }
+		ink := app.pointwise_filter_output_bounds(index) or { return }
+		C.native_bound_pointwise_filter_output(ink.x, ink.y + app.page_top(), ink.width, ink.height)
 	}
 }
 
@@ -158,6 +168,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			app.scroll_raster_keys = ScrollRasterKeyFrame{
 				valid:    true
 				document: document_id
+				paint_generation: app.paint_generation
 				scroll:   app.scroll_y
 				width:    damage.width
 				height:   damage.height

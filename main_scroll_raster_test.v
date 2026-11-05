@@ -8,6 +8,39 @@ import page
 import painting
 import time
 
+fn test_pointwise_filter_output_bounds_require_current_document_and_paint_frame() {
+	mut document := html.parse_document('<!doctype html><div></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	ink := layout.LayoutRect{10, 20, 30, 40}
+	mut app := BrowserApp{document: document, viewport_width: 800, viewport_height: 600,
+		paint_generation: 17, paint_commands: [layout.PaintCommand{kind: 'begin_css_filter_layer'},
+			layout.PaintCommand{kind: 'end_css_filter_layer'}]}
+	app.scroll_raster_keys = ScrollRasterKeyFrame{valid: true,
+		document: u64(document.unique_id().value()), paint_generation: 17, width: 800, height: 600,
+		keys: [ScrollRasterCommandKey{has_ink: true, ink: ink, group_end: 1}, ScrollRasterCommandKey{}]}
+	assert app.pointwise_filter_output_bounds(0)? == ink
+	assert app.pointwise_filter_output_bounds(-1) == none
+	assert app.pointwise_filter_output_bounds(2) == none
+	app.paint_generation++
+	assert app.pointwise_filter_output_bounds(0) == none
+	app.paint_generation--
+	app.scroll_raster_keys.document++
+	assert app.pointwise_filter_output_bounds(0) == none
+	app.scroll_raster_keys.document--
+	app.scroll_y = 1
+	assert app.pointwise_filter_output_bounds(0) == none
+	app.scroll_y = 0
+	app.viewport_width++
+	assert app.pointwise_filter_output_bounds(0) == none
+	app.viewport_width--
+	app.scroll_raster_keys.keys[0].has_ink = false
+	assert app.pointwise_filter_output_bounds(0) == none
+	app.scroll_raster_keys.keys[0].has_ink = true
+	app.scroll_raster_keys.keys[0].group_end = -1
+	assert app.pointwise_filter_output_bounds(0) == none
+}
+
 fn test_scroll_raster_revision_tracks_content_but_not_viewport_translation() {
 	mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{height:1000px;background:green}</style><div id="target"></div>')
 	defer { document.finalize() }
