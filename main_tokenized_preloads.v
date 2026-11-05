@@ -104,13 +104,17 @@ fn collect_tokenized_navigation_preloads(markup string, base_url string) ?Tokeni
 	for address in script_type_urls {
 		if address !in types { types[address] = 'script' }
 	}
-	for group in [styles, scripts, images] {
+	// Every stylesheet and script is requested before the page commits; only
+	// asynchronous images share the bounded preload budget.
+	for group_index, group in [styles, scripts, images] {
 		for address in group {
+			if group_index == 2 && urls.len >= max_preloaded_resources {
+				return TokenizedNavigationPreloads{urls:urls, types:types}
+			}
 			if !address.starts_with('http://') && !address.starts_with('https://') { continue }
 			if address in seen { continue }
 			seen[address] = true
 			urls << address
-			if urls.len == max_preloaded_resources { return TokenizedNavigationPreloads{urls:urls, types:types} }
 		}
 	}
 	return TokenizedNavigationPreloads{urls:urls, types:types}

@@ -101,30 +101,20 @@ fn retire_native_preload_document(document &dom.Document) {
 fn queue_navigation_preloads(mut pending PendingPagePreload, urls []string,
 	types map[string]string, cache map[string]PreloadedResource) {
 	pending.remaining += urls.len
+	mut jobs := []ResourceFetchJob{cap: urls.len}
 	for resource_url in urls {
-		owned_url := resource_url.clone()
 		cached := if resource := cache[resource_url] { [resource] } else { []PreloadedResource{} }
-		spawn fetch_navigation_preload(owned_url, pending.loaded.url,
-			types[resource_url] or { 'image' }, cached, pending.results)
+		jobs << ResourceFetchJob{ url: resource_url.clone(), request_type: types[resource_url] or { 'image' },
+			cached: cached }
 	}
+	spawn_resource_fetch_workers(jobs, pending.loaded.url, true, pending.results)
 }
 
 fn fetch_navigation_preload(resource_url string, source_url string, request_type string,
 	cached []PreloadedResource, results chan PreloadedResource) {
 	platform.retain_thread_allocations()
-	resource := if cached.len > 0 {
-		filter_preloaded_resource(cached[0], source_url, request_type) or {
-			PreloadedResource{ url: resource_url, error: err.msg(), source_url: source_url, request_type: request_type }
-		}
-	} else {
-		fetch_browser_resource(resource_url, '', source_url, request_type) or {
-			PreloadedResource{ url: resource_url, error: err.msg(), source_url: source_url, request_type: request_type }
-		}
-	}
-	results <- resource
-	$if macos {
-		C.native_wake_browser()
-	}
+	fetch_resource_jobs([ResourceFetchJob{ url: resource_url, request_type: request_type, cached: cached }],
+		source_url, true, results)
 }
 
 fn (mut app BrowserApp) prepare_loaded_page(loaded LoadedPage, add_history bool) {

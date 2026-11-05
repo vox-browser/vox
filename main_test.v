@@ -1103,19 +1103,6 @@ fn test_svg_image_contain_destination_resolves_computed_edge_offsets() {
 	assert height == 100
 }
 
-fn test_document_preload_resources_are_bounded() {
-	mut markup := '<html><head>'
-	for index in 0 .. max_preloaded_resources + 5 {
-		markup += '<link rel="stylesheet" href="/${index}.css">'
-	}
-	markup += '</head></html>'
-	document := html.parse_document(markup)
-	urls := document_preload_resource_urls(document, 'https://example.com/')
-	assert urls.len == max_preloaded_resources
-	assert urls[0] == 'https://example.com/0.css'
-	assert urls[urls.len - 1] == 'https://example.com/${max_preloaded_resources - 1}.css'
-}
-
 fn test_successful_page_cache_round_trip() {
 	cache_directory := os.join_path(os.temp_dir(), 'ladybird-v-cache-test-${os.getpid()}')
 	os.rmdir_all(cache_directory) or {}

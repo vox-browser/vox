@@ -1358,9 +1358,6 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			if resource_url !in seen {
 				seen[resource_url] = true
 				urls << resource_url
-				if urls.len == max_preloaded_resources {
-					return urls
-				}
 			}
 		}
 	}
@@ -1374,11 +1371,14 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
 				seen[resource_url] = true
 				urls << resource_url
-				if urls.len == max_preloaded_resources {
-					return urls
-				}
 			}
 		}
+	}
+	// Stylesheets and scripts block rendering and script execution; any not
+	// preloaded here would be fetched one at a time on the UI thread. Images
+	// load asynchronously, so only they share the bounded preload budget.
+	if urls.len >= max_preloaded_resources {
+		return urls
 	}
 	if preload_remote_images {
 		for image in css.query_selector_all(root, 'img[src]') {
@@ -1462,9 +1462,8 @@ fn preload_document_resource_urls(document &dom.Document, base_url string, urls 
 		return loaded
 	}
 	results := chan PreloadedResource{ cap: pending_urls.len }
-	for resource_url in pending_urls {
-		spawn fetch_resource_in_background(resource_url, document.url.serialize(), resource_types[resource_url] or { 'image' }, results)
-	}
+	spawn_resource_fetch_workers(pending_urls.map(ResourceFetchJob{ url: it, request_type: resource_types[it] or { 'image' } }),
+		document.url.serialize(), false, results)
 	for _ in pending_urls {
 		resource := <-results
 		loaded[resource.url] = resource

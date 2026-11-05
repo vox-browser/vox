@@ -33,13 +33,22 @@ fn test_tokenized_navigation_preloads_keep_sensitive_contexts_on_the_full_parser
 	assert collect_tokenized_navigation_preloads('<link rel="stylesheet" href="fragment.css">', 'https://preload.test/') == none
 }
 
-fn test_tokenized_navigation_preloads_preserve_group_priority_and_resource_limit() {
-	mut content := '<html><head></head><body><img src="shared"><script src="shared"></script><link rel="stylesheet" href="shared">'
+fn test_tokenized_navigation_preloads_preserve_group_priority_and_image_limit() {
+	mut content := '<html><head></head><body><img src="shared"><img src="late.png"><script src="shared"></script><link rel="stylesheet" href="shared">'
 	for index in 0 .. max_preloaded_resources + 8 { content += '<script src="${index}.js"></script>' }
 	content += '</body></html>'
 	found := collect_tokenized_navigation_preloads(content, 'https://preload.test/') or { panic('eligible') }
-	assert found.urls.len == max_preloaded_resources
+	// Every script is requested before commit; images only fit the remaining budget.
+	assert found.urls.len == max_preloaded_resources + 9
 	assert found.urls[0] == 'https://preload.test/shared'
 	assert found.types[found.urls[0]] == 'stylesheet'
 	assert found.types[found.urls[1]] == 'script'
+	assert found.urls.last() == 'https://preload.test/${max_preloaded_resources + 7}.js'
+	assert 'https://preload.test/late.png' !in found.urls
+	mut images := '<html><head></head><body><script src="a.js"></script>'
+	for index in 0 .. max_preloaded_resources + 8 { images += '<img src="${index}.png">' }
+	images += '</body></html>'
+	bounded := collect_tokenized_navigation_preloads(images, 'https://preload.test/') or { panic('eligible') }
+	assert bounded.urls.len == max_preloaded_resources
+	assert bounded.urls.last() == 'https://preload.test/${max_preloaded_resources - 2}.png'
 }
