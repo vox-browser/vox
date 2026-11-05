@@ -1,0 +1,3411 @@
+{
+  "status": "Completed-transition clock demand correction committed; production TechCrunch PNG captures now complete under the unchanged 3 GiB guard. Source and independent Brave references are exact, while native pixels still fail in both cache modes. No site qualification or broad-suite pass.",
+  "commit": "ef6d01a1962894f73a4f282ca18eff0e4c09bd9d",
+  "raw_root": "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105",
+  "implementation": "Suppress repeated animated-style invalidation for a non-idle CSS transition already sampled in its after phase at or beyond end_time. Preserve registration for before/after-change comparisons, unsampled final-phase demand and direct earlier-progress sampling. DocumentTimeline remains monotonic. CSS animations and Web Animations keep their existing demand paths.",
+  "diagnosis": {
+    "cumulative_mmap_warning": "Earlier mapping totals record cumulative mapping capacities, not peak live bytes or RSS. They do not independently identify the memory peak.",
+    "cache_trim_control": {
+      "no-trim": {
+        "command": [
+          "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/instrumented-compile/none",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/no-trim/vox.png",
+          "https://techcrunch.com/"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3233349632,
+        "elapsed_seconds": 21.822772917,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "trim-recycle": {
+        "command": [
+          "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/instrumented-compile/none",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/trim-recycle/vox.png",
+          "https://techcrunch.com/"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3222339584,
+        "elapsed_seconds": 21.213377333,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "stacks": "Read-only macOS sample and vmmap snapshots at main-process RSS thresholds 1800 and 2500 MiB identify animated style descendant recascade. Both commands exit successfully; thresholds are trigger observations, not aggregate peak limits.",
+    "transition_observation": "1868 transition target buckets, with the first 24 recorded entries showing tab_size 8 to 4, start 0 ms, end 1 ms, including html/head/meta. No claim that every transition was inspected. CSS animation target count is zero.",
+    "private_candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-candidate-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-candidate/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1590771712,
+      "elapsed_seconds": 15.695815167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "private_candidate_pixel_limit": "O0/private test-mode native text is garbled; its 309039-pixel source comparison does not qualify rendering. Production captures use the completed native bundle."
+  },
+  "focused": {
+    "new_cases": 2,
+    "modes": [
+      "default GC",
+      "GC disabled",
+      "prealloc with arena poisoning"
+    ],
+    "new_results": "completed-focused-v2",
+    "committed_feature_sha256": {
+      "css/computed_interpolation.v": "d9a9b055a4e0e74e842c060a0cf209005782d157cb85eea3c7eca16ae5dd0909",
+      "css/animation_rendering_demand.v": "f2462c23322625b47278bf8c8b0a0f62a7ce8ca462844acbb24f2b0879edb677",
+      "css/completed_transition_demand_test.v": "1612db739c4955ce2ebe529a637f1676cdffde97ea38afc4d77835affbbbb4c8"
+    },
+    "negative": "completed-negative: completed transition unnecessarily dirties animated style and requests a frame.",
+    "corrected_test_attempt": "completed-focused retained the first invalid document-clock rewind assertion. DocumentTimeline clamps that clock monotonically. The final test directly resamples the transition at earlier progress and verifies subsequent final-sample demand, while preserving monotonic document clock semantics.",
+    "existing_default_and_no_gc": {
+      "cases": 20,
+      "results": "completed-controls",
+      "files": [
+        "css/animation_timeline_invalidation_test.v",
+        "css/css_transition_timing_test.v",
+        "css/css_transition_shorthand_test.v",
+        "css/transition_registration_storage_test.v"
+      ]
+    },
+    "prealloc_controls": {
+      "cases": 23,
+      "results": "completed-prealloc-controls",
+      "poisoned_cases": 21,
+      "normal_bounded_frame_cases": 2,
+      "note": "Preserve the existing bounded-frame allocation budgets and run those two cases without poison. Endpoint sampling and all 20 transition controls use arena poison."
+    },
+    "existing_open_scratch_bound": "The separately retained layout/native_document_scratch_test.v result is 76800 versus its unchanged 65536-byte limit, also reproduced with the prior registration-storage fix removed. This run does not close that issue."
+  },
+  "production": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "7c357dd64d9ecb4ad997f54946dc07676e0d0da3c5319ba38383a688fcdecb70",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "592ccbd3689d2f5bf96cc9509941fbc78de87f4eebbc41515832cd0e2d0fe99a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7b47838ace705566b3c1909680ada4a07451864b96e84d7a82181dd9678678f0",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "7c357dd64d9ecb4ad997f54946dc07676e0d0da3c5319ba38383a688fcdecb70",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "652248fe1ab8f4b07c8cbaa73f50b5009c6669632884b23b164912ba7cc918cc",
+        "dirty": true,
+        "head": "230673dc5e26875c18fe0d44f0e1b7a7d4db7ef5",
+        "repository_sha256": "c5f9932141a246150c921dafbc67a09542d1384d2c52b770f744d18ce8e3502f"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "230673dc5e26875c18fe0d44f0e1b7a7d4db7ef5",
+        "id": "2ab9a532c6b847e5b87065b1b4b097b4"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "652248fe1ab8f4b07c8cbaa73f50b5009c6669632884b23b164912ba7cc918cc",
+        "dirty": true,
+        "head": "ef6d01a1962894f73a4f282ca18eff0e4c09bd9d",
+        "repository_sha256": "97ff1eada9fad09983bdaacbb603871f611702488600e6d667dcecf75628a474"
+      }
+    },
+    "manifest_sha256": "e96b9b2571dd513f4294a479b2b4258bd6864769c0f623e1e3a6f0ddc95f0442",
+    "cold": {
+      "started_at": "2026-11-05T19:54:07+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "cold",
+      "sites": [
+        {
+          "id": "techcrunch",
+          "name": "TechCrunch",
+          "url": "https://techcrunch.com/",
+          "status": "pixel-mismatch",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 70016,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "e96b9b2571dd513f4294a479b2b4258bd6864769c0f623e1e3a6f0ddc95f0442"
+        }
+      ],
+      "passed": 0
+    },
+    "complete": {
+      "started_at": "2026-11-05T20:05:07+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "complete",
+      "sites": [
+        {
+          "id": "techcrunch",
+          "name": "TechCrunch",
+          "url": "https://techcrunch.com/",
+          "status": "pixel-mismatch",
+          "image_animation_policy": "allowed",
+          "cache_policy": "complete",
+          "different_pixels": 87422,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "e96b9b2571dd513f4294a479b2b4258bd6864769c0f623e1e3a6f0ddc95f0442"
+        }
+      ],
+      "passed": 0
+    },
+    "cold_native_guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1517584384,
+      "elapsed_seconds": 7.257339917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "complete_native_guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1566244864,
+      "elapsed_seconds": 7.301589,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controls": {
+      "started_at": "2026-11-05T20:08:44+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "cold",
+      "sites": [
+        {
+          "id": "hacker-news",
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        },
+        {
+          "id": "wired",
+          "name": "WIRED",
+          "url": "https://www.wired.com/",
+          "status": "pass",
+          "image_animation_policy": "none",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "c70c845521149c08f0243e4529b8510581e47f9d7a56d4f3d9bb9ae4f9f90f7b"
+        }
+      ],
+      "passed": 2
+    },
+    "svg_source_switch": "production-cold/svg-source-switch: exact decoded pixels, process and memory guard exit 0.",
+    "protocol": "Fresh processes under finite canonical bundle read leases; pin executable, native libraries, full-uBO/checker/list/tool/archive identities throughout. Retain cold versus complete encoded-cache policy, private native profiles and the 3 GiB per-browser runtime budget. Script-free archived guest viewport, 1024x768, scale 1; WIRED uses its explicit first-frame policy. No tolerance or checked reference changes."
+  },
+  "rendering_followup": {
+    "regions": {
+      "header": {
+        "cold_vs_brave": 528,
+        "complete_vs_brave": 656,
+        "cold_vs_complete": 128
+      },
+      "main-image": {
+        "cold_vs_brave": 19909,
+        "complete_vs_brave": 19909,
+        "cold_vs_complete": 0
+      },
+      "main-text": {
+        "cold_vs_brave": 19630,
+        "complete_vs_brave": 19630,
+        "cold_vs_complete": 0
+      },
+      "side": {
+        "cold_vs_brave": 29949,
+        "complete_vs_brave": 30096,
+        "cold_vs_complete": 727
+      },
+      "headlines": {
+        "cold_vs_brave": 0,
+        "complete_vs_brave": 17131,
+        "cold_vs_complete": 17131
+      }
+    },
+    "text_geometry": "Main and side article title element boxes match Brave exactly in the cold diagnostic; white-mask comparisons suggest native headline glyph rows four pixels high. This is a diagnostic, not a positional tolerance or corrected output.",
+    "metrics": "CoreText ascent/descent agree with the decoded NB International and Yellix hhea tables; no additional metric correction implemented.",
+    "font_reuse_diagnostic": "Disabling nine font/layout reuse flags together changes 463324 pixels versus normal Vox, removes search/menu icons and shifts header height by 18px. This composite diagnostic is inconclusive for the four-pixel article baseline and is not kept as production policy.",
+    "individual_font_flags": {
+      "font-flag-face-specific": {
+        "native_reference_pixels": 463697,
+        "normal_native_pixels": 462709,
+        "guard": {
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width",
+            "1024",
+            "--window-height",
+            "852",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-face-specific/vox.png",
+            "https://techcrunch.com/"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 1685716992,
+          "elapsed_seconds": 8.807019583,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      },
+      "font-flag-live-cascade": {
+        "native_reference_pixels": 70291,
+        "normal_native_pixels": 855,
+        "guard": {
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width",
+            "1024",
+            "--window-height",
+            "852",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-live-cascade/vox.png",
+            "https://techcrunch.com/"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 1682096128,
+          "elapsed_seconds": 7.695045125,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      },
+      "font-flag-live-pending": {
+        "native_reference_pixels": 70291,
+        "normal_native_pixels": 855,
+        "guard": {
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width",
+            "1024",
+            "--window-height",
+            "852",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-live-pending/vox.png",
+            "https://techcrunch.com/"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 1566932992,
+          "elapsed_seconds": 7.378009417,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      },
+      "font-flag-refresh": {
+        "native_reference_pixels": 70291,
+        "normal_native_pixels": 855,
+        "guard": {
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width",
+            "1024",
+            "--window-height",
+            "852",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-refresh/vox.png",
+            "https://techcrunch.com/"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 1595719680,
+          "elapsed_seconds": 7.400475500000001,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      }
+    },
+    "individual_measurement_flags": {
+      "measurement-flag-committed": {
+        "native_reference_pixels": 70291,
+        "normal_native_pixels": 855
+      },
+      "measurement-flag-inline": {
+        "native_reference_pixels": 87147,
+        "normal_native_pixels": 17131
+      },
+      "measurement-flag-intrinsic": {
+        "native_reference_pixels": 51841,
+        "normal_native_pixels": 54121
+      },
+      "measurement-flag-live-pending": {
+        "native_reference_pixels": 51841,
+        "normal_native_pixels": 54121
+      },
+      "measurement-flag-pending-intrinsic": {
+        "native_reference_pixels": 70016,
+        "normal_native_pixels": 0
+      }
+    },
+    "isolated_baseline": {
+      "production-cold/sites/techcrunch": {
+        "rgba_sha256": "7bfe5f6013b269aa2b4da813668b9a384398de78dd14702039436276b4a1726a",
+        "first_title_line_mask": [
+          {
+            "native_shift_y": 4,
+            "different_mask_pixels": 0
+          },
+          {
+            "native_shift_y": 3,
+            "different_mask_pixels": 994
+          },
+          {
+            "native_shift_y": 5,
+            "different_mask_pixels": 994
+          },
+          {
+            "native_shift_y": 2,
+            "different_mask_pixels": 1976
+          },
+          {
+            "native_shift_y": 1,
+            "different_mask_pixels": 2942
+          },
+          {
+            "native_shift_y": 0,
+            "different_mask_pixels": 3850
+          },
+          {
+            "native_shift_y": -1,
+            "different_mask_pixels": 4664
+          },
+          {
+            "native_shift_y": -2,
+            "different_mask_pixels": 5164
+          },
+          {
+            "native_shift_y": -3,
+            "different_mask_pixels": 5450
+          },
+          {
+            "native_shift_y": -4,
+            "different_mask_pixels": 5657
+          },
+          {
+            "native_shift_y": -5,
+            "different_mask_pixels": 5817
+          }
+        ]
+      },
+      "measurement-flag-intrinsic": {
+        "rgba_sha256": "e3bf589313638554fba074a2ffa1f46d60c2b3948929651cd912c9fa34980279",
+        "first_title_line_mask": [
+          {
+            "native_shift_y": 0,
+            "different_mask_pixels": 0
+          },
+          {
+            "native_shift_y": -1,
+            "different_mask_pixels": 994
+          },
+          {
+            "native_shift_y": 1,
+            "different_mask_pixels": 994
+          },
+          {
+            "native_shift_y": -2,
+            "different_mask_pixels": 1976
+          },
+          {
+            "native_shift_y": 2,
+            "different_mask_pixels": 1976
+          },
+          {
+            "native_shift_y": -3,
+            "different_mask_pixels": 2942
+          },
+          {
+            "native_shift_y": 3,
+            "different_mask_pixels": 2942
+          },
+          {
+            "native_shift_y": -4,
+            "different_mask_pixels": 3850
+          },
+          {
+            "native_shift_y": 4,
+            "different_mask_pixels": 3850
+          },
+          {
+            "native_shift_y": 5,
+            "different_mask_pixels": 4659
+          },
+          {
+            "native_shift_y": -5,
+            "different_mask_pixels": 4664
+          }
+        ]
+      },
+      "measurement-flag-live-pending": {
+        "rgba_sha256": "e3bf589313638554fba074a2ffa1f46d60c2b3948929651cd912c9fa34980279",
+        "first_title_line_mask": [
+          {
+            "native_shift_y": 0,
+            "different_mask_pixels": 0
+          },
+          {
+            "native_shift_y": -1,
+            "different_mask_pixels": 994
+          },
+          {
+            "native_shift_y": 1,
+            "different_mask_pixels": 994
+          },
+          {
+            "native_shift_y": -2,
+            "different_mask_pixels": 1976
+          },
+          {
+            "native_shift_y": 2,
+            "different_mask_pixels": 1976
+          },
+          {
+            "native_shift_y": -3,
+            "different_mask_pixels": 2942
+          },
+          {
+            "native_shift_y": 3,
+            "different_mask_pixels": 2942
+          },
+          {
+            "native_shift_y": -4,
+            "different_mask_pixels": 3850
+          },
+          {
+            "native_shift_y": 4,
+            "different_mask_pixels": 3850
+          },
+          {
+            "native_shift_y": 5,
+            "different_mask_pixels": 4659
+          },
+          {
+            "native_shift_y": -5,
+            "different_mask_pixels": 4664
+          }
+        ]
+      }
+    },
+    "isolation_result": "Disabling intrinsic font reuse or live pending text reuse separately gives 51841 native-reference pixels and restores the first headline white-mask rows without a vertical shift. These are diagnostic policies; no general cache correctness fix or production pixel pass is established.",
+    "reduced_probe": "reduced-titles first acquisition fails the existing 1000-character body-text readiness precondition (287 characters); the failed source attempt and its real exit 2 remain retained. reduced-titles-v2 adds visible text below the viewport while preserving the rendered test area and readiness checks.",
+    "reduced_result": {
+      "status": "pass",
+      "image_animation_policy": "allowed",
+      "cache_policy": "cold",
+      "different_pixels": 0,
+      "artifacts": "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text",
+      "live_to_frozen_different_pixels": 0,
+      "reference_replay_different_pixels": 0,
+      "manifest_sha256": "fe4288a21ac36054a8c624bfeb78560578140f247b26d631abe1ac551d6cba4e"
+    }
+  },
+  "independent_rgba": [
+    {
+      "run": "production-cold",
+      "site": "techcrunch",
+      "images": [
+        {
+          "path": "Tests/Browser/Brave/sites/techcrunch/live.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "071c5de076e1470a3efc81834284cc22ae8d6f095546bb37b9e908e8574fb334"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/brave.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "071c5de076e1470a3efc81834284cc22ae8d6f095546bb37b9e908e8574fb334"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/brave-repeat.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "071c5de076e1470a3efc81834284cc22ae8d6f095546bb37b9e908e8574fb334"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/vox.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "7bfe5f6013b269aa2b4da813668b9a384398de78dd14702039436276b4a1726a"
+        }
+      ],
+      "different_pixels": {
+        "source_reference": 0,
+        "independent_reference": 0,
+        "vox_reference": 70016
+      }
+    },
+    {
+      "run": "production-complete",
+      "site": "techcrunch",
+      "images": [
+        {
+          "path": "Tests/Browser/Brave/sites/techcrunch/live.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "071c5de076e1470a3efc81834284cc22ae8d6f095546bb37b9e908e8574fb334"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "071c5de076e1470a3efc81834284cc22ae8d6f095546bb37b9e908e8574fb334"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-repeat.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "071c5de076e1470a3efc81834284cc22ae8d6f095546bb37b9e908e8574fb334"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/vox.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fad3ba33bc33c57064e297ad1c50e6ae1b66f57b324ac28658b587f509f7ce20"
+        }
+      ],
+      "different_pixels": {
+        "source_reference": 0,
+        "independent_reference": 0,
+        "vox_reference": 87422
+      }
+    },
+    {
+      "run": "regression-controls",
+      "site": "hacker-news",
+      "images": [
+        {
+          "path": "Tests/Browser/Brave/sites/hacker-news/live.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/brave.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/brave-repeat.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/vox.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+        }
+      ],
+      "different_pixels": {
+        "source_reference": 0,
+        "independent_reference": 0,
+        "vox_reference": 0
+      }
+    },
+    {
+      "run": "regression-controls",
+      "site": "wired",
+      "images": [
+        {
+          "path": "Tests/Browser/Brave/sites/wired/live.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/brave.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/brave-repeat.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        },
+        {
+          "path": "Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/vox.png",
+          "size": [
+            1024,
+            768
+          ],
+          "rgba_sha256": "b676dfd9fb13b86fd7da94da35f7fbddf15f077b38b39d892d8b02c5aaf770f1"
+        }
+      ],
+      "different_pixels": {
+        "source_reference": 0,
+        "independent_reference": 0,
+        "vox_reference": 0
+      }
+    }
+  ],
+  "limitations": [
+    "Observed peaks are sampled process-tree RSS and may double-count shared pages; no matched memory/performance cohort or instruction claim.",
+    "The production site comparisons still fail. No full-suite pass, live scripting, motion, scrolling or whole-site parity claim.",
+    "Engadget readiness, Slate source fidelity, ordinary WIRED animation and other previously reported gaps remain open.",
+    "The first Python image-analysis attempt lacked numpy and direct WOFF2 parsing lacked Brotli; Pillow byte analysis and existing native decoded TTFs supplied diagnostics without dependency installation."
+  ],
+  "archive_preparation_failure": {
+    "path": "docs/evidence/techcrunch-completed-transitions-20261105.zip",
+    "bytes": 6326914,
+    "sha256": "2c62d425d7b504f7144a27df580e8db73c85c01d82bf7c09a70baa3a4b37293d",
+    "reason": "Zip write and surrounding memory-guard report write failed with ENOSPC. Incomplete ZIP removed; every source evidence file remains. Actual controller exit 1; no completed guard receipt available."
+  },
+  "guards": {
+    "baseline/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/baseline/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3286794240,
+      "elapsed_seconds": 4.063771083000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-candidate/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-candidate-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-candidate/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1590771712,
+      "elapsed_seconds": 15.695815167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-candidate-compile/none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-candidate-compile/none",
+        "/Users/alex/code/vox2/main_memory_isolation_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5526470656,
+      "elapsed_seconds": 20.655736084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-candidate-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/completed_candidate.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1681571840,
+      "elapsed_seconds": 16.014482291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/animation_timeline_invalidation_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/animation_timeline_invalidation_test-default",
+        "/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1935179776,
+      "elapsed_seconds": 6.415335375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/animation_timeline_invalidation_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/animation_timeline_invalidation_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.425306416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/animation_timeline_invalidation_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/animation_timeline_invalidation_test-none",
+        "/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1883193344,
+      "elapsed_seconds": 6.226173792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/animation_timeline_invalidation_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/animation_timeline_invalidation_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 27901952,
+      "elapsed_seconds": 0.405810417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_shorthand_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_shorthand_test-default",
+        "/Users/alex/code/vox2/css/css_transition_shorthand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1979793408,
+      "elapsed_seconds": 6.956848875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_shorthand_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_shorthand_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.310253375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_shorthand_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_shorthand_test-none",
+        "/Users/alex/code/vox2/css/css_transition_shorthand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1989509120,
+      "elapsed_seconds": 8.044500957999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_shorthand_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_shorthand_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.319943334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_timing_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_timing_test-default",
+        "/Users/alex/code/vox2/css/css_transition_timing_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1968750592,
+      "elapsed_seconds": 6.537273333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_timing_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_timing_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.298404625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_timing_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_timing_test-none",
+        "/Users/alex/code/vox2/css/css_transition_timing_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1992409088,
+      "elapsed_seconds": 6.726452167000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/css_transition_timing_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/css_transition_timing_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.300234375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/transition_registration_storage_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/transition_registration_storage_test-default",
+        "/Users/alex/code/vox2/css/transition_registration_storage_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1953923072,
+      "elapsed_seconds": 7.6777117079999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/transition_registration_storage_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/transition_registration_storage_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.34111525,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/transition_registration_storage_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/transition_registration_storage_test-none",
+        "/Users/alex/code/vox2/css/transition_registration_storage_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1955414016,
+      "elapsed_seconds": 11.580857000000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-controls/transition_registration_storage_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-controls/transition_registration_storage_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.35902108299999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused/completed_transition_demand_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused/completed_transition_demand_test-default",
+        "/Users/alex/code/vox2/css/completed_transition_demand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1920745472,
+      "elapsed_seconds": 6.811101958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused/completed_transition_demand_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused/completed_transition_demand_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 442368,
+      "elapsed_seconds": 0.433387625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused-v2/completed_transition_demand_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused-v2/completed_transition_demand_test-default",
+        "/Users/alex/code/vox2/css/completed_transition_demand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1998602240,
+      "elapsed_seconds": 6.353195625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused-v2/completed_transition_demand_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused-v2/completed_transition_demand_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.416184875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused-v2/completed_transition_demand_test-none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused-v2/completed_transition_demand_test-none",
+        "/Users/alex/code/vox2/css/completed_transition_demand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1842642944,
+      "elapsed_seconds": 6.407401417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused-v2/completed_transition_demand_test-none-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused-v2/completed_transition_demand_test-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.302237334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused-v2/completed_transition_demand_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused-v2/completed_transition_demand_test-prealloc",
+        "/Users/alex/code/vox2/css/completed_transition_demand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1806319616,
+      "elapsed_seconds": 6.5272255,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-focused-v2/completed_transition_demand_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-focused-v2/completed_transition_demand_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.30372462499999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-negative/completed_transition_demand_test-default-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-negative/completed_transition_demand_test-default",
+        "/Users/alex/code/vox2/css/completed_transition_demand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1999110144,
+      "elapsed_seconds": 5.559366542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-negative/completed_transition_demand_test-default-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-negative/completed_transition_demand_test-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.300576541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/animation_timeline_invalidation_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/animation_timeline_invalidation_test-prealloc",
+        "/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1993277440,
+      "elapsed_seconds": 5.516119667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/animation_timeline_invalidation_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/animation_timeline_invalidation_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 21168128,
+      "elapsed_seconds": 0.5417053749999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/css_transition_shorthand_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/css_transition_shorthand_test-prealloc",
+        "/Users/alex/code/vox2/css/css_transition_shorthand_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1977237504,
+      "elapsed_seconds": 5.644766958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/css_transition_shorthand_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/css_transition_shorthand_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 18120704,
+      "elapsed_seconds": 0.411770792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/css_transition_timing_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/css_transition_timing_test-prealloc",
+        "/Users/alex/code/vox2/css/css_transition_timing_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1964408832,
+      "elapsed_seconds": 5.516158792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/css_transition_timing_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/css_transition_timing_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.28556954100000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/prealloc_bounded_frames_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/prealloc_bounded_frames_test-prealloc",
+        "/Users/alex/code/vox2/layout/prealloc_bounded_frames_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3671834624,
+      "elapsed_seconds": 11.381666958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/prealloc_bounded_frames_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/prealloc_bounded_frames_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 92749824,
+      "elapsed_seconds": 0.766817792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/sampled_transition_endpoints_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/sampled_transition_endpoints_test-prealloc",
+        "/Users/alex/code/vox2/css/sampled_transition_endpoints_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1849294848,
+      "elapsed_seconds": 6.266508249999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/sampled_transition_endpoints_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/sampled_transition_endpoints_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.30002925,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/transition_registration_storage_test-prealloc-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/transition_registration_storage_test-prealloc",
+        "/Users/alex/code/vox2/css/transition_registration_storage_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1988083712,
+      "elapsed_seconds": 5.849740583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "completed-prealloc-controls/transition_registration_storage_test-prealloc-run.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/completed-prealloc-controls/transition_registration_storage_test-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.40670991700000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-flag-face-specific/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-face-specific/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1685716992,
+      "elapsed_seconds": 8.807019583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-flag-live-cascade/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-live-cascade/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1682096128,
+      "elapsed_seconds": 7.695045125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-flag-live-pending/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-live-pending/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1566932992,
+      "elapsed_seconds": 7.378009417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-flag-refresh/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-flag-refresh/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1595719680,
+      "elapsed_seconds": 7.400475500000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-flags-individual-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/font_flags_individual.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1784348672,
+      "elapsed_seconds": 32.411524625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-metrics-compile.guard.json": {
+      "command": [
+        "clang",
+        "-framework",
+        "Foundation",
+        "-framework",
+        "CoreText",
+        "Build/techcrunch-live-memory-20261105/font_metrics.m",
+        "-o",
+        "Build/techcrunch-live-memory-20261105/font-metrics"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 91619328,
+      "elapsed_seconds": 0.291208417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-metrics-run.guard.json": {
+      "command": [
+        "Build/techcrunch-live-memory-20261105/font-metrics",
+        "/tmp/ladybird-v-fonts-78408/3f4731281835bb4e0adadba0288e310368ee44a523beb407f916ac3ed6927fcc.ttf",
+        "/tmp/ladybird-v-fonts-78408/311c94de48dd6a2f8e585efef92d1bdbfe08b15428a65d7e0b7644fc9d0426d0.ttf",
+        "/tmp/ladybird-v-fonts-78408/518dd14957a38f6c3f7ab26dc2b22ae0ece94add364eada9db00837709f167d3.ttf",
+        "/tmp/ladybird-v-fonts-78408/91425fefd09af9e9aeee1148b216d5ac74dda635e44f9ec2bd903ba7a27df5e1.ttf"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.296651833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-reuse-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/font_reuse_disabled.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1852129280,
+      "elapsed_seconds": 7.909138791999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font-reuse-disabled/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/font-reuse-disabled/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1766326272,
+      "elapsed_seconds": 7.346373625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented-compile/none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/instrumented-compile/none",
+        "/Users/alex/code/vox2/main_memory_isolation_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5618384896,
+      "elapsed_seconds": 19.4047395,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instrumented-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/instrumented.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3317760000,
+      "elapsed_seconds": 44.007720125000006,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "layout-audit/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/layout-audit/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1533607936,
+      "elapsed_seconds": 7.141854916,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "layout-audit-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/layout_audit.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1620639744,
+      "elapsed_seconds": 7.5455116669999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "measurement-flag-committed/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/measurement-flag-committed/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1634467840,
+      "elapsed_seconds": 7.636764542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "measurement-flag-inline/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/measurement-flag-inline/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1634598912,
+      "elapsed_seconds": 7.972220459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "measurement-flag-intrinsic/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/measurement-flag-intrinsic/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1529036800,
+      "elapsed_seconds": 7.836468666999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "measurement-flag-live-pending/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/measurement-flag-live-pending/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1427554304,
+      "elapsed_seconds": 7.525800167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "measurement-flag-pending-intrinsic/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/measurement-flag-pending-intrinsic/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1621950464,
+      "elapsed_seconds": 7.537726916,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "measurement-flags-individual-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/measurement_flags_individual.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1721810944,
+      "elapsed_seconds": 39.710360916,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-baseline-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/native_baseline.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3352838144,
+      "elapsed_seconds": 4.411569958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "no-trim/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/instrumented-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/no-trim/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3233349632,
+      "elapsed_seconds": 21.822772917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-cold/sites/techcrunch/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:59606",
+        "--replay-spki",
+        "dP0x9VBr8W/ejErX58qBk6U3fB56N0XaR8vJeIoZAEU="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1891467264,
+      "elapsed_seconds": 12.23561275,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-cold/sites/techcrunch/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:59606",
+        "--replay-spki",
+        "dP0x9VBr8W/ejErX58qBk6U3fB56N0XaR8vJeIoZAEU="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1894154240,
+      "elapsed_seconds": 12.393359709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-cold/sites/techcrunch/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1517584384,
+      "elapsed_seconds": 7.257339917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-cold/sites/techcrunch/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites/techcrunch/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1765785600,
+      "elapsed_seconds": 6.187591708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-cold/sites.guard.json": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "tools/forum_news_pixels.py",
+        "--sites",
+        "techcrunch",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-cold/sites",
+        "--extension",
+        "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "Build/wired-parity-20261104-inputs/adblock-check",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--cache-policy",
+        "cold"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2263793664,
+      "elapsed_seconds": 40.000861458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-cold/svg-source-switch.guard.json": {
+      "command": [
+        "sh",
+        "compare_screenshots.sh",
+        "svg-image-source-switch-same-size"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 210501632,
+      "elapsed_seconds": 5.263399832999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-complete/sites/techcrunch/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "preserve",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--profile-template",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-warm-profile",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:60919",
+        "--replay-spki",
+        "/j0vyFV3/2eH5MrP+mmwGRLaorgOkkPgN18njH0r/94="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1794736128,
+      "elapsed_seconds": 11.294991416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-complete/sites/techcrunch/brave-warm.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--proxy-server",
+        "socks5://127.0.0.1:60919",
+        "--replay-spki",
+        "/j0vyFV3/2eH5MrP+mmwGRLaorgOkkPgN18njH0r/94=",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-warm.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-warm.json",
+        "--profile-output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-warm-profile"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1844084736,
+      "elapsed_seconds": 12.468136,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-complete/sites/techcrunch/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "preserve",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--profile-template",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave-warm-profile",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:60919",
+        "--replay-spki",
+        "/j0vyFV3/2eH5MrP+mmwGRLaorgOkkPgN18njH0r/94="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1795670016,
+      "elapsed_seconds": 11.243841542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-complete/sites/techcrunch/vox-warm.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/vox-warm.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1467760640,
+      "elapsed_seconds": 7.178524375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-complete/sites/techcrunch/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1566244864,
+      "elapsed_seconds": 7.301589,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-complete/sites/techcrunch/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites/techcrunch/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1759100928,
+      "elapsed_seconds": 6.12339375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-complete/sites.guard.json": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "tools/forum_news_pixels.py",
+        "--sites",
+        "techcrunch",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/production-complete/sites",
+        "--extension",
+        "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "Build/wired-parity-20261104-inputs/adblock-check",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--cache-policy",
+        "complete"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2251096064,
+      "elapsed_seconds": 57.899173417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles/acquisition/capture.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/__vox_regressions__/article-text.html",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "3",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--proxy-server",
+        "socks5://127.0.0.1:62139",
+        "--replay-spki",
+        "YYk0HJyhGn4jdcf7Z6Ut2oJ6jJ2g3DuVtPQM7ehzSaQ=",
+        "--capture-dir",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles/acquisition/capture",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles/acquisition/capture.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 2,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1705705472,
+      "elapsed_seconds": 57.328986958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/reduced_titles.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1803370496,
+      "elapsed_seconds": 58.152727417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles-v2/acquisition/capture.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/__vox_regressions__/article-text.html",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "3",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--proxy-server",
+        "socks5://127.0.0.1:62463",
+        "--replay-spki",
+        "x9MV4shi/mc143Riw2Va007NaAO+bkSoknucP6VqNXU=",
+        "--capture-dir",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/acquisition/capture",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/acquisition/capture.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1817444352,
+      "elapsed_seconds": 11.42742575,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles-v2/comparison/article-text/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/__vox_regressions__/article-text.html",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "3",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:62516",
+        "--replay-spki",
+        "d6bJ/e6NqrBfr8yA2Uar6Wpf/AAPw2E8MSbPdUgK/xw="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1772683264,
+      "elapsed_seconds": 9.530422375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles-v2/comparison/article-text/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/__vox_regressions__/article-text.html",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "3",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:62516",
+        "--replay-spki",
+        "d6bJ/e6NqrBfr8yA2Uar6Wpf/AAPw2E8MSbPdUgK/xw="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1766866944,
+      "elapsed_seconds": 9.681676125000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles-v2/comparison/article-text/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text/vox.png",
+        "https://techcrunch.com/__vox_regressions__/article-text.html"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 186302464,
+      "elapsed_seconds": 3.429748916,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles-v2/comparison/article-text/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://techcrunch.com/__vox_regressions__/article-text.html",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "3",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/reduced-titles-v2/comparison/article-text/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1746649088,
+      "elapsed_seconds": 6.142266708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reduced-titles-v2-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/reduced_titles_v2.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2169176064,
+      "elapsed_seconds": 42.739024417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/hacker-news/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:61495",
+        "--replay-spki",
+        "FD8i4rynWDsE7Aa7n2AWF0pVkWb2ZKD3HD/k+jXSREY="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1747795968,
+      "elapsed_seconds": 15.215552917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/hacker-news/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:61495",
+        "--replay-spki",
+        "FD8i4rynWDsE7Aa7n2AWF0pVkWb2ZKD3HD/k+jXSREY="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1766752256,
+      "elapsed_seconds": 14.589685,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/hacker-news/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/vox.png",
+        "https://news.ycombinator.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 168345600,
+      "elapsed_seconds": 5.914877416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/hacker-news/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://news.ycombinator.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "allowed",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/hacker-news/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1830961152,
+      "elapsed_seconds": 11.831306417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/wired/brave-repeat.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/brave-repeat.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/brave-repeat.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:61692",
+        "--replay-spki",
+        "/SoLCh5Yh/k2j5fcPDb4S0o/lF8tbVB5HuavdhGA1os="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1762574336,
+      "elapsed_seconds": 12.420589541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/wired/brave.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--pixel-reference",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/brave.png",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/brave.json",
+        "--proxy-server",
+        "socks5://127.0.0.1:61692",
+        "--replay-spki",
+        "/SoLCh5Yh/k2j5fcPDb4S0o/lF8tbVB5HuavdhGA1os="
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1705394176,
+      "elapsed_seconds": 14.909519125000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/wired/vox.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/vox.png",
+        "https://www.wired.com/"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 784351232,
+      "elapsed_seconds": 6.493111,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites/wired/vox.ubo.guard.json": {
+      "command": [
+        "node",
+        "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+        "--url",
+        "https://www.wired.com/",
+        "--extension",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "/Users/alex/code/vox2/Build/wired-parity-20261104-inputs/adblock-check",
+        "--brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "--settle",
+        "5",
+        "--http-cache-policy",
+        "empty",
+        "--service-worker-policy",
+        "bypass",
+        "--image-animation-policy",
+        "none",
+        "--vox-log",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/vox.requests.jsonl",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites/wired/vox.ubo.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1756004352,
+      "elapsed_seconds": 6.094698542000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regression-controls/sites.guard.json": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "tools/forum_news_pixels.py",
+        "--sites",
+        "hacker-news,wired",
+        "--output",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/regression-controls/sites",
+        "--extension",
+        "Build/wired-parity-20261104-inputs/extension/uBlock0.chromium",
+        "--checker",
+        "Build/wired-parity-20261104-inputs/adblock-check",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--cache-policy",
+        "cold"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2135883776,
+      "elapsed_seconds": 93.935599875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "rss-stack/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/instrumented-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/rss-stack/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3223977984,
+      "elapsed_seconds": 31.906021625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "rss-stack-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/rss_stack.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3263922176,
+      "elapsed_seconds": 32.755268667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "target-compile/none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/target-compile/none",
+        "/Users/alex/code/vox2/main_memory_isolation_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5478924288,
+      "elapsed_seconds": 18.348853374999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "targets/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/target-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/targets/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3221274624,
+      "elapsed_seconds": 21.059109375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "targets-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/targets.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3302064128,
+      "elapsed_seconds": 21.735859667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-target-compile/none-compile.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/transition-target-compile/none",
+        "/Users/alex/code/vox2/main_memory_isolation_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5618827264,
+      "elapsed_seconds": 17.874823250000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-targets/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/transition-target-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/transition-targets/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3227385856,
+      "elapsed_seconds": 25.593017167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transition-targets-controller.guard.json": {
+      "command": [
+        "python3",
+        "Build/techcrunch-live-memory-20261105/transition_targets.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3307569152,
+      "elapsed_seconds": 26.267864250000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "trim-recycle/browser.guard.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/instrumented-compile/none",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/techcrunch-live-memory-20261105/trim-recycle/vox.png",
+        "https://techcrunch.com/"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3222339584,
+      "elapsed_seconds": 21.213377333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "archive": {
+    "path": "docs/evidence/techcrunch-completed-transitions-20261105.zip",
+    "sha256": "465a19280555305970d6aef1ac94488d4d43010607cafae4a91d7b0f811d69bd",
+    "bytes": 17199128,
+    "files": 725,
+    "manifest": "archive-manifest.json",
+    "validation": "CRC and SHA256 of every selected member verified",
+    "exclusions": "Binaries, bulk generated C, browser profiles/caches and private TLS keys. Committed publisher archives and canonical tools are referenced by identity."
+  }
+}

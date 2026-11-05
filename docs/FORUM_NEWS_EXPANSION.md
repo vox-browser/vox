@@ -1309,6 +1309,69 @@ and ordinary WIRED animation parity remain open.
 [Receipts, source provenance and limits](evidence/techcrunch-keyframe-workspace-20261105.json),
 [retained checks and attempts](evidence/techcrunch-keyframe-workspace-20261105.zip).
 
+## TechCrunch: completed transition demand (2026-11-05)
+
+Commit `ef6d01a19` stops repeated animated-style invalidation after a CSS
+transition has sampled its final phase. Completed transitions stay registered
+for later before/after-change comparisons. An unsampled final phase and direct
+resampling at earlier progress remain eligible; the document timeline retains
+its existing monotonic clock behavior.
+
+The preceding mapping traces counted **cumulative mapping capacities**, rather
+than live memory or peak RSS. Read-only macOS stack and VM snapshots at 1,800
+and 2,500 MiB main-process RSS instead show animated-style descendant recascade.
+The diagnostic records 1,868 transition target buckets; its first 24 entries
+are one-millisecond `tab-size: 8 → 4` transitions, including on `html`, `head`
+and `meta`. CSS animation target count is zero. Both private controls—with and
+without periodic unused arena-cache trimming—still exceed the unchanged 3 GiB
+guard. No trimming policy change is kept.
+
+The new repeated-frame regression fails before the correction. Both new cases
+pass with default GC, GC disabled and poisoned preallocation. All **20 existing
+transition controls** pass in both GC modes; those controls plus the sampled
+endpoint case pass with poisoned preallocation. The two bounded-frame tests
+also pass under normal preallocation with their original budgets. The first
+test's invalid attempt to rewind the monotonic document clock remains recorded;
+the corrected case directly resamples the effect. The separate, previously
+reproduced document-scratch bound failure remains open.
+
+Production executable `7c357dd64d9ecb4ad997f54946dc07676e0d0da3c5319ba38383a688fcdecb70`
+now completes TechCrunch's native captures. Its receipt verifies inputs at
+`ef6d01a19`, with the same sealed build-input digest `652248fe…` used during
+compilation. The registered archive remains `e96b9b25…`; every run uses fresh
+processes, pinned tools and native libraries, full uBO, finite bundle read
+leases and the original zero-pixel threshold.
+
+| Encoded cache | Saved source → Brave | Independent Brave replay | Vox → Brave | Native sampled peak RSS |
+| --- | ---: | ---: | ---: | ---: |
+| Cold | 0 | 0 | **70,016** | 1,517,584,384 bytes |
+| Complete | 0 | 0 | **87,422** | 1,566,244,864 bytes |
+
+Both native browsers exit zero within the 3 GiB guard; both strict site checks
+still fail their native pixel gate. Independent decoded RGBA comparisons
+confirm those counts. These observations establish capture completion, with
+no matched memory, timing or instruction-performance claim. The private O0
+candidate also completes, but its test-mode font output is garbled and supplies
+no rendering qualification.
+
+Hacker News and first-frame WIRED pass every cold-cache strict gate on this
+same production bundle, and the same-size SVG source-switch reftest is exact.
+TechCrunch's cold article-title element boxes match Brave, while glyph-row
+comparisons suggest a four-pixel paint offset. A reduced article fixture using
+the original encoded fonts, flex titles and stretched link overlays passes
+every gate at zero pixels. CoreText agrees with the fonts' vertical metric
+tables. No additional layout or font-metric correction is established. The
+warmed page separately changes headline weights and an icon. Disabling
+intrinsic-font reuse or live pending-text reuse individually restores the
+article glyph positions and gives **51,841 differing pixels**, including the
+separate headline-weight difference. This narrows the remaining investigation
+to cached text and intrinsic measurements; it establishes no general cache
+correction. All diagnostic attempts remain retained; no new site or broad-suite
+pass is claimed.
+
+[Receipts, comparisons and limitations](evidence/techcrunch-completed-transitions-20261105.json),
+[retained checks and diagnostics](evidence/techcrunch-completed-transitions-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
