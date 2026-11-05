@@ -1417,6 +1417,8 @@ void native_draw_ellipse_srgb(float x, float y, float width, float height,
 			context == native_font_compositing_context
 				&& native_font_compositing_transparency_depth == 0)) return;
 	}
+	// Quartz draws on the CPU canvas: read back any pending GPU canvas leaves.
+	ladybird_v_skia_gpu_canvas_cpu_access();
 #endif
 	CGPathRef path = CGPathCreateWithEllipseInRect(CGRectMake(x, y, width, height), NULL);
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,

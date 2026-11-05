@@ -55,6 +55,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
     decltype(&vox_graphite_canvas_draw_shape_msaa) draw_shape_msaa = nullptr;
+    decltype(&vox_graphite_canvas_draw_picture) draw_picture = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
 };
 
@@ -73,6 +74,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
         value.draw_shape_msaa = reinterpret_cast<decltype(value.draw_shape_msaa)>(dlsym(library, "vox_graphite_canvas_draw_shape_msaa"));
+        value.draw_picture = reinterpret_cast<decltype(value.draw_picture)>(dlsym(library, "vox_graphite_canvas_draw_picture"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
         return value;
     }();
@@ -294,15 +296,22 @@ void gpu_canvas_decline(CGContextRef destination);
 bool gpu_canvas_kind_supported(std::string_view kind, int flags)
 {
     // Flags from V: 1 outer_shadow, 2 caret, 4 scrollbar, 8 radius, 16 antialiased,
-    // 32 clip_outs, 64 rotated/sheared, 128 underlays_next, 256 no antialias.
+    // 32 clip_outs, 64 rotated/sheared, 128 underlays_next, 256 no antialias,
+    // 512 polygon points.
     if (kind == "paint_outer_box_shadow" || kind == "fill_rounded_rect"
         || kind == "paint_uniform_border" || kind == "paint_partial_rounded_border"
         || kind == "paint_rounded_border_top" || kind == "paint_rounded_border_right"
         || kind == "paint_rounded_border_bottom" || kind == "paint_rounded_border_left")
         return true;
     if (kind == "fill_rect") return !(flags & (1 | 2 | 4 | 64));
+    // Outlines and ellipses are rounded rectangles of the same native shape.
+    static bool const outlines = !std::getenv("VOX_GPU_CANVAS_DISABLE_OUTLINES");
+    if (kind == "stroke_rounded_rect") return outlines && !(flags & 512);
+    if (kind == "fill_ellipse" || kind == "stroke_ellipse") return outlines;
     if (kind == "draw_text") return !gpu_canvas_text_disabled();
     if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
+    static bool const insets = !std::getenv("VOX_GPU_CANVAS_DISABLE_INSET");
+    if (kind == "paint_inner_box_shadow") return insets && gpu_canvas_api()->draw_picture;
     return false;
 }
 

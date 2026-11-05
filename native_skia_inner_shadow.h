@@ -81,6 +81,17 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
     float scroll_y, float canvas_width, float canvas_height, float blur,
     uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha, int opaque_backdrop)
 {
+    // An approved leaf that does not finish on the GPU canvas returns to the
+    // CPU canvas, or to its Quartz fallback: neither may draw under GPU work
+    // that the canvas has not read back yet.
+    struct CanvasFallback {
+        CGContextRef destination;
+        bool on_canvas = false;
+        ~CanvasFallback()
+        {
+            if (!on_canvas && s_gpu_canvas && s_gpu_canvas->destination == destination) gpu_canvas_flush();
+        }
+    } canvas_fallback {destination};
     auto draw = shared_picture_draw();
     if (!destination || !s_chromium_painting || !draw || !outer_data || !inner_data
         || !content_data || !clip_data || !transform || !(canvas_width > 0)
@@ -168,6 +179,36 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
         shared_recording_content(destination, matrix.mapRect(content.rect()), page_y, scroll_y);
         if (isolated_input_defers_leaf_raster(destination)
             || shared_recording_defers_leaf_raster(destination, matrix.mapRect(content.rect()).makeOutset(2, 2))) return 1;
+    }
+    // A reused scroll frame draws the shadow on its GPU canvas, in the frame's
+    // single GPU pass, over the pixels uploaded beneath it. Over a root
+    // Chromium MSAA tile it draws in a multisampled pass, as shapes do.
+    if (s_gpu_canvas && s_gpu_canvas->destination == destination) {
+        std::vector<VoxGraphiteCanvasClip> clips;
+        bool msaa = gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y);
+        static bool const msaa_subpass = !std::getenv("VOX_GPU_CANVAS_DISABLE_MSAA_SUBPASS");
+        if (msaa && !msaa_subpass)
+            gpu_canvas_decline(destination);
+        else if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
+            auto device = SkMatrix::Concat(SkMatrix::Scale(frame->scale, frame->scale), matrix);
+            auto bounds = device.mapRect(content.rect()).makeOutset(2, 2);
+            SkPictureRecorder device_recorder;
+            auto* device_canvas = device_recorder.beginRecording(bounds);
+            device_canvas->setMatrix(device);
+            device_canvas->clipRRect(content, true);
+            draw_shadow(device_canvas);
+            auto device_picture = device_recorder.finishRecordingAsPicture();
+            auto bytes = device_picture ? inset_picture_bytes(device_picture.get(), false) : nullptr;
+            float device_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+            if (bytes && gpu_canvas_api()->draw_picture(bytes->bytes(), bytes->size(),
+                    device_bounds, clips.data(), int(clips.size()), msaa)) {
+                gpu_canvas_name_leaf(*frame, "inset", bounds, 0, clips.size());
+                frame->cpu_stale = true;
+                ++frame->draws;
+                canvas_fallback.on_canvas = !gpu_canvas_verify();
+                if (canvas_fallback.on_canvas) return 1;
+            } else gpu_canvas_flush();
+        }
     }
     // Rasterize the box over its backdrop in the region's own pixels. A
     // cropped region returns -1 when it cannot use the root tiles, so the

@@ -246,6 +246,10 @@ int vox_graphite_canvas_draw_path(const VoxGraphitePath *path, const float *devi
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_pixels(const uint8_t *bgra, int width, int height, int pitch,
     int device_x, int device_y, const VoxGraphiteCanvasClip *clips, int clip_count);
+// A serialized picture of one leaf in device coordinates, without images or
+// typefaces. `msaa` draws it in a multisampled pass, as a Chromium MSAA tile.
+int vox_graphite_canvas_draw_picture(const uint8_t *bytes, size_t size,
+    const float *device_bounds, const VoxGraphiteCanvasClip *clips, int clip_count, int msaa);
 int vox_graphite_canvas_read(const VoxGraphitePixelRegion *views, int count);
 void vox_graphite_canvas_end(void);
 #ifdef __cplusplus

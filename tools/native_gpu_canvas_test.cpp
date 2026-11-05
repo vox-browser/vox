@@ -79,6 +79,39 @@ static void draw_cpu_leaves(CGContextRef context, bool canvas)
     native_fill(context, 120, css_height - 150, 80, 30, 200, 40, 40, canvas);
 }
 
+// Inset box shadows join the canvas as pictures of their leaf: vlang.io's
+// unblurred 1px highlight, and a blurred shadow over a translucent fill.
+static void draw_inset_leaves(CGContextRef context, bool canvas)
+{
+    float transform[] {1, 0, 0, 1, 0, 0};
+    float panel[] {40.25f, 82, 300, 110, 10, 10, 10, 10, 10, 10, 10, 10};
+    float highlight[] {40.25f, 83, 300, 110, 10, 10, 10, 10, 10, 10, 10, 10};
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("paint_inner_box_shadow", 22, 0) == 1);
+    assert(ladybird_v_skia_draw_inner_box_shadow(context, panel, highlight, panel, panel, transform,
+        0, 0, 0, css_width, css_height, 0, 255, 255, 255, 40, 1));
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 70, 120, 200, 60, 8, 8, 8, 8, 8, 8, 8, 8,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 140, 1, 0, 1, 1));
+    float card[] {60.5f, 110, 240, 80, 12, 12, 12, 12, 12, 12, 12, 12};
+    float shifted[] {60.5f, 116, 240, 80, 12, 12, 12, 12, 12, 12, 12, 12};
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("paint_inner_box_shadow", 22, 0) == 1);
+    assert(ladybird_v_skia_draw_inner_box_shadow(context, card, shifted, card, card, transform,
+        0, 0, 0, css_width, css_height, 18, 0, 0, 0, 170, 1));
+}
+
+// Outlines and ellipses draw through the same native rounded-rectangle shape.
+// A polygon outline (flag 512) draws CPU lines and stays off the canvas.
+static void draw_outline_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("stroke_rounded_rect", 19, 512) == 0);
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("stroke_rounded_rect", 19, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 30.5f, 85, 320, 100, 6, 6, 6, 6, 6, 6, 6, 6,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 200, 210, 230, 255, 0, 1, 1, 1));
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_ellipse", 12, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 150, 110, 70, 50, 35, 25, 35, 25, 35, 25, 35, 25,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 240, 80, 60, 255, 1, 0, 1, 1));
+}
+
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
@@ -207,7 +240,83 @@ int main()
         std::cerr << "CPU-leaf frame differs by " << cpu_error << " or lost paint order\n";
         return 1;
     }
+    // Both inset shadows and the fill between them draw in the frame's one
+    // GPU pass, read back once when it ends.
+    auto inset_reference = render(false, false, draw_inset_leaves);
+    auto inset_candidate = render(true, false, draw_inset_leaves);
+    if (s_draws != 3 || s_declined || s_uploads != 1 || s_flushes) {
+        std::cerr << "Inset shadows took the wrong path: draws=" << s_draws << " uploads=" << s_uploads
+            << " flushes=" << s_flushes << " declined=" << s_declined << '\n';
+        return 1;
+    }
+    int inset_error = 0;
+    size_t inset_painted = 0;
+    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+        size_t at = (size_t(y) * width + x) * 4;
+        bool inside = y >= strip_top && y < strip_top + strip_height;
+        for (int c = 0; c < 4; ++c) {
+            if (!inside && inset_candidate[at + c] != original[at + c]) {
+                std::cerr << "Inset frame wrote outside the strip at " << x << "," << y << '\n';
+                return 1;
+            }
+            if (inside && inset_reference[at + c] != original[at + c]) ++inset_painted;
+            inset_error = std::max(inset_error, std::abs(int(inset_candidate[at + c]) - int(inset_reference[at + c])));
+        }
+    }
+    if (inset_painted < 50000 || inset_error > 3) {
+        std::cerr << "Inset shadows differ from per-leaf replay by " << inset_error
+            << " (" << inset_painted << " painted channels)\n";
+        return 1;
+    }
+    auto outline_reference = render(false, false, draw_outline_leaves);
+    auto outline_candidate = render(true, false, draw_outline_leaves);
+    int outline_error = 0;
+    for (size_t at = 0; at < outline_reference.size(); ++at)
+        outline_error = std::max(outline_error, std::abs(int(outline_candidate[at]) - int(outline_reference[at])));
+    if (s_draws != 2 || s_declined || s_uploads != 1 || s_flushes || outline_error > 3
+        || outline_reference == original) {
+        std::cerr << "Outline and ellipse took the wrong path: draws=" << s_draws << " uploads="
+            << s_uploads << " flushes=" << s_flushes << " error=" << outline_error << '\n';
+        return 1;
+    }
+    // Over Chromium MSAA tiles they draw in a multisampled scratch pass, as
+    // their tiled replay multisamples each tile.
+    int const msaa_tiles[] {0, 1, 2, 3, 4, 5, 6, 7};
+    s_raster_layer_height = css_height;
+    ladybird_v_skia_set_msaa_grid(msaa_tiles, 8, 512, 256, 2);
+    auto msaa_reference = render(false, false, draw_inset_leaves);
+    auto msaa_candidate = render(true, false, draw_inset_leaves);
+    ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
+    s_raster_layer_height = 0;
+    if (s_draws != 3 || s_declined || s_uploads != 1 || s_flushes) {
+        std::cerr << "MSAA inset shadows took the wrong path: draws=" << s_draws << " uploads="
+            << s_uploads << " flushes=" << s_flushes << " declined=" << s_declined << '\n';
+        return 1;
+    }
+    int msaa_error = 0;
+    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+        size_t at = (size_t(y) * width + x) * 4;
+        bool inside = y >= strip_top && y < strip_top + strip_height;
+        for (int c = 0; c < 4; ++c) {
+            if (!inside && msaa_candidate[at + c] != original[at + c]) {
+                std::cerr << "MSAA inset frame wrote outside the strip at " << x << "," << y << '\n';
+                return 1;
+            }
+            msaa_error = std::max(msaa_error, std::abs(int(msaa_candidate[at + c]) - int(msaa_reference[at + c])));
+        }
+    }
+    int msaa_shift = 0;
+    for (size_t at = 0; at < msaa_reference.size(); ++at)
+        msaa_shift = std::max(msaa_shift, std::abs(int(msaa_reference[at]) - int(inset_reference[at])));
+    // MSAA tiles are declined unless the canvas multisamples them itself; the
+    // counters above show that it did.
+    if (msaa_error > 3) {
+        std::cerr << "MSAA inset shadows differ from tiled replay by " << msaa_error << '\n';
+        return 1;
+    }
     std::cout << "GPU canvas matches per-leaf replay within " << max_error << " levels ("
-        << differing << " channels differ); outside pixels, CPU paint order, CPU leaves and "
-        "shared recordings preserved\n";
+        << differing << " channels differ), inset shadows within " << inset_error
+        << " (" << msaa_error << " in MSAA tiles, where plain replay differs by " << msaa_shift
+        << "), outlines and ellipses within " << outline_error
+        << "; outside pixels, CPU paint order, CPU leaves and shared recordings preserved\n";
 }

@@ -25,6 +25,8 @@ fn gpu_canvas_command_flags(command &layout.PaintCommand) int {
 	if matrix[1] != 0 || matrix[2] != 0 { flags |= 64 }
 	if command.underlays_next { flags |= 128 }
 	if command.disable_antialias { flags |= 256 }
+	// Polygon outlines draw as CPU lines rather than through the native shape.
+	if command.points.len >= 4 { flags |= 512 }
 	return flags
 }
 

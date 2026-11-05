@@ -294,6 +294,59 @@ int vox_graphite_canvas_draw_pixels(uint8_t const* bgra, int width, int height, 
     });
 }
 
+// An inset box shadow keeps Skia's double rounded rectangle, color filter and
+// blur exactly as its tiled raster records them, drawn over the frame's pixels.
+// In a Chromium MSAA tile it draws, as shapes do, in a multisampled scratch
+// pass over a copy of the area and returns through the destination clips.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_picture(uint8_t const* bytes, size_t size, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count, int msaa)
+{
+    if (!bytes || !size || size > 1024 * 1024 || !bounds) return 0;
+    SkDeserialProcs procs;
+    procs.fAllowSkSL = false;
+    procs.fImageProc = [](void const*, size_t, std::optional<SkAlphaType>, void*) -> sk_sp<SkImage> {
+        return nullptr;
+    };
+    procs.fTypefaceStreamProc = [](SkStream&, void*) -> sk_sp<SkTypeface> { return nullptr; };
+    auto picture = SkPicture::MakeFromData(bytes, size, &procs);
+    if (!picture) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!msaa)
+        return canvas_draw(bounds, clips, clip_count, [&](SkCanvas* canvas, CanvasTile const& tile) {
+            canvas->setMatrix(SkMatrix::Translate(-tile.x, -tile.y));
+            canvas->drawPicture(picture);
+        });
+    if (!canvas_recorder) return 0;
+    SkPaint copy;
+    copy.setBlendMode(SkBlendMode::kSrc);
+    for (auto& tile : canvas_tiles) {
+        auto area = SkRect::MakeLTRB(bounds[0] - tile.x, bounds[1] - tile.y,
+            bounds[2] - tile.x, bounds[3] - tile.y).roundOut();
+        if (!area.intersect(tile.clip)) continue;
+        auto snapshot = tile.surface->makeImageSnapshot(area);
+        auto scratch = snapshot ? SkSurfaces::RenderTarget(canvas_recorder.get(),
+            canvas_info(area.width(), area.height())) : nullptr;
+        if (!scratch) return 0;
+        auto* draw = scratch->getCanvas();
+        draw->drawImage(snapshot, 0, 0, SkSamplingOptions(), &copy);
+        force_msaa_render_pass(draw, area.width(), area.height());
+        draw->setMatrix(SkMatrix::Translate(-(tile.x + area.x()), -(tile.y + area.y())));
+        draw->drawPicture(picture);
+        auto result = scratch->makeImageSnapshot();
+        if (!result) return 0;
+        auto* canvas = tile.surface->getCanvas();
+        canvas->save();
+        canvas->resetMatrix();
+        canvas->clipRect(SkRect::Make(area));
+        apply_canvas_clips(canvas, tile, clips, clip_count);
+        canvas->resetMatrix();
+        canvas->drawImage(result, area.x(), area.y(), SkSamplingOptions(), &copy);
+        canvas->restore();
+    }
+    return 1;
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_read(VoxGraphitePixelRegion const* views, int count)
 {
