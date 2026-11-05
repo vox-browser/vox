@@ -10918,7 +10918,6 @@ pub mut:
 	rules_by_class               map[string][]&MatchingRule
 	rules_by_tag_name            map[string][]&MatchingRule
 	rules_by_attribute_name      map[string][]&MatchingRule
-	rules_by_exact_attribute     map[string]&ExactAttributeRuleBuckets
 	rules_by_pseudo_element      map[PseudoElement][]&MatchingRule
 	root_rules                   []&MatchingRule
 	slotted_rules                []&MatchingRule
