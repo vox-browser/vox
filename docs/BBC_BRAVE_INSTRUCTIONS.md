@@ -6399,3 +6399,46 @@ History reaches **107 measured cohorts / 2,314 acceptance browser attempts**,
 last ID 108; ID 104 remains preflight-only. The last valid full capture cohort,
 107, still fails the target. BBC homepage remains outside the catalog.
 [Every attempt, native checks and broad evidence](performance/bbc-grid-height-early-rejection-cohort108-20261105.json).
+
+
+## Grid-seed cohort 109 and frame diagnostic (2026-11-05)
+
+A newer completed parallel 33-unit build, `fcbdb3e693fa`, matches the checked
+early-rejection sources. Both fresh native arms pass original pixels/content,
+all 72 exact external author-script witnesses, loaded-image pins, ownership and
+normal exits; the grid-height marker remains candidate-only. Four SVG captures
+and all three comparisons are exact.
+
+All **21 attempts** in cohort **109** remain. Brave pair 6 fails its unchanged
+pixel reference, invalidating acceptance; 20 capture audits pass and all 21
+actual browser exits are 0. Observed launch medians are **27,501,979,540 Vox**,
+**27,330,420,056 control** and **17,500,230,358 Brave lower bound**. The grid seed
+shows a **171,559,484 median regression (0.628%)**, with one paired improvement
+and six regressions. Highest Vox / lowest control is **1.06840**. The observed
+strict inequality also fails, `283883589910 > 157009872330` (ratio **1.62726**),
+and the failed audit independently prevents acceptance. No saving is credited
+and there is no new positive-point broad trigger. An initial local auditor
+expected fields absent from an invalid summary; that failed postprocessing is
+retained, and the corrected calculation uses unchanged raw launch intervals.
+
+Separate frame-checkpoint diagnostics on `6bcb6ad70a1e` and `fcbdb3e693fa` pass
+the original native audits in both arms. Ordered chains before PNG place about
+0.84–0.86B root-process instructions between context readiness and document
+replay completion, versus 22.44–25.86B between complete frames. Those intervals
+include concurrent root threads, callbacks/preparation and checkpoint overhead;
+they do not isolate function costs or provide acceptance counts. No diagnostic
+instrumentation is enabled in the cohort.
+
+The publication read lease releases after the cohort, with identities checked
+throughout. The exclusive-coalition creation-to-encoded-PNG endpoint, startup
+and window setup, original frozen replay/scripts/references, 1024×768 CSS at
+scale 2, readiness plus two-second settlement, fresh private profiles/caches,
+retained OS caches and common historical rendering policies remain unchanged.
+Vox stops before file writing, Brave includes CDP delivery, audits/teardown
+follow, exited aggregates/allowed services are included and GPU/outside work is
+excluded. Existing cross-engine pixel/DOM/script/font/paint limitations remain;
+no live-page, isolated rendering or scrolling claim is made.
+
+History is **108 measured cohorts / 2,335 acceptance browser attempts**, last
+ID 109; ID 104 remains preflight-only. The target remains open and BBC homepage
+stays outside the catalog. [Complete attempts, receipts and frame diagnostics](performance/bbc-grid-height-cohort109-frame-parts-20261105.json).
