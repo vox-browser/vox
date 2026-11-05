@@ -6712,3 +6712,25 @@ recursive inclusive scopes overlap. Neither these times nor comparisons with
 the earlier instrumentation establish instruction shares or an optimization.
 The profile precedes and cannot validate the exact-value index experiment.
 [Expanded profile and complete verified sealed-input archive](performance/bbc-v-profile-expanded-20261105.json).
+
+## Exact attribute-value index: focused checks (2026-11-05)
+
+`24b996c79` indexes required, case-sensitive exact attribute values in the
+selector's subject compound. It keeps class/ID priority and the existing paths
+for case-folded values, namespace-dependent names, other operators and indirect
+`:is()`/`:not()` arguments. Every candidate still runs the complete selector.
+Lookup reads current attribute values; ordinary, direct and pseudo-candidate
+iterators and `:has()` mutation scans include the new buckets. `4cc1e8921`
+provides the isolated comparison control.
+
+All **366 final focused executions** pass: 61 cases in both arms across all
+three memory modes, including 36 executions of six new cases. Checks compare
+with complete selector matching and cover live `Attr` replacement, empty values,
+case/namespace boundaries, pseudo-elements, ancestor conditions, cascade, scope,
+quirks and `:has()` invalidation. All **335 instruction-tool tests** pass.
+Initial composed-fixture compile errors and the first oracle's missing ancestor
+filter/pseudo-target setup remain retained; both arms failed those assumptions.
+The corrected oracle and final matrices pass. BBC native eligibility and matched
+instruction measurements remain pending; no performance or catalog credit is
+assigned from focused tests or the preceding profile.
+[Focused checks and retained raw attempts](performance/bbc-exact-attribute-bucket-focus-20261105.json).
