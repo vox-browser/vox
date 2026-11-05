@@ -11,9 +11,11 @@ fn test_svg_paint_projection_retires_contours_after_copying_exact_segments_and_b
 	expected := compatibility_pack_clip_path_segments(visual)
 	bounds := painting_clip_path_bounds(visual) or { panic('missing reference bounds') }
 	before := platform.thread_arena_usage().used
-	actual := svg_paint_path_projection(path, .even_odd, true)
+	actual := svg_paint_path_projection(path, .even_odd, true, false)
 	after := platform.thread_arena_usage().used
-	$if prealloc { assert after - before < actual.packed_segments.len * sizeof(f32) + 1024 }
+	$if prealloc {
+		assert after - before < actual.packed_segments.len * sizeof(f32) + 1024
+	}
 	mut reuse := platform.begin_thread_scratch('reuse paint projection workspace')
 	_ = []u8{len: expected.len * 32, init: 0xa5}
 	reuse.finish()
@@ -23,11 +25,11 @@ fn test_svg_paint_projection_retires_contours_after_copying_exact_segments_and_b
 }
 
 fn test_svg_bounds_without_segment_packing_and_empty_paths_preserve_results() {
-	projection := svg_paint_path_projection(svg.parse_path_data('M1 2H11V22Z'), .nonzero, false)
+	projection := svg_paint_path_projection(svg.parse_path_data('M1 2H11V22Z'), .nonzero, false, false)
 	assert projection.packed_segments.len == 0
 	bounds := projection.bounds or { panic('missing bounds') }
 	assert bounds == painting.Rect{1, 2, 10, 20}
-	empty := svg_paint_path_projection(svg.Path{}, .nonzero, true)
+	empty := svg_paint_path_projection(svg.Path{}, .nonzero, true, false)
 	assert empty.packed_segments.len == 0
 	assert empty.bounds == none
 }

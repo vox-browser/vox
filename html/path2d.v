@@ -57,18 +57,36 @@ pub fn Path2D.create_from_svg_path_data(path_data string) &Path2D {
 	return output
 }
 
-fn svg_path_point(data []f64, offset int, current FloatPoint, absolute bool) FloatPoint {
-	mut point := FloatPoint{data[offset], data[offset + 1]}
+fn svg_path_scalar(value f64, single_precision bool) f64 {
+	return if single_precision { f64(f32(value)) } else { value }
+}
+
+fn svg_path_point(data []f64, offset int, current FloatPoint, absolute bool, single_precision bool) FloatPoint {
+	mut point := FloatPoint{svg_path_scalar(data[offset], single_precision), svg_path_scalar(data[offset + 1], single_precision)}
 	if !absolute {
-		point = FloatPoint{point.x + current.x, point.y + current.y}
+		point = FloatPoint{svg_path_scalar(point.x + current.x, single_precision), svg_path_scalar(point.y + current.y, single_precision)}
 	}
 	return point
+}
+
+fn svg_path_reflected_control(current FloatPoint, previous FloatPoint, single_precision bool) FloatPoint {
+	if !single_precision {
+		return FloatPoint{2 * current.x - previous.x, 2 * current.y - previous.y}
+	}
+	// Blink's SVGPathBuilder reflects PointF as current + (current - control).
+	// Round the subtraction before adding; converting only the final packed
+	// segment loses the current point used by subsequent relative commands.
+	return FloatPoint{svg_path_scalar(current.x + svg_path_scalar(current.x - previous.x, true), true), svg_path_scalar(current.y + svg_path_scalar(current.y - previous.y, true), true)}
 }
 
 // Literal translation of SVG::Path::to_gfx_path(), used by Path2D's string
 // constructor. Keeping this conversion here avoids making the SVG package
 // depend on HTML's Gfx-path model.
 fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
+	return svg_path_to_canvas_gfx_path_with_precision(path, false)
+}
+
+fn svg_path_to_canvas_gfx_path_with_precision(path svg.Path, single_precision bool) CanvasGfxPath {
 	mut output := CanvasGfxPath{}
 	mut previous_control_point := ?FloatPoint(none)
 	mut last_instruction := ?svg.PathInstructionType(none)
@@ -77,30 +95,38 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 		mut clear_last_control_point := true
 		match instruction.type_ {
 			.move {
-				output.move_to(svg_path_point(instruction.data, 0, last_point, instruction.absolute))
+				output.move_to(svg_path_point(instruction.data, 0, last_point, instruction.absolute, single_precision))
 			}
 			.close_path {
 				output.close()
 			}
 			.line {
-				output.line_to(svg_path_point(instruction.data, 0, last_point, instruction.absolute))
+				output.line_to(svg_path_point(instruction.data, 0, last_point, instruction.absolute, single_precision))
 			}
 			.horizontal_line {
-				x := instruction.data[0] + if instruction.absolute { 0.0 } else { last_point.x }
+				x := svg_path_scalar(svg_path_scalar(instruction.data[0], single_precision) + if instruction.absolute {
+					0.0
+				} else {
+					last_point.x
+				}, single_precision)
 				output.line_to(FloatPoint{x, last_point.y})
 			}
 			.vertical_line {
-				y := instruction.data[0] + if instruction.absolute { 0.0 } else { last_point.y }
+				y := svg_path_scalar(svg_path_scalar(instruction.data[0], single_precision) + if instruction.absolute {
+					0.0
+				} else {
+					last_point.y
+				}, single_precision)
 				output.line_to(FloatPoint{last_point.x, y})
 			}
 			.elliptical_arc {
-				next_point := svg_path_point(instruction.data, 5, last_point, instruction.absolute)
-				output.elliptical_arc_to(next_point, FloatSize{instruction.data[0], instruction.data[1]}, instruction.data[2] * math.pi / 180.0, instruction.data[3] != 0, instruction.data[4] != 0)
+				next_point := svg_path_point(instruction.data, 5, last_point, instruction.absolute, single_precision)
+				output.elliptical_arc_to(next_point, FloatSize{svg_path_scalar(instruction.data[0], single_precision), svg_path_scalar(instruction.data[1], single_precision)}, svg_path_scalar(instruction.data[2], single_precision) * math.pi / 180.0, instruction.data[3] != 0, instruction.data[4] != 0)
 			}
 			.quadratic_bezier_curve {
 				clear_last_control_point = false
-				control_point := svg_path_point(instruction.data, 0, last_point, instruction.absolute)
-				end_point := svg_path_point(instruction.data, 2, last_point, instruction.absolute)
+				control_point := svg_path_point(instruction.data, 0, last_point, instruction.absolute, single_precision)
+				end_point := svg_path_point(instruction.data, 2, last_point, instruction.absolute, single_precision)
 				output.quadratic_bezier_curve_to(control_point, end_point)
 				previous_control_point = control_point
 			}
@@ -116,16 +142,16 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 				}
 				previous := previous_control_point or { last_point }
 				control_point :=
-					FloatPoint{2 * last_point.x - previous.x, 2 * last_point.y - previous.y}
-				end_point := svg_path_point(instruction.data, 0, last_point, instruction.absolute)
+					svg_path_reflected_control(last_point, previous, single_precision)
+				end_point := svg_path_point(instruction.data, 0, last_point, instruction.absolute, single_precision)
 				output.quadratic_bezier_curve_to(control_point, end_point)
 				previous_control_point = control_point
 			}
 			.curve {
 				clear_last_control_point = false
-				control_point_1 := svg_path_point(instruction.data, 0, last_point, instruction.absolute)
-				control_point_2 := svg_path_point(instruction.data, 2, last_point, instruction.absolute)
-				end_point := svg_path_point(instruction.data, 4, last_point, instruction.absolute)
+				control_point_1 := svg_path_point(instruction.data, 0, last_point, instruction.absolute, single_precision)
+				control_point_2 := svg_path_point(instruction.data, 2, last_point, instruction.absolute, single_precision)
+				end_point := svg_path_point(instruction.data, 4, last_point, instruction.absolute, single_precision)
 				output.cubic_bezier_curve_to(control_point_1, control_point_2, end_point)
 				previous_control_point = control_point_2
 			}
@@ -141,9 +167,9 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 				}
 				previous := previous_control_point or { last_point }
 				control_point_1 :=
-					FloatPoint{2 * last_point.x - previous.x, 2 * last_point.y - previous.y}
-				control_point_2 := svg_path_point(instruction.data, 0, last_point, instruction.absolute)
-				end_point := svg_path_point(instruction.data, 2, last_point, instruction.absolute)
+					svg_path_reflected_control(last_point, previous, single_precision)
+				control_point_2 := svg_path_point(instruction.data, 0, last_point, instruction.absolute, single_precision)
+				end_point := svg_path_point(instruction.data, 2, last_point, instruction.absolute, single_precision)
 				output.cubic_bezier_curve_to(control_point_1, control_point_2, end_point)
 				previous_control_point = control_point_2
 			}
@@ -162,6 +188,13 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 // second time merely to recover exact curves.
 pub fn canvas_gfx_path_from_svg_path(path svg.Path) CanvasGfxPath {
 	return svg_path_to_canvas_gfx_path(path)
+}
+
+// The browser's Chromium painting policy uses float path operands and updates
+// the float current/control points after each operation. Keep the ordinary
+// Path2D/portable conversion's precision independent of this raster policy.
+pub fn canvas_gfx_path_from_svg_path_with_precision(path svg.Path, single_precision bool) CanvasGfxPath {
+	return svg_path_to_canvas_gfx_path_with_precision(path, single_precision)
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#dom-path2d-addpath

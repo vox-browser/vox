@@ -3159,7 +3159,7 @@ fn collect_svg_clip_path_components_in(node &Node, clip_box &Node, state &Layout
 				} else if user_space := target_to_page {
 					to_page = svg_clip_child_transform_to_page(node, clip_box, user_space)
 				}
-				local_path := html.canvas_gfx_path_from_svg_path(svg_path)
+				local_path := html.canvas_gfx_path_from_svg_path_with_precision(svg_path, node.document().font_rendering_policy() == .chromium)
 				clip_path := painting_clip_path_from_canvas_path(local_path, if styled.computed_values().clip_rule() == .evenodd {
 					painting.WindingRule.even_odd
 				} else {
@@ -3416,7 +3416,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 			if object_bounding_box_units {
 				to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
 			}
-			path := painting_clip_path_from_canvas_path(html.canvas_gfx_path_from_svg_path(svg_path), if computed.fill_rule() == .evenodd {
+			path := painting_clip_path_from_canvas_path(html.canvas_gfx_path_from_svg_path_with_precision(svg_path, node.document().font_rendering_policy() == .chromium), if computed.fill_rule() == .evenodd {
 				painting.WindingRule.even_odd
 			} else {
 				painting.WindingRule.nonzero
@@ -3791,7 +3791,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		ellipse_data := retained_svg_ellipse_data(node, path)
 		projection := svg_paint_path_projection(path, if computed.fill_rule() == .evenodd {
 			painting.WindingRule.even_odd
-		} else { painting.WindingRule.nonzero }, ellipse_data == none)
+		} else { painting.WindingRule.nonzero }, ellipse_data == none, node.document().font_rendering_policy() == .chromium)
 		svg_path_data = ellipse_data or { projection.packed_segments }
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
 		to_page := svg_path_transform_to_page(node, state)
