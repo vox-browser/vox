@@ -4330,6 +4330,62 @@ static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
 	return pixels;
 }
 
+#ifdef VOX_TEST_GRAYSCALE_IDENTITY
+static unsigned native_test_grayscale_identities;
+#endif
+
+// Grayscale preserves an already achromatic sRGB source, including its alpha.
+// Avoid a Core Image submission only when the complete visible input proves
+// that identity; other color spaces, formats and filter chains stay ordinary.
+static BOOL native_css_grayscale_is_identity(NativeCSSFilterLayer const *layer,
+    CGContextRef context, CGRect *output_rect) {
+    if (!getenv("VOX_ENABLE_GRAYSCALE_IDENTITY") || getenv("VOX_DISABLE_GRAYSCALE_IDENTITY")
+        || !context || !layer->operation_count || layer->graph_node_count) return NO;
+    for (size_t index = 0; index < layer->operation_count; ++index) {
+        NativeCSSFilterOperation operation = layer->operations[index];
+        if (operation.kind != 2 || operation.second != 2 || !isfinite(operation.first)
+            || operation.first < 0 || operation.first > 1) return NO;
+    }
+    CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
+    BOOL rgba = info == (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    BOOL bgra = info == (kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+    size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
+    size_t pitch = CGBitmapContextGetBytesPerRow(context);
+    if ((!rgba && !bgra) || CGBitmapContextGetBitsPerComponent(context) != 8
+        || CGBitmapContextGetBitsPerPixel(context) != 32
+        || !width || !height || width > SIZE_MAX / 4 || pitch < width * 4
+        || pitch > 64 * 1024 * 1024 / height) return NO;
+    static CGColorSpaceRef srgb;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ srgb = CGColorSpaceCreateWithName(kCGColorSpaceSRGB); });
+    if (!srgb || !CGBitmapContextGetColorSpace(context)
+        || !CFEqual(srgb, CGBitmapContextGetColorSpace(context))) return NO;
+    CGContextFlush(context);
+    const uint8_t *pixels = CGBitmapContextGetData(context);
+    if (!pixels) return NO;
+    // Inspect the live bitmap before its context is consumed by the image.
+    // A cropped CGImage may expose its parent's provider rather than an
+    // addressable crop; scanning these rows needs no provider-sized copy.
+    CGRect rect = native_css_filter_output_rect(layer, CGRectMake(0, 0, width, height));
+    *output_rect = rect;
+    size_t left = rect.origin.x, top = height - CGRectGetMaxY(rect);
+    size_t scan_width = rect.size.width, scan_height = rect.size.height;
+    BOOL identity = YES;
+    for (size_t y = 0; identity && y < scan_height; ++y) {
+        const uint8_t *row = pixels + (top + y) * pitch + left * 4;
+        for (size_t x = 0; x < scan_width; ++x) {
+            const uint8_t *p = row + x * 4;
+            if (p[0] != p[1] || p[1] != p[2]) { identity = NO; break; }
+        }
+    }
+#ifdef VOX_TEST_GRAYSCALE_IDENTITY
+    if (identity) ++native_test_grayscale_identities;
+#endif
+    if (getenv("VOX_GRAYSCALE_IDENTITY_DIAGNOSTICS"))
+        fprintf(stderr, "Vox grayscale identity: context_rows accepted=%d size=%zux%zu\n", identity, scan_width, scan_height);
+    return identity;
+}
+
 void native_end_css_filter_layer(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	ladybird_v_skia_gpu_canvas_cpu_access();
@@ -4381,6 +4437,8 @@ void native_end_css_filter_layer(void) {
 		return;
 	}
 #endif
+    CGRect identity_rect = CGRectNull;
+    BOOL grayscale_identity = native_css_grayscale_is_identity(&layer, layer.context, &identity_rect);
 	CGImageRef source_image;
 	if (layer.borrows_fresh_frame) {
 		// A filter attached to the enclosing layer still needs an isolated source.
@@ -4487,8 +4545,7 @@ void native_end_css_filter_layer(void) {
 		} else if (layer.operation_count == 0 && layer.graph_node_count == 0) {
 			filtered_image = CGImageRetain(source_image);
 		} else {
-			native_initialize_css_filter_renderer();
-			filtered_rect = native_css_filter_output_rect(&layer, source_rect);
+			filtered_rect = CGRectIsNull(identity_rect) ? native_css_filter_output_rect(&layer, source_rect) : identity_rect;
 			// The crop's pixels depend on no others, so Core Image reads and
 			// filters only them rather than the complete layer.
 			CGImageRef cropped_source = CGRectEqualToRect(filtered_rect, source_rect) ? NULL
@@ -4496,12 +4553,17 @@ void native_end_css_filter_layer(void) {
 					source_rect.size.height - CGRectGetMaxY(filtered_rect),
 					filtered_rect.size.width, filtered_rect.size.height));
 			if (cropped_source == NULL) filtered_rect = source_rect;
-			CIImage *output = native_apply_css_filter_layer(&layer,
-				cropped_source ? cropped_source : source_image);
-			filtered_image = [native_css_filter_ci_context createCGImage:output
-				fromRect:cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
-					filtered_rect.size.height) : source_rect
-				format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+			CGImageRef input = cropped_source ? cropped_source : source_image;
+			if (grayscale_identity) {
+				filtered_image = CGImageRetain(input);
+			} else {
+				native_initialize_css_filter_renderer();
+				CIImage *output = native_apply_css_filter_layer(&layer, input);
+				filtered_image = [native_css_filter_ci_context createCGImage:output
+					fromRect:cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
+						filtered_rect.size.height) : source_rect
+					format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+			}
 			if (cropped_source) CGImageRelease(cropped_source);
 		}
 		if (filtered_image != NULL && layer.destination != NULL) {
