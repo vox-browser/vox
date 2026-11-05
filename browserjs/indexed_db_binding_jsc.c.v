@@ -30,6 +30,7 @@ mut:
 	database    &indexeddb.IDBDatabase            = unsafe { nil }
 	transaction &indexeddb.IDBTransaction         = unsafe { nil }
 	store       &indexeddb.IDBObjectStore         = unsafe { nil }
+	index       &indexeddb.IDBIndex               = unsafe { nil }
 	source      voidptr
 	result      voidptr
 	error_value voidptr
@@ -42,6 +43,7 @@ mut:
 	prototypes     []voidptr
 	make_list      voidptr
 	sequence       voidptr
+	key_path       voidptr
 	entries        map[voidptr]&IndexedDBBindingEntry
 	wrappers       map[voidptr]voidptr
 	stores         map[string]voidptr
@@ -97,6 +99,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	}
 	binding.make_list = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 9, &exception))!
 	binding.sequence = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 10, &exception))!
+	binding.key_path = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 11, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
 		owner:  voidptr(binding)
@@ -512,6 +515,17 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 			if method == 'transaction' {
 				return runtime.indexed_db_transaction(mut binding, store.transaction)
 			}
+			if method == 'createIndex' {
+				name := runtime.binding_dom_string(args[2])!
+				path := runtime.indexed_db_key_path(args[3])!
+				dictionary := runtime.ui_event_argument(args, 4)
+				multi_entry := runtime.event_binding_bool_property(dictionary, 'multiEntry', false)!
+				unique := runtime.event_binding_bool_property(dictionary, 'unique', false)!
+				// WebIDL converts all arguments before the native transaction checks.
+				created := store.create_index(name, path, indexeddb.IDBIndexParameters{ unique: unique, multi_entry: multi_entry })!
+				index := &indexeddb.IDBIndex{ ...created }
+				return runtime.indexed_db_wrap(mut binding, voidptr(index), &IndexedDBBindingEntry{ kind: .index, index: index, source: receiver })
+			}
 			if method == 'get' {
 				store.transaction.require_active()!
 				key := runtime.indexed_db_key(args[2])!
@@ -528,6 +542,22 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				value := runtime.indexed_db_input(args[2])!
 				request := store.put_async(value, key, method == 'add')!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
+			}
+		}
+		.index {
+			mut index := entry.index
+			if method == 'name' { return runtime.binding_string(index.name()) }
+			if method == 'setName' {
+				index.rename(runtime.binding_dom_string(args[2])!)!
+				return undefined
+			}
+			if method == 'objectStore' { return entry.source }
+			if method == 'keyPath' { return runtime.indexed_db_output(index.key_path_value()!) }
+			if method == 'multiEntry' {
+				return C.vox_jsc_JSValueMakeBoolean(runtime.context, index.multi_entry())
+			}
+			if method == 'unique' {
+				return C.vox_jsc_JSValueMakeBoolean(runtime.context, index.unique())
 			}
 		}
 		else {}
@@ -554,10 +584,18 @@ fn (mut runtime Runtime) indexed_db_names(value voidptr) ![]string {
 }
 
 fn (mut runtime Runtime) indexed_db_key_path(value voidptr) !indexeddb.KeyPath {
-	if C.JSValueIsArray(runtime.context, value) {
-		return indexeddb.KeyPath(runtime.indexed_db_names(value)!)
+	binding := indexed_db_bindings_[voidptr(&runtime)] or { return error('Missing IndexedDB binding') }
+	converted := runtime.retain_javascript_value(runtime.call_javascript_function(binding.key_path, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!)!
+	defer { runtime.release_javascript_value(converted) }
+	if C.JSValueIsArray(runtime.context, converted) {
+		length := int(C.vox_jsc_JSValueToNumber(runtime.context, runtime.binding_property(converted, 'length')!, unsafe { nil }))
+		mut path := []string{cap: length}
+		for index in 0 .. length {
+			path << runtime.binding_dom_string(runtime.binding_property(converted, index.str())!)!
+		}
+		return indexeddb.KeyPath(path)
 	}
-	return indexeddb.KeyPath(runtime.binding_dom_string(value)!)
+	return indexeddb.KeyPath(runtime.binding_dom_string(converted)!)
 }
 
 fn (mut runtime Runtime) indexed_db_key(value voidptr) !indexeddb.Key {

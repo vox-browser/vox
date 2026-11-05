@@ -48,16 +48,21 @@ pub fn (index &IDBIndex) name() string {
 }
 
 pub fn (index &IDBIndex) unique() bool {
+	if data := index.index_ { return data.unique }
 	_, data := index.load() or { return false }
 	return data.unique
 }
 
 pub fn (index &IDBIndex) multi_entry() bool {
+	if data := index.index_ { return data.multi_entry }
 	_, data := index.load() or { return false }
 	return data.multi_entry
 }
 
 pub fn (index &IDBIndex) key_path() !KeyPath {
+	// Schema metadata belongs to the retained index record, including after
+	// deletion. Only operations on its records require a live schema handle.
+	if data := index.index_ { return clone_key_path(data.key_path) }
 	_, data := index.load()!
 	return clone_key_path(data.key_path)
 }
