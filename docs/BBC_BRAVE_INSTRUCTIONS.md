@@ -5858,3 +5858,34 @@ BBC homepage remains outside `OPTIMIZED_SITES.md`, and the 10% task remains
 open. [Exact counts, all failed attempts, focused/native/broad checks and the
 inconclusive hover diagnostic](performance/bbc-callback-heights-cohorts101-102-20261105.json)
 are preserved in a verified durable archive.
+
+
+## Within-pass grid item placement (2026-11-05)
+
+`573bf714f` retains grid item placement in the layout pass's existing measurement
+pool. It validates the complete expanded column/row line definitions, subgrid
+axes, immediate child identity/order, styles and anonymous-text membership.
+A hit repeats the grid-item marking performed by `ordered_grid_items()` and
+returns a separate writable placement vector. The pool owns both name-array
+levels, their strings and the saved result; release clears the cache. Track
+sizing and descendant layout still execute normally. This differs from the
+rejected cohort 60 experiment, which borrowed a placement list for track sizing.
+
+All **516 focused executions** pass: **86 cases**, candidate/control and three
+memory modes. Actual test calls and unchanged checked sources are verified.
+The cases include complete uncached geometry comparisons, scratch retirement,
+caller mutation of line names and result arrays, style/order/position/tree
+changes, whitespace becoming an item, named/implicit/negative lines, dense
+row/column flow, auto-repeat counts and both subgrid axes. All **324 instruction
+tool tests** pass; `f72134e36` isolates the placement control. The first compile
+rejects two intentional mutable test aliases without `unsafe`; no case runs.
+Those annotations and the anonymous-text fixture are corrected before every
+passing run. The explicitly stopped redundant compilation remains recorded.
+
+BBC eligibility and instruction measurement remain pending. Completed
+production `2f50a29e` and the current build's sealed C both lack this path.
+The shared build is already running; no duplicate production build is queued.
+Neither old executable nor focused tests establish BBC instruction savings.
+The 10% target stays open and BBC homepage remains outside the catalog.
+[Focused checks, source hashes, retained compile failures and pending native
+preflight](performance/bbc-grid-placement-focus-20261105.json) are archived.
