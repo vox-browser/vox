@@ -6,7 +6,9 @@ import os
 const disable_static_media_raster_reuse = os.getenv('VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE') != ''
 const copy_stationary_raster_commands = os.getenv('VOX_COPY_STATIONARY_RASTER_COMMANDS') != ''
 const stationary_raster_borrow_diagnostics = os.getenv('VOX_STATIONARY_RASTER_BORROW_DIAGNOSTICS') != ''
-const disable_offscreen_video_stationary_reuse = os.getenv('VOX_DISABLE_OFFSCREEN_VIDEO_STATIONARY_REUSE') != ''
+// The paired live cohort is mixed; retain an explicit experimental switch.
+const disable_offscreen_video_stationary_reuse = os.getenv('VOX_ENABLE_OFFSCREEN_VIDEO_STATIONARY_REUSE') != '1'
+	|| os.getenv('VOX_DISABLE_OFFSCREEN_VIDEO_STATIONARY_REUSE') != ''
 
 __global stationary_raster_borrow_reported bool
 
@@ -88,7 +90,7 @@ fn stationary_document_raster_viewport_eligible(commands []layout.PaintCommand,
 		command := &commands[index]
 		skipped := culling.skip(command, 0, page_y, width, height)
 		if stationary_document_raster_command_eligible(command, 0) { continue }
-		if !disable_static_media_raster_reuse && !disable_offscreen_video_stationary_reuse
+		if !disable_static_media_raster_reuse
 			&& command.kind == 'draw_video' && (skipped || (culling.resource_depth == 0
 				&& stationary_video_is_outside_canvas(command, page_y, width, height))) {
 			continue
@@ -104,7 +106,8 @@ fn (app &BrowserApp) begin_stationary_document_raster() bool {
 	$if macos {
 		// AppKit can request the first frame before navigation creates a document.
 		if app.document == unsafe { nil } { return false }
-		eligible := if app.ctx != unsafe { nil } && app.page_zoom == 1 && !app.paint_canvas_culling_disabled {
+		eligible := if !disable_offscreen_video_stationary_reuse && app.ctx != unsafe { nil }
+			&& app.page_zoom == 1 && !app.paint_canvas_culling_disabled {
 			stationary_document_raster_viewport_eligible(app.paint_commands, app.page_top(),
 				app.ctx.width, app.ctx.height)
 		} else { stationary_document_raster_eligible(app.paint_commands) }
