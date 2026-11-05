@@ -9,9 +9,10 @@ $if macos {
 	fn C.native_gpu_canvas_command(kind &u8, kind_len int, flags int) int
 }
 
-// Facts the native GPU canvas needs to decide whether a command's leaf draws on
-// it (VOX_EXPERIMENT_GPU_CANVAS=1). The decision itself lives in the native
-// bridge, so its coverage can change without rebuilding the browser.
+// Facts the native GPU canvas (on unless browsersettings disable_gpu_canvas)
+// needs to decide whether a command's leaf draws on it. The decision itself
+// lives in the native bridge, so its coverage can change without rebuilding
+// the browser.
 fn gpu_canvas_command_flags(command &layout.PaintCommand) int {
 	mut flags := 0
 	if command.outer_shadow { flags |= 1 }

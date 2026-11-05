@@ -88,7 +88,8 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false)
 
 int main()
 {
-    setenv("VOX_EXPERIMENT_GPU_CANVAS", "1", 1);
+    // On by default; only VOX_DISABLE_GPU_CANVAS turns the native canvas off.
+    unsetenv("VOX_DISABLE_GPU_CANVAS");
     assert(gpu_canvas_api());
     auto reference = render(false);
     auto candidate = render(true);

@@ -1,7 +1,8 @@
 #pragma once
 #include <map>
 #include <string_view>
-// GPU-resident canvas (experiment, VOX_EXPERIMENT_GPU_CANVAS=1). During a reused
+// GPU-resident canvas (on by default; the advanced setting "GPU-accelerated
+// scrolling" or VOX_DISABLE_GPU_CANVAS=1 turns it off). During a reused
 // scroll frame the repainted device rectangles of the root canvas live on GPU
 // surfaces in libVoxGraphite. Eligible leaves draw there with device-space
 // matrices and the destination's mirrored rounded clips, instead of rendering
@@ -73,12 +74,11 @@ GpuCanvasApi const* gpu_canvas_api()
         ? &api : nullptr;
 }
 
+// The browser consults the user's setting before beginning a frame; the
+// environment switch keeps a same-binary control arm for measurements.
 bool gpu_canvas_enabled()
 {
-    static bool const enabled = [] {
-        auto* value = std::getenv("VOX_EXPERIMENT_GPU_CANVAS");
-        return value && !std::strcmp(value, "1");
-    }();
+    static bool const enabled = !std::getenv("VOX_DISABLE_GPU_CANVAS");
     return enabled;
 }
 

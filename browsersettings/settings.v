@@ -13,6 +13,9 @@ pub:
 	allow_any_site bool
 	enable_tab_coloring bool
 	enable_custom_tab_titles bool
+	// GPU-accelerated scrolling is on unless the user turns it off: a profile
+	// saved before this setting existed keeps the default.
+	disable_gpu_canvas bool
 	enabled bool
 	host    string = '127.0.0.1'
 	port    string = '1080'
