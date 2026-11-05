@@ -5889,3 +5889,41 @@ Neither old executable nor focused tests establish BBC instruction savings.
 The 10% target stays open and BBC homepage remains outside the catalog.
 [Focused checks, source hashes, retained compile failures and pending native
 preflight](performance/bbc-grid-placement-focus-20261105.json) are archived.
+
+
+## Resolved placement setters and callback restoration (2026-11-05)
+
+Review finds that typed `MutableComputedValues` setters can replace placement
+inputs without advancing the raw property graph revision. `f044b69f2` adds
+explicit saved flow, order, resolved row/column positions and auto-position
+flags to placement validation. Automatic positions and explicit first-line
+positions can have equal numeric rectangles but different cursor behavior, so
+both forms are checked. Child subgrid spans are resolved against the same saved
+expanded line definitions. The new regression asserts an unchanged raw revision
+through order, axis, flow and subgrid mutations, and compares with full placement.
+
+All **522 focused executions** pass: **87 cases** in both arms and all three
+memory modes, with unchanged checked inputs and every test call verified.
+This supersedes the earlier 516-case-execution implementation check. The
+placement native preflight now also requires these typed-input witnesses in
+the sealed generated source. The prospective broader inventory has 537 cases;
+it is prepared, not claimed executed. Placement performance remains pending.
+
+A separate fresh launch validates the callback restoration on completed
+production `557eb0c8` / receipt `20261105-073513-bf3e7f1e`. Sealed-source checks
+confirm the original argument-array helper and absence of the Function.call
+experiment and its ABI helper. The document PNG is SHA-256-identical to the
+original reference, complete content matches, all 72 original external scripts
+execute successfully before PNG, every actual native image is pinned, identities
+remain unchanged, and native/driver/memory-guard exits are zero. This diagnostic
+runs with the JSC witness and earns no instruction credit.
+
+The reference-only driver does not populate `row.pixels_exact`; an initial
+auditor therefore records null. The corrected auditor compares the same
+already captured PNG independently and verifies the reference, actual PNG and
+diff tool hashes, without another browser launch. Both auditor records remain.
+This bundle predates grid placement reuse and cannot validate that change.
+No acceptance cohort has been added: history stays 102 / 2,209, the 10% target
+remains unmet, and BBC homepage stays outside the catalog.
+[Setter regression and restored native evidence](performance/bbc-grid-placement-typed-and-callback-restored-20261105.json)
+are preserved with a verified archive.
