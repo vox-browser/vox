@@ -11,6 +11,7 @@ import x.json2
 // URL, origin and DOMImplementation. Retain them until the realm closes.
 fn install_compact_document_binding(binding &CompactElementQueryBinding, mut runtime browserjs.Runtime) ! {
 	if runtime.engine == .javascriptcore {
+		install_compact_document_owner_query(binding, mut runtime)!
 		runtime.install_document_event_target_resolver(fn [binding] (key string) ?&dom.Document {
 			if key == '' { return binding.document }
 			node := binding.nodes[key] or { return none }
@@ -215,11 +216,10 @@ for(const name of ["firstChild","lastChild"])Object.defineProperty(Document.prot
 for(const name of ["querySelector","querySelectorAll","getElementById","getElementsByTagName","getElementsByClassName"]){Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(!arguments.length)throw new TypeError(name+" requires an argument");value=__compactDocumentString(value);return name==="getElementsByTagName"?__tagCollection(state.bridgeKey,value):__queryElements(state.bridgeKey,name==="getElementById"?"documentElementById":name,value);},writable:true,enumerable:true,configurable:true});}
 for(const [name,action] of [["createElement","documentCreateElement"],["createTextNode","createText"],["createDocumentFragment","createFragment"]])Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(name!=="createDocumentFragment"&&!arguments.length)throw new TypeError(name+" requires an argument");return __queryElements(state.bridgeKey,action,name==="createDocumentFragment"?"":__compactDocumentString(value));},writable:true,enumerable:true,configurable:true});
 Object.defineProperty(Document.prototype,"createElementNS",{value:function createElementNS(namespace,name){const state=__compactDocumentState(this);if(arguments.length<2)throw new TypeError("createElementNS requires two arguments");namespace=namespace==null?null:__compactDocumentString(namespace);name=__compactDocumentString(name);const element=__queryElements(state.bridgeKey,"documentCreateElementNS",JSON.stringify({namespace:namespace,name:name}));__compactNodeState(element).tagName=name;return element;},writable:true,enumerable:true,configurable:true});
-function __compactOwnerDocument(object){return __queryElements(__compactNodeState(object).bridgeKey,"ownerDocument","");}
 function __compactDocumentElementBindings(object,state){
  if(!state.ownerDocumentKey)return;
  object.appendChild=function appendChild(child){return __compactInsertNode(this,child,null,false);};
  object.insertBefore=function insertBefore(child,reference){return __compactInsertNode(this,child,reference,true);};
 }
-' + compact_tree_walker_bootstrap() + compact_adopted_style_sheets_bootstrap() + compact_document_name_collection_bootstrap()
+' + compact_document_owner_bootstrap() + compact_tree_walker_bootstrap() + compact_adopted_style_sheets_bootstrap() + compact_document_name_collection_bootstrap()
 }
