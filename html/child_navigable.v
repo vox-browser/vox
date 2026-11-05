@@ -33,6 +33,21 @@ pub fn create_child_navigable_for_element(element &dom.Element) !&NavigableModel
 	host := initial.document.navigable() or { return error('Missing initial child navigable') }
 	mut model := NavigableModel.create(host, context)!
 	model.set_has_session_history_entry_and_ready_for_navigation()
+	mut node := element.as_node()
+	node.set_load_event_delay_hook(dom.NodeLoadEventDelayHook{
+		target:   voidptr(host)
+		callback: fn (target voidptr) bool {
+			return unsafe { &dom.Navigable(target) }.delays_the_load_event_of_its_container()
+		}
+	})
+	node.set_active_window_proxy_hook(dom.NodeActiveWindowProxyHook{
+		target:   voidptr(model)
+		callback: fn (target voidptr) ?&dom.WindowProxy {
+			model := unsafe { &NavigableModel(target) }
+			proxy := model.active_window_proxy() or { return none }
+			return proxy.dom_proxy()
+		}
+	})
 	return model
 }
 

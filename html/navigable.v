@@ -143,6 +143,8 @@ mut:
 	paint_hook_                          ?NavigablePaintHook
 	screenshot_hook_                     ?NavigableScreenshotHook
 	navigation_fetch_hook_               ?NavigableNavigationFetchHook
+	navigation_fetch_host_               ?&fetch.FetchHost
+	navigation_fetch_controller_         ?&fetch.FetchController
 	backing_store_manager_               &painting.BackingStoreManager = unsafe { nil }
 	event_handler_                       &page.EventHandler = unsafe { nil }
 	rendering_thread_                    &RenderingThread = unsafe { nil }
@@ -758,9 +760,16 @@ pub fn (mut model NavigableModel) set_ongoing_navigation(value NavigableOngoingN
 	if model.ongoing_navigation_ == value {
 		return
 	}
+	if mut controller := model.navigation_fetch_controller_ {
+		model.navigation_fetch_controller_ = none
+		controller.stop_fetch()
+	}
 	model.inform_the_navigation_api_about_aborting_navigation()
 	was_traversal := model.ongoing_navigation_.kind == .traversal
 	model.ongoing_navigation_ = value
+	if value.kind == .empty && model.delaying_load_events_ {
+		model.set_delaying_load_events(false)
+	}
 	notify_ongoing_navigation_changed(model.host_)
 	if was_traversal && value.kind != .traversal {
 		for model.pending_navigations_.len > 0 {
@@ -1049,6 +1058,15 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 			}
 		}
 	}
+	mut request := create_navigation_fetch_request(entry, navigable, source_snapshot_params)!
+	response := perform_navigation_params_fetch(mut request, navigable, navigation_id, fetch_hook) or {
+		return NavigableNavigationParamsResult{ network_error: err.msg() }
+	}
+	return navigation_params_from_fetch_response(entry, navigable, source_snapshot_params, target_snapshot_params, user_involvement, navigation_id, request, response)
+}
+
+fn create_navigation_fetch_request(entry &SessionHistoryEntry, navigable &NavigableModel, source_snapshot_params SourceSnapshotParams) !&fetch.Request {
+	state := entry.document_state or { return error('Missing navigation document state') }
 	mut request := fetch.Request.create()
 	request.set_url(entry.url)
 	if client := source_snapshot_params.fetch_client {
@@ -1110,9 +1128,11 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 	request.reload_navigation = state.reload_pending
 	request.history_navigation = !state.reload_pending && state.ever_populated
 	request.user_activation = source_snapshot_params.has_transient_activation
-	response := perform_navigation_params_fetch(mut request, navigable, navigation_id, fetch_hook) or {
-		return NavigableNavigationParamsResult{ network_error: err.msg() }
-	}
+	return request
+}
+
+fn navigation_params_from_fetch_response(entry &SessionHistoryEntry, navigable &NavigableModel, source_snapshot_params SourceSnapshotParams, target_snapshot_params TargetSnapshotParams, user_involvement dom.UserNavigationInvolvement, navigation_id ?string, request &fetch.Request, response &fetch.Response) !NavigableNavigationParamsResult {
+	state := entry.document_state or { return error('Missing navigation document state') }
 	if response.is_network_error() {
 		return NavigableNavigationParamsResult{
 			network_error: response.network_error_message or { 'navigation fetch failed' }
@@ -1402,27 +1422,43 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 		received_navigation_params = NavigableNavigationParamsResult{
 			navigation_params: navigation_params
 		}
+	} else if !fetch.is_fetch_scheme(params.url.scheme()) {
+		received_navigation_params = NavigableNavigationParamsResult{
+			non_fetch_params: &NonFetchSchemeNavigationParams{
+				id: navigation_id, navigable: &model, url: params.url,
+				target_snapshot_sandboxing_flags: model.snapshot_target_snapshot_params().sandboxing_flags,
+				source_has_transient_activation: source_snapshot_params.has_transient_activation,
+				initiator_origin: initiator_origin, user_involvement: params.user_involvement
+			}
+		}
+	} else if host := model.navigation_fetch_host_ {
+		model.start_navigation_fetch(entry, params, source_snapshot_params, model.snapshot_target_snapshot_params(), history_handling, navigation_id, host)
+		return
 	} else if fetch_hook := model.navigation_fetch_hook_ {
 		received_navigation_params = create_navigation_params_by_fetching(entry, &model, source_snapshot_params, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, fetch_hook) or {
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			return
 		}
-		// The fetch callback can spin the event loop and destroy this navigable before
-		// response bytes are ready. Do not install a document into a dead context.
-		if model.has_been_destroyed() || model.active_browsing_context() == none {
+	}
+	model.finish_navigation_fetch(entry, params, source_snapshot_params, model.snapshot_target_snapshot_params(), history_handling, navigation_id, received_navigation_params)
+}
+
+fn (mut model NavigableModel) finish_navigation_fetch(entry &SessionHistoryEntry, params NavigableNavigateParams, source_snapshot_params SourceSnapshotParams, target_snapshot_params TargetSnapshotParams, history_handling HistoryHandlingBehavior, navigation_id string, received_navigation_params NavigableNavigationParamsResult) {
+	// A pending response belongs to this navigation alone. Completion must not
+	// commit into a destroyed context or clear a newer navigation's identity.
+	if model.has_been_destroyed() || model.active_browsing_context() == none
+		|| model.ongoing_navigation_.kind != .navigation || model.ongoing_navigation_.id != navigation_id { return }
+	if received_navigation_params.network_error != none {
+		model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		return
+	}
+	mut state := entry.document_state or { return }
+	initiator_origin := state.initiator_origin or { dom.origin_create_opaque() }
+	if non_fetch := received_navigation_params.non_fetch_params {
+		state.set_document(attempt_to_create_a_non_fetch_scheme_document(non_fetch))
+		if state.document == none {
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			return
-		}
-		if received_navigation_params.network_error != none {
-			model.set_ongoing_navigation(NavigableOngoingNavigation{})
-			return
-		}
-		if non_fetch := received_navigation_params.non_fetch_params {
-			state.set_document(attempt_to_create_a_non_fetch_scheme_document(non_fetch))
-			if state.document == none {
-				model.set_ongoing_navigation(NavigableOngoingNavigation{})
-				return
-			}
 		}
 	}
 	if navigation_params := received_navigation_params.navigation_params {
@@ -1440,7 +1476,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 			state.resource = body.bytes().bytestr()
 		}
 	}
-	model.populate_session_history_entry_document(entry, source_snapshot_params, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, received_navigation_params.navigation_params, none)
+	model.populate_session_history_entry_document(entry, source_snapshot_params, target_snapshot_params, params.user_involvement, navigation_id, received_navigation_params.navigation_params, none)
 	finalize_session_history_entry(entry, received_navigation_params, true, none)
 	new_document := entry.document() or {
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
@@ -2174,6 +2210,11 @@ pub fn (model &NavigableModel) has_pending_navigations() bool {
 }
 
 pub fn (mut model NavigableModel) set_has_been_destroyed() {
+	if mut controller := model.navigation_fetch_controller_ {
+		model.navigation_fetch_controller_ = none
+		controller.stop_fetch()
+	}
+	if model.delaying_load_events_ { model.set_delaying_load_events(false) }
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.set_has_been_destroyed()
 	model.resolve_all_pending_main_thread_scrolls()
