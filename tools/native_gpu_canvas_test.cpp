@@ -188,6 +188,7 @@ static void draw_video_leaves(CGContextRef context, bool canvas)
 
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
 static unsigned s_read_calls, s_successful_reads, s_fail_reads;
+static bool s_expect_native_grid;
 static decltype(&vox_graphite_canvas_read) s_backend_read;
 static decltype(&vox_graphite_canvas_read_direct) s_backend_direct_read;
 static unsigned s_direct_reads;
@@ -256,8 +257,10 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
     if (canvas) {
         int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
         assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        if(s_expect_native_grid)ladybird_v_skia_gpu_canvas_document_top(0);
     }
     leaves(context, canvas);
+    if(canvas && s_expect_native_grid)assert(s_gpu_canvas->native_grid);
     ladybird_v_skia_finish_shared_recording();
     ladybird_v_skia_set_shared_recording(0, 0, 0);
     if (canvas) {
@@ -439,6 +442,34 @@ static std::vector<uint8_t> render_overlay_batch(bool batch,int alpha,bool horiz
 
 int main(int argc, char** argv)
 {
+    if(argc==2 && !std::strcmp(argv[1],"--native-grid")) {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->begin_native_grid && api->draw_shape_native_grid);
+        s_backend_read=api->read;api->read=counted_read;s_expect_native_grid=true;
+        setenv("VOX_GPU_CANVAS_NATIVE_GRID","1",1);
+        unsetenv("VOX_GPU_CANVAS_DISABLE_ISOLATED_SHAPES");
+        s_raster_layer_is_root=true;s_raster_layer_height=css_height+128;
+        int max_error=0;
+        auto original=backdrop();
+        for(double scroll:{0.,13.5,127.5})for(bool full:{false,true})for(int tile:{0,1,2,3})
+            for(int fill:{0,1})for(int alpha:{128,255})for(float offset:{0.f,.375f}) {
+            s_root_raster_scroll_y=scroll;s_mixed_fill=fill;s_mixed_alpha=alpha;s_mixed_offset=offset;
+            ladybird_v_skia_set_msaa_grid(&tile,1,512,256,2);
+            auto reference=render(false,false,draw_mixed_shape,full);
+            auto candidate=render(true,false,draw_mixed_shape,full);
+            assert(s_draws==1 && s_uploads==1 && s_flushes==0);
+            for(int y=0;y<height;++y)for(int x=0;x<width*4;++x) {
+                size_t index=size_t(y)*width*4+x;
+                int error=std::abs(int(reference[index])-int(candidate[index]));
+                max_error=std::max(max_error,error);
+                if(!full && (y<strip_top || y>=strip_top+strip_height)) assert(candidate[index]==original[index]);
+            }
+            if(max_error>3) {
+                std::cerr<<"Native grid error "<<max_error<<" scroll="<<scroll<<" full="<<full<<" tile="<<tile<<" fill="<<fill<<" alpha="<<alpha<<" offset="<<offset<<'\n';
+                return 1;
+            }
+        }
+        std::cout<<"Native GPU grid mixed coverage, negative tile origins and clipping: max error "<<max_error<<'\n';return 0;
+    }
     if(argc==2 && !std::strcmp(argv[1],"--overlay-batch")) {
         int error=0;
         for(int aa:{0,1})for(int alpha:{73,128,255})for(bool horizontal:{false,true})for(float phase:{0.f,.25f,.5f,.75f}) {

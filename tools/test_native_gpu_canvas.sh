@@ -36,6 +36,7 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
 "$output_dir/native_gpu_canvas_test" --failed-readback
 "$output_dir/native_gpu_canvas_test" --iosurface-readback
 "$output_dir/native_gpu_canvas_test" --partial-readback
+"$output_dir/native_gpu_canvas_test" --native-grid
 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES=1 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 "$output_dir/native_gpu_canvas_test" --overlay-batch

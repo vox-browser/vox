@@ -4629,10 +4629,15 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         && s_rect_clip_outs.empty() && fill <= 1 && matrix.isScaleTranslate()
         && ((!anti_alias && std::getenv("VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES"))
             || !std::getenv("VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES"));
-    bool isolated_shapes = gpu_canvas_isolated_shapes_enabled() && !direct_layer;
-    if (root_msaa_tile && !isolated_shapes) gpu_canvas_decline(destination);
+    if(s_gpu_canvas && s_gpu_canvas->destination==destination && !s_gpu_canvas->begun)
+        gpu_canvas_native_grid(*s_gpu_canvas);
+    // Independent layers keep their own raster extent and coverage mode.
+    if (s_gpu_canvas && s_gpu_canvas->native_grid) direct_layer = false;
+    bool native_grid=s_gpu_canvas && s_gpu_canvas->native_grid && s_raster_layer_is_root;
+    bool isolated_shapes = gpu_canvas_isolated_shapes_enabled() && !direct_layer && !native_grid;
+    if (root_msaa_tile && !isolated_shapes && !native_grid) gpu_canvas_decline(destination);
     bool rounded_on_canvas = false;
-    if ((!root_msaa_tile || isolated_shapes) && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
+    if ((!root_msaa_tile || isolated_shapes || native_grid) && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
         std::vector<VoxGraphiteCanvasClip> clips;
         if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
             VoxGraphiteShape descriptor {
@@ -4666,7 +4671,10 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             float device_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
             auto msaa_rects = root_msaa_tile ? gpu_canvas_image_msaa_rects(destination, region, page_x, page_y, scroll_y)
                 : std::vector<int>{};
-            bool drawn = isolated_shapes
+            bool drawn = native_grid
+                ? gpu_canvas_api()->draw_shape_native_grid(&descriptor,device_bounds,clips.data(),int(clips.size()),
+                    msaa_rects.data(),int(msaa_rects.size()/4))
+                : isolated_shapes
                 ? gpu_canvas_api()->draw_shape_isolated(&descriptor, device_bounds, clips.data(), int(clips.size()),
                     msaa_rects.data(), int(msaa_rects.size() / 4))
                 : gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()));

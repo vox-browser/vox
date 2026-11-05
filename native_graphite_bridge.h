@@ -233,6 +233,7 @@ typedef struct {
     int antialias;
 } VoxGraphiteCanvasClip;
 int vox_graphite_canvas_begin(const int *rects, int count);
+int vox_graphite_canvas_begin_native_grid(const int *rects, int count);
 int vox_graphite_canvas_upload(int index, const uint8_t *bgra, int pitch);
 int vox_graphite_canvas_draw_shadow(const VoxGraphiteShadow *shadow, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
@@ -246,6 +247,8 @@ int vox_graphite_canvas_draw_image_msaa(const VoxGraphiteImage *image, const flo
     const VoxGraphiteCanvasClip *clips, int clip_count, const int *msaa_rects, int msaa_count);
 int vox_graphite_canvas_draw_shape_msaa(const VoxGraphiteShape *shape, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
+int vox_graphite_canvas_draw_shape_native_grid(const VoxGraphiteShape *shape, const float *device_bounds,
+    const VoxGraphiteCanvasClip *clips, int clip_count, const int *msaa_rects, int msaa_count);
 int vox_graphite_canvas_draw_shape_isolated(const VoxGraphiteShape *shape, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count, const int *msaa_rects, int msaa_count);
 int vox_graphite_canvas_draw_path(const VoxGraphitePath *path, const float *device_bounds,

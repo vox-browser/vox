@@ -223,6 +223,33 @@ int main() { @autoreleasepool {
         assert(IOSurfaceUnlock(frame,0,nullptr)==kIOReturnSuccess);
         CFRelease(frame);vox_graphite_canvas_end();
     }
+    canvas_reset();
+    setenv("VOX_GPU_CANVAS_NATIVE_GRID","1",1);
+    std::vector<int> grid;
+    for(int index=0;index<32;++index) {
+        int x=(index%8)*128,y=(index/8)*128;
+        grid.insert(grid.end(),{x,y,128,128,x+3,y+5,121,117});
+    }
+    assert(vox_graphite_canvas_begin_native_grid(grid.data(),32));
+    std::vector<uint32_t> source(128*128,0xff203040);
+    for(int index=0;index<32;++index) {
+        assert(canvas_tiles[index].surface->width()==128 && canvas_tiles[index].surface->height()==128);
+        assert(vox_graphite_canvas_upload(index,reinterpret_cast<uint8_t*>(source.data()),128*4));
+    }
+    VoxGraphiteShape grid_shape{.matrix={1,0,0,0,1,0,0,0,1},.rect={5,7,80,63,4,4,4,4,4,4,4,4},
+        .red=40,.green=100,.blue=200,.alpha=255,.fill=1,.anti_alias=1};
+    float bounds[]={3,5,87,72};int msaa[]={0,0,128,128};
+    assert(vox_graphite_canvas_draw_shape_native_grid(&grid_shape,bounds,nullptr,0,msaa,1));
+    auto invalid=grid;invalid[2]=16384;invalid[3]=16384;
+    assert(!vox_graphite_canvas_begin_native_grid(invalid.data(),32));
+    std::vector<uint32_t> output(32);
+    std::vector<VoxGraphitePixelRegion> views;
+    for(int index=0;index<32;++index)views.push_back({index?127:40,index?127:40,1,1,4,reinterpret_cast<uint8_t*>(&output[index])});
+    assert(vox_graphite_canvas_read(views.data(),32));
+    assert(output[0]==0xff2864c8);
+    for(int index=1;index<32;++index)assert(output[index]==0xff203040);
+    vox_graphite_canvas_end();assert(canvas_surface_pool.size()==32);
+    unsetenv("VOX_GPU_CANVAS_NATIVE_GRID");
     canvas_reset(); recorder.reset(); gpu_context.reset();
     std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }

@@ -48,7 +48,8 @@ void canvas_release_tiles()
     for (auto const& surface : canvas_surface_pool) pooled += canvas_surface_bytes(*surface);
     for (auto& tile : canvas_tiles) {
         size_t bytes = canvas_surface_bytes(*tile.surface);
-        if (canvas_surface_pool.size() < 8 && pooled + bytes <= canvas_pool_byte_limit) {
+        size_t slots=std::getenv("VOX_GPU_CANVAS_NATIVE_GRID")?64:8;
+        if (canvas_surface_pool.size() < slots && pooled + bytes <= canvas_pool_byte_limit) {
             pooled += bytes;
             canvas_surface_pool.push_back(std::move(tile.surface));
         }
@@ -101,12 +102,19 @@ void canvas_local_matrix(float const* device, float* local, CanvasTile const& ti
 }
 }
 
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_canvas_begin(int const* rects, int count)
+static int canvas_begin_impl(int const* rects, int count, bool native_grid)
 {
     // Eight values per rectangle: the surface x, y, width, height and the
     // repainted device rectangle drawn inside it, both in canvas device pixels.
-    if (!rects || count <= 0 || count > 16) return 0;
+    if (!rects || count <= 0 || count > (native_grid?64:16)) return 0;
+    size_t requested=0;
+    for(int index=0;index<count;++index) {
+        int width=rects[index*8+2],height=rects[index*8+3];
+        if(width<=0 || height<=0 || width>16384 || height>16384) return 0;
+        requested+=size_t(native_grid?width:canvas_rounded_size(width,256))
+            *(native_grid?height:canvas_rounded_size(height,128))*4;
+        if(native_grid && requested>canvas_pool_byte_limit) return 0;
+    }
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu) return 0;
@@ -127,6 +135,7 @@ int vox_graphite_canvas_begin(int const* rects, int count)
         auto best = canvas_surface_pool.end();
         for (auto it = canvas_surface_pool.begin(); it != canvas_surface_pool.end(); ++it) {
             if ((*it)->width() >= rect[2] && (*it)->height() >= rect[3]
+                && (!native_grid || ((*it)->width()==rect[2] && (*it)->height()==rect[3]))
                 && (best == canvas_surface_pool.end()
                     || canvas_surface_bytes(**it) < canvas_surface_bytes(**best))) best = it;
         }
@@ -135,7 +144,8 @@ int vox_graphite_canvas_begin(int const* rects, int count)
             canvas_surface_pool.erase(best);
         } else {
             surface = vox_shared_surface(canvas_recorder.get(),
-                canvas_info(canvas_rounded_size(rect[2], 256), canvas_rounded_size(rect[3], 128)),
+                canvas_info(native_grid?rect[2]:canvas_rounded_size(rect[2],256),
+                    native_grid?rect[3]:canvas_rounded_size(rect[3],128)),
                 std::getenv("VOX_GPU_CANVAS_LINEAR_TEXTURES") != nullptr);
         }
         if (!surface) {
@@ -151,6 +161,11 @@ int vox_graphite_canvas_begin(int const* rects, int count)
     }
     return 1;
 }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_begin(int const* rects,int count) { return canvas_begin_impl(rects,count,false); }
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_begin_native_grid(int const* rects,int count) { return canvas_begin_impl(rects,count,true); }
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
@@ -245,6 +260,42 @@ int vox_graphite_canvas_draw_shape_msaa(VoxGraphiteShape const* shape, float con
         apply_canvas_clips(canvas, tile, clips, clip_count);
         canvas->resetMatrix();
         canvas->drawImage(result, area.x(), area.y(), SkSamplingOptions(), &copy);
+        canvas->restore();
+    }
+    return 1;
+}
+
+// Native-grid tiles retain the ordinary root raster origin and extent. Select
+// their coverage mode directly, without allocating an isolated scratch pass.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_shape_native_grid(VoxGraphiteShape const* shape, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count, int const* msaa_rects, int msaa_count)
+{
+    if(!shape || !bounds || msaa_count<0 || msaa_count>4096 || (msaa_count && !msaa_rects)) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if(!canvas_recorder) return 0;
+    if(canvas_tiles.empty()) return 0;
+    for(auto const& tile:canvas_tiles) {
+        if(bounds[2]<=tile.x || bounds[0]>=tile.x+tile.width
+            || bounds[3]<=tile.y || bounds[1]>=tile.y+tile.height) continue;
+        auto* canvas=tile.surface->getCanvas();
+        canvas->save();
+        canvas->resetMatrix();
+        auto local=*shape;
+        canvas_local_matrix(shape->matrix,local.matrix,tile);
+        local.force_msaa=0;
+        for(int index=0;index<msaa_count;++index) {
+            auto* rect=msaa_rects+index*4;
+            auto area=SkIRect::MakeXYWH(rect[0]-tile.x,rect[1]-tile.y,rect[2],rect[3]);
+            if(area.intersect(tile.clip)) {
+                // Select the pass before clipping away the origin marker.
+                force_msaa_render_pass(canvas,tile.width,tile.height);
+                break;
+            }
+        }
+        canvas->clipRect(SkRect::Make(tile.clip));
+        apply_canvas_clips(canvas,tile,clips,clip_count);
+        draw_shape_on_canvas(canvas,local,tile.width,tile.height);
         canvas->restore();
     }
     return 1;

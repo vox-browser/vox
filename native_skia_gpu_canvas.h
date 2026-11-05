@@ -10,6 +10,8 @@
 // access to the CPU canvas first reads every rectangle back with one GPU wait
 // (flush); the next GPU leaf uploads the CPU pixels again. Chromium draws a
 // tile's display items in one GPU pass the same way.
+namespace { struct GpuCanvasFrame; }
+static void gpu_canvas_native_grid(GpuCanvasFrame&);
 namespace {
 struct GpuCanvasFrame {
     CGContextRef destination = nullptr;
@@ -36,6 +38,8 @@ struct GpuCanvasFrame {
     // other commands use the CPU canvas so their own CPU drawing stays ordered.
     bool in_gpu_command = false;
     bool complete_viewport = false;
+    bool native_grid = false;
+    int document_top = -1;
     bool video_backdrop_callbacks = false;
     void* frame_surface = nullptr; // Borrowed only for this native paint callback.
     void* frame_surface_pixels = nullptr;
@@ -57,6 +61,7 @@ bool s_gpu_canvas_read_failed = false;
 
 struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_begin) begin = nullptr;
+    decltype(&vox_graphite_canvas_begin_native_grid) begin_native_grid = nullptr;
     decltype(&vox_graphite_canvas_upload) upload = nullptr;
     decltype(&vox_graphite_canvas_draw_shadow) draw_shadow = nullptr;
     decltype(&vox_graphite_canvas_draw_shape) draw_shape = nullptr;
@@ -69,6 +74,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
     decltype(&vox_graphite_canvas_draw_image_msaa) draw_image_msaa = nullptr;
     decltype(&vox_graphite_canvas_draw_shape_msaa) draw_shape_msaa = nullptr;
+    decltype(&vox_graphite_canvas_draw_shape_native_grid) draw_shape_native_grid = nullptr;
     decltype(&vox_graphite_canvas_draw_shape_isolated) draw_shape_isolated = nullptr;
     decltype(&vox_graphite_canvas_draw_picture) draw_picture = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
@@ -81,6 +87,7 @@ GpuCanvasApi const* gpu_canvas_api()
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
         if (!library) return value;
         value.begin = reinterpret_cast<decltype(value.begin)>(dlsym(library, "vox_graphite_canvas_begin"));
+        value.begin_native_grid = reinterpret_cast<decltype(value.begin_native_grid)>(dlsym(library, "vox_graphite_canvas_begin_native_grid"));
         value.upload = reinterpret_cast<decltype(value.upload)>(dlsym(library, "vox_graphite_canvas_upload"));
         value.draw_shadow = reinterpret_cast<decltype(value.draw_shadow)>(dlsym(library, "vox_graphite_canvas_draw_shadow"));
         value.draw_shape = reinterpret_cast<decltype(value.draw_shape)>(dlsym(library, "vox_graphite_canvas_draw_shape"));
@@ -93,6 +100,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
         value.draw_image_msaa = reinterpret_cast<decltype(value.draw_image_msaa)>(dlsym(library, "vox_graphite_canvas_draw_image_msaa"));
         value.draw_shape_msaa = reinterpret_cast<decltype(value.draw_shape_msaa)>(dlsym(library, "vox_graphite_canvas_draw_shape_msaa"));
+        value.draw_shape_native_grid = reinterpret_cast<decltype(value.draw_shape_native_grid)>(dlsym(library, "vox_graphite_canvas_draw_shape_native_grid"));
         value.draw_shape_isolated = reinterpret_cast<decltype(value.draw_shape_isolated)>(dlsym(library, "vox_graphite_canvas_draw_shape_isolated"));
         value.draw_picture = reinterpret_cast<decltype(value.draw_picture)>(dlsym(library, "vox_graphite_canvas_draw_picture"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
@@ -358,7 +366,9 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
     auto* data = static_cast<uint8_t const*>(CGBitmapContextGetData(frame.destination));
     if (!api || !data) return false;
     if (!frame.begun) {
-        if (!api->begin(frame.device.data(), int(frame.tiles.size()))) return false;
+        gpu_canvas_native_grid(frame);
+        auto begin = frame.native_grid ? api->begin_native_grid : api->begin;
+        if (!begin(frame.device.data(), int(frame.tiles.size()))) return false;
         frame.begun = true;
     }
     CGContextFlush(frame.destination);
@@ -366,9 +376,14 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
     for (size_t index = 0; index < frame.tiles.size(); ++index) {
         auto const& rect = frame.tiles[index];
         std::vector<uint32_t> pixels(size_t(rect.width()) * rect.height());
-        for (int row = 0; row < rect.height(); ++row)
-            swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * rect.width()),
-                data + size_t(rect.top() + row) * pitch + size_t(rect.left()) * 4, size_t(rect.width()));
+        auto visible = rect;
+        if (visible.intersect(SkIRect::MakeWH(int(CGBitmapContextGetWidth(frame.destination)),
+                int(CGBitmapContextGetHeight(frame.destination))))) {
+            for (int row = visible.top(); row < visible.bottom(); ++row)
+                swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data()
+                        + size_t(row - rect.top()) * rect.width() + visible.left() - rect.left()),
+                    data + size_t(row) * pitch + size_t(visible.left()) * 4, size_t(visible.width()));
+        }
         if (!api->upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), rect.width() * 4))
             return false;
     }
@@ -675,6 +690,63 @@ extern "C" int ladybird_v_skia_gpu_canvas_command(char const* kind, int length, 
     return 0;
 }
 
+// The host supplies the document's device origin at begin. Layer selection
+// installs the root grid later, so configure its surfaces at the first leaf.
+static void gpu_canvas_native_grid(GpuCanvasFrame& frame)
+{
+    auto* api = gpu_canvas_api();
+    if (frame.native_grid || frame.begun || frame.document_top < 0 || !s_raster_layer_is_root
+        || !std::getenv("VOX_GPU_CANVAS_NATIVE_GRID") || !api || !api->draw_shape_native_grid
+        || !api->begin_native_grid || s_msaa_grid_columns <= 0
+        || s_msaa_grid_width < 16 || s_msaa_grid_width > 1024
+        || s_msaa_grid_height < 16 || s_msaa_grid_height > 1024
+        || frame.scale < 1 || frame.scale != std::floor(frame.scale) || s_shared_viewport_height <= 0) return;
+    double scroll = s_root_raster_scroll_y * frame.scale;
+    double content = std::ceil(std::max(double(s_shared_viewport_height), s_raster_layer_height) * frame.scale);
+    if (!std::isfinite(scroll) || std::abs(scroll) > INT_MAX || scroll != std::round(scroll)
+        || !std::isfinite(content) || content > INT_MAX) return;
+    int rows = int(std::max(1L, (long(content) - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2)));
+    VoxChromiumRasterGrid grid {s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
+    long shift = frame.document_top - long(std::lround(scroll));
+    long extent_x = long(grid.columns) * (grid.width - 2) + 2;
+    long extent_y = long(grid.rows) * (grid.height - 2) + 2;
+    std::vector<SkIRect> patches, tiles;
+    std::vector<int> device;
+    size_t pixels = 0;
+    for (auto patch : frame.rects) {
+        long first_y = patch.top() - shift, last_y = patch.bottom() - 1 - shift;
+        if (patch.left() < 0 || patch.right() > extent_x || first_y < 0 || last_y >= extent_y) return;
+        long first_row = grid.owner(first_y, grid.height, grid.rows);
+        long last_row = grid.owner(last_y, grid.height, grid.rows);
+        long first_column = grid.owner(patch.left(), grid.width, grid.columns);
+        long last_column = grid.owner(patch.right() - 1, grid.width, grid.columns);
+        for (long row = first_row; row <= last_row; ++row) {
+            for (long column = first_column; column <= last_column; ++column) {
+                int x = int(column * (grid.width - 2)), y = int(row * (grid.height - 2) + shift);
+                auto tile = SkIRect::MakeXYWH(x, y, grid.width, grid.height);
+                auto owned = SkIRect::MakeLTRB(x + (column > 0), y + (row > 0),
+                    x + grid.width - (column + 1 < grid.columns), y + grid.height - (row + 1 < grid.rows));
+                auto clipped = patch;
+                if (!clipped.intersect(owned)) continue;
+                pixels += size_t(tile.width()) * tile.height();
+                if (tiles.size() >= 64 || pixels > 64 * 1024 * 1024 / 4) return;
+                tiles.push_back(tile);
+                patches.push_back(clipped);
+                device.insert(device.end(), {tile.x(), tile.y(), tile.width(), tile.height(),
+                    clipped.x(), clipped.y(), clipped.width(), clipped.height()});
+            }
+        }
+    }
+    frame.rects = std::move(patches);
+    frame.tiles = std::move(tiles);
+    frame.device = std::move(device);
+    frame.dirty.assign(frame.rects.size(), SkIRect::MakeEmpty());
+    frame.native_grid = true;
+    if (gpu_canvas_diagnostics())
+        std::fprintf(stderr, "Vox GPU native grid: tiles=%zu shift_y=%ld size=%dx%d\n",
+            frame.tiles.size(), shift, s_msaa_grid_width, s_msaa_grid_height);
+}
+
 extern "C" int ladybird_v_skia_gpu_canvas_begin(CGContextRef destination, int const* rects, int count)
 {
     s_gpu_canvas.reset();
@@ -726,6 +798,12 @@ extern "C" void ladybird_v_skia_gpu_canvas_cpu_access()
 extern "C" void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int enabled)
 {
     if (s_gpu_canvas) s_gpu_canvas->video_backdrop_callbacks = enabled != 0;
+}
+
+extern "C" void ladybird_v_skia_gpu_canvas_document_top(int top)
+{
+    if (s_gpu_canvas && !s_gpu_canvas->begun && top >= 0
+        && size_t(top) < CGBitmapContextGetHeight(s_gpu_canvas->destination)) s_gpu_canvas->document_top = top;
 }
 
 extern "C" void ladybird_v_skia_gpu_canvas_frame_surface(void* surface)
