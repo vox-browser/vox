@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "complete": false,
+  "status": "rejected",
+  "recorded_unix": 1793896662.921258,
+  "implementation_commits": [
+    "2e547acea",
+    "f943f703a"
+  ],
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "01ba55f53219901430ef3478f3661a69e7837c85ec0588c8db8aadfa235401f4",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "7f5bae2c6437f5cac077ca363500a6d826c738b4818d3288aaf525eaab70b1cb",
+      "dirty": true,
+      "head": "f943f703ab2849f48b85df30a74c5db65ebf4fa7",
+      "repository_sha256": "f894603d58877a37c71dbcffd85c5d0ddfa390c8fe98a8569eba339478b913c0"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "f943f703ab2849f48b85df30a74c5db65ebf4fa7",
+      "id": "c1ec8dc0d85a4c4d97d72fef3d7a9b52"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7f5bae2c6437f5cac077ca363500a6d826c738b4818d3288aaf525eaab70b1cb",
+      "dirty": true,
+      "head": "2ae1315f9d50c2ebd8fd72d694bb17478e149e94",
+      "repository_sha256": "f894603d58877a37c71dbcffd85c5d0ddfa390c8fe98a8569eba339478b913c0"
+    }
+  },
+  "controller": {
+    "path": "docs/performance/chatgpt-animation-computed-scan-production-r1-controller-20261105.json",
+    "sha256": "01c837145204b52dd9918868ab1cc0e307dc7d2a18ceec9620f39a8eb258df7e",
+    "bytes": 3026
+  },
+  "diagnostic": {
+    "path": "docs/performance/chatgpt-animation-computed-scan-production-r1-diagnostic-20261105.json",
+    "sha256": "203efeed026c89caeba8cdaef3591b7a9eb8271cb833b28686d9a648587bdd92",
+    "bytes": 1382903
+  },
+  "matched": null,
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-animation-computed-scan-production-20261105-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {
+      "37753": "Thu Nov  5 19:35:10 2026    ",
+      "37756": "Thu Nov  5 19:35:10 2026    ",
+      "38164": "Thu Nov  5 19:35:19 2026    ",
+      "38167": "Thu Nov  5 19:35:19 2026    ",
+      "38173": "Thu Nov  5 19:35:20 2026    ",
+      "38175": "Thu Nov  5 19:35:20 2026    ",
+      "38177": "Thu Nov  5 19:35:20 2026    ",
+      "38538": "Thu Nov  5 19:35:31 2026    ",
+      "38540": "Thu Nov  5 19:35:31 2026    ",
+      "38550": "Thu Nov  5 19:35:31 2026    ",
+      "38551": "Thu Nov  5 19:35:31 2026    ",
+      "38552": "Thu Nov  5 19:35:31 2026    ",
+      "38889": "Thu Nov  5 19:35:40 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1704787968,
+    "elapsed_seconds": 37.556980749999994,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "diagnostic_path_observations": [
+    {
+      "variant": "candidate",
+      "paths": {
+        "computed_scan": true
+      }
+    },
+    {
+      "variant": "control",
+      "paths": {
+        "computed_scan": false
+      }
+    }
+  ],
+  "matched_observations": [],
+  "diagnostic_valid": false,
+  "matched_valid": false,
+  "broad_required": false,
+  "broad": null,
+  "focused_component": {
+    "path": "docs/performance/chatgpt-animation-computed-scan-20261105.json",
+    "sha256": "30f98dd02d864e2afc8a62722e43cf63a1c0459d3dd74bff7606efea677e5b4d",
+    "bytes": 61963
+  },
+  "focused_selected_passed": true,
+  "overall_css_suite_pass_claimed": false,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "browser_captures": 4,
+  "manual_build_requests": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-animation-computed-scan-production-r1-20261105-evidence.zip",
+      "sha256": "20360a0a025339215a7767048ad02d106342f4026ee990c10d27392e264af357",
+      "bytes": 694620
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-computed-scan-20261105-evidence.zip",
+      "sha256": "12a8009b73a648df359acb028c1bf688ba42d402b1cbcaa841bcdfc8b6823d6a",
+      "bytes": 60338
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-computed-scan-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "2f3b062a732ee8428d5445689db95891e3c063bf54b5b18d916e0dbbc693643e",
+      "bytes": 1204245
+    }
+  ],
+  "qualification": "The latest completed canonical bundle is pinned with a nonblocking shared publication lease. Stable aggregate build-input hashes and exact owned-source blobs at a recorded receipt head establish source identity; separate execution diagnostics establish eligibility. The initial available bundles had unmatched owned-source receipt heads and launched no samples. Original SOCKS fixture and author bytes, unchanged content/pixel references, private profiles/caches, unfocused five-second settle, 1024x768 viewport, backing scale 2 and exclusive-coalition creation-through-encoded-document-PNG scope remain in force. OS filesystem/shader caches are retained; GPU and outside-coalition services are excluded. Four matched pairs provide two observations per matrix mode and do not meet seven-pair Brave acceptance. Only clean root computed-style memo reuse differs between modes; the property-page memo remains enabled in both and recursive depth checks are preserved. Frame counts and host load qualify attribution. All 416 selected focused test-function executions pass. Preallocation-specific assertions run in preallocation/sanitizer builds. New cases force memo coverage while existing cases exercise environment-selected paths. No overall CSS-suite pass is claimed. Both modes retain the extended scan record; no older-binary memory comparison is claimed. No live-site, isolated-rendering or scrolling claim.",
+  "inspected_build_attempts": [
+    {
+      "receipt": "Build/production-build/receipts/20261105-193040-47ab2894",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "ad8a4b1a6db4dc083604cc738a64df8c61e03d996858eadfa36dcf10f91f5904",
+          "dirty": true,
+          "head": "2e547aceae0e69e4e01cd42846ba621a46ce7963",
+          "repository_sha256": "cf29441260f6c77df6d49a7ea3f3e058fc437ade9ed6ac937da3b97904776d7e"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "2e547aceae0e69e4e01cd42846ba621a46ce7963",
+          "id": "67a9aef0cdeb4546a1100490ce71d8f0"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "7f5bae2c6437f5cac077ca363500a6d826c738b4818d3288aaf525eaab70b1cb",
+          "dirty": true,
+          "head": "f943f703ab2849f48b85df30a74c5db65ebf4fa7",
+          "repository_sha256": "f894603d58877a37c71dbcffd85c5d0ddfa390c8fe98a8569eba339478b913c0"
+        }
+      }
+    },
+    {
+      "receipt": "Build/production-build/receipts/20261105-193145-dde60220",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "01ba55f53219901430ef3478f3661a69e7837c85ec0588c8db8aadfa235401f4",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "7f5bae2c6437f5cac077ca363500a6d826c738b4818d3288aaf525eaab70b1cb",
+          "dirty": true,
+          "head": "f943f703ab2849f48b85df30a74c5db65ebf4fa7",
+          "repository_sha256": "f894603d58877a37c71dbcffd85c5d0ddfa390c8fe98a8569eba339478b913c0"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "f943f703ab2849f48b85df30a74c5db65ebf4fa7",
+          "id": "c1ec8dc0d85a4c4d97d72fef3d7a9b52"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "7f5bae2c6437f5cac077ca363500a6d826c738b4818d3288aaf525eaab70b1cb",
+          "dirty": true,
+          "head": "2ae1315f9d50c2ebd8fd72d694bb17478e149e94",
+          "repository_sha256": "f894603d58877a37c71dbcffd85c5d0ddfa390c8fe98a8569eba339478b913c0"
+        }
+      }
+    }
+  ],
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-animation-computed-scan-production-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 3309568,
+    "elapsed_seconds": 0.166472542,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "failure_qualification": "The first candidate and both Brave diagnostic captures pass exact content/pixels. The control launch is stopped by the unchanged ownership audit after a new independent noncapture Vox process for vlang.io appears outside its coalition. No matched captures, whole-page credit, broad checkpoint or acceptance follow this attempt."
+}

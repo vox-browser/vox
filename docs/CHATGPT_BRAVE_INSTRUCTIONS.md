@@ -3093,3 +3093,74 @@ overall CSS-suite, live-site, scrolling or Brave result. No page instructions
 are credited and the broad cadence stays zero. The browser comparison awaits
 a completed bundle proving the final source. **The 5%-below-Brave target remains
 unmet**.
+
+
+## November 5: computed-style memo rejected and reverted
+
+The first production diagnostic confirms a candidate reuse and exact
+content/pixels. Its final control launch is stopped by the unchanged ownership
+audit: an independent new Vox window for `https://vlang.io/` appears outside
+the capture's resource coalition. That attempt remains rejected, with all four
+observations retained and zero instruction credit. No missing helper is
+silently excluded or added to the count.
+
+A later standalone cohort uses fresh processes/profiles and the unchanged
+ownership checks after that external launch. It pins 33-unit parallel executable
+`01ba55f53219901430ef3478f3661a69e7837c85ec0588c8db8aadfa235401f4`.
+Exact owned-source blobs at a recorded receipt head, stable aggregate build
+inputs and available scan disassembly verify the code; there is no sealed-C
+claim. All twelve captures in this complete cohort pass bootstrap, complete
+content and exact unchanged pixels. Separate diagnostics confirm reuse only
+in the candidate; matched captures disable diagnostics. The rejected first
+attempt is not pooled into these observations.
+
+| Unprofiled frozen-page variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Full-root-scan control 1 | 29,104,997,099 |
+| Clean-style memo candidate 1 | 29,874,670,960 |
+| Clean-style memo candidate 2 | 30,532,235,947 |
+| Full-root-scan control 2 | 29,111,159,071 |
+| Control median | 29,108,078,085 |
+| Candidate median | 30,203,453,453.5 |
+
+The candidate median is **3.763% higher**, with both candidates exceeding both
+controls. Conservative separation is **−1,427,238,848 instructions**. The
+component gains do not justify retaining this page regression. No whole-page
+credit or broad checkpoint follows; the cadence remains zero. Control frame
+checkpoints are 479/482 versus 452/452 for candidates, and one-minute host load
+ranges from 7.15 to 8.29 on 18 CPUs. The four Brave reference intervals span
+18,669,631,228 to 19,658,003,181 observed instructions. Only two observations
+per variant and four matched pairs limit attribution and fall short of
+seven-pair acceptance. No 5%-below-Brave result is claimed.
+
+Commit `cf8124f26` **reverts the memo and its internal benchmark**. Both engine
+files are byte-identical to before the experiment; the prototype, its focused
+tests and measurements remain in linear history and durable archives. All
+eight rollback jobs pass, with 188 test-function executions across poisoned
+preallocation, ordinary GC, no GC and ASan/UBSan. Preallocation-only ownership
+assertions remain conditional in the other modes.
+
+A fresh completed rollback bundle
+`ccefa34b26745cef0c79af04d915b5f9bb0b5ee019488dba531d7488fcdcfb9d`
+proves the restored source at its verified receipt head. A fresh Vox/Brave pair
+passes bootstrap, full content and exact pixels. The removed memo's flag and
+execution string are absent from the image. This validates restored rendering
+only, with no new performance credit. Its guard exits zero and adopts seven
+process identities without error.
+
+The [complete experiment receipt](performance/chatgpt-animation-computed-scan-production-20261105.json)
+links both cohorts, raw counters, audits, PNGs, commands, actual exits and six
+verified archives. The [rollback checks](performance/chatgpt-animation-computed-scan-rollback-20261105.json)
+and [rollback production validation](performance/chatgpt-animation-computed-scan-rollback-production-20261105.json)
+preserve their separate evidence. A postprocessor initially read the retained
+first-cohort paths; that metadata-only error is recorded and corrected before
+the final statistics, without changing any capture or counter.
+
+Every run keeps the original SOCKS fixture and author scripts, unchanged
+references, fresh private profiles/caches, five-second unfocused settle,
+1024×768 viewport, scale 2 and exclusive-coalition creation-through-encoded-PNG
+scope. OS filesystem/shader caches are retained; GPU and outside-coalition
+services are excluded. No app bundle is copied or extra build requested.
+Publication leases are released. **The requested 5% advantage remains unmet**;
+this experiment is not an optimized-site entry or a live-site, isolated-rendering
+or scrolling improvement.
