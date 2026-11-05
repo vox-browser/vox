@@ -115,9 +115,8 @@ fn test_calculated_export_parser_matches_reparse_in_lists_ratios_and_value_conte
 	for index, property in properties {
 		mut reference := Parser.from_css_text(sources[index])
 		expected := reference.parse_css_value(property) or { panic(sources[index]) }
-		// rotate wraps its calculation in TransformationStyleValue, which
-		// retains the existing fallback even when its numeric child is closed.
-		assert property_value_can_export(expected) == (index != 6 && !retain_calculated_value_reparse), sources[index]
+		assert property_value_can_export(expected) == (!retain_calculated_value_reparse
+			&& (index != 6 || !retain_transform_value_reparse)), sources[index]
 		actual := parse_css_value_logic(property, sources[index]) or { panic('workspace parse') }
 		assert actual.equals(expected)
 		assert actual.serialize(.normal) == expected.serialize(.normal)

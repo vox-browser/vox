@@ -66,6 +66,9 @@ fn property_value_can_export(value StyleValue) bool {
 		CalculatedStyleValue {
 			!retain_calculated_value_reparse && calculated_property_value_can_export(value)
 		}
+		TransformationStyleValue {
+			!retain_transform_value_reparse && transformation_property_value_can_export(value)
+		}
 		RatioStyleValue {
 			property_value_can_export(value.numerator_[0])
 				&& property_value_can_export(value.denominator_[0])
@@ -130,6 +133,7 @@ fn export_property_value(value StyleValue) StyleValue {
 			StyleValue(GridAutoFlowStyleValue{ row_: value.row_, dense_: value.dense_ })
 		}
 		CalculatedStyleValue { StyleValue(export_calculated_property_value(value)) }
+		TransformationStyleValue { StyleValue(export_transformation_property_value(value)) }
 		RatioStyleValue {
 			StyleValue(RatioStyleValue.create_from_style_values(export_property_value(value.numerator_[0]),
 				export_property_value(value.denominator_[0])))

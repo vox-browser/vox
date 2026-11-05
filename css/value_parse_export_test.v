@@ -109,10 +109,10 @@ fn test_property_value_workspace_preserves_supported_parser_graphs_and_serializa
 }
 
 fn test_property_value_workspace_fallback_preserves_unsupported_graphs_and_decoded_input() {
-	properties := [PropertyID.width, .content, .font_family, .background_image, .transform, .width,
+	properties := [PropertyID.width, .content, .font_family, .background_image, .filter, .width,
 		.aspect_ratio]
 	sources := ['calc(13px + sibling-index() * 2px)', r'"esc\61 ped"', r'"f\61 mily", serif',
-		r'image-set(url("esc\61 ped.png") 1x, url(other.png) 2x)', 'translate(3px, 4px) rotate(10deg)',
+		r'image-set(url("esc\61 ped.png") 1x, url(other.png) 2x)', 'blur(2px)',
 		r'var(--esc\61 ped, calc(7px + env(safe-area-inset-left, 2px)))',
 		'calc(6em * sibling-index() / 1px) / calc(3rem / 1px)']
 	for i, property in properties {
