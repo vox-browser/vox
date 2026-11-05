@@ -3369,3 +3369,47 @@ links authenticated source, commands, raw counts, logs and memory guards.
 These are component results. Production page validation is pending, the broad
 cadence remains zero, and the 5%-below-Brave target remains unmet. The original
 SOCKS capture, author scripts and pixel references are unchanged.
+
+### Opacity refinement and production eligibility (2026-11-05)
+
+The final compositor (`d5f611436`) admits spans from 32 pixels, caches its
+process-start control policy in atomic shared native state, and leaves half
+opacity on the original path. A widened prototype regressed repeated halfway
+ties by 14.266% at 32 pixels; that full failed experiment and its exact source
+remain retained. The final halfway control is essentially neutral, varying
+by at most 0.007% across the measured widths.
+
+Two unprofiled samples per mode at each of 32, 64, 128, 256 and 2048 pixels
+show 10.968–11.997% lower mixed-pixel medians, 5.508–6.655% lower mixed
+empty/opaque medians, and 1.779–2.723% lower opaque medians. Every output
+matches the independent oracle. Unit-opacity negative-control reductions
+receive no credit: its existing per-row environment lookup scans the extra
+control flag. Five final focused executions also pass 512 concurrent
+first-use/span-boundary comparisons each, alongside all previous exhaustive
+checks. Both native integration builds pass with the identical final header.
+The [refined component receipt](performance/chatgpt-byte-opacity-refined-20261105.json)
+retains every prototype result, source hash, test and raw sample.
+
+Both production attempts finish four valid captures apiece, passing complete
+content/bootstrap audits and unchanged pixel checks. Neither candidate emits
+the byte-opacity execution marker, despite its recorded launch environment
+enabling diagnostics. The first long-span attempt uses executable
+`19d7298d57c459d32684ed6761a9d3d9327923c88fb78278960eaf5fb22c3902`;
+the final 33-unit production bundle is
+`df6e738381e56ff1829e20e7ccb0ff5a195cf88e459101d8bd1f49e97671528d`,
+with exact owned-header bytes at its recorded `494ae2fd1` source head.
+Each cohort pins its own executable/native inputs with a nonblocking shared
+publication lease; no app copy or manual production build is used. The first
+attempt additionally authenticates its initially uncommitted header through
+an identical aggregate-input receipt after that header is committed.
+
+The eligibility gate rejects both attempts. No matched page comparison or
+broad checkpoint follows, and no component gain is attributed to ChatGPT.
+The [production receipt](performance/chatgpt-byte-opacity-production-20261105.json)
+and [verification receipt](performance/chatgpt-byte-opacity-verification-20261105.json)
+retain both actual nonzero controller exits, successful finalizers, adopted
+browser memory accounting and six authenticated archives. The verification
+checks all eight render captures and confirms the absent candidate markers.
+Whole-page instruction credit and the broad cadence remain zero. The
+5%-below-Brave target remains unmet; the original frozen SOCKS capture,
+author scripts, settle period and references are unchanged.

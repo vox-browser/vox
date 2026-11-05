@@ -1,0 +1,163 @@
+{
+  "evidence_complete": true,
+  "source_hashes": {
+    "native_opacity_group_darwin.h": "c39bd6a66dcd41021ea12bd954abf9b8a0af4c11fecffff2aa1a9a1e03ad50d4",
+    "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+    "tools/native_byte_opacity_benchmark.c": "d8de18d140b08838a8af44fcf98309a881214a08fcfedab6cf46b48d1d63e8ba",
+    "platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+    "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8"
+  },
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-20261105-evidence.zip",
+      "sha256": "2b350b154bd0aef424ac7680b3bd8eec9dfb6348d6473618beeb6106994e630f",
+      "bytes": 74917
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-production-20261105-evidence.zip",
+      "sha256": "16407d27a4b32e8f62aa35fe54302ed1fa6fe5e9d8e2b86dcff444f9cd2d8f0b",
+      "bytes": 741818
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "c892f12ef1f2dbef3f85f420a59fcdc8c0bca67a55c648b3df343c5b58a28e82",
+      "bytes": 1376402
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-production-r1-finalized-20261105-evidence.zip",
+      "sha256": "1ca9c8a9fb35230e8d7df330e099b869b675fe5c859303cc79f468c992be2f1b",
+      "bytes": 754890
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-production-r2-diagnostic-20261105-evidence.zip",
+      "sha256": "92319a027c95e98d7d312cdb6fbcf4823adb5c9794b5d5bb403c575eb48ca0f2",
+      "bytes": 1346628
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-refined-20261105-evidence.zip",
+      "sha256": "4ba3c0486b7ab840d172fef7b7123bbba6132f0e82598e1276f7484e402fb56c",
+      "bytes": 172613
+    }
+  ],
+  "production_attempts": [
+    {
+      "attempt": "r1",
+      "content_pixel_captures": 4,
+      "fast_path_observed": false,
+      "controller_guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-byte-opacity-production-20261105-r1/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "66662": "Thu Nov  5 20:52:32 2026    ",
+          "66665": "Thu Nov  5 20:52:33 2026    ",
+          "67108": "Thu Nov  5 20:52:41 2026    ",
+          "67112": "Thu Nov  5 20:52:41 2026    ",
+          "67115": "Thu Nov  5 20:52:41 2026    ",
+          "67116": "Thu Nov  5 20:52:41 2026    ",
+          "67119": "Thu Nov  5 20:52:41 2026    ",
+          "67395": "Thu Nov  5 20:52:49 2026    ",
+          "67397": "Thu Nov  5 20:52:50 2026    ",
+          "67400": "Thu Nov  5 20:52:50 2026    ",
+          "67401": "Thu Nov  5 20:52:50 2026    ",
+          "67402": "Thu Nov  5 20:52:50 2026    ",
+          "67501": "Thu Nov  5 20:52:58 2026    ",
+          "67504": "Thu Nov  5 20:52:58 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1706917888,
+        "elapsed_seconds": 38.350840292,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "finalization_guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-byte-opacity-production-20261105-r1/finalize.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3227648,
+        "elapsed_seconds": 0.157280875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "diagnostic": "docs/performance/chatgpt-byte-opacity-production-r1-diagnostic-20261105.json"
+    },
+    {
+      "attempt": "r2",
+      "content_pixel_captures": 4,
+      "fast_path_observed": false,
+      "controller_guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-byte-opacity-production-20261105-r2/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "77634": "Thu Nov  5 20:59:37 2026    ",
+          "77636": "Thu Nov  5 20:59:37 2026    ",
+          "77857": "Thu Nov  5 20:59:45 2026    ",
+          "77860": "Thu Nov  5 20:59:45 2026    ",
+          "77863": "Thu Nov  5 20:59:45 2026    ",
+          "77864": "Thu Nov  5 20:59:45 2026    ",
+          "77865": "Thu Nov  5 20:59:45 2026    ",
+          "77955": "Thu Nov  5 20:59:54 2026    ",
+          "77958": "Thu Nov  5 20:59:54 2026    ",
+          "77960": "Thu Nov  5 20:59:54 2026    ",
+          "77961": "Thu Nov  5 20:59:54 2026    ",
+          "77963": "Thu Nov  5 20:59:54 2026    ",
+          "78049": "Thu Nov  5 21:00:03 2026    ",
+          "78052": "Thu Nov  5 21:00:03 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1705820160,
+        "elapsed_seconds": 37.746224792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "finalization_guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-byte-opacity-production-20261105-r2/finalize.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3424256,
+        "elapsed_seconds": 0.166653084,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "diagnostic": "docs/performance/chatgpt-byte-opacity-production-r2-diagnostic-20261105.json"
+    }
+  ],
+  "qualification": "Both cohorts retain four successful content, bootstrap and unchanged-pixel captures. The candidate marker is absent despite the recorded launch environment enabling it. The eligibility gate rejects both; no matched page cohort is attempted. All native inputs/executable identities remain stable within each separate cohort. Component benefits are retained without page attribution; the Brave target remains unmet.",
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "verification_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-byte-opacity-production-20261105-r2/verify_close.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 3260416,
+    "elapsed_seconds": 0.16612333299999998,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "verification_source": "import hashlib,json,pathlib,zipfile\nroot=pathlib.Path.cwd();out=pathlib.Path(__file__).resolve().parent;perf=root/'docs/performance'\ndef read(p):return json.loads(p.read_text())\ndef sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()\nverified=[]\nfor p in sorted(perf.glob('chatgpt-byte-opacity*20261105-evidence.zip')):\n    with zipfile.ZipFile(p)as z:\n        assert z.testzip()is None\n        index=json.loads(z.read('index.json'))\n        for name,entry in index['entries'].items():\n            b=z.read('blobs/'+entry['sha256']);assert len(b)==entry['bytes']and hashlib.sha256(b).hexdigest()==entry['sha256'],name\n        for k in z.namelist():\n            if k.startswith('blobs/'):assert hashlib.sha256(z.read(k)).hexdigest()==k[6:]\n    verified.append(dict(path=str(p.relative_to(root)),sha256=sha(p),bytes=p.stat().st_size))\nfor name in ['chatgpt-byte-opacity-20261105.json','chatgpt-byte-opacity-refined-20261105.json']:\n    d=read(perf/name);assert d['focused']['passed']\nfinal=read(perf/'chatgpt-byte-opacity-production-20261105.json')\nassert final['page_instruction_credit']==0 and final['broad_cadence_after']==0 and not final['broad_required']\nattempts=[]\nfor suffix in ['r1','r2']:\n    folder=out.parent/('chatgpt-byte-opacity-production-20261105-'+suffix)\n    d=read(perf/('chatgpt-byte-opacity-production-'+suffix+'-diagnostic-20261105.json'))\n    assert d['identity_stable']and len(d['observations'])==4\n    assert all(r['exit']==r['kernel_exit_status']==0 and r['pixels_exact']and r['content_exact']for r in d['observations'])\n    vox=[r for r in d['observations']if r['engine']=='vox']\n    assert sorted((r['variant'],r['paths']['byte_opacity'])for r in vox)==[('candidate',False),('control',False)]\n    for r in vox:\n        launch=pathlib.Path(r['pixel_comparison']['actual']).parent/'launch.json'\n        text=launch.read_text();assert 'VOX_BYTE_OPACITY_DIAGNOSTICS=1'in text\n        assert ('VOX_RETAIN_NORMALIZED_OPACITY_FLOAT=1'in text)==(r['variant']=='control')\n    guard=read(folder/'run-guard.json');finalizer=read(folder/'finalize-guard.json')\n    assert guard['reason']=='completed'and guard['child_exit_code']==1 and guard['adoption_error']is None and guard['adopted_processes']\n    assert finalizer['reason']=='completed'and finalizer['child_exit_code']==0\n    attempts.append(dict(attempt=suffix,content_pixel_captures=4,fast_path_observed=False,controller_guard=guard,finalization_guard=finalizer,diagnostic=str((perf/('chatgpt-byte-opacity-production-'+suffix+'-diagnostic-20261105.json')).relative_to(root))))\nowned=read(perf/'chatgpt-byte-opacity-refined-20261105.json')['source_hashes']\nassert all(sha(root/p)==h for p,h in owned.items())\nresult=dict(evidence_complete=True,source_hashes=owned,archives=verified,production_attempts=attempts,\n    qualification='Both cohorts retain four successful content, bootstrap and unchanged-pixel captures. The candidate marker is absent despite the recorded launch environment enabling it. The eligibility gate rejects both; no matched page cohort is attempted. All native inputs/executable identities remain stable within each separate cohort. Component benefits are retained without page attribution; the Brave target remains unmet.',\n    page_instruction_credit=0,broad_cadence_after=0,acceptance=False)\n(perf/'chatgpt-byte-opacity-verification-20261105.json').write_text(json.dumps(result,indent=2)+'\\n')\nprint(json.dumps(dict(archives_verified=len(verified),valid_render_captures=8,page_eligible=False,page_instruction_credit=0)))\n",
+  "verification_source_sha256": "61813a23cf1e02a396b801c75ec5ea23217f067521cb554b8128f81094dd71f2",
+  "verification_log": "{\"archives_verified\": 6, \"valid_render_captures\": 8, \"page_eligible\": false, \"page_instruction_credit\": 0}\n{\"command\": [\"python3\", \"Build/chatgpt-byte-opacity-production-20261105-r2/verify_close.py\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 3260416, \"elapsed_seconds\": 0.16612333299999998, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+}

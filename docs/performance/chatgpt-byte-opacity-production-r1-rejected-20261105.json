@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "complete": false,
+  "status": "rejected",
+  "recorded_unix": 1793901304.173965,
+  "implementation_commits": [
+    "e33f08b32"
+  ],
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "19d7298d57c459d32684ed6761a9d3d9327923c88fb78278960eaf5fb22c3902",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "5a10ed651bac4ee40bd3f0f4c15500e911e8d1e3d515f7be0d8f400ae52258ff",
+      "dirty": true,
+      "head": "d1cce4de0d4911fcafdbd301276327ea9e7d6b52",
+      "repository_sha256": "1a9104ba1f80fc2cbfdeba133b8f9f65d0dd582a276d726307af99055fb0ec85"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "d1cce4de0d4911fcafdbd301276327ea9e7d6b52",
+      "id": "802eb0614b134a2dbc3df73deda19791"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "5a10ed651bac4ee40bd3f0f4c15500e911e8d1e3d515f7be0d8f400ae52258ff",
+      "dirty": true,
+      "head": "abeda448a4bb1cfdae3a182057ac5a94b1bc1bf1",
+      "repository_sha256": "56c9d1e6a155a9fa318629f8209648c51fd716c368f91596849911690e6097c1"
+    }
+  },
+  "controller": {
+    "path": "docs/performance/chatgpt-byte-opacity-production-r1-controller-20261105.json",
+    "sha256": "a1dace57d31f021a6a1e1fdd0a1f960f2621f08b750d17733b8fa9e7d916e506",
+    "bytes": 3015
+  },
+  "diagnostic": {
+    "path": "docs/performance/chatgpt-byte-opacity-production-r1-diagnostic-20261105.json",
+    "sha256": "3a75b75f872de2b8cc343cdf7b18539745db050a8963cfddca2156bac0d7295c",
+    "bytes": 1813045
+  },
+  "matched": null,
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-byte-opacity-production-20261105-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {
+      "66662": "Thu Nov  5 20:52:32 2026    ",
+      "66665": "Thu Nov  5 20:52:33 2026    ",
+      "67108": "Thu Nov  5 20:52:41 2026    ",
+      "67112": "Thu Nov  5 20:52:41 2026    ",
+      "67115": "Thu Nov  5 20:52:41 2026    ",
+      "67116": "Thu Nov  5 20:52:41 2026    ",
+      "67119": "Thu Nov  5 20:52:41 2026    ",
+      "67395": "Thu Nov  5 20:52:49 2026    ",
+      "67397": "Thu Nov  5 20:52:50 2026    ",
+      "67400": "Thu Nov  5 20:52:50 2026    ",
+      "67401": "Thu Nov  5 20:52:50 2026    ",
+      "67402": "Thu Nov  5 20:52:50 2026    ",
+      "67501": "Thu Nov  5 20:52:58 2026    ",
+      "67504": "Thu Nov  5 20:52:58 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1706917888,
+    "elapsed_seconds": 38.350840292,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "diagnostic_path_observations": [
+    {
+      "variant": "candidate",
+      "paths": {
+        "byte_opacity": false
+      }
+    },
+    {
+      "variant": "control",
+      "paths": {
+        "byte_opacity": false
+      }
+    }
+  ],
+  "matched_observations": [],
+  "diagnostic_valid": false,
+  "matched_valid": false,
+  "broad_required": false,
+  "broad": null,
+  "focused_component": {
+    "path": "docs/performance/chatgpt-byte-opacity-20261105.json",
+    "sha256": "4c327589117224aeaf9ae6f37c8ac3cb6af2297601ad9eedc33d65c822f1c6dd",
+    "bytes": 45257
+  },
+  "focused_selected_passed": true,
+  "overall_css_suite_pass_claimed": false,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "browser_captures": 4,
+  "manual_build_requests": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-production-r1-finalized-20261105-evidence.zip",
+      "sha256": "1ca9c8a9fb35230e8d7df330e099b869b675fe5c859303cc79f468c992be2f1b",
+      "bytes": 754890
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-20261105-evidence.zip",
+      "sha256": "2b350b154bd0aef424ac7680b3bd8eec9dfb6348d6473618beeb6106994e630f",
+      "bytes": 74917
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "c892f12ef1f2dbef3f85f420a59fcdc8c0bca67a55c648b3df343c5b58a28e82",
+      "bytes": 1376402
+    },
+    {
+      "path": "docs/performance/chatgpt-byte-opacity-production-r1-finalized-20261105-evidence.zip",
+      "sha256": "1ca9c8a9fb35230e8d7df330e099b869b675fe5c859303cc79f468c992be2f1b",
+      "bytes": 754890
+    }
+  ],
+  "qualification": "The latest completed canonical bundle is pinned with a nonblocking shared publication lease. Stable aggregate build-input hashes and exact owned-header bytes at a recorded receipt head establish source identity; separate execution diagnostics establish CPU-path eligibility. Original SOCKS fixture and author bytes, unchanged content/pixel references, private profiles/caches, unfocused five-second settle, 1024x768 viewport, backing scale 2 and exclusive-coalition creation-through-encoded-document-PNG scope remain in force. OS filesystem/shader caches are retained; GPU and outside-coalition services are excluded. Four matched pairs provide two observations per mode and do not meet seven-pair Brave acceptance. Only byte-unit opacity compositing differs between variants; ambiguous rounding retains normalized float arithmetic. Other renderer features keep identical default settings. Frame counts and host load qualify attribution. All five focused runtime selections and both native SVG mask integration builds pass. Earlier benchmark unused-function and native RTTI-link failures remain retained separately. Component gains and nearly neutral regressions remain in the component receipt. No live-site, isolated-rendering or scrolling claim.",
+  "inspected_build_attempts": []
+}
