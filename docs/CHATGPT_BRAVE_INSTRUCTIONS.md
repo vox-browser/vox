@@ -4002,3 +4002,77 @@ attempts, all component scenes, 12 valid captures, source/control proof, origina
 PNGs, audits, raw counters and exact comparison arithmetic. Whole-page credit
 and the broad cadence remain zero. No live-site or scrolling improvement is
 claimed.
+
+
+### Owned export of numeric transform arguments (2026-11-05)
+
+`013c9d6b9` extends completed property-workspace export to
+`TransformationStyleValue`, including transform lists and the individual rotate,
+scale and translate properties. A bounded allocation-free scan accepts one to
+sixteen scalar or closed calculated arguments. Publication rebuilds the concrete
+transform payload and its argument vector in caller storage. Calculated children
+use the existing bounded deep exporter; relative lengths and percentages retain
+their original specified trees until ordinary absolutization or matrix resolution.
+There is no additional retained cache or owner.
+
+Dependent calculations, unsupported leaves such as `perspective(none)`, empty or
+oversized vectors and unresolved inputs retain reparsing. The independent
+`VOX_RETAIN_TRANSFORM_VALUE_REPARSE` control disables transform export;
+`VOX_RETAIN_CALCULATED_VALUE_REPARSE` independently disables calculated children.
+A separate diagnostic marker reports actual transform export once.
+
+All 20 final compile/runtime jobs pass: 87 test functions execute in four modes
+(ordinary GC, no GC, poisoned preallocation and ASan/UBSan) with four combinations
+(candidate, transform control, calculation control and both controls), for
+**1,392 authenticated test calls**. Five new tests cover all 21 transform functions,
+individual transform properties, normal/resolved serialization, matrices with
+multiple reference-box sizes, relative-unit and density computation, argument
+mutation and arena retirement, recursively owned calculations and copied range
+maps, rejection/fallback behavior and allocation-free inspection. Existing
+calculation, parser, Typed OM, substitution and ownership regressions pass in the
+same selection. Generated C authenticates each selected runner call.
+
+The unprofiled single-unit C O3 component measures complete property parsing from
+text, including internal token and grammar workspaces, equality, normal/resolved
+serialization and all outer batch retirements. Setup and reference parsing are
+excluded. The parsed-value cache, poisoning and profiling are disabled. Each
+scene parses 10,000 values in batches of 100; checksums match across all trials.
+Control/candidate/candidate/control observations precede separate execution
+diagnostics. This component differs from the 33-unit production browser.
+
+| Component median | Reparse control instructions | Export candidate instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| unchanged-scalar | 95,644,921.0 | 95,623,800.5 | 0.0221% |
+| scalar-transform-list | 431,664,843.0 | 331,063,092.5 | 23.3055% |
+| calculated-transform-list | 798,808,365.5 | 543,900,156.0 | 31.9111% |
+| matrix3d | 891,635,030.5 | 672,742,853.5 | 24.5495% |
+| individual-translate | 468,576,739.5 | 331,832,479.0 | 29.1829% |
+| individual-rotate | 361,932,709.0 | 242,272,491.5 | 33.0615% |
+| dependent-fallback | 466,687,311.5 | 468,687,651.5 | -0.4286% |
+| keyword-fallback | 219,428,477.0 | 219,597,562.0 | -0.0771% |
+| invalid | 179,556,577.5 | 179,491,616.5 | 0.0362% |
+
+Supported transforms use 23.3–33.1% fewer observed component instructions.
+The dependent fallback regresses 0.4286%; the keyword fallback point estimate is
+0.0771% higher with overlapping ranges. Unchanged scalar ranges overlap; invalid
+input has a small 0.0362% point difference. Those ineligible cases supply no
+transform-path credit. Every observation and regression is retained.
+
+The first test compile rejected an immutable struct alias; the fixture was fixed
+before execution. Sanitizer linking and the first component staging/link attempts
+failed under disk exhaustion; a later component link reported LLVM's bad file
+descriptor error. No failed build supplied runtime samples. The unchanged final
+sources pass all modes, and the final production-condition component compiles
+with the exact Clang command recorded. Generated C, completed test binaries and
+private benchmark profiles were archived and verified before duplicate removal.
+Later cleanup removed generated shader caches only from completed private Brave
+benchmark profiles after reauthenticating their retained PNGs/logs against committed
+archives; no default/user profile, counter, audit, fixture or reference was removed.
+
+The [focused/component receipt](performance/chatgpt-transform-export-20261105.json)
+authenticates source revisions, the rejected attempts, all final jobs, generated
+runners, component commands, counts, guards, host load and cleanup receipts.
+The latest completed browser contains the transform diagnostic flag but predates
+its committed source proof; the newer shared build failed. A source-verified
+production comparison remains pending. Whole-page credit and broad cadence remain
+zero. The **5%-below-Brave target remains unmet**.
