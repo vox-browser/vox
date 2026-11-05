@@ -188,7 +188,7 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     size_t canvas_width = CGBitmapContextGetWidth(context);
     size_t canvas_height = CGBitmapContextGetHeight(context);
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
-    uint8_t *pixels = CGBitmapContextGetData(context);
+    uint8_t *pixels = (uint8_t *)CGBitmapContextGetData(context);
     double device_width = width * scale, device_height = height * scale;
     double device_top = page_top * scale;
     if (!pixels || !(scale > 0) || ctm.d != scale || ctm.b != 0 || ctm.c != 0
@@ -231,7 +231,7 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
         && cache->damage_optimized == damage_optimized
         && fabs(delta - round(delta)) < 0.0000001;
     if (cache->bytes != bytes) {
-        uint8_t *replacement = realloc(cache->pixels, bytes);
+        uint8_t *replacement = (uint8_t *)realloc(cache->pixels, bytes);
         if (!replacement) {
             native_discard_scroll_raster();
             return 0;
@@ -352,7 +352,7 @@ static void native_end_scroll_raster(void) {
     CGContextRef context = cache->context;
     if (cache->reused) CGContextRestoreGState(context);
     CGContextFlush(context);
-    uint8_t *pixels = CGBitmapContextGetData(context);
+    uint8_t *pixels = (uint8_t *)CGBitmapContextGetData(context);
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
     if (pixels) {
         if (cache->damage_optimized) {
@@ -401,8 +401,8 @@ static VoxVideoBackdrop *native_video_backdrop_find(const VoxScrollRaster *cache
     free(oldest->pixels);
     free(oldest->valid);
     *oldest = (VoxVideoBackdrop){0};
-    oldest->pixels = malloc((size_t)rect[2] * (size_t)rect[3] * 4);
-    oldest->valid = calloc((size_t)rect[3], 1);
+    oldest->pixels = (uint8_t *)malloc((size_t)rect[2] * (size_t)rect[3] * 4);
+    oldest->valid = (uint8_t *)calloc((size_t)rect[3], 1);
     if (!oldest->pixels || !oldest->valid) {
         free(oldest->pixels);
         free(oldest->valid);
@@ -449,7 +449,7 @@ static void native_video_backdrop_capture(CGContextRef current,
         || !native_video_backdrop_geometry(cache, cache->scroll, x, y, width, height, rect, &origin)
         || !native_video_backdrop_visible(cache, rect, origin, &first, &end)) return;
     VoxVideoBackdrop *backdrop = native_video_backdrop_find(cache, rect, 1);
-    uint8_t *canvas = CGBitmapContextGetData(current);
+    uint8_t *canvas = (uint8_t *)CGBitmapContextGetData(current);
     if (!backdrop || !canvas) return;
     CGContextFlush(current);
     size_t pitch = CGBitmapContextGetBytesPerRow(current);
@@ -497,23 +497,35 @@ static void native_video_backdrop_invalidate(double x, double y, double width, d
 
 // Replace the visible rectangle with its retained backdrop before the video
 // draws. Returns zero, leaving the canvas untouched, unless every row is valid.
-static int native_video_backdrop_restore(CGContextRef current,
-    double x, double y, double width, double height) {
+typedef int (*VoxVideoBackdropGpuRestore)(CGContextRef, const uint8_t *,
+    int, int, int, int, int);
+
+static int native_video_backdrop_restore_with_gpu(CGContextRef current,
+    double x, double y, double width, double height, VoxVideoBackdropGpuRestore gpu_restore) {
     VoxScrollRaster *cache = &native_scroll_raster;
     long rect[4], origin, first, end;
     if (!cache->active || !cache->reused || !current || current != cache->context
         || !native_video_backdrop_geometry(cache, cache->scroll, x, y, width, height, rect, &origin)
         || !native_video_backdrop_visible(cache, rect, origin, &first, &end)) return 0;
     VoxVideoBackdrop *backdrop = native_video_backdrop_find(cache, rect, 0);
-    uint8_t *canvas = CGBitmapContextGetData(current);
+    uint8_t *canvas = (uint8_t *)CGBitmapContextGetData(current);
     if (!backdrop || !canvas) return 0;
     for (long row = first; row < end; ++row)
         if (!backdrop->valid[row - rect[1]]) return 0;
+    if (gpu_restore && gpu_restore(current,
+            backdrop->pixels + (size_t)(first - rect[1]) * rect[2] * 4,
+            (int)rect[2], (int)(end - first), (int)rect[2] * 4,
+            (int)rect[0], (int)(cache->top + first - origin))) return 1;
     CGContextFlush(current);
     size_t pitch = CGBitmapContextGetBytesPerRow(current);
     for (long row = first; row < end; ++row)
         memcpy(canvas + (cache->top + (size_t)(row - origin)) * pitch + (size_t)rect[0] * 4,
             backdrop->pixels + (size_t)(row - rect[1]) * rect[2] * 4, (size_t)rect[2] * 4);
     return 1;
+}
+
+static int native_video_backdrop_restore(CGContextRef current,
+    double x, double y, double width, double height) {
+    return native_video_backdrop_restore_with_gpu(current, x, y, width, height, NULL);
 }
 #endif

@@ -3,7 +3,11 @@
 // per-leaf replay of the same leaves over the same backdrop: repainted pixels
 // match within blending rounding, pixels outside the repainted strip are never
 // touched, and a CPU draw of an unapproved command keeps its paint order.
+#import <Cocoa/Cocoa.h>
 #include "../native_skia_text_darwin.cpp"
+#include "../native_scroll_raster_darwin.h"
+#define LADYBIRD_V_HAS_SKIA_TEXT
+#include "native_video_backdrop_entry_points.inc"
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -168,9 +172,8 @@ static std::vector<uint8_t> s_video_frame = [] {
 
 static void draw_video_leaves(CGContextRef context, bool canvas)
 {
-    // Keep the CPU backdrop barrier before the video. Its image opts back in
-    // after that barrier rather than approving the complete draw_video command.
-    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == 0);
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == int(
+        s_gpu_canvas->video_backdrop_callbacks && std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP")));
     float radii[] {13, 13, 13, 13, 0, 0, 0, 0};
     assert(ladybird_v_skia_draw_rgba_image(context, s_video_frame.data(), 1426, 1080, 1426 * 4,
         52.5f, 81.25f, 238, 180, 0, 0, 1426, 1080, 52.5f, 81.25f, 238, 180,
@@ -274,10 +277,102 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
     return pixels;
 }
 
-int main()
+static bool s_fail_backdrop_copy;
+static int s_backdrop_verify_error;
+static decltype(&vox_graphite_canvas_copy_pixels) s_real_backdrop_copy;
+static int maybe_fail_backdrop_copy(uint8_t const* pixels, int w, int h, int pitch, int x, int y)
 {
+    return s_fail_backdrop_copy ? 0 : s_real_backdrop_copy(pixels, w, h, pitch, x, y);
+}
+
+static std::vector<uint8_t> render_video_backdrop(bool canvas, bool callbacks, int alpha, bool fail)
+{ @autoreleasepool {
+    auto pixels = backdrop();
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(pixels.data(), width, height, 8, width * 4, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color); assert(context);
+    CGContextScaleCTM(context, scale, scale);
+    CGContextClipToRect(context, CGRectMake(0, css_height - (strip_top + strip_height) / float(scale),
+        css_width, strip_height / float(scale)));
+    NSGraphicsContext* saved = NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    native_discard_scroll_raster();
+    native_scroll_raster = {.width=width, .height=height, .canvas_width=width, .canvas_height=height,
+        .scale=scale, .scroll=100, .owner=7, .active=1, .reused=1, .damage_optimized=1, .context=context};
+    native_scroll_repainted_count = 1;
+    long painted[] {0, strip_top, width, strip_top + strip_height};
+    std::copy_n(painted, 4, native_scroll_repainted[0]);
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0, css_width, css_height);
+    if (canvas) {
+        assert(native_gpu_canvas_begin()); // Actual host wrapper registers the callbacks.
+        assert(s_gpu_canvas->video_backdrop_callbacks);
+        if (!callbacks) ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(0);
+    }
+    draw_outline_leaves(context, canvas);
+    unsigned before_capture = canvas ? s_gpu_canvas->flushes : 0;
+    native_capture_video_backdrop(40, 210, 100.5, 51.5);
+    if (canvas) assert(!s_gpu_canvas->cpu_stale && s_gpu_canvas->flushes == before_capture + 1);
+    long geometry[] {80, 420, 201, 103};
+    auto* source = native_video_backdrop_find(&native_scroll_raster, geometry, 0); assert(source);
+    for (int y = 0; y < 103; ++y) {
+        assert(source->valid[y]);
+        for (int x = 0; x < 201; ++x) {
+            auto* p = source->pixels + (y * 201 + x) * 4;
+            p[0] = (x * 7 + y) % (alpha + 1); p[1] = (x + y * 3) % (alpha + 1);
+            p[2] = (x * 11 + y * 5) % (alpha + 1); p[3] = alpha;
+        }
+    }
+    draw_outline_leaves(context, canvas);
+    unsigned before_restore = canvas ? s_gpu_canvas->flushes : 0;
+    auto cpu_before = pixels;
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == int(callbacks));
+    s_fail_backdrop_copy = fail;
+    native_restore_video_backdrop(40, 210, 100.5, 51.5);
+    s_fail_backdrop_copy = false;
+    if (canvas && callbacks && !fail && !gpu_canvas_verify()) {
+        assert(s_gpu_canvas->cpu_stale && s_gpu_canvas->flushes == before_restore);
+        assert(pixels == cpu_before); // The successful GPU restore never writes stale CPU rows.
+    } else if (canvas) assert(s_gpu_canvas->flushes == before_restore + 1);
+    // The queued GPU copy owns its source before native cache eviction.
+    native_discard_video_backdrops();
+    for (size_t at = 3; at < s_video_frame.size(); at += 4) s_video_frame[at] = alpha;
+    draw_video_leaves(context, canvas);
+    if (canvas) {
+        if (gpu_canvas_verify()) {
+            ladybird_v_skia_gpu_canvas_cpu_access();
+            s_backdrop_verify_error = std::max(s_backdrop_verify_error, s_gpu_canvas->max_error);
+        }
+        ladybird_v_skia_gpu_canvas_end();
+    }
+    ladybird_v_skia_set_chromium_painting(0);
+    ladybird_v_skia_set_shared_recording(0, 0, 0);
+    native_discard_scroll_raster();
+    NSGraphicsContext.currentContext = saved;
+    CGContextFlush(context); CGContextRelease(context);
+    return pixels;
+} }
+
+int main(int argc, char** argv)
+{
+    if (argc == 2 && !std::strcmp(argv[1], "--video-backdrop-verify")) {
+        assert(gpu_canvas_verify_leaves());
+        auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api && api->copy_pixels);
+        s_real_backdrop_copy = api->copy_pixels; api->copy_pixels = maybe_fail_backdrop_copy;
+        setenv("VOX_GPU_CANVAS_VIDEO_BACKDROP", "1", 1);
+        for (int alpha : {128,255}) for (bool callbacks : {false,true}) for (bool fail : {false,true}) {
+            auto reference = render_video_backdrop(false, callbacks, alpha, false);
+            auto candidate = render_video_backdrop(true, callbacks, alpha, fail);
+            assert(reference == candidate);
+        }
+        assert(s_backdrop_verify_error <= 3);
+        std::cout << "GPU video backdrop per-leaf verification max error " << s_backdrop_verify_error << '\n';
+        return 0;
+    }
     // On by default; only VOX_DISABLE_GPU_CANVAS turns the native canvas off.
     unsetenv("VOX_DISABLE_GPU_CANVAS");
+    unsetenv("VOX_GPU_CANVAS_VIDEO_BACKDROP");
     assert(gpu_canvas_api());
     unsetenv("VOX_GPU_CANVAS_DISABLE_ISOLATED_SHAPES");
     assert(gpu_canvas_isolated_shapes_enabled());
@@ -546,6 +641,20 @@ int main()
             return 1;
         }
     }
+    assert(api->copy_pixels);
+    s_real_backdrop_copy = api->copy_pixels;
+    api->copy_pixels = maybe_fail_backdrop_copy;
+    setenv("VOX_GPU_CANVAS_VIDEO_BACKDROP", "1", 1);
+    int backdrop_error = 0;
+    for (int alpha : {128, 255}) for (bool callbacks : {false, true}) for (bool fail : {false, true}) {
+        auto reference = render_video_backdrop(false, callbacks, alpha, false);
+        auto candidate = render_video_backdrop(true, callbacks, alpha, fail);
+        for (size_t at = 0; at < reference.size(); ++at)
+            backdrop_error = std::max(backdrop_error, std::abs(int(reference[at]) - int(candidate[at])));
+        assert(backdrop_error <= 3);
+    }
+    unsetenv("VOX_GPU_CANVAS_VIDEO_BACKDROP");
+    api->copy_pixels = s_real_backdrop_copy;
     std::cout << "GPU canvas matches per-leaf replay within " << max_error << " levels ("
         << differing << " channels differ), inset shadows within " << inset_error
         << " (" << msaa_error << " in MSAA tiles, where plain replay differs by " << msaa_shift
@@ -553,5 +662,6 @@ int main()
         << ", CSS gradient tiles within " << pattern_error
         << ", video frames within " << video_error
         << ", isolated mixed-MSAA fills/strokes within " << isolated_shape_error << " (fallback exact)"
+        << ", GPU video backdrop within " << backdrop_error << " (legacy host and failed-copy fallback included)"
         << "; outside pixels, CPU paint order, CPU leaves and shared recordings preserved\n";
 }

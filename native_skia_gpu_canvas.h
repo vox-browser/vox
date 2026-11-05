@@ -35,6 +35,7 @@ struct GpuCanvasFrame {
     // other commands use the CPU canvas so their own CPU drawing stays ordered.
     bool in_gpu_command = false;
     bool complete_viewport = false;
+    bool video_backdrop_callbacks = false;
     std::map<std::string, unsigned> flush_reasons;
     // Diagnostics: why GPU-capable leaves still used their own raster path.
     std::map<std::string, unsigned> leaf_misses;
@@ -54,6 +55,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_read) read = nullptr;
     decltype(&vox_graphite_canvas_read_direct) read_direct = nullptr;
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
+    decltype(&vox_graphite_canvas_copy_pixels) copy_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
     decltype(&vox_graphite_canvas_draw_image_msaa) draw_image_msaa = nullptr;
@@ -76,6 +78,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.read = reinterpret_cast<decltype(value.read)>(dlsym(library, "vox_graphite_canvas_read"));
         value.read_direct = reinterpret_cast<decltype(value.read_direct)>(dlsym(library, "vox_graphite_canvas_read_direct"));
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
+        value.copy_pixels = reinterpret_cast<decltype(value.copy_pixels)>(dlsym(library, "vox_graphite_canvas_copy_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
         value.draw_image_msaa = reinterpret_cast<decltype(value.draw_image_msaa)>(dlsym(library, "vox_graphite_canvas_draw_image_msaa"));
@@ -361,6 +364,8 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     if (kind == "stroke_rounded_rect") return outlines && !(flags & 512);
     if (kind == "fill_ellipse" || kind == "stroke_ellipse") return outlines;
     if (kind == "draw_text") return !gpu_canvas_text_disabled();
+    if (kind == "draw_video") return s_gpu_canvas && s_gpu_canvas->video_backdrop_callbacks
+        && std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") && gpu_canvas_api()->copy_pixels;
     if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
     static bool const insets = !std::getenv("VOX_GPU_CANVAS_DISABLE_INSET");
     if (kind == "paint_inner_box_shadow") return insets && gpu_canvas_api()->draw_picture;
@@ -589,6 +594,41 @@ extern "C" void ladybird_v_skia_gpu_canvas_cpu_access()
         s_gpu_canvas->in_gpu_command = false;
     }
     gpu_canvas_flush();
+}
+
+extern "C" void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int enabled)
+{
+    if (s_gpu_canvas) s_gpu_canvas->video_backdrop_callbacks = enabled != 0;
+}
+
+extern "C" int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef destination,
+    uint8_t const* rgba, int width, int height, int pitch, int x, int y)
+{
+    auto* frame = s_gpu_canvas.get();
+    if (!frame || frame->destination != destination || !frame->video_backdrop_callbacks
+        || !std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") || !gpu_canvas_api()->copy_pixels
+        || (!frame->cpu_stale && !gpu_canvas_verify()) || gpu_canvas_shared_recording(destination)
+        || !rgba || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || pitch < width * 4 || size_t(width) * height > 32 * 1024 * 1024 / 4
+        || x < 0 || y < 0 || size_t(x) + width > CGBitmapContextGetWidth(destination)
+        || size_t(y) + height > CGBitmapContextGetHeight(destination)) return 0;
+    if (gpu_canvas_verify_leaves() && frame->cpu_stale) gpu_canvas_flush();
+    if (!gpu_canvas_upload(*frame)) return 0;
+    std::vector<uint32_t> pixels(size_t(width) * height);
+    for (int row = 0; row < height; ++row)
+        swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * width),
+            rgba + size_t(row) * pitch, size_t(width));
+    if (!gpu_canvas_api()->copy_pixels(reinterpret_cast<uint8_t const*>(pixels.data()),
+            width, height, width * 4, x, y)) return 0;
+    gpu_canvas_name_leaf(*frame, "video-backdrop", SkRect::MakeXYWH(x, y, width, height), 0, 0);
+    frame->cpu_stale = true;
+    frame->in_gpu_command = true;
+    ++frame->draws;
+    if (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP_DIAGNOSTICS"))
+        std::fprintf(stderr, "Vox GPU video backdrop: restored=%dx%d verify=%d\n", width, height, int(gpu_canvas_verify()));
+    // Verification also executes the ordinary CPU replacement before the
+    // next leaf compares the two surfaces.
+    return gpu_canvas_verify() ? 2 : 1;
 }
 
 extern "C" void ladybird_v_skia_gpu_canvas_end()

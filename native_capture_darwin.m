@@ -34,6 +34,9 @@ static void native_capture_instruction_checkpoint(const char *label) {
 extern int ladybird_v_skia_gpu_canvas_begin(CGContextRef, const int *, int);
 extern void ladybird_v_skia_gpu_canvas_cpu_access(void);
 extern void ladybird_v_skia_gpu_canvas_end(void);
+extern void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef,
+    const uint8_t *, int, int, int, int, int) __attribute__((weak_import));
 #endif
 #include "native_stationary_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
@@ -2839,6 +2842,9 @@ void native_set_scroll_damage_rects(float const *rects, int count) {
 
 // A top-level video's retained backdrop, in document CSS pixels.
 void native_capture_video_backdrop(double x, double y, double width, double height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
     native_video_backdrop_capture([[NSGraphicsContext currentContext] CGContext],
         x, y, width, height);
 }
@@ -2867,6 +2873,8 @@ int native_gpu_canvas_begin(void) {
 			|| cache->width * cache->height > 64 * 1024 * 1024 / 4) return 0;
 		int rect[] = {0, (int)cache->top, (int)cache->width, (int)cache->height};
 		int begun = ladybird_v_skia_gpu_canvas_begin(cache->context, rect, 1);
+		if (begun && ladybird_v_skia_gpu_canvas_video_backdrop_callbacks)
+			ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(1);
 		if (begun && getenv("VOX_GPU_CANVAS_DIAGNOSTICS"))
 			fprintf(stderr, "VOX_GPU_CANVAS_FULL_FRAME width=%zu height=%zu\n", cache->width, cache->height);
 		return begun;
@@ -2883,7 +2891,10 @@ int native_gpu_canvas_begin(void) {
 		rects[count * 4 + 3] = (int)(rect[3] - rect[1]);
 		count++;
 	}
-	return count > 0 ? ladybird_v_skia_gpu_canvas_begin(cache->context, rects, count) : 0;
+	int begun = count > 0 ? ladybird_v_skia_gpu_canvas_begin(cache->context, rects, count) : 0;
+	if (begun && ladybird_v_skia_gpu_canvas_video_backdrop_callbacks)
+		ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(1);
+	return begun;
 #else
 	return 0;
 #endif
@@ -2914,9 +2925,21 @@ void native_reject_scroll_raster_frame(void) {
     native_scroll_raster_independent_content();
 }
 
+static int native_try_restore_gpu_video_backdrop(CGContextRef context, const uint8_t *pixels,
+    int width, int height, int pitch, int x, int y) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    int result = ladybird_v_skia_gpu_canvas_restore_video_backdrop
+        ? ladybird_v_skia_gpu_canvas_restore_video_backdrop(context, pixels, width, height, pitch, x, y) : 0;
+    if (!result) ladybird_v_skia_gpu_canvas_cpu_access();
+    return result == 1;
+#else
+    return 0;
+#endif
+}
+
 void native_restore_video_backdrop(double x, double y, double width, double height) {
-    if (!native_video_backdrop_restore([[NSGraphicsContext currentContext] CGContext],
-            x, y, width, height))
+    if (!native_video_backdrop_restore_with_gpu([[NSGraphicsContext currentContext] CGContext],
+            x, y, width, height, native_try_restore_gpu_video_backdrop))
         native_scroll_raster_independent_content();
 }
 

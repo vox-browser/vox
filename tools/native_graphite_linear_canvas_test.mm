@@ -106,10 +106,15 @@ int main() { @autoreleasepool {
     assert(other==0xff20a041);
     vox_test_isolated_shape_fail_after=-1;
     assert(vox_graphite_canvas_draw_shape_isolated(&shape,bounds,nullptr,0,msaa,1));
+    std::vector<uint32_t> replacement(5*2,0x40102030);
+    assert(!vox_graphite_canvas_copy_pixels(reinterpret_cast<uint8_t const*>(replacement.data()),0,2,20,12,14));
+    assert(vox_graphite_canvas_copy_pixels(reinterpret_cast<uint8_t const*>(replacement.data()),3,2,20,12,14));
+    std::fill(replacement.begin(),replacement.end(),0xdeadc0de);
     std::vector<uint8_t> first(43 * 4 * 29, 0xa7), second(24 * 4 * 13, 0xa7);
     VoxGraphitePixelRegion views[] {{0, 0, 37, 29, 43 * 4, first.data()},
         {0, 0, 19, 13, 24 * 4, second.data()}};
     assert(vox_graphite_canvas_read_direct(views, 2));
+    assert(*reinterpret_cast<uint32_t*>(first.data()+7*43*4+9*4)==0x40102030);
     for (int y = 0; y < 29; ++y) {
         assert(*reinterpret_cast<uint32_t*>(first.data() + y * 43 * 4) == 0xff20a040);
         for (int x = 37 * 4; x < 43 * 4; ++x) assert(first[y * 43 * 4 + x] == 0xa7);

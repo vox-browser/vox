@@ -12,12 +12,24 @@ output_dir=${NATIVE_SKIA_TEST_OUTPUT_DIR:-"$repo_dir/Build/native-gpu-canvas-tes
 # A libVoxGraphite.dylib exporting the vox_graphite_canvas_* entry points.
 graphite_dir=${NATIVE_GRAPHITE_DIR:-"$repo_dir/Build/v/Vox.app/Contents/MacOS"}
 mkdir -p "$output_dir"
+python3 - "$repo_dir/native_capture_darwin.m" "$output_dir/native_video_backdrop_entry_points.inc" <<'PY'
+from pathlib import Path
+import sys
+source = Path(sys.argv[1]).read_text()
+functions = []
+for signature in ('void native_capture_video_backdrop(', 'int native_gpu_canvas_begin(',
+                  'static int native_try_restore_gpu_video_backdrop(', 'void native_restore_video_backdrop('):
+    first = source.index(signature)
+    functions.append(source[first:source.index('\n}\n', first) + 2])
+Path(sys.argv[2]).write_text('\n'.join(functions) + '\n')
+PY
 clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
-    -I"$skia_root/include/skia" -I"$skia_root/include" \
+    -I"$skia_root/include/skia" -I"$skia_root/include" -I"$output_dir" \
     "$repo_dir/tools/native_gpu_canvas_test.cpp" \
     -L"$skia_root/lib" -lskia \
-    -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+    -framework Cocoa -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
     -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" \
     -Wl,-rpath,"$repo_dir/Build/v/Vox.app/Contents/MacOS" \
     -o "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test"
+VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-verify

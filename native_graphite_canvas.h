@@ -462,6 +462,27 @@ int vox_graphite_canvas_draw_pixels(uint8_t const* bgra, int width, int height, 
     });
 }
 
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_copy_pixels(uint8_t const* bgra, int width, int height, int pitch,
+    int device_x, int device_y)
+{
+    if (!bgra || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || pitch < width * 4 || size_t(width) * height > 32 * 1024 * 1024 / 4
+        || device_x < 0 || device_y < 0 || device_x > 16384 - width || device_y > 16384 - height) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder) return 0;
+    auto raster = SkImages::RasterFromPixmapCopy(SkPixmap(canvas_info(width, height), bgra, size_t(pitch)));
+    auto image = raster ? vox_shared_image(canvas_recorder.get(), raster, {}) : nullptr;
+    if (!image) return 0;
+    float bounds[] {float(device_x), float(device_y), float(device_x + width), float(device_y + height)};
+    SkPaint copy;
+    copy.setBlendMode(SkBlendMode::kSrc);
+    return canvas_draw(bounds, nullptr, 0, [&](SkCanvas* canvas, CanvasTile const& tile) {
+        canvas->setMatrix(SkMatrix::Translate(device_x - tile.x, device_y - tile.y));
+        canvas->drawImage(image, 0, 0, SkSamplingOptions(SkFilterMode::kNearest), &copy);
+    });
+}
+
 // An inset box shadow keeps Skia's double rounded rectangle, color filter and
 // blur exactly as its tiled raster records them, drawn over the frame's pixels.
 // In a Chromium MSAA tile it draws, as shapes do, in a multisampled scratch
