@@ -71,9 +71,9 @@ static CGImageRef native_cached_css_color_filter_image(NativeCSSFilterLayer cons
             fprintf(stderr, "Vox CSS color filter cache: hit size=%zux%zu bytes=%zu\n", width, height, entry->bytes);
         return CGImageRetain(entry->output);
     }
-    native_initialize_css_filter_renderer();
+    CIContext *renderer = native_css_filter_render_context(layer, input);
     CIImage *filtered = native_apply_css_filter_layer(layer, input);
-    CGImageRef output = [native_css_filter_ci_context createCGImage:filtered
+    CGImageRef output = [renderer createCGImage:filtered
         fromRect:CGRectMake(0, 0, width, height) format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
     size_t output_pitch = output ? CGImageGetBytesPerRow(output) : 0;
     if (!output || output_pitch > native_color_filter_cache_limit / height) {

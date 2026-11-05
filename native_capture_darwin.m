@@ -2721,6 +2721,7 @@ static NativeCSSFilterLayer native_css_filter_stack[NATIVE_CSS_FILTER_MAX_DEPTH]
 static int native_css_filter_stack_depth;
 static int native_css_filter_overflow_depth;
 static CIContext *native_css_filter_ci_context;
+VOX_NATIVE_STATE CIContext *native_css_filter_software_context;
 static CGColorSpaceRef native_css_filter_color_space;
 
 // Run after the native draw has unwound. Managed references held by a paint
@@ -2773,6 +2774,10 @@ static void native_release_unused_graphics_memory(void) {
 		if (native_css_filter_ci_context != nil) {
 			[native_css_filter_ci_context reclaimResources];
 			[native_css_filter_ci_context clearCaches];
+		}
+		if (native_css_filter_software_context != nil) {
+			[native_css_filter_software_context reclaimResources];
+			[native_css_filter_software_context clearCaches];
 		}
 	}
 	malloc_zone_pressure_relief(NULL, 0);
@@ -4514,6 +4519,47 @@ static BOOL native_css_filter_visible_input_is_empty(NativeCSSFilterLayer const 
     return YES;
 }
 
+#ifdef VOX_TEST_SOFTWARE_POINTWISE_FILTERS
+static unsigned native_test_software_pointwise_filters;
+#endif
+
+// Small owned inputs need little arithmetic but a GPU submission still waits
+// for the queue. Keep Core Image's existing filter graph and color management,
+// selecting its software renderer only for bounded pointwise images.
+static CIContext *native_css_filter_render_context(NativeCSSFilterLayer const *layer,
+    CGImageRef input) {
+    native_initialize_css_filter_renderer();
+    size_t width = input ? CGImageGetWidth(input) : 0;
+    size_t height = input ? CGImageGetHeight(input) : 0;
+    BOOL software = getenv("VOX_SOFTWARE_POINTWISE_FILTERS") && input && width && height
+        && width <= 262144 / height && layer->operation_count && layer->operations
+        && !layer->graph_node_count && !layer->borrows_fresh_frame && !layer->copies_to_fresh_frame
+        && CGImageGetBitsPerComponent(input) == 8 && CGImageGetBitsPerPixel(input) == 32
+        && CGImageGetDecode(input) == NULL;
+    for (size_t index = 0; software && index < layer->operation_count; ++index) {
+        NativeCSSFilterOperation operation = layer->operations[index];
+        software = (operation.kind == 2 || operation.kind == 3)
+            && isfinite(operation.first) && isfinite(operation.second);
+    }
+    if (!software) return native_css_filter_ci_context;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        native_css_filter_software_context = [CIContext contextWithOptions:@{
+            kCIContextUseSoftwareRenderer: @YES,
+            kCIContextWorkingColorSpace: (__bridge id)native_css_filter_color_space,
+            kCIContextOutputColorSpace: (__bridge id)native_css_filter_color_space,
+        }];
+    });
+    if (!native_css_filter_software_context) return native_css_filter_ci_context;
+#ifdef VOX_TEST_SOFTWARE_POINTWISE_FILTERS
+    ++native_test_software_pointwise_filters;
+#endif
+    if (getenv("VOX_SOFTWARE_POINTWISE_FILTER_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_SOFTWARE_POINTWISE_FILTER width=%zu height=%zu operations=%zu\n",
+            width, height, layer->operation_count);
+    return native_css_filter_software_context;
+}
+
 #ifdef VOX_TEST_GRAYSCALE_IDENTITY
 static unsigned native_test_grayscale_identities;
 #endif
@@ -4528,7 +4574,8 @@ static unsigned native_test_compact_css_filter_inputs;
 static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *layer,
     CGContextRef context, CGRect *output_rect) {
     BOOL tight = (getenv("VOX_TIGHT_CSS_FILTER_INPUT") || getenv("VOX_CACHE_CSS_COLOR_FILTERS")
-        || getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS"))
+        || getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")
+        || getenv("VOX_SOFTWARE_POINTWISE_FILTERS"))
         && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
     if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
         || !context || CGBitmapContextGetBitsPerComponent(context) != 8
@@ -4929,8 +4976,10 @@ void native_end_css_filter_layer(void) {
 				// The immutable cached result uses the same Core Image arithmetic.
 			} else {
 				native_initialize_css_filter_renderer();
+				CIContext *renderer = compact_input
+                    ? native_css_filter_render_context(&layer, input) : native_css_filter_ci_context;
 				CIImage *output = native_apply_css_filter_layer(&layer, input);
-				filtered_image = [native_css_filter_ci_context createCGImage:output
+				filtered_image = [renderer createCGImage:output
 					fromRect:cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
 						filtered_rect.size.height) : source_rect
 					format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];

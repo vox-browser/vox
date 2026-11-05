@@ -10,6 +10,7 @@ static int native_font_compositing_transparency_depth;
 static CGFloat test_scale=2;
 static CGFloat native_svg_mask_backing_scale(void) { return test_scale; }
 #define VOX_TEST_COMPACT_CSS_FILTER_INPUT
+#define VOX_TEST_SOFTWARE_POINTWISE_FILTERS
 #include "native_document_canvas_entry_points.inc"
 
 static CGImageRef selected;
@@ -56,6 +57,33 @@ static NSData *packed(CGImageRef image) {
         CFDataGetBytePtr(data)+y*pitch,width*4);
     CFRelease(data);return result;
 }
+static void check_software_selection(void) {
+    setenv("VOX_SOFTWARE_POINTWISE_FILTERS","1",1);
+    NativeCSSFilterOperation operation={.kind=2,.first=.65,.second=2};
+    NativeCSSFilterLayer layer={.operations=&operation,.operation_count=1};
+    CGImageRef image=source(0,0);
+    assert(native_css_filter_render_context(&layer,image)==native_css_filter_software_context);
+    assert(native_css_filter_software_context!=nil);
+    operation.kind=0;
+    assert(native_css_filter_render_context(&layer,image)==native_css_filter_ci_context);operation.kind=2;
+    operation.first=NAN;
+    assert(native_css_filter_render_context(&layer,image)==native_css_filter_ci_context);operation.first=.65;
+    layer.graph_node_count=1;
+    assert(native_css_filter_render_context(&layer,image)==native_css_filter_ci_context);layer.graph_node_count=0;
+    layer.borrows_fresh_frame=1;
+    assert(native_css_filter_render_context(&layer,image)==native_css_filter_ci_context);layer.borrows_fresh_frame=0;
+    layer.copies_to_fresh_frame=1;
+    assert(native_css_filter_render_context(&layer,image)==native_css_filter_ci_context);layer.copies_to_fresh_frame=0;
+    assert(native_css_filter_render_context(&layer,NULL)==native_css_filter_ci_context);
+    CGImageRelease(image);
+    CGColorSpaceRef color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef context=CGBitmapContextCreate(NULL,513,513,8,513*4,color,
+        kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);assert(context);
+    image=CGBitmapContextCreateImage(context);assert(image);
+    assert(native_css_filter_render_context(&layer,image)==native_css_filter_ci_context);
+    CGImageRelease(image);CGContextRelease(context);CGColorSpaceRelease(color);
+    unsetenv("VOX_SOFTWARE_POINTWISE_FILTERS");
+}
 int main(int argc,char **argv){@autoreleasepool{
     setenv("VOX_COMPACT_CSS_FILTER_INPUT","1",1);
     NativeCSSFilterOperation operation={.kind=2,.first=.5,.second=2};
@@ -92,24 +120,32 @@ int main(int argc,char **argv){@autoreleasepool{
         }
         CGImageRelease(selected);return 0;
     }
+    check_software_selection();
     NSView *view=[[NSView alloc]initWithFrame:NSMakeRect(0,0,257,256)];unsigned cases=0;
+    for(int software=0;software<2;++software)
     for(int tight=0;tight<2;++tight)for(sparse=0;sparse<3;++sparse)
     for(int bgra=0;bgra<2;++bgra)for(int wide=0;wide<2;++wide)for(clipped=0;clipped<2;++clipped)
-        for(int scale=1;scale<=2;++scale)for(operation_kind=0;operation_kind<8;++operation_kind){
+        for(int scale=1;scale<=2;++scale)for(operation_kind=0;operation_kind<8;++operation_kind){@autoreleasepool{
             if(tight)setenv("VOX_TIGHT_CSS_FILTER_INPUT","1",1);else unsetenv("VOX_TIGHT_CSS_FILTER_INPUT");
+            unsetenv("VOX_SOFTWARE_POINTWISE_FILTERS");
             test_scale=scale;
             selected=source(bgra,wide);setenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT","1",1);
             CGImageRef reference=native_layer_raster_frame(view,scale,(IMP)paint);assert(reference);
             unsigned before=native_test_compact_css_filter_inputs;unsetenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT");
+            unsigned software_before=native_test_software_pointwise_filters;
+            if(software)setenv("VOX_SOFTWARE_POINTWISE_FILTERS","1",1);
             CGImageRef candidate=native_layer_raster_frame(view,scale,(IMP)paint);assert(candidate);
             assert([packed(candidate)isEqualToData:packed(reference)]);
-            if (!tight) assert((native_test_compact_css_filter_inputs>before)==(clipped&&operation_kind!=2));
+            if(!software || operation_kind==2)assert(native_test_software_pointwise_filters==software_before);
+            else if(sparse)assert(native_test_software_pointwise_filters>software_before);
+            if (!tight && !software) assert((native_test_compact_css_filter_inputs>before)==(clipped&&operation_kind!=2));
             else if(operation_kind==2) assert(native_test_compact_css_filter_inputs==before);
             else if(sparse) assert(native_test_compact_css_filter_inputs>before);
             ++cases;CGImageRelease(reference);CGImageRelease(candidate);CGImageRelease(selected);
             // Bound the many distinct Core Image target sizes in this corpus;
             // the tested arithmetic and the production cache policy are unchanged.
             if(cases%8==0)[native_css_filter_ci_context clearCaches];
-        }
-    printf("Compact CSS inputs: %u exact real frames; owned tight rows, RGBA/BGRA, alpha, padding, profiles, fractional clips, 1x/2x and non-pointwise fallback passed\n",cases);
+        }}
+    assert(native_test_software_pointwise_filters > 0);
+    printf("Compact CSS inputs: %u exact real frames; %u software Core Image draws, owned tight rows, RGBA/BGRA, alpha, padding, profiles, fractional clips, 1x/2x and non-pointwise fallback passed\n",cases,native_test_software_pointwise_filters);
 }}
