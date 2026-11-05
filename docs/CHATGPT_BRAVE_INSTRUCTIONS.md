@@ -3037,3 +3037,59 @@ recoverable from the 58,110,030-byte lossless archive. The source-storage receip
 records each removed hash and requires restoration before recompiling or
 rerunning the frozen-source validator. The signed diagnostic, canonical bundle,
 raw measurements and original fixture remain in place.
+
+
+## November 5: reuse of clean computed styles during retirement
+
+Commit `2e547acea` adds a bounded 256-slot memo for complete clean root
+`ComputedProperties` inspections. The live element and its last-applied layout
+snapshot often share that owner. Reusing its completed result avoids repeating
+the struct, property, layout-cache and projection checks. Address collisions
+fall back to scanning. Recursive projections retain the original depth limit;
+only a fully scanned root enters the memo. The memo lives inside one existing
+temporary inspection scope and is discarded before returning, so later
+mutations at the same addresses are rescanned.
+
+`VOX_RETAIN_ANIMATION_SAMPLE_COMPUTED_SCAN=1` retains the full root scan;
+the previous property-page memo remains enabled in both modes.
+`VOX_ANIMATION_SAMPLE_COMPUTED_DIAGNOSTICS=1` reports an actual reuse once.
+All **12 focused jobs pass**, covering **416 test-function executions**:
+52 cases × four modes × both variants. The modes are poisoned preallocation,
+ordinary GC, no GC and ASan/UBSan; preallocation-specific assertions run in the
+preallocation/sanitizer builds. The new cases force memo coverage in either
+environment and check collisions, mutable payloads between inspections,
+root-only caching, projection depth/cycles and caller-arena lifetime. Existing
+selected cases exercise the environment-selected paths and retained sample
+pages, typed values, density projections, inherited and custom properties.
+All compiles use the explicit production runtime overlay, 10 GiB compiler
+limits and guards; runtimes use 3 GiB guards.
+
+Tooling commit `f943f703a` measures 128 actual retirement inspections per
+scene with live DOM styles and applied layout owners. A separate nonmemoizing
+oracle verifies each scene before counting. Setup, the oracle and warmup are
+excluded; scan allocation, temporary lifetime and result checks are included.
+Four unprofiled control/candidate/candidate/control observations retain all
+results, with execution diagnostics kept separately.
+
+| Retirement component | Median observed instruction reduction |
+| --- | ---: |
+| Shared live/applied owners | 41.897% |
+| Repeated targets | 82.646% |
+| Live-only owners | −0.438% |
+| First target holds a sample | 0.087% |
+| Last applied owner holds a sample | 41.394% |
+
+The live-only regression remains retained. Both modes use the extended scan
+record, including its extra bounded 2 KiB memo, so this algorithm control on
+one executable is not an older-binary memory comparison. The benchmark source
+is renamed without content changes after compilation and before measurement
+to keep it outside ordinary test discovery; that receipt and the original
+generated assertion locations are retained.
+
+The [focused/component receipt](performance/chatgpt-animation-computed-scan-20261105.json)
+links all commands, actual exits, raw counters, checksums, generated test-call
+lists, source hashes and the verified archive. It establishes no whole-page,
+overall CSS-suite, live-site, scrolling or Brave result. No page instructions
+are credited and the broad cadence stays zero. The browser comparison awaits
+a completed bundle proving the final source. **The 5%-below-Brave target remains
+unmet**.
