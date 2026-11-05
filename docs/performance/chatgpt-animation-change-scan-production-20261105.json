@@ -1,0 +1,518 @@
+{
+  "version": 1,
+  "complete": true,
+  "status": "complete",
+  "recorded_unix": 1793892721.6165068,
+  "implementation_commits": [
+    "566c5cb96",
+    "ed8c5e961"
+  ],
+  "previous_pending": {
+    "version": 1,
+    "complete": false,
+    "status": "pending-final-archive",
+    "implementation_commits": [
+      "566c5cb96"
+    ],
+    "focused_component": {
+      "path": "docs/performance/chatgpt-animation-change-scan-20261105.json",
+      "sha256": "36fbe9f054d0ddefaab3fda2e6aed82eb1c7f8d6ea941d3b45c0b87e520c02ed",
+      "bytes": 63231
+    },
+    "initial_preflight": "Build/chatgpt-animation-change-scan-production-20261105-r1/availability-preflight.json",
+    "qualification": "The comparison completed; the final archive has not yet been verified. The first source preflight was overbroad: it included a concurrently modified RuleCache dependency. The successful cohort proves owned feature blobs and records the receipt-head dependency as a reference only, with getter/invalidation text crosschecks. No sealed dependency claim. No source build or app copy requested.",
+    "acceptance": false,
+    "page_instruction_credit": 0,
+    "broad_cadence_before": 0,
+    "broad_cadence_after": 0
+  },
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "9078cb555e014f8651a73ef59b2219fc924b41bc0adcc12b901908cb7f4c2ad6",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "f6761a96ffc3265555d5e241550a605c4ff54000023ea60412c7a1a9d2ea0423",
+      "dirty": true,
+      "head": "43342e1a76cead5d2fe51bc346a32ebfe9f659d8",
+      "repository_sha256": "ae9a8d2ae0118d14ab14849a62f321d5369bc561e9ecb06056569874eb338739"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "43342e1a76cead5d2fe51bc346a32ebfe9f659d8",
+      "id": "117685a8af044066bda8c815ddcefce0"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f6761a96ffc3265555d5e241550a605c4ff54000023ea60412c7a1a9d2ea0423",
+      "dirty": true,
+      "head": "43342e1a76cead5d2fe51bc346a32ebfe9f659d8",
+      "repository_sha256": "feb71109bbdb82415a7a9d7768b09b642b294626acc12f0c98da3b68096e8aea"
+    }
+  },
+  "controller": {
+    "path": "docs/performance/chatgpt-animation-change-scan-production-r2-controller-20261105.json",
+    "sha256": "043cc84e42bed5992e52840c3a276914856b7ab12953336fbcce817eda0813be",
+    "bytes": 3333
+  },
+  "diagnostic": {
+    "path": "docs/performance/chatgpt-animation-change-scan-production-r2-diagnostic-20261105.json",
+    "sha256": "d51a0770cb8d67d49b5469be764a319211b8dc398006a3b95b87f1dbb24c5c90",
+    "bytes": 1735948
+  },
+  "matched": {
+    "path": "docs/performance/chatgpt-animation-change-scan-production-r2-matched-20261105.json",
+    "sha256": "f10a235a5613b65c4f695168f8292d62376ed5a17327e78702d0f3ca24a1c506",
+    "bytes": 2645869
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-animation-change-scan-production-20261105-r2/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "9907": "Thu Nov  5 18:28:35 2026    ",
+      "9911": "Thu Nov  5 18:28:35 2026    ",
+      "10200": "Thu Nov  5 18:28:43 2026    ",
+      "10202": "Thu Nov  5 18:28:43 2026    ",
+      "10206": "Thu Nov  5 18:28:43 2026    ",
+      "10207": "Thu Nov  5 18:28:43 2026    ",
+      "10208": "Thu Nov  5 18:28:43 2026    ",
+      "10384": "Thu Nov  5 18:28:52 2026    ",
+      "10387": "Thu Nov  5 18:28:52 2026    ",
+      "10398": "Thu Nov  5 18:28:52 2026    ",
+      "10400": "Thu Nov  5 18:28:52 2026    ",
+      "10412": "Thu Nov  5 18:28:53 2026    ",
+      "10640": "Thu Nov  5 18:29:01 2026    ",
+      "10643": "Thu Nov  5 18:29:02 2026    ",
+      "11143": "Thu Nov  5 18:29:14 2026    ",
+      "11146": "Thu Nov  5 18:29:14 2026    ",
+      "11363": "Thu Nov  5 18:29:22 2026    ",
+      "11366": "Thu Nov  5 18:29:22 2026    ",
+      "11368": "Thu Nov  5 18:29:22 2026    ",
+      "11369": "Thu Nov  5 18:29:22 2026    ",
+      "11371": "Thu Nov  5 18:29:22 2026    ",
+      "11465": "Thu Nov  5 18:29:31 2026    ",
+      "11468": "Thu Nov  5 18:29:31 2026    ",
+      "11471": "Thu Nov  5 18:29:31 2026    ",
+      "11472": "Thu Nov  5 18:29:31 2026    ",
+      "11473": "Thu Nov  5 18:29:31 2026    ",
+      "11598": "Thu Nov  5 18:29:40 2026    ",
+      "11600": "Thu Nov  5 18:29:40 2026    ",
+      "11888": "Thu Nov  5 18:29:48 2026    ",
+      "11890": "Thu Nov  5 18:29:48 2026    ",
+      "12311": "Thu Nov  5 18:29:56 2026    ",
+      "12314": "Thu Nov  5 18:29:56 2026    ",
+      "12321": "Thu Nov  5 18:29:56 2026    ",
+      "12322": "Thu Nov  5 18:29:56 2026    ",
+      "12323": "Thu Nov  5 18:29:56 2026    ",
+      "12878": "Thu Nov  5 18:30:06 2026    ",
+      "12884": "Thu Nov  5 18:30:06 2026    ",
+      "12888": "Thu Nov  5 18:30:06 2026    ",
+      "12889": "Thu Nov  5 18:30:06 2026    ",
+      "12892": "Thu Nov  5 18:30:06 2026    ",
+      "13305": "Thu Nov  5 18:30:15 2026    ",
+      "13307": "Thu Nov  5 18:30:15 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1737506816,
+    "elapsed_seconds": 113.349615584,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "diagnostic_path_observations": [
+    {
+      "variant": "candidate",
+      "paths": {
+        "animation_change_scan": true
+      }
+    },
+    {
+      "variant": "control",
+      "paths": {
+        "animation_change_scan": false
+      }
+    }
+  ],
+  "matched_observations": [
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30126652599,
+        "upper": 30126652599
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          23.10986328125,
+          26.56689453125,
+          27.23193359375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          24.1416015625,
+          26.72314453125,
+          27.283203125
+        ]
+      },
+      "frame_checkpoints": 476
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16272742040,
+        "upper": 16307684391
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          24.1416015625,
+          26.72314453125,
+          27.283203125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          24.80810546875,
+          26.78125,
+          27.296875
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16882507564,
+        "upper": 17001783414
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          24.80810546875,
+          26.78125,
+          27.296875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          22.97314453125,
+          26.326171875,
+          27.12939453125
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29982530837,
+        "upper": 29982530837
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          22.97314453125,
+          26.326171875,
+          27.12939453125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          22.01416015625,
+          26.0712890625,
+          27.03466796875
+        ]
+      },
+      "frame_checkpoints": 473
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 28789416597,
+        "upper": 28789416597
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          20.8115234375,
+          25.75439453125,
+          26.9169921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          21.2265625,
+          25.75830078125,
+          26.9111328125
+        ]
+      },
+      "frame_checkpoints": 479
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16376022389,
+        "upper": 16382389378
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          21.2265625,
+          25.75830078125,
+          26.9111328125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          21.7802734375,
+          25.73193359375,
+          26.88818359375
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 16215913246,
+        "upper": 16233934709
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          21.7802734375,
+          25.73193359375,
+          26.88818359375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          23.38037109375,
+          25.92626953125,
+          26.9423828125
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29610304198,
+        "upper": 29610304198
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          23.38037109375,
+          25.92626953125,
+          26.9423828125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          24.390625,
+          26.09326171875,
+          26.9951171875
+        ]
+      },
+      "frame_checkpoints": 479
+    }
+  ],
+  "diagnostic_valid": true,
+  "matched_valid": true,
+  "broad_required": false,
+  "broad": null,
+  "focused_component": {
+    "path": "docs/performance/chatgpt-animation-change-scan-20261105.json",
+    "sha256": "36fbe9f054d0ddefaab3fda2e6aed82eb1c7f8d6ea941d3b45c0b87e520c02ed",
+    "bytes": 63231
+  },
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "browser_captures": 12,
+  "manual_build_requests": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-animation-change-scan-production-20261105-evidence.zip",
+      "sha256": "2d8b8f9401ee23a634cdf4d81814e5f72372475c5581ff66f0a42ac97c9e2e2a",
+      "bytes": 1419191
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-change-scan-20261105-evidence.zip",
+      "sha256": "3dee09962eca2aa02ad0b6d058aa37ad73dc4e70f8e9c208bc00ca4cc98f0cdf",
+      "bytes": 96146
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-change-scan-production-r2-diagnostic-20261105-evidence.zip",
+      "sha256": "c0497b6b983f76703a22cb9a64cc033c6f8333afe6eaa4210b7e7c8f40dcd644",
+      "bytes": 1494631
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-change-scan-production-r2-matched-20261105-evidence.zip",
+      "sha256": "a4cdc5c0ecce9b1ad331ff9493dab8ce2f0f5a8b97ceac35384305a7c1631ae4",
+      "bytes": 2920415
+    }
+  ],
+  "qualification": "The canonical latest completed bundle is pinned with a nonblocking shared publication lease. Source proof and separate execution diagnostics must pass before any attribution. Original SOCKS capture and author bytes, unchanged content/pixel references, private profiles/caches, unfocused five-second settle, 1024x768 viewport, backing scale 2 and exclusive-coalition creation-through-encoded-document-PNG counts remain in force. OS filesystem/shader caches are retained; GPU and outside-coalition service work are excluded. Four matched pairs provide two observations per lookup mode and do not meet seven-pair Brave acceptance. The candidate uses one current-map snapshot and a fused property-change scan; the control uses the existing three snapshots and classifiers. Both use the same production runtime overlay. Frame counts and host load qualify causal attribution. No live-site, isolated-rendering or scrolling claim. The failed preflights, incorrect test-runtime failure and independent closure-directory probes remain retained; none receives optimization credit.",
+  "inspected_build_attempts": [
+    {
+      "receipt": "Build/production-build/receipts/20261105-182542-aedb0518",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "9078cb555e014f8651a73ef59b2219fc924b41bc0adcc12b901908cb7f4c2ad6",
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "f6761a96ffc3265555d5e241550a605c4ff54000023ea60412c7a1a9d2ea0423",
+          "dirty": true,
+          "head": "43342e1a76cead5d2fe51bc346a32ebfe9f659d8",
+          "repository_sha256": "ae9a8d2ae0118d14ab14849a62f321d5369bc561e9ecb06056569874eb338739"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "43342e1a76cead5d2fe51bc346a32ebfe9f659d8",
+          "id": "117685a8af044066bda8c815ddcefce0"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "f6761a96ffc3265555d5e241550a605c4ff54000023ea60412c7a1a9d2ea0423",
+          "dirty": true,
+          "head": "43342e1a76cead5d2fe51bc346a32ebfe9f659d8",
+          "repository_sha256": "feb71109bbdb82415a7a9d7768b09b642b294626acc12f0c98da3b68096e8aea"
+        }
+      }
+    }
+  ],
+  "control": [
+    {
+      "lower": 30126652599,
+      "upper": 30126652599
+    },
+    {
+      "lower": 29610304198,
+      "upper": 29610304198
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 29982530837,
+      "upper": 29982530837
+    },
+    {
+      "lower": 28789416597,
+      "upper": 28789416597
+    }
+  ],
+  "control_median": 29868478398.5,
+  "candidate_median": 29385973717.0,
+  "observed_median_reduction_percent": 1.615431074400601,
+  "conservative_page_instruction_reduction": -372226639,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-animation-change-scan-production-20261105-r2/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 43614208,
+    "elapsed_seconds": 0.474258625,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "host_contention": {
+    "cpu_count": 18,
+    "one_minute_load_range": [
+      20.8115234375,
+      24.80810546875
+    ]
+  },
+  "candidate_brave_diagnostic": {
+    "max_candidate_observed_upper": 29982530837,
+    "min_brave_observed_lower": 16215913246,
+    "ratio": 1.8489572793191793,
+    "integer_5_percent_gate": false,
+    "qualification": "Candidate subset of a four-pair control/candidate diagnostic, below seven-pair acceptance; comparison of observed counts only."
+  },
+  "source_proof_scope": {
+    "owned_files": [
+      "css/style_computer.v",
+      "css/animated_property_change_scan.v"
+    ],
+    "dependency_reference": "css/computed_interpolation.v at the receipt head is an archived reference, not a sealed copy of a dirty dependency. Snapshot/invalidation functions match current text; unrelated RuleCache work receives no validation credit.",
+    "failed_preflight": "The initial standalone check and r1 controller launched no browsers. An edit intended to narrow the owned-file check did not match its spaced list; r2 corrects the harness and retains both preflight records."
+  },
+  "verification_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-animation-change-scan-production-20261105-r2/verify.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 39206912,
+    "elapsed_seconds": 0.351671542,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

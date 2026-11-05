@@ -2821,3 +2821,63 @@ links source/executable hashes, all 376 generated test calls, both closure
 probes and their actual exits, the failed initial matrix, counters, checksums,
 commands, guards and the verified archive. No whole-page saving is credited by
 this component evidence, and the broad-check cadence remains unchanged.
+
+
+## November 5: animation change-scan production comparison
+
+The first standalone source check stops before launching a browser because a
+concurrent `RuleCache` field addition changes a dependency file. An intended
+harness edit does not match the spaced source list; the first guarded controller
+therefore rejects the same overbroad preflight, also with zero browsers. Both
+records and the incorrect harness are retained. The corrected controller proves
+the two owned feature blobs at the completed receipt head, checks the snapshot/
+invalidation functions against current text, and archives the receipt-head
+dependency as a **reference, not a sealed copy of a dirty dependency**. Unrelated
+RuleCache work receives no validation credit.
+
+The valid cohort pins 33-unit parallel executable
+`9078cb555e014f8651a73ef59b2219fc924b41bc0adcc12b901908cb7f4c2ad6`
+with a nonblocking shared publication lease. Before/after aggregate build-input
+hashes match, and available scan/callback disassembly is retained. There is no
+sealed-C claim. All **12 fresh captures pass bootstrap, complete content and
+exact unchanged pixels**. A separate nonempty-scan marker appears only in the
+candidate; matched captures disable diagnostics. Both variants use the same
+production runtime overlay, so the focused-test correction gets no credit.
+
+| Unprofiled frozen-page variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Separate-scan control 1 | 30,126,652,599 |
+| Single-scan candidate 1 | 29,982,530,837 |
+| Single-scan candidate 2 | 28,789,416,597 |
+| Separate-scan control 2 | 29,610,304,198 |
+| Control median | 29,868,478,398.5 |
+| Candidate median | 29,385,973,717 |
+
+The candidate median is **1.615% lower**, but ranges overlap substantially:
+the conservative separation is **−372,226,639 instructions**. Therefore **no
+whole-page saving is credited**, no broad checkpoint is triggered and the
+cadence remains zero. Every sample is retained, including the first candidate
+that exceeds the second control. The component result remains separate.
+
+Control frame checkpoints are 476/479 versus 473/479 for candidates. One-minute
+host load ranges from 20.81 to 24.81 on 18 CPUs. The four Brave reference
+intervals span 16,215,913,246 to 17,001,783,414 observed instructions. Variation,
+only two observations per variant and four total pairs limit attribution and
+fall short of seven-pair acceptance. **The requested 5% advantage remains unmet**.
+
+The original SOCKS fixture, author scripts and pixel/content references,
+fresh private profiles/caches, five-second unfocused settle, 1024×768 viewport,
+scale 2 and exclusive-coalition creation-through-encoded-document-PNG scope
+remain unchanged. OS filesystem/shader caches remain retained; GPU and
+outside-coalition services are excluded. No live-site, isolated-rendering or
+scrolling improvement is established. The outer guard exits zero, adopts 42
+process identities without error and peaks at 1,737,506,816 sampled RSS bytes
+under 12 GiB. Both phase controllers exit zero; the comparison driver's
+separate exit one records the unmet Brave gate.
+
+The [completed production receipt](performance/chatgpt-animation-change-scan-production-20261105.json)
+links counters, audits, PNGs, source proofs, host conditions, commands, actual
+exits and four verified archives. It preserves the failed preflights, test-runtime
+mismatch and independent closure probes. No app is copied or duplicate build
+queued. The publication lease is released; **no 5%-below-Brave acceptance is
+claimed**.
