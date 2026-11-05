@@ -1,0 +1,146 @@
+{
+  "status": "Two-arm N1 instrumented diagnostic, not acceptance or optimization evidence. Both original pixel/content/script/ownership/native-exit audits pass. Default grid reuse fires only in candidate; one observation is insufficient to assess cache value.",
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "c81e92dfd28862f1f1c16c379e3076b6d3db15aa38d80476ead7884ae85e3591",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-104745-36fa2aba/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "ca08e61196900a15f70121660d6422c5d5258273b8d265dff932dc5139ecd1c9",
+      "dirty": true,
+      "head": "a3d8bb0c156d9d0ee00b41d2ea573569aae68c4f",
+      "repository_sha256": "f0083413eca8b4cab3b8b9ee66a81aa7cde5cc855cd41fa501341642e1eb4067"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "f58396100bd7adc3e73c4595a8f8183e32181f5a71222892eff1bbced899a3d6",
+      "dirty": true,
+      "head": "ace1186403df375494601fb710aa0d6616cfc4dc",
+      "repository_sha256": "c2caef7e0a5adc61259c66c36934e29e85a262900905a4d731f8bbfff434121b"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "a3d8bb0c156d9d0ee00b41d2ea573569aae68c4f",
+      "id": "0963c21b4ab24f8c91da2429a2d472d1"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "ca08e61196900a15f70121660d6422c5d5258273b8d265dff932dc5139ecd1c9",
+      "dirty": true,
+      "head": "a3d8bb0c156d9d0ee00b41d2ea573569aae68c4f",
+      "repository_sha256": "f0083413eca8b4cab3b8b9ee66a81aa7cde5cc855cd41fa501341642e1eb4067"
+    }
+  },
+  "arms": {
+    "vox": {
+      "instructions": 27447793609,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "external_sources": 72,
+      "all_external_hashes_exact": true,
+      "grid_reuse_before_png": true,
+      "coalescing_before_png": true,
+      "images_pinned": true,
+      "ownership_passed": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          44.64404296875,
+          42.27294921875,
+          37.990234375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          45.921875,
+          42.62548828125,
+          38.1650390625
+        ]
+      }
+    },
+    "control": {
+      "instructions": 27291032111,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "external_sources": 72,
+      "all_external_hashes_exact": true,
+      "grid_reuse_before_png": false,
+      "coalescing_before_png": true,
+      "images_pinned": true,
+      "ownership_passed": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          45.921875,
+          42.62548828125,
+          38.1650390625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          47.689453125,
+          43.04638671875,
+          38.33984375
+        ]
+      }
+    }
+  },
+  "candidate_minus_control": 156761498,
+  "qualifications": "Single-unit production c81e92dfd288, unlike parallel33unit cohort105. No cross-mode comparison or credit. One trial per arm with author/dyld diagnostics enabled, default first. Host load roughly45-48 on18CPUs, independent screenshot activity seen in early ownership scans; final capture ownership passes. No robust saving, exclusive cache cost, live-page result or Brave gate is established. All attempts retained; acceptance history unchanged at104measured cohorts and2251attempts; cohort104preflight-only.",
+  "guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-retained-grid-policy-20261105-1055/native-diagnostic.py",
+      "--capture-reference",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-retained-grid-policy-20261105-1055/page",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-retained-grid-policy-20261105-1055/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-retained-grid-policy-20261105-1055/pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-retained-grid-policy-20261105-1055/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-retained-grid-policy-20261105-1055/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--control-vox-app",
+      "Build/v/Vox.app",
+      "--control-disable-retained-grid-layout",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg",
+      "--retain-degenerate-border-msaa"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "17903": "Thu Nov  5 11:05:24 2026    ",
+      "17907": "Thu Nov  5 11:05:24 2026    ",
+      "18557": "Thu Nov  5 11:05:33 2026    ",
+      "18563": "Thu Nov  5 11:05:33 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1463173120,
+    "elapsed_seconds": 21.754088333,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-retained-grid-policy-diagnostic-20261105.tar.gz",
+    "bytes": 12865885,
+    "sha256": "f8eeabdb76af87ce9d388eb40a0bba2700d3f6ff93e040a5591f15482c986681",
+    "members": 47,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793866518.054852
+}

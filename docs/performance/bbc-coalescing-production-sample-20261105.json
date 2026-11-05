@@ -1,0 +1,89 @@
+{
+  "status": "Current production CPU sample has verified rootPID/startticks, matching dyld/executableUUID and all Vox frames in actual executable range. Native exit0, original content/pixels exact,72original external JS sources execute beforePNG, actual native-image identities unchanged. Diagnostic only; no instruction saving.",
+  "sample": {
+    "pid": 51167,
+    "start_ticks": 3246071452052,
+    "command": [
+      "/usr/bin/sample",
+      "51167",
+      "6",
+      "1",
+      "-file",
+      "/Users/alex/code/vox2/Build/bbc-coalescing-sample-20261105-1040/page/pair-1-vox/cpu.sample.txt"
+    ],
+    "started_unix": 1793864885.36059,
+    "exit": 0,
+    "finished_unix": 1793864893.642215
+  },
+  "symbol_validation": {
+    "pid": 51167,
+    "uuid": "5A116064-C833-3BCD-BA62-5C997120AC66",
+    "load_start": 4305174528,
+    "load_end": 4331950783,
+    "vox_frames_checked": 11711,
+    "all_in_actual_executable": true,
+    "dyld_uuid_matches": true
+  },
+  "page": {
+    "native_exit": 0,
+    "content_exact": true,
+    "pixels_exact": true,
+    "external_sources": 72,
+    "all_source_hashes_exact": true,
+    "native_images_pinned": true
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-coalescing-sample-20261105-1040/native-sample.py",
+      "--capture-reference",
+      "--reference-engine",
+      "vox",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-coalescing-sample-20261105-1040/page",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-coalescing-sample-20261105-1040/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-coalescing-sample-20261105-1040/pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-coalescing-sample-20261105-1040/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-coalescing-sample-20261105-1040/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg",
+      "--retain-degenerate-border-msaa"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "51167": "Thu Nov  5 10:48:05 2026    ",
+      "51179": "Thu Nov  5 10:48:05 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1602011136,
+    "elapsed_seconds": 14.146290667,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "controller_exit": {
+    "exit": 0
+  },
+  "qualifications": "Requested6seconds at1ms; actual sampling cadence is not proven1kHz. Root starts during real page load; sampling can include PNG/audit/teardown. Main-thread2998observations and all-thread totals are not CPU-instruction shares. All-thread leaf summary is dominated by idle workers; recursive inclusive counts overlap. JIT addresses may be unknown. Parallel33unit production, same pinned f2762ca3223b executable as cohort105. Broad jobs finished first; independent host jobs and archival compressor may overlap, host loads retained. Existing unprofiled cohort105 remains separate; no wall-time, scrolling, live-site or optimization acceptance claim.",
+  "investigative_leads": [
+    "Repeated intrinsic grid/inline layout",
+    "Retained block input collection and repeated independent grid/flex probes",
+    "DOM/layout attachment, overflow traversal, maps and dispersed copying"
+  ],
+  "archive": {
+    "path": "docs/performance/raw/bbc-coalescing-production-sample-20261105.tar.gz",
+    "bytes": 2130806,
+    "sha256": "a4fd8ebafeab415bf5a58f978b0c91c4d1ec71b5ceaa7a59bf96b7799562c946",
+    "members": 41,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793865846.451916
+}

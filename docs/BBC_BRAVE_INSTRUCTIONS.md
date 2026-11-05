@@ -6173,3 +6173,29 @@ BBC homepage remains outside `OPTIMIZED_SITES.md`, and the 10% task remains
 open. [All cohort attempts, focused/broad/native checks, actual exits, source
 proofs and retained failures](performance/bbc-frame-coalescing-cohort105-20261105.json)
 are archived with verified member hashes.
+
+
+## Production sample and grid-policy diagnostic (2026-11-05)
+
+The fresh CPU sample on cohort 105's pinned `f2762ca3223b` verifies the root PID
+and start ticks, executable UUID/load range and all 11,711 resolved Vox frames.
+Original pixels/content, 72 exact external author-script witnesses, loaded-image
+pins and native/driver/guard exits pass. It shows repeated intrinsic layout,
+retained-input collection and DOM attachment; recursive inclusive counts overlap
+and idle workers dominate all-thread totals. Requested 1 ms sampling does not
+prove that cadence. These are investigative leads, with no instruction saving
+or acceptance credit. [Sample and verified raw evidence](performance/bbc-coalescing-production-sample-20261105.json).
+
+A separate instrumented one-trial-per-arm diagnostic checks the existing
+persistent-grid policy on newer **single-unit** production `c81e92dfd288`. Both
+original pixel/content audits, 72 external script witnesses, pinned native images,
+final ownership checks and normal exits pass. Grid reuse fires before PNG only
+in the default candidate. Observed counts are 27,447,793,609 default and
+27,291,032,111 with grid retention disabled: a 156,761,498 point regression. One
+trial per arm, diagnostic instrumentation, high host load and independent browser
+activity leave cache value unresolved; no saving or cross-C-mode attribution is
+made. All attempts remain recorded. [Policy diagnostic and raw evidence](performance/bbc-retained-grid-policy-diagnostic-20261105.json).
+
+Acceptance history stays at 104 measured cohorts / 2,251 browser attempts. The
+last valid seven-triple cohort remains 105, the strict 10% target still fails,
+and BBC homepage remains outside the catalog.
