@@ -1,0 +1,231 @@
+{
+  "site": "Discord login",
+  "recorded_utc": "2026-11-05T16:49:33.263760+00:00",
+  "scope": "Offline WebAssembly startup, frame messaging, child-document routing, WindowProxy identity, and active-window ownership checks; separate production startup smoke.",
+  "fixes": [
+    {
+      "commit": "0c00f254a",
+      "behavior": "Install the WebAssembly completion wrappers once per runtime, preserving wrapper identity and later page overrides.",
+      "baseline_raw": "Build/discord-resume-20261105/frame-messaging/wasm-install-baseline-default-r1",
+      "baseline_runtime_exit": 1,
+      "regression_test": "browserjs/engine_async_completion_binding_test.v::test_webassembly_completion_binding_installs_once_and_preserves_page_overrides"
+    },
+    {
+      "commit": "08c03cd1c",
+      "behavior": "Bind optional Window references before passing them to the native setter in four ownership tests. The same assertions remain.",
+      "baseline_raw": "Build/discord-resume-20261105/frame-messaging/offline-models-default-r1",
+      "baseline_runtime_exit": 1,
+      "reduced_compiler_probe": {
+        "raw": "Build/discord-resume-20261105/optional-reference-probe",
+        "nested_argument_identity_matches": false,
+        "bound_argument_identity_matches": true,
+        "note": "The compiler passes an optional payload address for the nested argument. This finding changes the fixtures, not WindowProxy runtime behavior."
+      }
+    }
+  ],
+  "verification": {
+    "cases_per_mode": 52,
+    "modes": [
+      "default",
+      "-prealloc -gc none"
+    ],
+    "compile_memory_limit": "10G",
+    "compile_guard_limit_gib": 12,
+    "runtime_guard_limit_gib": 3,
+    "guard_metric": "Sampled aggregate process-tree RSS; short runs may complete between observations.",
+    "checks": {
+      "startup": {
+        "sources_sha256": {
+          "browserjs/engine_async_completion_binding_test.v": "d7d7ac15d59173560c17fa9acc9a5a120d27cc820f6d849e1633a3775dfdd74b",
+          "browserjs/console_info_test.v": "9654076429ed99eba837e26d7520b8a09ca9d41b74f59a2f18eb3fa1fb7e79ad",
+          "browserjs/window_message_binding_test.v": "5479e1b37af4470a19e470a21b9bca41fba0b039142a4ac3aa901e3c12cfbfb9",
+          "browserjs/animation_frame_host_test.v": "c90011fbfcc67a96efca2ac03c1a23d46ef005483ce895a7ae70cf2d8326c4cb",
+          "browserjs/document_source_backend_test.v": "8d9281fee38b563a0cccc03ee0c21a41218766f5dfd56222f724ca84a5babe41",
+          "browserjs/window_event_handler_binding_test.v": "3791ffab12166ff2a195ad1e2dfd2d3390bd71650cee17321e64625c7f888ffd",
+          "browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+          "browserjs/engine_async_completion_binding_jsc.c.v": "3d70f8d15fad03ef5dc7ebcc6d31b8c062be6aaa553a9df49b527e548658c3ee",
+          "browserjs/window_message_binding_jsc.c.v": "7b745922e91e0b3dd995b5ef86565fc25c199360077e6fb77badf84d28e5d5dc",
+          "browserjs/window_proxy_binding_jsc.c.v": "27791b552b253e18c13c605b649e297590cf0bed89a7f7cd3dd4d6ebe05e0ff5",
+          "browserjs/animation_frame_host_jsc.c.v": "4004b5d196f112ba521af2f5a3569be5bd52bc6cf529d046af7c7f4317099f3d",
+          "browserjs/document_window_event_binding_jsc.c.v": "50b11e75325c91c1b52fe4d6d092a3767f4b097fce1ef5626ae57b8d8c13f7dc"
+        },
+        "runs": {
+          "default": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-startup-default-r2",
+            "cases": 21,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 4890198016,
+            "sampled_runtime_peak_rss_bytes": 1081344
+          },
+          "prealloc": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-startup-prealloc-r2",
+            "cases": 21,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 4729683968,
+            "sampled_runtime_peak_rss_bytes": 32768
+          }
+        }
+      },
+      "frames": {
+        "sources_sha256": {
+          "main_child_documents_test.v": "84950f63d11c8ad2a857692f7537841204fc3038699f022671ec99211096bfc0",
+          "main_pointer_script_state_test.v": "9492442fa85b35652ce3e1bf7fba6adfdd3fbe0c54b5f0fab7ec269512a2f911",
+          "main_compact_click_events_test.v": "2e9a832f7d4c4682660f77e13e7625a0306c023623be59aecad445f4be5923fe",
+          "main_child_document_repaint_test.v": "e971b69593878b230d5b21c771ec2404ff79dee1372c38e67583d98b2fce0a04",
+          "main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5",
+          "main_child_pointer.v": "d35f703fe8b68cab9521623d94653dd048019fc301c08560fb00e76b386454b6",
+          "main_compact_iframe_window.v": "0e89c27e5b95d791cd80ab9b651dcc3bbbd32dc82ff5ac40c7ce0834fa276767",
+          "browserjs/window_proxy_binding_jsc.c.v": "27791b552b253e18c13c605b649e297590cf0bed89a7f7cd3dd4d6ebe05e0ff5",
+          "browserjs/window_proxy_binding.v": "32b50634a671fb756dbe61f1d28c27927bb29810ff9587e46a0481737fc1edb7"
+        },
+        "runs": {
+          "default": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-frames-default-r1",
+            "cases": 9,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 5504237568,
+            "sampled_runtime_peak_rss_bytes": 153747456
+          },
+          "prealloc": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-frames-prealloc-r1",
+            "cases": 9,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 5557649408,
+            "sampled_runtime_peak_rss_bytes": 173850624
+          }
+        }
+      },
+      "models": {
+        "sources_sha256": {
+          "html/window_proxy_identity_test.v": "13eeb159b3fbd5ac5df74b7533e6d1c0329c888f485ff8be249192e56c716886",
+          "html/window_post_message_test.v": "136989461cbc27caa67979be273107b551bbb0ca424d2fb0164986e2d43700a9",
+          "html/window_context.v": "99df1e3c80affdd23c818c8eb58f4a8a70d27aab0448ddb8b48154bb7b15e080",
+          "dom/document.v": "7249d065a1a5adabe2a9b29e56e1c4e1d3e9cf7aeee6442921cadab8d7aa36fb"
+        },
+        "runs": {
+          "default": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-models-default-r2",
+            "cases": 8,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 2902835200,
+            "sampled_runtime_peak_rss_bytes": 32768
+          },
+          "prealloc": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-models-prealloc-r2",
+            "cases": 8,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 2882551808,
+            "sampled_runtime_peak_rss_bytes": 32768
+          }
+        }
+      },
+      "owners": {
+        "sources_sha256": {
+          "html/window_child_tree_owner_test.v": "87b1567fb0aec460c9e3815755b2bd9aaa75349f9926328e3073696ebfc00cd9",
+          "html/window_logical_tree_owner_test.v": "51e8003e52a1e57ea9101c5944e196c112aa83f6c1f3ce7bc5a4de8b3fcc0711",
+          "html/unload_check_active_window_owner_test.v": "c85b02b586c81049037a3047403ac0284aeab87004874fc8bcdb3fcbf969d852",
+          "html/window_context.v": "99df1e3c80affdd23c818c8eb58f4a8a70d27aab0448ddb8b48154bb7b15e080",
+          "dom/document.v": "7249d065a1a5adabe2a9b29e56e1c4e1d3e9cf7aeee6442921cadab8d7aa36fb",
+          "html/traversable_navigable.v": "386e2d39d7c429c5907149d31d3463de4cfe7bebd6e36abe2b7e1b286373c62e"
+        },
+        "runs": {
+          "default": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-owners-default-r1",
+            "cases": 14,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 2884091904,
+            "sampled_runtime_peak_rss_bytes": 32768
+          },
+          "prealloc": {
+            "raw": "Build/discord-resume-20261105/frame-messaging/offline-owners-prealloc-r1",
+            "cases": 14,
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "focused_sources_unchanged": true,
+            "sampled_compile_peak_rss_bytes": 2893463552,
+            "sampled_runtime_peak_rss_bytes": 32768
+          }
+        }
+      }
+    }
+  },
+  "production_smoke": {
+    "raw": "Build/discord-resume-20261105/production-smoke-offline-r1",
+    "pins": {
+      "Build/v/Vox.app/Contents/MacOS/Vox": "eb7b4b3a95a1db362b67f2917fd53b72b2e6650e68d48d7aacff73b3b24baef5",
+      "Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "592ccbd3689d2f5bf96cc9509941fbc78de87f4eebbc41515832cd0e2d0fe99a",
+      "Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7b47838ace705566b3c1909680ada4a07451864b96e84d7a82181dd9678678f0",
+      "Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+    },
+    "source_receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "eb7b4b3a95a1db362b67f2917fd53b72b2e6650e68d48d7aacff73b3b24baef5",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "30c87f61ccc04152d37f5bf7612068574cda6968157b97de6cd25e3946849223",
+        "dirty": true,
+        "head": "c16cf47075ac37c682257db2a2f38ae1e180fde6",
+        "repository_sha256": "38813d424e95128426c38cbfd6b57264a65827f0bd2288b842b993a043b66430"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "c16cf47075ac37c682257db2a2f38ae1e180fde6",
+        "id": "bd4daa4664ac4ff48d8a849601c05cc1"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "30c87f61ccc04152d37f5bf7612068574cda6968157b97de6cd25e3946849223",
+        "dirty": true,
+        "head": "0c00f254a04ec04fc38d27c4c7bc8c65dd20c2d7",
+        "repository_sha256": "c0da641073c9c263edae5307c32b4374ab82edeb69eefde7aa9580a0e6b195d9"
+      }
+    },
+    "inputs_unchanged": true,
+    "runtime_exit": 0,
+    "checks": [
+      "JavaScript DOM mutation",
+      "JavaScript click event",
+      "Native wheel routing and scrolling",
+      "Ordinary element wheel listeners"
+    ],
+    "scope_note": "A fresh process using the latest completed bundle. This smoke check does not test repeat binding installation or authenticated Discord."
+  },
+  "live_authentication": {
+    "path": "/login",
+    "captcha": true,
+    "authenticated": false,
+    "form": true,
+    "recorded_utc": "2026-11-05T16:47:35.989750+00:00",
+    "executable_sha256": "68ebd616723ad2274218a18ba86f9b59b62789a132f4575f66f7c1527d978d5f",
+    "raw": "Build/discord-resume-20261105/auth-r33",
+    "human_verification_required": true,
+    "note": "Existing live session uses its recorded older executable. It does not validate the later fixes. No authenticated channels have been verified."
+  },
+  "remaining_limitations": [
+    "Human hCaptcha verification is pending.",
+    "Authenticated Discord navigation and channel behavior remain unverified.",
+    "General same-origin WindowProxy document/global forwarding is not implemented."
+  ]
+}
