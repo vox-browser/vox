@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_generated_text_keeps_the_pseudo_root_as_its_live_style_target(self):
+        self.compare_fixture('generated-pseudo-live-font', width=1024, height=768,
+                             settle_seconds=2)
+
     def test_opaque_headers_resume_ellipse_strokes_after_a_disjoint_svg_clip(self):
         self.compare_fixture('opaque-svg-mask-ellipse-resume', width=1024, height=768)
 

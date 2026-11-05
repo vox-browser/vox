@@ -533,17 +533,19 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	if generated := box.generated_for_pseudo_element() {
 		if generated in [.first_letter, .before, .after] {
 			if owner := box.pseudo_element_generator() {
-				dom_generated := dom_pseudo_element_for_layout_node(generated) or { dom.PseudoElement.first_letter }
-				mut mutable_owner := unsafe { &dom.Element(owner) }
-				mutable_owner.set_pseudo_element_node(int(dom_generated), &dom.LayoutNodeWithStyle_{
-					layout_node_:        placeholder
-					applied_properties_: dom.AbstractElement.new(owner, dom_generated).computed_properties()
-					kind_:               if box.is_inline_node() {
-						.inline_node
-					} else {
-						.block_container
-					}
-				})
+				if is_primary_generated_pseudo_layout_node(box, generated, owner) {
+					dom_generated := dom_pseudo_element_for_layout_node(generated) or { dom.PseudoElement.first_letter }
+					mut mutable_owner := unsafe { &dom.Element(owner) }
+					mutable_owner.set_pseudo_element_node(int(dom_generated), &dom.LayoutNodeWithStyle_{
+						layout_node_:        placeholder
+						applied_properties_: dom.AbstractElement.new(owner, dom_generated).computed_properties()
+						kind_:               if box.is_inline_node() {
+							.inline_node
+						} else {
+							.block_container
+						}
+					})
+				}
 			}
 		}
 	}
@@ -551,6 +553,30 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes, lazy_visual_lines)
 	}
 	return placeholder
+}
+
+// Generated text and image children carry the same pseudo identity as their
+// styled root. Style updates must reach that root, including after anonymous
+// wrappers are inserted; a descendant must not replace its DOM bridge.
+fn is_primary_generated_pseudo_layout_node(node &Node, pseudo css.PseudoElement,
+	owner &dom.Element) bool {
+	if node.as_node_with_style() == none { return false }
+	if metrics := node.as_node_with_style_and_box_model_metrics() {
+		if metrics.continuation_of_node() != none { return false }
+	}
+	mut ancestor := node.parent()
+	for ancestor != none {
+		parent := ancestor or { break }
+		if generated := parent.generated_for_pseudo_element() {
+			if generated == pseudo {
+				if generator := parent.pseudo_element_generator() {
+					if voidptr(generator) == voidptr(owner) { return false }
+				}
+			}
+		}
+		ancestor = parent.parent()
+	}
+	return true
 }
 
 // LayoutState::commit() creates each Layout::Node's paintables, transfers the

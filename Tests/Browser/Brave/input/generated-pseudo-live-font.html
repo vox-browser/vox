@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Generated pseudo-elements follow live inherited fonts</title>
+<style>
+html,body { margin:0; background:white; font:19px/1.4 Arial,sans-serif }
+main { display:flex; gap:24px; padding:24px }
+.card { box-sizing:border-box; width:440px; height:280px; padding:24px; background:#098334; color:white; display:flex; flex-direction:column; justify-content:flex-end; gap:12px }
+h2 { margin:0; font-size:32px; line-height:1.2 }
+.meta { display:flex; gap:8px; align-items:flex-start }
+.time::before { content:" - " }
+.author::after { content:" + "; color:#ffd255 }
+.fixed .meta { font-size:16px }
+footer { margin-top:1000px }
+</style>
+<main>
+<section class="card"><h2>Live inherited font</h2><div class="meta" id="live"><span class="author">A reporter</span><span class="time">9 hours ago</span></div></section>
+<section class="card fixed"><h2>Final font control</h2><div class="meta"><span class="author">A reporter</span><span class="time">9 hours ago</span></div></section>
+</main>
+<script>
+const live = document.getElementById('live');
+live.getBoundingClientRect();
+live.style.fontSize = '16px';
+</script>
+<footer>
+Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. Generated separators inherit their current host font after a completed layout. </footer>
