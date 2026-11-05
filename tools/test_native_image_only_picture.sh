@@ -2,6 +2,7 @@
 set -eu
 # Run this compile/test entrypoint through tools/run_memory_bounded.py.
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo_dir"
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 case "$(uname -m)" in
     arm64|aarch64) default_triplet=arm64-osx-dynamic ;;
@@ -17,7 +18,7 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     "$repo_dir/tools/native_skia_image_only_picture_test.cpp" \
     -L"$skia_root/lib" -lskia \
     -framework CoreFoundation -framework CoreGraphics -framework CoreText \
-    -framework Foundation -framework Metal \
+    -framework Foundation -framework Metal -framework ImageIO \
     -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" \
     -o "$output_dir/native-image-only-picture-test"
 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \

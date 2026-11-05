@@ -422,12 +422,14 @@ void shared_recording_speculative_content(CGContextRef destination, SkRect bound
 // A bitmap can be the only drawing in an ordinary compositor picture. It
 // must supply the ink, tile grid and page/scroll offsets just as a glyph or
 // vector does; otherwise finishing that picture silently discards it.
-// Speculative pictures retain their existing explicit eligibility gate.
+// Ordinary images are clipped to their geometric quad. Inventing an ink
+// fringe moves the complete picture's raster origin and changes sampling.
+// Speculative pictures retain their existing conservative eligibility margin.
 void shared_recording_image_content(CGContextRef destination, SkRect bounds,
     float page_y, float scroll_y)
 {
     if (s_shared_root_recording && s_shared_root_recording->speculative)
-        shared_recording_speculative_content(destination, bounds, page_y, scroll_y);
+        shared_recording_speculative_content(destination, bounds.makeOutset(2, 2), page_y, scroll_y);
     else
         shared_recording_content(destination, bounds, page_y, scroll_y);
 }

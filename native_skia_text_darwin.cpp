@@ -2333,7 +2333,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
             auto bounds = matrix.mapRect(SkRect::MakeXYWH(descriptor.destination[0],
                 descriptor.destination[1], descriptor.destination[2], descriptor.destination[3]));
             if (bounds.intersect(device_clip))
-                shared_recording_image_content(destination, bounds.makeOutset(2, 2), page_y, scroll_y);
+                shared_recording_image_content(destination, bounds, page_y, scroll_y);
         }
     }
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
@@ -2520,7 +2520,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         retain_compatible_image_decode(descriptor, matrix, destination_scale);
         if (shared_recording_image(destination, matrix, descriptor)) {
-            auto ink = device_bounds.makeOutset(2, 2);
+            auto ink = device_bounds;
             shared_recording_image_content(destination, ink, page_y, scroll_y);
             if (shared_recording_defers_leaf_raster(destination, ink)) return 1;
         }
