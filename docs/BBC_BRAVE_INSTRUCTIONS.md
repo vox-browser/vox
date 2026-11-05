@@ -7036,3 +7036,61 @@ failed preparations, raw counters/rows/samples, original PNGs and sealed inputs.
 No optimization, acceptance or catalog credit is assigned; cohort 121 and the
 10% target remain unchanged.
 [Complete diagnostic evidence](performance/bbc-v-profile-thread-instructions-20261105.json).
+
+## Geometry and private JavaScript helper scopes (2026-11-06)
+
+The next V-profile capture restores 20 prospectively named geometry, paint,
+CSSOM and string-conversion scopes in the preceding sealed C baseline. All
+20 changed functions have byte-identical engine bodies after removing profiler
+bookkeeping. The original 44 scopes and native caller/event tags remain. All
+61 executed scopes, 156 symbolized caller groups, original pixel/content/72
+author-source audits, input/native-image pins and actual exits pass; every
+caller group again reconciles exactly with the V-profile totals. A first
+label-to-C-symbol mapping failure launches no compiler or browser and remains
+retained. Main-thread exit instructions are 31,213,878,157 with 1,568,758 counter
+reads; this is instrumented, single-unit diagnostic evidence only.
+
+Geometry does not explain the large remaining selected self interval. The
+13,489 rectangle transforms have 104,555,337 self / 129,004,645 inclusive
+instructions. Paint-property and scroll refresh paths are smaller, while five
+invocations of one `message` callback still account for 9,744,612,196 selected
+self instructions. The stylesheet-query method has 275,849,664 self instructions
+across 754 calls. These overlapping scopes include probes and unselected native
+work and cannot be added across diagnostics or treated as production shares.
+The complete 61-member archive verifies every member and all reused compiler
+inputs against the preceding sealed archive.
+[Geometry V-profile evidence](performance/bbc-v-profile-client-geometry-20261105.json).
+
+A separate latest-production capture instruments 13 private JavaScript helper
+scopes with the calibrated current-thread instruction counter. Original and
+instrumented internal bootstraps are preserved; an independent reconstruction
+matches the exact transformation. Author sources remain unchanged. All scopes
+close correctly, both counter reads per call reconcile, and original capture,
+script, input, native-image and normal-exit audits pass. The 100,102 reads and
+extra helper wrappers remain included; this is not an unprofiled measurement.
+Creating 2,877 element wrappers costs 309,165,844 inclusive / 182,328,571 self
+instructions; style-proxy and class-list factories cost 15,278,409 and
+11,112,414 respectively. Total query helpers have 5,203,019,328 inclusive
+instructions, including 4,613,778,946 inside the separately measured native
+query call. Final snapshots cost 41,387,280 inclusive. These observations do
+not justify treating eager style/class-list allocation as the large callback
+cost, so their implementation remains unchanged.
+
+Two other diagnostic captures revisit baseline JIT thresholds only after the
+keyword-free module bypass removed the former private lexer startup. Actual
+option dumps verify default 10,000/100 versus 50/10, with JIT enabled and common
+executable/library/fixture/probe identities. All original capture audits pass.
+Native sampling records 384 and 364 stacks. Root-process instructions through
+capture, including these diagnostics, are 26,098,027,424 and 27,186,882,251.
+One instrumented observation per arm supplies no unprofiled comparison or
+optimization credit; production thresholds remain unchanged. The earlier
+rejected JIT cohorts remain rejected. The first packaging auditor's option-line
+indentation assumption and its failure are retained; the corrected auditor
+reads the same raw values without rerunning or changing either capture.
+
+The helper capture retains the known unsupported `performance.measure` module
+diagnostic and zero native reported errors; this does not establish complete
+React or BBC scripting conformance. No new engine saving, broad-check checkpoint
+or catalog credit is claimed. Cohort 121 remains the current acceptance result
+and still fails the 10% target.
+[Helper counters, JIT observations and raw evidence](performance/bbc-javascript-helper-and-jit-diagnostics-20261106.json).
