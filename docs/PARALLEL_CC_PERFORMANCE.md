@@ -36,10 +36,43 @@ CNN and Wikipedia. vlang.io's capture varies between launches of either build
 pages; the JavaScript-heavy CNN page pays about 2%. Use `--no-parallel-cc` for
 maximum binary performance and whenever comparing with single-unit results.
 
+## Build cost in retired instructions
+
+The stages that differ between the modes, with the same staged compiler and
+production arguments. Every process is counted: the V process, each clang call
+and ld (two runs per mode, alternating):
+
+| Stage | single | parallel |
+| --- | ---: | ---: |
+| V: parse, check, generate C | 152.2B | 201.5B |
+| Compile generated C | 2,438.3B / 2,423.7B, one `cc1` | 838.6B / 827.7B in 33 units (largest 38.8B) + 12.0B / 13.0B shared-header preprocessing |
+| Link | 4.7B / 4.5B | 2,232.5B / 2,221.3B, ThinLTO optimization and code generation |
+| Two small native sources | 10.6B / 10.4B | 6.7B / 6.6B |
+| **Total** | **2,606B / 2,591B** | **3,291B / 3,270B** |
+
+The split build retires about 26% more instructions: ThinLTO repeats work per
+module, and V's own count is about 50B higher. Its time advantage comes from the
+critical path. The single build runs 2.43 trillion instructions in one
+single-threaded `cc1`, which took 318 s even on a quiet host (load 9). The split
+build's largest unit is 38.8B, and its ThinLTO link spreads 2.22 trillion
+instructions over the cores: 379 s of CPU in 34 s (load 10–25).
+
+The counts are per process. A child's instruction count is not added to its
+parent's when it exits, so a wrapper reads each process's final hardware counter
+before reaping it. In the runs that hit the cache, the counted processes cover
+98.6–98.9% of the build tree's CPU time; the rest is the wrappers' own
+startup. To count `cc1`, compiles run it in-process (`-fintegrated-cc1`), and
+multi-job clang calls run the driver's own job list; the xcrun `/usr/bin/clang`
+stub (about 30M instructions per call) is bypassed. Two of the four runs missed
+V's native-object cache because other sessions changed native inputs. Their
+object compiles are excluded, and V's count comes from the runs with cache hits;
+earlier `time -l` readings of the V process agree (151–152B single, 201–217B
+parallel). Evidence:
+[instruction counts per process](performance/parallel-cc-build-instructions-20261105.json).
+
 ## Build time
 
-The C stages that differ between the modes, with the same staged compiler and
-production arguments, alternating on the shared 18-core host (load 93–170):
+The same stages timed, alternating on the shared 18-core host (load 93–170):
 
 | Run | Mode | C generation | C compile + link | Total | CPU | Peak RSS |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
