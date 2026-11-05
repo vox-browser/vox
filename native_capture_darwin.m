@@ -1043,6 +1043,7 @@ typedef struct {
 	float opacity;
 	int blend_mode;
 	int left, top, right, bottom;
+	int text_gpu_boundary; // Diagnostic: 1 current prefix, 2 pending GPU prefix.
 } NativeOpacityGroup;
 
 #define NATIVE_OPACITY_GROUP_MAX_DEPTH 64
@@ -1164,6 +1165,8 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
             ? ladybird_v_skia_gpu_canvas_layer_pixels(group->parent,
                 group->pixels + top * layer_pitch + (size_t)left * 4,
                 (int)ink_width, (int)ink_height, (int)layer_pitch, left, top, group->opacity, group->blend_mode) : 0;
+        if (gpu_result && group->text_gpu_boundary)
+            fprintf(stderr, "VOX_GPU_TEXT_LAYER_COMPOSITE pending_prefix=%d\n", group->text_gpu_boundary == 2);
         if (gpu_result == 1) {
             native_release_opacity_canvas((VoxOpacityCanvas){group->context, group->pixels},
                 group->left, group->top, group->right, group->bottom);
@@ -3040,6 +3043,22 @@ int native_gpu_canvas_command(const char *kind, int kind_len, int flags) {
 	return ladybird_v_skia_gpu_canvas_command(kind, kind_len, flags);
 #else
 	return 0;
+#endif
+}
+
+int native_gpu_canvas_can_defer_layers(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    int enabled = ladybird_v_skia_gpu_canvas_defer_layers && ladybird_v_skia_gpu_canvas_defer_layers();
+    if (enabled && native_opacity_group_depth > 0
+        && getenv("VOX_GPU_TEXT_LAYER_COMPOSITES_DIAGNOSTICS")) {
+        NativeOpacityGroup *group = &native_opacity_groups[native_opacity_group_depth - 1];
+        int pending = ladybird_v_skia_bitmap_pixels_are_current
+            && !ladybird_v_skia_bitmap_pixels_are_current(group->parent);
+        group->text_gpu_boundary = pending ? 2 : 1;
+    }
+    return enabled;
+#else
+    return 0;
 #endif
 }
 

@@ -7657,8 +7657,11 @@ fn (mut app BrowserApp) draw() {
 						next_layer := app.chromium_raster_plan.command_layers[command_index]
 						if next_layer != raster_layer {
 							app.flush_rounded_rect_underlay(0, page_y, window.height)
-							// Only a text scroll layer composites on the CPU canvas here.
-							if gpu_canvas && text_scroll_layer { C.native_gpu_canvas_cpu_access() }
+							// Eligible text layers can composite on the pending GPU canvas.
+							if gpu_canvas && text_scroll_layer
+								&& !(gpu_text_layer_composites_enabled && C.native_gpu_canvas_can_defer_layers() != 0) {
+								C.native_gpu_canvas_cpu_access()
+							}
 							if text_scroll_layer { end_chromium_text_scroll_layer() }
 							app.select_chromium_raster_layer(next_layer)
 							text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer, command_index)
@@ -7768,7 +7771,8 @@ fn (mut app BrowserApp) draw() {
 				}
 			}
 			$if macos {
-				if gpu_canvas { C.native_gpu_canvas_cpu_access() }
+				if gpu_canvas && !(text_scroll_layer && gpu_text_layer_composites_enabled
+					&& C.native_gpu_canvas_can_defer_layers() != 0) { C.native_gpu_canvas_cpu_access() }
 			}
 			if text_scroll_layer { end_chromium_text_scroll_layer() }
 			app.flush_rounded_rect_underlay(0, page_y, window.height)

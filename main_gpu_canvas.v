@@ -5,11 +5,13 @@ import browsersettings
 import os
 
 const gpu_scrollbar_batch_enabled = os.getenv('VOX_DISABLE_GPU_SCROLLBAR_BATCH') == ''
+const gpu_text_layer_composites_enabled = os.getenv('VOX_GPU_TEXT_LAYER_COMPOSITES') != ''
 
 $if macos {
 	fn C.native_gpu_canvas_begin() int
 	fn C.native_gpu_canvas_begin_rects(rects &f32, count i32) int
 	fn C.native_gpu_canvas_cpu_access()
+	fn C.native_gpu_canvas_can_defer_layers() int
 	fn C.native_gpu_canvas_end()
 	fn C.native_gpu_canvas_command(kind &u8, kind_len int, flags int) int
 }

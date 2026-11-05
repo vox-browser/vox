@@ -628,7 +628,8 @@ static std::vector<uint8_t> render_layer_pixels(bool gpu, int blend, float opaci
     return pixels;
 }
 
-static std::vector<uint8_t> render_native_group(bool gpu, bool nested, int blend, float opacity, bool full)
+static std::vector<uint8_t> render_native_group(bool gpu, bool nested, int blend, float opacity, bool full,
+    bool text_transition = false, bool force_barrier = false, bool suffix = false)
 {
     auto pixels = backdrop();
     auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -650,26 +651,51 @@ static std::vector<uint8_t> render_native_group(bool gpu, bool nested, int blend
     }
     assert(ladybird_v_skia_draw_rounded_rect(context, 30, 90, 80, 40, 0,0,0,0,0,0,0,0,
         1,0,0,1,0,0,0,0,0,css_width,css_height,73,101,139,255,1,0,1,0));
-    if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0));
+    if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0)
+        == int(native_gpu_canvas_can_defer_layers()!=0));
     native_begin_css_effect_layer(opacity, blend);
     assert(NSGraphicsContext.currentContext.CGContext != context);
     if (nested) {
-        if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0));
+        if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0)
+            == int(native_gpu_canvas_can_defer_layers()!=0));
         native_begin_css_effect_layer(.73f, 3);
     }
     auto isolated = NSGraphicsContext.currentContext.CGContext;
     CGContextSetRGBFillColor(isolated, .3, .7, .2, .6);
     CGContextFillRect(isolated, CGRectMake(35.5, css_height - 127.5, 45, 25));
+    if (text_transition) { @autoreleasepool {
+        auto* text = [[NSAttributedString alloc] initWithString:@"GPU text layer" attributes:@{
+            NSFontAttributeName: [NSFont monospacedSystemFontOfSize:13 weight:NSFontWeightRegular],
+            NSForegroundColorAttributeName: [NSColor colorWithSRGBRed:.8 green:.4 blue:.2 alpha:.73]}];
+        CTLineRef line = CTLineCreateWithAttributedString((CFAttributedStringRef)text);
+        CGContextSetTextMatrix(isolated,CGAffineTransformIdentity);
+        CGContextSetTextPosition(isolated,45,css_height-123);
+        CTLineDraw(line,isolated); CFRelease(line); [text release];
+    } }
     if (nested) {
-        if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0));
+        if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0)
+            == int(native_gpu_canvas_can_defer_layers()!=0));
         native_end_css_effect_layer();
         if (gpu && !gpu_canvas_verify()) assert(s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes);
     }
-    if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0));
+    if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0)
+        == int(native_gpu_canvas_can_defer_layers()!=0));
+    if (gpu && text_transition && (force_barrier || !native_gpu_canvas_can_defer_layers()))
+        ladybird_v_skia_gpu_canvas_cpu_access();
     native_end_css_effect_layer();
     assert(NSGraphicsContext.currentContext.CGContext == context);
+    if (suffix) {
+        if (gpu) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+        assert(ladybird_v_skia_draw_rounded_rect(context,40.25f,110.5f,50,30,3,3,3,3,3,3,3,3,
+            1,0,0,1,0,0,0,0,0,css_width,css_height,230,240,250,117,1,0,1,1));
+    }
     if (gpu) {
-        if (!gpu_canvas_verify()) assert(s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes && s_gpu_canvas->draws == 2);
+        if (!gpu_canvas_verify()) {
+            if (!force_barrier) assert(s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes
+                && s_gpu_canvas->draws == 2+unsigned(suffix) && s_gpu_canvas->uploads == 1);
+            else assert(s_gpu_canvas->flushes == 1 && s_gpu_canvas->draws == 1+unsigned(suffix)
+                && s_gpu_canvas->uploads == 1+unsigned(suffix));
+        }
         ladybird_v_skia_gpu_canvas_end();
     }
     assert(!native_opacity_group_depth);
@@ -705,6 +731,36 @@ static void test_bitmap_inspection_pending_inputs()
 int main(int argc, char** argv)
 {
     test_bitmap_inspection_pending_inputs();
+    if (argc == 2 && !std::strcmp(argv[1], "--text-layer-composite")) {
+        setenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS","1",1);
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api && api->draw_layer_pixels);
+        int error=0; unsigned cases=0;
+        for (bool full : {false,true}) for (bool nested : {false,true}) for (bool suffix : {false,true}) {
+            auto reference=render_native_group(false,nested,0,1,full,true);
+            auto control=render_native_group(true,nested,0,1,full,true,true,suffix);
+            auto candidate=render_native_group(true,nested,0,1,full,true,false,suffix);
+            // Reference includes the same following root leaf.
+            if (suffix) reference=render_native_group(false,nested,0,1,full,true,false,true);
+            for (size_t at=0; at<reference.size(); ++at) {
+                error=std::max(error,std::abs(int(reference[at])-int(candidate[at])));
+                error=std::max(error,std::abs(int(control[at])-int(candidate[at])));
+            }
+            assert(error<=3); ++cases;
+        }
+        auto layer_pixels=api->draw_layer_pixels;
+        api->draw_layer_pixels=nullptr;
+        for (bool full : {false,true}) {
+            auto reference=render_native_group(false,false,0,1,full,true,false,true);
+            auto fallback=render_native_group(true,false,0,1,full,true,true,true);
+            for (size_t at=0; at<reference.size(); ++at)
+                error=std::max(error,std::abs(int(reference[at])-int(fallback[at])));
+            assert(error<=3); ++cases;
+        }
+        api->draw_layer_pixels=layer_pixels;
+        std::cout << "Text layer composites: " << cases << " CPU/barrier/batched frames, max error "
+            << error << "; actual glyphs, nested screen groups, strip/full paint, following root leaves and capability fallback\n";
+        return 0;
+    }
     if (argc == 2 && !std::strcmp(argv[1], "--deferred-video-barriers")) {
         setenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS", "1", 1);
         unsetenv("VOX_GPU_CANVAS_VIDEO_BACKDROP");
