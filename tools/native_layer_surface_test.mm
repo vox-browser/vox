@@ -142,11 +142,19 @@ int main()
             CGImageRef third = CGImageRetain(native_layer_frame_image(view));
             ++frame_value;
             native_layer_present_frame(view, scale, (IMP)paint);
+            CGImageRef fourth = nullptr;
+            if (getenv("VOX_EXTRA_FRAME_BUFFER")) {
+                fourth = CGImageRetain(native_layer_frame_image(view));
+                assert(native_layer_surface_for_image(fourth));
+                ++frame_value;
+                native_layer_present_frame(view, scale, (IMP)paint);
+            }
             assert(!native_layer_surface_for_image(native_layer_frame_image(view)));
             assert(CFGetTypeID((__bridge CFTypeRef)view.layer.contents) == CGImageGetTypeID());
             assert([bytes(first) isEqualToData:original]);
             CGImageRelease(second);
             CGImageRelease(third);
+            if (fourth) CGImageRelease(fourth);
             selected = first;
             native_layer_present_frame(view, scale, (IMP)select_frame);
             assert(native_layer_frame_image(view) == first && view.layer.contents == (__bridge id)surface);

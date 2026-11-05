@@ -546,10 +546,14 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
         surface ? (__bridge id)image : nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     view.layer.contents = surface ? (__bridge id)surface : (__bridge id)image;
     [CATransaction commit];
-    if (getenv("VOX_FRAME_SURFACE_DIAGNOSTICS"))
-        fprintf(stderr, "Vox frame storage: %s %zux%zu pitch=%zu\n",
+    if (getenv("VOX_FRAME_SURFACE_DIAGNOSTICS")) {
+        int slot=-1;
+        for(int index=0;surface && index<VOX_LAYER_FRAME_BUFFER_CAPACITY;++index)
+            if(native_layer_frame_buffers[index].surface==surface) { slot=index;break; }
+        fprintf(stderr, "Vox frame storage: %s %zux%zu pitch=%zu slot=%d\n",
             surface ? "IOSurface" : "CGImage", CGImageGetWidth(image),
-            CGImageGetHeight(image), CGImageGetBytesPerRow(image));
+            CGImageGetHeight(image), CGImageGetBytesPerRow(image),slot);
+    }
     native_document_submission_acknowledge(&submission);
     objc_setAssociatedObject(view, &native_layer_frame_generation_key,
         @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
