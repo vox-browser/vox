@@ -1,0 +1,85 @@
+// Optional gg.canvas glyph rasterizer. With VOX_GG_TEXT=1 the browser
+// registers gg.canvas' CPU text renderer here so it replaces Skia's raster
+// drawTextBlob() for BGRA8 premultiplied sRGB surfaces; comparing captures
+// with and without it validates the Skia migration in place. A run the
+// renderer cannot reproduce exactly returns 0, and Skia draws it instead.
+#pragma once
+
+#include "include/core/SkFont.h"
+#include "include/core/SkMatrix.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkSurfaceProps.h"
+#include "include/core/SkTextBlob.h"
+#include "include/ports/SkTypeface_mac.h"
+
+#include <cstdint>
+#include <vector>
+
+// Flags passed with a run, mirroring the SkFont flags.
+enum : int {
+    VoxGGTextSubpixel = 1,
+    VoxGGTextLinearMetrics = 2,
+    VoxGGTextEmbolden = 4,
+    VoxGGTextBaselineSnap = 8,
+    VoxGGTextEmbeddedBitmaps = 16,
+};
+
+using VoxGGGlyphRun = int (*)(uint32_t* pixels, int width, int height, int row_pixels,
+    void const* ct_font, float size, float scale_x, float skew_x, int edging, int hinting,
+    int flags, uint16_t const* glyphs, float const* positions, int count, float origin_x,
+    float origin_y, float const* matrix, uint32_t color, float text_contrast, float text_gamma);
+
+static VoxGGGlyphRun s_gg_glyph_run = nullptr;
+
+extern "C" void ladybird_v_skia_set_gg_glyph_run(VoxGGGlyphRun run)
+{
+    s_gg_glyph_run = run;
+}
+
+// Draws a single-run, fully positioned blob (as the bridge builds them) into
+// BGRA8 premultiplied sRGB pixels like SkCanvas::drawTextBlob(). Returns false
+// without touching the pixels when no gg renderer is registered or it cannot
+// reproduce the draw.
+static bool gg_draw_text_blob(uint32_t* pixels, int width, int height, size_t row_bytes,
+    SkMatrix const& matrix, SkTextBlob const* blob, float x, float y, SkPaint const& paint,
+    SkSurfaceProps const* properties)
+{
+    if (!s_gg_glyph_run || !blob || !pixels || row_bytes % 4 || matrix.hasPerspective())
+        return false;
+    if (paint.getShader() || paint.getMaskFilter() || paint.getColorFilter()
+        || paint.getPathEffect() || paint.getImageFilter() || !paint.isSrcOver()
+        || paint.getStyle() != SkPaint::kFill_Style
+        || paint.getColor4f() != SkColor4f::FromColor(paint.getColor()))
+        return false;
+    SkTextBlob::Iter iter(*blob);
+    SkTextBlob::Iter::ExperimentalRun run;
+    if (!iter.experimentalNext(&run) || iter.experimentalNext(nullptr) || run.count <= 0
+        || !run.positions)
+        return false;
+    auto const& font = run.font;
+    auto* typeface = font.getTypeface();
+    if (!typeface)
+        return false;
+    int flags = (font.isSubpixel() ? VoxGGTextSubpixel : 0)
+        | (font.isLinearMetrics() ? VoxGGTextLinearMetrics : 0)
+        | (font.isEmbolden() ? VoxGGTextEmbolden : 0)
+        | (font.isBaselineSnap() ? VoxGGTextBaselineSnap : 0)
+        | (font.isEmbeddedBitmaps() ? VoxGGTextEmbeddedBitmaps : 0);
+    std::vector<float> positions(size_t(run.count) * 2);
+    for (int i = 0; i < run.count; ++i) {
+        positions[size_t(i) * 2] = run.positions[i].fX;
+        positions[size_t(i) * 2 + 1] = run.positions[i].fY;
+    }
+    float values[9];
+    matrix.get9(values);
+    SkSurfaceProps defaults;
+    auto const& props = properties ? *properties : defaults;
+    if (props.pixelGeometry() != kUnknown_SkPixelGeometry)
+        return false;
+    return s_gg_glyph_run(pixels, width, height, int(row_bytes / 4),
+               SkTypeface_GetCTFontRef(typeface), font.getSize(), font.getScaleX(),
+               font.getSkewX(), int(font.getEdging()), int(font.getHinting()), flags,
+               run.glyphs, positions.data(), run.count, x, y, values, paint.getColor(),
+               props.textContrast(), props.textGamma())
+        != 0;
+}

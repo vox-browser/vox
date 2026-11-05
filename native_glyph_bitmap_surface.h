@@ -88,7 +88,11 @@ static bool draw_glyph_bitmap_surface(CGContextRef context, int width, int heigh
     auto* canvas = surface->getCanvas();
     if (device_clip) canvas->clipIRect(visible);
     canvas->setMatrix(matrix);
-    canvas->drawTextBlob(blob, x, y, paint);
+    // The gg glyph adapter has no device clip argument. Preserve the bounded
+    // write when this tile borrows a clipped region of the frame.
+    if (device_clip || !gg_draw_text_blob(reinterpret_cast<uint32_t*>(tile), width, height,
+            pitch, matrix, blob, x, y, paint, properties))
+        canvas->drawTextBlob(blob, x, y, paint);
     surface.reset();
     swap_red_blue_tile(tile, pitch, width, height);
     return true;

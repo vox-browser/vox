@@ -55,6 +55,10 @@ int native_prefers_overlay_scrollbars(void) {
 
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern void ladybird_v_skia_set_chromium_painting(int active);
+extern void ladybird_v_skia_set_gg_glyph_run(void* run);
+extern void ladybird_v_skia_set_gg_shape_draw(void* draw);
+extern void ladybird_v_skia_set_gg_path_draw(void* draw);
+extern void ladybird_v_skia_set_gg_svg_image_draw(void* draw);
 extern void ladybird_v_skia_release_unused_graphics_memory(void);
 extern int ladybird_v_skia_release_idle_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
@@ -3081,6 +3085,42 @@ void native_begin_font_compositing_layer(float width, float height) {
 	native_font_compositing_transparency_depth = 0;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	ladybird_v_skia_set_chromium_painting(1);
+#endif
+}
+
+// Registers gg.canvas' CPU glyph renderer with the Skia bridge (VOX_GG_TEXT=1).
+void native_set_gg_glyph_run(void* run) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_gg_glyph_run(run);
+#else
+	(void)run;
+#endif
+}
+
+// Registers gg.canvas' Graphite shape port with the Skia bridge (VOX_GG_SHAPES=1).
+void native_set_gg_shape_draw(void* draw) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_gg_shape_draw(draw);
+#else
+	(void)draw;
+#endif
+}
+
+// Registers gg.canvas' Graphite path port with the Skia bridge (VOX_GG_PATHS=1).
+void native_set_gg_path_draw(void* draw) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_gg_path_draw(draw);
+#else
+	(void)draw;
+#endif
+}
+
+// Registers gg.canvas' SVG image drawing with the Skia bridge (VOX_GG_PATHS=1).
+void native_set_gg_svg_image_draw(void* draw) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_gg_svg_image_draw(draw);
+#else
+	(void)draw;
 #endif
 }
 

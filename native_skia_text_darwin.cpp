@@ -66,6 +66,9 @@
 #include "include/core/SkStream.h"
 #include "include/core/SkTextBlob.h"
 #include "native_glyph_text_blob_cache.h"
+#include "native_gg_text.h"
+#include "native_gg_shape.h"
+#include "native_gg_path.h"
 #include "src/core/SkGlyph.h"
 #include "include/core/SkTypeface.h"
 #include "include/core/SkSamplingOptions.h"
@@ -376,7 +379,7 @@ auto graphite_image_tiles_draw()
     return draw;
 }
 
-auto graphite_shape_draw()
+auto graphite_shape_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -386,7 +389,17 @@ auto graphite_shape_draw()
     return draw;
 }
 
-auto graphite_rounded_parts_draw()
+// With VOX_GG_SHAPES=1, gg.canvas draws the descriptors it supports.
+auto graphite_shape_draw()
+{
+    auto draw = graphite_shape_draw_original();
+    if (!draw || !s_gg_shape_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_shape_pixels(arguments...) ? 1 : graphite_shape_draw_original()(arguments...);
+    });
+}
+
+auto graphite_rounded_parts_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -406,7 +419,17 @@ auto graphite_shadow_region_draw()
     return draw;
 }
 
-auto graphite_shape_region_draw()
+// With VOX_GG_SHAPES=1, gg.canvas draws the descriptors it supports.
+auto graphite_rounded_parts_draw()
+{
+    auto draw = graphite_rounded_parts_draw_original();
+    if (!draw || !s_gg_shape_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_rounded_parts_pixels(arguments...) ? 1 : graphite_rounded_parts_draw_original()(arguments...);
+    });
+}
+
+auto graphite_shape_region_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -416,7 +439,17 @@ auto graphite_shape_region_draw()
     return draw;
 }
 
-auto graphite_shape_regions_draw()
+// With VOX_GG_SHAPES=1, gg.canvas draws the descriptors it supports.
+auto graphite_shape_region_draw()
+{
+    auto draw = graphite_shape_region_draw_original();
+    if (!draw || !s_gg_shape_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_shape_region_pixels(arguments...) ? 1 : graphite_shape_region_draw_original()(arguments...);
+    });
+}
+
+auto graphite_shape_regions_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -426,7 +459,17 @@ auto graphite_shape_regions_draw()
     return draw;
 }
 
-auto graphite_path_region_draw()
+// With VOX_GG_SHAPES=1, gg.canvas draws the descriptors it supports.
+auto graphite_shape_regions_draw()
+{
+    auto draw = graphite_shape_regions_draw_original();
+    if (!draw || !s_gg_shape_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_shape_regions_pixels(arguments...) ? 1 : graphite_shape_regions_draw_original()(arguments...);
+    });
+}
+
+auto graphite_path_region_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -436,7 +479,17 @@ auto graphite_path_region_draw()
     return draw;
 }
 
-auto graphite_path_draw()
+// With VOX_GG_PATHS=1, gg.canvas draws the descriptors it supports.
+auto graphite_path_region_draw()
+{
+    auto draw = graphite_path_region_draw_original();
+    if (!draw || !s_gg_path_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_path_region_pixels(arguments...) ? 1 : graphite_path_region_draw_original()(arguments...);
+    });
+}
+
+auto graphite_path_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -456,7 +509,17 @@ auto graphite_dashed_path_draw()
     return draw;
 }
 
-auto graphite_path_parts_draw()
+// With VOX_GG_PATHS=1, gg.canvas draws the descriptors it supports.
+auto graphite_path_draw()
+{
+    auto draw = graphite_path_draw_original();
+    if (!draw || !s_gg_path_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_path_pixels(arguments...) ? 1 : graphite_path_draw_original()(arguments...);
+    });
+}
+
+auto graphite_path_parts_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -466,7 +529,17 @@ auto graphite_path_parts_draw()
     return draw;
 }
 
-auto graphite_svg_image_region_draw()
+// With VOX_GG_PATHS=1, gg.canvas draws the descriptors it supports.
+auto graphite_path_parts_draw()
+{
+    auto draw = graphite_path_parts_draw_original();
+    if (!draw || !s_gg_path_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_path_parts_pixels(arguments...) ? 1 : graphite_path_parts_draw_original()(arguments...);
+    });
+}
+
+auto graphite_svg_image_region_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -474,6 +547,16 @@ auto graphite_svg_image_region_draw()
             dlsym(library, "vox_graphite_draw_svg_image_region_pixels")) : nullptr;
     }();
     return draw;
+}
+
+// With VOX_GG_PATHS=1, gg.canvas draws the SVG images it supports.
+auto graphite_svg_image_region_draw()
+{
+    auto draw = graphite_svg_image_region_draw_original();
+    if (!draw || !s_gg_svg_image_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_svg_image_region_pixels(arguments...) ? 1 : graphite_svg_image_region_draw_original()(arguments...);
+    });
 }
 
 auto graphite_path_batch_draw()
@@ -486,7 +569,7 @@ auto graphite_path_batch_draw()
     return draw;
 }
 
-auto graphite_svg_image_draw()
+auto graphite_svg_image_draw_original()
 {
     static auto draw = [] {
         void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
@@ -494,6 +577,16 @@ auto graphite_svg_image_draw()
             dlsym(library, "vox_graphite_draw_svg_image_pixels")) : nullptr;
     }();
     return draw;
+}
+
+// With VOX_GG_PATHS=1, gg.canvas draws the SVG images it supports.
+auto graphite_svg_image_draw()
+{
+    auto draw = graphite_svg_image_draw_original();
+    if (!draw || !s_gg_svg_image_draw) return draw;
+    return static_cast<decltype(draw)>([](auto... arguments) {
+        return gg_draw_svg_image_pixels(arguments...) ? 1 : graphite_svg_image_draw_original()(arguments...);
+    });
 }
 
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
@@ -1702,7 +1795,10 @@ static int draw_retained_glyph_run(CGContextRef destination,
     auto* canvas = surface->getCanvas();
     if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(draw_matrix);
-    canvas->drawTextBlob(blob, blob_x, blob_y, paint);
+    if (has_float_color || !gg_draw_text_blob(pixels.data(), raster_width, raster_height,
+            row_bytes, draw_matrix, blob.get(), blob_x, blob_y, paint,
+            chromium ? &chromium_coverage : nullptr))
+        canvas->drawTextBlob(blob, blob_x, blob_y, paint);
     if (has_float_color && !surface->readPixels(image_info, pixels.data(), row_bytes, 0, 0))
         return 0;
     surface.reset();

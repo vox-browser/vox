@@ -8253,6 +8253,9 @@ fn main() {
 	}
 	needs_native_font_replay := !options.headless_smoke && !options.headless_layout_tree
 	$if macos {
+		$if vox_gg_canvas ? {
+			install_gg_canvas_renderers()
+		}
 		if needs_native_font_replay {
 			C.native_prevent_app_nap()
 		}
