@@ -3049,9 +3049,13 @@ int native_gpu_canvas_command(const char *kind, int kind_len, int flags) {
 int native_gpu_canvas_can_defer_layers(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     int enabled = ladybird_v_skia_gpu_canvas_defer_layers && ladybird_v_skia_gpu_canvas_defer_layers();
-    if (enabled && native_opacity_group_depth > 0
-        && getenv("VOX_GPU_TEXT_LAYER_COMPOSITES_DIAGNOSTICS")) {
-        NativeOpacityGroup *group = &native_opacity_groups[native_opacity_group_depth - 1];
+    if (!enabled || native_opacity_group_overflow_depth || native_opacity_group_depth <= 0) return 0;
+    NativeOpacityGroup *group = &native_opacity_groups[native_opacity_group_depth - 1];
+    // Only an independent source can close without the root CPU barrier.
+    // Passthrough/Quartz layers retain their established command ordering.
+    if (!group->offscreen || group->passthrough
+        || group->context != NSGraphicsContext.currentContext.CGContext) return 0;
+    if (getenv("VOX_GPU_TEXT_LAYER_COMPOSITES_DIAGNOSTICS")) {
         int pending = ladybird_v_skia_bitmap_pixels_are_current
             && !ladybird_v_skia_bitmap_pixels_are_current(group->parent);
         group->text_gpu_boundary = pending ? 2 : 1;

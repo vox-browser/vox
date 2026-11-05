@@ -652,12 +652,12 @@ static std::vector<uint8_t> render_native_group(bool gpu, bool nested, int blend
     assert(ladybird_v_skia_draw_rounded_rect(context, 30, 90, 80, 40, 0,0,0,0,0,0,0,0,
         1,0,0,1,0,0,0,0,0,css_width,css_height,73,101,139,255,1,0,1,0));
     if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0)
-        == int(native_gpu_canvas_can_defer_layers()!=0));
+        == int(ladybird_v_skia_gpu_canvas_defer_layers()!=0));
     native_begin_css_effect_layer(opacity, blend);
     assert(NSGraphicsContext.currentContext.CGContext != context);
     if (nested) {
         if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0)
-            == int(native_gpu_canvas_can_defer_layers()!=0));
+            == int(ladybird_v_skia_gpu_canvas_defer_layers()!=0));
         native_begin_css_effect_layer(.73f, 3);
     }
     auto isolated = NSGraphicsContext.currentContext.CGContext;
@@ -674,12 +674,12 @@ static std::vector<uint8_t> render_native_group(bool gpu, bool nested, int blend
     } }
     if (nested) {
         if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0)
-            == int(native_gpu_canvas_can_defer_layers()!=0));
+            == int(ladybird_v_skia_gpu_canvas_defer_layers()!=0));
         native_end_css_effect_layer();
         if (gpu && !gpu_canvas_verify()) assert(s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes);
     }
     if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0)
-        == int(native_gpu_canvas_can_defer_layers()!=0));
+        == int(ladybird_v_skia_gpu_canvas_defer_layers()!=0));
     if (gpu && text_transition && (force_barrier || !native_gpu_canvas_can_defer_layers()))
         ladybird_v_skia_gpu_canvas_cpu_access();
     native_end_css_effect_layer();
@@ -728,11 +728,52 @@ static void test_bitmap_inspection_pending_inputs()
     CGContextRelease(context);
 }
 
+static void test_text_layer_barrier_eligibility()
+{
+    auto color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context=CGBitmapContextCreate(nullptr,32,32,8,128,color,
+        kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color); assert(context);
+    auto saved=NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext=[NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    native_font_compositing_context=context;
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0,32,32);
+    int rect[]={0,0,32,32};
+    assert(ladybird_v_skia_gpu_canvas_begin(context,rect,1));
+    assert(ladybird_v_skia_gpu_canvas_defer_layers());
+    assert(!native_gpu_canvas_can_defer_layers());
+    s_raster_layer_is_root=false;
+    ladybird_v_skia_set_layer_shared_recording(1);
+    native_begin_css_effect_layer(1,0);
+    assert(native_opacity_groups[0].passthrough);
+    assert(!native_gpu_canvas_can_defer_layers());
+    assert(ladybird_v_skia_gpu_canvas_command("draw_text",9,0));
+    if (!native_gpu_canvas_can_defer_layers()) ladybird_v_skia_gpu_canvas_cpu_access();
+    assert(!s_gpu_canvas->in_gpu_command);
+    native_end_css_effect_layer();
+    ladybird_v_skia_set_layer_shared_recording(0);
+    s_raster_layer_is_root=true;
+    native_begin_css_effect_layer(.7f,0);
+    assert(native_gpu_canvas_can_defer_layers());
+    native_opacity_group_overflow_depth=1;
+    assert(!native_gpu_canvas_can_defer_layers());
+    native_opacity_group_overflow_depth=0;
+    native_end_css_effect_layer();
+    assert(!native_gpu_canvas_can_defer_layers());
+    ladybird_v_skia_gpu_canvas_end();
+    ladybird_v_skia_set_chromium_painting(0);
+    native_font_compositing_context=nullptr;
+    NSGraphicsContext.currentContext=saved;
+    CGContextRelease(context);
+}
+
 int main(int argc, char** argv)
 {
     test_bitmap_inspection_pending_inputs();
     if (argc == 2 && !std::strcmp(argv[1], "--text-layer-composite")) {
         setenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS","1",1);
+        test_text_layer_barrier_eligibility();
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api && api->draw_layer_pixels);
         int error=0; unsigned cases=0;
         for (bool full : {false,true}) for (bool nested : {false,true}) for (bool suffix : {false,true}) {
