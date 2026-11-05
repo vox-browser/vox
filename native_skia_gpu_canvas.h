@@ -46,6 +46,8 @@ struct GpuCanvasFrame {
     double leaf_area = 0;
     uint64_t leaf_differing = 0;
     int leaf_error = 0;
+    std::chrono::steady_clock::time_point command_started;
+    char timed_command[96] {};
 };
 std::unique_ptr<GpuCanvasFrame> s_gpu_canvas;
 // A transfer failure loses GPU-only leaves. Reject this replay and use the
@@ -142,6 +144,23 @@ bool gpu_canvas_diagnostics()
 {
     static bool const enabled = std::getenv("VOX_GPU_CANVAS_DIAGNOSTICS") != nullptr;
     return enabled;
+}
+
+// Separate diagnostic runs only: time the interval between native command
+// boundaries, including any CPU fallback and GPU wait in that interval.
+void gpu_canvas_time_command(char const* name, int length)
+{
+    static bool const enabled=std::getenv("VOX_GPU_CANVAS_COMMAND_TIMES")!=nullptr;
+    if (!enabled || !s_gpu_canvas) return;
+    auto& frame=*s_gpu_canvas;
+    auto now=std::chrono::steady_clock::now();
+    if(frame.timed_command[0]) {
+        auto us=std::chrono::duration_cast<std::chrono::microseconds>(now-frame.command_started).count();
+        if(us>=2000) std::fprintf(stderr,"Vox GPU command time: kind=%s us=%lld scroll_y=%.2f\n",
+            frame.timed_command,(long long)us,s_root_raster_scroll_y);
+    }
+    std::snprintf(frame.timed_command,sizeof(frame.timed_command),"%.*s",length,name ? name : "");
+    frame.command_started=now;
 }
 
 // Device rows of the CPU bitmap are top-down RGBA; GPU surfaces are BGRA.
@@ -598,6 +617,7 @@ void gpu_canvas_decline(CGContextRef destination)
 
 extern "C" int ladybird_v_skia_gpu_canvas_command(char const* kind, int length, int flags)
 {
+    gpu_canvas_time_command(kind,kind && length>0 ? length : 0);
     auto* frame = s_gpu_canvas.get();
     if (!frame) return 0;
     std::string_view name(kind ? kind : "", kind && length > 0 ? size_t(length) : 0);
@@ -702,6 +722,7 @@ extern "C" void ladybird_v_skia_gpu_canvas_end()
 {
     if (!s_gpu_canvas) return;
     gpu_canvas_flush();
+    gpu_canvas_time_command(nullptr,0);
     if (gpu_canvas_diagnostics())
         std::fprintf(stderr, "VOX_GPU_CANVAS rects=%zu draws=%u uploads=%u flushes=%u declined=%u cpu_leaves=%u compared=%llu differing=%llu max_error=%d\n",
             s_gpu_canvas->rects.size(), s_gpu_canvas->draws, s_gpu_canvas->uploads,
