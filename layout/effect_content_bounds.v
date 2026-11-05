@@ -12,6 +12,7 @@ mut:
 	bounded bool = true
 	has_ink bool
 	ink     LayoutRect
+	has_uniform_border bool
 }
 
 // CSS color matrices and hue rotation leave transparent input transparent
@@ -111,6 +112,10 @@ fn effect_leaf_ink_bounds_with_precision_guard(command &PaintCommand, native_pre
 		else { return none }
 	}
 	rect = LayoutRect{rect.x - outset, rect.y - outset, rect.width + outset * 2, rect.height + outset * 2}
+	return effect_map_ink_bounds(command, rect, native_precision)
+}
+
+fn effect_map_ink_bounds(command &PaintCommand, rect LayoutRect, native_precision bool) ?LayoutRect {
 	if native_precision {
 		// Native drawing rounds its geometry and matrix to float32. Large
 		// cancelling coordinates can move ink across the canvas edge; retain
@@ -209,10 +214,16 @@ fn bound_visual_effect_contents(mut commands []PaintCommand) {
 				begin.clip_y = ink.y
 				begin.clip_width = ink.width
 				begin.clip_height = ink.height
+				if effect_border_bounds_diagnostics && bounds.has_uniform_border {
+					report_effect_border_bounds(ink)
+				}
 			}
 			if stack.len > 0 {
 				if bounds.bounded {
 					stack[stack.len - 1].include(bounds.ink)
+					if effect_border_bounds_diagnostics && bounds.has_uniform_border {
+						stack[stack.len - 1].has_uniform_border = true
+					}
 				} else {
 					stack[stack.len - 1].bounded = false
 				}
@@ -220,8 +231,11 @@ fn bound_visual_effect_contents(mut commands []PaintCommand) {
 			continue
 		}
 		if !stack[stack.len - 1].bounded { continue }
-		if ink := effect_leaf_ink_bounds(command) {
+		if ink := effect_content_leaf_ink_bounds(command) {
 			stack[stack.len - 1].include(ink)
+			if effect_border_bounds_diagnostics && command.kind == 'paint_uniform_border' {
+				stack[stack.len - 1].has_uniform_border = true
+			}
 		} else {
 			// In particular, a nested filter may move or generate pixels beyond
 			// all its input commands. Do not constrain that enclosing surface.

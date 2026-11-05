@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Uniform border opacity bounds</title>
+<style>
+html,body { margin:0; width:640px; height:480px; background:#e7ecf3 }
+.box { position:absolute; box-sizing:border-box; width:110px; height:70px; opacity:.65; border:3px solid #1647a5; border-radius:18px; background:#d2f4dd }
+.thin { left:20.125px; top:20.375px; border-width:.5px; border-radius:45px 14px / 25px 10px }
+.rotate { left:180px; top:35px; transform:rotate(17deg) scale(1.2,.8); border-width:7px }
+.wide { left:355px; top:20px; border-width:24px; border-radius:40px }
+.screen { left:500px; top:40px; border-color:#c83776; mix-blend-mode:screen; background:#26485e }
+.nested { position:absolute; left:30px; top:145px; width:180px; height:110px; opacity:.7 }
+.nested .box { left:7px; top:9px; border-width:5px; transform:skewX(14deg); opacity:.6 }
+.clipped { position:absolute; left:250px; top:145px; width:90px; height:65px; overflow:hidden }
+.clipped .box { left:-12px; top:-8px; border-width:9px; border-radius:40% }
+.color { left:400px; top:150px; filter:grayscale(.5); border-width:6px; opacity:.8 }
+.blur { left:520px; top:170px; width:80px; filter:blur(3px); border-width:5px }
+.text { left:35px; top:325px; width:75px; height:80px; font:italic 64px Georgia; white-space:nowrap; color:#6c184e; border-width:2px; background:transparent }
+.fractional { left:300.25px; top:320.75px; width:180px; height:100px; border-width:1.25px; border-radius:75% 15% / 30% 80%; transform:scale(.75,1.125) rotate(-9deg) }
+</style>
+<div class="box thin"></div>
+<div class="box rotate"></div>
+<div class="box wide"></div>
+<div class="box screen"></div>
+<div class="nested"><div class="box"></div></div>
+<div class="clipped"><div class="box"></div></div>
+<div class="box color"></div>
+<div class="box blur"></div>
+<div class="box text">fjWÁ</div>
+<div class="box fractional"></div>
