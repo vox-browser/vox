@@ -4414,7 +4414,8 @@ static unsigned native_test_compact_css_filter_inputs;
 // output already qualifies for the established integer-device crop.
 static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *layer,
     CGContextRef context, CGRect *output_rect) {
-    BOOL tight = getenv("VOX_TIGHT_CSS_FILTER_INPUT") && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
+    BOOL tight = (getenv("VOX_TIGHT_CSS_FILTER_INPUT") || getenv("VOX_CACHE_CSS_COLOR_FILTERS"))
+        && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
     if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
         || !context || CGBitmapContextGetBitsPerComponent(context) != 8
         || CGBitmapContextGetBitsPerPixel(context) != 32) return NULL;
@@ -4603,6 +4604,8 @@ static CGImageRef native_css_filter_grayscale_rows(NativeCSSFilterLayer const *l
     return image;
 }
 
+#include "native_css_color_filter_cache_darwin.h"
+
 void native_end_css_filter_layer(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	ladybird_v_skia_gpu_canvas_cpu_access();
@@ -4784,6 +4787,8 @@ void native_end_css_filter_layer(void) {
 			CGImageRef input = cropped_source ? cropped_source : source_image;
 			if (grayscale_identity && (cropped_source || CGRectEqualToRect(identity_rect, source_rect))) {
 				filtered_image = CGImageRetain(input);
+			} else if (compact_input && (filtered_image = native_cached_css_color_filter_image(&layer, input))) {
+				// The immutable cached result uses the same Core Image arithmetic.
 			} else {
 				native_initialize_css_filter_renderer();
 				CIImage *output = native_apply_css_filter_layer(&layer, input);
