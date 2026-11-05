@@ -220,6 +220,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_image",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_image_msaa",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_shape_msaa",
+        "-Wl,-exported_symbol,_vox_graphite_canvas_draw_shape_isolated",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_picture",
         "-Wl,-exported_symbol,_vox_graphite_canvas_end",
         "-Wl,-install_name,@rpath/libVoxGraphite.dylib", "-o", str(args.output)], check=True)

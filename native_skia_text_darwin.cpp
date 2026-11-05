@@ -4625,9 +4625,11 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     // replay selects coverage per raster tile. Mixed tiles and fractional
     // corners can differ substantially; keep that established tile path.
     // Video has its own API with explicit MSAA rectangles and still batches.
-    if (root_msaa_tile) gpu_canvas_decline(destination);
+    bool isolated_shapes = std::getenv("VOX_GPU_CANVAS_ISOLATED_SHAPES") && gpu_canvas_api()
+        && gpu_canvas_api()->draw_shape_isolated;
+    if (root_msaa_tile && !isolated_shapes) gpu_canvas_decline(destination);
     bool rounded_on_canvas = false;
-    if (!root_msaa_tile && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
+    if ((!root_msaa_tile || isolated_shapes) && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
         std::vector<VoxGraphiteCanvasClip> clips;
         if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
             VoxGraphiteShape descriptor {
@@ -4655,8 +4657,19 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             auto device = SkMatrix::Scale(frame->scale, frame->scale);
             SkMatrix::Concat(device, matrix).get9(descriptor.matrix);
             auto bounds = device.mapRect(matrix.mapRect(local_bounds)).makeOutset(2, 2);
+            if (isolated_shapes)
+                bounds = SkRect::MakeLTRB(region.left * frame->scale, region.top * frame->scale,
+                    region.right * frame->scale, region.bottom * frame->scale);
             float device_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
-            if (gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()))) {
+            auto msaa_rects = root_msaa_tile ? gpu_canvas_image_msaa_rects(destination, region, page_x, page_y, scroll_y)
+                : std::vector<int>{};
+            bool drawn = isolated_shapes
+                ? gpu_canvas_api()->draw_shape_isolated(&descriptor, device_bounds, clips.data(), int(clips.size()),
+                    msaa_rects.data(), int(msaa_rects.size() / 4))
+                : gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()));
+            if (drawn) {
+                if (isolated_shapes && std::getenv("VOX_GPU_CANVAS_ISOLATED_SHAPES_DIAGNOSTICS"))
+                    std::fprintf(stderr, "Vox GPU isolated shape: fill=%d msaa_rects=%zu\n", fill, msaa_rects.size() / 4);
                 gpu_canvas_name_leaf(*frame, "shape", bounds, fill, clips.size());
                 frame->cpu_stale = true;
                 ++frame->draws;

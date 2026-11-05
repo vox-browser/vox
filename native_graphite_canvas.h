@@ -246,6 +246,89 @@ int vox_graphite_canvas_draw_shape_msaa(VoxGraphiteShape const* shape, float con
     return 1;
 }
 
+// Render each coverage mode in its own pass before selecting its raster tiles.
+// A prior canvas path or a difference clip must not change rrect coverage.
+#ifdef VOX_TEST_ISOLATED_CANVAS_FAILURE
+static int vox_test_isolated_shape_fail_after = -1;
+#endif
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_shape_isolated(VoxGraphiteShape const* shape, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count, int const* msaa_rects, int msaa_count)
+{
+    if (!shape || !bounds || msaa_count < 0 || msaa_count > 4096 || (msaa_count && !msaa_rects)) return 0;
+    auto raster = SkRect::MakeLTRB(bounds[0], bounds[1], bounds[2], bounds[3]);
+    if (!raster.isFinite() || raster.isEmpty()) return 0;
+    auto size = raster.roundOut();
+    if (size.width() <= 0 || size.height() <= 0 || size.width() > 16384 || size.height() > 16384
+        || size_t(size.width()) * size.height() > 64 * 1024 * 1024 / 4) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder) return 0;
+    SkPaint copy;
+    copy.setBlendMode(SkBlendMode::kSrc);
+    struct Pass {
+        CanvasTile* tile;
+        SkIRect area;
+        SkPath mask;
+        bool masked, msaa;
+        sk_sp<SkImage> result;
+    };
+    std::vector<Pass> passes;
+    for (auto& tile : canvas_tiles) {
+        auto area = SkRect::MakeLTRB(bounds[0] - tile.x, bounds[1] - tile.y,
+            bounds[2] - tile.x, bounds[3] - tile.y).roundOut();
+        auto visible = area;
+        if (!visible.intersect(tile.clip)) continue;
+        auto sampled = area;
+        if (!sampled.intersect(SkIRect::MakeWH(tile.width, tile.height))) continue;
+        SkPathBuilder builder;
+        bool intersects = false;
+        for (int index = 0; index < msaa_count; ++index) {
+            auto* rect = msaa_rects + index * 4;
+            auto part = SkIRect::MakeXYWH(rect[0] - tile.x, rect[1] - tile.y, rect[2], rect[3]);
+            if (!part.intersect(area)) continue;
+            builder.addRect(SkRect::Make(part));
+            intersects = true;
+        }
+        auto mask = builder.detach();
+        auto snapshot = tile.surface->makeImageSnapshot(sampled);
+        if (!snapshot) return 0;
+        for (int msaa = 0; msaa <= int(intersects); ++msaa) {
+            auto scratch = SkSurfaces::RenderTarget(canvas_recorder.get(), canvas_info(area.width(), area.height()));
+            if (!scratch) return 0;
+            auto* draw = scratch->getCanvas();
+            draw->drawImage(snapshot, sampled.x() - area.x(), sampled.y() - area.y(), SkSamplingOptions(), &copy);
+            auto local = *shape;
+            local.force_msaa = msaa;
+            SkMatrix matrix;
+            matrix.set9(shape->matrix);
+            matrix.postTranslate(-(tile.x + area.x()), -(tile.y + area.y()));
+            matrix.get9(local.matrix);
+            draw_shape_on_canvas(draw, local, area.width(), area.height());
+            auto result = scratch->makeImageSnapshot();
+            if (!result) return 0;
+            passes.push_back({&tile, area, mask, intersects, bool(msaa), std::move(result)});
+#ifdef VOX_TEST_ISOLATED_CANVAS_FAILURE
+            if (vox_test_isolated_shape_fail_after == 0) return 0;
+            if (vox_test_isolated_shape_fail_after > 0) --vox_test_isolated_shape_fail_after;
+#endif
+        }
+    }
+    // Prepare every target before changing any destination; a failure can
+    // replay the ordinary leaf over its original backdrop exactly once.
+    for (auto const& pass : passes) {
+        auto* canvas = pass.tile->surface->getCanvas();
+        canvas->save();
+        canvas->resetMatrix();
+        canvas->clipRect(SkRect::Make(pass.area));
+        if (pass.masked) canvas->clipPath(pass.mask, pass.msaa ? SkClipOp::kIntersect : SkClipOp::kDifference, false);
+        apply_canvas_clips(canvas, *pass.tile, clips, clip_count);
+        canvas->resetMatrix();
+        canvas->drawImage(pass.result, pass.area.x(), pass.area.y(), SkSamplingOptions(), &copy);
+        canvas->restore();
+    }
+    return 1;
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_draw_path(VoxGraphitePath const* path, float const* bounds,
     VoxGraphiteCanvasClip const* clips, int clip_count)

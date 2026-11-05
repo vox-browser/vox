@@ -58,6 +58,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
     decltype(&vox_graphite_canvas_draw_image_msaa) draw_image_msaa = nullptr;
     decltype(&vox_graphite_canvas_draw_shape_msaa) draw_shape_msaa = nullptr;
+    decltype(&vox_graphite_canvas_draw_shape_isolated) draw_shape_isolated = nullptr;
     decltype(&vox_graphite_canvas_draw_picture) draw_picture = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
 };
@@ -79,6 +80,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
         value.draw_image_msaa = reinterpret_cast<decltype(value.draw_image_msaa)>(dlsym(library, "vox_graphite_canvas_draw_image_msaa"));
         value.draw_shape_msaa = reinterpret_cast<decltype(value.draw_shape_msaa)>(dlsym(library, "vox_graphite_canvas_draw_shape_msaa"));
+        value.draw_shape_isolated = reinterpret_cast<decltype(value.draw_shape_isolated)>(dlsym(library, "vox_graphite_canvas_draw_shape_isolated"));
         value.draw_picture = reinterpret_cast<decltype(value.draw_picture)>(dlsym(library, "vox_graphite_canvas_draw_picture"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
         return value;
@@ -332,6 +334,7 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     // strip need not touch. Keep shapes on their established per-tile path
     // until the full-surface resolve matches that coverage as well.
     if (s_gpu_canvas && s_gpu_canvas->complete_viewport
+        && !(std::getenv("VOX_GPU_CANVAS_ISOLATED_SHAPES") && gpu_canvas_api()->draw_shape_isolated)
         && (kind == "fill_rounded_rect" || kind == "stroke_rounded_rect"
             || kind == "fill_ellipse" || kind == "stroke_ellipse"
             || kind == "paint_uniform_border" || kind == "paint_partial_rounded_border"

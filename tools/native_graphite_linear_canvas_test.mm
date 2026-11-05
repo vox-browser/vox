@@ -4,6 +4,7 @@
 // fixture and the included Vox implementation with ASan/UBSan.
 #include "include/private/SkASAN.h"
 #undef SK_SANITIZE_ADDRESS
+#define VOX_TEST_ISOLATED_CANVAS_FAILURE
 #include "../native_graphite_darwin.mm"
 #include <cassert>
 
@@ -88,6 +89,23 @@ int main() { @autoreleasepool {
         insertion.fRecording = recording.get();
         assert(gpu->insertRecording(insertion) == skgpu::graphite::InsertStatus::kSuccess);
     }
+    VoxGraphiteShape shape {.matrix={1,0,0,0,1,0,0,0,1},
+        .rect={8,12,10,8,3,3,3,3,3,3,3,3}, .red=240, .green=80, .blue=40,
+        .alpha=128, .fill=1, .anti_alias=1};
+    float bounds[] {6,10,20,22};
+    int msaa[] {0,0,16,16};
+    vox_test_isolated_shape_fail_after=0;
+    assert(!vox_graphite_canvas_draw_shape_isolated(&shape,bounds,nullptr,0,msaa,1));
+    std::vector<uint8_t> unchanged(37*4*29);
+    uint32_t other=0;
+    VoxGraphitePixelRegion check[] {{0,0,37,29,37*4,unchanged.data()},
+        {0,0,1,1,4,reinterpret_cast<uint8_t*>(&other)}};
+    assert(vox_graphite_canvas_read_direct(check,2));
+    for (size_t pixel=0;pixel<37*29;++pixel)
+        assert(reinterpret_cast<uint32_t*>(unchanged.data())[pixel]==0xff20a040);
+    assert(other==0xff20a041);
+    vox_test_isolated_shape_fail_after=-1;
+    assert(vox_graphite_canvas_draw_shape_isolated(&shape,bounds,nullptr,0,msaa,1));
     std::vector<uint8_t> first(43 * 4 * 29, 0xa7), second(24 * 4 * 13, 0xa7);
     VoxGraphitePixelRegion views[] {{0, 0, 37, 29, 43 * 4, first.data()},
         {0, 0, 19, 13, 24 * 4, second.data()}};

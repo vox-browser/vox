@@ -246,6 +246,8 @@ int vox_graphite_canvas_draw_image_msaa(const VoxGraphiteImage *image, const flo
     const VoxGraphiteCanvasClip *clips, int clip_count, const int *msaa_rects, int msaa_count);
 int vox_graphite_canvas_draw_shape_msaa(const VoxGraphiteShape *shape, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
+int vox_graphite_canvas_draw_shape_isolated(const VoxGraphiteShape *shape, const float *device_bounds,
+    const VoxGraphiteCanvasClip *clips, int clip_count, const int *msaa_rects, int msaa_count);
 int vox_graphite_canvas_draw_path(const VoxGraphitePath *path, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_pixels(const uint8_t *bgra, int width, int height, int pitch,

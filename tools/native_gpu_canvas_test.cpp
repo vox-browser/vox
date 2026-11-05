@@ -121,7 +121,7 @@ static void draw_mixed_shape(CGContextRef context, bool canvas)
 {
     char const* kind = s_mixed_fill ? "fill_rounded_rect" : "stroke_rounded_rect";
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command(kind, int(std::strlen(kind)), 0)
-        == int(!s_gpu_canvas->complete_viewport));
+        == int(!s_gpu_canvas->complete_viewport || std::getenv("VOX_GPU_CANVAS_ISOLATED_SHAPES")));
     float rect[] {40.25f + s_mixed_offset, 100.125f, 300.375f, 56.25f, 12, 9, 7, 11, 10, 6, 13, 8};
     if (!s_mixed_fill) ladybird_v_skia_set_rounded_rect_underlay(rect, 38, 63, 94, 255);
     assert(ladybird_v_skia_draw_rounded_rect(context, rect[0], rect[1], rect[2], rect[3],
@@ -480,6 +480,10 @@ int main()
     // All four corners can belong to different ordinary/MSAA raster tiles.
     // Fractional compound strokes and opaque sparse fills must retain their
     // exact ordinary coverage in both full and partial viewport repainting.
+    int isolated_shape_error = 0;
+    for (bool isolated : {false, true}) {
+    if (isolated) setenv("VOX_GPU_CANVAS_ISOLATED_SHAPES", "1", 1);
+    else unsetenv("VOX_GPU_CANVAS_ISOLATED_SHAPES");
     for (bool full : {false, true}) for (int tile : {0, 1, 2, 3})
         for (int fill : {0, 1}) for (int alpha : {128, 255}) for (float offset : {0.f, .375f}) {
         s_mixed_fill = fill; s_mixed_alpha = alpha; s_mixed_offset = offset;
@@ -487,9 +491,19 @@ int main()
         ladybird_v_skia_set_msaa_grid(&tile, 1, 512, 256, 2);
         auto reference = render(false, false, draw_mixed_shape, full);
         auto candidate = render(true, false, draw_mixed_shape, full);
-        assert(s_draws == 0 && s_uploads == 0 && s_flushes == 0);
-        assert(candidate == reference);
+        assert(s_draws == unsigned(isolated) && s_uploads == unsigned(isolated) && s_flushes == 0);
+        int error = 0;
+        for (size_t at = 0; at < reference.size(); ++at)
+            error = std::max(error, std::abs(int(reference[at]) - int(candidate[at])));
+        if (error > (isolated ? 3 : 0)) {
+            std::cerr << "Isolated=" << isolated << " full=" << full << " tile=" << tile
+                << " fill=" << fill << " alpha=" << alpha << " offset=" << offset << " error=" << error << '\n';
+            return 1;
+        }
+        isolated_shape_error = std::max(isolated_shape_error, error);
     }
+    }
+    unsetenv("VOX_GPU_CANVAS_ISOLATED_SHAPES");
     ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
     s_raster_layer_height = 0;
     int video_error = 0;
@@ -533,6 +547,6 @@ int main()
         << "), outlines and ellipses within " << outline_error
         << ", CSS gradient tiles within " << pattern_error
         << ", video frames within " << video_error
-        << ", mixed-MSAA fills/strokes exact"
+        << ", isolated mixed-MSAA fills/strokes within " << isolated_shape_error << " (fallback exact)"
         << "; outside pixels, CPU paint order, CPU leaves and shared recordings preserved\n";
 }
