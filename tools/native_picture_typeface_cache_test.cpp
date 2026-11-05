@@ -14,6 +14,32 @@
 #include <iostream>
 #include <vector>
 
+static VoxSharedPicturePixelsRegistry shared_fonts(128 * 1024 * 1024, 16);
+static std::vector<uint64_t> shared_font_tokens;
+extern "C" __attribute__((visibility("default")))
+int vox_picture_pixels_acquire(uint64_t token, VoxSharedPicturePixelsLease* out) {
+    return shared_fonts.acquire(token, out);
+}
+
+static uint64_t publish_font(sk_sp<SkData> data) {
+    auto* retained = data.release();
+    std::shared_ptr<void const> owner(retained, [](void const* value) {
+        static_cast<SkData const*>(value)->unref();
+    });
+    return shared_fonts.insert(owner, static_cast<uint8_t const*>(retained->data()), retained->size());
+}
+
+static sk_sp<SkData> font_token(uint64_t token) {
+    VoxSharedPictureTypefaceToken payload; payload.token = token;
+    return SkData::MakeWithCopy(&payload, sizeof(payload));
+}
+
+static SkSerialReturnType encode_shared_font(SkTypeface* face, void*) {
+    auto token = publish_font(vox_serialize_picture_typeface(face, nullptr)); assert(token);
+    shared_font_tokens.push_back(token);
+    return font_token(token);
+}
+
 // LibWeb's older Skia passes the picture stream through its legacy callback.
 // The pinned Dawn Skia uses the typed stream callback for the same packet.
 static sk_sp<SkTypeface> decode_legacy(void const* data, size_t size, void* context)
@@ -141,6 +167,53 @@ int main(int argc, char** argv)
         assert(decoded && raster(decoded.get()) == expected);
     }
 
+    // A retired transaction token cannot be acquired again, while the decoded
+    // face and cache still own its immutable font bytes. Reissuing the same
+    // owned bytes preserves face identity without comparing/copying the font.
+    VoxPictureTypefaceCache leased;
+    auto first_token = publish_font(packets[0]); assert(first_token);
+    SkMemoryStream first_shared(font_token(first_token));
+    auto first_shared_face = leased.decode_stream(first_shared);
+    assert(first_shared_face && first_shared.isAtEnd() && leased.entry_count() == 1);
+    shared_fonts.retire(first_token);
+    assert(shared_fonts.live_bytes() == packets[0]->size());
+    SkMemoryStream expired_shared(font_token(first_token));
+    assert(!leased.decode_stream(expired_shared));
+    auto second_token = publish_font(packets[0]); assert(second_token && second_token != first_token);
+    SkMemoryStream second_shared(font_token(second_token));
+    auto reused_shared_face = leased.decode_stream(second_shared);
+    assert(reused_shared_face && second_shared.isAtEnd()
+        && reused_shared_face->uniqueID() == first_shared_face->uniqueID());
+    shared_fonts.retire(second_token);
+    assert(shared_fonts.live_bytes() == packets[0]->size());
+    leased.clear();
+    first_shared_face.reset(); reused_shared_face.reset();
+    assert(shared_fonts.live_bytes() == 0);
+    SkMemoryStream zero_token(font_token(0));
+    assert(!leased.decode_stream(zero_token));
+    auto malformed = SkData::MakeWithCopy(packets[0]->data(), packets[0]->size());
+    static_cast<uint8_t*>(malformed->writable_data())[8] ^= 1;
+    auto bad_token = publish_font(malformed); assert(bad_token);
+    SkMemoryStream bad_shared(font_token(bad_token));
+    assert(!leased.decode_stream(bad_shared));
+    shared_fonts.retire(bad_token);
+    assert(!leased.entry_count() && !shared_fonts.live_bytes());
+
+    serial.fTypefaceProc = encode_shared_font;
+    auto shared_bytes = picture->serialize(&serial);
+    assert(shared_bytes && shared_bytes->size() < custom_bytes->size() / 2);
+    VoxPictureTypefaceCache shared_picture_cache;
+    deserial.fTypefaceCtx = &shared_picture_cache;
+    auto shared_picture = SkPicture::MakeFromData(shared_bytes.get(), &deserial);
+    assert(shared_picture);
+    for (auto token : shared_font_tokens) shared_fonts.retire(token);
+    assert(raster(shared_picture.get()) == expected);
+    shared_picture_cache.clear();
+    assert(raster(shared_picture.get()) == expected);
+    shared_picture.reset();
+    assert(shared_fonts.live_bytes() == 0);
+    deserial.fTypefaceCtx = &cache;
+
     size_t largest_cost = 0;
     for (auto const& packet : packets) largest_cost = std::max(largest_cost, (packet->size() - 16) * 2);
     VoxPictureTypefaceCache single(largest_cost, 1);
@@ -206,9 +279,16 @@ int main(int argc, char** argv)
         assert(candidate(reinterpret_cast<uint8_t*>(result.data()), 160, 64, 160 * 4,
             ordinary_bytes->data(), ordinary_bytes->size(), matrix));
         assert(result == reference);
+        shared_font_tokens.clear();
+        auto shared_gpu_bytes = picture->serialize(&serial);
+        assert(candidate(reinterpret_cast<uint8_t*>(result.data()), 160, 64, 160 * 4,
+            shared_gpu_bytes->data(), shared_gpu_bytes->size(), matrix));
+        assert(result == reference);
+        for (auto token : shared_font_tokens) shared_fonts.retire(token);
         std::cout << "Four old/new GPU picture comparisons are exact\n";
     } else {
         assert(argc == 1);
     }
     std::cout << "Four embedded faces reuse owned packets; mixed-font pictures are exact; bounds and fallbacks pass\n";
+    std::cout << "Shared font tokens: immutable identity, expiry, ownership and mixed-font pixels pass\n";
 }

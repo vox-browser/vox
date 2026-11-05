@@ -174,6 +174,7 @@ group("tint") {{ public_configs = [":dawn_api_config"] }}
     for framework in ['CoreText', 'Metal', 'CoreGraphics', 'Foundation', 'ImageIO', 'IOSurface', 'IOKit', 'QuartzCore', 'Cocoa']:
         command += ['-framework', framework]
     command += ['-Wl,-exported_symbol,_vox_graphite_picture_supports_shared_pixels',
+                '-Wl,-exported_symbol,_vox_graphite_picture_supports_shared_typefaces',
                 '-Wl,-exported_symbol,_vox_graphite_draw_picture_pixels',
                 '-Wl,-exported_symbol,_vox_graphite_draw_picture_region_pixels',
                 '-Wl,-exported_symbol,_vox_graphite_draw_picture_regions_pixels',

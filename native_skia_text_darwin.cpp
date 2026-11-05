@@ -107,9 +107,10 @@ VoxSharedPicturePixelsRegistry s_shared_picture_pixels;
 class SharedPicturePixelsScope {
     SharedPicturePixelsScope* previous_;
     std::vector<uint64_t> tokens_;
-    struct Input { uint8_t const* bytes; size_t size; sk_sp<SkData> payload; };
+    struct Input { uint8_t const* bytes; size_t size; sk_sp<SkData> payload; bool typeface; };
     std::vector<Input> inputs_;
     bool enabled_;
+    bool typefaces_enabled_ = false;
 public:
     static thread_local SharedPicturePixelsScope* active;
     explicit SharedPicturePixelsScope(bool enabled = true) : previous_(active), enabled_(false) {
@@ -118,6 +119,10 @@ public:
             auto supports = library ? reinterpret_cast<int(*)()>(
                 dlsym(library, "vox_graphite_picture_supports_shared_pixels")) : nullptr;
             enabled_ = supports && supports();
+            auto supports_typefaces = library ? reinterpret_cast<int(*)()>(
+                dlsym(library, "vox_graphite_picture_supports_shared_typefaces")) : nullptr;
+            typefaces_enabled_ = enabled_ && std::getenv("VOX_SHARED_PICTURE_TYPEFACES")
+                && supports_typefaces && supports_typefaces();
             if (library) dlclose(library);
         }
         active = this;
@@ -128,10 +133,11 @@ public:
         active = previous_;
         for (auto token : tokens_) s_shared_picture_pixels.retire(token);
     }
-    sk_sp<SkData> encode(sk_sp<SkData> bytes) {
-        if (!enabled_ || !bytes || bytes->size() < 64 * 1024) return bytes;
+    sk_sp<SkData> encode(sk_sp<SkData> bytes, bool typeface = false) {
+        if (!enabled_ || !bytes || (typeface ? !typefaces_enabled_ : bytes->size() < 64 * 1024)) return bytes;
         for (auto const& input : inputs_)
-            if (input.size == bytes->size() && !std::memcmp(input.bytes, bytes->data(), input.size))
+            if (input.typeface == typeface && input.size == bytes->size()
+                && (input.bytes == bytes->data() || !std::memcmp(input.bytes, bytes->data(), input.size)))
                 return input.payload;
         auto* retained = bytes.release();
         std::shared_ptr<void const> owner(retained, [](void const* value) {
@@ -145,12 +151,23 @@ public:
             std::fprintf(stderr, "VOX_SHARED_PICTURE_PIXELS_ENCODE bytes=%zu live=%zu\n",
                 retained->size(), s_shared_picture_pixels.live_bytes());
         VoxSharedPicturePixelsToken payload; payload.token = token;
-        auto result = SkData::MakeWithCopy(&payload, sizeof(payload));
-        if (result) inputs_.push_back({static_cast<uint8_t const*>(retained->data()), retained->size(), result});
-        return result;
+        VoxSharedPictureTypefaceToken font_payload; font_payload.token = token;
+        auto result = typeface ? SkData::MakeWithCopy(&font_payload, sizeof(font_payload))
+            : SkData::MakeWithCopy(&payload, sizeof(payload));
+        if (typeface && std::getenv("VOX_SHARED_PICTURE_TYPEFACES_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_SHARED_PICTURE_TYPEFACE_ENCODE bytes=%zu token=%llu\n",
+                retained->size(), (unsigned long long)token);
+        if (result) inputs_.push_back({static_cast<uint8_t const*>(retained->data()), retained->size(), result, typeface});
+        return result ? result : sk_ref_sp(retained);
     }
 };
 thread_local SharedPicturePixelsScope* SharedPicturePixelsScope::active = nullptr;
+
+SkSerialReturnType serialize_shared_picture_typeface(SkTypeface* face, void* context) {
+    auto bytes = vox_serialize_picture_typeface(face, context);
+    return SharedPicturePixelsScope::active
+        ? SharedPicturePixelsScope::active->encode(std::move(bytes), true) : bytes;
+}
 }
 extern "C" __attribute__((visibility("default")))
 int vox_picture_pixels_acquire(uint64_t token, VoxSharedPicturePixelsLease* out)
@@ -2952,7 +2969,7 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
     auto picture = output.finishRecordingAsPicture();
     SkSerialProcs procs;
     procs.fImageProc = serialize_shared_picture_image;
-    procs.fTypefaceProc = vox_serialize_picture_typeface;
+    procs.fTypefaceProc = serialize_shared_picture_typeface;
     auto bytes = picture->serialize(&procs);
     float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
     if (!bytes) return 0;
@@ -2963,6 +2980,7 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
         // separate self-contained key with exact owned image rows instead.
         auto canonical_procs = procs;
         canonical_procs.fImageProc = [](SkImage* image, void*) { return vox_encode_picture_image(image); };
+        canonical_procs.fTypefaceProc = vox_serialize_picture_typeface;
         auto canonical = picture->serialize(&canonical_procs);
         std::vector<uint8_t> key;
         int geometry[] {pixel_width, pixel_height, region_x, region_y, output_width, output_height,

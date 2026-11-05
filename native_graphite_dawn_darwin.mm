@@ -512,3 +512,6 @@ int vox_graphite_picture_supports_shared_pixels()
 {
     return dlsym(RTLD_DEFAULT, "vox_picture_pixels_acquire") != nullptr;
 }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_picture_supports_shared_typefaces() { return 1; }

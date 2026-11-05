@@ -5,13 +5,23 @@
 #include "include/core/SkSerialProcs.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkTypeface.h"
+#include "native_shared_picture_pixels.h"
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 #include <list>
 #include <mutex>
 #include <utility>
 
 inline constexpr uint8_t vox_picture_typeface_magic[8] {'V', 'X', 'T', 'F', 1, 0, 0, 0};
+inline constexpr uint8_t vox_shared_typeface_magic[8] {'V', 'X', 'T', 'F', 2, 0, 0, 0};
+struct VoxSharedPictureTypefaceToken {
+    uint8_t magic[8] {'V', 'X', 'T', 'F', 2, 0, 0, 0};
+    uint64_t token = 0;
+};
+static_assert(sizeof(VoxSharedPictureTypefaceToken) == 16);
 
 // Frame SkPicture's ordinary embedded font bytes so the receiving Skia can
 // retain one decoded face without reparsing its descriptor to find its length.
@@ -94,20 +104,27 @@ public:
     explicit VoxPictureTypefaceCache(size_t budget = 128 * 1024 * 1024, size_t count = 64)
         : byte_limit(budget), entry_limit(count) { }
 
-    sk_sp<SkTypeface> decode(void const* data, size_t size)
+    sk_sp<SkTypeface> decode_input(void const* data, size_t size, sk_sp<SkData> owned)
     {
         if (!data || !size || size > 64 * 1024 * 1024) return nullptr;
         // This small LRU already verifies every byte before reusing a face.
         // Compare directly: hashing a multi-megabyte embedded font first
         // repeats the whole scan for every picture tile, including cache hits.
         for (auto it = entries.begin(); it != entries.end(); ++it) {
-            if (it->encoded->size() != size
-                || std::memcmp(it->encoded->data(), data, size)) continue;
+            if (it->encoded->size() != size) continue;
+            // A shared lease owns immutable encoded bytes. Retaining that
+            // owner prevents address reuse, so equal addresses are exact keys.
+            if (!(owned && it->encoded->data() == data)
+                && std::memcmp(it->encoded->data(), data, size)) continue;
+            bool identity_hit = owned && it->encoded->data() == data;
+            if (owned) it->encoded = std::move(owned);
+            if (identity_hit && std::getenv("VOX_SHARED_PICTURE_TYPEFACES_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_SHARED_PICTURE_TYPEFACE_REUSE identity=1 bytes=%zu\n", size);
             auto face = it->face;
             entries.splice(entries.begin(), entries, it);
             return face;
         }
-        auto encoded = SkData::MakeWithCopy(data, size);
+        auto encoded = owned ? std::move(owned) : SkData::MakeWithCopy(data, size);
         if (!encoded) return nullptr;
         SkMemoryStream stream(encoded);
         auto face = SkTypeface::MakeDeserialize(&stream, nullptr);
@@ -125,9 +142,46 @@ public:
         return face;
     }
 
+    sk_sp<SkTypeface> decode(void const* data, size_t size) {
+        return decode_input(data, size, nullptr);
+    }
+
+    sk_sp<SkTypeface> decode_shared(uint64_t token) {
+        static auto acquire = reinterpret_cast<VoxAcquireSharedPicturePixels>(
+            dlsym(RTLD_DEFAULT, "vox_picture_pixels_acquire"));
+        VoxSharedPicturePixelsLease lease;
+        if (!token || !acquire || !acquire(token, &lease)) return nullptr;
+        struct Owner {
+            VoxSharedPicturePixelsLease lease;
+            ~Owner() { if (lease.release) lease.release(lease.owner); }
+        };
+        auto owner = std::make_unique<Owner>();
+        owner->lease = lease;
+        if (!lease.bytes || lease.size <= 16 || lease.size > 64 * 1024 * 1024
+            || std::memcmp(lease.bytes, vox_picture_typeface_magic, 8)) return nullptr;
+        uint64_t size = 0;
+        for (int i = 0; i < 8; ++i) size |= uint64_t(lease.bytes[8 + i]) << (i * 8);
+        if (size != lease.size - 16) return nullptr;
+        auto encoded = SkData::MakeWithProc(lease.bytes + 16, size,
+            [](void const*, void* value) { delete static_cast<Owner*>(value); }, owner.get());
+        if (!encoded) return nullptr;
+        owner.release();
+        auto face = decode_input(encoded->data(), encoded->size(), encoded);
+        if (std::getenv("VOX_SHARED_PICTURE_TYPEFACES_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_SHARED_PICTURE_TYPEFACE_DECODE bytes=%zu ready=%d\n",
+                size_t(size), bool(face));
+        return face;
+    }
+
     sk_sp<SkTypeface> decode_stream(SkStream& stream)
     {
         uint8_t header[16];
+        if (stream.peek(header, sizeof(header)) == sizeof(header)
+            && !std::memcmp(header, vox_shared_typeface_magic, 8)) {
+            VoxSharedPictureTypefaceToken payload;
+            if (stream.read(&payload, sizeof(payload)) != sizeof(payload)) return nullptr;
+            return decode_shared(payload.token);
+        }
         if (stream.peek(header, sizeof(header)) != sizeof(header)
             || std::memcmp(header, vox_picture_typeface_magic, 8)) {
             // Preserve callers that still supply ordinary SkPicture fonts.

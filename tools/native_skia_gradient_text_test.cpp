@@ -113,6 +113,17 @@ int main()
             ++cases;
         }
     s_gradient_text_raster_cache.clear();
+    for (bool regional : {false, true}) for (int scale : {1, 2}) for (float phase : {0.f, .25f}) {
+        unsetenv("VOX_SHARED_PICTURE_TYPEFACES");
+        auto expected = cached_text_frame(false, regional, scale, false, false, false, phase);
+        setenv("VOX_SHARED_PICTURE_TYPEFACES", "1", 1);
+        assert(cached_text_frame(false, regional, scale, false, false, false, phase) == expected);
+        // An explicit transport override must retain the embedded-font path.
+        setenv("VOX_DISABLE_SHARED_PICTURE_PIXELS", "1", 1);
+        assert(cached_text_frame(false, regional, scale, false, false, false, phase) == expected);
+        unsetenv("VOX_DISABLE_SHARED_PICTURE_PIXELS");
+    }
+    unsetenv("VOX_SHARED_PICTURE_TYPEFACES");
     for (int scale : {1, 2}) for (float phase : {0.f, .25f, .5f, .75f}) {
         unsetenv("VOX_REUSE_DAWN_REGION_RECORDER");
         auto reference = cached_text_frame(false, true, scale, false, true, false, phase);
