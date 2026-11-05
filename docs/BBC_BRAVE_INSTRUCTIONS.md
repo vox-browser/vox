@@ -15,6 +15,11 @@ preflight-only. Cohort 120 and every earlier failing result remain preserved.
 [Complete current evidence](performance/bbc-keyword-free-module-cohort121-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
 
+The fresh optimized `v -profile` investigation below does not replace cohort
+121. Its separate main-thread counter, caller groups, allocation counters and
+JSC samples supply diagnostic evidence only.
+[Profiles and complete verified compiler inputs](performance/bbc-v-profile-thread-instructions-20261105.json).
+
 Fresh native captures confirm candidate-only keyword-free module bypass before
 PNG and pass original pixels/content, all 72 external author scripts, actual
 native-library pins, helper ownership and exits. The SVG source-switch guard
@@ -6969,3 +6974,65 @@ unchanged. Cross-browser pixels still differ by 82.7154%; recorded DOM/script,
 font and paint limitations remain. This is no live-page, isolated rendering or
 scrolling result. The homepage stays outside the catalog.
 [Every capture, preflight failure, source proof and rollback check](performance/bbc-exact-attribute-cohort114-20261105.json).
+
+## Optimized main-thread V profile and callback investigation (2026-11-05)
+
+A fresh canonical generation preserves the completed production V flag/module/
+runtime seed, including `-d vox_production`, and explicitly uses C `-O3`, ThinLTO
+and inlining threshold 1500. It is a standalone single-C-unit diagnostic,
+different from the 33-unit production builds used for acceptance. Every checked
+repository source input remains unchanged through generation and sealing. All
+131 sealed C compiler inputs and 37 live inputs are retained and verified;
+the generated/preprocessed C records the actual compiled external modules.
+The original failed source-changing generation and the later V syntax failure
+remain retained without profile credit. The corrected protocol also clarifies
+that the production V seed has no literal `-prod` option; the first rejected
+attempt did not reach C compilation or browser execution.
+
+The existing V profiler's call, inclusive and self bookkeeping uses 44
+prospectively selected scopes, enabled on the main thread only. Its diagnostic
+clock reads the instruction field of Apple's
+[`thread_selfcounts` THSC_CPI record](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/resource_private.h).
+A separate native calibration verifies 1,001 increasing samples, approximately
+1.002M versus 10.011M instructions for ten times the compiled loop work, and
+worker isolation: 25,013,835 worker instructions versus 50,747 main-thread
+instructions while joining that worker. No counter overhead is subtracted.
+The first valid capture records 31,365,183,693 main-thread instructions at exit
+and 1,401,316 counter reads. Selected self counts include 9,817,299,187 in
+object-receiver JavaScript calls, 1,831,629,734 in rule matching and
+1,536,321,275 in uncached grid layout. The module rewrite has one call and
+11,466,383 selected self instructions. These are instrumented intervals, with
+unselected/native/JSC work and probe overhead; they are not production shares.
+Recursive inclusive scopes overlap, `main` is unfinished and post-PNG work can
+be included. Root-process instructions are recorded separately as context.
+
+A second capture adds native caller/event tags without extra clock reads or
+JavaScript property access. All 155 groups reconcile exactly with the V-profile
+call/inclusive/self totals. Caller addresses lie inside the actual executable's
+text segment and resolve against that executable's `dladdr` base. Six calls to
+one `message` callback account for 9,968,885,632 selected self instructions in
+that diagnostic. A first transform's incorrect seven-return assertion is
+retained; the actual eight generated returns all restore the event tag in the
+successful transform. No browser launched from the rejected transform.
+
+Two additional captures investigate that interval. Internal-bootstrap counters
+observe 2,877 wrappers, style proxies and class-list objects before PNG, with
+three style proxies reaching a get/set/has trap and no class token method use.
+Bare object reads, reflection and identity checks are not counted, so this does
+not prove exact lazy-allocation eligibility. The initial ambiguous proxy-trap
+replacement is rejected statically before injection; its compiled probe remains
+recorded. A separate capture of the latest completed canonical production build
+uses WebKit's native [sampling C APIs](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/API/JSContextRefPrivate.h)
+without changing script bytes or tier thresholds. One positively enabled group
+produces 640 raw stack samples; 391 leaf samples are native host frames and 236
+stacks include the internal geometry reader. These wall observations include
+native engine work and cannot establish retired-instruction shares or savings.
+
+All four captures pass the original exact pixel/content checks, all 72 external
+author-source witnesses before PNG, native-image/input identities and normal
+exits. Compiler, capture, counter-calibration, analysis, symbolization and archive
+guards exit zero. The complete archive verifies all 362 members, including all
+failed preparations, raw counters/rows/samples, original PNGs and sealed inputs.
+No optimization, acceptance or catalog credit is assigned; cohort 121 and the
+10% target remain unchanged.
+[Complete diagnostic evidence](performance/bbc-v-profile-thread-instructions-20261105.json).
