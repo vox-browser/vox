@@ -26,9 +26,11 @@ static void reference(const uint8_t *source, const uint8_t *background,
     }
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     enum { width = 2048, height = 128, passes = 8 };
+    size_t requested_span = argc > 1 ? strtoul(argv[1], NULL, 10) : 0;
+    assert(argc <= 2 && (!requested_span || (requested_span <= width && width % requested_span == 0)));
     size_t bytes = (size_t)width * height * 4;
     uint8_t *source = malloc(bytes), *background = malloc(bytes);
     uint8_t *result = malloc(bytes), *expected = malloc(bytes);
@@ -37,7 +39,7 @@ int main(void)
         "halfway-fallback", "short-spans", "unit-opacity", "empty"};
     for (int scene = 0; scene < 7; ++scene) {
         float opacity = scene == 3 ? 0.5f : scene == 5 ? 1.0f : 0.37f;
-        size_t span = scene == 4 ? 128 : width;
+        size_t span = requested_span ? requested_span : scene == 4 ? 128 : width;
         for (size_t i = 0; i < bytes / 4; ++i) {
             unsigned alpha = 1 + (i * 73 + i / width * 37) % 254;
             if (scene == 1 && i / 8 % 3 != 0) alpha = i / 8 % 3 == 1 ? 0 : 255;
