@@ -39,9 +39,9 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
 
 
-def input_identity(bundle, inputs):
+def input_identity(bundle, inputs, resources=()):
     """Pin the executable, native libraries, fixtures and shared fixture resources."""
-    paths = [bundle / 'Contents/MacOS/Vox', *bundle.glob('Contents/MacOS/*.dylib')]
+    paths = [bundle / 'Contents/MacOS/Vox', *bundle.glob('Contents/MacOS/*.dylib'), *resources]
     for directory in (inputs, inputs.parent / 'assets', inputs.parent / 'resources'):
         if directory.is_dir():
             paths.extend(p for p in directory.rglob('*') if p.is_file())
@@ -142,6 +142,8 @@ def main():
     parser.add_argument('--only', action='append', default=[])
     parser.add_argument('--fixture-list', type=Path,
                         help='one fixture stem per line, preserving a historical cohort')
+    parser.add_argument('--resource', action='append', default=[], type=Path, metavar='FILE',
+                        help='additional fixture resource to hash before each launch (repeatable)')
     parser.add_argument('--ignore', action='append', type=parse_rectangle, metavar='X,Y,W,H',
                         help='window rectangle excluded from comparison (default: the RAM readout)')
     parser.add_argument('--recompare', action='store_true',
@@ -196,9 +198,19 @@ def run_leased_captures(args, ignore):
     renderers = enabled_renderers(candidate)
     if renderers:
         candidate['VOX_GG_DIAGNOSTICS'] = '1'
+    resources = [Path(__file__).resolve(), *[p.resolve() for p in args.resource]]
+    if args.fixture_list:
+        resources.append(args.fixture_list.resolve())
+    missing_resources = [str(p) for p in resources if not p.is_file()]
+    if missing_resources:
+        raise ValueError(f'missing capture resource files: {missing_resources}')
+
+    def current_identity():
+        return input_identity(args.bundle, args.inputs, resources)
+
     args.output.mkdir(parents=True, exist_ok=False)
     identity_before = sha256(browser)
-    inputs_before = input_identity(args.bundle, args.inputs)
+    inputs_before = current_identity()
     fixtures = sorted(args.inputs.glob('*.html'))
     if args.fixture_list:
         names = args.fixture_list.read_text().splitlines()
@@ -216,7 +228,7 @@ def run_leased_captures(args, ignore):
         directory.mkdir(exist_ok=True)
         row = {'fixture': html.stem}
         for mode, env in (('control', {}), ('candidate', candidate)):
-            if input_identity(args.bundle, args.inputs) != inputs_before:
+            if current_identity() != inputs_before:
                 inputs_unchanged = False
                 break
             png = directory / f'{mode}.png'
@@ -250,7 +262,7 @@ def run_leased_captures(args, ignore):
         'bundle': str(args.bundle), 'executable_sha256_before': identity_before,
         'executable_sha256_after': sha256(browser), 'candidate_env': candidate,
         'input_identity': inputs_before,
-        'inputs_unchanged': inputs_unchanged and input_identity(args.bundle, args.inputs) == inputs_before,
+        'inputs_unchanged': inputs_unchanged and current_identity() == inputs_before,
         'requested_fixtures': len(fixtures),
     }
     return rows, summary

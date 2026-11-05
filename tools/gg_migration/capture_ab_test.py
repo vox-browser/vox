@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -30,7 +31,7 @@ class CaptureValidationTest(unittest.TestCase):
         (self.inputs / 'two.html').write_text('<p>two</p>')
         self.args = SimpleNamespace(bundle=self.bundle, inputs=self.inputs,
                                     output=root / 'captures', candidate_env=['VOX_GG_SHAPES=1'],
-                                    fixture_list=None, only=[], width=8, height=8,
+                                    fixture_list=None, resource=[], only=[], width=8, height=8,
                                     delay=0, timeout=1)
 
     @staticmethod
@@ -77,6 +78,49 @@ class CaptureValidationTest(unittest.TestCase):
         self.assertEqual(progress['candidate_env']['VOX_GG_SHAPES'], '1')
         self.assertEqual(progress['requested_fixtures'], 1)
         self.assertTrue(progress['input_identity'])
+        self.assertEqual(progress['input_identity'][str(manifest.resolve())],
+                         capture_ab.sha256(manifest))
+        runner = Path(capture_ab.__file__).resolve()
+        self.assertEqual(progress['input_identity'][str(runner)], capture_ab.sha256(runner))
+
+    def test_external_font_change_stops_before_candidate_launch(self):
+        font = self.inputs.parent / 'sites/font.woff2'
+        font.parent.mkdir()
+        font.write_bytes(b'original font')
+        self.args.resource = [font]
+        launches = []
+        def mutate(*args):
+            launches.append(args[2].name)
+            result = self.capture(*args)
+            font.write_bytes(b'replacement font')
+            return result
+        rows, summary = self.run_captures(mutate)
+        self.assertEqual(launches, ['control.png'])
+        self.assertFalse(summary['inputs_unchanged'])
+        self.assertEqual(rows[0]['outcome'], 'failed')
+        self.assertEqual(summary['input_identity'][str(font.resolve())],
+                         hashlib.sha256(b'original font').hexdigest())
+
+    def test_fixture_manifest_change_stops_cohort(self):
+        manifest = self.inputs.parent / 'cohort.txt'
+        manifest.write_text('one\ntwo\n')
+        self.args.fixture_list = manifest
+        def mutate(*args):
+            result = self.capture(*args)
+            manifest.write_text('one\n')
+            return result
+        rows, summary = self.run_captures(mutate)
+        self.assertFalse(summary['inputs_unchanged'])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['outcome'], 'failed')
+
+    def test_missing_external_resource_fails_before_any_capture(self):
+        self.args.resource = [self.inputs.parent / 'missing-font.woff2']
+        with patch.object(capture_ab, 'capture') as capture:
+            with self.assertRaisesRegex(ValueError, 'missing capture resource files'):
+                capture_ab.run_captures(self.args, [])
+            capture.assert_not_called()
+        self.assertFalse(self.args.output.exists())
 
     def test_shared_resource_change_is_an_identity_change(self):
         resources = self.inputs.parent / 'resources'
