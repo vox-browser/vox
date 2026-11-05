@@ -57,7 +57,8 @@ fn test_window_root_parent_uses_active_native_proxy_slot_and_stable_proxy_identi
 	}
 	proxy := window.window()
 	native_proxy := top.get_browsing_context()?.window_proxy()
-	native_proxy.set_window(replacement.get_window()?)
+	replacement_native := replacement.get_window()?
+	native_proxy.set_window(replacement_native)
 	assert proxy.window() == replacement_window
 	assert window.Window.parent()? == native_proxy
 	assert window.Window.top()? == native_proxy

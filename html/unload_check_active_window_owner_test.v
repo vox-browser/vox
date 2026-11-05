@@ -132,7 +132,8 @@ fn test_unload_phase_one_re_reads_native_proxy_window_after_queueing() {
 	mut event_loop := main_thread_event_loop()
 	assert voidptr(event_loop.task_queue().last_added_task()?.document()?) == voidptr(document)
 	native_proxy := document.get_browsing_context()?.window_proxy()
-	native_proxy.set_window(replacement.get_window()?)
+	replacement_native := replacement.get_window()?
+	native_proxy.set_window(replacement_native)
 	assert voidptr(traversable.active_window()?) == voidptr(replacement_window)
 	event_loop.process()
 	assert state.events == ['replacement:navigate']

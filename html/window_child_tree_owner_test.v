@@ -92,7 +92,8 @@ fn test_indexed_child_uses_native_active_proxy_slot_and_null_value_without_activ
 	}
 	child_proxy := child_window.window()
 	native := child.get_browsing_context()?.window_proxy()
-	native.set_window(replacement.get_window()?)
+	replacement_native := replacement.get_window()?
+	native.set_window(replacement_native)
 	assert child_proxy.window() == replacement_window
 	assert window_child_tree_proxy_value(window.window(), top.origin(), '0')! == voidptr(child_proxy)
 	assert window.length() == 1

@@ -35,7 +35,8 @@ fn test_source_proxy_native_and_typed_reassociation_updates_context_and_property
 	mut context := unsafe { &BrowsingContextModel(original_window.browsing_context()) }
 	mut proxy := context.window_proxy()?
 	native_proxy := original.get_browsing_context()?.window_proxy()
-	native_proxy.set_window(replacement.get_window()?)
+	replacement_native := replacement.get_window()?
+	native_proxy.set_window(replacement_native)
 	assert proxy.window() == replacement_window
 	assert context.active_window()? == replacement_window
 	assert proxy.associated_browsing_context() == replacement_window.browsing_context()
