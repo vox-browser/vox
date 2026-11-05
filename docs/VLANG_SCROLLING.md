@@ -1,6 +1,8 @@
 # vlang.io scrolling
 
-The live **60 FPS target remains unmet**. The latest fully pinned default-path cohort (`0bb14e2f`) measures **10.56 / 10.12 scroll-changing publications/s**, with every measured interval exceeding 16.67 ms. Raster staging produces mixed results and is removed. A separate unpublished native image-cache candidate improves both pairs but remains near 8–9 FPS on its different native configuration, with correctness and installed-browser validation pending. The native complete-picture experiment has a failed complete-content audit and supplies no FPS credit. These are Cocoa layer publications; physical display scanout is unmeasured. See the [native candidate checkpoint](#static-pages-and-unpublished-native-candidates).
+The live **smooth 60 fps target remains unmet**. Recent GPU-scroll cohorts have mean native publication rates above 60, but still miss the 16.67 ms frame budget. The November 6 follow-up below records the newer live protocol, interval distributions and rejected candidates. These are native layer publications; physical display scanout is unmeasured.
+
+Historical checkpoint before the newer GPU-scroll cohorts: an earlier fully pinned default-path cohort (`0bb14e2f`) measures **10.56 / 10.12 scroll-changing publications/s**, with every measured interval exceeding 16.67 ms. Raster staging produces mixed results and is removed. A separate unpublished native image-cache candidate improves both pairs but remains near 8–9 FPS on its different native configuration, with correctness and installed-browser validation pending. The native complete-picture experiment has a failed complete-content audit and supplies no FPS credit. These are Cocoa layer publications; physical display scanout is unmeasured. See the [native candidate checkpoint](#static-pages-and-unpublished-native-candidates).
 
 The [compositor milestone receipt](benchmark-results/vlang-scroll-20261101-compositor-milestone.json) and [compressed raw records](benchmark-results/vlang-scroll-20261101-compositor-milestone-raw.json.gz) retain 64 completed measurements and 1,657 raw text artifacts through this checkpoint, including diagnostic runs, failures, commands, input/publication timestamps, source and executable identities, host load, guard exits and rejected patches. Full artifacts remain in `Build/vlang-scroll-compositor-20261101-111741/`. That milestone is historical; later accepted cohorts are retained below.
 
@@ -2182,3 +2184,86 @@ retain exact build/library identities, input schedules, whole-window rates,
 intervals, misses, gaps, host load, diagnostics, tests and failures. Native
 publications remain distinct from physical display scanout. `69c332f7e` adds
 separate filter-stage timing diagnostics; those supply no unprofiled credit.
+
+### Sparse inputs, retained frames and image batching, November 6
+
+Smooth 60 fps remains open. These live tests use the same 1708×953 document
+viewport at 2×, 600 precise delta-8 wheel events at nominal 120 Hz, title
+readiness, ten seconds of settling, and fresh empty private profiles/caches.
+Rates count scroll-changing native publications over the full input window.
+
+| Candidate | Pair 1 publications/s | Pair 2 publications/s | Candidate p95 intervals (ms) | State |
+|---|---:|---:|---:|---|
+| Sparse owned CSS filter inputs | 88.91→89.56 | 90.15→78.33 | 26.14 / 26.03 | Off |
+| Early shared filter-context creation | 88.21→89.26 | 86.65→90.37 | 23.17 / 25.00 | On; p95 regresses |
+| Stationary snapshots with offscreen video | 80.88→92.61 | 97.27→90.32 | 21.42 / 21.43 | Off |
+| Bounds from current pointwise-filter groups | 93.54→89.05 | 88.30→89.72 | 23.50 / 24.65 | Off |
+| Filtered static images in mixed-MSAA tiles | 88.55→88.42 | 81.91→90.21 | 22.93 / 24.84 | Off |
+| Larger exact-byte upload cache | 90.14→91.11 | 90.31→78.11 | 22.30 / 26.27 | Off |
+
+The [evidence report](performance/vlang-gpu-scroll-sparse-redraw-20261106.json)
+and [verified raw archive](performance/raw/vlang-gpu-scroll-sparse-redraw-20261106.tar.gz)
+retain every attempt, complete input/publication timestamps, median/p95/maximum
+intervals, deadline misses, boundary gaps, host load, identities, guards and
+actual exits. The paired image/cache cohorts inject the same candidate native
+library into both arms and change only its experimental flag. Native publication
+is not physical display scanout. Host variation limits causal attribution;
+above-60 means do not establish smooth 60 fps.
+
+The stage diagnostic finds a 41.85 ms Core Image context initialization during
+input, followed by large pointwise imports. `a3a658913` prepares the shared
+context when adopting retained filters, including offscreen ones. A separate
+live diagnostic confirms preparation before input. Both paired means and maxima
+improve, but both p95 intervals regress; this does not establish a general
+smoothness gain. Pages without retained filters keep lazy initialization.
+Optimized and sanitizer checks preserve 144 exact frame comparisons.
+
+`6ccf1b499` gives filter inputs dedicated owned mappings. Its diagnostic skips
+378,935,348 untouched bytes across 97 input-window queries, but live timing stays
+mixed. The final native corpus preserves 3,072 exact frames in each mode and
+stable memory across 200 Retina frames. The rejected immutable-provider
+prototype supplies no change: the original provider already shares its bytes
+and retains the owner through its last copied-data view.
+
+`049f417f1` and `00af7e304` use bounded group geometry only from the current
+document, paint generation, scroll and viewport. A diagnostic compares the
+proposed crop with completed input alpha; all 97 initial and 87 repeated live
+checks pass within the unchanged three-level GPU pixel bound. Full-viewport
+filter imports fall from 14 to one in the diagnostic, but the unprofiled pairs
+remain mixed. Optimized and sanitizer corpora preserve 1,440 exact frames each.
+The initial timing cohort fails for disk exhaustion; its successful control
+and all failed arms remain retained. The table uses the complete later cohort.
+
+`fa54dc8cc` admits filtered static images to the existing mixed-MSAA image API.
+The initial live prototype exceeds the pixel bound on explicitly clipped
+images. Those draws and nearest sampling retain ordinary replay in the final
+candidate: 128 optimized and sanitizer comparisons stay within two levels,
+and live per-leaf verification stays within three. Both candidate p95 intervals
+improve, but the first mean and maximum regress. The path stays experimental.
+
+`781b3aefa` keeps a 128 MiB upload-cache option so the 37 MB mascot can use exact
+byte comparison instead of a digest. The native tests cover mutation, row
+padding, source ownership, retirement and the total budget. The live diagnostic
+confirms 22 owned-byte hits, but the second timing pair regresses. The default
+cache remains 32 MiB.
+
+`65c07c20c` safely discards queued redraw deliveries already covered by a newer
+prepared frame. Its native dispatch tests pass, but its live diagnostic finds
+zero eligible input deliveries, so it earns no FPS credit. Offscreen-video
+snapshot eligibility (`f8ed9f33c`) finds 63 input-window snapshot selections;
+`d6082bef9` keeps that path opt-in after the mixed cohort.
+
+`750fdb0ea` adds an experimental follow-up: same-size decoded frames retain their
+paint commands while still advancing the full content revision. Only proven
+stationary eligibility may omit those tracked media-only revisions from its
+cache key. Tests verify real retained video sources, updated pixel generations,
+other repaint invalidations, child/new-document ownership, size changes and
+both enabled and disabled modes. Live validation awaits the completed bundle's
+publication while another session holds its shared measurement lease.
+
+Completed cache and compiler artifacts are preserved losslessly. The raw archive
+includes the deduplicated trial-cache object archive, per-file SHA256/path/time
+manifest and restore tool; empty expanded cache directories are not empty
+measured caches. Another 116 completed compiler-source receipts are compressed
+and individually verified, recovering about 4 GiB after disk exhaustion. Their
+restore manifests and the original failures are retained.
