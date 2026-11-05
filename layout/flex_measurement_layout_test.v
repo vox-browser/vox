@@ -153,6 +153,26 @@ fn test_flex_measurement_owns_replayed_geometry_after_scratch_release() {
 	}
 }
 
+fn test_flex_measurement_keeps_a_recently_reused_question_across_eviction() {
+	mut document := html.parse_document('<!doctype html><section id="flex" style="display:flex;gap:7px"><p>Wrapping words alpha beta gamma.</p><p>Other content.</p></section>')
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := flex_measurement_test_node(document, 'flex')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	source.measurement_chunk_pool_.scratch_enabled_ = true
+	defer { source.release_measurement_chunk_pool() }
+	for width in [140, 160, 180, 200] {
+		assert !flex_measurement_test_compare(mut source, root, width, 0, .normal, '')
+	}
+	assert flex_measurement_test_compare(mut source, root, 140, 0, .normal, '')
+	assert !flex_measurement_test_compare(mut source, root, 220, 0, .normal, '')
+	assert flex_measurement_test_compare(mut source, root, 140, 0, .normal, '') == !retain_fifo_measurement_eviction
+	assert source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))].len == 4
+}
+
 fn test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry() {
 	for change in ['width', 'height', 'parent-width', 'parent-height', 'ancestor', 'constraint',
 		'edge', 'text', 'style', 'font', 'environment', 'tree', 'mode'] {

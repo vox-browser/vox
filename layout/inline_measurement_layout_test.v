@@ -94,6 +94,47 @@ fn test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires() {
 	assert pool.closed && pool.inline_measurements_.len == 0
 }
 
+fn test_inline_measurement_keeps_a_recently_reused_question_across_eviction() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
+	container := measurement_inline_fixture(document, '')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	source.measurement_chunk_pool_.scratch_enabled_ = true
+	defer { source.release_measurement_chunk_pool() }
+	for index, width in [140, 160, 180, 200, 140, 220, 140] {
+		space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)), AvailableSize.make_indefinite())
+		reused := measurement_inline_compare(mut source, container, space, .normal, false)
+		assert reused == (index == 4 || (index == 6 && !retain_fifo_measurement_eviction))
+	}
+	assert source.measurement_chunk_pool_.inline_measurements_[u64(voidptr(container))].len == 4
+}
+
+fn test_committed_inline_measurement_hit_preserves_probe_eviction_order() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
+	container := measurement_inline_fixture(document, '')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	defer { source.release_measurement_chunk_pool() }
+	for width in [140, 160, 180, 200] {
+		space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)), AvailableSize.make_indefinite())
+		assert !measurement_inline_compare(mut source, container, space, .normal, false)
+	}
+	key := u64(voidptr(container))
+	order := source.measurement_chunk_pool_.inline_measurements_[key].map(it.key.width)
+	mut used := source.get_mutable(unsafe { &NodeWithStyle(container) })
+	used.set_content_width(CSSPixels.new(140))
+	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(140)), AvailableSize.make_indefinite())
+	_ = run_inline_formatting_context_for_width(mut source, container, mut used, .normal, space, none, false)
+	assert used.line_boxes_are_shared_
+	assert source.measurement_chunk_pool_.inline_measurements_[key].map(it.key.width) == order
+}
+
 fn test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_font_rendering_policy(.chromium)

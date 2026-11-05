@@ -117,8 +117,8 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	key := inline_measurement_key(used, mode, space, width_only)
 	node_key := u64(voidptr(root))
 	font_generation := css.css_style_computer_for(root.document()).font_computer().environment_generation()
-	previous := pool.inline_measurements_[node_key] or { []&InlineMeasurementLayout{} }
-	for cached in previous {
+	mut previous := pool.inline_measurements_[node_key] or { []&InlineMeasurementLayout{} }
+	for cache_index, cached in previous {
 		if cached.key == key && cached.font_generation == font_generation
 			&& cached.font_policy == root.document().font_rendering_policy()
 			&& cached.style_environment == root.document().style_environment_version()
@@ -138,6 +138,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 				eprintln('Vox inline measurement: reused closed text layout within pass')
 			}
 			if committed { report_committed_inline_measurement_reuse() }
+			if !committed { retain_recent_measurement(mut previous, cache_index, root) }
 			return cached.result
 		}
 	}

@@ -176,6 +176,26 @@ fn test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement()
 	}
 }
 
+fn test_grid_measurement_keeps_a_recently_reused_question_across_eviction() {
+	mut document := html.parse_document('<!doctype html><section id="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><p>Wrapping words alpha beta gamma.</p><p>Other content.</p></section>')
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := grid_measurement_test_node(document, 'grid')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	source.measurement_chunk_pool_.scratch_enabled_ = true
+	defer { source.release_measurement_chunk_pool() }
+	for width in [140, 160, 180, 200] {
+		assert !grid_measurement_test_compare(mut source, root, width, 0, 500)
+	}
+	assert grid_measurement_test_compare(mut source, root, 140, 0, 500)
+	assert !grid_measurement_test_compare(mut source, root, 220, 0, 500)
+	assert grid_measurement_test_compare(mut source, root, 140, 0, 500) == !retain_fifo_measurement_eviction
+	assert source.measurement_chunk_pool_.grid_measurements_[u64(voidptr(root))].len == 4
+}
+
 fn test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree() {
 	mut document := html.parse_document('<!doctype html><section id="grid" style="display:grid;width:180px;grid-template-columns:1fr 1fr;gap:7px"><p id="item">Original wrapping words alpha beta gamma.</p><p>Other content.</p></section>')
 	defer { document.finalize() }

@@ -80,7 +80,8 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	key := flex_measurement_question(state, container, used, space)
 	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
 	style_environment := container.document().style_environment_version()
-	for cached in pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} } {
+	mut previous := pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} }
+	for cache_index, cached in previous {
 		keys_match := cached.key == key || (committed && cached.external_heights_independent
 			&& committed_flex_measurement_keys_match(&cached.key, &key))
 		unused_heights := !keys_match && !disable_unused_measurement_heights
@@ -113,6 +114,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
+		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		if committed && committed_flex_measurement_diagnostics && !committed_flex_measurement_reported {
 			committed_flex_measurement_reported = true
 			eprintln('Vox flex measurement: promoted measured flex into committed geometry')

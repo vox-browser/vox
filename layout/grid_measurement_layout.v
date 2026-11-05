@@ -194,8 +194,8 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	key := grid_measurement_key(state, container, used, space)
 	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
 	style_environment := container.document().style_environment_version()
-	previous := pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
-	for cached in previous {
+	mut previous := pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
+	for cache_index, cached in previous {
 		keys_match := cached.key == key || (committed && cached.external_heights_independent
 			&& committed_grid_measurement_keys_match(&cached.key, &key))
 		unused_heights := !keys_match && !disable_unused_measurement_heights
@@ -226,6 +226,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
+		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		return cached.result
 	}
 	// A committed miss must not populate, reject or evict disposable entries.
