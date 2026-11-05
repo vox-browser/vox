@@ -6,6 +6,7 @@ import time
 
 fn C.native_configure_browser_drawables()
 fn C.native_install_browser_layer_presentation()
+fn C.native_set_opaque_browser_frames(i32)
 
 // Keep GG's normal input dispatch for events that do not need its font atlas.
 fn C.gg__gg_event_fn(voidptr, voidptr)
@@ -41,6 +42,9 @@ fn configure_native_browser_context(mut context gg.Context) {
 		// runs for the unused parent callback and can make the child wait twice.
 		context.config = gg.Config{ ...context.config, swap_interval: 0 }
 		C.native_install_browser_layer_presentation()
+		// draw() initializes the entire native frame before end_browser_frame:
+		// opaque clear/replay, restored scroll pixels, or a retained snapshot.
+		C.native_set_opaque_browser_frames(1)
 		context.window.init_userdata_cb = initialize_native_browser_context
 		context.window.cleanup_userdata_cb = cleanup_native_browser_context
 		context.window.event_userdata_cb = dispatch_native_browser_event

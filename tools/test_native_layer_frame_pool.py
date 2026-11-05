@@ -5,6 +5,7 @@ Run through tools/run_memory_bounded.py (3 GiB suffices).
 """
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -27,8 +28,12 @@ def main():
         with (output / (mode + ".log")).open("w") as log:
             compiled = subprocess.call(command, stdout=log, stderr=subprocess.STDOUT)
             tested = subprocess.call([str(binary)], stdout=log, stderr=subprocess.STDOUT) if compiled == 0 else None
-        failed = failed or tested != 0
-        print(json.dumps(dict(mode=mode, compile_exit=compiled, test_exit=tested, log=str(output / (mode + ".log")))), flush=True)
+            cleared = subprocess.call([str(binary)], env={**os.environ,
+                'VOX_CLEAR_OPAQUE_FRAME_BUFFERS': '1'}, stdout=log,
+                stderr=subprocess.STDOUT) if compiled == 0 else None
+        failed = failed or tested != 0 or cleared != 0
+        print(json.dumps(dict(mode=mode, compile_exit=compiled, test_exit=tested,
+                             cleared_test_exit=cleared, log=str(output / (mode + ".log")))), flush=True)
     return 1 if failed else 0
 
 

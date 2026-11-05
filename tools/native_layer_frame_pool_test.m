@@ -7,6 +7,12 @@
 #include <stdio.h>
 #include "native_layer_presentation_darwin.h"
 
+// Use the same backend frame contract as the V browser, without a window.
+@interface MyView2 : NSView
+@end
+@implementation MyView2
+@end
+
 static int frame_value;
 static BOOL frame_started_clear;
 
@@ -49,6 +55,41 @@ static CGImageRef frame(NSView* view, int value)
     return image;
 }
 
+static void pool_test_opaque_draw(id self, SEL command, NSRect rect)
+{
+    CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+    CGContextSetRGBFillColor(context, 1, 1, 1, 1);
+    CGContextFillRect(context, rect);
+    CGContextSetRGBFillColor(context, frame_value / 255.0, 0.25, 0.5, 0.5);
+    CGContextFillRect(context, CGRectMake(1.25, 1.5, 20.5, 10.25));
+    vox_browser_frame_completed();
+}
+
+static NSView* nested_view;
+static void pool_test_incomplete_draw(id self, SEL command, NSRect rect)
+{
+    if (nested_view) {
+        CGImageRef child = native_layer_raster_frame(nested_view, 2, (IMP)pool_test_opaque_draw);
+        assert(child);
+        CGImageRelease(child);
+    }
+    // A completed nested frame must not complete this unpainted callback.
+}
+
+static void pool_test_opaque_throw(id self, SEL command, NSRect rect)
+{
+    pool_test_opaque_draw(self, command, rect);
+    @throw [NSException exceptionWithName:@"pool" reason:@"opaque draw failed" userInfo:nil];
+}
+
+static void assert_transparent(CGImageRef image)
+{
+    assert(image);
+    NSData* data = image_bytes(image);
+    const uint8_t* bytes = data.bytes;
+    for (NSUInteger i = 0; i < data.length; ++i) assert(bytes[i] == 0);
+}
+
 int main(void)
 {
     @autoreleasepool {
@@ -89,6 +130,37 @@ int main(void)
         CGImageRef resized = frame(view, 9);
         assert(CGImageGetWidth(resized) == 160 && native_test_frame_buffer_maps == 4);
         CGImageRelease(resized);
+        NSView* opaque_view = [[MyView2 alloc] initWithFrame:NSMakeRect(0, 0, 80, 40)];
+        frame_value = 100;
+        CGImageRef expected = native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_opaque_draw);
+        NSData* expected_pixels = image_bytes(expected);
+        CGImageRelease(expected);
+        native_set_opaque_browser_frames(1);
+        CGImageRef opaque = native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_opaque_draw);
+        assert([image_bytes(opaque) isEqualToData:expected_pixels]);
+        frame_value = 200;
+        CGImageRef next = native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_opaque_draw);
+        assert([image_bytes(opaque) isEqualToData:expected_pixels]);
+        CGImageRelease(next);
+        CGImageRelease(opaque);
+        const char *force_clear = getenv("VOX_CLEAR_OPAQUE_FRAME_BUFFERS");
+        assert((native_test_frame_buffer_deferred_clears > 0) == !(force_clear && *force_clear));
+        @try { native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_opaque_throw); assert(0); }
+        @catch (NSException* exception) { }
+        CGImageRef incomplete = native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_incomplete_draw);
+        assert_transparent(incomplete);
+        CGImageRelease(incomplete);
+        nested_view = [[MyView2 alloc] initWithFrame:NSMakeRect(0, 0, 80, 40)];
+        CGImageRef parent = native_layer_raster_frame(opaque_view, 2, (IMP)pool_test_incomplete_draw);
+        assert_transparent(parent);
+        CGImageRelease(parent);
+        nested_view = nil;
+        // Opt-in affects only browser callbacks; generic partial painting still
+        // receives a cleared bitmap and retains its transparent background.
+        CGImageRef generic = frame(view, 12);
+        CGImageRelease(generic);
+        native_set_opaque_browser_frames(0);
+        assert(!native_layer_opaque_frame_context && !native_layer_opaque_frame_complete);
         printf("PASS layer frame buffers: %u maps, %u reuses, cleared starts, immutable images\n",
             native_test_frame_buffer_maps, native_test_frame_buffer_reuses);
     }

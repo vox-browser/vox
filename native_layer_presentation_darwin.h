@@ -41,6 +41,23 @@ static CGContextRef native_layer_document_bitmap;
 static BOOL native_layer_document_bitmap_claimed;
 static VoxInitialDocumentClear native_layer_initial_document_clear;
 
+// V opts in only for callbacks that replace the whole frame before completing:
+// an opaque background plus replay, a restored scroll frame, or a snapshot.
+// Callbacks that return before completing still publish a transparent bitmap.
+static BOOL native_layer_opaque_frames;
+static CGContextRef native_layer_opaque_frame_context;
+static BOOL native_layer_opaque_frame_complete;
+
+static void native_set_opaque_browser_frames(int enabled) {
+    native_layer_opaque_frames = enabled != 0;
+}
+
+static void vox_browser_frame_completed(void) {
+    if (native_layer_opaque_frame_context
+        && NSGraphicsContext.currentContext.CGContext == native_layer_opaque_frame_context)
+        native_layer_opaque_frame_complete = YES;
+}
+
 static BOOL native_layer_claim_document_bitmap(CGContextRef context) {
     if (!context || context != native_layer_document_bitmap
         || native_layer_document_bitmap_claimed) return NO;
@@ -234,7 +251,8 @@ static CGFloat native_layer_effective_scale(NSView *view) {
 // each frame fault in and zero every page again (29 MB for a 1708x1065 window
 // at 2x), mostly inside the scroll ring's copy into it. Keep a few buffers
 // mapped instead: a buffer is reused only after the image that owns it has
-// been released, and is cleared to the transparent state of a new one.
+// been released. Generic callbacks start transparent; V's opaque-frame
+// contract can defer that clear until an incomplete callback returns.
 #define VOX_LAYER_FRAME_BUFFERS 3
 typedef struct {
     void *pixels;
@@ -246,6 +264,7 @@ typedef struct {
 static VoxLayerFrameBuffer native_layer_frame_buffers[VOX_LAYER_FRAME_BUFFERS];
 #ifdef VOX_TEST_LAYER_FRAME_BUFFERS
 static unsigned native_test_frame_buffer_reuses, native_test_frame_buffer_maps;
+static unsigned native_test_frame_buffer_deferred_clears;
 #endif
 
 static void native_layer_release_frame_buffer(void *info, const void *data, size_t size) {
@@ -254,7 +273,8 @@ static void native_layer_release_frame_buffer(void *info, const void *data, size
     __atomic_store_n(&((VoxLayerFrameBuffer *)info)->busy, 0, __ATOMIC_RELEASE);
 }
 
-static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size_t height) {
+static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size_t height,
+    BOOL defer_clear) {
     static int disabled = -1;
     if (disabled < 0) {
         const char *value = getenv("VOX_DISABLE_LAYER_FRAME_BUFFER_POOL");
@@ -269,9 +289,10 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
         if (buffer->pixels && buffer->width == width && buffer->height == height
             && __atomic_compare_exchange_n(&buffer->busy, &idle, 1, false,
                 __ATOMIC_ACQUIRE, __ATOMIC_RELAXED)) {
-            memset(buffer->pixels, 0, bytes);
+            if (!defer_clear) memset(buffer->pixels, 0, bytes);
 #ifdef VOX_TEST_LAYER_FRAME_BUFFERS
             ++native_test_frame_buffer_reuses;
+            if (defer_clear) ++native_test_frame_buffer_deferred_clears;
 #endif
             return buffer;
         }
@@ -333,7 +354,10 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     if (pixel_width > 16384 || pixel_height > 16384) return NULL;
     size_t width = (size_t)pixel_width, height = (size_t)pixel_height;
     if (!width || !height || width > SIZE_MAX / 4 / height) return NULL;
-    VoxLayerFrameBuffer *pooled = native_layer_acquire_frame_buffer(width, height);
+    const char *force_clear = getenv("VOX_CLEAR_OPAQUE_FRAME_BUFFERS");
+    BOOL defer_clear = native_layer_opaque_frames && native_layer_is_browser_view(view)
+        && !(force_clear && *force_clear);
+    VoxLayerFrameBuffer *pooled = native_layer_acquire_frame_buffer(width, height, defer_clear);
     BOOL pooled_owned = NO;
     CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGContextRef bitmap = CGBitmapContextCreate(pooled ? pooled->pixels : NULL, width, height,
@@ -350,6 +374,8 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     CGContextRef previous_bitmap = native_layer_document_bitmap;
     BOOL previous_claimed = native_layer_document_bitmap_claimed;
     VoxInitialDocumentClear previous_initial_clear = native_layer_initial_document_clear;
+    CGContextRef previous_opaque_context = native_layer_opaque_frame_context;
+    BOOL previous_opaque_complete = native_layer_opaque_frame_complete;
     NativeDocumentSubmissionFrame frame = { .bitmap = bitmap,
         .token = ++native_document_submission_sequence };
     NativeDocumentSubmissionFrame *previous_submission = native_document_submission_current;
@@ -359,9 +385,15 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         native_layer_document_bitmap = bitmap;
         native_layer_document_bitmap_claimed = NO;
         native_layer_initial_document_clear = (VoxInitialDocumentClear){0};
+        native_layer_opaque_frame_context = pooled && defer_clear ? bitmap : NULL;
+        native_layer_opaque_frame_complete = NO;
         NSGraphicsContext.currentContext = [NSGraphicsContext
             graphicsContextWithCGContext:bitmap flipped:view.isFlipped];
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
+        if (native_layer_opaque_frame_context && !native_layer_opaque_frame_complete) {
+            CGContextFlush(bitmap);
+            memset(pooled->pixels, 0, pooled->bytes);
+        }
         image = pooled ? native_layer_pooled_frame_image(bitmap, pooled, &pooled_owned)
             : vox_frame_snapshot_copy(bitmap);
     } @finally {
@@ -370,6 +402,8 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         native_layer_document_bitmap = previous_bitmap;
         native_layer_document_bitmap_claimed = previous_claimed;
         native_layer_initial_document_clear = previous_initial_clear;
+        native_layer_opaque_frame_context = previous_opaque_context;
+        native_layer_opaque_frame_complete = previous_opaque_complete;
         NSGraphicsContext.currentContext = previous;
         CGContextRelease(bitmap);
         if (pooled && !pooled_owned) __atomic_store_n(&pooled->busy, 0, __ATOMIC_RELEASE);
