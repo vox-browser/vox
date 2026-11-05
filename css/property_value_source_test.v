@@ -51,7 +51,8 @@ fn test_cascade_property_source_reads_current_background_and_math_depth() {
 	mut element := document.create_element('div')!
 	element.set_attribute_value('style', 'background-image:none,none,none;background-attachment:fixed;font-size:math;math-depth:2')
 	computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(element, none))
-	assert property_source_test_layer_count(computed.property(.background_attachment, .no)?) == 3
+	attachment := computed.property(.background_attachment, .no)?
+	assert property_source_test_layer_count(attachment) == 3
 	assert computed.math_depth() == 2
 	assert computed.font_size().raw_value() == 516
 	assert !computed.is_property_inherited(.background_attachment)
@@ -71,7 +72,8 @@ fn test_recomputation_property_source_observes_replaced_values_and_keeps_flags()
 		computed.set_property(.font_size, property_source_test_value(.font_size, 'math'), .no, .no)
 		gc_collect()
 		StyleComputer.new(document).compute_property_values(mut computed, subject)
-		assert property_source_test_layer_count(computed.property(.background_attachment, .no)?) == count
+		attachment := computed.property(.background_attachment, .no)?
+		assert property_source_test_layer_count(attachment) == count
 		assert computed.font_size().raw_value() == 516
 		assert computed.is_property_inherited(.background_attachment)
 		assert computed.is_property_important(.background_attachment)
