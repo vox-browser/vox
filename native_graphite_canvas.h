@@ -15,6 +15,8 @@ std::unique_ptr<skgpu::graphite::Recorder> canvas_recorder;
 std::vector<CanvasTile> canvas_tiles;
 std::vector<sk_sp<SkSurface>> canvas_surface_pool;
 id<MTLComputePipelineState> canvas_readback_pipeline;
+VoxGraphiteImageUploadCache<sk_sp<SkImage>> canvas_backdrop_uploads {16 * 1024 * 1024, 4};
+size_t canvas_backdrop_texture_hits;
 
 SkImageInfo canvas_info(int width, int height)
 {
@@ -27,6 +29,7 @@ void canvas_reset()
 {
     canvas_tiles.clear();
     canvas_surface_pool.clear();
+    canvas_backdrop_uploads.clear();
     canvas_recorder.reset();
     [canvas_readback_pipeline release];
     canvas_readback_pipeline = nil;
@@ -538,9 +541,27 @@ int vox_graphite_canvas_copy_pixels(uint8_t const* bgra, int width, int height, 
         || device_x < 0 || device_y < 0 || device_x > 16384 - width || device_y > 16384 - height) return 0;
     std::lock_guard lock(gpu_mutex);
     if (!canvas_recorder) return 0;
-    auto raster = SkImages::RasterFromPixmapCopy(SkPixmap(canvas_info(width, height), bgra, size_t(pitch)));
-    auto image = raster ? vox_shared_image(canvas_recorder.get(), raster, {}) : nullptr;
+    // Retained video backdrops often repeat unchanged across scroll frames.
+    // This private cache owns exact source rows and textures, ignoring padding.
+    // Larger inputs keep the ordinary upload rather than digest-only matching.
+    bool cached = std::getenv("VOX_GPU_CANVAS_CACHE_BACKDROP")
+        && size_t(width) * height <= 4 * 1024 * 1024 / 4;
+    VoxGraphiteImage key {.width = width, .height = height, .pitch = pitch, .flags = 1, .pixels = bgra};
+    auto request = cached ? canvas_backdrop_uploads.prepare(key, width, height, false)
+        : decltype(canvas_backdrop_uploads)::Request{};
+    auto image = request.texture;
+    bool reused = bool(image);
+    if (!image) {
+        auto raster = SkImages::RasterFromPixmapCopy(SkPixmap(canvas_info(width, height), bgra, size_t(pitch)));
+        image = raster ? vox_shared_image(canvas_recorder.get(), raster, {}) : nullptr;
+    }
     if (!image) return 0;
+    if (cached) {
+        if (reused) ++canvas_backdrop_texture_hits;
+        canvas_backdrop_uploads.finish(std::move(request), image);
+        if (std::getenv("VOX_GPU_CANVAS_BACKDROP_CACHE_DIAGNOSTICS"))
+            std::fprintf(stderr, "Vox GPU backdrop texture: reused=%d size=%dx%d\n", reused, width, height);
+    }
     float bounds[] {float(device_x), float(device_y), float(device_x + width), float(device_y + height)};
     SkPaint copy;
     copy.setBlendMode(SkBlendMode::kSrc);

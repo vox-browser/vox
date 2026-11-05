@@ -277,6 +277,40 @@ int main() { @autoreleasepool {
         assert(actual == expected);
         vox_graphite_canvas_end();
     }
+    canvas_reset();
+    setenv("VOX_GPU_CANVAS_CACHE_BACKDROP", "1", 1);
+    {
+        constexpr int w = 37, h = 29, pitch = w * 4 + 16, target_w = 128, target_h = 128;
+        std::vector<uint8_t> source(pitch * h), backdrop(target_w * target_h * 4, 0x53), expected = backdrop, actual(backdrop.size());
+        for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+            auto* p = source.data() + y * pitch + x * 4;
+            p[0] = x; p[1] = y; p[2] = x + y; p[3] = 200;
+        }
+        int rect[] {0, 0, target_w, target_h, 0, 0, target_w, target_h};
+        size_t hits = canvas_backdrop_texture_hits;
+        for (int frame = 0; frame < 2; ++frame) {
+            assert(vox_graphite_canvas_begin(rect, 1));
+            assert(vox_graphite_canvas_upload(0, backdrop.data(), target_w * 4));
+            for (int pass = 0; pass < 3; ++pass) {
+                int x = pass == 1 ? 64 : 13, y = pass == 2 ? 80 : 17;
+                if (pass == 1) for (int row = 0; row < h; ++row)
+                    std::memset(source.data() + row * pitch + w * 4, 0xdd, pitch - w * 4);
+                if (pass == 2) source[0] ^= 1;
+                assert(vox_graphite_canvas_copy_pixels(source.data(), w, h, pitch, x, y));
+                for (int row = 0; row < h; ++row)
+                    std::memcpy(expected.data() + ((y + row) * target_w + x) * 4,
+                        source.data() + row * pitch, w * 4);
+            }
+            assert(canvas_backdrop_texture_hits >= hits + 1);
+            VoxGraphitePixelRegion view {0, 0, target_w, target_h, target_w * 4, actual.data()};
+            assert(vox_graphite_canvas_read(&view, 1) && actual == expected);
+            vox_graphite_canvas_end();
+            expected = backdrop;
+        }
+        assert(canvas_backdrop_texture_hits >= hits + 4);
+        canvas_reset(); // Retire cached textures before their recorder/context.
+    }
+    unsetenv("VOX_GPU_CANVAS_CACHE_BACKDROP");
     canvas_reset(); recorder.reset(); gpu_context.reset();
     std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }
