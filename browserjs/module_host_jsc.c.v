@@ -149,14 +149,18 @@ fn (mut host ModuleHost) resolve(specifier string, base string, parent string) !
 }
 
 fn (mut host ModuleHost) rewrite(code string, base string, key string, is_module bool) !string {
+	skip_specifier_lexer := host.can_skip_keyword_free_module_lexer(code, is_module)
 	value := host.runtime.call_javascript_function(host.transform,
 		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
 			host.runtime.binding_string(code),
 			host.runtime.binding_string(base),
 			host.runtime.binding_string(key),
 			C.vox_jsc_JSValueMakeBoolean(host.runtime.context, is_module),
+			C.vox_jsc_JSValueMakeBoolean(host.runtime.context, skip_specifier_lexer),
 		])!
-	return host.runtime.binding_dom_string(value)
+	result := host.runtime.binding_dom_string(value)!
+	if skip_specifier_lexer { report_keyword_free_module_lexer_skip() }
+	return result
 }
 
 fn (mut host ModuleHost) transform_classic(source ScriptSource) !ScriptSource {
