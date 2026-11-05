@@ -45,6 +45,43 @@ static void test_redraw_survives_layer_display(void) {
     native_layer_original_draw = NULL;
 }
 
+static void test_completed_frame_covers_queued_redraw(void) {
+    for (int disabled = 0; disabled < 2; ++disabled)
+    for (int change = 0; change < 7; ++change) {
+        if (disabled) setenv("VOX_DISABLE_COVERED_LAYER_REDRAWS", "1", 1);
+        else unsetenv("VOX_DISABLE_COVERED_LAYER_REDRAWS");
+        NSView *view = [[VoxScrollRasterTestView alloc] initWithFrame:NSMakeRect(0, 0, 32, 32)];
+        view.wantsLayer = YES;
+        native_layer_original_draw = (IMP)test_draw;
+        redraw_during_paint = YES;
+        native_layer_update(view, @selector(updateLayer)); // Queue a retained request.
+        redraw_during_paint = NO;
+        native_layer_update(view, @selector(updateLayer)); // Finish a newer frame first.
+        view.needsDisplay = NO; // Model AppKit clearing its dirty bit.
+        CGFloat saved_scale = native_layer_capture_scale;
+        uintptr_t saved_view = native_layer_last_preparation_view;
+        uint64_t saved_prepared = native_layer_last_prepared_generation;
+        if (change == 1) ++native_layer_redraw_generation;
+        if (change == 2) view.frame = NSMakeRect(0, 0, 33, 32);
+        if (change == 3) view.needsDisplay = YES;
+        if (change == 4) native_layer_capture_scale = native_layer_effective_scale(view) + 1;
+        if (change == 5) native_layer_last_preparation_view = 0;
+        if (change == 6) --native_layer_last_prepared_generation;
+        __block BOOL drained = NO;
+        dispatch_async(dispatch_get_main_queue(), ^{ drained = YES; });
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:1];
+        while (!drained && deadline.timeIntervalSinceNow > 0)
+            [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:deadline];
+        assert(drained);
+        assert(view.needsDisplay == (BOOL)(disabled || change != 0));
+        native_layer_capture_scale = saved_scale;
+        native_layer_last_preparation_view = saved_view;
+        native_layer_last_prepared_generation = saved_prepared;
+    }
+    unsetenv("VOX_DISABLE_COVERED_LAYER_REDRAWS");
+    native_layer_original_draw = NULL;
+}
+
 static void test_independent_image_pixels_are_not_reused(void) {
     CGColorSpaceRef color = CGColorSpaceCreateDeviceRGB();
     CGContextRef context = CGBitmapContextCreate(NULL, 32, 32, 8, 128,
@@ -415,6 +452,7 @@ int main(void) {
         for (int scale = 1; scale <= 2; ++scale)
             test_video_backdrop_composites_new_frames_exactly(scale);
         test_redraw_survives_layer_display();
+        test_completed_frame_covers_queued_redraw();
         puts("Scroll raster: exact pixels across scroll direction, overlay fades, revision, navigation, resize, density and fallback");
     }
 }

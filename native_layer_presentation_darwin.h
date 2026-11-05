@@ -653,6 +653,19 @@ static void native_layer_update(id self, SEL command) {
     NSNumber *painted = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
     if (painted && painted.unsignedLongLongValue != native_layer_redraw_generation) {
         dispatch_async(dispatch_get_main_queue(), ^{
+            // Another display pass can finish before this delivery runs. Its
+            // completed preparation already covers the retained request; do
+            // not dirty that fresh frame again. Leave an existing dirty bit
+            // intact, and keep requests without a matching preparation/view.
+            if (!getenv("VOX_DISABLE_COVERED_LAYER_REDRAWS")
+                && native_layer_last_preparation_view == (uintptr_t)(__bridge void *)view
+                && native_layer_last_prepared_generation == native_layer_redraw_generation
+                && native_layer_frame_matches_input(view, native_layer_effective_scale(view))) {
+                if (getenv("VOX_LAYER_REDRAW_DELIVERY_DIAGNOSTICS"))
+                    fprintf(stderr, "VOX_LAYER_REDRAW_DELIVERY skipped=1 generation=%llu\n",
+                        (unsigned long long)native_layer_redraw_generation);
+                return;
+            }
             view.needsDisplay = YES;
         });
     }
