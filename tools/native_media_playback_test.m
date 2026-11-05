@@ -25,6 +25,22 @@ static uint64_t frameHash(void *media) {
     native_media_free_frame(frame);
     return hash;
 }
+// Every byte keeps its pixel; red and blue swap, including the scalar tail of
+// odd widths and padded source rows.
+static void checkBgraConversion(void) {
+    for (size_t w = 1; w <= 11; ++w) {
+        size_t h = 3, stride = w * 4 + 12;
+        uint8_t *source = malloc(stride * h), *converted = malloc(w * h * 4);
+        for (size_t i = 0; i < stride * h; ++i) source[i] = (uint8_t)(i * 37 + 11);
+        native_media_bgra_to_rgba(source, stride, converted, w, h);
+        for (size_t y = 0; y < h; ++y) for (size_t x = 0; x < w; ++x) {
+            const uint8_t *s = source + y * stride + x * 4;
+            const uint8_t *d = converted + (y * w + x) * 4;
+            assert(d[0] == s[2] && d[1] == s[1] && d[2] == s[0] && d[3] == s[3]);
+        }
+        free(source); free(converted);
+    }
+}
 static void checkPlayback(const char *url) {
     void *media = native_media_open(url);
     assert(media);
@@ -66,6 +82,7 @@ static void checkPlayback(const char *url) {
 int main(int argc, const char **argv) {
     @autoreleasepool {
         assert(argc == 3);
+        checkBgraConversion();
         void *loaded = dlopen("/System/Library/Frameworks/AVFoundation.framework/AVFoundation",
             RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
         assert((loaded != NULL) == (getenv("VOX_EAGER_AVFOUNDATION") != NULL));

@@ -7,6 +7,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#endif
 
 // All calls run on the browser's main thread. AVFoundation owns asynchronous
 // networking, demuxing, decoding and audio; V pulls frames into VideoFrameSource.
@@ -127,6 +130,28 @@ static void native_media_seek(void *handle, double seconds, int32_t approximate)
             if (generation == media.seekGeneration) media.seeking = NO;
         }];
 }
+// A playing video converts every new frame on the main thread: swap red and
+// blue four pixels at a time (1426x1080 BGRA frames on vlang.io).
+static void native_media_bgra_to_rgba(const uint8_t *input, size_t stride, uint8_t *pixels,
+    size_t w, size_t h) {
+#if defined(__aarch64__)
+    const uint8_t indices[] = {2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15};
+    uint8x16_t order = vld1q_u8(indices);
+#endif
+    for (size_t y = 0; y < h; ++y) {
+        const uint8_t *src = input + y * stride;
+        uint8_t *dst = pixels + y * w * 4;
+        size_t x = 0;
+#if defined(__aarch64__)
+        for (; w - x >= 4; x += 4)
+            vst1q_u8(dst + x * 4, vqtbl1q_u8(vld1q_u8(src + x * 4), order));
+#endif
+        for (; x < w; ++x) {
+            dst[x * 4] = src[x * 4 + 2]; dst[x * 4 + 1] = src[x * 4 + 1];
+            dst[x * 4 + 2] = src[x * 4]; dst[x * 4 + 3] = src[x * 4 + 3];
+        }
+    }
+}
 static uint8_t *native_media_copy_frame(void *handle, int32_t *width, int32_t *height) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
     if (!media) return NULL;
@@ -140,11 +165,7 @@ static uint8_t *native_media_copy_frame(void *handle, int32_t *width, int32_t *h
         CVPixelBufferLockBaseAddress(frame, kCVPixelBufferLock_ReadOnly);
         const uint8_t *input = CVPixelBufferGetBaseAddress(frame);
         size_t stride = CVPixelBufferGetBytesPerRow(frame);
-        for (size_t y = 0; y < h; ++y) for (size_t x = 0; x < w; ++x) {
-            const uint8_t *src = input + y * stride + x * 4;
-            uint8_t *dst = pixels + (y * w + x) * 4;
-            dst[0] = src[2]; dst[1] = src[1]; dst[2] = src[0]; dst[3] = src[3];
-        }
+        native_media_bgra_to_rgba(input, stride, pixels, w, h);
         CVPixelBufferUnlockBaseAddress(frame, kCVPixelBufferLock_ReadOnly);
         *width = (int32_t)w; *height = (int32_t)h;
     }
