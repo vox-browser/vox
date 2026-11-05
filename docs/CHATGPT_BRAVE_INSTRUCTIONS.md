@@ -1988,3 +1988,41 @@ the original `O1` mode remains the default. All eleven tooling tests pass,
 including exact compiler-option preservation, CLI forwarding, invalid-mode
 rejection and real recursive/partial callback execution under C `-O3`. Profiles
 remain diagnostic because their callbacks and counters add work.
+
+
+## November 5: profile with production compiler flags
+
+The completed single-unit receipt for executable
+`fc1b35e2a33b03af8106ca59b65b3f4961ed02cad05a2abff8fa1953c6135c1a`
+supplies the sealed source and link inputs for a separate diagnostic executable.
+The profiler retains the original C `-O3` and inlining flags. Compilation takes
+1,360.49 seconds under heavy host contention and peaks at 10,358,833,152 bytes
+under the 12 GiB guard. No production bundle is rebuilt or copied.
+
+Both five-second captures pass bootstrap, complete content identity, unchanged
+pixels and stable input identities. The selected-counter capture has zero
+profiler faults and one partial root frame. Its active gate records
+41,144,053,373 current-process instructions. Selected self scopes include module
+fulfillment (11,106,078,835), retained layout (6,598,737,046), the document style
+callback (5,155,118,184) and native CSS effect-layer completion (2,672,909,818).
+Self excludes only selected children; concurrent process threads and callback
+costs remain included. Recursive inclusive totals overlap. Module fulfillment
+includes JavaScriptCore jobs and native binding calls, so it does not isolate
+JavaScript parsing or execution. These counts cannot be compared directly with
+the unprofiled launch-through-PNG coalition totals.
+
+The second capture collects surviving function call counts and elapsed scopes,
+with zero faults and three partial frames. It observes 48,237 URL constructions,
+101,292 protected-value registrations and 155,050 host-function dispatches.
+Counts alone establish neither redundant inputs nor an optimization opportunity.
+A separate production leaf diagnostic passes the same rendering gates. Its
+labels charge grouped handlers to their first command; elapsed times include
+host waits at load averages above 100 on 18 CPUs. These observations guide
+component experiments and receive no performance credit.
+
+The [profile receipt](performance/chatgpt-production-optimized-profile-20261105.json)
+links the verified archive containing compiler inputs, commands, raw profiles,
+leaf observations, captures, guards and all eleven tooling-test results. Runtime
+peaks stay below the 3 GiB guards. Original author scripts and the saved SOCKS
+capture remain unchanged. The broad-check cadence stays at zero, and the
+requested 5% advantage over Brave remains unmet.
