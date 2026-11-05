@@ -1,0 +1,109 @@
+{
+  "complete": false,
+  "status": "pending-publication-and-browser-validation",
+  "recorded_unix": 1793916843.38117,
+  "implementation_commit": "bde01623f",
+  "focused": {
+    "path": "docs/performance/chatgpt-document-owner-20261106.json",
+    "sha256": "c7cd8f8c030d60b783d43514e44a1157a019525f083909ae44854ce235cbf1d4",
+    "bytes": 63566
+  },
+  "focused_test_function_executions": 296,
+  "source_hashes": {
+    "browserjs/document_owner_query.v": "40c646cfcdb6f7fccffc51b0ca3464a6a8ade74aee515d77fb55e2950f67d01b",
+    "browserjs/document_owner_query_test.v": "bcd03491ab90252e74e19a2fc31ea310dcd143f1c9d54d32a36b34c35562a6ca",
+    "main_compact_document_owner.v": "077942c4cfda945e93756d0d252a0441cd309158303b8c2260fdab5a6e40788a",
+    "main_compact_document_owner_test.v": "419a8da3d07fe28bbb9c02ef0e73f7878d1f79522ca98e60790baa754d3224ca",
+    "main_compact_document.v": "0fb4b7d894c71b9f2c250fab523a82079cccddcf81f116f12f62cb6a86da1daf"
+  },
+  "latest_completed": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "304c4496bc6c2fa36ce9b5e161cf4cc956ca50f273bca19a2e79e42e5739b78d",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "9230ff989feab489c16f9f0a59be4a27d7605923d093b2fd82a57024bb78fa86",
+      "dirty": true,
+      "head": "b4402f9a2d8cac4a3794b92b2e78828d4408d933",
+      "repository_sha256": "6c799671467eb5aa1c690c6c080316fe958304915b4d25abbf5cf4c0dde27ce0"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "b4402f9a2d8cac4a3794b92b2e78828d4408d933",
+      "id": "cd974e6351324725a16df4fbd45d1964"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "9230ff989feab489c16f9f0a59be4a27d7605923d093b2fd82a57024bb78fa86",
+      "dirty": true,
+      "head": "b4402f9a2d8cac4a3794b92b2e78828d4408d933",
+      "repository_sha256": "ab29fe09bf0d6949ac987943275c380d25b82e983f07f451c845953c9d158cb2"
+    }
+  },
+  "candidate_receipt": "Build/production-build/receipts/20261106-010930-179cfeeb",
+  "candidate_inputs": {
+    "build_inputs_sha256": "eea8ac01e1c8f4d34e97e0eb2c96c3ee989a7211b71376e1750a98003b70411a",
+    "dirty": true,
+    "head": "bde01623f70f4caba3d1737f0f5654f6a043edc4",
+    "repository_sha256": "a0c0bd30ca8053b37c4c6196667de0a72e57a7b7c3f646f9f66b58d4a883e105"
+  },
+  "candidate_compile_guard": {
+    "command": [
+      "sh",
+      "-c",
+      "exec sh -c \"$(cat)\" \"$0\"",
+      "/Users/alex/code/vox2/build-prod-browser.sh"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 7893057536,
+    "elapsed_seconds": 49.490853209,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "candidate_smoke_guard": {
+    "command": [
+      "/Users/alex/code/vox2/Build/.production-output-adcxfgbm/Vox.app/Contents/MacOS/Vox",
+      "--headless-smoke"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 32768,
+    "elapsed_seconds": 0.530408208,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "candidate_c_compile": {
+    "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+    "mode": "parallel",
+    "requested": "parallel",
+    "units": 33
+  },
+  "browser_captures": 0,
+  "manual_build_requests": 0,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-document-owner-production-pending-20261106-evidence.zip",
+      "sha256": "395c77c627ce846d5af3656bac7e2e5c94667258fc994c009d6e1a85ceef6aee",
+      "bytes": 37662
+    },
+    {
+      "path": "docs/performance/chatgpt-document-owner-20261106-evidence.zip",
+      "sha256": "1983f2e89fd7e190012f1a6675b0029391946dadf4ada278131e11b51412de8d",
+      "bytes": 36083949
+    }
+  ],
+  "qualification": "The completed available bundle exposes the feature marker and flag, but its recorded Git head predates the committed owned sources. No browser is launched against that identity and no new instruction sample or page saving is claimed. The already coalesced production build has the exact final owned-source blobs at bde01623f, passes compilation and headless smoke, and awaits canonical publication behind another session publication lease. Prepared source/branch diagnostics, matched frozen-page captures, memory adoption and conditional 47-job broad controller remain unexecuted. All 296 focused executions pass, including poisoned preallocation and ASan/UBSan. Existing SOCKS fixture, author scripts, references and tolerances are unchanged. The preceding document-envelope comparison and its credited 209379818 instructions remain separate and are not attributed to this owner-read optimization. The 5%-below-Brave goal remains unmet."
+}

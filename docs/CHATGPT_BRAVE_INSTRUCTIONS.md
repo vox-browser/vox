@@ -4379,3 +4379,56 @@ and [verification receipt](performance/chatgpt-document-reply-production-verific
 preserve exact counts, source/control proofs, all 12 captures and original PNGs,
 commands, guards, audits, raw failed attempts and the required broad checkpoint.
 No live-site, cross-browser pixel equality or Brave advantage is claimed.
+
+
+## Live root document owner read (2026-11-06)
+
+Implementation `bde01623f` adds a synchronous JavaScriptCore boolean read for
+registered nodes whose current native owner is the binding's root document. The
+facade returns the existing root Document only when there are no pending DOM
+operations or dirty element states. Foreign or unknown identities, Documents,
+unmaterialized nodes and pending edits retain the existing ownerDocument query
+and mutation replay. Ownership is read on every call; there is no identity cache
+or DOM write. The host borrows its key inside a temporary scratch scope and
+returns only a boolean. The native callback and intrinsic Set size getter are
+captured before author scripts. `VOX_RETAIN_DOCUMENT_OWNER_QUERY` retains the
+ordinary query path; other engine optimizations remain enabled in both variants.
+
+All 24 focused jobs pass: eight compilations and sixteen executions, with **296
+authenticated test-function calls** across ordinary GC, no GC, poisoned
+preallocation and address/undefined-behavior sanitizers, for both variants.
+Coverage includes native Element/Text/Comment/DocumentFragment ownership, foreign
+adoption and adoption back, unchanged identity maps, exact boolean results,
+non-string argument rejection without coercion, separate runtime owners, close
+behavior, temporary-key retirement, branding, replaced native/Set intrinsics,
+foreign and unknown fallbacks, and pending unrelated edits that adopt the queried
+node synchronously during replay. Existing document, identity, fragment, parent,
+child, template, shadow-root and actual-value host tests are included.
+Preallocation-specific ownership assertions remain conditional.
+
+The focused controller and 12 GiB guard exit zero over 219.24 seconds, peaking at
+8,919,171,072 sampled RSS bytes. Runtime jobs use separate 3 GiB guards. Runner
+verification authenticates the exact generated-C call sets against each selected
+source file. Its first parser assumed a module prefix for main-package test calls;
+it rejected before archiving or deleting anything. The corrected parser preserves
+that failed attempt and verifies all eight runners. After archive readback and
+hash checks, 270,234,967 bytes of generated C duplicates were removed. The
+[focused receipt](performance/chatgpt-document-owner-20261106.json) retains source
+hashes, all commands, logs, guards, generated C and runtime evidence. These focused
+checks supply no page-level instruction credit.
+
+The available production executable `304c4496bc6c2fa36ce9b5e161cf4cc956ca50f273bca19a2e79e42e5739b78d`
+exposes the new feature flag and marker, but its receipt points to `b4402f9a2`,
+before these owned sources were committed. It is not used to validate the final
+change. The already coalesced build at `bde01623f` contains the exact final owned
+source blobs, uses 33 parallel C units, and passes compilation and headless smoke.
+Canonical publication is waiting behind another session's broad-browser lease.
+No additional build or app copy is requested.
+
+The [pending production receipt](performance/chatgpt-document-owner-production-pending-20261106.json)
+archives that availability check, build/smoke receipts and prepared source/branch,
+matched-capture and conditional 47-job broad harnesses. They have not launched a
+browser for this optimization. **Page validation remains pending, with zero new
+page instruction credit and unchanged zero broad carry.** The preceding 2.2367%
+document-envelope result remains separate. The **5%-below-Brave target remains
+unmet**.
