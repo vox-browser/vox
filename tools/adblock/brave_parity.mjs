@@ -469,7 +469,8 @@ try {
     throw error;
 } finally {
     try {
-        await closeOracleBrowser(browser,()=>requestOracleBrowserClose(browserControl,background,page));
+        await closeOracleBrowser(browser,()=>requestOracleBrowserClose(browserControl,background,page),
+            {receiptFile:path.resolve(options.output)+'.shutdown.json'});
         if (completed && options['profile-output']) {
             if (browser.signalCode === 'SIGKILL') throw new Error('Cannot save a forcibly terminated oracle profile');
             await saveClosedOracleProfile(profile, options['profile-output']);
