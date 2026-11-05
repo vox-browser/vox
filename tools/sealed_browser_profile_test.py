@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -65,6 +66,17 @@ class SealedProfileTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             profile.inject_entry(source.replace('_vinit();', 'unknown_init();'))
 
+    def test_no_inline_only_removes_the_inlining_threshold(self):
+        command = ['clang', '-x', 'objective-c-cpp-output', '/main.i', '-x', 'none',
+                   '-O3', '-mllvm', '-inline-threshold=1500', '-mllvm', '-unroll-threshold=100',
+                   '-o', '/old']
+        actual = profile.profile_command(command, Path('/main.i'), Path('/new.i'),
+                                         Path('/helper.o'), Path('/binary'), {}, no_inline=True)
+        self.assertNotIn('-inline-threshold=1500', actual)
+        self.assertIn('-unroll-threshold=100', actual)
+        self.assertIn('-fno-inline-functions', actual)
+        self.assertEqual(actual.count('-mllvm'), 1)
+
     def test_changed_sealed_input_is_rejected_before_creating_outputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             out = Path(temporary)
@@ -96,6 +108,21 @@ class SealedProfileTests(unittest.TestCase):
                       text.replace('"self_ns": 4', '"self_ns": 9')]:
             with self.assertRaises(ValueError):
                 profile.parse_profile(wrong)
+
+    def test_instruction_counts_cannot_exceed_inclusive_or_process_totals(self):
+        row = dict(address=1, calls=2, partial_calls=1, self_ns=4, inclusive_ns=8,
+                   inclusive_instructions=12, self_instructions=5)
+        metadata = dict(faults=0, unfinished_frames=1, instruction_mode=True, process_instructions=20)
+        def text():
+            return 'VOX_CPROFILE_META '+json.dumps(metadata)+'\nVOX_CPROFILE '+json.dumps(row)
+        self.assertEqual(profile.parse_profile(text())['rows'], [row])
+        row['self_instructions'] = 13
+        with self.assertRaises(ValueError):
+            profile.parse_profile(text())
+        row['self_instructions'] = 5
+        metadata['process_instructions'] = 4
+        with self.assertRaises(ValueError):
+            profile.parse_profile(text())
 
     @unittest.skipUnless(sys.platform == 'darwin', 'Mach timing helper')
     def test_real_after_inline_callbacks_recursion_threads_and_partial_exit(self):
@@ -134,6 +161,18 @@ int main(void) {
             self.assertNotIn('background', rows)
             self.assertEqual(result['metadata']['unfinished_frames'], 1)
             self.assertTrue(all(Path(r['image']).resolve() == (out / 'probe').resolve() for r in rows.values()))
+            # Real process counters, with unselected children omitted from the
+            # stack while their instructions remain inside their selected parent.
+            completed = subprocess.run([str(out / 'probe')], check=True, capture_output=True,
+                text=True, env={**os.environ, 'VOX_CPROFILE_INSTRUCTIONS': 'recursive,flush_inside'})
+            result = profile.parse_profile(completed.stdout)
+            rows = {r['function']: r for r in result['rows']}
+            self.assertEqual(set(rows), {'recursive', 'flush_inside'})
+            self.assertEqual(rows['recursive']['calls'], 4)
+            self.assertEqual(rows['recursive']['partial_calls'], 0)
+            self.assertEqual(rows['flush_inside']['partial_calls'], 1)
+            self.assertTrue(result['metadata']['instruction_mode'])
+            self.assertTrue(all(r['inclusive_instructions'] > 0 for r in rows.values()))
 
 
 if __name__ == '__main__':

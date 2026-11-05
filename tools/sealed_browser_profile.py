@@ -44,16 +44,19 @@ def inject_entry(source):
             '\n vox_cprofile_start((void *)&' + name + ');' + source[position:])
 
 
-def profile_command(command, source, replacement, helper, binary, libraries):
+def profile_command(command, source, replacement, helper, binary, libraries, no_inline=False):
     if command.count(str(source)) != 1 or command.count('-o') != 1:
         raise ValueError('Unexpected sealed compiler command')
     result = []
     index = 0
     while index < len(command):
         token = command[index]
+        if no_inline and token == '-mllvm' and index + 1 < len(command) and command[index+1].startswith('-inline-threshold='):
+            index += 2
+            continue
         if token == '-o':
             result += ['-x', 'none', str(helper), '-finstrument-functions-after-inlining',
-                       '-O1', '-o', str(binary)]
+                       '-O1', *(['-fno-inline-functions'] if no_inline else []), '-o', str(binary)]
             index += 2
             continue
         if token == str(source):
@@ -94,12 +97,24 @@ def parse_profile(text):
         if not (row['calls'] > 0 and 0 <= row['partial_calls'] <= row['calls']
                 and 0 <= row['self_ns'] <= row['inclusive_ns']):
             raise ValueError('Invalid profile counters')
-    return dict(metadata=metadata[0], rows=rows,
-                self=sorted(rows, key=lambda r: r['self_ns'], reverse=True),
-                inclusive=sorted(rows, key=lambda r: r['inclusive_ns'], reverse=True))
+        if metadata[0].get('instruction_mode') and not (
+                0 <= row['self_instructions'] <= row['inclusive_instructions']
+                and row['inclusive_instructions'] > 0):
+            raise ValueError('Invalid instruction counters')
+    if metadata[0].get('instruction_mode') and not (
+            metadata[0]['process_instructions'] > 0 and
+            sum(row['self_instructions'] for row in rows) <= metadata[0]['process_instructions']):
+        raise ValueError('Instruction totals exceed process scope')
+    result = dict(metadata=metadata[0], rows=rows,
+                  self=sorted(rows, key=lambda r: r['self_ns'], reverse=True),
+                  inclusive=sorted(rows, key=lambda r: r['inclusive_ns'], reverse=True))
+    if metadata[0].get('instruction_mode'):
+        result.update(instruction_self=sorted(rows, key=lambda r: r['self_instructions'], reverse=True),
+                      instruction_inclusive=sorted(rows, key=lambda r: r['inclusive_instructions'], reverse=True))
+    return result
 
 
-def build(receipt, out):
+def build(receipt, out, no_inline=False):
     production = json.loads(receipt.read_text())
     frozen_path = Path(production['frozen_compilation'])
     frozen = json.loads(frozen_path.read_text())
@@ -126,7 +141,7 @@ def build(receipt, out):
     source = Path(next(p for p in frozen['sealed_inputs'] if p.endswith('/0-Vox.c.i')))
     out.mkdir(parents=True, exist_ok=False)
     result = dict(complete=False, diagnostic=True, acceptance=False, instruction_credit=0,
-                  production=production, inputs_before=pins, compiler_command=None)
+                  production=production, inputs_before=pins, compiler_command=None, no_inline=no_inline)
     def save():
         (out / 'build.json').write_text(json.dumps(result, indent=2) + '\n')
     try:
@@ -138,7 +153,7 @@ def build(receipt, out):
         subprocess.run(result['helper_command'], check=True)
         binary = out / 'Vox-profile'
         command = profile_command(frozen['compiler_command'], source, generated, helper,
-                                  binary, libraries)
+                                  binary, libraries, no_inline=no_inline)
         result['compiler_command'] = command
         result['generated_sha256'] = digest(generated)
         result['helper_sha256'] = digest(helper)
@@ -161,8 +176,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--receipt', type=Path, default=ROOT / 'Build/production-build/latest.json')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--no-inline', action='store_true', help='Disable optional function inlining in this diagnostic build')
     args = parser.parse_args()
-    build(args.receipt.resolve(), args.output.resolve())
+    build(args.receipt.resolve(), args.output.resolve(), no_inline=args.no_inline)
 
 
 if __name__ == '__main__':
