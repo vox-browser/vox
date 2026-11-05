@@ -242,3 +242,45 @@ draw 332 canvas frames (2,487 GPU leaves); the seeded setting and the
 environment switch each give zero canvas frames. Since the change, the
 `OPTIMIZED_SITES.md` "Vox GPU canvas FPS" column describes the default
 browser, and its "Vox scroll FPS" column the canvas turned off.
+
+## Lazy canvas after a lag report (2026-11-05)
+
+The user reported laggy scrolling on Hacker News and vlang.io with the canvas
+on, in 1708×1065 windows. The earlier cohorts used a 1024×768 viewport and
+gentle 2-pixel steps. At a 1708×953 document viewport with 8-pixel steps at
+120 Hz, the Hacker News comments page spent 6.3 ms per frame in the draw loop
+with the canvas against 1.4 ms without it: every reused frame uploaded its
+repainted rectangles, rasterized its text on the CPU only to composite it on
+the GPU, and waited for a readback (1.6 uploads and readbacks per frame). The
+page's leaves are almost all text and solid fills, which the ordinary path
+draws on the CPU canvas without any GPU round trip.
+
+`fb46f4702` keeps the canvas idle until a frame needs GPU work. Text and solid
+fills draw on the CPU canvas while no GPU leaf is pending, GPU surfaces are
+acquired at the frame's first GPU leaf, and pooled surfaces are reused when
+large enough (rounded-up sizes, 64 MiB cap) instead of only on an exact size
+match. The native test adds a frame whose first fill must stay on the CPU with
+no upload or surfaces, followed by a GPU fill and a second fill that joins the
+canvas above it. With injected candidate libraries the same page dropped to
+2.2 ms per frame (0.26 uploads and readbacks per frame). On the installed
+bundle `8a1e86fa…`, two alternating pairs measure:
+
+| Page (1708×953, delta 8 at 120 Hz) | Canvas on | Canvas off |
+| --- | --- | --- |
+| HN comments page | 80.3 / 76.3 FPS, 1.78 / 2.01 ms per frame | 79.1 / 78.0 FPS, 1.39 / 1.30 ms per frame |
+| vlang.io (one pair) | 12.0 FPS, 62.5 ms per frame | 10.1 FPS, 76.6 ms per frame |
+
+Host load averages were 140–200 on 18 CPUs during these runs, from concurrent
+sessions' builds and browsers (the GPU was 44% busy without these tests), so
+absolute FPS is depressed; the per-frame draw-loop times compare matched runs.
+On vlang.io at this width the cost is the composited card's box shadow
+(about 2848×1420 device pixels re-rasterized and blurred every frame before
+one strip is copied out), inset box shadows and the terminal video, with or
+without the canvas; a 1024×768 control at the same time measured 40 ms per
+frame. Rasterizing composited layers in a layer-anchored tile grid that
+survives scrolling, as Chromium does and as the root layer already does,
+would remove most of that work.
+
+An unrelated crash surfaced in one run: after the input finished, the browser
+exited with signal 11 in `net.http.Transport.reap_idle_connections`. Evidence:
+`docs/performance/raw/gpu-canvas-lazy-20261105.tar.gz`.
