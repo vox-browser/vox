@@ -62,10 +62,12 @@ fn test_solid_svg_effect_bounds_retain_unknown_strokes_payloads_and_precision_lo
 		PaintCommand{ ...base, stroke_color: 'blue', stroke_width: 1 },
 		PaintCommand{ ...base, outer_shadow: true }, PaintCommand{ ...base, blur: 2 },
 		PaintCommand{ ...base, svg_data: unsafe { nil } },
-		PaintCommand{ ...base, svg_data: &PaintSVGPathData{ path_data: [f32(0), 1] } },
-		PaintCommand{ ...base, svg_data: &PaintSVGPathData{ path_data: [f32(0), math.nan(), 0,
-			0, 0, 0, 0, 0, 0, 0, 0, 0] } },
-		PaintCommand{ ...base, transform: [f64(1), 0, 0, 1, 2_000_000, 0]! }] {
+		PaintCommand{ ...base, svg_data: &PaintSVGPathData{ path_data: [f32(0), 1] } }, PaintCommand{
+			...base
+			svg_data: &PaintSVGPathData{
+				path_data: [f32(0), math.nan(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			}
+		}, PaintCommand{ ...base, transform: [f64(1), 0, 0, 1, 2_000_000, 0]! }] {
 		assert effect_svg_fill_ink_bounds(&command) == none
 	}
 }
