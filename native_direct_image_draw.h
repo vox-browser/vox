@@ -45,6 +45,9 @@ static bool draw_direct_image(SkCanvas* canvas, skgpu::graphite::Recorder* recor
             stage.destination[0] = stage.destination[1] = 0;
             std::copy_n(stage.destination, 4, stage.clip);
             std::fill_n(stage.clip + 4, 8, 0.f);
+            // The authored overflow clips the final compositor quad. This
+            // first-stage clip is synthetic; recording it changes sampling.
+            stage.flags &= ~VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP;
             stage.opacity = 1;
             PreparedImageDraw first;
             first.texture = source.texture; first.whole_source = true;
