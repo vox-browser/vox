@@ -1,5 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
+#include "native_test_presented_frame.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -67,11 +68,7 @@ static void fail(const char *message) {
 }
 
 static NSData *page_pixels(void) {
-    id contents = page_view.layer.contents;
-    if (!contents || CFGetTypeID((__bridge CFTypeRef)contents) != CGImageGetTypeID())
-        return nil;
-    CGImageRef image = (__bridge CGImageRef)contents;
-    return CFBridgingRelease(CGDataProviderCopyData(CGImageGetDataProvider(image)));
+    return native_test_presented_pixels(page_view.layer.contents);
 }
 
 static void assert_page_preserved(void) {

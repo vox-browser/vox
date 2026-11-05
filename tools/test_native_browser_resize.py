@@ -25,7 +25,7 @@ def main():
         library = output / "resize.dylib"
         subprocess.run([
             "clang", "-dynamiclib", "-fobjc-arc", "-fblocks",
-            "-framework", "Cocoa", "-framework", "QuartzCore",
+            "-framework", "Cocoa", "-framework", "QuartzCore", "-framework", "IOSurface",
             str(repo / "tools/native_browser_resize_test.m"), "-o", str(library),
         ], check=True)
         env = dict(os.environ, VOX_TEST_WINDOW="1", LADYBIRD_CACHE_DIR=str(output / "cache"),

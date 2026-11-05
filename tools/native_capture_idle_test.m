@@ -40,7 +40,7 @@ static unsigned termination_calls;
     self.bitmapWidth = bitmap.pixelsWide;
     self.bitmapHeight = bitmap.pixelsHigh;
     ++self.captures;
-    CGImageRef image = (__bridge CGImageRef)self.layer.contents;
+    CGImageRef image = native_layer_frame_image(self);
     self.sourceWidth = CGImageGetWidth(image);
     self.sourceHeight = CGImageGetHeight(image);
     self.sourceScale = self.layer.contentsScale;
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
                 // Capture-mode presentation instead follows its explicit 1x DPR.
                 unsetenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");
                 native_layer_update(capture_view, @selector(updateLayer));
-                assert(CGImageGetWidth((__bridge CGImageRef)capture_view.layer.contents) == 64);
+                assert(CGImageGetWidth(native_layer_frame_image(capture_view)) == 64);
                 assert(capture_view.layer.contentsScale == 2);
                 setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS", "0", 1);
                 NSUInteger previous = capture_view.captures;

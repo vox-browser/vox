@@ -433,8 +433,8 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     const char *force_clear = getenv("VOX_CLEAR_OPAQUE_FRAME_BUFFERS");
     BOOL defer_clear = native_layer_opaque_frames && native_layer_is_browser_view(view)
         && !(force_clear && *force_clear);
-    const char *surface_option = getenv("VOX_IOSURFACE_FRAMES");
-    BOOL shared = surface_option && *surface_option && native_layer_is_browser_view(view)
+    const char *disable_surface = getenv("VOX_DISABLE_IOSURFACE_FRAMES");
+    BOOL shared = !(disable_surface && *disable_surface) && native_layer_is_browser_view(view)
         && width * 4 * height <= 64 * 1024 * 1024;
     VoxLayerFrameBuffer *pooled = native_layer_acquire_frame_buffer(width, height, defer_clear, shared);
     BOOL pooled_owned = NO;

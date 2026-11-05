@@ -1,5 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
+#include "native_test_presented_frame.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,15 +31,12 @@ static void fail(const char *message) {
 }
 
 static BOOL presented_frame_is_ready(void) {
-    id contents = test_view.layer.contents;
-    if (!contents || CFGetTypeID((__bridge CFTypeRef)contents) != CGImageGetTypeID())
-        return NO;
-    CGImageRef image = (__bridge CGImageRef)contents;
+    CGSize image_size = native_test_presented_size(test_view.layer.contents);
     CGSize size = test_view.bounds.size;
     CGFloat scale = test_view.layer.contentsScale;
     return size.width > 0 && size.height > 0 && scale > 0
-        && CGImageGetWidth(image) == (size_t)ceil(size.width * scale)
-        && CGImageGetHeight(image) == (size_t)ceil(size.height * scale);
+        && image_size.width == ceil(size.width * scale)
+        && image_size.height == ceil(size.height * scale);
 }
 
 static void advance(void);

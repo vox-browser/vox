@@ -28,7 +28,7 @@ def main():
         library = output / "keyboard.dylib"
         subprocess.run([
             "clang", "-dynamiclib", "-fobjc-arc", "-fblocks",
-            "-framework", "Cocoa", "-framework", "QuartzCore",
+            "-framework", "Cocoa", "-framework", "QuartzCore", "-framework", "IOSurface",
             str(repo / "tools/native_browser_keyboard_test.m"), "-o", str(library),
         ], check=True)
         env = dict(os.environ, VOX_TEST_WINDOW="1", VOX_PROFILE_DIR=str(output / "profile"),

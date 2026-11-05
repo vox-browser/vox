@@ -2,6 +2,7 @@
 #import <Metal/Metal.h>
 #include "../native_layer_presentation_darwin.h"
 #include "../native_presented_capture_darwin.h"
+#include "native_test_presented_frame.h"
 #include <cassert>
 #include <cstdio>
 #include <vector>
@@ -94,7 +95,7 @@ int main()
 {
     @autoreleasepool {
         [NSApplication sharedApplication];
-        setenv("VOX_IOSURFACE_FRAMES", "1", 1);
+        unsetenv("VOX_DISABLE_IOSURFACE_FRAMES");
         native_set_opaque_browser_frames(1);
         MyView2* view = [[MyView2 alloc] initWithFrame:NSMakeRect(0, 0, 65, 49)];
         view.wantsLayer = YES;
@@ -113,6 +114,10 @@ int main()
             IOSurfaceRef surface = native_layer_surface_for_image(first);
             assert(surface && (__bridge id)surface == view.layer.contents);
             assert(CGImageGetBytesPerRow(first) == IOSurfaceGetBytesPerRow(surface));
+            assert(CGSizeEqualToSize(native_test_presented_size(view.layer.contents),
+                CGSizeMake(65 * scale, 49 * scale)));
+            assert([native_test_presented_pixels(view.layer.contents)
+                isEqualToData:native_test_presented_pixels((__bridge id)first)]);
             auto reference = render((__bridge id)first, 65 * scale, 49 * scale);
             auto actual = render((__bridge id)surface, 65 * scale, 49 * scale);
             size_t nonzero = 0;
@@ -180,7 +185,7 @@ int main()
         // Unrelated layer contents cannot reuse the associated snapshot.
         view.layer.contents = [CALayer layer];
         assert(!native_layer_frame_image(view) && !native_layer_frame_matches_input(view, 2));
-        unsetenv("VOX_IOSURFACE_FRAMES");
+        setenv("VOX_DISABLE_IOSURFACE_FRAMES", "1", 1);
         native_layer_present_frame(view, 2, (IMP)paint);
         assert(!native_layer_surface_for_image(native_layer_frame_image(view)));
         assert(native_layer_frame_matches_input(view, 2));
