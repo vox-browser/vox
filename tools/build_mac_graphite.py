@@ -219,6 +219,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_canvas_read_direct",
         "-Wl,-exported_symbol,_vox_graphite_canvas_read_iosurface",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_pixels",
+        "-Wl,-exported_symbol,_vox_graphite_canvas_draw_layer_pixels",
         "-Wl,-exported_symbol,_vox_graphite_canvas_copy_pixels",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_path",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_image",

@@ -17,6 +17,13 @@ from pathlib import Path
 import sys
 source = Path(sys.argv[1]).read_text()
 functions = []
+for signature in ('static void native_begin_tracked_transparency_layer(',
+                  'static void native_end_tracked_transparency_layer(',
+                  'static CGBlendMode native_compositing_operator('):
+    first = source.index(signature)
+    functions.append(source[first:source.index('\n}\n', first) + 2])
+functions.append(source[source.index('// A Chromium-profile opacity group'):
+                        source.index('static CGColorRef native_srgb_color(')])
 for signature in ('void native_capture_video_backdrop(', 'int native_gpu_canvas_begin(',
                   'int native_gpu_canvas_begin_rects(',
                   'static int native_try_gpu_css_filter_image(',
@@ -39,6 +46,7 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
 "$output_dir/native_gpu_canvas_test" --partial-readback
 "$output_dir/native_gpu_canvas_test" --native-grid
 "$output_dir/native_gpu_canvas_test" --filter-image
+"$output_dir/native_gpu_canvas_test" --layer-pixels
 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES=1 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 "$output_dir/native_gpu_canvas_test" --overlay-batch

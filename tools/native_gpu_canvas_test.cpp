@@ -7,12 +7,17 @@
 #include "../native_skia_text_darwin.cpp"
 #include "../native_scroll_raster_darwin.h"
 #include "../native_layer_presentation_darwin.h"
+#include "../native_opacity_canvas_pool_darwin.h"
+#include "../native_bitmap_snapshot_darwin.h"
+#include "../native_chromium_screen_blend.h"
 #define LADYBIRD_V_HAS_SKIA_TEXT
 static CGFloat native_svg_mask_backing_scale() { return 2; }
 static CGContextRef native_font_compositing_context;
 static int native_font_compositing_transparency_depth;
 #include "native_video_backdrop_entry_points.inc"
 #include <cassert>
+#include "../native_chromium_screen_blend.h"
+#include "../native_opacity_group_darwin.h"
 #include <cstdlib>
 #include <iostream>
 
@@ -512,8 +517,134 @@ static std::vector<uint8_t> render_filter_image(bool canvas, bool bgra, int alph
     return pixels;
 }
 
+static std::vector<uint8_t> render_layer_pixels(bool gpu, int blend, float opacity, bool full)
+{
+    auto pixels = backdrop();
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(pixels.data(), width, height, 8, width * 4, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    auto other = CGBitmapContextCreate(nullptr, 16, 16, 8, 64, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    assert(context && other); CGColorSpaceRelease(color);
+    CGContextScaleCTM(context, scale, scale);
+    ladybird_v_skia_set_shared_recording(0, css_width, css_height);
+    if (gpu) {
+        int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
+        assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0));
+        assert(ladybird_v_skia_gpu_canvas_defer_layers());
+    }
+    constexpr int w = 37, h = 29, pitch = w * 4 + 16, x = 80, y = 225;
+    std::vector<uint8_t> source(pitch * h);
+    for (int row = 0; row < h; ++row) for (int column = 0; column < w; ++column) {
+        auto* p = source.data() + row * pitch + column * 4;
+        int alpha = (column * 17 + row * 31) % 256;
+        p[0] = column * 13 % (alpha + 1); p[1] = row * 11 % (alpha + 1);
+        p[2] = (column * 3 + row * 7) % (alpha + 1); p[3] = alpha;
+    }
+    for (int pass = 0; pass < 2; ++pass) {
+        int result = 0;
+        if (gpu) {
+            assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0));
+            result = ladybird_v_skia_gpu_canvas_layer_pixels(context, source.data(), w, h, pitch, x, y, opacity, blend);
+            assert(result == (gpu_canvas_verify() ? 2 : 1));
+        }
+        if (result != 1) {
+            for (int row = 0; row < h; ++row) {
+                auto* destination = pixels.data() + ((y + row) * width + x) * 4;
+                if (blend == 3) native_composite_screen_pixels(source.data() + row * pitch,
+                    destination, destination, w, opacity);
+                else native_composite_opacity_pixels(source.data() + row * pitch,
+                    destination, destination, w, opacity);
+            }
+        }
+        if (gpu && !gpu_canvas_verify()) {
+            ladybird_v_skia_gpu_canvas_context_access(other);
+            assert(s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes && s_gpu_canvas->uploads == 1);
+            assert(!ladybird_v_skia_gpu_canvas_layer_pixels(context, source.data(), w, h, pitch, x, y, opacity, 1));
+        }
+    }
+    std::fill(source.begin(), source.end(), 0xdd); source.clear(); source.shrink_to_fit();
+    if (gpu) ladybird_v_skia_gpu_canvas_end();
+    CGContextRelease(other); CGContextRelease(context);
+    return pixels;
+}
+
+static std::vector<uint8_t> render_native_group(bool gpu, bool nested, int blend, float opacity, bool full)
+{
+    auto pixels = backdrop();
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(pixels.data(), width, height, 8, width * 4, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    assert(context); CGColorSpaceRelease(color);
+    CGContextScaleCTM(context, scale, scale);
+    if (!full) CGContextClipToRect(context, CGRectMake(0,
+        css_height - (strip_top + strip_height) / float(scale), css_width, strip_height / float(scale)));
+    auto saved = NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    native_font_compositing_context = context;
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0, css_width, css_height);
+    if (gpu) {
+        int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
+        assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0));
+    }
+    assert(ladybird_v_skia_draw_rounded_rect(context, 30, 90, 80, 40, 0,0,0,0,0,0,0,0,
+        1,0,0,1,0,0,0,0,0,css_width,css_height,73,101,139,255,1,0,1,0));
+    if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0));
+    native_begin_css_effect_layer(opacity, blend);
+    assert(NSGraphicsContext.currentContext.CGContext != context);
+    if (nested) {
+        if (gpu) assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer", 22, 0));
+        native_begin_css_effect_layer(.73f, 3);
+    }
+    auto isolated = NSGraphicsContext.currentContext.CGContext;
+    CGContextSetRGBFillColor(isolated, .3, .7, .2, .6);
+    CGContextFillRect(isolated, CGRectMake(35.5, css_height - 127.5, 45, 25));
+    if (nested) {
+        if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0));
+        native_end_css_effect_layer();
+        if (gpu && !gpu_canvas_verify()) assert(s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes);
+    }
+    if (gpu) assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer", 20, 0));
+    native_end_css_effect_layer();
+    assert(NSGraphicsContext.currentContext.CGContext == context);
+    if (gpu) {
+        if (!gpu_canvas_verify()) assert(s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes && s_gpu_canvas->draws == 2);
+        ladybird_v_skia_gpu_canvas_end();
+    }
+    assert(!native_opacity_group_depth);
+    ladybird_v_skia_set_chromium_painting(0);
+    native_font_compositing_context = nullptr;
+    NSGraphicsContext.currentContext = saved;
+    CGContextFlush(context); CGContextRelease(context);
+    return pixels;
+}
+
 int main(int argc, char** argv)
 {
+    if (argc == 2 && !std::strcmp(argv[1], "--layer-pixels")) {
+        setenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS", "1", 1);
+        assert(gpu_canvas_api()->draw_layer_pixels);
+        int error = 0;
+        for (int blend : {0, 3}) for (float opacity : {0.f, .01f, .25f, .5f, .85f, .999f, 1.f})
+            for (bool full : {false, true}) {
+                auto reference = render_layer_pixels(false, blend, opacity, full);
+                auto candidate = render_layer_pixels(true, blend, opacity, full);
+                for (size_t index = 0; index < reference.size(); ++index)
+                    error = std::max(error, std::abs(int(reference[index]) - int(candidate[index])));
+            }
+        for (bool nested : {false, true}) for (int blend : {0, 3})
+            for (float opacity : {.5f, .85f, 1.f}) for (bool full : {false, true}) {
+                auto reference = render_native_group(false, nested, blend, opacity, full);
+                auto candidate = render_native_group(true, nested, blend, opacity, full);
+                for (size_t index = 0; index < reference.size(); ++index)
+                    error = std::max(error, std::abs(int(reference[index]) - int(candidate[index])));
+            }
+        std::cout << "GPU screen/opacity layers: scalar reference, nested CPU access, source lifetime and pending order max error " << error << '\n';
+        assert(error <= 3); return 0;
+    }
     if (argc == 2 && !std::strcmp(argv[1], "--filter-image")) {
         setenv("VOX_GPU_CANVAS_FILTER_LAYERS", "1", 1);
         int error = 0;

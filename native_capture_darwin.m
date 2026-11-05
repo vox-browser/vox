@@ -38,6 +38,10 @@ extern void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int) __attribute
 extern void ladybird_v_skia_gpu_canvas_frame_surface(void *) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_document_top(int) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_filters(void) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_defer_layers(void) __attribute__((weak_import));
+extern void ladybird_v_skia_gpu_canvas_context_access(CGContextRef) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_layer_pixels(CGContextRef, const uint8_t *,
+    int, int, int, int, int, float, int) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_filter_image(CGContextRef, CGImageRef,
     float, float, float, float, float) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef,
@@ -1130,16 +1134,31 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 	size_t height = CGBitmapContextGetHeight(group->parent);
 	size_t layer_pitch = width * 4;
 	size_t parent_pitch = CGBitmapContextGetBytesPerRow(group->parent);
-	const uint8_t *backdrop = CGBitmapContextGetData(group->parent);
+	const uint8_t *backdrop = (const uint8_t *)CGBitmapContextGetData(group->parent);
 	int left, top, right, bottom;
 	if (native_opacity_canvas_ink_bounds((VoxOpacityCanvas){group->context, group->pixels},
 		layer_pitch, group->left, group->top,
 			group->right, group->bottom, &left, &top, &right, &bottom)) {
 		size_t ink_width = (size_t)(right - left), ink_height = (size_t)(bottom - top);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+        int gpu_result = ladybird_v_skia_gpu_canvas_layer_pixels
+            ? ladybird_v_skia_gpu_canvas_layer_pixels(group->parent,
+                group->pixels + top * layer_pitch + (size_t)left * 4,
+                (int)ink_width, (int)ink_height, (int)layer_pitch, left, top, group->opacity, group->blend_mode) : 0;
+        if (gpu_result == 1) {
+            native_release_opacity_canvas((VoxOpacityCanvas){group->context, group->pixels},
+                group->left, group->top, group->right, group->bottom);
+            return;
+        }
+        if (!gpu_result) {
+            if (ladybird_v_skia_gpu_canvas_context_access) ladybird_v_skia_gpu_canvas_context_access(group->parent);
+            else ladybird_v_skia_gpu_canvas_cpu_access();
+        }
+#endif
 		CGColorSpaceRef color_space = CGBitmapContextGetColorSpace(group->parent);
 		CGContextRef result_context = CGBitmapContextCreate(NULL, ink_width, ink_height,
 			8, ink_width * 4, color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-		uint8_t *result = result_context == NULL ? NULL : CGBitmapContextGetData(result_context);
+		uint8_t *result = result_context == NULL ? NULL : (uint8_t *)CGBitmapContextGetData(result_context);
 		if (result != NULL) {
 			for (size_t row = 0; row < ink_height; ++row) {
 				if (group->blend_mode == 3) native_composite_screen_pixels(
@@ -1173,7 +1192,8 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 
 void native_begin_css_effect_layer(float opacity, int blend_mode) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_gpu_canvas_cpu_access();
+	if (!ladybird_v_skia_gpu_canvas_defer_layers || !ladybird_v_skia_gpu_canvas_defer_layers())
+		ladybird_v_skia_gpu_canvas_cpu_access();
 #endif
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL) {
@@ -1190,6 +1210,7 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 		if (opacity == 1 && blend_mode == 0
 			&& ladybird_v_skia_layer_shared_recording_enabled()
 			&& native_compositing_canvas_is_readable(context)) {
+			ladybird_v_skia_gpu_canvas_cpu_access();
 			group->passthrough = 1;
 			ladybird_v_skia_set_shared_layer_backdrop(1);
 			return;
@@ -1205,6 +1226,8 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 		native_opacity_group_overflow_depth++;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (ladybird_v_skia_gpu_canvas_context_access) ladybird_v_skia_gpu_canvas_context_access(context);
+    else ladybird_v_skia_gpu_canvas_cpu_access();
 	// Copy replay requires the isolated bitmap, never the parent transparency layer.
 	ladybird_v_skia_set_layer_shared_recording(0);
 	ladybird_v_skia_set_shared_layer_backdrop(0);
@@ -1228,7 +1251,8 @@ void native_set_chromium_opaque_layer_continuation(int enabled) {
 
 void native_end_css_effect_layer(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_gpu_canvas_cpu_access();
+	if (!ladybird_v_skia_gpu_canvas_defer_layers || !ladybird_v_skia_gpu_canvas_defer_layers())
+		ladybird_v_skia_gpu_canvas_cpu_access();
 #endif
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	// Replay while the isolated canvas is still alive, before group opacity.
@@ -1248,6 +1272,10 @@ void native_end_css_effect_layer(void) {
 			&& native_opacity_groups[native_opacity_group_depth - 1].passthrough);
 #endif
 		if (group.passthrough) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+            if (ladybird_v_skia_gpu_canvas_context_access) ladybird_v_skia_gpu_canvas_context_access(group.parent);
+            else ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
 			CGContextRestoreGState(group.parent);
 			return;
 		}
@@ -1261,6 +1289,10 @@ void native_end_css_effect_layer(void) {
 	if (context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (ladybird_v_skia_gpu_canvas_context_access) ladybird_v_skia_gpu_canvas_context_access(context);
+    else ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
 	native_end_tracked_transparency_layer(context);
 	CGContextRestoreGState(context);
 }
@@ -4419,7 +4451,7 @@ static unsigned native_test_compact_css_filter_inputs;
 static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *layer,
     CGContextRef context, CGRect *output_rect) {
     BOOL tight = (getenv("VOX_TIGHT_CSS_FILTER_INPUT") || getenv("VOX_CACHE_CSS_COLOR_FILTERS")
-        || getenv("VOX_GPU_CANVAS_FILTER_LAYERS"))
+        || getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS"))
         && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
     if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
         || !context || CGBitmapContextGetBitsPerComponent(context) != 8
@@ -4636,7 +4668,10 @@ void native_end_css_filter_layer(void) {
     BOOL deferred_color_filter = native_css_filter_has_pointwise_device_mapping(&layer,
         CGRectMake(0, 0, layer.canvas_width * layer.scale, layer.canvas_height * layer.scale));
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-    if (!deferred_color_filter) ladybird_v_skia_gpu_canvas_cpu_access();
+    if (!deferred_color_filter) {
+        if (ladybird_v_skia_gpu_canvas_context_access) ladybird_v_skia_gpu_canvas_context_access(layer.destination);
+        else ladybird_v_skia_gpu_canvas_cpu_access();
+    }
 #endif
 	if (!layer.active) {
 		free(layer.operations);
@@ -4829,7 +4864,10 @@ void native_end_css_filter_layer(void) {
                 ? native_try_gpu_css_filter_image(layer.destination, filtered_image, target, layer.canvas_height) : 0;
             if (gpu_result != 1) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-                if (!gpu_result) ladybird_v_skia_gpu_canvas_cpu_access();
+                if (!gpu_result) {
+                    if (ladybird_v_skia_gpu_canvas_context_access) ladybird_v_skia_gpu_canvas_context_access(layer.destination);
+                    else ladybird_v_skia_gpu_canvas_cpu_access();
+                }
 #endif
                 native_layer_draw_document_image(layer.destination, target,
                     filtered_image, layer.copies_to_fresh_frame);

@@ -7,6 +7,8 @@
 #define VOX_TEST_ISOLATED_CANVAS_FAILURE
 #include "../native_graphite_darwin.mm"
 #include <cassert>
+#include "../native_chromium_screen_blend.h"
+#include "../native_opacity_group_darwin.h"
 
 static std::vector<uint8_t> read_surface(skgpu::graphite::Context* gpu,
     skgpu::graphite::Recorder* recorder, SkSurface* surface) {
@@ -250,6 +252,31 @@ int main() { @autoreleasepool {
     for(int index=1;index<32;++index)assert(output[index]==0xff203040);
     vox_graphite_canvas_end();assert(canvas_surface_pool.size()==32);
     unsetenv("VOX_GPU_CANVAS_NATIVE_GRID");
+    canvas_reset();
+    for (int blend : {0, 3}) for (float opacity : {0.f, .01f, .25f, .5f, .85f, .999f, 1.f}) {
+        constexpr int w = 67, h = 53, pitch = w * 4;
+        std::vector<uint8_t> input(pitch * h), backdrop(input.size()), expected(input.size()), actual(input.size());
+        for (int pixel = 0; pixel < w * h; ++pixel) {
+            int sa = (pixel * 17) % 256, da = (pixel * 23) % 256;
+            for (int c = 0; c < 3; ++c) {
+                input[pixel * 4 + c] = (pixel * (c + 3)) % (sa + 1);
+                backdrop[pixel * 4 + c] = (pixel * (c + 7)) % (da + 1);
+            }
+            input[pixel * 4 + 3] = sa; backdrop[pixel * 4 + 3] = da;
+        }
+        if (blend == 3) native_composite_screen_pixels(input.data(), backdrop.data(), expected.data(), w * h, opacity);
+        else native_composite_opacity_pixels(input.data(), backdrop.data(), expected.data(), w * h, opacity);
+        int rect[] {0, 0, w, h, 0, 0, w, h};
+        assert(vox_graphite_canvas_begin(rect, 1));
+        assert(vox_graphite_canvas_upload(0, backdrop.data(), pitch));
+        assert(!vox_graphite_canvas_draw_layer_pixels(input.data(), w, h, pitch, 0, 0, nullptr, 0, opacity, 1));
+        assert(vox_graphite_canvas_draw_layer_pixels(input.data(), w, h, pitch, 0, 0, nullptr, 0, opacity, blend));
+        std::fill(input.begin(), input.end(), 0xdd); input.clear(); input.shrink_to_fit();
+        VoxGraphitePixelRegion view {0, 0, w, h, pitch, actual.data()};
+        assert(vox_graphite_canvas_read(&view, 1));
+        assert(actual == expected);
+        vox_graphite_canvas_end();
+    }
     canvas_reset(); recorder.reset(); gpu_context.reset();
     std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }

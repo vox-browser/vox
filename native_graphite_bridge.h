@@ -255,6 +255,8 @@ int vox_graphite_canvas_draw_path(const VoxGraphitePath *path, const float *devi
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_pixels(const uint8_t *bgra, int width, int height, int pitch,
     int device_x, int device_y, const VoxGraphiteCanvasClip *clips, int clip_count);
+int vox_graphite_canvas_draw_layer_pixels(const uint8_t *bgra, int width, int height, int pitch,
+    int device_x, int device_y, const VoxGraphiteCanvasClip *clips, int clip_count, float opacity, int blend_mode);
 int vox_graphite_canvas_copy_pixels(const uint8_t *bgra, int width, int height, int pitch,
     int device_x, int device_y);
 // A serialized picture of one leaf in device coordinates, without images or

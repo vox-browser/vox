@@ -69,6 +69,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_read_direct) read_direct = nullptr;
     decltype(&vox_graphite_canvas_read_iosurface) read_iosurface = nullptr;
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
+    decltype(&vox_graphite_canvas_draw_layer_pixels) draw_layer_pixels = nullptr;
     decltype(&vox_graphite_canvas_copy_pixels) copy_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
@@ -95,6 +96,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.read_direct = reinterpret_cast<decltype(value.read_direct)>(dlsym(library, "vox_graphite_canvas_read_direct"));
         value.read_iosurface = reinterpret_cast<decltype(value.read_iosurface)>(dlsym(library, "vox_graphite_canvas_read_iosurface"));
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
+        value.draw_layer_pixels = reinterpret_cast<decltype(value.draw_layer_pixels)>(dlsym(library, "vox_graphite_canvas_draw_layer_pixels"));
         value.copy_pixels = reinterpret_cast<decltype(value.copy_pixels)>(dlsym(library, "vox_graphite_canvas_copy_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
@@ -508,7 +510,9 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
         && std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") && gpu_canvas_api()->copy_pixels;
     if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
     if (kind == "begin_css_filter_layer" || kind == "end_css_filter_layer")
-        return std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") != nullptr;
+        return std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS");
+    if (kind == "begin_css_effect_layer" || kind == "end_css_effect_layer")
+        return std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS") && gpu_canvas_api()->draw_layer_pixels;
     static bool const insets = !std::getenv("VOX_GPU_CANVAS_DISABLE_INSET");
     if (kind == "paint_inner_box_shadow") return insets && gpu_canvas_api()->draw_picture;
     return false;
@@ -799,7 +803,46 @@ extern "C" void ladybird_v_skia_gpu_canvas_cpu_access()
 
 extern "C" int ladybird_v_skia_gpu_canvas_defer_filters()
 {
-    return s_gpu_canvas && !s_gpu_canvas_read_failed && std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS");
+    return s_gpu_canvas && !s_gpu_canvas_read_failed
+        && (std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS"));
+}
+
+extern "C" void ladybird_v_skia_gpu_canvas_context_access(CGContextRef destination)
+{
+    if (s_gpu_canvas && s_gpu_canvas->destination == destination) ladybird_v_skia_gpu_canvas_cpu_access();
+}
+
+extern "C" int ladybird_v_skia_gpu_canvas_defer_layers()
+{
+    return s_gpu_canvas && !s_gpu_canvas_read_failed && std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")
+        && gpu_canvas_api()->draw_layer_pixels;
+}
+
+extern "C" int ladybird_v_skia_gpu_canvas_layer_pixels(CGContextRef destination,
+    uint8_t const* rgba, int width, int height, int pitch, int x, int y, float opacity, int blend_mode)
+{
+    if (!ladybird_v_skia_gpu_canvas_defer_layers() || s_gpu_canvas->destination != destination
+        || !s_gpu_canvas->in_gpu_command || !rgba || width <= 0 || height <= 0
+        || width > 16384 || height > 16384 || pitch < width * 4
+        || size_t(width) * height > 16 * 1024 * 1024 / 4
+        || !std::isfinite(opacity) || opacity < 0 || opacity > 1 || (blend_mode != 0 && blend_mode != 3)) return 0;
+    std::vector<VoxGraphiteCanvasClip> clips;
+    auto* frame = gpu_canvas_for_leaf(destination, clips);
+    if (!frame) return 0;
+    std::vector<uint32_t> pixels(size_t(width) * height);
+    for (int row = 0; row < height; ++row)
+        swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * width),
+            rgba + size_t(row) * pitch, width);
+    if (!gpu_canvas_api()->draw_layer_pixels(reinterpret_cast<uint8_t const*>(pixels.data()), width, height,
+            width * 4, x, y, clips.data(), int(clips.size()), opacity, blend_mode)) {
+        gpu_canvas_flush();
+        return 0;
+    }
+    gpu_canvas_name_leaf(*frame, blend_mode == 3 ? "screen-layer" : "opacity-layer",
+        SkRect::MakeXYWH(x, y, width, height), blend_mode, clips.size());
+    frame->cpu_stale = true;
+    ++frame->draws;
+    return gpu_canvas_verify() ? 2 : 1;
 }
 
 // Core Image's pointwise result maps one-to-one to device pixels. Keep its

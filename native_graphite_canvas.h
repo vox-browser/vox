@@ -501,20 +501,32 @@ int vox_graphite_canvas_draw_image_msaa(VoxGraphiteImage const* image, float con
 // Premultiplied BGRA pixels rasterized on a transparent CPU target, composited
 // source-over at an integral device position: text and other CPU-only leaves.
 extern "C" __attribute__((visibility("default")))
-int vox_graphite_canvas_draw_pixels(uint8_t const* bgra, int width, int height, int pitch,
-    int device_x, int device_y, VoxGraphiteCanvasClip const* clips, int clip_count)
+int vox_graphite_canvas_draw_layer_pixels(uint8_t const* bgra, int width, int height, int pitch,
+    int device_x, int device_y, VoxGraphiteCanvasClip const* clips, int clip_count, float opacity, int blend_mode)
 {
-    if (!bgra || width <= 0 || height <= 0 || pitch < width * 4) return 0;
+    if (!bgra || width <= 0 || height <= 0 || width > 16384 || height > 16384 || pitch < width * 4
+        || !std::isfinite(opacity) || opacity < 0 || opacity > 1 || (blend_mode != 0 && blend_mode != 3)) return 0;
     std::lock_guard lock(gpu_mutex);
     if (!canvas_recorder) return 0;
     auto raster = SkImages::RasterFromPixmapCopy(SkPixmap(canvas_info(width, height), bgra, size_t(pitch)));
     auto image = raster ? vox_shared_image(canvas_recorder.get(), raster, {}) : nullptr;
     if (!image) return 0;
+    SkPaint paint;
+    paint.setAlphaf(opacity);
+    paint.setBlendMode(blend_mode == 3 ? SkBlendMode::kScreen : SkBlendMode::kSrcOver);
     float bounds[] {float(device_x), float(device_y), float(device_x + width), float(device_y + height)};
     return canvas_draw(bounds, clips, clip_count, [&](SkCanvas* canvas, CanvasTile const& tile) {
         canvas->setMatrix(SkMatrix::Translate(device_x - tile.x, device_y - tile.y));
-        canvas->drawImage(image, 0, 0, SkSamplingOptions(SkFilterMode::kNearest), nullptr);
+        canvas->drawImage(image, 0, 0, SkSamplingOptions(SkFilterMode::kNearest), &paint);
     });
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_pixels(uint8_t const* bgra, int width, int height, int pitch,
+    int device_x, int device_y, VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    return vox_graphite_canvas_draw_layer_pixels(bgra, width, height, pitch, device_x, device_y,
+        clips, clip_count, 1, 0);
 }
 
 extern "C" __attribute__((visibility("default")))
