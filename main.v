@@ -3234,6 +3234,11 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		messages << 'JavaScript idle-callback bindings: ${err.msg()}'
 		return none
 	}
+	cache_settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	runtime.install_cache_storage_binding(cache_settings != unsafe { nil } && cache_settings.is_secure_context()) or {
+		messages << 'JavaScript CacheStorage bindings: ${err.msg()}'
+		return none
+	}
 	install_browser_page_storage(document, runtime) or {
 		messages << 'JavaScript storage bindings: ${err.msg()}'
 		return none
