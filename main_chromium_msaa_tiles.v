@@ -265,6 +265,12 @@ fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 }
 
 fn chromium_border_has_diagonal_path(command layout.PaintCommand) bool {
+	return chromium_border_has_diagonal_path_with_arc_policy(command,
+		retain_degenerate_border_msaa)
+}
+
+fn chromium_border_has_diagonal_path_with_arc_policy(command layout.PaintCommand,
+	retain_degenerate_arcs bool) bool {
 	if command.svg_data == unsafe { nil } { return false }
 	data := command.svg_data.path_data
 	stride := layout.compatibility_clip_path_segment_stride
@@ -284,6 +290,10 @@ fn chromium_border_has_diagonal_path(command layout.PaintCommand) bool {
 		next_x := data[index + 1]
 		next_y := data[index + 2]
 		if kind == 4 {
+			if retain_degenerate_arcs {
+				report_archived_border_msaa()
+				return true
+			}
 			// SVG omits an arc whose endpoints coincide, and a zero radius
 			// makes it a straight segment. Square CSS borders retain these
 			// arc records, but they do not require a multisampled path pass.
