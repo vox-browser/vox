@@ -145,6 +145,37 @@ bool glyph_bitmap_clip_is_rectangular(CGContextRef context)
         || (!found->second.unsupported && found->second.clips.empty());
 }
 
+// Axis-aligned rectangular clips whose edges lie on device pixels mask each
+// Quartz pixel completely in or out. A private frame can apply their device
+// intersection itself, provided Quartz's own clip is exactly that rectangle.
+bool glyph_bitmap_device_clip(CGContextRef context, float scale, float canvas_height, SkIRect& device)
+{
+    auto found = s_shared_clips.find(context);
+    if (found == s_shared_clips.end() || found->second.unsupported || found->second.clips.empty()
+        || !(scale > 0) || !std::isfinite(scale) || !std::isfinite(canvas_height)) return false;
+    SkRect bounds;
+    bool first = true;
+    for (auto const& clip : found->second.clips) {
+        if (!clip.rect.isRect() || !clip.matrix.isScaleTranslate()) return false;
+        auto mapped = clip.matrix.mapRect(clip.rect.rect());
+        if (first) bounds = mapped;
+        else if (!bounds.intersect(mapped)) return false;
+        first = false;
+    }
+    float edges[] {bounds.left() * scale, bounds.top() * scale, bounds.right() * scale, bounds.bottom() * scale};
+    for (float edge : edges)
+        if (!std::isfinite(edge) || std::abs(edge - std::round(edge)) > 1e-3f) return false;
+    auto native = CGContextGetClipBoundingBox(context);
+    double quartz[] {native.origin.x, canvas_height - CGRectGetMaxY(native),
+        CGRectGetMaxX(native), canvas_height - native.origin.y};
+    float tracked[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+    for (int i = 0; i < 4; ++i)
+        if (!std::isfinite(quartz[i]) || std::abs(quartz[i] - tracked[i]) > .001) return false;
+    device = SkIRect::MakeLTRB(int(std::lround(edges[0])), int(std::lround(edges[1])),
+        int(std::lround(edges[2])), int(std::lround(edges[3])));
+    return !device.isEmpty();
+}
+
 #include "native_chromium_speculative_recording.h"
 
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()

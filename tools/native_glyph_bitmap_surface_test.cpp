@@ -97,9 +97,49 @@ int main()
         CFRelease(retained); CGImageRelease(snapshot);
         CGContextRelease(actual); CGContextRelease(expected); ++cases;
     }
+    // A whole-device-pixel clip masks pixels completely in or out: inside it the
+    // tile matches the unclipped raster, outside it the frame is untouched.
+    unsigned clipped = 0;
+    for (double scale : {1.0, 2.0}) for (bool noisy : {false, true})
+    // The tile covers device columns 20-50 and rows 20-40 from the top.
+    for (auto clip : {SkIRect::MakeLTRB(25, 23, 41, 35), SkIRect::MakeLTRB(0, 0, 96, 80),
+             SkIRect::MakeLTRB(20, 20, 50, 21), SkIRect::MakeLTRB(60, 50, 70, 60)}) {
+        auto actual = frame(scale, 255, noisy), unclipped = frame(scale, 255, noisy);
+        auto* original = static_cast<uint8_t*>(CGBitmapContextGetData(actual));
+        std::vector<uint8_t> before(original, original+400*80);
+        auto snapshot = CGBitmapContextCreateImage(actual); assert(snapshot);
+        // Quartz writes the snapshot detach pixel only inside its own clip.
+        CGContextClipToRect(actual, CGRectMake(clip.left()/scale, (80-clip.bottom())/scale,
+            clip.width()/scale, clip.height()/scale));
+        SkFont font(typeface, 9); font.setSubpixel(true);
+        SkTextBlobBuilder builder;
+        auto const& run = builder.allocRunPos(font, 3);
+        assert(font.textToGlyphs("Vox", 3, SkTextEncoding::kUTF8,
+            SkSpan<SkGlyphID>(run.glyphs, 3)) == 3);
+        for (int i = 0; i < 3; ++i) { run.pos[2*i] = 2+float(i)*6+.25f; run.pos[2*i+1] = 12; }
+        auto blob = builder.make(); assert(blob);
+        SkPaint paint; paint.setColor(SkColorSetARGB(255, 17, 83, 211));
+        SkSurfaceProps props(0, kUnknown_SkPixelGeometry, 0.0f, 1.0f);
+        auto matrix = SkMatrix::I();
+        auto rect = CGRectMake(20/scale, 40/scale, 30/scale, 20/scale);
+        assert(draw_glyph_bitmap_surface(unclipped,30,20,rect,matrix,blob.get(),0,0,paint,&props));
+        assert(draw_glyph_bitmap_surface(actual,30,20,rect,matrix,blob.get(),0,0,paint,&props,&clip));
+        auto* drawn = static_cast<uint8_t const*>(CGBitmapContextGetData(actual));
+        auto* full = static_cast<uint8_t const*>(CGBitmapContextGetData(unclipped));
+        for (int y = 0; y < 80; ++y) for (int x = 0; x < 96; ++x) {
+            auto expected = clip.contains(x, y) ? full : before.data();
+            assert(!std::memcmp(drawn+y*400+x*4, expected+y*400+x*4, 4));
+        }
+        auto retained = CGDataProviderCopyData(CGImageGetDataProvider(snapshot)); assert(retained);
+        auto pitch = CGImageGetBytesPerRow(snapshot);
+        for (size_t y = 0; y < 80; ++y)
+            assert(!std::memcmp(CFDataGetBytePtr(retained)+y*pitch,before.data()+y*400,96*4));
+        CFRelease(retained); CGImageRelease(snapshot);
+        CGContextRelease(actual); CGContextRelease(unclipped); ++clipped;
+    }
     auto context = frame(1,255,false);
     SkPaint paint; auto matrix = SkMatrix::I();
     assert(!draw_glyph_bitmap_surface(context,30,20,CGRectMake(20,40,30,20),matrix,nullptr,0,0,paint,nullptr));
     CGContextRelease(context);
-    std::printf("PASS %u exact BGRA raster regions and retained snapshots\n",cases);
+    std::printf("PASS %u exact BGRA raster regions, %u device clips and retained snapshots\n",cases,clipped);
 }

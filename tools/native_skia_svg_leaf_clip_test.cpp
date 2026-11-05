@@ -82,10 +82,57 @@ static void check_pixel_exact_cuts()
     s_shared_clips.erase(context);
 }
 
+static void check_glyph_device_clips()
+{
+    // A glyph tile may apply rectangular clips itself only when every edge lies
+    // on a device pixel and Quartz clips to exactly the tracked rectangle.
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    for (float scale : {1.f, 2.f}) {
+        auto context = CGBitmapContextCreate(nullptr, 200, 200, 8, 800, space,
+            kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        assert(context);
+        CGContextScaleCTM(context, scale, scale);
+        float canvas_height = 200 / scale;
+        auto quartz = [&](SkRect r) {
+            CGContextClipToRect(context, CGRectMake(r.left(), canvas_height - r.bottom(), r.width(), r.height()));
+        };
+        SkIRect device;
+        assert(!glyph_bitmap_device_clip(context, scale, canvas_height, device));
+        auto cell = SkRect::MakeLTRB(10.5f, 10, 50.5f, 30);
+        CGContextSaveGState(context);
+        quartz(cell);
+        s_shared_clips[context].clips = {SharedClip {SkRRect::MakeRect(cell), SkMatrix::I()}};
+        assert(glyph_bitmap_device_clip(context, scale, canvas_height, device) == (scale == 2));
+        if (scale == 2) assert(device == SkIRect::MakeLTRB(21, 20, 101, 60));
+        // Nested rectangles use their intersection.
+        auto inner = SkRect::MakeLTRB(0, 15, 30, 80);
+        quartz(inner);
+        s_shared_clips[context].clips.push_back(SharedClip {SkRRect::MakeRect(inner), SkMatrix::I()});
+        assert(glyph_bitmap_device_clip(context, scale, canvas_height, device) == (scale == 2));
+        if (scale == 2) assert(device == SkIRect::MakeLTRB(21, 30, 60, 60));
+        // Rounded, skewed, untracked or unsupported clips keep the composited path.
+        s_shared_clips[context].clips.back().rect = SkRRect::MakeRectXY(inner, 2, 2);
+        assert(!glyph_bitmap_device_clip(context, scale, canvas_height, device));
+        s_shared_clips[context].clips.back().rect = SkRRect::MakeRect(inner);
+        s_shared_clips[context].clips.back().matrix = SkMatrix::MakeAll(1, .25f, 0, 0, 1, 0, 0, 0, 1);
+        assert(!glyph_bitmap_device_clip(context, scale, canvas_height, device));
+        s_shared_clips[context].clips.pop_back();
+        assert(!glyph_bitmap_device_clip(context, scale, canvas_height, device));
+        s_shared_clips[context].clips = {SharedClip {SkRRect::MakeRect(cell), SkMatrix::I()}};
+        s_shared_clips[context].unsupported = true;
+        assert(!glyph_bitmap_device_clip(context, scale, canvas_height, device));
+        s_shared_clips.erase(context);
+        CGContextRestoreGState(context);
+        CGContextRelease(context);
+    }
+    CGColorSpaceRelease(space);
+}
+
 int main()
 {
     check_clip_intersections();
     check_pixel_exact_cuts();
+    check_glyph_device_clips();
     constexpr int width = 320, height = 240;
     int cases = 0, pixel_exact_cuts = 0;
     for (int scale : {1, 2}) for (float phase : {.125f, .372f, .5f, .875f})

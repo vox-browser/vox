@@ -621,6 +621,7 @@ CGImageRef create_pixel_image(CGContextRef destination, std::vector<uint32_t>&& 
 
 #include "native_glyph_bitmap_copy.h"
 bool glyph_bitmap_clip_is_rectangular(CGContextRef);
+bool glyph_bitmap_device_clip(CGContextRef, float, float, SkIRect&);
 
 void capture_native_rounded_image(CGContextRef, CGImageRef, CGRect, bool);
 
@@ -1592,13 +1593,16 @@ static int draw_retained_glyph_run(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()));
     SkSurfaceProps direct_coverage(0, kUnknown_SkPixelGeometry, 0.0f,
         (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
+    SkIRect glyph_clip;
+    bool clipped_surface = false;
     if (has_background && !has_float_color && !emoji_face && blur == 0
         && (font_smoothing & VOX_GLYPH_PRIVATE_BITMAP)
         && !std::getenv("VOX_DISABLE_DIRECT_GLYPH_SURFACE")
-        && glyph_bitmap_clip_is_rectangular(destination)
+        && (glyph_bitmap_clip_is_rectangular(destination)
+            || (clipped_surface = glyph_bitmap_device_clip(destination, destination_scale, canvas_height, glyph_clip)))
         && draw_glyph_bitmap_surface(destination, raster_width, raster_height,
             destination_rect, draw_matrix, blob.get(), blob_x, blob_y, paint,
-            chromium ? &direct_coverage : nullptr)) {
+            chromium ? &direct_coverage : nullptr, clipped_surface ? &glyph_clip : nullptr)) {
         if (std::getenv("VOX_DIRECT_GLYPH_SURFACE_DIAGNOSTICS"))
             std::fprintf(stderr, "VOX_DIRECT_GLYPH_SURFACE width=%d height=%d\n", raster_width, raster_height);
         return 1;
