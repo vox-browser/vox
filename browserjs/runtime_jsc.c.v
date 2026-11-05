@@ -43,6 +43,15 @@ fn js_string_to_v(context voidptr, value voidptr) !string {
 	if capacity == 0 {
 		return ''
 	}
+	if !retain_heap_jsc_string_buffer && capacity <= 256 {
+		// JSC writes synchronously. Copy the exact result into the caller's
+		// allocation owner before this fixed stack buffer leaves its frame.
+		mut buffer := [256]u8{}
+		written := unsafe { C.JSStringGetUTF8CString(string_value, &char(&buffer[0]), capacity) }
+		if written == 0 { return error('JavaScript string conversion failed') }
+		note_inline_jsc_string_buffer()
+		return unsafe { tos(&buffer[0], int(written) - 1).clone() }
+	}
 	mut bytes := []u8{len: int(capacity)}
 	written := unsafe { C.JSStringGetUTF8CString(string_value, &char(bytes.data), capacity) }
 	if written == 0 {
