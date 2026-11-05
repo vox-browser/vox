@@ -24,7 +24,9 @@ pub struct URLInputParser {
 mut:
 	base_parser       URLBaseParser
 	storage_          &platform.Arena          = unsafe { nil }
-	slots_            [512]&URLInputCacheEntry = unsafe { [512]&URLInputCacheEntry{} }
+	// Use aggregate zero initialization. An explicit pointer-array default can
+	// decay to a stack address when the compiler embeds this parser in an owner.
+	slots_            [512]&URLInputCacheEntry
 	next_way_         [256]u8
 	seen_             [512]u64
 	admission_misses_ int
