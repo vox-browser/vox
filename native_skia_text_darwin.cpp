@@ -5757,12 +5757,15 @@ static bool draw_sparse_svg_path(CGContextRef destination, VoxGraphitePath const
     RasterRegion const& region, int width, int height, float scale,
     float canvas_height, bool opaque_backdrop)
 {
-    auto draw = graphite_path_parts_draw();
     auto ctm = CGContextGetCTM(destination);
     if (ctm.a != scale || ctm.d != scale || ctm.b != 0 || ctm.c != 0
         || ctm.tx != 0 || ctm.ty != 0) return false;
     std::vector<VoxPathRegion> parts;
-    if (!draw || !vox_sparse_path_regions(path, width, height, parts)) return false;
+    if (!vox_sparse_path_regions(path, width, height, parts)) return false;
+    // Opening the Graphite library costs more than many small paths; leave it
+    // unloaded until a path actually has sparse contours to transfer.
+    auto draw = graphite_path_parts_draw();
+    if (!draw) return false;
     auto background = opaque_backdrop ? read_backdrop(destination, region, scale, width, height) : Backdrop{};
     std::vector<std::vector<uint32_t>> pixels(parts.size());
     std::vector<VoxGraphitePixelRegion> views;

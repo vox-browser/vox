@@ -22,6 +22,23 @@ static std::vector<float> border_path(float right, float bottom)
 
 int main()
 {
+    // A path without sparse contours keeps the Graphite library unloaded.
+    {
+        auto curve = border_path(287, 219);
+        curve[12] = 3;
+        VoxGraphitePath descriptor {};
+        descriptor.segments = curve.data(); descriptor.segment_count = int(curve.size() / 12);
+        descriptor.matrix[0] = descriptor.matrix[4] = descriptor.matrix[8] = 1;
+        std::vector<uint8_t> bitmap(320 * 240 * 4, 255);
+        auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto context = CGBitmapContextCreate(bitmap.data(), 320, 240, 8, 320 * 4, space,
+            CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+        CGColorSpaceRelease(space);
+        assert(context);
+        assert(!draw_sparse_svg_path(context, descriptor, RasterRegion {0, 0, 320, 240}, 320, 240, 1, 240, true));
+        CGContextRelease(context);
+        assert(!dlopen("@rpath/libVoxGraphite.dylib", RTLD_NOLOAD));
+    }
     auto path = std::getenv("VOX_SKIA_REFERENCE_LIBRARY");
     assert(path && *path);
     auto library = dlopen(path, RTLD_NOW | RTLD_LOCAL);
