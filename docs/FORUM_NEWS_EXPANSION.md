@@ -1608,6 +1608,60 @@ No live-site, ordinary-animation, scrolling or performance claim is added.
 [Results, identities and limitations](evidence/techcrunch-root-raster-20261105.json),
 [retained attempts, screenshots and receipts](evidence/techcrunch-root-raster-20261105.zip).
 
+## TechCrunch: float SVG path state (2026-11-06)
+
+Commits `8af323f0a` and `8c946bdff` remove the logo's remaining bad pixel.
+TechCrunch now differs from Brave + full uBO by **32 one-level photo pixels**.
+The registered manifest (`e96b9b25…`), publisher responses, source PNG and
+existing references remain unchanged; full-site equality remains open.
+
+Vox previously accumulated relative SVG coordinates as doubles and rounded
+only the final native segments. Chromium's
+[SVGPathBuilder](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/svg/svg_path_builder.cc)
+updates float current and control points after each operation. Chromium
+painting now rounds operands, relative additions and smooth-control reflection
+at those boundaries, including paths used by clips and masks. Ordinary Path2D
+and the portable conversion retain their existing behavior.
+
+Six new cases and 19 related controls pass with default GC, GC disabled and
+poisoned preallocation. The first reduced coordinate test fails before the
+fix. The added clip/mask cases pass too; their original no-GC compile ran out
+of disk at link, and the two unfinished modes subsequently pass after cleanup.
+The failed compile and compatibility fallback output remain recorded.
+
+Production `8032eda1…` contains the fix and gives the following strict results:
+
+| Case | Saved source → Brave | Independent Brave replay | Vox → Brave |
+| --- | ---: | ---: | ---: |
+| TechCrunch, cold cache | 0 | 0 | **32** |
+| TechCrunch, complete cache | 0 | 0 | **32** |
+| Hacker News | 0 | 0 | 0 |
+| WIRED, first-frame policy | 0 | 0 | 0 |
+
+The new [`svg-relative-path-precision`](../Tests/Browser/Brave/input/svg-relative-path-precision.html)
+screenshot fixture reproduces three copies of the logo pixel in the earlier
+bundle and reaches zero on production. Its source and two fresh full-uBO
+references match exactly. The original attempt's final native network audit
+timed out and remains an incomplete whole attempt. A separate fresh-process
+audit of the retained native request/header stream passes; the prior captures
+are carried without rerendering. The full **136-test /
+142-capture** rendering cohort is entirely exact on the same production
+executable, with canonical tools, fixtures and native libraries unchanged.
+Independent RGBA checks also verify the full-site results above.
+
+Private coordinate, clip, shader-math and backend probes remain diagnostics;
+none changes production sampling or earns rendering acceptance. The invalid
+first Dawn export and LayerTree snapshots with stale IDs or changed reference
+pixels are retained. Later mip and Chromium 156 image probes fail with layout
+segmentation faults on a different shared build (`7f943f4c…`), including its
+installed control before the alternate backend executes. Those attempts earn
+no pixel qualification; the successful strict and broad cohorts stay pinned to
+`8032eda1…`. No live-site, ordinary-animation, scrolling or performance claim is
+added; the separate four mask-only reducer pixels remain open.
+
+[Results, identities and qualifications](evidence/techcrunch-svg-path-precision-20261106.json),
+[retained attempts, captures and checks](evidence/techcrunch-svg-path-precision-20261106.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
