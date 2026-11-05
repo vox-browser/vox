@@ -1,0 +1,608 @@
+{
+  "status": "Cohort125 invalid: Brave pair2 and7 differ from unchanged pixels;all21attempts retained. Vox median27,709,657,175 vscontrol27,190,414,737,negative point519,242,438 (1.90965%);4paired improvements/3regressions and positive409,977,729 paired median reflect mixed variation. No causal regression/saving or acceptance/catalog credit.",
+  "implementation_commit": "b5135c568",
+  "control_commit": "77a7f166f",
+  "statistics": {
+    "valid_capture_cohort": false,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 27709657175,
+            "upper": 27709657175
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28921644201,
+            "upper": 28921644201
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17624502928,
+            "upper": 17645123401
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 28044282622,
+            "upper": 28044282622
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27010234079,
+            "upper": 27010234079
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17944631785,
+            "upper": 17963422629
+          },
+          "exit": 1,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": false,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "passed": false
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 26638344216,
+            "upper": 26638344216
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26603617241,
+            "upper": 26603617241
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17917046437,
+            "upper": 17927953536
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 28102407986,
+            "upper": 28102407986
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28512385715,
+            "upper": 28512385715
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17981363142,
+            "upper": 17988645773
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 29002931246,
+            "upper": 29002931246
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26386948972,
+            "upper": 26386948972
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17673424918,
+            "upper": 17702812702
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 26358636817,
+            "upper": 26358636817
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28161031864,
+            "upper": 28161031864
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17607986030,
+            "upper": 17614260347
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 26104682976,
+            "upper": 26104682976
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27190414737,
+            "upper": 27190414737
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17532484957,
+            "upper": 17556099348
+          },
+          "exit": 1,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": false,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "passed": false
+        }
+      }
+    ],
+    "failed_attempts": [
+      {
+        "pair": 2,
+        "arm": "brave",
+        "error": "Captured document differs from its unchanged pixel reference",
+        "native_exit": 0,
+        "cleanup_native_exit": null
+      },
+      {
+        "pair": 7,
+        "arm": "brave",
+        "error": "Captured document differs from its unchanged pixel reference",
+        "native_exit": 0,
+        "cleanup_native_exit": null
+      }
+    ],
+    "attempts_retained": 21,
+    "capture_audits_passed": 19,
+    "median_vox": 27709657175,
+    "median_control": 27190414737,
+    "median_brave_lower": 17673424918,
+    "point_reduction": -519242438,
+    "point_fraction": -0.019096525118222216,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": -519242438,
+    "paired_control_minus_vox": [
+      1211987026,
+      -1034048543,
+      -34726975,
+      409977729,
+      -2615982274,
+      1802395047,
+      1085731761
+    ],
+    "improvements": 4,
+    "regressions": 3,
+    "worst_vox_over_best_control": 1.0991392478446789,
+    "strict_left": 290029312460,
+    "strict_right": 157792364613,
+    "conservative_brave_ratio": 1.6542396196051103,
+    "target_met": false,
+    "broad_trigger": false,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 119,
+      "acceptance_browser_attempts": 2566,
+      "last_measured_id": 125,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113,
+        118,
+        124
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793920709.7285702
+  },
+  "paired_median_control_minus_vox": 409977729,
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "short_attribute_memo_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "short_attribute_memo_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "763626382a9ee485568f15f37899f4a369dbb2bab2fa5229e78364af5cccac83",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "01c1de084c44d4237a3b13f2f950eba3ae6a202bbac1d6351ff687ce93ec4c72",
+        "dirty": true,
+        "head": "e6c8479f2174ce4fe8d0356165d33bd46ee67183",
+        "repository_sha256": "cdcbfd310ae5c28b176056662f84e0acd6a8b3f14303f4624a11f5376508b6ec"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "e6c8479f2174ce4fe8d0356165d33bd46ee67183",
+        "id": "f3172ccf19664211a0e521ccda4a69f4"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "01c1de084c44d4237a3b13f2f950eba3ae6a202bbac1d6351ff687ce93ec4c72",
+        "dirty": true,
+        "head": "77a7f166fc0029ea7f8b12f9c6fd9b252688a498",
+        "repository_sha256": "682c13c0c3e881eddf53b3148a0acbaeacf5dae542befe9f9d25d494ff74dae3"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; attribute-substring memo disabled only in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793920135.0042582
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/uncached attribute-substring control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793920146.648175
+  },
+  "source_proof": {
+    "checked": {
+      "css/short_attribute_match_memo_test.v": "2f28cb3ed6bebfa3bcea6a4c4e1b3d3e6b16debe4311519f5780ef49716478b6",
+      "css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+      "css/selector_substring_search_test.v": "7aea744182c43d56d37d48c3167a7690878cc9facb507bf209298dc1fcfd323b",
+      "css/selector_borrowed_fast_test.v": "ab9d3dac802eff322b0edacfeea0c95aa496ae770c1dc98ac8a84aa904196597",
+      "css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+      "css/matching_rule_candidates_test.v": "439bede97a7ae269bf56f926afeab90b2ac56a03e0a957e0d443f602d9801d28",
+      "css/short_attribute_match_memo.v": "c76f0b935fe23c26e3d07535225e7706cee9aab9385226e9d0424073eaef5698",
+      "css/selectors.v": "9e42cd8151a0661385e67084f8f5ee190c72494306444ec9f1a3289fa9243a96",
+      "css/computed_interpolation.v": "57de29d54909954ef2bc74563e8a32a8522c92e0b1cfb57eec153270aa818388",
+      "css/style_scope_cache.v": "02ecbd6ab64fcb550812f5d7aa5ef4f74da1c43b5fbf59030679d967ff3bf42a",
+      "css/selector_substring_scan.v": "daef59b7bd615b0b608848790e3b8d4d5e8353865e73ea4bf69d14a17f36419f",
+      "css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523",
+      "css/matching_rule_candidates.v": "20e8b4c3e7c8916f98d1ebf8c30e78e908641396d6c1055a1eca9dd2537f4fd2"
+    },
+    "build_head": "77a7f166fc0029ea7f8b12f9c6fd9b252688a498",
+    "producer_initial_head": "e6c8479f2174ce4fe8d0356165d33bd46ee67183",
+    "complete_build_digest_verified": true,
+    "committed_sources_match": true,
+    "generated_c_preserved": false,
+    "qualification": "Final focused source hashes match the producer verified HEAD. Initial and verified complete build-input digests match. Later shared working-tree edits are separately tested and do not require replacing this completed bundle. Dirty production metadata does not claim sealed generated C or a per-file source manifest. For parallel receipt,unchanged complete generation input fingerprints are required by canonical driver;no sealedgeneratedC claim."
+  },
+  "focus": "docs/performance/bbc-short-attribute-memo-focus-20261106.json",
+  "preflight124": {
+    "passed": false,
+    "browser_launched": false,
+    "reason": "Inherited disk planning minimum"
+  },
+  "lease": {
+    "requested_unix": 1793920459.673747,
+    "purpose": "Pin canonical executable/libraries through matched cohort125. Reuse only current-hash validated native/SVG diagnostics; no source, workload, reference, endpoint, counter or threshold changes.",
+    "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+    "helper_sha256": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+    "acquired_unix": 1793920459.674499,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "763626382a9ee485568f15f37899f4a369dbb2bab2fa5229e78364af5cccac83",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "01c1de084c44d4237a3b13f2f950eba3ae6a202bbac1d6351ff687ce93ec4c72",
+        "dirty": true,
+        "head": "e6c8479f2174ce4fe8d0356165d33bd46ee67183",
+        "repository_sha256": "cdcbfd310ae5c28b176056662f84e0acd6a8b3f14303f4624a11f5376508b6ec"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "e6c8479f2174ce4fe8d0356165d33bd46ee67183",
+        "id": "f3172ccf19664211a0e521ccda4a69f4"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "01c1de084c44d4237a3b13f2f950eba3ae6a202bbac1d6351ff687ce93ec4c72",
+        "dirty": true,
+        "head": "77a7f166fc0029ea7f8b12f9c6fd9b252688a498",
+        "repository_sha256": "682c13c0c3e881eddf53b3148a0acbaeacf5dae542befe9f9d25d494ff74dae3"
+      }
+    },
+    "native_svg_reused_for_identical_executable": true,
+    "cohort_exit": 1,
+    "cohort_finished_unix": 1793920670.295302,
+    "released_unix": 1793920670.296385
+  },
+  "scope": "Unchanged exclusive-coalition creation through encoded document PNG,startup/window/target/readiness/visible-image/two-second settlement included;Vox before file write,Brave including CDP delivery,audits/teardown afterward. Fixed609 original-origin HTTPS responses,original author scripts,1024x768 CSS,DPR2,fresh private profiles/caches,retained OS caches,unchanged references and common3rendering policies. Exited aggregates/allowed owned services included,GPU/outside work excluded.",
+  "qualifications": "Pinned parallel33-unit763626382a9e. Receipt initialHEADe6c8479f2,verifiedHEAD77a7f166f,identical complete initial/final build digests. Baseline primary focused feature/test hashes match verified HEAD; later shared style-stage edits separately pass another150focused executions. Dirty production metadata is not sealed generated C or a per-file source manifest. Candidate-only actual memo hit beforePNG; original native pixels/content/72external source witnesses/images/ownership/exits and SVG guard pass. No own heavy diagnostics/compilers during acceptance; host contention recorded. All failed first launches/regressions/pixel failures retained,no sample retry/drop/combination. Negative full/partial median point triggers no broad run;last completed724-case broad result remains5baselinefailures/no full-suite pass or cadence reset. Known unsupported performance.measure error/DOM/script/font/paint limitations and82.7154%cross-browser pixel difference remain. No full async conformance,live/render-only/FPS claim. Preflight124 launches no acceptance browser; history119measured/2566attempts,preflightIDs104,110,111,113,118,124.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-short-attribute-memo-cohort125-20261106.tar.gz",
+    "bytes": 39189997,
+    "sha256": "8d7be432e570456eaab640ac79210a42660e6424198f9174e0d25aecb6a5dda0",
+    "members": 395,
+    "all_members_verified": true
+  },
+  "unix": 1793920783.412343,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-short-attribute-memo-20261106-0230/archive-cohort125.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 32980992,
+    "elapsed_seconds": 2.920121125,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

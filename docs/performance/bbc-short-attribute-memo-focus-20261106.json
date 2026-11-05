@@ -1,0 +1,591 @@
+{
+  "passed": true,
+  "implementation": "b5135c568",
+  "tooling": "77a7f166f",
+  "primary_cases": 25,
+  "new_cases": 6,
+  "primary_executions": 150,
+  "additional_shared_stage_executions": 150,
+  "earlier_executions": 150,
+  "total_focused_executions": 450,
+  "tool_tests": 342,
+  "matrices": {
+    "initial": {
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "proof": [
+        {
+          "mode": "default",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "none",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "prealloc",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/css/short_attribute_match_memo_test.v": "65e1473333624197c190902b5fb1eebf0e13e2ded5d40c3ebc1b6f004ffd002a",
+        "/Users/alex/code/vox2/css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+        "/Users/alex/code/vox2/css/selector_substring_search_test.v": "7aea744182c43d56d37d48c3167a7690878cc9facb507bf209298dc1fcfd323b",
+        "/Users/alex/code/vox2/css/selector_borrowed_fast_test.v": "ab9d3dac802eff322b0edacfeea0c95aa496ae770c1dc98ac8a84aa904196597",
+        "/Users/alex/code/vox2/css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+        "/Users/alex/code/vox2/css/matching_rule_candidates_test.v": "e65fa419bb5da71a360501f987915d65b5942f9fdd215d53f3192f1bb9a0462e",
+        "/Users/alex/code/vox2/css/short_attribute_match_memo.v": "c76f0b935fe23c26e3d07535225e7706cee9aab9385226e9d0424073eaef5698",
+        "/Users/alex/code/vox2/css/selectors.v": "9e42cd8151a0661385e67084f8f5ee190c72494306444ec9f1a3289fa9243a96",
+        "/Users/alex/code/vox2/css/computed_interpolation.v": "57de29d54909954ef2bc74563e8a32a8522c92e0b1cfb57eec153270aa818388",
+        "/Users/alex/code/vox2/css/style_scope_cache.v": "02ecbd6ab64fcb550812f5d7aa5ef4f74da1c43b5fbf59030679d967ff3bf42a",
+        "/Users/alex/code/vox2/css/selector_substring_scan.v": "daef59b7bd615b0b608848790e3b8d4d5e8353865e73ea4bf69d14a17f36419f",
+        "/Users/alex/code/vox2/css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523",
+        "/Users/alex/code/vox2/css/matching_rule_candidates.v": "20e8b4c3e7c8916f98d1ebf8c30e78e908641396d6c1055a1eca9dd2537f4fd2"
+      },
+      "unchanged": true,
+      "cases_per_run": 25,
+      "expected_cases": [
+        "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+        "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+        "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+        "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+        "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+        "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+        "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+        "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+        "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+        "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+        "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+        "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+        "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+        "test_selector_substring_boundary_filter_preserves_every_byte_value",
+        "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+        "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+        "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+        "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+        "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+        "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+        "test_matching_query_reuses_context_for_rejected_candidates",
+        "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+        "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+        "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+        "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+      ]
+    },
+    "ownership": {
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "proof": [
+        {
+          "mode": "default",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "none",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "prealloc",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/css/short_attribute_match_memo_test.v": "2f28cb3ed6bebfa3bcea6a4c4e1b3d3e6b16debe4311519f5780ef49716478b6",
+        "/Users/alex/code/vox2/css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+        "/Users/alex/code/vox2/css/selector_substring_search_test.v": "7aea744182c43d56d37d48c3167a7690878cc9facb507bf209298dc1fcfd323b",
+        "/Users/alex/code/vox2/css/selector_borrowed_fast_test.v": "ab9d3dac802eff322b0edacfeea0c95aa496ae770c1dc98ac8a84aa904196597",
+        "/Users/alex/code/vox2/css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+        "/Users/alex/code/vox2/css/matching_rule_candidates_test.v": "439bede97a7ae269bf56f926afeab90b2ac56a03e0a957e0d443f602d9801d28",
+        "/Users/alex/code/vox2/css/short_attribute_match_memo.v": "c76f0b935fe23c26e3d07535225e7706cee9aab9385226e9d0424073eaef5698",
+        "/Users/alex/code/vox2/css/selectors.v": "9e42cd8151a0661385e67084f8f5ee190c72494306444ec9f1a3289fa9243a96",
+        "/Users/alex/code/vox2/css/computed_interpolation.v": "57de29d54909954ef2bc74563e8a32a8522c92e0b1cfb57eec153270aa818388",
+        "/Users/alex/code/vox2/css/style_scope_cache.v": "02ecbd6ab64fcb550812f5d7aa5ef4f74da1c43b5fbf59030679d967ff3bf42a",
+        "/Users/alex/code/vox2/css/selector_substring_scan.v": "daef59b7bd615b0b608848790e3b8d4d5e8353865e73ea4bf69d14a17f36419f",
+        "/Users/alex/code/vox2/css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523",
+        "/Users/alex/code/vox2/css/matching_rule_candidates.v": "20e8b4c3e7c8916f98d1ebf8c30e78e908641396d6c1055a1eca9dd2537f4fd2"
+      },
+      "unchanged": true,
+      "cases_per_run": 25,
+      "expected_cases": [
+        "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+        "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+        "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+        "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+        "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+        "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+        "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+        "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+        "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+        "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+        "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+        "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+        "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+        "test_selector_substring_boundary_filter_preserves_every_byte_value",
+        "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+        "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+        "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+        "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+        "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+        "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+        "test_matching_query_reuses_context_for_rejected_candidates",
+        "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+        "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+        "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+        "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+      ]
+    },
+    "shared_stages": {
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      "proof": [
+        {
+          "mode": "default",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "none",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "prealloc",
+          "calls": [
+            "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+            "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+            "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+            "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+            "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+            "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+            "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+            "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+            "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+            "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+            "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+            "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+            "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+            "test_selector_substring_boundary_filter_preserves_every_byte_value",
+            "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+            "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+            "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+            "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+            "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+            "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+            "test_matching_query_reuses_context_for_rejected_candidates",
+            "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+            "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+            "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+            "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+          ],
+          "all_called": true
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/css/short_attribute_match_memo_test.v": "2f28cb3ed6bebfa3bcea6a4c4e1b3d3e6b16debe4311519f5780ef49716478b6",
+        "/Users/alex/code/vox2/css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+        "/Users/alex/code/vox2/css/selector_substring_search_test.v": "7aea744182c43d56d37d48c3167a7690878cc9facb507bf209298dc1fcfd323b",
+        "/Users/alex/code/vox2/css/selector_borrowed_fast_test.v": "ab9d3dac802eff322b0edacfeea0c95aa496ae770c1dc98ac8a84aa904196597",
+        "/Users/alex/code/vox2/css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+        "/Users/alex/code/vox2/css/matching_rule_candidates_test.v": "439bede97a7ae269bf56f926afeab90b2ac56a03e0a957e0d443f602d9801d28",
+        "/Users/alex/code/vox2/css/short_attribute_match_memo.v": "c76f0b935fe23c26e3d07535225e7706cee9aab9385226e9d0424073eaef5698",
+        "/Users/alex/code/vox2/css/selectors.v": "9e42cd8151a0661385e67084f8f5ee190c72494306444ec9f1a3289fa9243a96",
+        "/Users/alex/code/vox2/css/computed_interpolation.v": "e14f36a2292e174f7085b552fa89afaad125836027886e299ba5a1f19cf841bb",
+        "/Users/alex/code/vox2/css/style_scope_cache.v": "02ecbd6ab64fcb550812f5d7aa5ef4f74da1c43b5fbf59030679d967ff3bf42a",
+        "/Users/alex/code/vox2/css/selector_substring_scan.v": "daef59b7bd615b0b608848790e3b8d4d5e8353865e73ea4bf69d14a17f36419f",
+        "/Users/alex/code/vox2/css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523",
+        "/Users/alex/code/vox2/css/matching_rule_candidates.v": "20e8b4c3e7c8916f98d1ebf8c30e78e908641396d6c1055a1eca9dd2537f4fd2",
+        "/Users/alex/code/vox2/css/style_computer.v": "fc5ddf809b9bb71351ce048085d03c9ba36a5a93e679f470277c9085218e5f7a",
+        "/Users/alex/code/vox2/css/stylesheet_conversion_workspace.v": "e83dafef36464154ea461bef5933f28f48a3acaa6068e1df184f1f5626f66c40",
+        "/Users/alex/code/vox2/processmetrics/load_stages.v": "c73042c40e4a5a4ef91ff3f7b9f84eb02fd0cd351decaf83cf48decca0001d2f",
+        "/Users/alex/code/vox2/processmetrics/instructions_darwin.c.v": "65b3a1c85d9641015db6f4394285992602333a95effffaf5b549bc4cad1f420c"
+      },
+      "unchanged": true,
+      "cases_per_run": 25,
+      "expected_cases": [
+        "test_short_attribute_memo_matches_the_byte_oracle_at_every_storage_boundary",
+        "test_short_attribute_memo_checks_interior_bytes_despite_fingerprint_collisions",
+        "test_short_attribute_memo_owns_scratch_inputs_and_overwrites_without_allocating",
+        "test_short_attribute_matching_preserves_fallbacks_and_lazily_allocates_storage",
+        "test_short_attribute_matching_keeps_namespaces_case_and_live_mutations_on_both_paths",
+        "test_short_attribute_memo_is_used_by_the_cascade_and_rechecks_changed_values",
+        "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+        "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+        "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+        "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+        "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+        "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+        "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+        "test_selector_substring_boundary_filter_preserves_every_byte_value",
+        "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+        "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+        "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+        "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+        "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+        "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+        "test_matching_query_reuses_context_for_rejected_candidates",
+        "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+        "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+        "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+        "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+      ]
+    }
+  },
+  "primary_source_matches_feature_commit": true,
+  "commit_scope": {
+    "partial_field_file": "css/computed_interpolation.v",
+    "qualification": "Only the cache field is staged from computed_interpolation.v; unrelated in-progress processmetrics imports/scopes remain unstaged. All other staged files are this feature. Focused checks retain complete checked working-tree hashes; no claim those unrelated working-tree edits are part of this commit.",
+    "staged_sha256": {
+      "css/selectors.v": "9e42cd8151a0661385e67084f8f5ee190c72494306444ec9f1a3289fa9243a96",
+      "css/style_scope_cache.v": "02ecbd6ab64fcb550812f5d7aa5ef4f74da1c43b5fbf59030679d967ff3bf42a",
+      "css/matching_rule_candidates_test.v": "439bede97a7ae269bf56f926afeab90b2ac56a03e0a957e0d443f602d9801d28",
+      "css/short_attribute_match_memo.v": "c76f0b935fe23c26e3d07535225e7706cee9aab9385226e9d0424073eaef5698",
+      "css/short_attribute_match_memo_test.v": "2f28cb3ed6bebfa3bcea6a4c4e1b3d3e6b16debe4311519f5780ef49716478b6",
+      "css/computed_interpolation.v": "57de29d54909954ef2bc74563e8a32a8522c92e0b1cfb57eec153270aa818388"
+    }
+  },
+  "qualifications": "Primary refined ownership matrix25cases/twoarms/threeGCmodes,all actual native test-main calls verified. Fixed256slot storage owns256value/32pattern bytes,checks complete bytes after fingerprints,keeps case mode,and never retains source or DOM references;only16..256byte values/nonempty<=32byte substring patterns eligible. Unsupported operators/sizes stay ordinary,lazy cache and reset context owner checked. Actual source/pattern backing buffers mutate and retire;overwrite/hit paths allocate no further storage. Current shared stage instrumentation has separate successful matrix; it is not silently folded into feature commit. No workload saving from focused checks; generated C retained without claiming a sealed focused compilation.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-short-attribute-memo-focus-20261106.tar.gz",
+    "bytes": 28905993,
+    "sha256": "1f910d88b510db4dd3095f424f0d2ddefdba546f8d8bdf03abc17a46a0cc9c92",
+    "members": 127,
+    "all_members_verified": true
+  },
+  "unix": 1793920245.45842,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-short-attribute-memo-20261106-0230/archive-focus.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 23855104,
+    "elapsed_seconds": 3.442975792,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

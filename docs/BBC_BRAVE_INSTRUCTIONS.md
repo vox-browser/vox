@@ -1,6 +1,31 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 123**, on pinned parallel production `2ed5a2e46d92`:
+Latest attempt — **cohort 125** on parallel production `763626382a9e` is
+invalid for acceptance: Brave pairs 2 and 7 differ from their unchanged pixel
+reference. All 21 attempts remain recorded, with 19 successful capture audits,
+normal native exits and unchanged identities. Medians are **27,709,657,175 Vox**,
+**27,190,414,737 substring-memo control** and **17,673,424,918 Brave lower bound**.
+The candidate has a **519,242,438 negative median point difference** (1.90965%),
+with four paired improvements and three regressions. The positive paired median
+409,977,729 reflects mixed variation; no causal regression or saving is established.
+The strict target also fails `290029312460 > 157792364613` (ratio **1.65424**).
+The substring memo experiment is being retired without performance credit.
+[All attempts and native validation](performance/bbc-short-attribute-memo-cohort125-20261106.json).
+
+The memo's primary **150 focused executions** (25 cases, both arms, three GC
+modes) and **342 tooling tests** pass. Separate earlier and current-shared-stage
+matrices each pass another 150 executions. Native checks show candidate-only
+actual reuse before PNG and retain original pixels/content, 72 external source
+witnesses, native-image/ownership checks, normal exits and exact SVG source-switch.
+The production receipt's verified HEAD contains the change and its initial/final
+complete build digests agree; its generation-start HEAD predates the change.
+These aggregate receipts are not sealed C or per-file source manifests.
+[Focused and ownership evidence](performance/bbc-short-attribute-memo-focus-20261106.json).
+Preflight 124 failed its declared disk budget before launching any acceptance
+browser. No full or partial median point reduction triggers broader checks for
+125; the last completed broad result below retains five baseline failures.
+
+Last valid result — **cohort 123**, on pinned parallel production `2ed5a2e46d92`:
 all 21 capture audits pass, with normal native exits and unchanged input
 identities. Launch-to-PNG medians are **26,144,631,473 Vox**,
 **26,248,892,855 empty-index-lookup control**, and **17,449,156,252 Brave lower
@@ -9,8 +34,8 @@ bound** instructions. The strict 10% target fails
 The candidate shows a **104,261,382** median point reduction (**0.397203%**),
 with four paired improvements and three regressions; the conservative control
 ratio **1.05345** fails. No robust saving or catalog credit is claimed.
-History is **118 measured cohorts / 2,545 acceptance browser attempts**;
-104, 110, 111, 113 and 118 are preflight-only. Every earlier result remains
+History through cohort 125 is **119 measured cohorts / 2,566 acceptance browser attempts**;
+104, 110, 111, 113, 118 and 124 are preflight-only. Every earlier result remains
 preserved. [Complete current evidence](performance/bbc-empty-pseudo-indexes-cohort123-20261106.json).
 
 The empty-index candidate (`34d4000d9`, isolated control `9717aa4b7`) skips
