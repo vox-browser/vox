@@ -4063,24 +4063,26 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		viewport := unsafe { &NavigableContainerViewport(node) }
 		viewport.did_set_content_size(used.content_size())
 		nested_viewport_document = viewport.content_document()
-		nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
-			viewport_rect: painting.Rect{
-				x: position.x().to_double()
-				y: position.y().to_double()
-				width: used.content_width().to_double()
-				height: used.content_height().to_double()
-			}
-			border_radii: painting.BorderRadiiData{
-				top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
-				top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
-				bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
-				bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
-			}
-			border_widths: painting.PixelBox{
-				top: used.border_top.to_double()
-				right: used.border_right.to_double()
-				bottom: used.border_bottom.to_double()
-				left: used.border_left.to_double()
+		if nested_viewport_document != none {
+			nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
+				viewport_rect: painting.Rect{
+					x: position.x().to_double()
+					y: position.y().to_double()
+					width: used.content_width().to_double()
+					height: used.content_height().to_double()
+				}
+				border_radii: painting.BorderRadiiData{
+					top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+					top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+					bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+					bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+				}
+				border_widths: painting.PixelBox{
+					top: used.border_top.to_double()
+					right: used.border_right.to_double()
+					bottom: used.border_bottom.to_double()
+					left: used.border_left.to_double()
+				}
 			}
 		}
 	}

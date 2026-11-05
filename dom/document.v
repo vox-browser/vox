@@ -3870,6 +3870,8 @@ pub fn (n &Navigable) active_document_id() ?UniqueNodeID {
 }
 
 pub fn (mut n Navigable) set_active_document(document ?&Document) {
+	old_document_pointer := if old := n.active_document_ { voidptr(old) } else { unsafe { nil } }
+	new_document_pointer := if next := document { voidptr(next) } else { unsafe { nil } }
 	if old_document := n.active_document_ {
 		is_same_document := if new_document := document {
 			voidptr(old_document) == voidptr(new_document)
@@ -3893,6 +3895,13 @@ pub fn (mut n Navigable) set_active_document(document ?&Document) {
 	if n.html_model_handle_ != unsafe { nil }
 		&& n.active_document_changed_ != unsafe { nil } {
 		n.active_document_changed_(n.html_model_handle_, document)
+	}
+	if old_document_pointer != new_document_pointer {
+		if container := n.container() {
+			mut owner := container.document()
+			owner.invalidate_layout_tree(.navigable_active_document_changed)
+			owner.set_needs_repaint()
+		}
 	}
 }
 
@@ -4784,13 +4793,8 @@ fn relevant_global_object_for_doc(doc &Document) &Window {
 }
 
 fn as_navigable_container(node &Node) ?&NavigableContainer {
-	for navigable in dom_all_navigables {
-		container := navigable.container() or { continue }
-		if voidptr(container) == voidptr(node) {
-			return &NavigableContainer{
-				content_navigable_: navigable
-			}
-		}
+	if navigable := node.content_navigable() {
+		return &NavigableContainer{content_navigable_: navigable}
 	}
 	return none
 }
@@ -4921,6 +4925,7 @@ pub enum PseudoElement {
 }
 
 pub enum InvalidateLayoutTreeReason {
+	navigable_active_document_changed
 	document_add_an_element_to_the_top_layer
 	document_request_an_element_to_be_removed_from_the_top_layer
 	document_immediately_remove_element_from_the_top_layer

@@ -83,9 +83,8 @@ pub fn ReplacedBox.new(document &dom.Document, element &dom.Element, computed_va
 	}
 }
 
-// Layout::NavigableContainerViewport. The DOM port does not yet attach a
-// concrete DOM::Document to HTML's metadata-only NavigableContainer model, so
-// retain the active about:blank/srcdoc document on the layout box itself.
+// Layout::NavigableContainerViewport. A hosted navigable supplies its actual
+// active document. Standalone layout keeps its about:blank/srcdoc adapter.
 @[heap]
 pub struct NavigableContainerViewport {
 	ReplacedBox
@@ -103,7 +102,12 @@ pub fn NavigableContainerViewport.new(document &dom.Document, element &dom.Eleme
 	return box
 }
 
-pub fn (box &NavigableContainerViewport) content_document() &dom.Document {
+pub fn (box &NavigableContainerViewport) content_document() ?&dom.Document {
+	if node := box.dom_node() {
+		if navigable := node.content_navigable() {
+			return navigable.active_document()
+		}
+	}
 	return box.content_document_
 }
 
@@ -115,7 +119,8 @@ pub fn (box &NavigableContainerViewport) natural_size() css.SizeWithAspectRatio 
 	if !element.is_html_element() || element.local_name() != 'object' {
 		return css.SizeWithAspectRatio{}
 	}
-	root := box.content_document_.document_element() or { return css.SizeWithAspectRatio{} }
+	document := box.content_document() or { return css.SizeWithAspectRatio{} }
+	root := document.document_element() or { return css.SizeWithAspectRatio{} }
 	if !root.is_svg_svg_element() {
 		return css.SizeWithAspectRatio{}
 	}
@@ -126,8 +131,8 @@ pub fn (box &NavigableContainerViewport) natural_size() css.SizeWithAspectRatio 
 // V lowers directly from UsedValues, so update the hosted document at that
 // same boundary in the typed paint adapter.
 pub fn (box &NavigableContainerViewport) did_set_content_size(size css.CSSPixelSize) {
-	old_rect := box.content_document_.viewport_rect()
-	mut document := unsafe { &dom.Document(box.content_document_) }
+	mut document := unsafe { &dom.Document(box.content_document() or { return }) }
+	old_rect := document.viewport_rect()
 	document.set_viewport_rect(dom.Rect{
 		x: old_rect.x
 		y: old_rect.y

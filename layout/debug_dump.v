@@ -163,7 +163,10 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 		}
 	}
 	if node.is_navigable_container_viewport() {
-		line += ' (url: about:blank)'
+		viewport := unsafe { &NavigableContainerViewport(node) }
+		if content := viewport.content_document() {
+			line += ' (url: ${content.url.serialize()})'
+		}
 	}
 	// LayoutTest asks Painting for scrollable overflow while serializing each
 	// layout node. The upstream query measures lazily; V commits the same data
@@ -183,9 +186,11 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 		viewport := unsafe { &NavigableContainerViewport(node) }
 		if styled := node.as_node_with_style() {
 			if used := state.try_get(styled) {
-				if nested := run_document_layout_for_tree_dump(viewport.content_document(), used.content_width().to_double(), used.content_height().to_double()) {
-					append_typed_layout_node(nested.root, nested.state, depth + 1, mut lines)
-					lines << ''
+				if content := viewport.content_document() {
+					if nested := run_document_layout_for_tree_dump(content, used.content_width().to_double(), used.content_height().to_double()) {
+						append_typed_layout_node(nested.root, nested.state, depth + 1, mut lines)
+						lines << ''
+					}
 				}
 			}
 		}
