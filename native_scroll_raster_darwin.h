@@ -137,7 +137,7 @@ static size_t native_scroll_raster_restore_visible(VoxScrollRaster *cache,
             if (bottom > top) area += (size_t)(rect[2] - rect[0]) * (bottom - top);
         }
     }
-    if (!area || area < cache->width * count / 8) {
+    if (!area || area < cache->width * count / 64) {
         native_scroll_raster_copy_rows(cache, canvas, pitch, first, count, 0);
         return 0;
     }

@@ -49,6 +49,24 @@ static void test_visible_copy(void) {
     unsetenv("VOX_SKIP_OVERWRITTEN_SCROLL_COPY");
 }
 
+static void test_small_damage_admission(void) {
+    uint8_t ring[100 * 100 * 4], output[sizeof(ring)];
+    memset(ring, 0x31, sizeof(ring));
+    memset(output, 0xa5, sizeof(output));
+    VoxScrollRaster cache = {.pixels = ring, .width = 100, .height = 100};
+    // A two-percent patch is worth skipping; a single pixel uses bulk copy.
+    long patch[] = {3, 7, 23, 17};
+    memcpy(native_scroll_repainted[0], patch, sizeof(patch));
+    native_scroll_repainted_count = 1;
+    setenv("VOX_SKIP_OVERWRITTEN_SCROLL_COPY", "1", 1);
+    assert(native_scroll_raster_restore_visible(&cache, output, 400, 0, 100, 1) == 800);
+    assert(output[(7 * 100 + 3) * 4] == 0xa5);
+    native_scroll_repainted[0][2] = 4; native_scroll_repainted[0][3] = 8;
+    assert(native_scroll_raster_restore_visible(&cache, output, 400, 0, 100, 1) == 0);
+    assert(!memcmp(output, ring, sizeof(ring)));
+    unsetenv("VOX_SKIP_OVERWRITTEN_SCROLL_COPY");
+}
+
 // Fractional damage leaves partially covered edge pixels in the retained
 // copy. Compare final compositing against an independently restored baseline.
 static void test_fractional_damage(int scale, int promise) {
@@ -127,6 +145,7 @@ static void test_fractional_damage(int scale, int promise) {
 int main(void) {
     @autoreleasepool {
         test_visible_copy();
+        test_small_damage_admission();
         setenv("VOX_SKIP_OVERWRITTEN_SCROLL_COPY", "1", 1);
         for (int scale = 1; scale <= 2; ++scale)
         for (int promise = 0; promise <= 1; ++promise)
