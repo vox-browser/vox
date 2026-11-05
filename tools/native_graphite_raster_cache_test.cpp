@@ -70,6 +70,42 @@ static void large_upload_admission()
     assert(uploads.prepare(large, 912, 734, false).texture == texture);
 }
 
+static void retained_large_upload_admission()
+{
+    setenv("VOX_RETAIN_LARGE_IMAGE_UPLOAD_BYTES", "1", 1);
+    assert(vox_image_upload_cache_budget() == 128 * 1024 * 1024);
+    VoxGraphiteImageUploadCache<std::shared_ptr<int>> uploads;
+    unsetenv("VOX_RETAIN_LARGE_IMAGE_UPLOAD_BYTES");
+    assert(vox_image_upload_cache_budget() == 32 * 1024 * 1024);
+    constexpr int width=3993, height=2317, pitch=width*4+12;
+    std::vector<uint8_t> pixels(size_t(pitch)*height, 37);
+    auto source=image(pixels.data()); source.width=width; source.height=height; source.pitch=pitch;
+    auto request=uploads.prepare(source,999,580,false);
+    assert(request.pending && !request.verified_by_digest
+        && request.pending->source.size()==size_t(width)*height*4);
+    auto texture=std::make_shared<int>(1);
+    std::weak_ptr<int> original=texture;
+    uploads.finish(std::move(request),texture); texture.reset();
+    auto hit=uploads.prepare(source,999,580,false);
+    assert(hit.texture && !hit.verified_by_digest); hit.texture.reset();
+    for (size_t at : {size_t(0),size_t(pitch)*1158+7311,size_t(pitch)*2316+15971}) {
+        pixels[at]^=1; assert(!uploads.prepare(source,999,580,false).texture); pixels[at]^=1;
+    }
+    pixels[size_t(pitch)*1158+width*4+3]^=0x55;
+    assert(uploads.prepare(source,999,580,false).texture);
+    // The independent source copies and textures remain under the total cap.
+    // A fourth distinct mascot must retire the least recently used upload.
+    for (int index=2; index<=4; ++index) {
+        pixels[0]=index;
+        request=uploads.prepare(source,999,580,false);
+        assert(request.pending && !request.verified_by_digest);
+        uploads.finish(std::move(request),std::make_shared<int>(index));
+    }
+    assert(original.expired());
+    uploads.clear();
+    assert(!uploads.prepare(source,999,580,false).texture);
+}
+
 static void large_draw_admission()
 {
     constexpr int width = 128, height = 128, pitch = width * 4 + 16;
@@ -179,6 +215,7 @@ int main(int argc, char** argv)
     unsetenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION");
     large_draw_admission();
     large_upload_admission();
+    retained_large_upload_admission();
     equivalent_path_admission(true);
     equivalent_path_admission(false);
     std::vector<uint8_t> source(16, 87), pixels(16, 31);

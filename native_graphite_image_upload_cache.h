@@ -62,6 +62,11 @@ inline void vox_image_upload_digest(uint8_t const* pixels, size_t row_bytes, siz
 // A texture upload depends on decoded pixels, their interpretation and the
 // selected upload/mipmap sizes. Destination geometry and the backdrop belong
 // to the later draw. Texture owns the backend resource (sk_sp in production).
+inline size_t vox_image_upload_cache_budget()
+{
+    return std::getenv("VOX_RETAIN_LARGE_IMAGE_UPLOAD_BYTES") ? 128 * 1024 * 1024 : 32 * 1024 * 1024;
+}
+
 template<typename Texture> class VoxGraphiteImageUploadCache {
     struct Entry {
         VoxGraphiteImage image {};
@@ -79,7 +84,7 @@ template<typename Texture> class VoxGraphiteImageUploadCache {
     size_t bytes = 0;
     size_t byte_limit, entry_limit;
 public:
-    explicit VoxGraphiteImageUploadCache(size_t limit = 32 * 1024 * 1024, size_t count = 128)
+    explicit VoxGraphiteImageUploadCache(size_t limit = vox_image_upload_cache_budget(), size_t count = 128)
         : byte_limit(limit), entry_limit(count) { }
     struct Request {
         Texture texture;
@@ -90,6 +95,7 @@ public:
         // A retained planar upload gains GPU-generated levels per plane,
         // without flattening the YUVA image into an RGBA texture.
         bool needs_planar_mipmaps = false;
+        bool verified_by_digest = false;
     };
     Request prepare(VoxGraphiteImage const& image, int upload_width, int upload_height, bool mipmapped)
     {
@@ -153,7 +159,7 @@ public:
             }
             auto texture = entry.texture;
             entries.splice(entries.begin(), entries, it);
-            return {std::move(texture), nullptr};
+            return {std::move(texture), nullptr, false, false, digested};
         }
         auto entry = std::make_unique<Entry>();
         entry->image = image; entry->image.pixels = nullptr;
@@ -169,7 +175,7 @@ public:
                 std::memcpy(entry->source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);
         }
         bool needs_mipmaps = bool(mipmap_source);
-        return {std::move(mipmap_source), std::move(entry), needs_mipmaps, planar_mipmap_source};
+        return {std::move(mipmap_source), std::move(entry), needs_mipmaps, planar_mipmap_source, digested};
     }
     void finish(Request&& request, Texture texture)
     {
