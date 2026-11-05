@@ -3521,7 +3521,7 @@ The matched order is control/candidate/candidate/control, each paired with a
 fresh Brave reference. Scope remains exclusive-coalition creation through
 encoded document PNG, including startup/window setup, with fresh private
 profiles/caches, 1024×768 viewport, scale 2 and an unfocused five-second settle.
-OS filesystem/shader caches remain warm; GPU and outside-coalition services
+OS filesystem/shader caches are retained; GPU and outside-coalition services
 are excluded.
 
 | Unprofiled observed instructions | Control | Candidate |
