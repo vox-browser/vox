@@ -168,3 +168,54 @@ fn test_grid_placement_rechecks_tree_identity_and_anonymous_text_membership() {
 	assert !grid_placement_test_compare(mut state, root, columns, rows, false, false)
 	assert grid_placement_test_compare(mut state, root, columns, rows, false, false) == !disable_grid_placement_reuse
 }
+
+fn test_grid_placement_rechecks_typed_flow_order_axes_and_subgrid_without_raw_style_mutation() {
+	mut document := html.parse_document('<!doctype html><section id="grid" style="display:grid"><div id="a" style="display:grid;grid-template-columns:subgrid">a</div><div>b</div><div>c</div></section>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := grid_placement_test_root(document, 'grid')
+	item := grid_placement_test_root(document, 'a')
+	mut state := LayoutState.new()
+	state.enable_measurement_chunk_pool()
+	defer { state.release_measurement_chunk_pool() }
+	columns := [][]css.GridLineName{len: 5}
+	rows := [][]css.GridLineName{len: 4}
+	assert !grid_placement_test_compare(mut state, root, columns, rows, false, false)
+	root_revision := root.computed_values().mutation_revision()
+	item_revision := item.computed_values().mutation_revision()
+	mut item_values := unsafe { &css.MutableComputedValues(item.computed_values()) }
+	for step in 0 .. 5 {
+		match step {
+			0 { item_values.set_order(2) }
+			1 {
+				item_values.set_grid_column_start(css.GridTrackPlacement.make_line(css.IntegerStyleValue.create(1), none))
+			}
+			2 {
+				item_values.set_grid_row_start(css.GridTrackPlacement.make_line(css.IntegerStyleValue.create(1), none))
+			}
+			3 {
+				item_values.set_grid_column_end(css.GridTrackPlacement.make_span(css.IntegerStyleValue.create(2), none))
+			}
+			else {
+				item_values.set_grid_row_end(css.GridTrackPlacement.make_span(css.IntegerStyleValue.create(2), none))
+			}
+		}
+		assert item.computed_values().mutation_revision() == item_revision
+		assert !grid_placement_test_compare(mut state, root, columns, rows, false, false)
+		assert grid_placement_test_compare(mut state, root, columns, rows, false, false) == !disable_grid_placement_reuse
+	}
+	mut root_values := unsafe { &css.MutableComputedValues(root.computed_values()) }
+	root_values.set_grid_auto_flow(css.GridAutoFlow{ row: false, dense: true })
+	assert root.computed_values().mutation_revision() == root_revision
+	assert !grid_placement_test_compare(mut state, root, columns, rows, false, false)
+	assert grid_placement_test_compare(mut state, root, columns, rows, false, false) == !disable_grid_placement_reuse
+	item_values.set_grid_column_start(css.GridTrackPlacement.make_auto())
+	item_values.set_grid_column_end(css.GridTrackPlacement.make_auto())
+	assert !grid_placement_test_compare(mut state, root, columns, rows, false, false)
+	mut subgrid := css.GridTrackSizeList.make_subgrid()
+	for _ in 0 .. 4 { subgrid.append_line_names(css.GridLineNames{}) }
+	item_values.set_grid_template_columns(subgrid)
+	assert item.computed_values().mutation_revision() == item_revision
+	assert !grid_placement_test_compare(mut state, root, columns, rows, false, false)
+	assert grid_placement_test_compare(mut state, root, columns, rows, false, false) == !disable_grid_placement_reuse
+}

@@ -10,10 +10,15 @@ const grid_placement_diagnostics = os.getenv('VOX_GRID_PLACEMENT_DIAGNOSTICS') !
 __global grid_placement_reuse_reported bool
 
 struct GridPlacementChildInput {
-	node     &Node
-	style    &css.ComputedValues
-	revision u64
-	included bool
+	node        &Node
+	style       &css.ComputedValues
+	revision    u64
+	included    bool
+	order       int
+	column      GridAxisPlacement
+	row         GridAxisPlacement
+	column_auto bool
+	row_auto    bool
 }
 
 @[heap]
@@ -26,6 +31,7 @@ struct GridPlacementCache {
 	subgridded_columns bool
 	subgridded_rows    bool
 	result             GridPlacementResult
+	flow               css.GridAutoFlow
 }
 
 fn grid_placement_includes_child(child &Node) bool {
@@ -36,7 +42,8 @@ fn grid_placement_includes_child(child &Node) bool {
 fn (cached &GridPlacementCache) inputs_are_current(container &Node) bool {
 	computed := container.computed_values()
 	if voidptr(computed) != voidptr(cached.style) || computed.mutation_revision() != cached.revision
-		|| computed.has_animated_properties() || container.child_count() != cached.children.len {
+		|| computed.has_animated_properties() || computed.grid_auto_flow() != cached.flow
+		|| container.child_count() != cached.children.len {
 		return false
 	}
 	for index, child in container.children() {
@@ -45,6 +52,17 @@ fn (cached &GridPlacementCache) inputs_are_current(container &Node) bool {
 		if voidptr(child) != voidptr(input.node) || voidptr(current) != voidptr(input.style)
 			|| current.mutation_revision() != input.revision || current.has_animated_properties()
 			|| grid_placement_includes_child(child) != input.included {
+			return false
+		}
+		if input.included && (current.order() != input.order
+			|| grid_axis_is_auto(current.grid_column_start(), current.grid_column_end()) != input.column_auto
+			|| grid_axis_is_auto(current.grid_row_start(), current.grid_row_end()) != input.row_auto
+			|| resolve_grid_item_axis_position(child, true, current.grid_column_start(),
+				current.grid_column_end(), cached.column_lines.len, cached.column_lines,
+				cached.subgridded_columns) != input.column
+			|| resolve_grid_item_axis_position(child, false, current.grid_row_start(),
+				current.grid_row_end(), cached.row_lines.len, cached.row_lines,
+				cached.subgridded_rows) != input.row) {
 			return false
 		}
 	}
@@ -104,11 +122,29 @@ fn place_grid_items_in_state(mut state LayoutState, container &Node,
 	for child in container.children() {
 		style := child.computed_values()
 		if style.mutation_revision() == 0 || style.has_animated_properties() { return result }
+		included := grid_placement_includes_child(child)
 		children << GridPlacementChildInput{
-			node:     child
-			style:    style
-			revision: style.mutation_revision()
-			included: grid_placement_includes_child(child)
+			node:        child
+			style:       style
+			revision:    style.mutation_revision()
+			included:    included
+			order:       style.order()
+			column_auto: grid_axis_is_auto(style.grid_column_start(), style.grid_column_end())
+			row_auto:    grid_axis_is_auto(style.grid_row_start(), style.grid_row_end())
+			column:      if included {
+				resolve_grid_item_axis_position(child, true,
+					style.grid_column_start(), style.grid_column_end(), column_lines.len,
+					column_lines, subgridded_columns)
+			} else {
+				GridAxisPlacement{}
+			}
+			row:         if included {
+				resolve_grid_item_axis_position(child, false,
+					style.grid_row_start(), style.grid_row_end(), row_lines.len,
+					row_lines, subgridded_rows)
+			} else {
+				GridAxisPlacement{}
+			}
 		}
 	}
 	cached := &GridPlacementCache{
@@ -120,6 +156,7 @@ fn place_grid_items_in_state(mut state LayoutState, container &Node,
 		subgridded_columns: subgridded_columns
 		subgridded_rows:    subgridded_rows
 		result:             GridPlacementResult{ ...result, placements: result.placements.clone() }
+		flow:               computed.grid_auto_flow()
 	}
 	mut entries := pool.grid_placements_[key] or { []&GridPlacementCache{} }
 	if entries.len == 4 { entries.delete(0) }
