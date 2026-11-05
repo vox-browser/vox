@@ -48,6 +48,13 @@ fn retained_style_needs_changed_font_inputs(style &dom.CSSComputedProperties_, f
 	// than matching descriptors or family order. A retained cascade records
 	// precisely which pending faces its selected weight/stretch can use.
 	if changed_face != unsafe { nil } {
+		// Metric queries can resolve the replacement cascade before this fanout
+		// reaches the style. Its geometry still belongs to the refresh snapshot
+		// until refresh_font_inputs applies the required layout invalidation.
+		if computed.font_input_refresh_snapshot_ != unsafe { nil }
+			&& computed.font_input_refresh_snapshot_.depends_on_pending_face(changed_face) {
+			return true
+		}
 		if list := computed.cached_computed_font_list() {
 			return list.depends_on_pending_face(changed_face)
 		}
