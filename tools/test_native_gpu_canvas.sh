@@ -27,10 +27,11 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     -I"$skia_root/include/skia" -I"$skia_root/include" -I"$output_dir" \
     "$repo_dir/tools/native_gpu_canvas_test.cpp" \
     -L"$skia_root/lib" -lskia \
-    -framework Cocoa -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+    -framework Cocoa -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal -framework QuartzCore -framework IOSurface \
     -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" \
     -Wl,-rpath,"$repo_dir/Build/v/Vox.app/Contents/MacOS" \
     -o "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --failed-readback
+"$output_dir/native_gpu_canvas_test" --iosurface-readback
 VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-verify

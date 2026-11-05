@@ -262,6 +262,10 @@ int vox_graphite_canvas_read(const VoxGraphitePixelRegion *views, int count);
 // Shared Metal targets only. Writes BGRA directly into caller-owned rows after
 // one GPU wait. Failure leaves every destination unchanged.
 int vox_graphite_canvas_read_direct(const VoxGraphitePixelRegion *views, int count);
+// Replace each damage clip in a locked RGBA IOSurface frame, waiting once for
+// completion. CPU access is unlocked and relocked within the call. Returns 0
+// before writing when unsupported, -1 on a failed GPU transfer, 1 on success.
+int vox_graphite_canvas_read_iosurface(void *surface, int width, int height);
 void vox_graphite_canvas_end(void);
 #ifdef __cplusplus
 }

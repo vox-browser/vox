@@ -125,6 +125,64 @@ int main() { @autoreleasepool {
     }
     vox_graphite_canvas_end();
     }
+    for (int iteration=0; iteration<12; ++iteration) {
+        canvas_reset();
+        constexpr int width=79,height=53;
+        IOSurfaceRef frame = IOSurfaceCreate((__bridge CFDictionaryRef)@{
+            (__bridge id)kIOSurfaceWidth:@(width), (__bridge id)kIOSurfaceHeight:@(height),
+            (__bridge id)kIOSurfaceBytesPerElement:@4,
+            (__bridge id)kIOSurfacePixelFormat:@((uint32_t)'RGBA')});
+        assert(frame && IOSurfaceLock(frame,0,nullptr)==kIOReturnSuccess);
+        size_t pitch=IOSurfaceGetBytesPerRow(frame);
+        auto* pixels=static_cast<uint8_t*>(IOSurfaceGetBaseAddress(frame));
+        std::memset(pixels,0xa7,pitch*height);
+        // Disjoint damage, overlapping tiles and alpha replacement preserve
+        // exact channels, damage order and all untouched bytes, including pitch.
+        int rects[] {3,7,37,29, 5,9,31,23, 30,20,39,25, 32,23,33,19};
+        assert(vox_graphite_canvas_begin(rects,2));
+        for (int index=0;index<2;++index) {
+            auto const& tile=canvas_tiles[index];
+            std::vector<uint32_t> input(size_t(tile.width)*tile.height,0x80203040+index);
+            assert(vox_graphite_canvas_upload(index,reinterpret_cast<uint8_t*>(input.data()),tile.width*4));
+            SkPaint paint; paint.setColor(0x9020a040); paint.setAntiAlias(true);
+            tile.surface->getCanvas()->drawCircle(12.25f,11.5f,8.75f,paint);
+        }
+        // An invalid destination declines without consuming pending draws or
+        // writing bytes. The next transfer still includes those pending draws.
+        assert(!vox_graphite_canvas_read_iosurface(frame,width-1,height));
+        for (size_t byte=0;byte<pitch*height;++byte) assert(pixels[byte]==0xa7);
+        std::vector<uint8_t> expected(pitch*height,0xa7);
+        std::vector<std::vector<uint32_t>> read(2);
+        VoxGraphitePixelRegion views[2];
+        for (int index=0;index<2;++index) {
+            auto const& tile=canvas_tiles[index];
+            read[index].resize(size_t(tile.clip.width())*tile.clip.height());
+            views[index]={tile.clip.x(),tile.clip.y(),tile.clip.width(),tile.clip.height(),
+                tile.clip.width()*4,reinterpret_cast<uint8_t*>(read[index].data())};
+        }
+        // Retain a CPU reference, then queue another identical paint so the
+        // IOSurface path is also tested with pending source commands.
+        assert(vox_graphite_canvas_read_direct(views,2));
+        for (int index=0;index<2;++index) {
+            auto const& tile=canvas_tiles[index];
+            for (int y=0;y<tile.clip.height();++y) for(int x=0;x<tile.clip.width();++x) {
+                auto bgra=read[index][size_t(y)*tile.clip.width()+x];
+                auto* out=expected.data()+size_t(tile.y+tile.clip.y()+y)*pitch+(tile.x+tile.clip.x()+x)*4;
+                out[0]=(bgra>>16)&255;out[1]=(bgra>>8)&255;out[2]=bgra&255;out[3]=bgra>>24;
+            }
+            SkPaint copy;copy.setBlendMode(SkBlendMode::kSrc);
+            tile.surface->getCanvas()->drawRect(SkRect::MakeXYWH(0,0,1,1),copy);
+        }
+        assert(vox_graphite_canvas_read_iosurface(frame,width,height)==1);
+        assert(!std::memcmp(pixels,expected.data(),expected.size()));
+        // CPU access is locked again and the same frame can be transferred a
+        // second time. No imported frame texture escapes the temporary recorder.
+        assert(vox_graphite_canvas_read_iosurface(frame,width,height)==1);
+        assert(!std::memcmp(pixels,expected.data(),expected.size()));
+        assert(!IOSurfaceIsInUse(frame));
+        assert(IOSurfaceUnlock(frame,0,nullptr)==kIOReturnSuccess);
+        CFRelease(frame); vox_graphite_canvas_end();
+    }
     canvas_reset(); recorder.reset(); gpu_context.reset();
     std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }

@@ -35,6 +35,7 @@ extern int ladybird_v_skia_gpu_canvas_begin(CGContextRef, const int *, int);
 extern void ladybird_v_skia_gpu_canvas_cpu_access(void);
 extern void ladybird_v_skia_gpu_canvas_end(void);
 extern void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int) __attribute__((weak_import));
+extern void ladybird_v_skia_gpu_canvas_frame_surface(void *) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef,
     const uint8_t *, int, int, int, int, int) __attribute__((weak_import));
 #endif
@@ -2873,6 +2874,8 @@ int native_gpu_canvas_begin(void) {
 			|| cache->width * cache->height > 64 * 1024 * 1024 / 4) return 0;
 		int rect[] = {0, (int)cache->top, (int)cache->width, (int)cache->height};
 		int begun = ladybird_v_skia_gpu_canvas_begin(cache->context, rect, 1);
+		if (begun && ladybird_v_skia_gpu_canvas_frame_surface)
+			ladybird_v_skia_gpu_canvas_frame_surface(native_layer_frame_surface(cache->context));
 		if (begun && ladybird_v_skia_gpu_canvas_video_backdrop_callbacks)
 			ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(1);
 		if (begun && getenv("VOX_GPU_CANVAS_DIAGNOSTICS"))
@@ -2892,6 +2895,8 @@ int native_gpu_canvas_begin(void) {
 		count++;
 	}
 	int begun = count > 0 ? ladybird_v_skia_gpu_canvas_begin(cache->context, rects, count) : 0;
+	if (begun && ladybird_v_skia_gpu_canvas_frame_surface)
+		ladybird_v_skia_gpu_canvas_frame_surface(native_layer_frame_surface(cache->context));
 	if (begun && ladybird_v_skia_gpu_canvas_video_backdrop_callbacks)
 		ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(1);
 	return begun;

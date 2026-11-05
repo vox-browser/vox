@@ -36,6 +36,8 @@ struct GpuCanvasFrame {
     bool in_gpu_command = false;
     bool complete_viewport = false;
     bool video_backdrop_callbacks = false;
+    void* frame_surface = nullptr; // Borrowed only for this native paint callback.
+    void* frame_surface_pixels = nullptr;
     std::map<std::string, unsigned> flush_reasons;
     // Diagnostics: why GPU-capable leaves still used their own raster path.
     std::map<std::string, unsigned> leaf_misses;
@@ -57,6 +59,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_shape) draw_shape = nullptr;
     decltype(&vox_graphite_canvas_read) read = nullptr;
     decltype(&vox_graphite_canvas_read_direct) read_direct = nullptr;
+    decltype(&vox_graphite_canvas_read_iosurface) read_iosurface = nullptr;
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
     decltype(&vox_graphite_canvas_copy_pixels) copy_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
@@ -80,6 +83,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_shape = reinterpret_cast<decltype(value.draw_shape)>(dlsym(library, "vox_graphite_canvas_draw_shape"));
         value.read = reinterpret_cast<decltype(value.read)>(dlsym(library, "vox_graphite_canvas_read"));
         value.read_direct = reinterpret_cast<decltype(value.read_direct)>(dlsym(library, "vox_graphite_canvas_read_direct"));
+        value.read_iosurface = reinterpret_cast<decltype(value.read_iosurface)>(dlsym(library, "vox_graphite_canvas_read_iosurface"));
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
         value.copy_pixels = reinterpret_cast<decltype(value.copy_pixels)>(dlsym(library, "vox_graphite_canvas_copy_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
@@ -149,6 +153,53 @@ void gpu_canvas_flush()
         auto* api = gpu_canvas_api();
         auto* data = static_cast<uint8_t*>(CGBitmapContextGetData(frame->destination));
         size_t pitch = CGBitmapContextGetBytesPerRow(frame->destination);
+        if (api && api->read_iosurface && frame->frame_surface && data
+            && data == frame->frame_surface_pixels && !gpu_canvas_verify()
+            && std::getenv("VOX_GPU_CANVAS_IOSURFACE_READBACK")) {
+            CGContextFlush(frame->destination);
+            int result = api->read_iosurface(frame->frame_surface,
+                int(CGBitmapContextGetWidth(frame->destination)), int(CGBitmapContextGetHeight(frame->destination)));
+            if (result) {
+                // Diagnostic transport check: compare the new frame storage
+                // with the established reader on the same GPU pixels. Ordinary
+                // CPU/GPU leaf verification remains a separate diagnostic.
+                if (result > 0 && std::getenv("VOX_GPU_CANVAS_IOSURFACE_READBACK_VERIFY")) {
+                    std::vector<std::vector<uint32_t>> pixels(frame->rects.size());
+                    std::vector<VoxGraphitePixelRegion> views;
+                    for (size_t index=0; index<frame->rects.size(); ++index) {
+                        auto const& rect=frame->rects[index]; auto const& tile=frame->tiles[index];
+                        pixels[index].resize(size_t(rect.width())*rect.height());
+                        views.push_back({rect.left()-tile.left(),rect.top()-tile.top(),rect.width(),rect.height(),
+                            rect.width()*4,reinterpret_cast<uint8_t*>(pixels[index].data())});
+                    }
+                    bool read=api->read(views.data(),int(views.size()));
+                    int error=0; size_t compared=0;
+                    if (read) for (size_t index=0; index<frame->rects.size(); ++index) {
+                        auto const& rect=frame->rects[index];
+                        for(int y=0;y<rect.height();++y) for(int x=0;x<rect.width();++x) {
+                            auto* actual=data+size_t(rect.top()+y)*pitch+size_t(rect.left()+x)*4;
+                            auto* expected=reinterpret_cast<uint8_t*>(pixels[index].data())+(size_t(y)*rect.width()+x)*4;
+                            int const order[]={2,1,0,3};
+                            for(int channel=0;channel<4;++channel)
+                                error=std::max(error,std::abs(int(actual[channel])-int(expected[order[channel]])));
+                            ++compared;
+                        }
+                    }
+                    std::fprintf(stderr,"Vox GPU IOSurface verify: read=%d pixels=%zu max_error=%d\n",int(read),compared,error);
+                    if (!read || error) result=-1;
+                }
+                if (result < 0) {
+                    s_gpu_canvas_read_failed = true;
+                    s_deferred_layer_frame_failed = true;
+                }
+                if (gpu_canvas_diagnostics())
+                    std::fprintf(stderr,"Vox GPU IOSurface readback: result=%d rects=%zu\n",result,frame->rects.size());
+                frame->cpu_stale = false;
+                frame->gpu_valid = false;
+                ++frame->flushes;
+                return;
+            }
+        }
         if (api && api->read_direct && data && !gpu_canvas_verify()
             && std::getenv("VOX_GPU_CANVAS_DIRECT_READBACK") && pitch <= INT_MAX) {
             std::vector<VoxGraphitePixelRegion> direct;
@@ -607,6 +658,14 @@ extern "C" void ladybird_v_skia_gpu_canvas_cpu_access()
 extern "C" void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int enabled)
 {
     if (s_gpu_canvas) s_gpu_canvas->video_backdrop_callbacks = enabled != 0;
+}
+
+extern "C" void ladybird_v_skia_gpu_canvas_frame_surface(void* surface)
+{
+    if (s_gpu_canvas) {
+        s_gpu_canvas->frame_surface = surface;
+        s_gpu_canvas->frame_surface_pixels = CGBitmapContextGetData(s_gpu_canvas->destination);
+    }
 }
 
 extern "C" int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef destination,

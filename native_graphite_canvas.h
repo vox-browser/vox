@@ -3,6 +3,7 @@
 // device rectangles live on shared-storage GPU surfaces. Leaves record into
 // them directly; a single read waits for the GPU once and returns them all,
 // as Chromium rasterizes every display item of a tile in one GPU pass.
+#import <IOSurface/IOSurface.h>
 namespace {
 struct CanvasTile {
     int x, y, width, height;
@@ -535,6 +536,70 @@ int vox_graphite_canvas_draw_picture(uint8_t const* bytes, size_t size, float co
     }
     return 1;
 }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_read_iosurface(void* handle, int width, int height)
+{ @autoreleasepool {
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    auto surface = static_cast<IOSurfaceRef>(handle);
+    if (!gpu || !surface || !canvas_recorder || canvas_tiles.empty()
+        || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || size_t(width) * height > canvas_pool_byte_limit / 4
+        || IOSurfaceGetWidth(surface) != size_t(width)
+        || IOSurfaceGetHeight(surface) != size_t(height)
+        || IOSurfaceGetPixelFormat(surface) != uint32_t('RGBA')
+        || IOSurfaceGetBytesPerElement(surface) != 4
+        || IOSurfaceGetBytesPerRow(surface) < size_t(width) * 4) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto device = vox_shared_metal_device(recorder.get());
+    if (!device) return 0;
+    auto* descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+        width:width height:height mipmapped:NO];
+    descriptor.storageMode = MTLStorageModeShared;
+    descriptor.usage = MTLTextureUsageRenderTarget;
+    id<MTLTexture> texture = [device newTextureWithDescriptor:descriptor iosurface:surface plane:0];
+    if (!texture) return 0;
+    auto backend = skgpu::graphite::BackendTextures::MakeMetal({width,height}, (CFTypeRef)texture);
+    auto target = SkSurfaces::WrapBackendTexture(recorder.get(), backend, SkColorSpace::MakeSRGB(), nullptr);
+    [texture release];
+    if (!target) return 0;
+    // All allocations and bounds checks precede any destination writes. The
+    // short-lived recorder releases imported frame resources after submission,
+    // so its cache cannot keep a published frame's pool slot in use.
+    std::vector<sk_sp<SkImage>> images;
+    auto frame = SkIRect::MakeWH(width,height);
+    for (auto const& tile : canvas_tiles) {
+        auto damage = tile.clip.makeOffset(tile.x,tile.y);
+        if (!frame.contains(damage)) return 0;
+        auto image = tile.surface->makeImageSnapshot();
+        if (!image) return 0;
+        images.push_back(std::move(image));
+    }
+    auto* canvas = target->getCanvas();
+    SkPaint copy; copy.setBlendMode(SkBlendMode::kSrc);
+    for (size_t index=0; index<canvas_tiles.size(); ++index) {
+        auto const& tile = canvas_tiles[index];
+        canvas->save();
+        canvas->clipRect(SkRect::Make(tile.clip.makeOffset(tile.x,tile.y)));
+        canvas->drawImage(images[index],tile.x,tile.y,SkSamplingOptions(),&copy);
+        canvas->restore();
+    }
+    if (IOSurfaceUnlock(surface,0,nullptr) != kIOReturnSuccess) return 0;
+    auto source = canvas_recorder->snap();
+    auto output = recorder->snap();
+    bool ok = output != nullptr;
+    for (auto* recording : {source.get(),output.get()}) if (recording) {
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording = recording;
+        if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) { ok=false; break; }
+    }
+    // Even a failed insertion must finish any previously accepted commands
+    // before CPU access resumes.
+    bool submitted = gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    bool locked = IOSurfaceLock(surface,0,nullptr) == kIOReturnSuccess;
+    return ok && submitted && locked ? 1 : -1;
+} }
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_read_direct(VoxGraphitePixelRegion const* views, int count)

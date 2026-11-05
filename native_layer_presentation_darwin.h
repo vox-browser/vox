@@ -267,6 +267,22 @@ typedef struct {
     int busy;
 } VoxLayerFrameBuffer;
 static VoxLayerFrameBuffer native_layer_frame_buffers[VOX_LAYER_FRAME_BUFFERS];
+
+// The GPU canvas may finish damage directly in this frame's shared storage.
+// Borrow only the currently locked document buffer; ordinary and nested
+// bitmaps keep the existing readback path.
+static void *native_layer_frame_surface(CGContextRef context) {
+    if (!context || context != native_layer_document_bitmap) return NULL;
+    for (int index=0; index<VOX_LAYER_FRAME_BUFFERS; ++index) {
+        VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
+        if (buffer->surface && buffer->locked && __atomic_load_n(&buffer->busy, __ATOMIC_ACQUIRE)
+            && CGBitmapContextGetData(context) == buffer->pixels
+            && CGBitmapContextGetWidth(context) == buffer->width
+            && CGBitmapContextGetHeight(context) == buffer->height
+            && CGBitmapContextGetBytesPerRow(context) == buffer->pitch) return buffer->surface;
+    }
+    return NULL;
+}
 #ifdef VOX_TEST_LAYER_FRAME_BUFFERS
 static unsigned native_test_frame_buffer_reuses, native_test_frame_buffer_maps;
 static unsigned native_test_frame_buffer_deferred_clears;

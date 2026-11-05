@@ -6,6 +6,7 @@
 #import <Cocoa/Cocoa.h>
 #include "../native_skia_text_darwin.cpp"
 #include "../native_scroll_raster_darwin.h"
+#include "../native_layer_presentation_darwin.h"
 #define LADYBIRD_V_HAS_SKIA_TEXT
 #include "native_video_backdrop_entry_points.inc"
 #include <cassert>
@@ -354,8 +355,86 @@ static std::vector<uint8_t> render_video_backdrop(bool canvas, bool callbacks, i
     return pixels;
 } }
 
+@interface MyView2 : NSView
+@end
+@implementation MyView2
+@end
+static bool s_surface_legacy_host, s_surface_decline;
+static unsigned s_surface_calls;
+static decltype(&vox_graphite_canvas_read_iosurface) s_surface_read;
+static int test_surface_read(void* surface, int w, int h)
+{
+    ++s_surface_calls;
+    return s_surface_decline ? 0 : s_surface_read(surface,w,h);
+}
+static void paint_shared_frame(id, SEL, NSRect)
+{
+    auto context=NSGraphicsContext.currentContext.CGContext;
+    auto original=backdrop();
+    auto* pixels=static_cast<uint8_t*>(CGBitmapContextGetData(context));
+    size_t pitch=CGBitmapContextGetBytesPerRow(context);
+    for(int y=0;y<height;++y) std::memcpy(pixels+y*pitch,original.data()+y*width*4,width*4);
+    CGContextClipToRect(context,CGRectMake(0,css_height-(strip_top+strip_height)/float(scale),
+        css_width,strip_height/float(scale)));
+    native_scroll_raster={.width=width,.height=height,.canvas_width=width,.canvas_height=height,
+        .scale=scale,.active=1,.reused=1,.damage_optimized=1,.context=context};
+    native_scroll_repainted_count=1;
+    long painted[]={0,strip_top,width,strip_top+strip_height};
+    std::copy_n(painted,4,native_scroll_repainted[0]);
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0,css_width,css_height);
+    ladybird_v_skia_begin_deferred_layer_frame(0);
+    if(s_surface_legacy_host) {
+        int rect[]={0,strip_top,width,strip_height};
+        assert(ladybird_v_skia_gpu_canvas_begin(context,rect,1));
+        assert(!s_gpu_canvas->frame_surface);
+    } else {
+        assert(native_gpu_canvas_begin());
+        assert(s_gpu_canvas->frame_surface==native_layer_frame_surface(context));
+        assert(s_gpu_canvas->frame_surface);
+    }
+    draw_leaves(context,true);
+    ladybird_v_skia_gpu_canvas_end();
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+    native_scroll_raster={};
+    ladybird_v_skia_set_chromium_painting(0);
+}
+
+static std::vector<uint8_t> shared_frame_pixels(NSView* view)
+{
+    auto image=native_layer_raster_frame(view,scale,(IMP)paint_shared_frame); assert(image);
+    auto data=CGDataProviderCopyData(CGImageGetDataProvider(image)); assert(data);
+    auto* source=CFDataGetBytePtr(data);
+    size_t pitch=CGImageGetBytesPerRow(image);
+    std::vector<uint8_t> output(size_t(width)*height*4);
+    for(int y=0;y<height;++y) std::memcpy(output.data()+y*width*4,source+y*pitch,width*4);
+    CFRelease(data); CGImageRelease(image);
+    return output;
+}
+
 int main(int argc, char** argv)
 {
+    if (argc==2 && !std::strcmp(argv[1],"--iosurface-readback")) { @autoreleasepool {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api && api->read_iosurface);
+        s_surface_read=api->read_iosurface; api->read_iosurface=test_surface_read;
+        setenv("VOX_GPU_CANVAS_DISABLE_ISOLATED_SHAPES","1",1);
+        MyView2* view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,css_width,css_height)];
+        unsetenv("VOX_GPU_CANVAS_IOSURFACE_READBACK");
+        auto reference=shared_frame_pixels(view);
+        assert(!s_surface_calls);
+        setenv("VOX_GPU_CANVAS_IOSURFACE_READBACK","1",1);
+        for(int iteration=0;iteration<6;++iteration) {
+            assert(shared_frame_pixels(view)==reference);
+            assert(s_surface_calls==(iteration+1)*2);
+        }
+        s_surface_decline=true;
+        assert(shared_frame_pixels(view)==reference && s_surface_calls==14);
+        s_surface_decline=false; s_surface_legacy_host=true;
+        assert(shared_frame_pixels(view)==reference && s_surface_calls==14);
+        [view release];
+        std::cout<<"IOSurface GPU readback matches pooled publication exactly, including CPU barriers, reuse, legacy host and unsupported fallback\n";
+        return 0;
+    } }
     if (argc == 2 && !std::strcmp(argv[1], "--failed-readback")) {
         auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api);
         s_backend_read = api->read; api->read = counted_read;

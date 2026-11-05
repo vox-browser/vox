@@ -11,7 +11,7 @@ for mode in optimized sanitized; do
     clang++ -std=c++20 $flags -DSK_GRAPHITE -DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER \
         -I"$skia_source" "$repo_dir/tools/native_graphite_linear_canvas_test.mm" \
         -L"$skia_source/out/Release" -lskia -lskcms \
-        -framework Foundation -framework Metal -framework CoreGraphics -framework ImageIO \
+        -framework Foundation -framework Metal -framework CoreGraphics -framework ImageIO -framework IOSurface \
         -o "$output_dir/$mode"
     "$output_dir/$mode"
 done
