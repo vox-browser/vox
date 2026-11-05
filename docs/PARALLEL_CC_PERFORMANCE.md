@@ -36,6 +36,27 @@ CNN and Wikipedia. vlang.io's capture varies between launches of either build
 pages; the JavaScript-heavy CNN page pays about 2%. Use `--no-parallel-cc` for
 maximum binary performance and whenever comparing with single-unit results.
 
+## Build time
+
+The C stages that differ between the modes, with the same staged compiler and
+production arguments, alternating on the shared 18-core host (load 93–170):
+
+| Run | Mode | C generation | C compile + link | Total | CPU | Peak RSS |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| p1 | parallel | 159 s | 316 s | 476 s | 592 s | 4.5 GB |
+| s1 | single | 124 s | 895 s | 1,019 s | 473 s | 9.4 GB |
+| s2 | single | 25 s | 589 s | 614 s | 470 s | 9.0 GB |
+| p2 | parallel | 40 s | 183 s | 224 s | 594 s | 4.5 GB |
+
+The split compile and link is 2.8–3.2× faster and the whole stage 2.1–2.7×
+faster in neighbouring runs; it uses about 25% more CPU (ThinLTO and repeated
+header parsing per unit) and half the peak memory. Its advantage depends on free
+cores: on 2026-11-04 the ThinLTO split compile took 136 s (load 32–68) against
+370–432 s for one unit (load 12–63), and 51–63 s without LTO. The remaining
+production steps (Rust, Skia/Graphite libraries,
+ad-block helper, signing) are the same in both modes. Raw timings:
+[build-time evidence](performance/parallel-cc-build-time-20261105.json).
+
 ## Method and limits
 
 - One V generation (V branch `parallel-cc-native-headers` at `57cb0da449`,

@@ -1,0 +1,100 @@
+{
+ "title": "Vox C compile time: one unit vs -parallel-cc (ThinLTO), production prealloc flags",
+ "method": "Scripts below (time_modes.sh, summarize_times.py): same staged V (parallel-cc-native-headers 57cb0da449) and production arguments; parallel = V generates, compiles 33 units concurrently and links with ThinLTO; single = V writes Vox.c then one clang -O3 -mllvm -inline-threshold=1500 call compiles and links it. Excludes the build steps both modes share (Rust, Skia/Graphite libraries, ad-block helper, signing). Order p1, s1, s2, p2 (ABBA) on an 18-core host shared with other sessions.",
+ "runs": [
+  {
+   "run": "p1",
+   "mode": "parallel",
+   "started_utc": "2026-11-05T03:48:26Z",
+   "finished_utc": "2026-11-05T03:56:21Z",
+   "load_before": "6:48  up 1 day, 12:28, 1 user, load averages: 135.85 151.92 116.81",
+   "load_after": "6:56  up 1 day, 12:36, 1 user, load averages: 126.85 147.60 129.87",
+   "v": {
+    "real": 475.54,
+    "user": 558.58,
+    "sys": 33.23,
+    "max_rss_bytes": 4542218240
+   },
+   "v_stages_seconds": {
+    "C object cache": 0.08796999999999999,
+    "cc": 316.31426,
+    "total": 475.18789000000004
+   },
+   "executable_bytes": 30409600
+  },
+  {
+   "run": "s1",
+   "mode": "single",
+   "started_utc": "2026-11-05T03:56:22Z",
+   "finished_utc": "2026-11-05T04:13:21Z",
+   "load_before": "6:56  up 1 day, 12:36, 1 user, load averages: 126.85 147.60 129.87",
+   "load_after": "7:13  up 1 day, 12:53, 1 user, load averages: 139.74 94.70 102.43",
+   "v": {
+    "real": 124.04,
+    "user": 29.46,
+    "sys": 2.67,
+    "max_rss_bytes": 3439427584
+   },
+   "v_stages_seconds": {
+    "C object cache": 0.06476000000000001,
+    "total": 123.89427
+   },
+   "executable_bytes": 32696096,
+   "single_clang": {
+    "real": 894.62,
+    "user": 430.0,
+    "sys": 11.04,
+    "max_rss_bytes": 9404465152
+   }
+  },
+  {
+   "run": "s2",
+   "mode": "single",
+   "started_utc": "2026-11-05T04:13:21Z",
+   "finished_utc": "2026-11-05T04:23:35Z",
+   "load_before": "7:13  up 1 day, 12:53, 1 user, load averages: 139.74 94.70 102.43",
+   "load_after": "7:23  up 1 day, 13:03, 1 user, load averages: 92.60 70.68 82.74",
+   "v": {
+    "real": 25.13,
+    "user": 27.93,
+    "sys": 1.92,
+    "max_rss_bytes": 3451076608
+   },
+   "v_stages_seconds": {
+    "C object cache": 0.03989,
+    "total": 24.975849999999998
+   },
+   "executable_bytes": 32810896,
+   "single_clang": {
+    "real": 588.97,
+    "user": 429.98,
+    "sys": 9.83,
+    "max_rss_bytes": 9047293952
+   }
+  },
+  {
+   "run": "p2",
+   "mode": "parallel",
+   "started_utc": "2026-11-05T04:23:36Z",
+   "finished_utc": "2026-11-05T04:27:19Z",
+   "load_before": "7:23  up 1 day, 13:03, 1 user, load averages: 92.60 70.68 82.74",
+   "load_after": "7:27  up 1 day, 13:07, 1 user, load averages: 169.64 124.98 103.45",
+   "v": {
+    "real": 223.63,
+    "user": 566.78,
+    "sys": 27.04,
+    "max_rss_bytes": 4545855488
+   },
+   "v_stages_seconds": {
+    "C object cache": 0.055990000000000005,
+    "cc": 182.95964,
+    "total": 223.27962
+   },
+   "executable_bytes": 30426288
+  }
+ ],
+ "scripts": {
+  "time_modes.sh": "#!/bin/sh\n# Time only the build stages that differ between C modes, with the production\n# arguments and the staged prealloc compiler of this session's parallel build.\n#   parallel: V generates and compiles the C with -parallel-cc + ThinLTO, then links\n#   single:   V writes Vox.c (+flags) and exits; one clang call compiles and links it\n#             (production --no-parallel-cc path, without freeze's preprocessing copy)\n# usage: time_modes.sh parallel|single LABEL\nset -eu\nmode=$1\nlabel=$2\nL=/Users/alex/code/vox2/Build/pcc-ab-20261105\nout=$L/times/$label\nmkdir -p \"$out\"\nrepo=/Users/alex/code/vox2\nskia_root=\"$repo/../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic\"\nldflags=\"-Wl,-dead_strip,-dead_strip_dylibs -L$repo/Build/v/rust-yuv/release -lladybird_v_yuv -L$L/stage -lLadybirdVSkiaText -Wl,-rpath,@executable_path -Wl,-rpath,$skia_root/lib -lc++ $skia_root/lib/libicuuc.dylib -Wl,-rpath,$skia_root/lib\"\ncflags=$(python3 -c \"import json;print(json.load(open('$L/v-args.json'))['cflags'])\")\ncompiler=$(python3 -c \"import json;print(json.load(open('$L/receipt/c-compile.json'))['compiler'])\")\nuptime > \"$out/load-before.txt\"\ndate -u +%Y-%m-%dT%H:%M:%SZ > \"$out/start.txt\"\ncd \"$(dirname \"$compiler\")\"\nexport V_MACOS_V3_NO_FALLBACK=1\nif [ \"$mode\" = parallel ]; then\n    V3_PARALLEL_CC_REQUIRE_SPLIT=1 /usr/bin/time -l -o \"$out/time-v.txt\" python3 -c \"\nimport json, os, sys\na = json.load(open('$L/v-args.json'))['args']\nos.execv('$compiler', ['$compiler', *a, *sys.argv[1:]])\" \\\n        -show-timings -parallel-cc -cflags \"$cflags -flto=thin\" \\\n        -ldflags \"$ldflags -flto=thin -Wl,-mllvm,-inline-threshold=1500\" \\\n        -o \"$out/Vox\" \"$repo\" > \"$out/v.log\" 2>&1\nelse\n    /usr/bin/time -l -o \"$out/time-v.txt\" python3 -c \"\nimport json, os, sys\na = json.load(open('$L/v-args.json'))['args']\nos.execv('$compiler', ['$compiler', *a, *sys.argv[1:]])\" \\\n        -show-timings -cflags \"$cflags\" -ldflags \"$ldflags\" \\\n        -dump-c-flags \"$out/Vox.flags\" -o \"$out/Vox.c\" \"$repo\" > \"$out/v.log\" 2>&1\n    /usr/bin/time -l -o \"$out/time-cc.txt\" python3 \"$L/compile_single.py\" \\\n        \"$out/Vox.flags\" \"$out/Vox.c\" \"$out/Vox\" > \"$out/cc.log\" 2>&1\nfi\ndate -u +%Y-%m-%dT%H:%M:%SZ > \"$out/end.txt\"\nuptime > \"$out/load-after.txt\"\nls -la \"$out/Vox\" > \"$out/executable.txt\"\nrm -f \"$out/Vox.c\" \"$out/Vox\"\necho \"$label ($mode) done\"\n",
+  "summarize_times.py": "#!/usr/bin/env python3\n\"\"\"Summarize time_modes.sh runs: C generation, C compile + link, total, CPU, peak RSS, load.\nusage: summarize_times.py LABEL...\"\"\"\nimport re\nimport sys\nfrom pathlib import Path\n\nroot = Path(__file__).resolve().parent / 'times'\n\n\ndef tl(path):\n    t = path.read_text()\n    real = float(re.search(r'([\\d.]+) real', t).group(1))\n    cpu = float(re.search(r'([\\d.]+) user', t).group(1)) + float(re.search(r'([\\d.]+) sys', t).group(1))\n    rss = int(re.search(r'(\\d+)\\s+maximum resident', t).group(1)) / 1e9\n    return real, cpu, rss\n\n\nprint('| run | mode | V wall | C generation | native objects | C compile + link wall | total wall | total CPU | peak RSS | load (1 min) before/after |')\nprint('|---|---|---:|---:|---:|---:|---:|---:|---:|---|')\nfor label in sys.argv[1:]:\n    d = root / label\n    log = (d / 'v.log').read_text(errors='replace')\n    stages = {m.group(1).strip(): float(m.group(2)) / 1000\n              for m in re.finditer(r'^  ([a-zA-Z(). /]+?)\\s+([\\d.]+) ms', log, re.M)}\n    v_real, v_cpu, v_rss = tl(d / 'time-v.txt')\n    cache = stages.get('C object cache', 0.0)\n    if (d / 'time-cc.txt').exists():\n        mode = 'single'\n        cc_real, cc_cpu, cc_rss = tl(d / 'time-cc.txt')\n        generation = v_real - cache\n        compile_wall = cc_real\n        total, cpu, rss = v_real + cc_real, v_cpu + cc_cpu, max(v_rss, cc_rss)\n    else:\n        mode = 'parallel'\n        compile_wall = stages.get('cc', 0.0)\n        generation = stages.get('total', v_real) - compile_wall - cache\n        total, cpu, rss = v_real, v_cpu, v_rss\n    lb = (d / 'load-before.txt').read_text().split('averages:')[1].split()[0]\n    la = (d / 'load-after.txt').read_text().split('averages:')[1].split()[0]\n    print(f'| {label} | {mode} | {v_real:.0f} s | {generation:.0f} s | {cache:.0f} s | {compile_wall:.0f} s | '\n          f'{total:.0f} s | {cpu:.0f} s | {rss:.1f} GB | {lb} / {la} |')\n"
+ }
+}
