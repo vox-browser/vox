@@ -1,0 +1,169 @@
+{
+  "status": "Memo retired after unsuccessful cohort125. All57restoration executions and341tooling tests pass. Native production restoration pending; available completed bundle still contains memo. No saving or target/catalog credit.",
+  "engine_commit": "2d5314555",
+  "tooling_commit": "a95f2d80f",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-restored",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-restored",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-restored",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+          "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+          "test_selector_substring_boundary_filter_preserves_every_byte_value",
+          "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+          "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+          "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+          "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_matching_query_reuses_context_for_rejected_candidates",
+          "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+          "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+          "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+          "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+          "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+          "test_selector_substring_boundary_filter_preserves_every_byte_value",
+          "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+          "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+          "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+          "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_matching_query_reuses_context_for_rejected_candidates",
+          "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+          "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+          "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+          "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+          "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+          "test_selector_substring_boundary_filter_preserves_every_byte_value",
+          "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+          "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+          "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+          "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_matching_query_reuses_context_for_rejected_candidates",
+          "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+          "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+          "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+          "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+      "/Users/alex/code/vox2/css/selector_substring_search_test.v": "7aea744182c43d56d37d48c3167a7690878cc9facb507bf209298dc1fcfd323b",
+      "/Users/alex/code/vox2/css/selector_borrowed_fast_test.v": "ab9d3dac802eff322b0edacfeea0c95aa496ae770c1dc98ac8a84aa904196597",
+      "/Users/alex/code/vox2/css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+      "/Users/alex/code/vox2/css/matching_rule_candidates_test.v": "e65fa419bb5da71a360501f987915d65b5942f9fdd215d53f3192f1bb9a0462e",
+      "/Users/alex/code/vox2/css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "/Users/alex/code/vox2/css/computed_interpolation.v": "9874305ebbe56c574710a4e9d3eba4315799f47dc6bee115dad1239cd823e016",
+      "/Users/alex/code/vox2/css/style_scope_cache.v": "d8316a3e206eb47ad0df3555605a7d95070245bbed2c092f1102f373309eb57d",
+      "/Users/alex/code/vox2/css/selector_substring_scan.v": "daef59b7bd615b0b608848790e3b8d4d5e8353865e73ea4bf69d14a17f36419f",
+      "/Users/alex/code/vox2/css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523",
+      "/Users/alex/code/vox2/css/matching_rule_candidates.v": "20e8b4c3e7c8916f98d1ebf8c30e78e908641396d6c1055a1eca9dd2537f4fd2"
+    },
+    "unchanged": true,
+    "cases_per_run": 19,
+    "expected_cases": [
+      "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+      "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+      "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+      "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+      "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+      "test_selector_substring_search_respects_slice_bounds_and_pattern_sizes",
+      "test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths",
+      "test_selector_substring_boundary_filter_preserves_every_byte_value",
+      "test_selector_substring_boundary_filter_stays_within_borrowed_slices",
+      "test_borrowed_fast_selectors_preserve_all_simple_types_and_context",
+      "test_borrowed_fast_selectors_keep_child_backtracking_and_metadata",
+      "test_borrowed_fast_selectors_keep_shadow_guard_and_reuse_after_gc",
+      "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+      "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+      "test_matching_query_reuses_context_for_rejected_candidates",
+      "test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs",
+      "test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live",
+      "test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries",
+      "test_candidate_scratch_clears_grown_prefix_and_retains_cloned_rule_and_shadow_identity"
+    ]
+  },
+  "tool_tests": 341,
+  "archive": {
+    "path": "docs/performance/raw/bbc-short-attribute-retirement-focus-20261106.tar.gz",
+    "bytes": 7096752,
+    "sha256": "ec2dbff18f3e050321133c7426826c37f08bea08eefcad894b8010cd6a93e492",
+    "members": 36,
+    "all_members_verified": true
+  },
+  "unix": 1793921429.1478279,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-short-attribute-retirement-20261106-0325/archive.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 34406400,
+    "elapsed_seconds": 1.1502380419999998,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

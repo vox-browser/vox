@@ -9,7 +9,11 @@ The candidate has a **519,242,438 negative median point difference** (1.90965%),
 with four paired improvements and three regressions. The positive paired median
 409,977,729 reflects mixed variation; no causal regression or saving is established.
 The strict target also fails `290029312460 > 157792364613` (ratio **1.65424**).
-The substring memo experiment is being retired without performance credit.
+The substring memo experiment is retired (`2d5314555`), with its comparison
+control removed separately (`a95f2d80f`). All **57 restoration executions** and
+**341 tooling tests** pass. Native restoration awaits a completed production
+bundle containing the rollback; an older memo bundle supplies no restoration
+credit. [Restoration checks](performance/bbc-short-attribute-retirement-focus-20261106.json).
 [All attempts and native validation](performance/bbc-short-attribute-memo-cohort125-20261106.json).
 
 The memo's primary **150 focused executions** (25 cases, both arms, three GC
