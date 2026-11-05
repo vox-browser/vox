@@ -6,8 +6,8 @@
 #include <mach/mach_vm.h>
 #include <unistd.h>
 
-// Only the pool's dedicated anonymous mappings qualify. After a synchronous
-// draw/flush, a page with no backing anywhere in its VM object/shadow chain is
+// Only dedicated anonymous mappings owned by these adapters qualify. After a
+// synchronous draw/flush, a page with no backing in its VM object/shadow chain is
 // still zero-fill. Do not read it merely to discover transparent pixels.
 // Resident, compressed and all other nonzero dispositions retain the ordinary
 // byte scan. Query failure also falls back to that scan.
@@ -37,6 +37,7 @@ static int native_opacity_canvas_ink_bounds(VoxOpacityCanvas canvas, size_t pitc
             right, bottom, ink_left, ink_top, ink_right, ink_bottom);
     }
     int found = 0, min_x = right, min_y = bottom, max_x = left, max_y = top;
+    size_t untouched = 0, inspected = 0;
     for (int y = top; y < bottom; ++y) {
         size_t row = (size_t)y * pitch;
         size_t offset = row + (size_t)left * 4, end = row + (size_t)right * 4;
@@ -45,6 +46,7 @@ static int native_opacity_canvas_ink_bounds(VoxOpacityCanvas canvas, size_t pitc
             size_t limit = (index + 1) * (size_t)page;
             if (limit > end) limit = end;
             if (dispositions[index] != 0) {
+                inspected += limit - offset;
                 int x0, y0, x1, y1;
                 if (native_opacity_layer_ink_bounds(canvas.pixels, pitch,
                         (int)((offset - row) / 4), y, (int)((limit - row) / 4), y + 1,
@@ -55,11 +57,14 @@ static int native_opacity_canvas_ink_bounds(VoxOpacityCanvas canvas, size_t pitc
                     if (y0 < min_y) min_y = y0;
                     if (y1 > max_y) max_y = y1;
                 }
-            }
+            } else untouched += limit - offset;
             offset = limit;
         }
     }
     free(dispositions);
+    if (getenv("VOX_SPARSE_BITMAP_INK_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_SPARSE_BITMAP_INK queried_bytes=%zu untouched_bytes=%zu inspected_bytes=%zu\n",
+            bytes, untouched, inspected);
     if (!found) return 0;
     *ink_left = min_x; *ink_top = min_y;
     *ink_right = max_x; *ink_bottom = max_y;

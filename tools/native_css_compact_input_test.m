@@ -123,23 +123,26 @@ int main(int argc,char **argv){@autoreleasepool{
     }
     check_software_selection();
     NSView *view=[[NSView alloc]initWithFrame:NSMakeRect(0,0,257,256)];unsigned cases=0;
+    for(int mapped=0;mapped<2;++mapped)
     for(int software=0;software<2;++software)
     for(int tight=0;tight<2;++tight)for(sparse=0;sparse<3;++sparse)
     for(int bgra=0;bgra<2;++bgra)for(int wide=0;wide<2;++wide)for(clipped=0;clipped<2;++clipped)
         for(int scale=1;scale<=2;++scale)for(operation_kind=0;operation_kind<8;++operation_kind){@autoreleasepool{
             if(tight)setenv("VOX_TIGHT_CSS_FILTER_INPUT","1",1);else unsetenv("VOX_TIGHT_CSS_FILTER_INPUT");
             unsetenv("VOX_SOFTWARE_POINTWISE_FILTERS");
+            unsetenv("VOX_SPARSE_CSS_FILTER_INPUTS");
             test_scale=scale;
             selected=source(bgra,wide);setenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT","1",1);
             CGImageRef reference=native_layer_raster_frame(view,scale,(IMP)paint);assert(reference);
             unsigned before=native_test_compact_css_filter_inputs;unsetenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT");
             unsigned software_before=native_test_software_pointwise_filters;
             if(software)setenv("VOX_SOFTWARE_POINTWISE_FILTERS","1",1);
+            if(mapped)setenv("VOX_SPARSE_CSS_FILTER_INPUTS","1",1);
             CGImageRef candidate=native_layer_raster_frame(view,scale,(IMP)paint);assert(candidate);
             assert([packed(candidate)isEqualToData:packed(reference)]);
             if(!software || operation_kind==2)assert(native_test_software_pointwise_filters==software_before);
             else if(sparse)assert(native_test_software_pointwise_filters>software_before);
-            if (!tight && !software) assert((native_test_compact_css_filter_inputs>before)==(clipped&&operation_kind!=2));
+            if (!tight && !software && !mapped) assert((native_test_compact_css_filter_inputs>before)==(clipped&&operation_kind!=2));
             else if(operation_kind==2) assert(native_test_compact_css_filter_inputs==before);
             else if(sparse) assert(native_test_compact_css_filter_inputs>before);
             ++cases;CGImageRelease(reference);CGImageRelease(candidate);CGImageRelease(selected);

@@ -78,11 +78,14 @@ static void check_formats_and_ownership(void) {
 static void paint_filtered_frame(id view, SEL selector, NSRect rect) {
     (void)view; (void)selector; (void)rect;
     native_begin_font_compositing_layer(1280, 900);
+    BOOL independent = getenv("VOX_TEST_INDEPENDENT_FILTER_INPUT") != NULL;
+    if (independent) native_begin_css_filter_layer(1280, 900);
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
     CGContextSetRGBFillColor(context, .2, .6, .3, .7);
     CGContextFillEllipseInRect(context, CGRectMake(20.25, 10.75, 1200, 850));
     native_begin_svg_filter_graph(0, 1, 0, 0, 1280, 900, 1, 0, 0, 1, 0, 0, 0, 0);
     native_add_svg_filter_node(0, 4, 1.25, .75, 0, 0, 0, 0, (gg__Color){0}, 0, 0, 0);
+    if (independent) native_end_css_filter_layer();
     native_end_font_compositing_layer();
 }
 

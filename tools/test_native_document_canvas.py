@@ -57,7 +57,8 @@ def main():
     fixtures = ("native_document_canvas_test.m", "native_document_bitmap_copy_test.mm",
                 "native_document_publication_test.mm", "native_css_grayscale_test.m",
                 "native_css_grayscale_rows_test.m", "native_css_compact_input_test.m",
-                "native_css_color_filter_cache_test.m", "native_empty_pointwise_filter_test.m")
+                "native_css_color_filter_cache_test.m", "native_empty_pointwise_filter_test.m",
+                "native_sparse_bitmap_context_test.cpp")
     compiler = Path(shutil.which("clang")).resolve()
     inputs = [implementation, extracted, compiler, Path(__file__).resolve()]
     inputs += list(source.glob("native*darwin.h"))

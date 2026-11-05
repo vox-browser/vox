@@ -2650,6 +2650,8 @@ static CGFloat native_svg_mask_backing_scale(void) {
 }
 
 #define NATIVE_CSS_FILTER_MAX_DEPTH 64
+#include "native_sparse_bitmap_context_darwin.h"
+#include "native_sparse_opacity_ink_darwin.h"
 
 typedef struct {
 	int kind;
@@ -2690,6 +2692,8 @@ static CGImageRef native_copy_cg_image(gg__Image *image);
 typedef struct {
 	CGContextRef context;
 	CGContextRef destination;
+	// Non-null only for this layer's dedicated anonymous zero-fill mapping.
+	uint8_t *sparse_input_pixels;
 	CGImageRef backdrop_source;
 	CGPathRef backdrop_clip;
 	CGRect backdrop_bounds;
@@ -2829,8 +2833,13 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 		size_t width = (size_t)MAX(1.0, ceil(canvas_width * layer.scale));
 		size_t height = (size_t)MAX(1.0, ceil(canvas_height * layer.scale));
 		CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-		layer.context = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
-			color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+		if (getenv("VOX_SPARSE_CSS_FILTER_INPUTS")) {
+            layer.context = native_create_sparse_bitmap_context(width, height, color_space);
+            if (layer.context) layer.sparse_input_pixels = (uint8_t *)CGBitmapContextGetData(layer.context);
+        }
+        if (!layer.context)
+            layer.context = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
+                color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 		CGColorSpaceRelease(color_space);
 		if (layer.context != NULL) {
 			CGContextScaleCTM(layer.context, layer.scale, layer.scale);
@@ -4631,7 +4640,7 @@ static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *la
     CGContextRef context, CGRect *output_rect) {
     BOOL tight = (getenv("VOX_TIGHT_CSS_FILTER_INPUT") || getenv("VOX_CACHE_CSS_COLOR_FILTERS")
         || getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")
-        || getenv("VOX_SOFTWARE_POINTWISE_FILTERS"))
+        || getenv("VOX_SOFTWARE_POINTWISE_FILTERS") || getenv("VOX_SPARSE_CSS_FILTER_INPUTS"))
         && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
     if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
         || !context || CGBitmapContextGetBitsPerComponent(context) != 8
@@ -4646,6 +4655,11 @@ static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *la
     CGRect whole = CGRectMake(0, 0, width, height);
     CGRect rect = native_css_filter_output_rect(layer, whole);
     if (tight && !native_css_filter_has_pointwise_device_mapping(layer, whole)) return NULL;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (getenv("VOX_SPARSE_CSS_FILTER_INPUTS")
+        && (!ladybird_v_skia_bitmap_pixels_are_current
+            || !ladybird_v_skia_bitmap_pixels_are_current(context))) return NULL;
+#endif
     if (!tight && CGRectEqualToRect(rect, whole)) return NULL;
     CGContextFlush(context);
     const uint8_t *source = CGBitmapContextGetData(context);
@@ -4653,9 +4667,18 @@ static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *la
     if (!source || !color) return NULL;
     if (tight) {
         int left, top, right, bottom;
-        if (!native_opacity_layer_ink_bounds(source,source_pitch,(int)rect.origin.x,
+        BOOL sparse = layer->sparse_input_pixels == source && layer->context == context;
+        int found = sparse ? native_opacity_canvas_ink_bounds(
+                (VoxOpacityCanvas){context, layer->sparse_input_pixels}, source_pitch,
+                (int)rect.origin.x, (int)(height-CGRectGetMaxY(rect)),
+                (int)CGRectGetMaxX(rect), (int)(height-rect.origin.y), &left,&top,&right,&bottom)
+            : native_opacity_layer_ink_bounds(source,source_pitch,(int)rect.origin.x,
                 (int)(height-CGRectGetMaxY(rect)),(int)CGRectGetMaxX(rect),
-                (int)(height-rect.origin.y),&left,&top,&right,&bottom)) {
+                (int)(height-rect.origin.y),&left,&top,&right,&bottom);
+        if (sparse && getenv("VOX_SPARSE_CSS_FILTER_INPUT_DIAGNOSTICS"))
+            fprintf(stderr, "VOX_SPARSE_CSS_FILTER_INPUT source_bytes=%zu found=%d\n",
+                source_pitch * height, found);
+        if (!found) {
             left=(int)rect.origin.x; top=(int)(height-CGRectGetMaxY(rect));
             right=left+1; bottom=top+1;
         }
