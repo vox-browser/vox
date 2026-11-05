@@ -1,0 +1,59 @@
+{
+  "site": "Discord login",
+  "recorded": "2026-11-05",
+  "fixes": [
+    "106ad0968",
+    "5ebb7f8bc"
+  ],
+  "problem": "The native combined rounded-background/border pass used the border transform for a background retained in a different paint-offset coordinate space.",
+  "behavior": "Translate compatible background geometry into the consumer coordinate space; paint incompatible spaces separately. The compatibility query borrows its pending command.",
+  "workload": {
+    "input": "Tests/Browser/Ref/transformed-rounded-modal-underlay.html",
+    "reference": "Tests/Browser/Ref/transformed-rounded-modal-underlay.ref.html",
+    "viewport": [
+      1280,
+      788
+    ],
+    "rendering_policy": "chromium (normal browser policy)",
+    "capture": "canonical capture_screenshot.sh with SCREENSHOT_REUSE_PRODUCTION=1; document viewport only; fresh empty profiles"
+  },
+  "baseline": {
+    "raw": "Build/discord-resume-20261105/modal-r31/browser-baseline-r2",
+    "different_pixels": 341439,
+    "maximum_channel_error": 35,
+    "executable_sha256": "ae288b903196bc4e3482f587078963672c6df831cda3c5f2595ec16d5feeeaf0",
+    "bundle_and_fixture_pins_unchanged": true,
+    "reference_png_sha256": "49f443a5c5849bc4d67801c73b965307d1045c3c2e599ac8c9cf91a552b2cf86",
+    "actual_png_sha256": "2b035ad2e1510fd821ec0a1be2b3b39970678b690a91a7ae635db491de02f482"
+  },
+  "candidate": {
+    "raw": "Build/discord-resume-20261105/modal-r31/browser-candidate-r3",
+    "different_pixels": 0,
+    "maximum_channel_error": 0,
+    "executable_sha256": "25c6fc5a0763e211baa538fe8746649a58381e25b62ab603e5dc1ee45b5e081e",
+    "bundle_and_fixture_pins_unchanged": true,
+    "reference_png_sha256": "49f443a5c5849bc4d67801c73b965307d1045c3c2e599ac8c9cf91a552b2cf86",
+    "actual_png_sha256": "49f443a5c5849bc4d67801c73b965307d1045c3c2e599ac8c9cf91a552b2cf86",
+    "validated_source_head": "106ad0968996d6ca891ba1b302172cb45c99253d",
+    "ownership_follow_up": "5ebb7f8bc is covered by both focused allocator runs, including the repeated pending-command lookup storage bound."
+  },
+  "tests": {
+    "default-r3": {
+      "cases": 13,
+      "focused_sources_unchanged": true,
+      "compiler_exit": 0,
+      "runtime_exit": 0
+    },
+    "prealloc-r3": {
+      "cases": 13,
+      "focused_sources_unchanged": true,
+      "compiler_exit": 0,
+      "runtime_exit": 0
+    }
+  },
+  "additional_checks": {
+    "corner_shape_failure": "Expanded and standalone main_chromium_corner_shapes_test.v fail at line 138: complete outer-shadow eligibility accepts a case the test expects rejected. The eligibility implementation is unchanged by these commits. Logs retained in frame-messaging/rounded-underlay-batch-default-r1 and rounded-underlay-corners-alone-default-r1.",
+    "libweb_control": "reftest-baseline-r1 passed before the fix because compare_screenshots.sh selected the LibWeb font/rendering test policy. It did not exercise the affected Chromium path; the corrected browser-policy baseline is retained separately."
+  },
+  "authentication": "Normal test-account sign-in reaches hCaptcha; authenticated channel behavior remains unverified."
+}
