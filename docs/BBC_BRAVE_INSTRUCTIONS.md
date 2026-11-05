@@ -45,6 +45,21 @@ invalidation, with no performance credit. See the
 [sample ledger](performance/bbc-current-production-sample-20261104.json) and
 [raw sample](performance/raw/bbc-current-production-sample-20261104.tar.gz).
 
+A separate **thread CPU `v -profile` diagnostic** extends the earlier sealed
+expanded-profile baseline. It passes original pixels/content, all 72 author
+scripts, native exits and mapped-library identity checks. All profiler counters
+and nesting state are isolated per thread; the main thread and 51 completed
+finite worker wrappers print separate sections, including an empty section.
+The selected rows record 94 TLS dials and roughly 811,000 stylesheet-subtree
+visits. CPU-clock overhead strongly inflates frequent-call rows; these timings
+are not instruction shares, comparable wall-clock shares or unprofiled savings.
+Persistent network/UI threads and the separate filter process remain outside
+these rows. This baseline predates SVG tree retention and later changes.
+Fresh current-source code generation succeeds but its native link fails because
+the completed library lacks a newly referenced graphics API; that attempt and
+two corrected profiler-only compile failures remain preserved.
+[Diagnostic evidence](performance/bbc-v-profile-thread-cpu-20261105.json).
+
 **Latest complete comparison — cohort 94:** seven alternating control/Vox/Brave
 triples complete on pinned executable
 `6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b`.
