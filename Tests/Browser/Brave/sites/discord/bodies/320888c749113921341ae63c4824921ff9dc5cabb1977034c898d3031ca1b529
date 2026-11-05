@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html data-wf-domain="prod-wf1.discord.com" data-wf-page="6a8c9adf8a1eca12fbe9eabf" data-wf-site="6257adef93867e50d84d30e2" lang="en" class="w-mod-js w-mod-ix"><head><base href="https://discord.com/"><style>.wf-force-outline-none[tabindex="-1"]:focus{outline:none;}</style><meta charset="utf-8"><link href="https://cdn.prod.website-files.com" rel="preconnect" crossorigin="anonymous"><title>Discord - Group Chat That’s All Fun &amp; Games</title><meta content="Discord is great for playing games and chilling with friends, or even building a worldwide community. Customize your own space to talk, play, and hang out." name="description"><meta content="Discord - Group Chat That’s All Fun &amp; Games" property="og:title"><meta content="Discord is great for playing games and chilling with friends, or even building a worldwide community. Customize your own space to talk, play, and hang out." property="og:description"><meta content="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg" property="og:image"><meta content="Discord - Group Chat That’s All Fun &amp; Games" name="twitter:title"><meta content="Discord is great for playing games and chilling with friends, or even building a worldwide community. Customize your own space to talk, play, and hang out." name="twitter:description"><meta content="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg" name="twitter:image"><meta property="og:type" content="website"><meta content="summary_large_image" name="twitter:card"><meta content="width=device-width, initial-scale=1" name="viewport"><link href="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/css/discord-2022.shared.9b1af0738.min.css" rel="stylesheet" type="text/css" integrity="sha384-mxrwc4uEx4las8u10IFdUiohjyfuv8j5VnE0ar3OWi+He1ARfV1UcF1ELPnGZgrg" crossorigin="anonymous"><style>@media (min-width:992px) {html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b686"] {-webkit-transform:translate3d(0, -10px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-moz-transform:translate3d(0, -10px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-ms-transform:translate3d(0, -10px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);transform:translate3d(0, -10px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b687"] {width:105%;filter: blur(0.5px);}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b691"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b692"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b693"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b694"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b695"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b696"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b697"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b698"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b699"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69e"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69f"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a0"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a1"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a2"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a3"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a4"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c3"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c4"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c5"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c6"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c7"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c8"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c9"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ca"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cb"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cc"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cd"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e1"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e2"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e3"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e4"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e5"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e6"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e7"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e8"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e9"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ea"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b700"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b701"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b702"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b703"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b704"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b705"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b706"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b707"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b708"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b709"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b754"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b755"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b756"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b757"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b758"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b759"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b778"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b779"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77e"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77f"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b780"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b781"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b796"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b797"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b798"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b799"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79e"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79f"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c4"] {-webkit-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);-moz-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);-ms-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);transform-style:preserve-3d;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c6"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c7"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c8"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c9"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7ca"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b70c"] {-webkit-transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-moz-transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-ms-transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b671"] {-webkit-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-moz-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-ms-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b679"] {-webkit-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-moz-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-ms-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);}}@media (max-width:991px) and (min-width:768px) {html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b691"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b692"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b693"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b694"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b695"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b696"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b697"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b698"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b699"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69e"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69f"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a0"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a1"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a2"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a3"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a4"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c3"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c4"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c5"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c6"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c7"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c8"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c9"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ca"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cb"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cc"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cd"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e1"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e2"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e3"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e4"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e5"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e6"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e7"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e8"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e9"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ea"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b700"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b701"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b702"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b703"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b704"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b705"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b706"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b707"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b708"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b709"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b754"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b755"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b756"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b757"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b758"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b759"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b778"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b779"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77e"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77f"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b780"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b781"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b796"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b797"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b798"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b799"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79a"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79b"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79c"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79d"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79e"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79f"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c4"] {-webkit-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);-moz-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);-ms-transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);transform:translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0deg) rotateY(null) rotateZ(0deg) skew(0, 0);transform-style:preserve-3d;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c6"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c7"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c8"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c9"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7ca"] {opacity:0;}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b70c"] {-webkit-transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-moz-transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);-ms-transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);transform:translate3d(0%, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b671"] {-webkit-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-moz-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-ms-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);}html.w-mod-js:not(.w-mod-ix) [data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b679"] {-webkit-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-moz-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);-ms-transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);transform:translate3d(0px, 0px, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0deg) skew(0, 0);}}</style><link href="https://fonts.googleapis.com" rel="preconnect"><link href="https://fonts.gstatic.com" rel="preconnect" crossorigin="anonymous"><link href="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62fddf0fde45a8baedcc7ee5_847541504914fd33810e70a0ea73177e%20(2)-1.png" rel="shortcut icon" type="image/x-icon"><link href="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6266bc493fb42d4e27bb8393_847541504914fd33810e70a0ea73177e.ico" rel="apple-touch-icon"><style type="text/css">var{font-style:inherit;}</style><meta name="google" content="notranslate">
+
+
+
+<style>
+.language{
+    display:flex;
+    user-select: none;
+}
+.language .lang-container {
+    position: relative;
+}
+
+.language .lang-selector-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.language .locale-container{
+    display: flex;
+    align-items: center;
+}
+
+.language .flag {
+    width: 24px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+.language .selector-language-name{
+    color: #fff;
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.language .arrow-icon{
+    padding-left: 8px;
+}
+
+.language .lang-dropdown-container {
+    z-index: 10;
+    bottom: 100%;
+    margin-bottom: 8px;
+    position: absolute;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 1px rgb(0 0 0 / 10%);
+    overflow: hidden;
+    display: none;
+}
+
+.language .lang-dropdown {
+    max-height: 320px;
+    min-width: 150px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.language .dropdown-item{
+    padding: 8px;
+}
+
+.language .dropdown-clickable{
+    cursor: pointer;
+}
+
+.language .dropdown-language-name{
+    color: #23272a;
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.flag-ru{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f39e6ac4c46ce39566_ru.png");
+}
+
+.flag-bg{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6257c2a1e7544e303083b2b1_bolg.png");
+}
+.flag-cs{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f1254305732a01676d_cs.png");
+}
+.flag-da{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f16128094022db6768_da.png");
+}
+.flag-de{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f1c50496ce73c40d99_de.png");
+}
+.flag-en-GB {
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62d01c2078d11b68a1633276_Rectangle%201%20(3).svg");
+}
+.flag-el{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f17c26b5fe5a53876f_el.png");
+}
+.flag-en-US{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6257bf8b5ba300233705a542_en.png");
+}
+.flag-en{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6257bf8b5ba300233705a542_en.png");
+}
+.flag-es{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f14edab1b0029593fc_es-ES.png");
+}
+.flag-fi{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f1921c0cf82fc59da7_fi.png");
+}
+.flag-fr{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f1544a7ab7c66e9ccb_fr.png");
+}
+.flag-hi{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f13fcb6e76c05b504e_hi.png");
+}
+.flag-hr{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f1aeebe9064763c90c_hr.png");
+}
+.flag-hu{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f19e6ac41dcce39561_hu.png");
+}
+.flag-it{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f1bd099a25f8f77ea4_it.png");
+}
+.flag-ja{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f1e819841940bec47d_ja.png");
+}
+.flag-ko{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f125430509b9016776_ko.png");
+}
+.flag-lt{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f14edab152b8959405_lt.png");
+}
+.flag-nl{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f3e00ff80959abff2a_nl.png");
+}
+.flag-no{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f37c26b5e22453877d_no.png");
+}
+.flag-pl{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f3c504963019c40db7_pl.png");
+}
+.flag-pt-BR{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f3d809bc2503e62bec_pt-BR.png");
+}
+.flag-ro{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f36e94d725ce411ab6_ro.png");
+}
+.flag-sv{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f49e6ac47674e39567_sv-SE.png");
+}
+.flag-th{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f465c529bf26e211a1_th.png");
+}
+.flag-tr{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f4e819848178bec4d1_tr.png");
+}
+.flag-uk{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f37c26b54f6a53877f_uk.png");
+}
+.flag-vi{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f4e819840d89bec4d2_vi.png");
+}
+.flag-zh-Hans{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f49e6ac45f35e39568_zh-CN.png");
+}
+.flag-zh-TW{
+    content:url("https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/62cb46f33fcb6ea5c95b5069_zh-TW.png");
+}
+</style>
+
+
+<style>
+  
+  .nav-bar-hack {
+  	bottom: 0px !important;
+    height: auto !important;
+  }
+  
+  body a.w-webflow-badge {
+    display: none !important;
+  }
+  
+  body {
+  	text-rendering: optimizeLegibility;
+  }
+  
+  @media screen and (max-width: 476px) {
+    .hide-on-mobile {
+      display: none;
+    }
+  }
+  
+  .hr-style {
+  border: 0;
+  height: 8px;
+  background-color: #F0F0F0;
+  margin: 20px 0px;
+  }
+  
+  .BlogBodyQuote {
+  grid-column: 2/-1;
+  font-size: 24px;
+  line-height: 36px;
+  padding: 0px 0px 15px 40px;
+  font-style: italic;
+  margin: 40px 0px 50px 0px;
+}
+
+.quote-text {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.quote-icon {
+  position: relative;
+  top: 16px;
+}
+
+footer.quote-footer {
+  font-size: 16px;
+  margin-top: 20px;
+  font-style: normal;
+}
+  
+  
+</style>
+
+
+<style>
+@-moz-document url-prefix() {
+  .dropdown-language-list-wr .dropdown-list-container-wr {
+    scrollbar-width: thin;
+    scrollbar-color: white transparent;
+  }
+  }
+
+  .dropdown-language-list-wr .dropdown-list-container-wr {
+    max-height: 240px !important;
+    overflow: auto !important;
+
+  }
+  .dropdown-language-list-wr .dropdown-list-container-wr::-webkit-scrollbar {
+    width: 6px;
+  }
+  .dropdown-language-list-wr .dropdown-list-container-wr::-webkit-scrollbar-thumb {
+    background-color: white;
+    border-radius: 3px;
+    margin-right: 30px;
+  }
+
+  .dropdown-language-list-wr .dropdown-list-container-wr::-webkit-scrollbar-button {
+    display: none;
+  }
+</style>
+
+<style>
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+}
+</style>
+
+
+
+<link rel="preload" as="image" href="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/673df7fbe95a8e90a7571751_D-bg.png">
+
+<meta name="theme-color" content="#161cbb">
+
+
+<style>
+button[data-testid="button-open-discord-in-browser"] {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;     
+  text-align: center !important;
+}
+
+.primary-cta-download-button {
+  display: inline-flex !important;     
+  justify-content: center !important;
+  align-items: center !important;    
+  gap: 8px !important;                 
+  text-align: center !important;
+}
+
+html[lang="zh-TW"] .heading--h1 {
+  line-height: 1.0;
+}
+html[lang="zh-Hans"] .heading--h1 {
+  line-height: 1.0;
+}
+html[lang="th"] .heading--h1 {
+  line-height: 1.0;
+}
+
+html[lang="zh-TW"] .heading--h2.is_2025 {
+  line-height: 1.0;
+}
+html[lang="zh-Hans"] .heading--h2.is_2025 {
+  line-height: 1.0;
+}
+html[lang="th"] .heading--h2.is_2025 {
+  line-height: 1.0;
+}
+
+
+
+
+
+html[lang="ko"] .heading--h1 {
+  line-height: 1.2;
+}
+	.home--group-chat-img.video {
+  transform: translateZ(0);
+  } 
+  
+  @media (max-width: 767px) and (min-width: 270px) {
+  #landing-cta .ctaContainer-5100Xg {
+    flex-direction: column;
+  }
+  #landing-cta > div > *:first-child { 
+    margin-left: 0; 
+    margin-right: 0; 
+  }
+}
+@media screen and (max-width: 1023px) and (min-width: 768px) {
+  .ctaContainer-5100Xg {
+    justify-content: center;
+  }
+}
+.wumpus-footer-home-contain, .discord_robot {
+	-webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+/Edge */
+  user-select: none;
+}
+</style>
+
+<style>
+html[lang="ja"] .heading--h1.is_2025 {
+  line-height: 1.2;
+}
+@media screen and (max-width: 767px) {
+    html[lang="ja"] .heading--h1.is_2025  {
+     line-height: 1.2;
+    }
+}
+
+html[lang="ja"] .heading--h2.is_2025 {
+  line-height: 1.1;
+}
+@media screen and (max-width: 767px) {
+    html[lang="ja"] .heading--h2.is_2025 {
+     line-height: 1.1;
+    }
+}
+
+html[lang="vi"] .heading--h1.is_2025 {
+  line-height: 1.1;
+}
+@media screen and (max-width: 767px) {
+    html[lang="vi"] .heading--h1.is_2025  {
+     line-height: 1.1;
+    }
+}
+
+html[lang="vi"] .heading--h2.is_2025 {
+  line-height: 1.12;
+}
+@media screen and (max-width: 767px) {
+    html[lang="vi"] .heading--h2.is_2025 {
+     line-height: 1.12;
+    }
+}
+
+html[lang="hi"] .heading--h1.is_2025 {
+  line-height: 1.2;
+}
+@media screen and (max-width: 767px) {
+    html[lang="hi"] .heading--h1.is_2025  {
+     line-height: 1.2;
+    }
+}
+
+html[lang="hi"] .heading--h2.is_2025 {
+  line-height: 1.2;
+}
+@media screen and (max-width: 767px) {
+    html[lang="hi"] .heading--h2.is_2025 {
+     line-height: 1.2;
+    }
+}
+
+
+html[lang="hu"] .heading--h2 {
+  font-size:33px;
+}
+@media screen and (min-width: 1920px) {
+    html[lang="hu"] .heading--h2 {
+      font-size: 44px;
+    }
+      html[lang="ru"] .heading--h2 {
+      font-size: 40px;
+    }
+}
+
+@media screen and (max-width: 1281px) {
+    html[lang="hu"] .heading--h2 {
+      font-size: 22px;
+    }
+}
+
+@media screen and (min-width: 1280px) {
+     html[lang="ru"] .heading--h2 {
+      font-size: 30px;
+    }
+ 
+}
+
+@media screen and (max-width: 479px) {
+   html[lang="ru"]  .heading--h2.is_2025 {
+        font-size: 1.25rem;
+    }
+}
+
+@media screen and (min-width: 1920px) {
+  html[lang="tr"]  .heading--h2.is_2025 {
+       
+        font-size: 2.65rem !important;
+    }
+}
+
+</style>
+
+<link rel="canonical" href="https://discord.com">
+<link rel="stylesheet" href="/w/assets/3a756378428a770f27e63b63edc9fd6cc02fda3a/styles.css"><style id="onetrust-style">#onetrust-banner-sdk .onetrust-vendors-list-handler{cursor:pointer;color:#1f96db;font-size:inherit;font-weight:bold;text-decoration:none;margin-left:5px}#onetrust-banner-sdk .onetrust-vendors-list-handler:hover{color:#1f96db}#onetrust-banner-sdk:focus{outline:2px solid #000;outline-offset:-2px}#onetrust-banner-sdk a:focus{outline:2px solid #000}#onetrust-banner-sdk #onetrust-accept-btn-handler,#onetrust-banner-sdk #onetrust-reject-all-handler,#onetrust-banner-sdk #onetrust-pc-btn-handler{outline-offset:1px}#onetrust-banner-sdk.ot-bnr-w-logo .ot-bnr-logo{height:64px;width:64px}#onetrust-banner-sdk .ot-tcf2-vendor-count.ot-text-bold{font-weight:bold}#onetrust-banner-sdk .ot-close-icon,#onetrust-pc-sdk .ot-close-icon,#ot-sync-ntfy .ot-close-icon{background-size:contain;background-repeat:no-repeat;background-position:center;height:12px;width:12px}#onetrust-banner-sdk .powered-by-logo,#onetrust-banner-sdk .ot-pc-footer-logo a,#onetrust-pc-sdk .powered-by-logo,#onetrust-pc-sdk .ot-pc-footer-logo a,#ot-sync-ntfy .powered-by-logo,#ot-sync-ntfy .ot-pc-footer-logo a{background-size:contain;background-repeat:no-repeat;background-position:center;height:25px;width:152px;display:block;text-decoration:none;font-size:.75em}#onetrust-banner-sdk .powered-by-logo:hover,#onetrust-banner-sdk .ot-pc-footer-logo a:hover,#onetrust-pc-sdk .powered-by-logo:hover,#onetrust-pc-sdk .ot-pc-footer-logo a:hover,#ot-sync-ntfy .powered-by-logo:hover,#ot-sync-ntfy .ot-pc-footer-logo a:hover{color:#565656}#onetrust-banner-sdk h3 *,#onetrust-banner-sdk h4 *,#onetrust-banner-sdk h6 *,#onetrust-banner-sdk button *,#onetrust-banner-sdk a[data-parent-id] *,#onetrust-pc-sdk h3 *,#onetrust-pc-sdk h4 *,#onetrust-pc-sdk h6 *,#onetrust-pc-sdk button *,#onetrust-pc-sdk a[data-parent-id] *,#ot-sync-ntfy h3 *,#ot-sync-ntfy h4 *,#ot-sync-ntfy h6 *,#ot-sync-ntfy button *,#ot-sync-ntfy a[data-parent-id] *{font-size:inherit;font-weight:inherit;color:inherit}#onetrust-banner-sdk .ot-hide,#onetrust-pc-sdk .ot-hide,#ot-sync-ntfy .ot-hide{display:none !important}#onetrust-banner-sdk button.ot-link-btn:hover,#onetrust-pc-sdk button.ot-link-btn:hover,#ot-sync-ntfy button.ot-link-btn:hover{text-decoration:underline;opacity:1}#onetrust-pc-sdk .ot-sdk-row .ot-sdk-column{padding:0}#onetrust-pc-sdk .ot-sdk-container{padding-right:0}#onetrust-pc-sdk .ot-sdk-row{flex-direction:initial;width:100%}#onetrust-pc-sdk [type=checkbox]:checked,#onetrust-pc-sdk [type=checkbox]:not(:checked){pointer-events:initial}#onetrust-pc-sdk [type=checkbox]:disabled+label::before,#onetrust-pc-sdk [type=checkbox]:disabled+label:after,#onetrust-pc-sdk [type=checkbox]:disabled+label{pointer-events:none;opacity:.8}#onetrust-pc-sdk #vendor-list-content{transform:translate3d(0, 0, 0)}#onetrust-pc-sdk li input[type=checkbox]{z-index:1}#onetrust-pc-sdk li .ot-checkbox label{z-index:2}#onetrust-pc-sdk li .ot-checkbox input[type=checkbox]{height:auto;width:auto}#onetrust-pc-sdk li .host-title a,#onetrust-pc-sdk li .ot-host-name a,#onetrust-pc-sdk li .accordion-text,#onetrust-pc-sdk li .ot-acc-txt{z-index:2;position:relative}#onetrust-pc-sdk input{margin:3px .1ex}#onetrust-pc-sdk .pc-logo,#onetrust-pc-sdk .ot-pc-logo{height:60px;width:180px;background-position:center;background-size:contain;background-repeat:no-repeat;display:inline-flex;justify-content:center;align-items:center}#onetrust-pc-sdk .pc-logo img,#onetrust-pc-sdk .ot-pc-logo img{max-height:100%;max-width:100%}#onetrust-pc-sdk .screen-reader-only,#onetrust-pc-sdk .ot-scrn-rdr,.ot-sdk-cookie-policy .screen-reader-only,.ot-sdk-cookie-policy .ot-scrn-rdr{border:0;clip:rect(0 0 0 0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}#onetrust-pc-sdk.ot-fade-in,.onetrust-pc-dark-filter.ot-fade-in,#onetrust-banner-sdk.ot-fade-in{animation-name:onetrust-fade-in;animation-duration:400ms;animation-timing-function:ease-in-out}#onetrust-pc-sdk.ot-hide{display:none !important}.onetrust-pc-dark-filter.ot-hide{display:none !important}#ot-sdk-btn.ot-sdk-show-settings,#ot-sdk-btn.optanon-show-settings{color:#fff;background-color:#468254;height:auto;white-space:normal;word-wrap:break-word;padding:.8em 2em;font-size:.8em;line-height:1.2;cursor:pointer;-moz-transition:.1s ease;-o-transition:.1s ease;-webkit-transition:1s ease;transition:.1s ease}#ot-sdk-btn.ot-sdk-show-settings:hover,#ot-sdk-btn.optanon-show-settings:hover{color:#fff;background-color:#2c6415}#ot-sdk-btn.ot-sdk-show-settings:active,#ot-sdk-btn.optanon-show-settings:active{color:#fff;background-color:#2c6415;border:1px solid rgba(162,192,169,.5)}.onetrust-pc-dark-filter{background:rgba(0,0,0,.5);z-index:2147483646;width:100%;height:100%;overflow:hidden;position:fixed;top:0;bottom:0;left:0}@keyframes onetrust-fade-in{0%{opacity:0}100%{opacity:1}}.ot-cookie-label{text-decoration:underline}@media only screen and (min-width: 426px)and (max-width: 896px)and (orientation: landscape){#onetrust-pc-sdk p{font-size:.75em}}#onetrust-banner-sdk .banner-option-input:focus+label{outline:1px solid #000;outline-style:auto}.category-vendors-list-handler+a:focus,.category-vendors-list-handler+a:focus-visible{outline:2px solid #000}#onetrust-pc-sdk .ot-userid-title{margin-top:10px}#onetrust-pc-sdk .ot-userid-title>span,#onetrust-pc-sdk .ot-userid-timestamp>span{font-weight:700}#onetrust-pc-sdk .ot-userid-desc{font-style:italic}#onetrust-pc-sdk .ot-host-desc a{pointer-events:initial}#onetrust-pc-sdk .ot-ven-hdr>p a{position:relative;z-index:2;pointer-events:initial}#onetrust-pc-sdk .ot-vnd-serv .ot-vnd-item .ot-vnd-info a,#onetrust-pc-sdk .ot-vs-list .ot-vnd-item .ot-vnd-info a{margin-right:auto}#onetrust-pc-sdk .ot-pc-footer-logo img{width:136px;height:16px}#onetrust-pc-sdk .ot-pur-vdr-count{font-weight:400;font-size:.8em;padding-top:3px;display:block}#onetrust-banner-sdk .ot-optout-signal,#onetrust-pc-sdk .ot-optout-signal{border:1px solid #32ae88;border-radius:3px;padding:5px;margin-bottom:10px;background-color:#f9fffa;font-size:.85rem;line-height:2}#onetrust-banner-sdk .ot-optout-signal .ot-optout-icon,#onetrust-pc-sdk .ot-optout-signal .ot-optout-icon{display:inline;margin-right:5px}#onetrust-banner-sdk .ot-optout-signal svg,#onetrust-pc-sdk .ot-optout-signal svg{height:20px;width:30px;transform:scale(0.5)}#onetrust-banner-sdk .ot-optout-signal svg path,#onetrust-pc-sdk .ot-optout-signal svg path{fill:#32ae88}#onetrust-consent-sdk .ot-general-modal{overflow:hidden;position:fixed;margin:0 auto;top:50%;left:50%;width:40%;padding:1.5rem;max-width:575px;min-width:575px;z-index:2147483647;border-radius:2.5px;transform:translate(-50%, -50%)}#onetrust-consent-sdk .ot-signature-health-group{margin-top:1rem;padding-left:1.25rem;padding-right:1.25rem;margin-bottom:.625rem;width:calc(100% - 2.5rem)}#onetrust-consent-sdk .ot-signature-health-group .ot-signature-health-form{gap:.5rem}#onetrust-consent-sdk .ot-signature-health .ot-signature-health-form{width:70%;gap:.35rem}#onetrust-consent-sdk .ot-signature-health .ot-signature-input{height:38px;padding:6px 10px;background-color:#fff;border:1px solid #d1d1d1;border-radius:4px;box-shadow:none;box-sizing:border-box}#onetrust-consent-sdk .ot-signature-health .ot-signature-subtitle{font-size:1.125rem}#onetrust-consent-sdk .ot-signature-health .ot-signature-group-title{font-size:1.25rem;font-weight:bold}#onetrust-consent-sdk .ot-signature-health,#onetrust-consent-sdk .ot-signature-health-group{display:flex;flex-direction:column;gap:1rem}#onetrust-consent-sdk .ot-signature-health .ot-signature-cont,#onetrust-consent-sdk .ot-signature-health-group .ot-signature-cont{display:flex;flex-direction:column;gap:.25rem}#onetrust-consent-sdk .ot-signature-health .ot-signature-paragraph,#onetrust-consent-sdk .ot-signature-health-group .ot-signature-paragraph{margin:0;line-height:20px;font-size:max(14px,.875rem)}#onetrust-consent-sdk .ot-signature-health .ot-health-signature-error,#onetrust-consent-sdk .ot-signature-health-group .ot-health-signature-error{color:#4d4d4d;font-size:min(12px,.75rem)}#onetrust-consent-sdk .ot-signature-health .ot-signature-buttons-cont,#onetrust-consent-sdk .ot-signature-health-group .ot-signature-buttons-cont{margin-top:max(.75rem,2%);gap:1rem;display:flex;justify-content:flex-end}#onetrust-consent-sdk .ot-signature-health .ot-signature-button,#onetrust-consent-sdk .ot-signature-health-group .ot-signature-button{flex:1;height:auto;color:#fff;cursor:pointer;line-height:1.2;min-width:125px;font-weight:600;font-size:.813em;border-radius:2px;padding:12px 10px;white-space:normal;word-wrap:break-word;word-break:break-word;background-color:#68b631;border:2px solid #68b631}#onetrust-consent-sdk .ot-signature-health .ot-signature-button.reject,#onetrust-consent-sdk .ot-signature-health-group .ot-signature-button.reject{background-color:#fff}#onetrust-consent-sdk .ot-input-field-cont{display:flex;flex-direction:column;gap:.5rem}#onetrust-consent-sdk .ot-input-field-cont .ot-signature-input{width:65%}#onetrust-consent-sdk .ot-signature-health-form{display:flex;flex-direction:column}#onetrust-consent-sdk .ot-signature-health-form .ot-signature-label{margin-bottom:0;line-height:20px;font-size:max(14px,.875rem)}@media only screen and (max-width: 600px){#onetrust-consent-sdk .ot-general-modal{min-width:100%}#onetrust-consent-sdk .ot-signature-health .ot-signature-health-form{width:100%}#onetrust-consent-sdk .ot-input-field-cont .ot-signature-input{width:100%}}#onetrust-banner-sdk,#onetrust-pc-sdk,#ot-sdk-cookie-policy,#ot-sync-ntfy{font-size:16px}#onetrust-banner-sdk *,#onetrust-banner-sdk ::after,#onetrust-banner-sdk ::before,#onetrust-pc-sdk *,#onetrust-pc-sdk ::after,#onetrust-pc-sdk ::before,#ot-sdk-cookie-policy *,#ot-sdk-cookie-policy ::after,#ot-sdk-cookie-policy ::before,#ot-sync-ntfy *,#ot-sync-ntfy ::after,#ot-sync-ntfy ::before{-webkit-box-sizing:content-box;-moz-box-sizing:content-box;box-sizing:content-box}#onetrust-banner-sdk div,#onetrust-banner-sdk span,#onetrust-banner-sdk h1,#onetrust-banner-sdk h2,#onetrust-banner-sdk h3,#onetrust-banner-sdk h4,#onetrust-banner-sdk h5,#onetrust-banner-sdk h6,#onetrust-banner-sdk p,#onetrust-banner-sdk img,#onetrust-banner-sdk svg,#onetrust-banner-sdk button,#onetrust-banner-sdk section,#onetrust-banner-sdk a,#onetrust-banner-sdk label,#onetrust-banner-sdk input,#onetrust-banner-sdk ul,#onetrust-banner-sdk li,#onetrust-banner-sdk nav,#onetrust-banner-sdk table,#onetrust-banner-sdk thead,#onetrust-banner-sdk tr,#onetrust-banner-sdk td,#onetrust-banner-sdk tbody,#onetrust-banner-sdk .ot-main-content,#onetrust-banner-sdk .ot-toggle,#onetrust-banner-sdk #ot-content,#onetrust-banner-sdk #ot-pc-content,#onetrust-banner-sdk .checkbox,#onetrust-pc-sdk div,#onetrust-pc-sdk span,#onetrust-pc-sdk h1,#onetrust-pc-sdk h2,#onetrust-pc-sdk h3,#onetrust-pc-sdk h4,#onetrust-pc-sdk h5,#onetrust-pc-sdk h6,#onetrust-pc-sdk p,#onetrust-pc-sdk img,#onetrust-pc-sdk svg,#onetrust-pc-sdk button,#onetrust-pc-sdk section,#onetrust-pc-sdk a,#onetrust-pc-sdk label,#onetrust-pc-sdk input,#onetrust-pc-sdk ul,#onetrust-pc-sdk li,#onetrust-pc-sdk nav,#onetrust-pc-sdk table,#onetrust-pc-sdk thead,#onetrust-pc-sdk tr,#onetrust-pc-sdk td,#onetrust-pc-sdk tbody,#onetrust-pc-sdk .ot-main-content,#onetrust-pc-sdk .ot-toggle,#onetrust-pc-sdk #ot-content,#onetrust-pc-sdk #ot-pc-content,#onetrust-pc-sdk .checkbox,#ot-sdk-cookie-policy div,#ot-sdk-cookie-policy span,#ot-sdk-cookie-policy h1,#ot-sdk-cookie-policy h2,#ot-sdk-cookie-policy h3,#ot-sdk-cookie-policy h4,#ot-sdk-cookie-policy h5,#ot-sdk-cookie-policy h6,#ot-sdk-cookie-policy p,#ot-sdk-cookie-policy img,#ot-sdk-cookie-policy svg,#ot-sdk-cookie-policy button,#ot-sdk-cookie-policy section,#ot-sdk-cookie-policy a,#ot-sdk-cookie-policy label,#ot-sdk-cookie-policy input,#ot-sdk-cookie-policy ul,#ot-sdk-cookie-policy li,#ot-sdk-cookie-policy nav,#ot-sdk-cookie-policy table,#ot-sdk-cookie-policy thead,#ot-sdk-cookie-policy tr,#ot-sdk-cookie-policy td,#ot-sdk-cookie-policy tbody,#ot-sdk-cookie-policy .ot-main-content,#ot-sdk-cookie-policy .ot-toggle,#ot-sdk-cookie-policy #ot-content,#ot-sdk-cookie-policy #ot-pc-content,#ot-sdk-cookie-policy .checkbox,#ot-sync-ntfy div,#ot-sync-ntfy span,#ot-sync-ntfy h1,#ot-sync-ntfy h2,#ot-sync-ntfy h3,#ot-sync-ntfy h4,#ot-sync-ntfy h5,#ot-sync-ntfy h6,#ot-sync-ntfy p,#ot-sync-ntfy img,#ot-sync-ntfy svg,#ot-sync-ntfy button,#ot-sync-ntfy section,#ot-sync-ntfy a,#ot-sync-ntfy label,#ot-sync-ntfy input,#ot-sync-ntfy ul,#ot-sync-ntfy li,#ot-sync-ntfy nav,#ot-sync-ntfy table,#ot-sync-ntfy thead,#ot-sync-ntfy tr,#ot-sync-ntfy td,#ot-sync-ntfy tbody,#ot-sync-ntfy .ot-main-content,#ot-sync-ntfy .ot-toggle,#ot-sync-ntfy #ot-content,#ot-sync-ntfy #ot-pc-content,#ot-sync-ntfy .checkbox{font-family:inherit;font-weight:normal;-webkit-font-smoothing:auto;letter-spacing:normal;line-height:normal;padding:0;margin:0;height:auto;min-height:0;max-height:none;width:auto;min-width:0;max-width:none;border-radius:0;border:none;clear:none;float:none;position:static;bottom:auto;left:auto;right:auto;top:auto;text-align:left;text-decoration:none;text-indent:0;text-shadow:none;text-transform:none;white-space:normal;background:none;overflow:visible;vertical-align:baseline;visibility:visible;z-index:auto;box-shadow:none}#onetrust-banner-sdk label:before,#onetrust-banner-sdk label:after,#onetrust-banner-sdk .checkbox:after,#onetrust-banner-sdk .checkbox:before,#onetrust-pc-sdk label:before,#onetrust-pc-sdk label:after,#onetrust-pc-sdk .checkbox:after,#onetrust-pc-sdk .checkbox:before,#ot-sdk-cookie-policy label:before,#ot-sdk-cookie-policy label:after,#ot-sdk-cookie-policy .checkbox:after,#ot-sdk-cookie-policy .checkbox:before,#ot-sync-ntfy label:before,#ot-sync-ntfy label:after,#ot-sync-ntfy .checkbox:after,#ot-sync-ntfy .checkbox:before{content:"";content:none}#onetrust-banner-sdk .ot-sdk-container,#onetrust-pc-sdk .ot-sdk-container,#ot-sdk-cookie-policy .ot-sdk-container{position:relative;width:100%;max-width:100%;margin:0 auto;padding:0 20px;box-sizing:border-box}#onetrust-banner-sdk .ot-sdk-column,#onetrust-banner-sdk .ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-column,#onetrust-pc-sdk .ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-column,#ot-sdk-cookie-policy .ot-sdk-columns{width:100%;float:left;box-sizing:border-box;padding:0;display:initial}@media(min-width: 400px){#onetrust-banner-sdk .ot-sdk-container,#onetrust-pc-sdk .ot-sdk-container,#ot-sdk-cookie-policy .ot-sdk-container{width:90%;padding:0}}@media(min-width: 550px){#onetrust-banner-sdk .ot-sdk-container,#onetrust-pc-sdk .ot-sdk-container,#ot-sdk-cookie-policy .ot-sdk-container{width:100%}#onetrust-banner-sdk .ot-sdk-column,#onetrust-banner-sdk .ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-column,#onetrust-pc-sdk .ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-column,#ot-sdk-cookie-policy .ot-sdk-columns{margin-left:4%}#onetrust-banner-sdk .ot-sdk-column:first-child,#onetrust-banner-sdk .ot-sdk-columns:first-child,#onetrust-pc-sdk .ot-sdk-column:first-child,#onetrust-pc-sdk .ot-sdk-columns:first-child,#ot-sdk-cookie-policy .ot-sdk-column:first-child,#ot-sdk-cookie-policy .ot-sdk-columns:first-child{margin-left:0}#onetrust-banner-sdk .ot-sdk-two.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-two.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-two.ot-sdk-columns{width:13.3333333333%}#onetrust-banner-sdk .ot-sdk-three.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-three.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-three.ot-sdk-columns{width:22%}#onetrust-banner-sdk .ot-sdk-four.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-four.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-four.ot-sdk-columns{width:30.6666666667%}#onetrust-banner-sdk .ot-sdk-eight.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-eight.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-eight.ot-sdk-columns{width:65.3333333333%}#onetrust-banner-sdk .ot-sdk-nine.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-nine.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-nine.ot-sdk-columns{width:74%}#onetrust-banner-sdk .ot-sdk-ten.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-ten.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-ten.ot-sdk-columns{width:82.6666666667%}#onetrust-banner-sdk .ot-sdk-eleven.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-eleven.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-eleven.ot-sdk-columns{width:91.3333333333%}#onetrust-banner-sdk .ot-sdk-twelve.ot-sdk-columns,#onetrust-pc-sdk .ot-sdk-twelve.ot-sdk-columns,#ot-sdk-cookie-policy .ot-sdk-twelve.ot-sdk-columns{width:100%;margin-left:0}}#onetrust-banner-sdk h1,#onetrust-banner-sdk h2,#onetrust-banner-sdk h3,#onetrust-banner-sdk h4,#onetrust-banner-sdk h5,#onetrust-banner-sdk h6,#onetrust-pc-sdk h1,#onetrust-pc-sdk h2,#onetrust-pc-sdk h3,#onetrust-pc-sdk h4,#onetrust-pc-sdk h5,#onetrust-pc-sdk h6,#ot-sdk-cookie-policy h1,#ot-sdk-cookie-policy h2,#ot-sdk-cookie-policy h3,#ot-sdk-cookie-policy h4,#ot-sdk-cookie-policy h5,#ot-sdk-cookie-policy h6{margin-top:0;font-weight:600;font-family:inherit}#onetrust-banner-sdk h1,#onetrust-pc-sdk h1,#ot-sdk-cookie-policy h1{font-size:1.5rem;line-height:1.2}#onetrust-banner-sdk h2,#onetrust-pc-sdk h2,#ot-sdk-cookie-policy h2{font-size:1.5rem;line-height:1.25}#onetrust-banner-sdk h3,#onetrust-pc-sdk h3,#ot-sdk-cookie-policy h3{font-size:1.5rem;line-height:1.3}#onetrust-banner-sdk h4,#onetrust-pc-sdk h4,#ot-sdk-cookie-policy h4{font-size:1.5rem;line-height:1.35}#onetrust-banner-sdk h5,#onetrust-pc-sdk h5,#ot-sdk-cookie-policy h5{font-size:1.5rem;line-height:1.5}#onetrust-banner-sdk h6,#onetrust-pc-sdk h6,#ot-sdk-cookie-policy h6{font-size:1.5rem;line-height:1.6}@media(min-width: 550px){#onetrust-banner-sdk h1,#onetrust-pc-sdk h1,#ot-sdk-cookie-policy h1{font-size:1.5rem}#onetrust-banner-sdk h2,#onetrust-pc-sdk h2,#ot-sdk-cookie-policy h2{font-size:1.5rem}#onetrust-banner-sdk h3,#onetrust-pc-sdk h3,#ot-sdk-cookie-policy h3{font-size:1.5rem}#onetrust-banner-sdk h4,#onetrust-pc-sdk h4,#ot-sdk-cookie-policy h4{font-size:1.5rem}#onetrust-banner-sdk h5,#onetrust-pc-sdk h5,#ot-sdk-cookie-policy h5{font-size:1.5rem}#onetrust-banner-sdk h6,#onetrust-pc-sdk h6,#ot-sdk-cookie-policy h6{font-size:1.5rem}}#onetrust-banner-sdk p,#onetrust-pc-sdk p,#ot-sdk-cookie-policy p{margin:0 0 1em 0;font-family:inherit;line-height:normal}#onetrust-banner-sdk a,#onetrust-pc-sdk a,#ot-sdk-cookie-policy a{color:#565656;text-decoration:underline}#onetrust-banner-sdk a:hover,#onetrust-pc-sdk a:hover,#ot-sdk-cookie-policy a:hover{color:#565656;text-decoration:none}#onetrust-banner-sdk .ot-sdk-button,#onetrust-banner-sdk button,#onetrust-pc-sdk .ot-sdk-button,#onetrust-pc-sdk button,#ot-sdk-cookie-policy .ot-sdk-button,#ot-sdk-cookie-policy button{margin-bottom:1rem;font-family:inherit}#onetrust-banner-sdk .ot-sdk-button,#onetrust-banner-sdk button,#onetrust-pc-sdk .ot-sdk-button,#onetrust-pc-sdk button,#ot-sdk-cookie-policy .ot-sdk-button,#ot-sdk-cookie-policy button{display:inline-block;height:38px;padding:0 30px;color:#555;text-align:center;font-size:.9em;font-weight:400;line-height:38px;letter-spacing:.01em;text-decoration:none;white-space:nowrap;background-color:rgba(0,0,0,0);border-radius:2px;border:1px solid #bbb;cursor:pointer;box-sizing:border-box}#onetrust-banner-sdk .ot-sdk-button:hover,#onetrust-banner-sdk :not(.ot-leg-btn-container)>button:not(.ot-link-btn):hover,#onetrust-banner-sdk :not(.ot-leg-btn-container)>button:not(.ot-link-btn):focus,#onetrust-pc-sdk .ot-sdk-button:hover,#onetrust-pc-sdk :not(.ot-leg-btn-container)>button:not(.ot-link-btn):hover,#onetrust-pc-sdk :not(.ot-leg-btn-container)>button:not(.ot-link-btn):focus,#ot-sdk-cookie-policy .ot-sdk-button:hover,#ot-sdk-cookie-policy :not(.ot-leg-btn-container)>button:not(.ot-link-btn):hover,#ot-sdk-cookie-policy :not(.ot-leg-btn-container)>button:not(.ot-link-btn):focus{color:#333;border-color:#888;opacity:.9}#onetrust-banner-sdk .ot-sdk-button:focus,#onetrust-banner-sdk :not(.ot-leg-btn-container)>button:focus,#onetrust-pc-sdk .ot-sdk-button:focus,#onetrust-pc-sdk :not(.ot-leg-btn-container)>button:focus,#ot-sdk-cookie-policy .ot-sdk-button:focus,#ot-sdk-cookie-policy :not(.ot-leg-btn-container)>button:focus{outline:2px solid #000}#onetrust-banner-sdk .ot-sdk-button.ot-sdk-button-primary,#onetrust-banner-sdk button.ot-sdk-button-primary,#onetrust-banner-sdk input[type=submit].ot-sdk-button-primary,#onetrust-banner-sdk input[type=reset].ot-sdk-button-primary,#onetrust-banner-sdk input[type=button].ot-sdk-button-primary,#onetrust-pc-sdk .ot-sdk-button.ot-sdk-button-primary,#onetrust-pc-sdk button.ot-sdk-button-primary,#onetrust-pc-sdk input[type=submit].ot-sdk-button-primary,#onetrust-pc-sdk input[type=reset].ot-sdk-button-primary,#onetrust-pc-sdk input[type=button].ot-sdk-button-primary,#ot-sdk-cookie-policy .ot-sdk-button.ot-sdk-button-primary,#ot-sdk-cookie-policy button.ot-sdk-button-primary,#ot-sdk-cookie-policy input[type=submit].ot-sdk-button-primary,#ot-sdk-cookie-policy input[type=reset].ot-sdk-button-primary,#ot-sdk-cookie-policy input[type=button].ot-sdk-button-primary{color:#fff;background-color:#33c3f0;border-color:#33c3f0}#onetrust-banner-sdk .ot-sdk-button.ot-sdk-button-primary:hover,#onetrust-banner-sdk button.ot-sdk-button-primary:hover,#onetrust-banner-sdk input[type=submit].ot-sdk-button-primary:hover,#onetrust-banner-sdk input[type=reset].ot-sdk-button-primary:hover,#onetrust-banner-sdk input[type=button].ot-sdk-button-primary:hover,#onetrust-banner-sdk .ot-sdk-button.ot-sdk-button-primary:focus,#onetrust-banner-sdk button.ot-sdk-button-primary:focus,#onetrust-banner-sdk input[type=submit].ot-sdk-button-primary:focus,#onetrust-banner-sdk input[type=reset].ot-sdk-button-primary:focus,#onetrust-banner-sdk input[type=button].ot-sdk-button-primary:focus,#onetrust-pc-sdk .ot-sdk-button.ot-sdk-button-primary:hover,#onetrust-pc-sdk button.ot-sdk-button-primary:hover,#onetrust-pc-sdk input[type=submit].ot-sdk-button-primary:hover,#onetrust-pc-sdk input[type=reset].ot-sdk-button-primary:hover,#onetrust-pc-sdk input[type=button].ot-sdk-button-primary:hover,#onetrust-pc-sdk .ot-sdk-button.ot-sdk-button-primary:focus,#onetrust-pc-sdk button.ot-sdk-button-primary:focus,#onetrust-pc-sdk input[type=submit].ot-sdk-button-primary:focus,#onetrust-pc-sdk input[type=reset].ot-sdk-button-primary:focus,#onetrust-pc-sdk input[type=button].ot-sdk-button-primary:focus,#ot-sdk-cookie-policy .ot-sdk-button.ot-sdk-button-primary:hover,#ot-sdk-cookie-policy button.ot-sdk-button-primary:hover,#ot-sdk-cookie-policy input[type=submit].ot-sdk-button-primary:hover,#ot-sdk-cookie-policy input[type=reset].ot-sdk-button-primary:hover,#ot-sdk-cookie-policy input[type=button].ot-sdk-button-primary:hover,#ot-sdk-cookie-policy .ot-sdk-button.ot-sdk-button-primary:focus,#ot-sdk-cookie-policy button.ot-sdk-button-primary:focus,#ot-sdk-cookie-policy input[type=submit].ot-sdk-button-primary:focus,#ot-sdk-cookie-policy input[type=reset].ot-sdk-button-primary:focus,#ot-sdk-cookie-policy input[type=button].ot-sdk-button-primary:focus{color:#fff;background-color:#1eaedb;border-color:#1eaedb}#onetrust-banner-sdk input[type=text],#onetrust-pc-sdk input[type=text],#ot-sdk-cookie-policy input[type=text]{height:38px;padding:6px 10px;background-color:#fff;border:1px solid #d1d1d1;border-radius:4px;box-shadow:none;box-sizing:border-box}#onetrust-banner-sdk input[type=text],#onetrust-pc-sdk input[type=text],#ot-sdk-cookie-policy input[type=text]{-webkit-appearance:none;-moz-appearance:none;appearance:none}#onetrust-banner-sdk input[type=text]:focus,#onetrust-pc-sdk input[type=text]:focus,#ot-sdk-cookie-policy input[type=text]:focus{border:1px solid #000;outline:0}#onetrust-banner-sdk label,#onetrust-pc-sdk label,#ot-sdk-cookie-policy label{display:block;margin-bottom:.5rem;font-weight:600}#onetrust-banner-sdk input[type=checkbox],#onetrust-pc-sdk input[type=checkbox],#ot-sdk-cookie-policy input[type=checkbox]{display:inline}#onetrust-banner-sdk ul,#onetrust-pc-sdk ul,#ot-sdk-cookie-policy ul{list-style:circle inside}#onetrust-banner-sdk ul,#onetrust-pc-sdk ul,#ot-sdk-cookie-policy ul{padding-left:0;margin-top:0}#onetrust-banner-sdk ul ul,#onetrust-pc-sdk ul ul,#ot-sdk-cookie-policy ul ul{margin:1.5rem 0 1.5rem 3rem;font-size:90%}#onetrust-banner-sdk li,#onetrust-pc-sdk li,#ot-sdk-cookie-policy li{margin-bottom:1rem}#onetrust-banner-sdk th,#onetrust-banner-sdk td,#onetrust-pc-sdk th,#onetrust-pc-sdk td,#ot-sdk-cookie-policy th,#ot-sdk-cookie-policy td{padding:12px 15px;text-align:left;border-bottom:1px solid #e1e1e1}#onetrust-banner-sdk button,#onetrust-pc-sdk button,#ot-sdk-cookie-policy button{margin-bottom:1rem;font-family:inherit}#onetrust-banner-sdk .ot-sdk-container:after,#onetrust-banner-sdk .ot-sdk-row:after,#onetrust-pc-sdk .ot-sdk-container:after,#onetrust-pc-sdk .ot-sdk-row:after,#ot-sdk-cookie-policy .ot-sdk-container:after,#ot-sdk-cookie-policy .ot-sdk-row:after{content:"";display:table;clear:both}#onetrust-banner-sdk .ot-sdk-row,#onetrust-pc-sdk .ot-sdk-row,#ot-sdk-cookie-policy .ot-sdk-row{margin:0;max-width:none;display:block}.ot-sdk-cookie-policy{font-family:inherit;font-size:16px}.ot-sdk-cookie-policy.otRelFont{font-size:1rem}.ot-sdk-cookie-policy h3,.ot-sdk-cookie-policy h4,.ot-sdk-cookie-policy h6,.ot-sdk-cookie-policy p,.ot-sdk-cookie-policy li,.ot-sdk-cookie-policy a,.ot-sdk-cookie-policy th,.ot-sdk-cookie-policy #cookie-policy-description,.ot-sdk-cookie-policy .ot-sdk-cookie-policy-group,.ot-sdk-cookie-policy #cookie-policy-title{color:dimgray}.ot-sdk-cookie-policy #cookie-policy-description{margin-bottom:1em}.ot-sdk-cookie-policy h4{font-size:1.2em}.ot-sdk-cookie-policy h6{font-size:1em;margin-top:2em}.ot-sdk-cookie-policy th{min-width:75px}.ot-sdk-cookie-policy a,.ot-sdk-cookie-policy a:hover{background:#fff}.ot-sdk-cookie-policy thead{background-color:#f6f6f4;font-weight:bold}.ot-sdk-cookie-policy .ot-mobile-border{display:none}.ot-sdk-cookie-policy section{margin-bottom:2em}.ot-sdk-cookie-policy table{border-collapse:inherit}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy{font-family:inherit;font-size:1rem}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy h3,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy h4,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy h6,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy p,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy li,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy a,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy th,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy #cookie-policy-description,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-cookie-policy-group,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy #cookie-policy-title{color:dimgray}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy #cookie-policy-description{margin-bottom:1em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-subgroup{margin-left:1.5em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy #cookie-policy-description,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-cookie-policy-group-desc,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-table-header,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy a,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy span,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy td{font-size:.9em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy td span,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy td a{font-size:inherit}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-cookie-policy-group{font-size:1em;margin-bottom:.6em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-cookie-policy-title{margin-bottom:1.2em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy>section{margin-bottom:1em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy th{min-width:75px}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy a,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy a:hover{background:#fff}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy thead{background-color:#f6f6f4;font-weight:bold}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-mobile-border{display:none}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy section{margin-bottom:2em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-subgroup ul li{list-style:disc;margin-left:1.5em}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-subgroup ul li h4{display:inline-block}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table{border-collapse:inherit;margin:auto;border:1px solid #d7d7d7;border-radius:5px;border-spacing:initial;width:100%;overflow:hidden}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table th,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table td{border-bottom:1px solid #d7d7d7;border-right:1px solid #d7d7d7}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table tr:last-child td{border-bottom:0px}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table tr th:last-child,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table tr td:last-child{border-right:0px}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table .ot-host,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table .ot-cookies-type{width:25%}.ot-sdk-cookie-policy[dir=rtl]{text-align:left}#ot-sdk-cookie-policy h3{font-size:1.5em}@media only screen and (max-width: 530px){.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) table,.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) thead,.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) tbody,.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) th,.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) td,.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) tr{display:block}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) thead tr{position:absolute;top:-9999px;left:-9999px}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) tr{margin:0 0 1em 0}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) tr:nth-child(odd),.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) tr:nth-child(odd) a{background:#f6f6f4}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) td{border:none;border-bottom:1px solid #eee;position:relative;padding-left:50%}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) td:before{position:absolute;height:100%;left:6px;width:40%;padding-right:10px}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) .ot-mobile-border{display:inline-block;background-color:#e4e4e4;position:absolute;height:100%;top:0;left:45%;width:2px}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) td:before{content:attr(data-label);font-weight:bold}.ot-sdk-cookie-policy:not(#ot-sdk-cookie-policy-v2) li{word-break:break-word;word-wrap:break-word}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table{overflow:hidden}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table td{border:none;border-bottom:1px solid #d7d7d7}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy thead,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy tbody,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy th,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy td,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy tr{display:block}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table .ot-host,#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table .ot-cookies-type{width:auto}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy tr{margin:0 0 1em 0}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy td:before{height:100%;width:40%;padding-right:10px}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy td:before{content:attr(data-label);font-weight:bold}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy li{word-break:break-word;word-wrap:break-word}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy thead tr{position:absolute;top:-9999px;left:-9999px;z-index:-9999}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table tr:last-child td{border-bottom:1px solid #d7d7d7;border-right:0px}#ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table tr:last-child td:last-child{border-bottom:0px}}
+                
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy h5,
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy h6,
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy li,
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy p,
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy a,
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy span,
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy td,
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy #cookie-policy-description {
+                        color: #696969;
+                    }
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy th {
+                        color: #696969;
+                    }
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy .ot-sdk-cookie-policy-group {
+                        color: #696969;
+                    }
+                    
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy #cookie-policy-title {
+                            color: #696969;
+                        }
+                    
+            
+                    #ot-sdk-cookie-policy-v2.ot-sdk-cookie-policy table th {
+                            background-color: #F8F8F8;
+                        }
+                    
+            .ot-floating-button__front{background-image:url('//discord.com/assets/oneTrust/v8/consent/04da1d72-0626-4fff-b3c6-150c719cc115/019f1ec5-08ff-77c5-9107-108772038ecc/logos/static/ot_persistent_cookie_icon.png')}</style></head><body class="body is-dark-blue"><div class="styles"><div class="global-styles w-embed"><style>
+
+/* Make text look crisper and more legible in all browsers */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Focus state style for keyboard navigation for the focusable elements */
+*[tabindex]:focus-visible,
+  input[type="file"]:focus-visible {
+   outline: 0.125rem solid #4d65ff;
+   outline-offset: 0.125rem;
+}
+
+/* Get rid of top margin on first element in any rich text element */
+.w-richtext > :not(div):first-child, .w-richtext > div:first-child > :first-child {
+  margin-top: 0 !important;
+}
+
+/* Get rid of bottom margin on last element in any rich text element */
+.w-richtext>:last-child, .w-richtext ol li:last-child, .w-richtext ul li:last-child {
+	margin-bottom: 0 !important;
+}
+
+/* Prevent all click and hover interaction with an element */
+.pointer-events-off {
+	pointer-events: none;
+}
+
+/* Enables all click and hover interaction with an element */
+.pointer-events-on {
+  pointer-events: auto;
+}
+
+/* Create a class of .div-square which maintains a 1:1 dimension of a div */
+.div-square::after {
+	content: "";
+	display: block;
+	padding-bottom: 100%;
+}
+
+/* Make sure containers never lose their center alignment */
+.container-medium,.container-small, .container-large {
+	margin-right: auto !important;
+  margin-left: auto !important;
+}
+
+/* 
+Make the following elements inherit typography styles from the parent and not have hardcoded values. 
+Important: You will not be able to style for example "All Links" in Designer with this CSS applied.
+Uncomment this CSS to use it in the project. Leave this message for future hand-off.
+*/
+/*
+a,
+.w-input,
+.w-select,
+.w-tab-link,
+.w-nav-link,
+.w-dropdown-btn,
+.w-dropdown-toggle,
+.w-dropdown-link {
+  color: inherit;
+  text-decoration: inherit;
+  font-size: inherit;
+}
+*/
+
+/* Apply "..." after 3 lines of text */
+.text-style-3lines {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+}
+
+/* Apply "..." after 2 lines of text */
+.text-style-2lines {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+/* Apply "..." after 1 lines of text */
+.text-style-1line {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-line-clamp: 1;
+	-webkit-box-orient: vertical;
+}
+/* Adds inline flex display */
+.display-inlineflex {
+  display: inline-flex;
+}
+
+/* These classes are never overwritten */
+.hide {
+  display: none !important;
+}
+
+@media screen and (max-width: 991px), 
+  @media screen and (max-width: 767px), 
+  @media screen and (max-width: 479px){
+    .hide, .hide-tablet{
+      display: none !important;
+    }
+  }
+  @media screen and (max-width: 767px)
+    .hide-mobile-landscape{
+      display: none !important;
+    }
+  }
+  @media screen and (max-width: 479px)
+    .hide-mobile{
+      display: none !important;
+    }
+  }
+ 
+.margin-0 {
+  margin: 0rem !important;
+}
+  
+.padding-0 {
+  padding: 0rem !important;
+}
+
+.spacing-clean {
+padding: 0rem !important;
+margin: 0rem !important;
+}
+
+.margin-top {
+  margin-right: 0rem !important;
+  margin-bottom: 0rem !important;
+  margin-left: 0rem !important;
+}
+
+.padding-top {
+  padding-right: 0rem !important;
+  padding-bottom: 0rem !important;
+  padding-left: 0rem !important;
+}
+  
+.margin-right {
+  margin-top: 0rem !important;
+  margin-bottom: 0rem !important;
+  margin-left: 0rem !important;
+}
+
+.padding-right {
+  padding-top: 0rem !important;
+  padding-bottom: 0rem !important;
+  padding-left: 0rem !important;
+}
+
+.margin-bottom {
+  margin-top: 0rem !important;
+  margin-right: 0rem !important;
+  margin-left: 0rem !important;
+}
+
+.padding-bottom {
+  padding-top: 0rem !important;
+  padding-right: 0rem !important;
+  padding-left: 0rem !important;
+}
+
+.margin-left {
+  margin-top: 0rem !important;
+  margin-right: 0rem !important;
+  margin-bottom: 0rem !important;
+}
+  
+.padding-left {
+  padding-top: 0rem !important;
+  padding-right: 0rem !important;
+  padding-bottom: 0rem !important;
+}
+  
+.margin-horizontal {
+  margin-top: 0rem !important;
+  margin-bottom: 0rem !important;
+}
+
+.padding-horizontal {
+  padding-top: 0rem !important;
+  padding-bottom: 0rem !important;
+}
+
+.margin-vertical {
+  margin-right: 0rem !important;
+  margin-left: 0rem !important;
+}
+  
+.padding-vertical {
+  padding-right: 0rem !important;
+  padding-left: 0rem !important;
+}
+
+a {
+  text-decoration: none;
+  font-size: inherit;
+  color: inherit;
+  font-weight: inherit;
+}
+</style></div><div class="project-styles w-embed"><style>
+	.btn:hover .button-arrow {
+   transform: translateX(2px);
+  }
+  
+  .btn.is-back:hover .button-arrow-back {
+   transform: translateX(-2px);
+  }
+  
+  .btn_hover {
+  opacity: 0;
+  transition: opacity 0.5s ease; 
+}
+
+ 	.btn_wr:hover .btn_hover {
+  opacity: 1;
+}
+
+ 	.btn_wr:active .btn_hover {
+  opacity: 1;
+}
+
+ 	.btn_wr:focus .btn_hover {
+  opacity: 1;
+}
+
+	.featured_image {
+    transition: transform 0.3s ease;
+}
+
+	.featured_main-card:hover .featured_image {
+    transform: scale(1.15); 
+}
+
+
+	@media (max-width: 767px) {
+    .featured_main-card:hover .featured_image {
+        transform: scale(1.1); 
+    }
+}
+
+.bottom_search_trigger:hover .icon_dd_bg{
+  opacity:1;
+  top:4px;
+  left:4px;
+  bottom:4px;
+  right:4px;
+  border-radius:0.75rem;
+}
+
+.swiper_arrow:hover .icon_dd_bg {
+opacity:0.3;
+}
+
+</style></div></div><div class="w-embed"><style>
+body {
+  font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+</style></div><div class="page-wrapper"><div class="logo_animation"><div data-w-id="abca9d1c-e9ea-e3fa-d03c-c15060a8b886" class="menu-animation is_brand"></div><div class="hide"><div class="w-embed"><style>
+@media (max-width: 1279px) and (min-width: 992px) {  
+    .nav_brand_main-logo-2 {  
+        opacity: 1;  
+    }  
+      .nav_brand_main-black-icon {  
+       opacity: 0; 
+    }  
+      .nav_brand  {  
+       width: 9.1rem; 
+    }  
+        .nav_brand_main-black-logo {  
+      background-color: black; 
+    }  
+
+}  
+
+
+
+@media screen and (min-width: 1280px) {
+    .nav_brand_main-black-logo {
+        width: 9.1rem; }  
+
+}  
+
+.menu-animation.is_brand {
+  height: 870px;
+}
+
+
+@media (max-width: 1279px) and (min-width: 992px) {
+  .menu-animation.is_brand {
+    height: 700px;
+  }
+}
+
+
+@media (min-width: 1991px) {
+  .menu-animation.is_brand {
+    height: 8000px;
+  }
+}
+
+</style></div></div></div><header class="nav"><div class="nav_styles w-embed"><style>
+
+	/*nav styles*/
+ .nav:has(.nav_dd_trigger.w--open) .nav_blur{
+ 	 display: block;
+   height:100%;
+   transition: opacity 0.4s;
+   opacity:1;
+   
+  }
+   /* Focus state style for keyboard navigation for the focusable elements */
+*[tabindex]:focus-visible,
+  input[type="file"]:focus-visible {
+   outline: 0.125rem solid #fff;
+   outline-offset: 0.125rem;
+}
+ 
+  
+  .nav_blur {  
+    display: block;               
+    opacity: 0;                
+    visibility: hidden;        
+    transition: opacity 0.4s, visibility 0.4s; 
+}  
+
+.nav:has(.nav_dd_trigger.w--open) .nav_blur {  
+    opacity: 1;                 
+    visibility: visible;        
+}  
+
+  .nav:has(.nav_dd_trigger.w--open) .nav_dd_bg{
+  transform: scaleY(1);
+  }
+  
+.nav_burger_content .nav_link{
+	padding-top: 1.5rem;
+	padding-left:0;
+	padding-bottom: 1.5rem;
+	border-bottom: 1px solid #ffffff10;
+	border-radius: 0px;
+	justify-content:left;
+}
+
+.nav_burger_content .nav_dd_trigger {
+	padding-top: 1.5rem;
+	padding-left:0;
+	padding-bottom: 1.5rem;
+	border-bottom: none;
+	justify-content:space-between;
+	flex-grow:1;
+}
+.nav_burger_content .nav_dd {
+	border-bottom: 1px solid #ffffff10;
+	border-radius: 0px;
+}
+.nav_menu.is-burger::-webkit-scrollbar {
+  width: 0px;
+  height: 10px;
+}
+.nav_dd_link-group:last-child {
+  border:0px;
+}
+
+.dd_nav-link:hover .nav_dd_link_arrow{
+	transform: translate(2px, -2px); 
+}
+@media screen and (max-width: 340px) and (min-width: 240px) {
+.nav_brand {
+   width: 7.45rem;
+}
+}
+
+
+
+ @media screen and (min-width: 1281px) and (max-width: 1500px)  {
+  html[lang="nl"] .nav_link, html[lang="nl"] .dd_nav-link, html[lang="nl"] .nav_dd_trigger,
+  html[lang="es"] .nav_link, html[lang="es"] .dd_nav-link, html[lang="es"] .nav_dd_trigger,
+  html[lang="ru"] .nav_link, html[lang="ru"] .dd_nav-link, html[lang="ru"] .nav_dd_trigger,
+  html[lang="el"] .nav_link, html[lang="el"] .dd_nav-link, html[lang="el"] .nav_dd_trigger,
+  html[lang="hu"] .nav_link, html[lang="hu"] .dd_nav-link, html[lang="hu"] .nav_dd_trigger,
+  html[lang="uk"] .nav_link, html[lang="uk"] .dd_nav-link, html[lang="uk"] .nav_dd_trigger {
+    font-size: 0.75rem !important;  
+  }
+}
+
+@media screen and (min-width: 992px) and (max-width: 1280px) {
+  html[lang="nl"] .nav_link, html[lang="nl"] .dd_nav-link, html[lang="nl"] .nav_dd_trigger,
+  html[lang="es"] .nav_link, html[lang="es"] .dd_nav-link, html[lang="es"] .nav_dd_trigger,
+  html[lang="da"] .nav_link, html[lang="da"] .dd_nav-link, html[lang="da"] .nav_dd_trigger,
+  html[lang="de"] .nav_link, html[lang="de"] .dd_nav-link, html[lang="de"] .nav_dd_trigger,   
+  html[lang="es-LA"] .nav_link, html[lang="es-LA"] .dd_nav-link, html[lang="es-LA"] .nav_dd_trigger, 
+  html[lang="fr"] .nav_link, html[lang="fr"] .dd_nav-link, html[lang="fr"] .nav_dd_trigger,  
+  html[lang="hr"] .nav_link, html[lang="hr"] .dd_nav-link, html[lang="hr"] .nav_dd_trigger,
+  html[lang="it"] .nav_link, html[lang="it"] .dd_nav-link, html[lang="it"] .nav_dd_trigger,
+  html[lang="lt"] .nav_link, html[lang="lt"] .dd_nav-link, html[lang="lt"] .nav_dd_trigger,
+  html[lang="no"] .nav_link, html[lang="no"] .dd_nav-link, html[lang="no"] .nav_dd_trigger,
+  html[lang="pl"] .nav_link, html[lang="pl"] .dd_nav-link, html[lang="pl"] .nav_dd_trigger,
+  html[lang="pt-BR"] .nav_link, html[lang="pt-BR"] .dd_nav-link, html[lang="pt-BR"] .nav_dd_trigger,
+  html[lang="ro"] .nav_link, html[lang="ro"] .dd_nav-link, html[lang="ro"] .nav_dd_trigger,
+  html[lang="sv"] .nav_link, html[lang="sv"] .dd_nav-link, html[lang="sv"] .nav_dd_trigger,
+  html[lang="vi"] .nav_link, html[lang="vi"] .dd_nav-link, html[lang="vi"] .nav_dd_trigger,
+  html[lang="th"] .nav_link, html[lang="th"] .dd_nav-link, html[lang="th"] .nav_dd_trigger,
+  html[lang="bg"] .nav_link, html[lang="bg"] .dd_nav-link, html[lang="bg"] .nav_dd_trigger,
+  html[lang="ja"] .nav_link, html[lang="ja"] .dd_nav-link, html[lang="ja"] .nav_dd_trigger,
+  html[lang="ru"] .nav_link, html[lang="ru"] .dd_nav-link, html[lang="ru"] .nav_dd_trigger,
+  html[lang="el"] .nav_link, html[lang="el"] .dd_nav-link, html[lang="el"] .nav_dd_trigger,
+  html[lang="hu"] .nav_link, html[lang="hu"] .dd_nav-link, html[lang="hu"] .nav_dd_trigger,
+  html[lang="uk"] .nav_link, html[lang="uk"] .dd_nav-link, html[lang="uk"] .nav_dd_trigger {
+    font-size: 0.65rem !important;  
+  }
+}
+
+
+@media screen and (max-width: 479px) {
+  
+    .nav_burger_list {
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+   
+    .nav_burger_bottom {
+        padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
+        flex-shrink: 0;
+    }
+}
+
+  
+</style></div><div class="nav_padding"><div class="nav_wrapper"><a data-button-ally="skip" href="#main" class="skip-link w-inline-block w--current"><div>Skip to main content</div></a><a href="/" class="nav_brand w-nav-brand w--current"><img width="146" loading="lazy" alt="Home" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e90ab9506850e8a5dd48e3_Discrod_MainLogo.svg" class="nav_brand_main-logo"><div class="nav_brand_main-black-logo"><img width="146" loading="lazy" alt="" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/67ed8194f41d7d8eade32c90_Logo.svg" class="nav_brand_main-black-icon"><img width="Auto" loading="lazy" alt="" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/67ece93be2524af5cf14dc1c_Logo-black-bg.svg" class="nav_brand_main-logo-2"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/67d00cf7266d2c75571aebde_Example.svg" alt="" class="nav_brand_main-logo-bg"></div></a><div class="nav_menu_wr"><ul role="list" class="nav_menu"><li><a href="/download" class="nav_link">Download<span class="sr-only">1 of 9</span></a></li><li><a href="/nitro" class="nav_link">Nitro<span class="sr-only">2 of 9</span></a></li><li><div data-delay="0" data-hover="true" class="nav_dd is-relative w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-0" aria-controls="w-dropdown-list-0" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div><span class="menu-title">Discover</span> <span class="sr-only">3 of 9</span></div><div class="nav_dd_arrow-wr-white" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><div class="nav_dd_arrow-wr-black" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="black" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><a tabindex="0" href="https://discord.com/servers" class="nav_link_dropdown w-inline-block"></a></div><nav class="nav_dd_list is-safety w-dropdown-list" id="w-dropdown-list-0" aria-labelledby="w-dropdown-toggle-0"><div class="nav_dd_content-wr isnew"><div class="nav_dd_content_layout top-none _1-col"><div class="nav_dd_link-group"><div class="nav_dd_link_list"><div class="nav_dd_link_title">Resources</div><a href="https://discord.com/servers" class="dd_nav-link" tabindex="0">Server Directory<span class="sr-only">1 of 2</span></a><a href="https://discord.com/trending-games" class="dd_nav-link" tabindex="0">Trending Games<span class="sr-only">2 of 2</span></a></div></div></div><img loading="eager" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a1fdab6dacb93b00f5ec24d_Discord_Objects_Newspaper.webp" alt="" class="nav-dd-decor is_discover"></div></nav></div></li><li><div data-delay="0" data-hover="true" class="nav_dd is-relative w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-1" aria-controls="w-dropdown-list-1" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div><span class="menu-title">Safety</span> <span class="sr-only">4 of 9</span></div><div class="nav_dd_arrow-wr-white" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><div class="nav_dd_arrow-wr-black" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="black" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><a tabindex="0" href="/safety" class="nav_link_dropdown w-inline-block"></a></div><nav class="nav_dd_list is-safety w-dropdown-list" id="w-dropdown-list-1" aria-labelledby="w-dropdown-toggle-1"><div class="nav_dd_content-wr isnew"><div class="nav_dd_content_layout top-none _2-col is_n"><div class="nav_dd_link-group is_2025 is_n"><div class="nav_dd_link_list is-new"><div class="nav_dd_link_title">Resources</div><a href="/safety-family-center" class="dd_nav-link" tabindex="0">Family Center <span class="sr-only">1 of 10</span></a><a href="/safety-library" class="dd_nav-link" tabindex="0">Safety Library <span class="sr-only">2 of 10</span></a><a href="/safety-news" class="dd_nav-link" tabindex="0">Safety News <span class="sr-only">3 of 10</span></a><a href="/safety-teen-charter" class="dd_nav-link w-inline-block" tabindex="0"><div>Teen Charter <span class="sr-only">4 of 10</span></div></a><a href="/safety-players-guide" class="dd_nav-link is_new w-inline-block" tabindex="0"><div>Discord Player's Guide <span class="sr-only">5 of 10</span></div></a></div></div><div class="nav_dd_link-group is_hub"><div class="nav_dd_link_list is-new"><div class="nav_dd_link_title">Hubs</div><a href="/safety-parents" class="dd_nav-link w-inline-block" tabindex="0"><div>Parent Hub <span class="sr-only">6 of 10</span></div></a><a href="/safety-policies" class="dd_nav-link w-inline-block" tabindex="0"><div>Policy Hub <span class="sr-only">7 of 10</span></div></a><a href="/safety-privacy" class="dd_nav-link w-inline-block" tabindex="0"><div>Privacy Hub <span class="sr-only">8 of 10</span></div></a><a href="/safety-transparency" class="dd_nav-link w-inline-block" tabindex="0"><div>Transparency Hub <span class="sr-only">9 of 10</span></div></a><a href="/safety-wellbeing" class="dd_nav-link w-inline-block" tabindex="0"><div>Wellbeing Hub <span class="sr-only">10 of 10</span></div></a></div></div></div><img loading="eager" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/678a4dee303240abdd278abf_Egg.webp" alt="" class="nav-dd-decor is-safety"></div></nav></div></li><li><div data-delay="0" data-hover="true" class="nav_dd is-relative w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-2" aria-controls="w-dropdown-list-2" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div><span class="menu-title">Quests</span> <span class="sr-only">5 of 9</span></div><div class="nav_dd_arrow-wr-white" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><div class="nav_dd_arrow-wr-black" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="black" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><a tabindex="0" href="/ads/quests" class="nav_link_dropdown w-inline-block"></a></div><nav class="nav_dd_list is-safety w-dropdown-list" id="w-dropdown-list-2" aria-labelledby="w-dropdown-toggle-2"><div class="nav_dd_content-wr isnew"><div class="nav_dd_content_layout top-none _1-col"><div class="nav_dd_link-group"><div class="nav_dd_link_list"><div class="nav_dd_link_title">Resources</div><a href="/ads/quests" class="dd_nav-link" tabindex="0">Advertising<span class="sr-only">1 of 3</span></a><a href="/ads/quests-success-stories" class="dd_nav-link" tabindex="0">Success Stories<span class="sr-only">2 of 3</span></a><a href="/ads/quests-faq" class="dd_nav-link" tabindex="0">Quests FAQ <span class="sr-only">3 of 3</span></a></div></div></div><img loading="eager" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/678a4e92695af76b1f7487a3_Set%201%2015.webp" alt="" class="nav-dd-decor"></div></nav></div></li><li><div data-delay="0" data-hover="true" class="nav_dd is-relative w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-3" aria-controls="w-dropdown-list-3" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div><span class="menu-title">Support</span> <span class="sr-only">6 of 9</span></div><div class="nav_dd_arrow-wr-white" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><div class="nav_dd_arrow-wr-black" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="black" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><a tabindex="0" href="https://support.discord.com/hc/" class="nav_link_dropdown w-inline-block"></a></div><nav class="nav_dd_list is-safety w-dropdown-list" id="w-dropdown-list-3" aria-labelledby="w-dropdown-toggle-3"><div class="nav_dd_content-wr isnew"><div class="nav_dd_content_layout top-none _1-col"><div class="nav_dd_link-group"><div class="nav_dd_link_list"><div class="nav_dd_link_title">Resources</div><a href="https://support.discord.com/hc" class="dd_nav-link" tabindex="0">Help Center<span class="sr-only">1 of 3</span></a><a href="https://support.discord.com/hc/requests/new?brand_id=96508&amp;ticket_form_id=34826052965399" class="dd_nav-link" tabindex="0">Feedback<span class="sr-only">2 of 3</span></a><a href="https://support.discord.com/hc/en-us/requests/new" class="dd_nav-link" tabindex="0">Submit a Request<span class="sr-only">3 of 3</span></a></div></div></div><img loading="eager" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/678a4b31695af76b1f713594_Discord_Nelly_Pose2_Flying%201.webp" alt="" class="nav-dd-decor is-support"></div></nav></div></li><li><div data-delay="0" data-hover="true" class="nav_dd is-relative w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-4" aria-controls="w-dropdown-list-4" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div><span class="menu-title">Blog </span><span class="sr-only">7 of 9</span> </div><div class="nav_dd_arrow-wr-white" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><div class="nav_dd_arrow-wr-black" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="black" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><a tabindex="0" href="/blog" class="nav_link_dropdown w-inline-block"></a></div><nav class="nav_dd_list is-safety w-dropdown-list" id="w-dropdown-list-4" aria-labelledby="w-dropdown-toggle-4"><div class="nav_dd_content-wr isnew"><div class="nav_dd_content_layout top-none _1-col"><div class="nav_dd_link-group"><div class="nav_dd_link_list"><div class="nav_dd_link_title">Collections</div><a href="/blog" class="dd_nav-link" tabindex="0">Featured<span class="sr-only">1 of 7</span></a><a href="/category/community" class="dd_nav-link" tabindex="0">Community<span class="sr-only">2 of 7</span></a><a href="/category/company" class="dd_nav-link" tabindex="0">Discord HQ<span class="sr-only">3 of 7</span></a><a href="/category/engineering" class="dd_nav-link" tabindex="0">Engineering &amp; Developers<span class="sr-only">4 of 7</span></a><a href="/category/how-to-discord" class="dd_nav-link" tabindex="0">How to Discord<span class="sr-only">5 of 7</span></a><a href="/category/safety" class="dd_nav-link" tabindex="0">Policy &amp; Safety<span class="sr-only">6 of 7</span></a><a href="/category/product" class="dd_nav-link" tabindex="0">Product &amp; Features<span class="sr-only">7 of 7</span></a></div></div></div><img loading="eager" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/678a4c12dbf6be5d792aa920_Clyde%20Cube.webp" alt="" class="nav-dd-decor is-blog"></div></nav></div></li><li><div data-delay="0" data-hover="true" class="nav_dd is-relative w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-5" aria-controls="w-dropdown-list-5" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div><span class="menu-title">Developers</span><span class="sr-only">8 of 9</span> </div><div class="nav_dd_arrow-wr-white" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><div class="nav_dd_arrow-wr-black" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="black" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><a tabindex="0" href="/developers" class="nav_link_dropdown w-inline-block"></a></div><nav class="nav_dd_list is-safety w-dropdown-list" id="w-dropdown-list-5" aria-labelledby="w-dropdown-toggle-5"><div class="nav_dd_content-wr isnew"><div class="nav_dd_content_layout top-none _2-col"><div class="nav_dd_link-group"><div class="nav_dd_link_list"><div class="nav_dd_link_title">Learn</div><a href="https://discord.com/developers" class="dd_nav-link w-inline-block" tabindex="0"><div>Discord for Game Developers <span class="sr-only">1 of 10</span></div></a><a href="https://discord.com/developers/social-sdk" class="dd_nav-link w-inline-block" tabindex="0"><div>Integration <span class="sr-only">2 of 10</span></div></a><a href="https://discord.com/developers/social-commerce" class="dd_nav-link w-inline-block" tabindex="0"><div>Social Commerce <span class="sr-only">3 of 10</span></div></a><a href="https://discord.com/developers/build" class="dd_nav-link w-inline-block" tabindex="0"><div>Apps &amp;&nbsp;Activities <span class="sr-only">4 of 10</span></div></a><a href="https://discord.com/developers/developer-newsletter" class="dd_nav-link w-inline-block" tabindex="0"><div>Developer Newsletter<span class="sr-only"> 5 of 10 </span></div></a><a href="https://discord.com/developers/success-stories" class="dd_nav-link w-inline-block" tabindex="0"><div>Developer Case Studies <span class="sr-only">6 of 10</span></div></a></div><div class="nav_dd_link_line is-n"></div><div class="nav_dd_link_list"><div class="nav_dd_link_title">Build</div><a href="https://discord.com/community" class="dd_nav-link w-inline-block" tabindex="0"><div>Official Game Communities <span class="sr-only">7 of 10</span></div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a><a href="https://discord.com/developers/home" class="dd_nav-link w-inline-block" tabindex="0"><div>Developer Portal <span class="sr-only">8 of 10</span></div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a><a href="https://discord.com/developers/docs/intro" class="dd_nav-link w-inline-block" tabindex="0"><div>Documentation <span class="sr-only">9 of 10</span></div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a><a href="https://support-dev.discord.com/hc/en-us" class="dd_nav-link w-inline-block" tabindex="0"><div>Developer Help Center <span class="sr-only">10 of 10</span></div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a></div></div></div><img loading="eager" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/678a4aae3ee9f2e87506de82_Clyde%20(1).webp" alt="" class="nav-dd-decor is-build"></div></nav></div></li><li><a href="/careers" class="nav_link is_careers">Careers<span class="sr-only">9 of 9</span></a></li></ul></div><div class="nav_buttons-wr_new"><a id="login" data-track="login" data-track-nav="login" href="https://discord.com/login" class="button-nav login-button-js new w-button hide-on-mobile">Log In</a><a data-track-nav="login" data-track="login" href="https://discord.com/login" class="menu-button-login login-button-js abc hide-on-mobile">Log In</a></div><div id="w-node-_67393616-e5e7-814a-4677-1dbdb5d2d583-b5d2d520" class="nav_burger_button"><button data-w-id="b93b50af-9631-6ca8-6e01-55118fad5ab8" aria-label="Menu" tabindex="0" role="button" class="nav_burger_trigger"><div class="close_icon w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4 6C4 5.44772 4.44772 5 5 5H19C19.5523 5 20 5.44772 20 6C20 6.55228 19.5523 7 19 7H5C4.44772 7 4 6.55228 4 6ZM4 12C4 11.4477 4.44772 11 5 11H19C19.5523 11 20 11.4477 20 12C20 12.5523 19.5523 13 19 13H5C4.44772 13 4 12.5523 4 12ZM5 17C4.44772 17 4 17.4477 4 18C4 18.5523 4.44772 19 5 19H12C12.5523 19 13 18.5523 13 18C13 17.4477 12.5523 17 12 17H5Z" fill="white"></path>
+</svg></div></button><a aria-label="Menu" tabindex="0" role="button" data-w-id="67393616-e5e7-814a-4677-1dbdb5d2d584" href="#" class="nav_burger_trigger is_hide w-inline-block"></a><div data-w-id="67393616-e5e7-814a-4677-1dbdb5d2d586" class="nav_burger_trigger-black"><div class="close_icon w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4 6C4 5.44772 4.44772 5 5 5H19C19.5523 5 20 5.44772 20 6C20 6.55228 19.5523 7 19 7H5C4.44772 7 4 6.55228 4 6ZM4 12C4 11.4477 4.44772 11 5 11H19C19.5523 11 20 11.4477 20 12C20 12.5523 19.5523 13 19 13H5C4.44772 13 4 12.5523 4 12ZM5 17C4.44772 17 4 17.4477 4 18C4 18.5523 4.44772 19 5 19H12C12.5523 19 13 18.5523 13 18C13 17.4477 12.5523 17 12 17H5Z" fill="currentColor"></path>
+</svg></div></div><div class="nav_burger_list" style="opacity: 0; display: none;"><div class="nav_burger_content" style="transform: translate3d(100%, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="nav_burger_top"><a href="https://discord.com/" class="nav_brand is-burger w-nav-brand"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e278299a53f5bf88615e90_Symbol.svg" alt="" class="nav-brand_logo-burger"></a><a href="#" title="Close menu" data-w-id="67393616-e5e7-814a-4677-1dbdb5d2d58d" class="nav_burger_close w-nav-brand"><div class="close_icon w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 6L6 18M6 6L18 18" stroke="white" stroke-width="2" stroke-linecap="round"></path>
+</svg></div></a></div><ul role="list" class="nav_menu is-burger"><li><a href="https://discord.com/download" class="nav_link">Download</a></li><li><a href="https://discord.com/nitro" class="nav_link">Nitro</a></li><li><div data-delay="0" data-hover="false" class="nav_dd w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-6" aria-controls="w-dropdown-list-6" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Discover</div><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><nav class="nav_dd_list is-burger w-dropdown-list" id="w-dropdown-list-6" aria-labelledby="w-dropdown-toggle-6"><div class="nav_dd_content-wr"><div class="nav_dd_separator"></div><div class="nav_dd_content_layout"><div class="nav_dd_link-group"><a href="https://discord.com/servers" class="nav_dd_link-group_title is-new" tabindex="0">Discover</a><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Resources</div><a href="https://discord.com/servers" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Server Directory</div></a><a href="https://discord.com/trending-games" class="dd_nav-link is-new" tabindex="0">Trending Games</a></div></div></div><div class="nav_dd_list_bg"></div></div></nav></div></li><li><div data-delay="0" data-hover="false" class="nav_dd w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-7" aria-controls="w-dropdown-list-7" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Safety</div><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><nav class="nav_dd_list is-burger w-dropdown-list" id="w-dropdown-list-7" aria-labelledby="w-dropdown-toggle-7"><div class="nav_dd_content-wr"><div class="nav_dd_separator"></div><div class="nav_dd_content_layout"><div class="nav_dd_link-group"><a href="/safety" class="nav_dd_link-group_title is-new" tabindex="0">Safety</a><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Resources</div><a href="/safety-family-center" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Family Center</div></a><a href="/safety-library" class="dd_nav-link is-new" tabindex="0">Safety Library</a><a href="/safety-news" class="dd_nav-link is-new" tabindex="0">Safety News</a><a href="/safety-teen-charter" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Teen Charter</div></a><a href="/safety-players-guide" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Discord Player's Guide</div></a></div></div><div class="nav_dd_link-group"><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Hubs</div><a href="/safety-parents" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Parent Hub</div></a><a href="/safety-policies" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Policy Hub</div></a><a href="/safety-privacy" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Privacy Hub</div></a><a href="/safety-transparency" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Transparency Hub</div></a><a href="/safety-wellbeing" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Wellbeing Hub</div></a></div></div></div><div class="nav_dd_list_bg"></div></div></nav></div></li><li><div data-delay="0" data-hover="false" class="nav_dd w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-8" aria-controls="w-dropdown-list-8" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Quests</div><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><nav class="nav_dd_list is-burger w-dropdown-list" id="w-dropdown-list-8" aria-labelledby="w-dropdown-toggle-8"><div class="nav_dd_content-wr"><div class="nav_dd_separator"></div><div class="nav_dd_content_layout"><div class="nav_dd_link-group"><a href="https://discord.com/ads/quests" class="nav_dd_link-group_title is-new" tabindex="0">Quests</a><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Resources</div><a href="https://discord.com/ads/quests" class="dd_nav-link is-new" tabindex="0">Advertising</a><a href="https://discord.com/ads/quests-success-stories" class="dd_nav-link is-new" tabindex="0">Success Stories</a><a href="https://discord.com/ads/quests-faq" class="dd_nav-link is-new" tabindex="0">Quests FAQ</a></div></div></div><div class="nav_dd_list_bg"></div></div></nav></div></li><li><div data-delay="0" data-hover="false" class="nav_dd w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-9" aria-controls="w-dropdown-list-9" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Support</div><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><nav class="nav_dd_list is-burger w-dropdown-list" id="w-dropdown-list-9" aria-labelledby="w-dropdown-toggle-9"><div class="nav_dd_content-wr"><div class="nav_dd_separator"></div><div class="nav_dd_content_layout"><div class="nav_dd_link-group"><a href="https://support.discord.com/hc" class="nav_dd_link-group_title is-new" tabindex="0">Support</a><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Resources</div><a href="https://support.discord.com/hc" class="dd_nav-link is-new" tabindex="0">Help Center</a><a href="https://support.discord.com/hc/requests/new?brand_id=96508&amp;ticket_form_id=34826052965399" class="dd_nav-link is-new" tabindex="0">Feedback</a><a href="https://support.discord.com/hc/en-us/requests/new" class="dd_nav-link is-new" tabindex="0">Submit a Request</a></div></div></div></div></nav></div></li><li><div data-delay="0" data-hover="false" class="nav_dd w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-10" aria-controls="w-dropdown-list-10" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Blog</div><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><nav class="nav_dd_list is-burger w-dropdown-list" id="w-dropdown-list-10" aria-labelledby="w-dropdown-toggle-10"><div class="nav_dd_content-wr"><div class="nav_dd_separator"></div><div class="nav_dd_content_layout"><div class="nav_dd_link-group"><a href="https://discord.com/blog" class="nav_dd_link-group_title is-new" tabindex="0">Blog</a><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Collections</div><a href="https://discord.com/blog" class="dd_nav-link is-new" tabindex="0">Featured</a><a href="https://discord.com/category/community" class="dd_nav-link is-new" tabindex="0">Community</a><a href="https://discord.com/category/company" class="dd_nav-link is-new" tabindex="0">Discord HQ</a><a href="https://discord.com/category/engineering" class="dd_nav-link is-new" tabindex="0">Engineering &amp; Developers</a><a href="https://discord.com/category/how-to-discord" class="dd_nav-link is-new" tabindex="0">How to Discord</a><a href="https://discord.com/category/safety" class="dd_nav-link is-new" tabindex="0">Policy &amp; Safety</a><a href="https://discord.com/category/product" class="dd_nav-link" tabindex="0">Product &amp; Features</a></div></div></div><div class="nav_dd_list_bg"></div></div></nav></div></li><li><div data-delay="0" data-hover="false" class="nav_dd w-dropdown"><div class="nav_dd_trigger w-dropdown-toggle" id="w-dropdown-toggle-11" aria-controls="w-dropdown-list-11" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Developers</div><div class="nav_dd_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 6L8 10L4 6" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></div><nav class="nav_dd_list is-burger w-dropdown-list" id="w-dropdown-list-11" aria-labelledby="w-dropdown-toggle-11"><div class="nav_dd_content-wr"><div class="nav_dd_separator"></div><div class="nav_dd_content_layout"><div class="nav_dd_link-group"><a href="https://discord.com/developers" class="nav_dd_link-group_title is-new" tabindex="0">Developers</a><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Learn</div><a href="https://discord.com/developers" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Discord for Game Developers</div></a><a href="https://discord.com/developers/social-sdk" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Integration</div></a><a href="https://discord.com/developers/social-commerce" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Social Commerce</div></a><a href="https://discord.com/developers/build" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Apps and Activities</div></a><a href="https://discord.com/developers/developer-newsletter" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Developer Newsletter</div></a><a href="https://discord.com/developers/success-stories" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Developer Case Studies</div></a></div><div class="nav_dd_link_line"></div><div class="nav_dd_link_list"><div class="nav_dd_link_title is-new">Documentation</div><a href="https://discord.com/community" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Official Game Communities</div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a><a href="https://discord.com/developers/home" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Developer Portal</div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a><a href="https://discord.com/developers/docs/intro" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Documentation</div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a><a href="https://support-dev.discord.com/hc/en-us" class="dd_nav-link is-new w-inline-block" tabindex="0"><div>Developer Help Center</div><div class="nav_dd_link_arrow w-embed"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5 4H12M12 4V11M12 4L4 12" stroke="white" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg></div></a></div></div></div></div></nav></div></li><li><a href="https://discord.com/careers" class="nav_link">Careers</a></li></ul><div class="nav-sider"></div><div class="nav_burger_bottom"><a href="https://discord.com/login" data-track-nav="login" data-track="login" class="button-nav is-burger is-ghost login-button-js w-nav-brand hide-on-mobile">Log In</a><a href="//discord.com/api/downloads/distributions/app/installers/latest?channel=stable&amp;platform=osx&amp;arch=arm64" data-track-download="Download Page" class="button-nav is-burger download-button w-nav-brand">Download for Mac</a><div class="nav_burger_bottom_grad"></div></div></div></div><div class="nav_burger_bottom_grad"></div></div></div></div><div class="nav_blur"></div></header><div class="w-embed"><style>
+
+  @media (max-width: 1279px) and (min-width: 310px) {
+  .nav {
+z-index: 101;
+}
+  }
+  
+  </style>
+  
+  <style>
+.hero_button-r {  
+    position: relative; 
+    overflow: hidden;  
+    background-color: transparent; 
+    border: none; 
+    padding: 10px 20px; 
+    color: #ffffff; 
+    cursor: pointer; 
+    z-index: 1; 
+    transition: color 0.3s ease; 
+}  
+
+.hero_button-r::after {  
+    content: ''; 
+    position: absolute; 
+    left: 0; 
+    right: 0;
+    bottom: 0; 
+    height: 100%; 
+    background: linear-gradient(to bottom, transparent 0%, #1f1d5d 130%);  
+    opacity: 0; 
+    transition: opacity 0.3s ease; 
+    z-index: -1; 
+}  
+
+.hero_button-r:hover::after {  
+    opacity: 1; 
+}  
+
+
+</style></div><main id="main" class="main-wrapper overflow-hidden _2025"><div class="home--hero is_2025 is_2026"><div class="padding-global is_2025"><div class="container-hero is_2025"><div class="home--2col_layout is-hero is_2025"><div class="home--text-wr is-mobile-center is_2025 is_2026"><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b671" class="crown is_2025" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"></div><div class="text-mask is_2025"><h1 class="heading--h1 is_2025">Group chat that’s all fun&nbsp;&amp; games</h1></div><div class="hero-subtitle-wrapper"><p class="body-text--xl is_2025 hero-p">Discord is great for playing games and chilling&nbsp;with friends, or even building a worldwide community. Customize your own&nbsp;space to talk, play, and hang&nbsp;out.</p></div></div><div class="home--image-wr is-center is_2026"><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b679" class="star is_2025" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"></div><div class="home-image is_2026"><div class="hero-wr-image desctop-show"><div class="home_image-static is_2025 is_new is_2027"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a8eb3097d2e5335ed7b59cc_CHARACTER.webp" alt="" class="home-image-gerl is_2026"></div></div><div class="home_image-hero-mobile is_2026"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6abec3265ca23899daf402b3_Hero-mobile2%20(1).webp" alt="Group chat that’s all fun&nbsp;&amp; games" sizes="(max-width: 672px) 100vw, 672px" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6abec3265ca23899daf402b3_Hero-mobile2%20(1)-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6abec3265ca23899daf402b3_Hero-mobile2%20(1).webp 672w" class="home_image-hero mobile_new is_2026"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/683dd52d4c9254eada79dd11_Discord%20Boy.webp" alt="" class="home_image-hero-character"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a8eb3097d2e5335ed7b59cc_CHARACTER.webp" alt="" class="home_image-hero-character-2 is_2026"></div><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b682"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/662630272724e61320fb7ee2_WUMPUS.webp" alt="" width="189" height="Auto" class="home_wumpus is_2025 is_2026"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66263062e1fb458b0803dbe6_WUMPUS-pl.webp" alt="" class="home_wumpus-pl is_2025 is_2026" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"></div><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b685" class="home_clyde is_2025 is_2026"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6641da5484ffb72b9ad73f01_Clyde.webp" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b686" width="110" height="Auto" alt="" class="clyde-img" style="transform: translate3d(0px, -10px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6641da60031c61b5df8ff50b_Clyde-Shadow.webp" alt="" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b687" class="cloud-shadow" style="width: 105%; filter: blur(0.5px);"></div></div></div></div><aside id="landing-cta"><div class="ctaContainer-5100Xg"><a class="button-ZGMevK buttonWhite-1M-wED buttonLarge-3z9xOS refresh2025ButtonStyles-1s5cu6 marginTop24-3ZXBpg primary-cta-download-button marginRight24-2hC304" href="//discord.com/api/downloads/distributions/app/installers/latest?channel=stable&amp;platform=osx&amp;arch=arm64"><svg width="24" height="24" viewBox="0 0 24 24" class="icon-2tQ9Jt"><g fill="currentColor"><path d="M17.707 10.708L16.293 9.29398L13 12.587V2.00098H11V12.587L7.70697 9.29398L6.29297 10.708L12 16.415L17.707 10.708Z"></path><path d="M18 18.001V20.001H6V18.001H4V20.001C4 21.103 4.897 22.001 6 22.001H18C19.104 22.001 20 21.103 20 20.001V18.001H18Z"></path></g></svg>Download for Mac</a><button class="button-ZGMevK buttonBrand-24ECS3 buttonLarge-3z9xOS marginTop24-3ZXBpg refresh2025TryDiscordButtonStyles-1MEJvp" data-testid="button-open-discord-in-browser">Open Discord in your browser</button></div></aside></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b691" alt="" class="star-hero-home"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b692" alt="" class="star-hero-home star-2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b693" alt="" class="star-hero-home star-7"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b694" alt="" class="star-hero-home star-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b695" alt="" class="star-hero-home star-7"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b696" alt="" class="star-hero-home _14"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b697" alt="" class="star-hero-home _21"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b698" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b699" alt="" class="star-hero-home _16"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69a" alt="" class="star-hero-home _22"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69b" alt="" class="star-hero-home _6"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69c" alt="" class="star-hero-home _7"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69d" alt="" class="star-hero-home _19"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69e" alt="" class="star-hero-home _20"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b69f" alt="" class="star-hero-home _12"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a0" alt="" class="star-hero-home _12 _1"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a1" alt="" class="star-hero-home _2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a2" alt="" class="star-hero-home _17"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a3" alt="" class="star-hero-home _5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6a4" alt="" class="star-hero-home _3"></div></div></div><div class="banner-top hiden"><div class="relative-banner"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729ea7f867e2d8c602ee82e_Sports_Girl_Melanie_v01%20copy%201.png" loading="lazy" alt="" class="girl-bnner"><h2 class="heading--h2 is-banner">find your friends on discord.</h2><div class="div-block-witch"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/672a05ddd346501810640d92_Witch%20(1).png" loading="lazy" alt="" class="girl-bnner is-second"></div><a data-track-nav="open" href="/login" class="hero_button-r blue-button n-home _2025-banner w-button">Download</a></div></div><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ae" class="home--2section is_2025"><div class="padding-global"><div class="container-huge z-index-100 is_2025"><div class="_3d-animation"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664f241c29359dccfb0ff0c5_Party%20Wumpus.webp" loading="lazy" alt="" class="chats_top-image"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6620ec7544fa3849c3cb27fc_party_wumpus.gif" loading="lazy" alt="" class="chats_top is_2025 hide"><div class="home--block-group block-1 _2025"><div class="home--2col_layout is_2025"><div class="home--image-wr video is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634cb38dc3cb7acca8fa801_BKG.webp" loading="lazy" width="762.5" sizes="100vw" alt="" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634cb38dc3cb7acca8fa801_BKG-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634cb38dc3cb7acca8fa801_BKG-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634cb38dc3cb7acca8fa801_BKG-p-1080.webp 1080w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634cb38dc3cb7acca8fa801_BKG.webp 1521w" class="home--group-chat-img reduce-motion-img"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da0a2e6be98fa5216b_Discord_Website_Refresh_Emojis%2BSoundboard.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da0a2e6be98fa5216b_Discord_Website_Refresh_Emojis%2BSoundboard-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da0a2e6be98fa5216b_Discord_Website_Refresh_Emojis%2BSoundboard-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da0a2e6be98fa5216b_Discord_Website_Refresh_Emojis%2BSoundboard-p-1080.webp 1080w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da0a2e6be98fa5216b_Discord_Website_Refresh_Emojis%2BSoundboard.webp 1223w" alt="Make your group chats more fun" class="home-2-block-gift reduce-motion-img"><div class="home--group-chat-img-wr"><div data-poster-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_poster.0000000.jpg" data-video-urls="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_mp4.mp4,https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_webm.webm" data-autoplay="true" data-loop="true" data-wf-ignore="true" class="home--group-chat-img video _2025 w-background-video w-background-video-atom hide"><video id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ba-video" autoplay="" loop="" style="background-image:url(&quot;https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_poster.0000000.jpg&quot;)" muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover" src="https://cdn.discordapp.com/assets/content/b5d96aff26b7c494c32c5c54e56a2fd2bab5a9d976b4165157637be1c6d5b626.mp4"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_mp4.mp4" data-wf-ignore="true"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_webm.webm" data-wf-ignore="true"></video></div></div></div><div class="home--text-wr is-mobile-first is_2025"><h2 class="heading--h2 is_2025">MAKE YOUR GROUP CHATS MORE FUN</h2><p class="body-text--xl is_2025-n">Use custom emoji, stickers, soundboard effects and more to add&nbsp;your personality to your voice, video, or text chat. Set your avatar and a custom status, and write your own profile to show up&nbsp;in chat your way.</p></div></div></div></div><div class="home_egg is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729d372eed9e3f4c2da82dc_Egg%20(1).webp" loading="lazy" width="250" height="Auto" alt="" class="home_egg-icon is_2025"></div></div></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c3" alt="" class="star-hero-home _2-1"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c4" alt="" class="star-hero-home _2-8"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c5" alt="" class="star-hero-home _2-2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c6" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c7" alt="" class="star-hero-home _2-3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c8" alt="" class="star-hero-home _2-7"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6c9" alt="" class="star-hero-home _2-4"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ca" alt="" class="star-hero-home _2-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cb" alt="" class="star-hero-home _2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cc" alt="" class="star-hero-home _3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6cd" alt="" class="star-hero-home _2-6"></div></div><div class="home--3section is_2025"><div class="padding-global"><div class="container-huge _2-x is_2025"><div class="_3d-animation"><div class="home--block-group is-reverse home-new _2025"><div class="home--2col_layout block-2"><div class="home--text-wr is-mobile-first is_2025"><h2 class="heading--h2 is_2025">stream like you’re in the same room</h2><p class="body-text--xl new-home is_2025 stream">High quality and low latency streaming makes it&nbsp;feel like you're hanging out on the couch with friends while playing a game, watching shows, looking at photos, or idk doing homework&nbsp;or something.</p></div><div class="home--image-wr is-reverse"><div class="home--image-wr video is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6638bdbd1150b7c8509fb2be_Discord_Website_Refresh_SameRoom.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6638bdbd1150b7c8509fb2be_Discord_Website_Refresh_SameRoom-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6638bdbd1150b7c8509fb2be_Discord_Website_Refresh_SameRoom.webp 796w" alt="stream like you’re in the same room" class="section3-image image reduce-motion-img"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6630bc0fe938efc69a900a3a_Art.svg" loading="eager" alt="" class="radius-60 reduce-motion-img"><div class="home--group-chat-img-wr"><div data-poster-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763b611120b46189e164b4a_Discord_Website_Refresh_EN-poster-00001.jpg" data-video-urls="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763b611120b46189e164b4a_Discord_Website_Refresh_EN-transcode.mp4,https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763b611120b46189e164b4a_Discord_Website_Refresh_EN-transcode.webm" data-autoplay="true" data-loop="true" data-wf-ignore="true" class="home--group-chat-img video is-2025 w-background-video w-background-video-atom hide"><video id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6de-video" autoplay="" loop="" style="background-image:url(&quot;https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763b611120b46189e164b4a_Discord_Website_Refresh_EN-poster-00001.jpg&quot;)" muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763b611120b46189e164b4a_Discord_Website_Refresh_EN-transcode.mp4" data-wf-ignore="true"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763b611120b46189e164b4a_Discord_Website_Refresh_EN-transcode.webm" data-wf-ignore="true"></video></div></div></div></div></div></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729d594f586de43b73bfdf9_Clyde%20Cube.webp" loading="lazy" alt="" class="clyde-cube"></div></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e1" alt="" class="star-hero-home _2-1"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e2" alt="" class="star-hero-home _2-8"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e3" alt="" class="star-hero-home _2-2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e4" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e5" alt="" class="star-hero-home _2-3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e6" alt="" class="star-hero-home _2-4"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e7" alt="" class="star-hero-home _2-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e8" alt="" class="star-hero-home _2-9"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6e9" alt="" class="star-hero-home _3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6ea" alt="" class="star-hero-home _2-6"></div></div><div class="home--4section is_2025"><div class="padding-global"><div class="container-huge is_2025"><div class="_3d-animation"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729d519a38959fc5dcc329a_Box.webp" loading="lazy" alt="" class="box-4s is_2025"><div class="home--block-group block-2 _2025"><div class="home--2col_layout"><div class="home--image-wr video is_2025"><div class="home--group-chat-img-wr"><div data-poster-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a317f73a44ea577535c09_Homepage_Hop-In_EN-poster-00001.jpg" data-video-urls="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a317f73a44ea577535c09_Homepage_Hop-In_EN-transcode.mp4,https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a317f73a44ea577535c09_Homepage_Hop-In_EN-transcode.webm" data-autoplay="true" data-loop="true" data-wf-ignore="true" class="home--group-chat-img video _2025 w-background-video w-background-video-atom hide"><video id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6f4-video" autoplay="" loop="" style="background-image:url(&quot;https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a317f73a44ea577535c09_Homepage_Hop-In_EN-poster-00001.jpg&quot;)" muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover" src="https://cdn.discordapp.com/assets/content/be300975e0960828820a67de6e5b86c791b5aacc1752c85ed0809b9fd8927ab1.mp4"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a317f73a44ea577535c09_Homepage_Hop-In_EN-transcode.mp4" data-wf-ignore="true"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a317f73a44ea577535c09_Homepage_Hop-In_EN-transcode.webm" data-wf-ignore="true"></video></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/661f9dcf53591e4046ea40e8_art-product-featured%20(1).webp" loading="lazy" width="762.5" sizes="100vw" alt="" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/661f9dcf53591e4046ea40e8_art-product-featured%20(1)-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/661f9dcf53591e4046ea40e8_art-product-featured%20(1)-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/661f9dcf53591e4046ea40e8_art-product-featured%20(1).webp 1515w" class="section4-image radius-60 reduce-motion-img"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da372be4a12a3dc9df_Discord_Website_Refresh_Hop-In.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da372be4a12a3dc9df_Discord_Website_Refresh_Hop-In-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da372be4a12a3dc9df_Discord_Website_Refresh_Hop-In-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da372be4a12a3dc9df_Discord_Website_Refresh_Hop-In.webp 939w" alt="Hop in when you're free, no need to call" class="section-4-image reduce-motion-img"></div><div class="home--text-wr is-mobile-first is_2025"><h2 class="heading--h2 is_2025">Hop in when you're free, no&nbsp;need to call</h2><p class="body-text--xl new-home is_2025">Easily hop in and out of voice or text chats without having to call or invite anyone, so your party chat lasts before, during, and after your game session.</p></div></div></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664dac894dc189990b0c7a53_dis_icon_Rupee_01%201.webp" loading="lazy" width="234" height="Auto" alt="" class="gem is_2025"></div></div><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6fd" class="animation-scroll is_2025"></div><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b6fe" class="animation-scroll _4"></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b700" alt="" class="star-hero-home _2-10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b701" alt="" class="star-hero-home _2-8"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b702" alt="" class="star-hero-home _2-2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b703" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b704" alt="" class="star-hero-home _2-3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b705" alt="" class="star-hero-home _2-4"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b706" alt="" class="star-hero-home _2-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b707" alt="" class="star-hero-home _2-9"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b708" alt="" class="star-hero-home _3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b709" alt="" class="star-hero-home _2-6"></div></div><div class="line-wr-home"><div class="line-animation is_2025"><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b70c" class="line-move" style="transform: translate3d(0%, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"><div class="line-images is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" width="45.5" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">talk</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">play</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">chat</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">hang out</div></div><div class="line-images is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">talk</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">play</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">chat</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">hang out</div></div><div class="line-images is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">talk</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">play</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">chat</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">hang out</div></div><div class="line-images is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">talk</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">play</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">chat</div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665786b8a93285bff36e194e_discord-mark-white%202.webp" loading="lazy" alt="" class="discord-mark is_2025"><div class="line_text-animation is_2025">hang out</div></div></div></div></div><div class="home--5section is_2025"><div class="padding-global"><div class="container-huge is_2025"><div class="_3d-animation"><div class="fun2-top-eyes is_2025" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b745" data-animation-type="lottie" data-src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664caa806ebb0ab60e40021e_eyes.lottie" data-loop="1" data-direction="1" data-autoplay="1" data-is-ix2-target="0" data-renderer="svg" data-duration="0" data-loading="eager"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 465 300" width="465" height="300" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 100%; transform: translate3d(0px, 0px, 0px); content-visibility: visible;"><defs><clipPath id="__lottie_element_2"><rect width="465" height="300" x="0" y="0"></rect></clipPath><radialGradient id="__lottie_element_6" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></radialGradient><mask id="__lottie_element_8"><path fill="url(#__lottie_element_7)"></path></mask><radialGradient id="__lottie_element_7" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop></radialGradient><linearGradient id="__lottie_element_9" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></linearGradient><filter id="__lottie_element_12" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur result="filter_result_0"></feGaussianBlur></filter><linearGradient id="__lottie_element_13" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop><stop></stop><stop></stop><stop></stop><stop></stop></linearGradient><mask id="__lottie_element_15"><path fill="url(#__lottie_element_14)"></path></mask><linearGradient id="__lottie_element_14" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop></linearGradient><g id="__lottie_element_16"><g style="display: none;"><g><path></path></g><g><path fill="url(#__lottie_element_19)" mask="url(#__lottie_element_21)"></path></g><g><path fill="url(#__lottie_element_22)"></path></g></g></g><radialGradient id="__lottie_element_19" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></radialGradient><mask id="__lottie_element_21"><path fill="url(#__lottie_element_20)"></path></mask><radialGradient id="__lottie_element_20" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop><stop stop-color="rgb(255,255,255)"></stop></radialGradient><linearGradient id="__lottie_element_22" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></linearGradient><radialGradient id="__lottie_element_26" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></radialGradient><filter id="__lottie_element_29" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur result="filter_result_0"></feGaussianBlur></filter><linearGradient id="__lottie_element_30" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></linearGradient><linearGradient id="__lottie_element_31" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></linearGradient><g id="__lottie_element_32"><g filter="url(#__lottie_element_34)" style="display: none;"><g><path fill="url(#__lottie_element_35)"></path></g></g></g><filter id="__lottie_element_34" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur result="filter_result_0"></feGaussianBlur></filter><radialGradient id="__lottie_element_35" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></radialGradient><linearGradient id="__lottie_element_39" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></linearGradient><radialGradient id="__lottie_element_43" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></radialGradient><linearGradient id="__lottie_element_44" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></linearGradient><radialGradient id="__lottie_element_48" spreadMethod="pad" gradientUnits="userSpaceOnUse"><stop></stop><stop></stop><stop></stop></radialGradient></defs><g clip-path="url(#__lottie_element_2)"><g style="display: none;"><g><path></path></g><g><path fill="url(#__lottie_element_6)" mask="url(#__lottie_element_8)"></path></g><g><path fill="url(#__lottie_element_9)"></path></g></g><g style="display: none;"><g filter="url(#__lottie_element_12)"><g><path fill="url(#__lottie_element_13)" mask="url(#__lottie_element_15)"></path></g></g></g><g style="display: none;"><g><path fill="url(#__lottie_element_26)"></path></g></g><g style="display: none;"><g filter="url(#__lottie_element_29)"><g><path fill="url(#__lottie_element_30)"></path><path stroke-linecap="butt" stroke-linejoin="miter" fill-opacity="0" stroke-miterlimit="4"></path></g><g><path></path><path stroke-linecap="butt" stroke-linejoin="miter" fill-opacity="0" stroke-miterlimit="4"></path></g><g><path fill="url(#__lottie_element_31)"></path><path stroke-linecap="butt" stroke-linejoin="miter" fill-opacity="0" stroke-miterlimit="4"></path></g></g></g><g style="display: none;"><g><path fill="url(#__lottie_element_39)"></path></g></g><g style="display: none;"><g><path></path></g><g><path fill="url(#__lottie_element_43)"></path></g><g><path fill="url(#__lottie_element_44)"></path></g></g></g></svg></div><div class="home--block-group is-reverse _2025"><div class="home--2col_layout block-2 is_2025"><div class="home--text-wr is-mobile-first is_2025"><div class="max-w-h"><h2 class="heading--h2 m-90 is_2025">See who's around to chill</h2></div><p class="body-text--xl new-home is_2025 stream">See who's around, playing games, or&nbsp;just hanging out. For supported games, you can see what modes or characters your friends are playing and directly join up.</p></div><div class="home--image-wr is-reverse is_2025"><div class="home--group-chat-img-wr"><div data-poster-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a3195524ad05044d126c9_Homepage_AroundToChill_EN-poster-00001.jpg" data-video-urls="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a3195524ad05044d126c9_Homepage_AroundToChill_EN-transcode.mp4,https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a3195524ad05044d126c9_Homepage_AroundToChill_EN-transcode.webm" data-autoplay="true" data-loop="true" data-wf-ignore="true" class="home--group-chat-img video is-2025 w-background-video w-background-video-atom hide"><video id="c00f7e63-fd3f-ca6d-eda3-a89c4777b750-video" autoplay="" loop="" style="background-image:url(&quot;https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a3195524ad05044d126c9_Homepage_AroundToChill_EN-poster-00001.jpg&quot;)" muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover" src="https://cdn.discordapp.com/assets/content/9a34b3ef89a4a735bf7fe6ec204a9f60f8edf1c53367607bc5187dbf34427d1d.mp4"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a3195524ad05044d126c9_Homepage_AroundToChill_EN-transcode.mp4" data-wf-ignore="true"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F683a3195524ad05044d126c9_Homepage_AroundToChill_EN-transcode.webm" data-wf-ignore="true"></video></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6620d9036aad92a48a009ddb_art-product-featured%20(1).svg" loading="eager" alt="" class="radius-60 see reduce-motion-img"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da94dd30e64e74357a_Discord_Website_Refresh_StatusHover.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da94dd30e64e74357a_Discord_Website_Refresh_StatusHover-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da94dd30e64e74357a_Discord_Website_Refresh_StatusHover-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723da94dd30e64e74357a_Discord_Website_Refresh_StatusHover.webp 904w" alt="See who's around to chill" class="section-6-image reduce-motion-img"></div></div></div></div></div></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b754" alt="" class="star-hero-home _2-1"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b755" alt="" class="star-hero-home _2-8"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b756" alt="" class="star-hero-home _2-2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b757" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b758" alt="" class="star-hero-home _2-3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b759" alt="" class="star-hero-home _2-4"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75a" alt="" class="star-hero-home _2-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75b" alt="" class="star-hero-home _2-9"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75c" alt="" class="star-hero-home _3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b75d" alt="" class="star-hero-home _2-6"></div></div><div class="home--6section is_2025 second"><div class="padding-global"><div class="container-huge is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729d6e22696ebd39c002e21_Set%203%203.webp" loading="lazy" width="139" height="Auto" alt="" class="coin is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729d76b04ef7312d3dfd2fd_Set%202%204.webp" loading="lazy" width="139" height="Auto" alt="" class="set"><div class="_3d-animation"><div class="characters-wr is_2025"><div class="characters-hunds is_2025 is_2026"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91b04dee3b20d605b76581_Card%20Characters.png" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91b04dee3b20d605b76581_Card%20Characters-p-500.png 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91b04dee3b20d605b76581_Card%20Characters-p-800.png 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91b04dee3b20d605b76581_Card%20Characters-p-1080.png 1080w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91b04dee3b20d605b76581_Card%20Characters.png 1168w" alt="" class="characters-bot is_2026"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6633620bd19f5f363e7d1823_woman-bottom.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6633620bd19f5f363e7d1823_woman-bottom-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6633620bd19f5f363e7d1823_woman-bottom-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6633620bd19f5f363e7d1823_woman-bottom.webp 821w" alt="" class="characters-top"></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a915f86af246846bc10077b_GARFIELD_SIMON_Pose_01_LightUpdate%201.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a915f86af246846bc10077b_GARFIELD_SIMON_Pose_01_LightUpdate%201-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a915f86af246846bc10077b_GARFIELD_SIMON_Pose_01_LightUpdate%201.webp 662w" alt="" class="characters"></div><div class="home--block-group block-4 is_2025"><div class="home--2col_layout always"><div class="home--image-wr video is_2025"><div class="home--group-chat-img-wr"><div data-poster-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6aba16d0489fca412d26aa69_Discord_Website_Refresh_Activities_EN_1_poster.0000000.jpg" data-video-urls="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6aba16d0489fca412d26aa69_Discord_Website_Refresh_Activities_EN_1_mp4.mp4,https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6aba16d0489fca412d26aa69_Discord_Website_Refresh_Activities_EN_1_webm.webm" data-autoplay="true" data-loop="true" data-wf-ignore="true" class="home--group-chat-img video _2025 w-background-video w-background-video-atom hide"><video id="c00f7e63-fd3f-ca6d-eda3-a89c4777b76d-video" autoplay="" loop="" style="background-image:url(&quot;https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6aba16d0489fca412d26aa69_Discord_Website_Refresh_Activities_EN_1_poster.0000000.jpg&quot;)" muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover" src="https://cdn.discordapp.com/assets/content/6e7459b871a20905c186f130fc5dc37fa1881f2b0024ca8d6270880c9f113b65.mp4"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6aba16d0489fca412d26aa69_Discord_Website_Refresh_Activities_EN_1_mp4.mp4" data-wf-ignore="true"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6aba16d0489fca412d26aa69_Discord_Website_Refresh_Activities_EN_1_webm.webm" data-wf-ignore="true"></video></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634ceb1970de13881b1bfd4_Art.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634ceb1970de13881b1bfd4_Art-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634ceb1970de13881b1bfd4_Art-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634ceb1970de13881b1bfd4_Art-p-1080.webp 1080w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6634ceb1970de13881b1bfd4_Art.webp 1521w" alt="" class="radius-60 reduce-motion-img"><div class="image-cont img reduce-motion-img"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723dbe91e5ee8db15cfe7_Discord_Website_Refresh_Activities.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723dbe91e5ee8db15cfe7_Discord_Website_Refresh_Activities-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664723dbe91e5ee8db15cfe7_Discord_Website_Refresh_Activities.webp 691w" alt="always have something to do together" class="image-always"></div></div><div class="home--text-wr is-mobile-first is_2025"><h2 class="heading--h2 is_2025">always have something to do together</h2><p class="body-text--xl new-home is_2025">Watch videos, play built-in games, listen to music, or just scroll together and spam memes. Seamlessly text, call, video chat, and play games, all&nbsp;in&nbsp;one group chat.</p></div></div></div></div></div></div><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b776" class="animation-scroll is_coin"></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b778" alt="" class="star-hero-home _2-10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b779" alt="" class="star-hero-home _2-8"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77a" alt="" class="star-hero-home _2-2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77b" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77c" alt="" class="star-hero-home _2-3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77d" alt="" class="star-hero-home _2-4"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77e" alt="" class="star-hero-home _2-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b77f" alt="" class="star-hero-home _2-9"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b780" alt="" class="star-hero-home _3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b781" alt="" class="star-hero-home _2-6"></div></div><div class="home--section7 color-gr is_2025"><div class="padding-global"><div class="container-huge _5-x is_2025"><div class="_3d-animation"><div class="home--block-group is-reverse is_2025"><div class="home--2col_layout mob-revers is_2025"><div class="home--text-wr is-mobile-first is_2025 is_wherever"><h2 class="heading--h2 is_2025">wherever YOU GAME, HANG OUT HERE</h2><div class="max-width-p"><p class="body-text--xl new-home is_2025 stream">On your PC, phone, or console, you can still hang out on Discord. Easily switch between devices and use tools to manage multiple group chats with&nbsp;friends.</p></div></div><div class="home--image-wr is-reverse is_2025"><div class="home--group-chat-img-wr"><div data-poster-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763ba683086419cf7bfb7fb_Discord_Refresh_Platforms-poster-00001.jpg" data-video-urls="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763ba683086419cf7bfb7fb_Discord_Refresh_Platforms-transcode.mp4,https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763ba683086419cf7bfb7fb_Discord_Refresh_Platforms-transcode.webm" data-autoplay="true" data-loop="true" data-wf-ignore="true" class="home--group-chat-img video is-2025 w-background-video w-background-video-atom hide"><video id="c00f7e63-fd3f-ca6d-eda3-a89c4777b790-video" autoplay="" loop="" style="background-image:url(&quot;https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763ba683086419cf7bfb7fb_Discord_Refresh_Platforms-poster-00001.jpg&quot;)" muted="" playsinline="" data-wf-ignore="true" data-object-fit="cover"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763ba683086419cf7bfb7fb_Discord_Refresh_Platforms-transcode.mp4" data-wf-ignore="true"><source src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6763ba683086419cf7bfb7fb_Discord_Refresh_Platforms-transcode.webm" data-wf-ignore="true"></video></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664f27d23048834acf0c3117_art-3.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664f27d23048834acf0c3117_art-3-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664f27d23048834acf0c3117_art-3-p-800.webp 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664f27d23048834acf0c3117_art-3-p-1080.webp 1080w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664f27d23048834acf0c3117_art-3.webp 2378w" alt="" class="radius-60 reduce-motion-img"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6638bcb99c2b8dc14e6f67fd_Discord_Website_Refresh_Platforms.webp" loading="lazy" sizes="100vw" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6638bcb99c2b8dc14e6f67fd_Discord_Website_Refresh_Platforms-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6638bcb99c2b8dc14e6f67fd_Discord_Website_Refresh_Platforms.webp 760w" alt="wherever YOU GAME, HANG OUT HERE" class="section-7-image reduce-motion-img"></div></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729d84197169276c6426a4b_Set%203%204.webp" loading="lazy" width="139" height="Auto" alt="" class="plump"></div></div></div><div data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b794" class="animation-scroll"></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b796" alt="" class="star-hero-home _2-1"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b797" alt="" class="star-hero-home _2-8 vis"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b798" alt="" class="star-hero-home _2-2 vr"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b799" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79a" alt="" class="star-hero-home _2-3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79b" alt="" class="star-hero-home _2-4"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79c" alt="" class="star-hero-home _2-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79d" alt="" class="star-hero-home _2-9"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79e" alt="" class="star-hero-home _3"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b79f" alt="" class="star-hero-home _2-6"></div></div><div class="discord_banner color-s is_2025"><div class="padding-global z-index-2"><div class="container-huge"><div class="max-width-788px home is_2025"><div class="text-mask title-wr"><h2 class="heading--h2-center is_2025">YOU CAN'T SCROLL<span class="sp-bettwen"> </span>ANYMORE.<br>BETTER GO CHAT.</h2></div><div class="padding-24px"></div><div class="home--hero_button-wr"><a data-track-download="Landing Bottom CTA" href="//discord.com/api/downloads/distributions/app/installers/latest?channel=stable&amp;platform=osx&amp;arch=arm64" class="button-bl download-button imagine is_2025 download-other si_icon w-inline-block">Download for Mac</a></div></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664b167375be889038da5624_Property%201%3Dstar_m.webp" loading="lazy" alt="" class="star-hero-home _9"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664b170f1a3ff24179d84bfb_Property%201%3Dstar_lg.webp" loading="lazy" alt="" class="star-hero-home _1--2"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664b170f1a3ff24179d84bfb_Property%201%3Dstar_lg.webp" loading="lazy" alt="" class="star-hero-home _11"></div></div><div class="relative-2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7.webp" loading="eager" width="1440" sizes="(max-width: 1439px) 100vw, 1440px" alt="YOU CAN'T SCROLL ANYMORE.BETTER GO CHAT." srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7-p-500.png 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7-p-800.png 800w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7-p-1080.png 1080w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7-p-1600.png 1600w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7-p-2000.png 2000w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7-p-2600.png 2600w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a968c8f943a531a9625bb35_Footer-7.webp 3200w" class="discord_svg is_2025 is_n"><div id="discord_robot" class="discort_robot discord_robot is_2025 is_n" style="pointer-events: none;"><div id="robot_head" class="robot-head _2024 is_2027"><footer data-json-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a9e6f414cabd3a3efe51519_0.json" class="image-robot1 image-robot lottie"></footer><div data-json-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a9e6f417252345b93145e0a_1.json" class="image-robot2 image-robot lottie-2 hide"></div><div data-json-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a9e6f419614c2273d03a9d9_2.json" class="image-robot3 lottie-3 image-robot hide"></div><div data-json-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a9e6f41efa8187e5d274a22_3.json" class="image-robot4 lottie-4 image-robot hide"></div><div data-json-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a9e6f417058d12cadbf4782_4.json" class="image-robot5 lottie-5 image-robot hide"></div><div data-json-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a9e6f41df2e61b3bd0e5a29_5.json" class="image-robot6 lottie-6 image-robot hide"></div><div data-json-url="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a9e6f416b5667bb90a8cb61_6.json" class="image-robot7 lottie-7 image-robot hide"></div></div><div class="code-embed w-embed"><audio class="hide" id="easter_egg_audio_1" preload="">
+    <source src="https://cdn.discordapp.com/assets/homepage/1.m4a" type="audio/mp4">
+</audio>
+<audio class="hide" id="easter_egg_audio_2" preload="">
+    <source src="https://cdn.discordapp.com/assets/homepage/2.m4a" type="audio/mp4">
+</audio>
+<audio class="hide" id="easter_egg_audio_3" preload="">
+    <source src="https://cdn.discordapp.com/assets/homepage/3.m4a" type="audio/mp4">
+</audio>
+<audio class="hide" id="easter_egg_audio_4" preload="">
+    <source src="https://cdn.discordapp.com/assets/homepage/4.m4a" type="audio/mp4">
+</audio>
+<audio class="hide" id="easter_egg_audio_5" preload="">
+    <source src="https://cdn.discordapp.com/assets/homepage/5.m4a" type="audio/mp4">
+</audio>
+<audio class="hide" id="easter_egg_audio_6" preload="">
+    <source src="https://cdn.discordapp.com/assets/homepage/6.m4a" type="audio/mp4">
+</audio></div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/664754815450cb39bca27b05_Smoke.gif" loading="eager" id="smoke_gif" alt="" class="smoke-gif hide"></div><div class="wumpus-footer-home-contain smaller is_2025"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91dd676cf1144bc52e78bf_Wumpus_Pose_02_Sitting.webp" loading="eager" width="174" height="Auto" alt="" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91dd676cf1144bc52e78bf_Wumpus_Pose_02_Sitting-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6a91dd676cf1144bc52e78bf_Wumpus_Pose_02_Sitting.webp 818w" sizes="(max-width: 479px) 100vw, 174px" class="wumpus-footer-home is_2025 is_2026"><div class="wumpus-footer-home is-2025 is_2026"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729dcb95107159dc7e52855_Wumpus.webp" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c4" sizes="100vw" alt="" srcset="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729dcb95107159dc7e52855_Wumpus-p-500.webp 500w, https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6729dcb95107159dc7e52855_Wumpus.webp 688w" class="wumpus-footer-list is_2025" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"></div></div><div><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b219b15d5875c1e47bf_Property%201%3Dstar_lg.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c6" alt="" class="star-hero-home _2-1"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c7" alt="" class="star-hero-home _10"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c8" alt="" class="star-hero-home _2-4"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349b3378e1057faaf58ac5_Property%201%3Dstar_m.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7c9" alt="" class="star-hero-home _2-5"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66349c8a486afee7b4b834b6_Property%201%3Dstar_sm.svg" loading="lazy" data-w-id="c00f7e63-fd3f-ca6d-eda3-a89c4777b7ca" alt="" class="star-hero-home _2-9"></div></div></div><div class="w-embed"><style>
+
+
+@media screen and (min-width: 1680px) {
+.discort_robot {
+    margin-top: 8.7%!important;
+}
+}
+
+
+.paragraph-small.font-blue {
+    color: #fff;
+ 
+ 
+}
+
+
+.link-footer {
+    color: #fff;
+
+}
+
+
+.footer-line-blue {
+    border-top: 1px solid #fff;
+   
+}
+
+aside#landing-cta button.gtm-click-class-open-button {
+  background-color: #161CBB;
+}
+
+crown img, .Trophy img, .potion img, .Turnip img, .Star img{
+-webkit-touch-callout:none;  /* iOS Safari */
+  -webkit-user-select:none;   /* Chrome/Safari/Opera */
+  -khtml-user-select:none;    /* Konqueror */
+  -moz-user-select:none;      /* Firefox */
+  -ms-user-select:none;       /* Internet Explorer/Edge */
+  user-select:none;           /* Non-prefixed version */
+}
+
+
+/* Footer Media */
+@media screen and (min-width: 300px) and (max-width: 349px) {
+    .absolute .wumpus-footer-home { top: 76% !important; }
+    .absolute .discort_robot { bottom: 16% !important; }
+}
+@media screen and (min-width: 350px) and (max-width: 399px) {
+    .absolute .wumpus-footer-home { top: 72% !important; }
+    .absolute .discort_robot { bottom: 20% !important; }
+}
+@media screen and (min-width: 400px) and (max-width: 449px) {
+    .absolute .wumpus-footer-home { top: 67% !important; }
+    .absolute .discort_robot { bottom: 23% !important; }
+}
+@media screen and (min-width: 450px) and (max-width: 499px) {
+    .absolute .wumpus-footer-home { top: 71% !important; }
+    .absolute .discort_robot { bottom: 25% !important; }
+}
+@media screen and (min-width: 500px) and (max-width: 549px) {
+    .absolute .wumpus-footer-home { top: 70% !important; }
+    .absolute .discort_robot { bottom: 30% !important; }
+}
+@media screen and (min-width: 550px) and (max-width: 599px) {
+    .absolute .wumpus-footer-home { top: 66% !important; }
+    .absolute .discort_robot { bottom: 34% !important; }
+}
+@media screen and (min-width: 600px) and (max-width: 649px) {
+    .absolute .wumpus-footer-home { top: 63% !important; }
+    .absolute .discort_robot { bottom: 37% !important; }
+}
+@media screen and (min-width: 650px) and (max-width: 699px) {
+    .absolute .wumpus-footer-home { top: 60% !important; }
+    .absolute .discort_robot { bottom: 40% !important; }
+}
+@media screen and (min-width: 700px) and (max-width: 749px) {
+    .absolute .wumpus-footer-home { top: 57% !important; }
+    .absolute .discort_robot { bottom: 43% !important; }
+}
+@media screen and (min-width: 750px) and (max-width: 767px) {
+    .absolute .wumpus-footer-home { top: 54% !important; }
+    .absolute .discort_robot { bottom: 48% !important; }
+}
+@media screen and (min-width: 769px) and (max-width: 799px) {
+    .absolute .wumpus-footer-home { top: 55% !important; }
+    .absolute .discort_robot { bottom: 39% !important; }
+}
+@media screen and (min-width: 800px) and (max-width: 849px) {
+    .absolute .wumpus-footer-home { top: 53% !important; }
+    .absolute .discort_robot { bottom: 40% !important; }
+}
+@media screen and (min-width: 850px) and (max-width: 899px) {
+    .absolute .wumpus-footer-home { top: 51% !important; }
+    .absolute .discort_robot { bottom: 43% !important; }
+}
+@media screen and (min-width: 900px) and (max-width: 949px) {
+    .absolute .wumpus-footer-home { top: 48% !important; }
+    .absolute .discort_robot { bottom: 46% !important; }
+}
+@media screen and (min-width: 950px) and (max-width: 991px) {
+    .absolute .wumpus-footer-home { top: 44% !important; }
+    .absolute .discort_robot { bottom: 48% !important; }
+}
+@media screen and (min-width: 992px) and (max-width: 1015px) {
+    .absolute .wumpus-footer-home { top: 53% !important; }
+    .absolute .discort_robot { bottom: 37% !important; }
+}
+@media screen and (min-width: 1016px) and (max-width: 1049px) {
+    .absolute .wumpus-footer-home { top: 52% !important; }
+    .absolute .discort_robot { bottom: 37% !important; }
+}
+@media screen and (min-width: 1050px) and (max-width: 1099px) {
+    .absolute .wumpus-footer-home { top: 50% !important; }
+    .absolute .discort_robot { bottom: 39% !important; }
+}
+@media screen and (min-width: 1100px) and (max-width: 1149px) {
+    .absolute .wumpus-footer-home { top: 47% !important; }
+    .absolute .discort_robot { bottom: 41% !important; }
+}
+@media screen and (min-width: 1150px) and (max-width: 1199px) {
+    .absolute .wumpus-footer-home { top: 45% !important; }
+    .absolute .discort_robot { bottom: 42% !important; }
+}
+@media screen and (min-width: 1200px) and (max-width: 1249px) {
+    .absolute .wumpus-footer-home { top: 43% !important; }
+    .absolute .discort_robot { bottom: 43% !important; }
+}
+@media screen and (min-width: 1250px) and (max-width: 1299px) {
+    .absolute .wumpus-footer-home { top: 43% !important; }
+    .absolute .discort_robot { bottom: 44% !important; }
+}
+@media screen and (min-width: 1300px) and (max-width: 1349px) {
+    .absolute .wumpus-footer-home { top: 42% !important; }
+    .absolute .discort_robot { bottom: 46% !important; }
+}
+@media screen and (min-width: 1350px) and (max-width: 1399px) {
+    .absolute .wumpus-footer-home { top: 39% !important; }
+    .absolute .discort_robot { bottom: 46% !important; }
+}
+@media screen and (min-width: 1400px) and (max-width: 1439px) {
+    .absolute .wumpus-footer-home { top: 37% !important; }
+    .absolute .discort_robot { bottom: 46% !important; }
+}
+@media screen and (min-width: 1441px) and (max-width: 1449px) {
+    .absolute .wumpus-footer-home { top: 43% !important; }
+    .absolute .discort_robot { bottom: 38% !important; }
+}
+@media screen and (min-width: 1450px) and (max-width: 1499px) {
+    .absolute .wumpus-footer-home { top: 43% !important; }
+    .absolute .discort_robot { bottom: 38% !important; }
+}
+@media screen and (min-width: 1500px) and (max-width: 1549px) {
+    .absolute .wumpus-footer-home { top: 41% !important; }
+    .absolute .discort_robot { bottom: 40% !important; }
+}
+@media screen and (min-width: 1550px) and (max-width: 1599px) {
+    .absolute .wumpus-footer-home { top: 39% !important; }
+    .absolute .discort_robot { bottom: 43% !important; }
+}
+@media screen and (min-width: 1600px) and (max-width: 1649px) {
+    .absolute .wumpus-footer-home { top: 37% !important; }
+    .absolute .discort_robot { bottom: 44% !important; }
+}
+@media screen and (min-width: 1650px) and (max-width: 1699px) {
+    .absolute .wumpus-footer-home { top: 34% !important; }
+    .absolute .discort_robot { bottom: 46% !important; }
+}
+@media screen and (min-width: 1700px) and (max-width: 1749px) {
+    .absolute .wumpus-footer-home { top: 33% !important; }
+    .absolute .discort_robot { bottom: 47% !important; }
+}
+@media screen and (min-width: 1750px) and (max-width: 1799px) {
+    .absolute .wumpus-footer-home { top: 31% !important; }
+    .absolute .discort_robot { bottom: 47% !important; }
+}
+@media screen and (min-width: 1800px) and (max-width: 1919px) {
+    .absolute .wumpus-footer-home { top: 29% !important; }
+    .absolute .discort_robot { bottom: 49% !important; }
+}
+/* End Footer Media */
+
+
+</style></div><div class="footer_new"><div class="footer-styles w-embed"><!--style>
+
+/* For Chrome and Safari */
+.dropdown-language-list-wr::-webkit-scrollbar {
+    width: 5px;
+}
+.dropdown-language-list-wr::-webkit-scrollbar-thumb {
+  background-color: white; 
+  border-radius: 3px;
+}
+.dropdown-language-list-wr::-webkit-scrollbar-track {
+  margin-top:1.75rem;
+  margin-bottom:1.75rem;
+}
+.dropdown-language-list-wr::-webkit-scrollbar-button { 
+     display:none;
+}
+
+</style-->
+
+<style>
+
+.p-footer {
+    color: #FFFFFFB3 !important;
+
+}
+</style></div><div class="container-1762"><div class="w-layout-grid grid-footer is-new-com"><div id="w-node-_7f02ccc2-4de0-9fe4-5350-2bcb84a209ed-42a4716b" class="vertical-flex mobile-left is_new"><a href="/" class="footer-logo-link w-inline-block w--current"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e278299a53f5bf88615e90_Symbol.svg" alt="Discord Home"></a><div class="p-footer is_2026">Language</div><div class="padding-16px"></div><div data-delay="0" data-hover="false" data-w-id="7f02ccc2-4de0-9fe4-5350-2bcb84a209f3" class="dropdown-language-wr w-dropdown"><div class="dropdown-language-btn w-dropdown-toggle" id="w-dropdown-toggle-12" aria-controls="w-dropdown-list-12" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="dropdown-language-name">English</div><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e2c5a476e29535c2465b24_Chevron%20Down.svg" alt="" class="dropdown-language-arrow" style="transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg); transform-style: preserve-3d;"></div><nav class="dropdown-language-list-wr w-dropdown-list" id="w-dropdown-list-12" aria-labelledby="w-dropdown-toggle-12"><ul role="list" class="dropdown-list-container-wr"><li tabindex="0" data-locale="cs" class="dropdown-list-container"><div class="dropdown-language-item">Čeština</div></li><li tabindex="0" data-locale="da" class="dropdown-list-container"><div class="dropdown-language-item">Dansk</div></li><li tabindex="0" data-locale="de" class="dropdown-list-container"><div class="dropdown-language-item">Deutsch</div></li><li tabindex="0" data-locale="en" class="dropdown-list-container"><div class="dropdown-language-item">English</div></li><li tabindex="0" data-locale="en-GB" class="dropdown-list-container"><div class="dropdown-language-item">English (UK)</div></li><li tabindex="0" data-locale="es" class="dropdown-list-container"><div class="dropdown-language-item">Español</div></li><li tabindex="0" data-locale="es-LA" class="dropdown-list-container"><div class="dropdown-language-item">Español (América Latina)</div></li><li tabindex="0" data-locale="fr" class="dropdown-list-container"><div class="dropdown-language-item">Français</div></li><li tabindex="0" data-locale="hr" class="dropdown-list-container"><div class="dropdown-language-item">Hrvatski</div></li><li tabindex="0" data-locale="it" class="dropdown-list-container"><div class="dropdown-language-item">Italiano</div></li><li tabindex="0" data-locale="lt" class="dropdown-list-container"><div class="dropdown-language-item">lietuvių kalba</div></li><li tabindex="0" data-locale="hu" class="dropdown-list-container"><div class="dropdown-language-item">Magyar</div></li><li tabindex="0" data-locale="nl" class="dropdown-list-container"><div class="dropdown-language-item">Nederlands</div></li><li tabindex="0" data-locale="no" class="dropdown-list-container"><div class="dropdown-language-item">Norsk</div></li><li tabindex="0" data-locale="pl" class="dropdown-list-container"><div class="dropdown-language-item">Polski</div></li><li tabindex="0" data-locale="pt-BR" class="dropdown-list-container"><div class="dropdown-language-item">Português (Brasil)</div></li><li tabindex="0" data-locale="ro" class="dropdown-list-container"><div class="dropdown-language-item">Română</div></li><li tabindex="tabindex" data-locale="fi" class="dropdown-list-container"><div class="dropdown-language-item">Suomi</div></li><li tabindex="0" data-locale="sv" class="dropdown-list-container"><div class="dropdown-language-item">Svenska</div></li><li tabindex="0" data-locale="vi" class="dropdown-list-container"><div class="dropdown-language-item">Tiếng Việt</div></li><li tabindex="0" data-locale="tr" class="dropdown-list-container"><div class="dropdown-language-item">Türkçe</div></li><li tabindex="0" data-locale="el" class="dropdown-list-container"><div class="dropdown-language-item">Ελληνικά</div></li><li tabindex="0" data-locale="bg" class="dropdown-list-container"><div class="dropdown-language-item">български</div></li><li tabindex="0" data-locale="ru" class="dropdown-list-container"><div class="dropdown-language-item">Русский</div></li><li tabindex="0" data-locale="uk" class="dropdown-list-container"><div class="dropdown-language-item">Українська</div></li><li tabindex="0" data-locale="hi" class="dropdown-list-container"><div class="dropdown-language-item">हिंदी</div></li><li tabindex="0" data-locale="th" class="dropdown-list-container"><div class="dropdown-language-item">ไทย</div></li><li tabindex="0" data-locale="ko" class="dropdown-list-container"><div class="dropdown-language-item">한국어</div></li><li tabindex="0" data-locale="zh-Hans" class="dropdown-list-container"><div class="dropdown-language-item">中文</div></li><li tabindex="0" data-locale="zh-TW" class="dropdown-list-container"><div class="dropdown-language-item">中文(繁體)</div></li><li tabindex="0" data-locale="ja" class="dropdown-list-container"><div class="dropdown-language-item">日本語</div></li></ul></nav></div><div class="desctop-soc"><div class="p-footer hide-landscape">Social</div><div class="flex-horizontal top-soc-new"><a data-track="twitter" href="https://twitter.com/discord" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe4237b6a1c4fa714f76_x.svg" alt="Twitter" class="image"></a><a data-track="instagram" href="https://www.instagram.com/discord/" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe42d907d27f3dead7a0_instagram.svg" alt="Instagram" class="image"></a><a data-track="facebook" href="https://www.facebook.com/discord/" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe4173c1df8be608c8a2_facebook.svg" alt="Facebook" class="image"></a><a data-track="youtube" href="https://www.youtube.com/discord" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe42d907d27f3dead7ad_youtube.svg" alt="Youtube" class="image"></a><a data-track="Tiktok" href="https://www.tiktok.com/@discord" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe4152ae5860036dadf1_tiktok.svg" alt="Tiktok" class="image"></a></div></div></div><div id="w-node-_7f02ccc2-4de0-9fe4-5350-2bcb84a20a65-42a4716b"><div class="footer-h-link show-landscape">Menu</div><h3 class="desktop-only-footer-title">Product</h3><div data-delay="0" data-hover="false" data-w-id="7f02ccc2-4de0-9fe4-5350-2bcb84a20a6a" class="dropdown-footer w-dropdown"><div class="dropdown-toggle-footer is_2026 w-dropdown-toggle" id="w-dropdown-toggle-13" aria-controls="w-dropdown-list-13" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Product</div><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e15958db56b5a91218f5e9_Chevron%20Down.svg" alt="" class="arrow-drop show-landscape"></div><nav class="dropdown-list-footer w-dropdown-list" id="w-dropdown-list-13" aria-labelledby="w-dropdown-toggle-13"><div class="padding-16px show-landscape"></div><a data-track="download" href="/download" class="link-footer top-new-link" tabindex="0">Download</a><a data-track="nitro" href="/nitro" class="link-footer top-new-link" tabindex="0">Nitro</a><a data-track="status" href="https://discordstatus.com/" class="link-footer top-new-link" tabindex="0">Status</a><a data-track="app directory" href="/application-directory" class="link-footer top-new-link" tabindex="0">App Directory</a><a data-track="gift cards" href="/gift-cards" class="link-footer top-new-link" tabindex="0">Gift Cards</a></nav></div></div><div id="w-node-_7f02ccc2-4de0-9fe4-5350-2bcb84a20a79-42a4716b"><h3 class="desktop-only-footer-title">Company</h3><div data-delay="0" data-hover="false" data-w-id="7f02ccc2-4de0-9fe4-5350-2bcb84a20a7c" class="dropdown-footer w-dropdown"><div class="dropdown-toggle-footer is_2026 w-dropdown-toggle" id="w-dropdown-toggle-14" aria-controls="w-dropdown-list-14" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Company</div><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e15958db56b5a91218f5e9_Chevron%20Down.svg" alt="" class="arrow-drop show-landscape"></div><nav class="dropdown-list-footer w-dropdown-list" id="w-dropdown-list-14" aria-labelledby="w-dropdown-toggle-14"><div class="padding-16px show-landscape"></div><a data-track="about" href="/company" class="link-footer top-new-link" tabindex="0">About</a><a data-track="jobs" href="/careers" class="link-footer top-new-link" tabindex="0">Jobs</a><a data-track="branding" href="/branding" class="link-footer top-new-link" tabindex="0">Brand</a><a data-track="newsroom" href="/newsroom" class="link-footer top-new-link" tabindex="0">Newsroom</a></nav></div></div><div id="w-node-_7f02ccc2-4de0-9fe4-5350-2bcb84a20a8b-42a4716b"><h3 class="desktop-only-footer-title">Resources</h3><div data-delay="0" data-hover="false" data-w-id="7f02ccc2-4de0-9fe4-5350-2bcb84a20a8e" class="dropdown-footer w-dropdown"><div class="dropdown-toggle-footer is_2026 w-dropdown-toggle" id="w-dropdown-toggle-15" aria-controls="w-dropdown-list-15" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Resources</div><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e15958db56b5a91218f5e9_Chevron%20Down.svg" alt="" class="arrow-drop show-landscape"></div><nav class="dropdown-list-footer w-dropdown-list" id="w-dropdown-list-15" aria-labelledby="w-dropdown-toggle-15"><div class="padding-16px show-landscape"></div><a data-track="support" href="https://support.discord.com/hc" class="link-footer top-new-link" tabindex="0">Support</a><a data-track="safety" href="/safety" class="link-footer top-new-link" tabindex="0">Safety</a><a data-track="blog" href="/blog" class="link-footer top-new-link" tabindex="0">Blog</a><a data-track="creators" href="/creators" class="link-footer top-new-link" tabindex="0">Creators</a><a data-track="community" href="/community" class="link-footer top-new-link" tabindex="0">Community</a><a data-track="Build" href="/developers" class="link-footer top-new-link" tabindex="0">Developers</a><a data-track="Build" href="/ads/quests" class="link-footer top-new-link" tabindex="0">Quests</a><a data-track="store" href="https://discordmerch.com/evergreenfooter" target="_blank" class="link-footer top-new-link" tabindex="0">Official 3rd Party Merch</a><a data-track="feedback" href="https://support.discord.com/hc/requests/new?brand_id=96508&amp;ticket_form_id=34826052965399" class="link-footer top-new-link" tabindex="0">Feedback</a></nav></div></div><div id="w-node-_7f02ccc2-4de0-9fe4-5350-2bcb84a20aa7-42a4716b"><h3 class="desktop-only-footer-title">Policies</h3><div data-delay="0" data-hover="false" data-w-id="7f02ccc2-4de0-9fe4-5350-2bcb84a20aaa" class="dropdown-footer line-none w-dropdown"><div class="dropdown-toggle-footer is_2026 w-dropdown-toggle" id="w-dropdown-toggle-16" aria-controls="w-dropdown-list-16" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div>Policies</div><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e15958db56b5a91218f5e9_Chevron%20Down.svg" alt="" class="arrow-drop show-landscape"></div><nav class="dropdown-list-footer w-dropdown-list" id="w-dropdown-list-16" aria-labelledby="w-dropdown-toggle-16"><div class="padding-16px show-landscape"></div><a data-track="terms" href="/terms" class="link-footer top-new-link" tabindex="0">Terms</a><a data-track="privacy" href="/privacy" class="link-footer top-new-link" tabindex="0">Privacy</a><a data-open-cookie-settings="true" href="#" class="link-footer top-new-link" tabindex="0">Cookie Settings</a><a data-track="guidelines" href="/guidelines" class="link-footer top-new-link" tabindex="0">Guidelines</a><a data-track="acknowledgement" href="/acknowledgements" class="link-footer top-new-link" tabindex="0">Acknowledgements</a><a data-track="licenses" href="/licenses" class="link-footer top-new-link" tabindex="0">Licenses</a><a data-track="moderation" href="/company-information" class="link-footer top-new-link" tabindex="0">Company Information</a></nav></div></div><div id="w-node-_7f02ccc2-4de0-9fe4-5350-2bcb84a20abf-42a4716b" class="show-soc"><div class="p-footer is_2026">Social</div><div class="flex-horizontal top-soc-new"><a data-track="twitter" href="https://x.com/discord" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe4237b6a1c4fa714f76_x.svg" alt="Twitter" class="image"></a><a data-track="instagram" href="https://www.instagram.com/discord/" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe42d907d27f3dead7a0_instagram.svg" alt="Instagram" class="image"></a><a data-track="facebook" href="https://www.facebook.com/discord/" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe4173c1df8be608c8a2_facebook.svg" alt="Facebook" class="image"></a><a data-track="youtube" href="https://www.youtube.com/discord" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe42d907d27f3dead7ad_youtube.svg" alt="Youtube" class="image"></a><a data-track="Tiktok" href="https://www.tiktok.com/@discord" target="_blank" class="link-s w-inline-block"><img loading="lazy" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/65a4fe4152ae5860036dadf1_tiktok.svg" alt="Tiktok" class="image"></a></div></div></div></div><div class="container_word"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/67ac9b4644222140ae614b06_Wordmark.svg" loading="lazy" aria-label="Discord" alt="Discord" class="word"></div></div></main></div>
+
+<!--<script src="https://discord.com/webflow-scripts/bodyEnd.js" defer></script>-->
+<!--script src="https://discord.com/webflow-scripts/bodyEnd2026.js" defer></scriptt-->
+<!--script src="https://discord.com/webflow-scripts/bodyEnd042026.js" defer></script-->
+
+
+
+<!-- build:inlineScriptNonceTag -->
+  <!-- section:dataLayer -->
+  
+
+  <!-- build:inlineScriptNonceTag -->
+  
+  <!-- endsection -->
+  <!-- section:gtm -->
+  <!-- build:inlineScriptNonceTag -->
+  
+  <!-- endsection -->
+
+<!-- <script src="https://discord.com/webflow-scripts/download.js" defer></script>-->
+<!--script src="https://discord.com/webflow-scripts/landing.js" defer></script>-->
+<!--script src="https://discord.com/webflow-scripts/newHomepage.js" defer></script>>-->
+
+
+
+
+
+
+<iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; visibility: hidden;"></iframe><div id="onetrust-consent-sdk" data-nosnippet="true"><div class="onetrust-pc-dark-filter ot-hide ot-fade-in"></div></div></body></html>

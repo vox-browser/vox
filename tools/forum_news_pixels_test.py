@@ -422,11 +422,11 @@ class ForumNewsPixelTests(unittest.TestCase):
                     common_stream=dict(matches=True),
                     cosmetic=dict(css_matches=True, procedural_matches=True, scriptlet_filters_match=True))
 
-    def test_all_fifteen_sites_are_registered_once(self):
+    def test_all_sixteen_sites_are_registered_once(self):
         sites = json.loads(CATALOG.read_text())['sites']
         expected = {'hacker-news', 'reddit', 'lobsters', 'slashdot', 'stackoverflow',
                     'bbc', 'cnn', 'guardian', 'theverge', 'pikabu',
-                    'techcrunch', 'engadget', 'theregister', 'slate', 'wired'}
+                    'techcrunch', 'engadget', 'theregister', 'slate', 'wired', 'discord'}
         self.assertEqual(len(sites), len(expected))
         self.assertEqual(len({s['url'] for s in sites}), len(expected))
         self.assertEqual({s['id'] for s in sites}, expected)
