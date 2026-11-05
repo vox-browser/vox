@@ -4334,17 +4334,26 @@ static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
 static unsigned native_test_grayscale_identities;
 #endif
 
-// Grayscale preserves an already achromatic sRGB source, including its alpha.
-// Avoid a Core Image submission only when the complete visible input proves
-// that identity; other color spaces, formats and filter chains stay ordinary.
-static BOOL native_css_grayscale_is_identity(NativeCSSFilterLayer const *layer,
-    CGContextRef context, CGRect *output_rect) {
-    if (!getenv("VOX_ENABLE_GRAYSCALE_IDENTITY") || getenv("VOX_DISABLE_GRAYSCALE_IDENTITY")
-        || !context || !layer->operation_count || layer->graph_node_count) return NO;
+#include "native_opacity_group_darwin.h"
+
+// Both grayscale paths require addressable premultiplied sRGB bitmap rows.
+typedef struct {
+    uint8_t *pixels;
+    size_t pitch, left, top, width, height;
+    BOOL bgra;
+    double amount;
+    CGRect rect;
+} NativeGrayscaleBitmap;
+
+static BOOL native_css_grayscale_bitmap(NativeCSSFilterLayer const *layer,
+    CGContextRef context, NativeGrayscaleBitmap *bitmap) {
+    if (!context || !layer->operation_count || layer->graph_node_count) return NO;
+    double inverse = 1;
     for (size_t index = 0; index < layer->operation_count; ++index) {
         NativeCSSFilterOperation operation = layer->operations[index];
         if (operation.kind != 2 || operation.second != 2 || !isfinite(operation.first)
             || operation.first < 0 || operation.first > 1) return NO;
+        inverse *= 1 - operation.first;
     }
     CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
     BOOL rgba = info == (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
@@ -4361,19 +4370,29 @@ static BOOL native_css_grayscale_is_identity(NativeCSSFilterLayer const *layer,
     if (!srgb || !CGBitmapContextGetColorSpace(context)
         || !CFEqual(srgb, CGBitmapContextGetColorSpace(context))) return NO;
     CGContextFlush(context);
-    const uint8_t *pixels = CGBitmapContextGetData(context);
+    uint8_t *pixels = CGBitmapContextGetData(context);
     if (!pixels) return NO;
     // Inspect the live bitmap before its context is consumed by the image.
     // A cropped CGImage may expose its parent's provider rather than an
     // addressable crop; scanning these rows needs no provider-sized copy.
     CGRect rect = native_css_filter_output_rect(layer, CGRectMake(0, 0, width, height));
-    *output_rect = rect;
     size_t left = rect.origin.x, top = height - CGRectGetMaxY(rect);
     size_t scan_width = rect.size.width, scan_height = rect.size.height;
+    *bitmap = (NativeGrayscaleBitmap){pixels, pitch, left, top, scan_width, scan_height,
+        bgra, 1 - inverse, rect};
+    return YES;
+}
+
+static BOOL native_css_grayscale_is_identity(NativeCSSFilterLayer const *layer,
+    CGContextRef context, CGRect *output_rect) {
+    if (!getenv("VOX_ENABLE_GRAYSCALE_IDENTITY") || getenv("VOX_DISABLE_GRAYSCALE_IDENTITY")) return NO;
+    NativeGrayscaleBitmap bitmap;
+    if (!native_css_grayscale_bitmap(layer, context, &bitmap)) return NO;
+    *output_rect = bitmap.rect;
     BOOL identity = YES;
-    for (size_t y = 0; identity && y < scan_height; ++y) {
-        const uint8_t *row = pixels + (top + y) * pitch + left * 4;
-        for (size_t x = 0; x < scan_width; ++x) {
+    for (size_t y = 0; identity && y < bitmap.height; ++y) {
+        const uint8_t *row = bitmap.pixels + (bitmap.top + y) * bitmap.pitch + bitmap.left * 4;
+        for (size_t x = 0; x < bitmap.width; ++x) {
             const uint8_t *p = row + x * 4;
             if (p[0] != p[1] || p[1] != p[2]) { identity = NO; break; }
         }
@@ -4382,8 +4401,73 @@ static BOOL native_css_grayscale_is_identity(NativeCSSFilterLayer const *layer,
     if (identity) ++native_test_grayscale_identities;
 #endif
     if (getenv("VOX_GRAYSCALE_IDENTITY_DIAGNOSTICS"))
-        fprintf(stderr, "Vox grayscale identity: context_rows accepted=%d size=%zux%zu\n", identity, scan_width, scan_height);
+        fprintf(stderr, "Vox grayscale identity: context_rows accepted=%d size=%zux%zu\n", identity, bitmap.width, bitmap.height);
     return identity;
+}
+
+// A grayscale matrix is homogeneous, so it acts directly on premultiplied
+// sRGB bytes. Fuse a grayscale-only chain before quantizing, preserving alpha
+// and neutral pixels. Other formats, profiles and filter chains keep Core Image.
+static CGImageRef native_css_filter_grayscale_rows(NativeCSSFilterLayer const *layer,
+    CGContextRef context, CGRect *output_rect) {
+    if (!getenv("VOX_ENABLE_CPU_GRAYSCALE_FILTERS") || getenv("VOX_DISABLE_CPU_GRAYSCALE_FILTERS")) return NULL;
+    NativeGrayscaleBitmap bitmap;
+    if (!native_css_grayscale_bitmap(layer, context, &bitmap)) return NULL;
+    // Isolated filters commonly contain a small logo on a transparent viewport.
+    // Trim zero pixels only for the same integer device mapping as the ordinary
+    // clip crop. Whole-frame copy/borrow publication retains its full extent.
+    CGAffineTransform ctm = layer->destination ? CGContextGetCTM(layer->destination) : CGAffineTransformIdentity;
+    if (layer->destination && !layer->copies_to_fresh_frame && !layer->borrows_fresh_frame
+        && layer->scale >= 1 && layer->scale == floor(layer->scale)
+        && layer->canvas_width * layer->scale == CGBitmapContextGetWidth(context)
+        && layer->canvas_height * layer->scale == CGBitmapContextGetHeight(context)
+        && ctm.a == layer->scale && ctm.d == layer->scale && ctm.b == 0 && ctm.c == 0
+        && ctm.tx == floor(ctm.tx) && ctm.ty == floor(ctm.ty)) {
+        int left, top, right, bottom;
+        if (!native_opacity_layer_ink_bounds(bitmap.pixels, bitmap.pitch, (int)bitmap.left,
+                (int)bitmap.top, (int)(bitmap.left + bitmap.width), (int)(bitmap.top + bitmap.height),
+                &left, &top, &right, &bottom)) {
+            left = (int)bitmap.left; top = (int)bitmap.top; right = left + 1; bottom = top + 1;
+        }
+        bitmap.left = left; bitmap.top = top;
+        bitmap.width = right - left; bitmap.height = bottom - top;
+        bitmap.rect = CGRectMake(left, CGBitmapContextGetHeight(context) - bottom,
+            bitmap.width, bitmap.height);
+    }
+    // Own a compact output rather than changing the source. Allocation/image
+    // failure can then fall back without applying a partial filter twice.
+    size_t pitch = bitmap.width * 4;
+    CFMutableDataRef data = CFDataCreateMutable(NULL, pitch * bitmap.height);
+    if (!data) return NULL;
+    CFDataSetLength(data, pitch * bitmap.height);
+    uint8_t *pixels = CFDataGetMutableBytePtr(data);
+    uint32_t red = (uint32_t)lround(65536 * .2126 * bitmap.amount);
+    uint32_t green = (uint32_t)lround(65536 * .7152 * bitmap.amount);
+    uint32_t blue = (uint32_t)lround(65536 * .0722 * bitmap.amount);
+    uint32_t rr = 65536 - green - blue, gg = 65536 - red - blue, bb = 65536 - red - green;
+    for (size_t y = 0; y < bitmap.height; ++y) {
+        const uint8_t *row = bitmap.pixels + (bitmap.top + y) * bitmap.pitch + bitmap.left * 4;
+        for (size_t x = 0; x < bitmap.width; ++x) {
+            const uint8_t *p = row + x * 4;
+            uint8_t *out = pixels + y * pitch + x * 4;
+            uint32_t r = p[bitmap.bgra ? 2 : 0], g = p[1], b = p[bitmap.bgra ? 0 : 2];
+            out[bitmap.bgra ? 2 : 0] = (rr * r + green * g + blue * b + 32768) >> 16;
+            out[1] = (red * r + gg * g + blue * b + 32768) >> 16;
+            out[bitmap.bgra ? 0 : 2] = (red * r + green * g + bb * b + 32768) >> 16;
+            out[3] = p[3];
+        }
+    }
+    CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
+    CGImageRef image = provider ? CGImageCreate(bitmap.width, bitmap.height, 8, 32,
+        pitch, CGBitmapContextGetColorSpace(context), CGBitmapContextGetBitmapInfo(context),
+        provider, NULL, true, kCGRenderingIntentDefault) : NULL;
+    if (provider) CGDataProviderRelease(provider);
+    CFRelease(data);
+    if (!image) return NULL;
+    *output_rect = bitmap.rect;
+    if (getenv("VOX_CPU_GRAYSCALE_DIAGNOSTICS"))
+        fprintf(stderr, "Vox CPU grayscale: rows=%zux%zu amount=%g\n", bitmap.width, bitmap.height, bitmap.amount);
+    return image;
 }
 
 void native_end_css_filter_layer(void) {
@@ -4438,7 +4522,9 @@ void native_end_css_filter_layer(void) {
 	}
 #endif
     CGRect identity_rect = CGRectNull;
-    BOOL grayscale_identity = native_css_grayscale_is_identity(&layer, layer.context, &identity_rect);
+    CGImageRef grayscale_image = native_css_filter_grayscale_rows(&layer, layer.context, &identity_rect);
+    BOOL grayscale_identity = !grayscale_image
+        && native_css_grayscale_is_identity(&layer, layer.context, &identity_rect);
 	CGImageRef source_image;
 	if (layer.borrows_fresh_frame) {
 		// A filter attached to the enclosing layer still needs an isolated source.
@@ -4480,6 +4566,7 @@ void native_end_css_filter_layer(void) {
 #endif
 
 	if (source_image == NULL) {
+		if (grayscale_image) CGImageRelease(grayscale_image);
 		free(layer.operations);
 		native_free_svg_filter_graph(&layer);
 		return;
@@ -4540,7 +4627,10 @@ void native_end_css_filter_layer(void) {
 			}
 		}
 #endif
-		if (rendered_with_skia) {
+		if (grayscale_image) {
+			filtered_image = grayscale_image;
+			filtered_rect = identity_rect;
+		} else if (rendered_with_skia) {
 			// The bridge composited the Skia filter result directly.
 		} else if (layer.operation_count == 0 && layer.graph_node_count == 0) {
 			filtered_image = CGImageRetain(source_image);
@@ -4554,7 +4644,7 @@ void native_end_css_filter_layer(void) {
 					filtered_rect.size.width, filtered_rect.size.height));
 			if (cropped_source == NULL) filtered_rect = source_rect;
 			CGImageRef input = cropped_source ? cropped_source : source_image;
-			if (grayscale_identity) {
+			if (grayscale_identity && (cropped_source || CGRectEqualToRect(identity_rect, source_rect))) {
 				filtered_image = CGImageRetain(input);
 			} else {
 				native_initialize_css_filter_renderer();
