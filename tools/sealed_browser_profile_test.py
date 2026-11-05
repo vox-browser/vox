@@ -72,10 +72,12 @@ class SealedProfileTests(unittest.TestCase):
             binary.write_bytes(b'browser')
             source = out / '0-Vox.c.i'
             source.write_bytes(b'changed compiler input')
+            compiler = out / 'clang'
+            compiler.write_bytes(b'compiler identity; must never execute')
             frozen = out / 'frozen.json'
             frozen.write_text(json.dumps(dict(complete=True, compiler_exit=0,
-                compiler='/usr/bin/clang', sealed_inputs={str(source): '0'*64},
-                resolved_libraries={}, live_inputs={'/usr/bin/clang': profile.digest('/usr/bin/clang')})))
+                compiler=str(compiler), sealed_inputs={str(source): '0'*64},
+                resolved_libraries={}, live_inputs={str(compiler): profile.digest(compiler)})))
             receipt = out / 'latest.json'
             receipt.write_text(json.dumps(dict(exit=0, executable=str(binary),
                 executable_sha256=profile.digest(binary), frozen_compilation=str(frozen),
