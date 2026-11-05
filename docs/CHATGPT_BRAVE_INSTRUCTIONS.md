@@ -39,6 +39,13 @@ instructions than its matched control, with exact pixels and 47 broad checks
 passing. It remains below seven-pair acceptance and above Brave's count; see
 [HTML animation clock ownership](#november-5-html-animation-clock-ownership).
 
+The latest four-pair URL-input-cache diagnostic observes **3.432% fewer
+instructions than its matched base-only control**, with exact page pixels and
+32 focused plus 47 broad check jobs passing. Its production bundle uses parallel
+C/ThinLTO; the comparison pins one executable for both variants. Each diagnostic
+has its own control. The Brave target remains unmet; see
+[admitted URL input caching](#november-5-admitted-url-input-caching).
+
 ## Previous complete baseline
 
 The requested 5% advantage over Brave remains **unmet**. The earlier complete
@@ -2026,3 +2033,114 @@ leaf observations, captures, guards and all eleven tooling-test results. Runtime
 peaks stay below the 3 GiB guards. Original author scripts and the saved SOCKS
 capture remain unchanged. The broad-check cadence stays at zero, and the
 requested 5% advantage over Brave remains unmet.
+
+
+## November 5: admitted URL input caching
+
+Commit `cf91de94e` adds a binding-local memo of successful converted URL input
+and optional-base pairs. It keeps 512 entries in two-way sets, compares the full
+raw strings and base presence on every hit, and returns independent copies of
+all record components. URL objects and searchParams owners remain fresh. A
+32,768-bit admission filter avoids copying first-seen inputs into storage and
+clears after 4,096 successful misses. Inputs or bases above 2,048 bytes bypass
+the memo. Production preallocation resets replaced storage at a 2 MiB threshold
+plus one bounded entry. Closing the binding clears both this memo and its
+existing parsed-base cache. `VOX_RETAIN_URL_INPUT_PARSE` selects the base-only
+control; separate diagnostics report cache hits.
+
+A source-injected diagnostic records **48,258 constructions and 1,354 distinct
+input/base pairs**, all in one binding. It prints after both WebIDL conversions,
+so the engine still executes conversion order, reentry and exceptions. The
+thirty-second C `-O1`/no-inline capture passes bootstrap, complete content and
+unchanged pixels with stable identities. Its printing and instrumentation earn
+no instruction credit. A separate five-second production style-invalidation
+trace also passes those gates and is retained as a diagnostic lead.
+
+**All 32 final focused jobs pass**, covering **572 case executions** with the
+current compiler. Forty-five DOM URL cases and 25 JavaScriptCore binding cases
+pass in both cache modes under poisoned preallocation, ordinary GC, no GC and
+AddressSanitizer/UndefinedBehaviorSanitizer. Three workspace ownership cases pass
+in each mode. Coverage includes raw keys, invalid and absent bases, hash
+collisions, admission-filter saturation, oversized inputs, producer retirement,
+cache resets/close, independent paths and query owners, coercion reentry,
+original exceptions and unmodified upstream URL/query fixtures. Compile peak is
+9,772,597,248 bytes under 12 GiB; runtime peak is 922,157,056 bytes under 3 GiB.
+V frontend invocations retain their 10G limit.
+
+The first no-GC stress run exceeded its 3 GiB guard at 3,275,014,144 observed
+bytes. Arena retirement is inactive in that mode, leaving long-input parser
+allocations unreclaimed. Final ordinary/no-GC runs use 64 short stress inputs;
+poisoned preallocation and sanitized runs retain all 4,096 long inputs. The
+failed run stays archived. An early component controller also ran before its
+binary was published and stopped in preflight without samples. The prototype's
+8.54% unique-input regression is retained with its source and counters.
+
+Benchmark commit `4509b41d6` compares the same observed constructor sequence
+against canonical parse/serialization results. Each scene uses alternating
+control/candidate/candidate/control executions of one C `-O2` preallocated
+component binary, with separate execution diagnostics. Reference setup and cache
+teardown lie outside the measured parse/serialize intervals. The final observed
+component medians are:
+
+| Component scene | Fewer observed instructions |
+| --- | ---: |
+| Observed constructor sequence, empty memo | 60.733% |
+| Observed constructor sequence, warm memo | 63.283% |
+| Repeated relative inputs | 69.324% |
+| Unique inputs | 0.339% |
+| Oversized inputs | −0.157% |
+
+The admission filter removes the prototype's material unique-input regression.
+The small oversized-input regression is preserved. These component results do
+not establish browser costs. The [focused/component receipt](performance/chatgpt-url-input-cache-20261105.json)
+links all versions, raw observations, compiler/source proofs, guards, host
+conditions, the observed input sequence and verified archives.
+
+The latest completed production executable is
+`f2762ca3223ba199dab08c476096c61accdd00ac812f125c9a6da279f9708b4d`,
+compiled as 33 parallel C units with ThinLTO. Its completed receipt has identical
+aggregate build-input hashes before and after compilation. Parallel builds do
+not publish sealed preprocessed C; retained parser disassembly verifies the
+admission filter, 4,096-miss reset, 2 MiB retirement threshold and independent
+record-copy path. Separate candidate/control diagnostics confirm cache hits
+only with the memo enabled. All twelve captures across diagnostics and the
+unprofiled cohort pass bootstrap, full content, exact reference pixels and zero
+browser/kernel exits. Executable, dependency, tool and fixture identities stay
+stable. No separate production build or app copy is used.
+
+| Four-pair launch-through-encoded-PNG diagnostic | Observed instructions |
+| --- | ---: |
+| Base-only control observations | 30,700,369,364; 30,605,155,434 |
+| Input-memo candidate observations | 29,148,338,369; 30,052,916,083 |
+| Control median | 30,652,762,399 |
+| Candidate median | 29,600,627,226 |
+| Observed median reduction | 3.432% |
+| Conservative control/candidate separation | 552,239,351 |
+
+The positive separation triggers the 5,000,000-instruction checkpoint:
+**all 47 broad checks pass**. The screenshot set has 17 exact cases and three
+within its existing bounds (`inline-node`: 13 pixels; `text-decorations`: 1,341;
+`canvas-text`: 2,033). Native rendering checks and all 200 exact upstream AST
+comparisons pass. No references or tolerances change; the cadence resets to zero.
+
+The cohort retains the saved SOCKS fixture, original scripts, empty private
+profiles/caches, five-second unfocused settle, 1024×768 viewport, scale 2 and
+exclusive resource-coalition launch-through-encoded-PNG boundary for both
+browsers. OS filesystem/shader caches remain retained. The guard adopts 45
+process identities without errors and peaks at 1,770,110,976 bytes under 12 GiB;
+controller/guard exit is zero. Driver exit 1 records the unmet target.
+
+Controls complete 292/280 frame checkpoints and 10/11 box builds; candidates
+complete 255/312 frames and 10/11 box builds. Starting Vox load averages range
+22.64–33.19 on 18 CPUs, with focused sanitizer compilation overlapping the
+cohort. Different frame counts and host load qualify causal attribution. This
+is an observed four-pair diagnostic with only two candidate observations, below
+seven-pair acceptance. Brave's four lower bounds range
+16,235,663,407–16,433,599,280, still below Vox. No historical single/parallel-C
+comparison receives optimization credit.
+
+The [production receipt](performance/chatgpt-url-input-cache-production-20261105.json)
+links every capture, raw count, ownership audit, disassembly proof, broad check
+and verified archive. The requested **5% advantage over Brave remains unmet**.
+These frozen-page results establish neither live-site performance, isolated
+rendering time nor scrolling FPS, and no qualifying catalog entry is added.

@@ -1,0 +1,2363 @@
+{
+  "version": 1,
+  "complete": true,
+  "implementation_commit": "cf91de94e",
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "f2762ca3223ba199dab08c476096c61accdd00ac812f125c9a6da279f9708b4d",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "f755cf994934823a6d6383e60099be5388b77155138840de54706d988a2a229e",
+      "dirty": true,
+      "head": "17841f527c79a5c9f2a226bd547179599cbfdf0d",
+      "repository_sha256": "94148fa08b93b107f80a27f9b4c8e2517c76e6b1c8bd86357ada964e439d3dfb"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "17841f527c79a5c9f2a226bd547179599cbfdf0d",
+      "id": "24f98834afbb4b51b4da93faa41b8a47"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f755cf994934823a6d6383e60099be5388b77155138840de54706d988a2a229e",
+      "dirty": true,
+      "head": "1226f65b771d2f3fce2d053bd2958662becc52ac",
+      "repository_sha256": "5230aa674814e9a3b2251ba289cf2963d53c3486c0bb4c8d8360f2c5c77e7593"
+    }
+  },
+  "diagnostic": {
+    "report": "docs/performance/chatgpt-url-input-cache-production-r1-diagnostic-20261105.json",
+    "complete": true,
+    "path_verified": true,
+    "observations": 4
+  },
+  "matched": {
+    "report": "docs/performance/chatgpt-url-input-cache-production-r1-matched-20261105.json",
+    "complete": true,
+    "instrumented": false,
+    "observations": 8,
+    "control": [
+      {
+        "lower": 30700369364,
+        "upper": 30700369364
+      },
+      {
+        "lower": 30605155434,
+        "upper": 30605155434
+      }
+    ],
+    "candidate": [
+      {
+        "lower": 29148338369,
+        "upper": 29148338369
+      },
+      {
+        "lower": 30052916083,
+        "upper": 30052916083
+      }
+    ],
+    "brave": [
+      {
+        "lower": 16341174458,
+        "upper": 16341174458
+      },
+      {
+        "lower": 16433599280,
+        "upper": 16440288232
+      },
+      {
+        "lower": 16235663407,
+        "upper": 16249698203
+      },
+      {
+        "lower": 16408948214,
+        "upper": 16415176989
+      }
+    ],
+    "control_median": 30652762399.0,
+    "candidate_median": 29600627226.0,
+    "observed_median_reduction_percent": 3.43243182883356,
+    "conservative_separation": 552239351
+  },
+  "work": [
+    {
+      "variant": "control",
+      "frame_checkpoints": 292,
+      "box_build_checkpoints": 10,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          22.63818359375,
+          27.1689453125,
+          38.79345703125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          24.37158203125,
+          27.39306640625,
+          38.73681640625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_checkpoints": 255,
+      "box_build_checkpoints": 10,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          27.166015625,
+          27.70654296875,
+          38.390625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          26.291015625,
+          27.50146484375,
+          38.19287109375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_checkpoints": 312,
+      "box_build_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          25.626953125,
+          27.34326171875,
+          38.07421875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          25.97705078125,
+          27.38720703125,
+          38.02685546875
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_checkpoints": 280,
+      "box_build_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          33.1865234375,
+          28.93359375,
+          38.154296875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          33.29541015625,
+          29.08642578125,
+          38.10009765625
+        ]
+      }
+    }
+  ],
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-url-input-cache-production-20261105-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "81908": "Thu Nov  5 10:29:56 2026    ",
+      "81911": "Thu Nov  5 10:29:56 2026    ",
+      "82779": "Thu Nov  5 10:30:08 2026    ",
+      "82784": "Thu Nov  5 10:30:08 2026    ",
+      "82789": "Thu Nov  5 10:30:08 2026    ",
+      "82800": "Thu Nov  5 10:30:08 2026    ",
+      "82801": "Thu Nov  5 10:30:08 2026    ",
+      "82805": "Thu Nov  5 10:30:08 2026    ",
+      "83556": "Thu Nov  5 10:30:22 2026    ",
+      "83560": "Thu Nov  5 10:30:22 2026    ",
+      "83568": "Thu Nov  5 10:30:22 2026    ",
+      "83569": "Thu Nov  5 10:30:22 2026    ",
+      "83573": "Thu Nov  5 10:30:22 2026    ",
+      "84123": "Thu Nov  5 10:30:35 2026    ",
+      "84126": "Thu Nov  5 10:30:35 2026    ",
+      "85392": "Thu Nov  5 10:30:57 2026    ",
+      "85395": "Thu Nov  5 10:30:57 2026    ",
+      "86431": "Thu Nov  5 10:31:11 2026    ",
+      "86435": "Thu Nov  5 10:31:11 2026    ",
+      "86449": "Thu Nov  5 10:31:11 2026    ",
+      "86451": "Thu Nov  5 10:31:11 2026    ",
+      "86455": "Thu Nov  5 10:31:11 2026    ",
+      "87145": "Thu Nov  5 10:31:26 2026    ",
+      "87152": "Thu Nov  5 10:31:26 2026    ",
+      "87161": "Thu Nov  5 10:31:26 2026    ",
+      "87162": "Thu Nov  5 10:31:26 2026    ",
+      "87165": "Thu Nov  5 10:31:26 2026    ",
+      "87941": "Thu Nov  5 10:31:41 2026    ",
+      "87949": "Thu Nov  5 10:31:42 2026    ",
+      "88656": "Thu Nov  5 10:31:55 2026    ",
+      "88661": "Thu Nov  5 10:31:55 2026    ",
+      "89251": "Thu Nov  5 10:32:07 2026    ",
+      "89253": "Thu Nov  5 10:32:07 2026    ",
+      "89274": "Thu Nov  5 10:32:08 2026    ",
+      "89275": "Thu Nov  5 10:32:08 2026    ",
+      "89276": "Thu Nov  5 10:32:08 2026    ",
+      "89306": "Thu Nov  5 10:32:08 2026    ",
+      "89314": "Thu Nov  5 10:32:08 2026    ",
+      "90119": "Thu Nov  5 10:32:24 2026    ",
+      "90123": "Thu Nov  5 10:32:24 2026    ",
+      "90139": "Thu Nov  5 10:32:24 2026    ",
+      "90140": "Thu Nov  5 10:32:24 2026    ",
+      "90146": "Thu Nov  5 10:32:24 2026    ",
+      "91012": "Thu Nov  5 10:32:38 2026    ",
+      "91014": "Thu Nov  5 10:32:38 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1770110976,
+    "elapsed_seconds": 497.068644208,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "broad": {
+    "complete": true,
+    "passed": true,
+    "feature_before": {
+      "/Users/alex/code/vox2/main_animation_frame.v": "ce868b5b8fe6befb96631033d6ff32479027f4f9b11fefc0129e79b4f301b2ab",
+      "/Users/alex/code/vox2/main_animation_clock_test.v": "f8fcdad40a7a94a0a32e6022280bb737f53bf5066e377468c24b9493206ada76"
+    },
+    "feature_after": {
+      "/Users/alex/code/vox2/main_animation_frame.v": "ce868b5b8fe6befb96631033d6ff32479027f4f9b11fefc0129e79b4f301b2ab",
+      "/Users/alex/code/vox2/main_animation_clock_test.v": "f8fcdad40a7a94a0a32e6022280bb737f53bf5066e377468c24b9493206ada76"
+    },
+    "visual_identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "5d97ca5a3e4400ec3ad53986888b9cc09052c114ff753999f5bd2b6ea5e9f709",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7ea0ba00f6e2c1b785050d74cb06d3d3feeae2cde329544c9905342724db19ff",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "161713f464e9589300059a314a9248ea2826db99c2d90ed9f9bcb884f7669a9d",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "f2762ca3223ba199dab08c476096c61accdd00ac812f125c9a6da279f9708b4d",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/Build/pixel-tools/pixel_diff": "f340c01cfa7a91f03313608183160f2ecf7070edaee34ddacd47d7a5d83d9a91",
+      "/Users/alex/code/vox2/tools/pixel_diff.v": "3e34f4d1ed211a5476bc54c3483ab074b2ace8c36239d77f15e6f50d990ddfb7",
+      "/Users/alex/code/vox2/compare_screenshots.sh": "07ae2a52bbbcfded48991149c20db27c10cabe65baee349c5c9af101f7066b99",
+      "/Users/alex/code/vox2/capture_screenshot.sh": "fdf053e6ae1f7ae32a9c44408504387b860784f1b40de9547e3bf73db3fd0d62"
+    },
+    "rows": [
+      {
+        "label": "diff-controls",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/diff-controls.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/diff-controls.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "python3",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/verify_diff.py"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793863974.600307,
+          "cpu_count": 18,
+          "load": [
+            33.2333984375,
+            29.2275390625,
+            38.04541015625
+          ]
+        },
+        "host_after": {
+          "unix": 1793863974.981729,
+          "load": [
+            33.2333984375,
+            29.2275390625,
+            38.04541015625
+          ]
+        }
+      },
+      {
+        "label": "visual-0-inline-node",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-0-inline-node.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-0-inline-node.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "inline-node"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-0-inline-node"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793863975.131385,
+          "cpu_count": 18,
+          "load": [
+            33.2333984375,
+            29.2275390625,
+            38.04541015625
+          ]
+        },
+        "host_after": {
+          "unix": 1793863978.61117,
+          "load": [
+            33.2333984375,
+            29.2275390625,
+            38.04541015625
+          ]
+        }
+      },
+      {
+        "label": "visual-1-ordered-list",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-1-ordered-list.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-1-ordered-list.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "ordered-list"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-1-ordered-list"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793863978.736783,
+          "cpu_count": 18,
+          "load": [
+            33.2333984375,
+            29.2275390625,
+            38.04541015625
+          ]
+        },
+        "host_after": {
+          "unix": 1793863981.861151,
+          "load": [
+            35.61669921875,
+            29.7880859375,
+            38.19140625
+          ]
+        }
+      },
+      {
+        "label": "visual-2-text-decorations",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-2-text-decorations.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-2-text-decorations.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "text-decorations"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-2-text-decorations"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793863981.992049,
+          "cpu_count": 18,
+          "load": [
+            35.61669921875,
+            29.7880859375,
+            38.19140625
+          ]
+        },
+        "host_after": {
+          "unix": 1793863985.207527,
+          "load": [
+            36.60791015625,
+            30.09033203125,
+            38.24853515625
+          ]
+        }
+      },
+      {
+        "label": "visual-3-line-clamp-properties",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-3-line-clamp-properties.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-3-line-clamp-properties.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "line-clamp-properties"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-3-line-clamp-properties"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793863985.343816,
+          "cpu_count": 18,
+          "load": [
+            36.60791015625,
+            30.09033203125,
+            38.24853515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793863991.0001888,
+          "load": [
+            37.76025390625,
+            30.43701171875,
+            38.3232421875
+          ]
+        }
+      },
+      {
+        "label": "visual-4-canvas-text",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-4-canvas-text.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-4-canvas-text.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "canvas-text"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-4-canvas-text"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793863991.134241,
+          "cpu_count": 18,
+          "load": [
+            37.76025390625,
+            30.43701171875,
+            38.3232421875
+          ]
+        },
+        "host_after": {
+          "unix": 1793863994.627997,
+          "load": [
+            37.939453125,
+            30.595703125,
+            38.3330078125
+          ]
+        }
+      },
+      {
+        "label": "visual-5-selection-focus-between-text-controls",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-5-selection-focus-between-text-controls.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-5-selection-focus-between-text-controls.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "selection-focus-between-text-controls"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-5-selection-focus-between-text-controls"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793863994.7635598,
+          "cpu_count": 18,
+          "load": [
+            37.939453125,
+            30.595703125,
+            38.3330078125
+          ]
+        },
+        "host_after": {
+          "unix": 1793864000.882092,
+          "load": [
+            37.38330078125,
+            30.60205078125,
+            38.2900390625
+          ]
+        }
+      },
+      {
+        "label": "visual-6-selection-insert-between-boundaries",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-6-selection-insert-between-boundaries.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-6-selection-insert-between-boundaries.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "selection-insert-between-boundaries"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-6-selection-insert-between-boundaries"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864001.054206,
+          "cpu_count": 18,
+          "load": [
+            37.38330078125,
+            30.60205078125,
+            38.2900390625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864007.0055208,
+          "load": [
+            37.6728515625,
+            30.7744140625,
+            38.3056640625
+          ]
+        }
+      },
+      {
+        "label": "visual-7-selection-moves-between-subtrees",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-7-selection-moves-between-subtrees.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-7-selection-moves-between-subtrees.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "selection-moves-between-subtrees"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-7-selection-moves-between-subtrees"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864007.163297,
+          "cpu_count": 18,
+          "load": [
+            37.6728515625,
+            30.7744140625,
+            38.3056640625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864013.191231,
+          "load": [
+            38.09912109375,
+            30.97705078125,
+            38.3330078125
+          ]
+        }
+      },
+      {
+        "label": "visual-8-empty-caret-with-placeholder",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-8-empty-caret-with-placeholder.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-8-empty-caret-with-placeholder.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "empty-caret-with-placeholder"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-8-empty-caret-with-placeholder"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864013.387452,
+          "cpu_count": 18,
+          "load": [
+            38.09912109375,
+            30.97705078125,
+            38.3330078125
+          ]
+        },
+        "host_after": {
+          "unix": 1793864019.345619,
+          "load": [
+            38.0908203125,
+            31.09326171875,
+            38.3310546875
+          ]
+        }
+      },
+      {
+        "label": "visual-9-caret-after-first-character",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-9-caret-after-first-character.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-9-caret-after-first-character.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "caret-after-first-character"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-9-caret-after-first-character"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864019.552713,
+          "cpu_count": 18,
+          "load": [
+            37.92333984375,
+            31.17431640625,
+            38.3173828125
+          ]
+        },
+        "host_after": {
+          "unix": 1793864025.352038,
+          "load": [
+            36.72802734375,
+            31.03857421875,
+            38.2275390625
+          ]
+        }
+      },
+      {
+        "label": "visual-10-default-ignorable-code-points-not-painted",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-10-default-ignorable-code-points-not-painted.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-10-default-ignorable-code-points-not-painted.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "default-ignorable-code-points-not-painted"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-10-default-ignorable-code-points-not-painted"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864025.5447328,
+          "cpu_count": 18,
+          "load": [
+            36.72802734375,
+            31.03857421875,
+            38.2275390625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864031.4056509,
+          "load": [
+            36.90966796875,
+            31.17041015625,
+            38.23193359375
+          ]
+        }
+      },
+      {
+        "label": "visual-11-svg-image-source-switch-same-size",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-11-svg-image-source-switch-same-size.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-11-svg-image-source-switch-same-size.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-11-svg-image-source-switch-same-size"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864031.557146,
+          "cpu_count": 18,
+          "load": [
+            36.90966796875,
+            31.17041015625,
+            38.23193359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864037.386577,
+          "load": [
+            36.75634765625,
+            31.23388671875,
+            38.212890625
+          ]
+        }
+      },
+      {
+        "label": "visual-12-gradient-stop-added",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-12-gradient-stop-added.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-12-gradient-stop-added.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-added.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-12-gradient-stop-added"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864037.5996501,
+          "cpu_count": 18,
+          "load": [
+            36.75634765625,
+            31.23388671875,
+            38.212890625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864043.599715,
+          "load": [
+            37.896484375,
+            31.56201171875,
+            38.28759765625
+          ]
+        }
+      },
+      {
+        "label": "visual-13-gradient-stop-color-animation",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-13-gradient-stop-color-animation.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-13-gradient-stop-color-animation.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-color-animation.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-13-gradient-stop-color-animation"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864043.7710552,
+          "cpu_count": 18,
+          "load": [
+            37.896484375,
+            31.56201171875,
+            38.28759765625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864049.7623181,
+          "load": [
+            37.78369140625,
+            31.74169921875,
+            38.27197265625
+          ]
+        }
+      },
+      {
+        "label": "visual-14-gradient-href-chain-update",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-14-gradient-href-chain-update.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-14-gradient-href-chain-update.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-href-chain-update.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-14-gradient-href-chain-update"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864050.021604,
+          "cpu_count": 18,
+          "load": [
+            37.78369140625,
+            31.74169921875,
+            38.27197265625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864055.8119712,
+          "load": [
+            37.080078125,
+            31.69580078125,
+            38.21728515625
+          ]
+        }
+      },
+      {
+        "label": "visual-15-gradient-transform-attribute-update",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-15-gradient-transform-attribute-update.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-15-gradient-transform-attribute-update.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-transform-attribute-update.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-15-gradient-transform-attribute-update"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864056.001451,
+          "cpu_count": 18,
+          "load": [
+            37.080078125,
+            31.69580078125,
+            38.21728515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864061.8679419,
+          "load": [
+            37.4736328125,
+            31.86669921875,
+            38.2392578125
+          ]
+        }
+      },
+      {
+        "label": "visual-16-gradient-stop-offset-update",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-16-gradient-stop-offset-update.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-16-gradient-stop-offset-update.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-offset-update.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-16-gradient-stop-offset-update"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864062.040919,
+          "cpu_count": 18,
+          "load": [
+            37.4736328125,
+            31.86669921875,
+            38.2392578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793864067.902462,
+          "load": [
+            36.794921875,
+            31.81884765625,
+            38.18505859375
+          ]
+        }
+      },
+      {
+        "label": "visual-17-gradient-stop-move-before",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-17-gradient-stop-move-before.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-17-gradient-stop-move-before.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-17-gradient-stop-move-before"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864068.066525,
+          "cpu_count": 18,
+          "load": [
+            36.794921875,
+            31.81884765625,
+            38.18505859375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864073.932245,
+          "load": [
+            36.97119140625,
+            31.93798828125,
+            38.189453125
+          ]
+        }
+      },
+      {
+        "label": "visual-18-paint-server-id-collision",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-18-paint-server-id-collision.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-18-paint-server-id-collision.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-18-paint-server-id-collision"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864074.0969641,
+          "cpu_count": 18,
+          "load": [
+            36.97119140625,
+            31.93798828125,
+            38.189453125
+          ]
+        },
+        "host_after": {
+          "unix": 1793864079.8726761,
+          "load": [
+            38.025390625,
+            32.333984375,
+            38.2568359375
+          ]
+        }
+      },
+      {
+        "label": "visual-19-paint-server-html-id-collision",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-19-paint-server-html-id-collision.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/visual-19-paint-server-html-id-collision.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "sh",
+          "/Users/alex/code/vox2/compare_screenshots.sh",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html"
+        ],
+        "environment": {
+          "V_BIN": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/v-diff-wrapper.sh",
+          "SCREENSHOT_OUTPUT_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/screenshots",
+          "SCREENSHOT_BROWSER_LOG_DIR": "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/browser-logs/visual-19-paint-server-html-id-collision"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864080.0305421,
+          "cpu_count": 18,
+          "load": [
+            38.025390625,
+            32.333984375,
+            38.2568359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864085.798155,
+          "load": [
+            38.02294921875,
+            32.427734375,
+            38.2548828125
+          ]
+        }
+      },
+      {
+        "label": "native_skia_shared_layer-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shared_layer-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shared_layer-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_skia_shared_layer_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shared_layer"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864085.901616,
+          "cpu_count": 18,
+          "load": [
+            38.02294921875,
+            32.427734375,
+            38.2548828125
+          ]
+        },
+        "host_after": {
+          "unix": 1793864107.57761,
+          "load": [
+            38.716796875,
+            32.94921875,
+            38.3056640625
+          ]
+        }
+      },
+      {
+        "label": "native_skia_shared_layer-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shared_layer-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shared_layer-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shared_layer"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864107.622489,
+          "cpu_count": 18,
+          "load": [
+            38.716796875,
+            32.94921875,
+            38.3056640625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864111.2006469,
+          "load": [
+            38.1787109375,
+            32.93310546875,
+            38.2685546875
+          ]
+        }
+      },
+      {
+        "label": "native_skia_large_layer-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_large_layer-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_large_layer-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_skia_large_layer_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_large_layer"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864111.2497568,
+          "cpu_count": 18,
+          "load": [
+            38.1787109375,
+            32.93310546875,
+            38.2685546875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864125.513184,
+          "load": [
+            35.54931640625,
+            32.63525390625,
+            38.06982421875
+          ]
+        }
+      },
+      {
+        "label": "native_skia_large_layer-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_large_layer-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_large_layer-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_large_layer"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864125.5631008,
+          "cpu_count": 18,
+          "load": [
+            35.54931640625,
+            32.63525390625,
+            38.06982421875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864126.1703548,
+          "load": [
+            35.54931640625,
+            32.63525390625,
+            38.06982421875
+          ]
+        }
+      },
+      {
+        "label": "native_clipped_root_shadow-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_clipped_root_shadow-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_clipped_root_shadow-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_clipped_root_shadow_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_clipped_root_shadow"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864126.222425,
+          "cpu_count": 18,
+          "load": [
+            35.54931640625,
+            32.63525390625,
+            38.06982421875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864139.836477,
+          "load": [
+            32.68359375,
+            32.14599609375,
+            37.80029296875
+          ]
+        }
+      },
+      {
+        "label": "native_clipped_root_shadow-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_clipped_root_shadow-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_clipped_root_shadow-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_clipped_root_shadow"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864139.8836942,
+          "cpu_count": 18,
+          "load": [
+            32.68359375,
+            32.14599609375,
+            37.80029296875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864142.0886242,
+          "load": [
+            32.68359375,
+            32.14599609375,
+            37.80029296875
+          ]
+        }
+      },
+      {
+        "label": "native_skia_inner_shadow-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_inner_shadow-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_inner_shadow-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_skia_inner_shadow_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_inner_shadow"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864142.131225,
+          "cpu_count": 18,
+          "load": [
+            32.68359375,
+            32.14599609375,
+            37.80029296875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864156.552503,
+          "load": [
+            34.6748046875,
+            32.62548828125,
+            37.87255859375
+          ]
+        }
+      },
+      {
+        "label": "native_skia_inner_shadow-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_inner_shadow-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_inner_shadow-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_inner_shadow"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864156.594403,
+          "cpu_count": 18,
+          "load": [
+            34.6748046875,
+            32.62548828125,
+            37.87255859375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864157.1536808,
+          "load": [
+            34.6748046875,
+            32.62548828125,
+            37.87255859375
+          ]
+        }
+      },
+      {
+        "label": "native_skia_outer_shadow_group-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_outer_shadow_group-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_outer_shadow_group-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_skia_outer_shadow_group_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_outer_shadow_group"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864157.1998239,
+          "cpu_count": 18,
+          "load": [
+            34.6748046875,
+            32.62548828125,
+            37.87255859375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864170.590847,
+          "load": [
+            32.44873046875,
+            32.22119140625,
+            37.6357421875
+          ]
+        }
+      },
+      {
+        "label": "native_skia_outer_shadow_group-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_outer_shadow_group-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_outer_shadow_group-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_outer_shadow_group"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864170.6417768,
+          "cpu_count": 18,
+          "load": [
+            32.44873046875,
+            32.22119140625,
+            37.6357421875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864171.4973319,
+          "load": [
+            32.44873046875,
+            32.22119140625,
+            37.6357421875
+          ]
+        }
+      },
+      {
+        "label": "native_picture_regions-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_regions-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_regions-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_picture_regions_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_regions"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864171.544225,
+          "cpu_count": 18,
+          "load": [
+            32.44873046875,
+            32.22119140625,
+            37.6357421875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864185.2610922,
+          "load": [
+            29.7783203125,
+            31.62548828125,
+            37.3271484375
+          ]
+        }
+      },
+      {
+        "label": "native_picture_regions-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_regions-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_regions-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_regions"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864185.3166049,
+          "cpu_count": 18,
+          "load": [
+            29.7783203125,
+            31.62548828125,
+            37.3271484375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864186.480631,
+          "load": [
+            29.7783203125,
+            31.62548828125,
+            37.3271484375
+          ]
+        }
+      },
+      {
+        "label": "native_skia_deferred_layer-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_deferred_layer-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_deferred_layer-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_skia_deferred_layer_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_deferred_layer"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864186.536566,
+          "cpu_count": 18,
+          "load": [
+            29.7783203125,
+            31.62548828125,
+            37.3271484375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864204.469165,
+          "load": [
+            32.90966796875,
+            32.22998046875,
+            37.443359375
+          ]
+        }
+      },
+      {
+        "label": "native_skia_deferred_layer-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_deferred_layer-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_deferred_layer-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_deferred_layer"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864204.525702,
+          "cpu_count": 18,
+          "load": [
+            32.90966796875,
+            32.22998046875,
+            37.443359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864205.313427,
+          "load": [
+            33.07666015625,
+            32.27587890625,
+            37.4287109375
+          ]
+        }
+      },
+      {
+        "label": "native_css_blur_regions-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_css_blur_regions-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_css_blur_regions-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_css_blur_regions_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_css_blur_regions"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864205.369042,
+          "cpu_count": 18,
+          "load": [
+            33.07666015625,
+            32.27587890625,
+            37.4287109375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864227.932538,
+          "load": [
+            36.1484375,
+            32.98046875,
+            37.55859375
+          ]
+        }
+      },
+      {
+        "label": "native_css_blur_regions-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_css_blur_regions-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_css_blur_regions-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_css_blur_regions"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864227.9906938,
+          "cpu_count": 18,
+          "load": [
+            36.1484375,
+            32.98046875,
+            37.55859375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864229.9533691,
+          "load": [
+            35.33544921875,
+            32.8642578125,
+            37.49072265625
+          ]
+        }
+      },
+      {
+        "label": "native_skia_drop_shadow_chain-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_drop_shadow_chain-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_drop_shadow_chain-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_skia_drop_shadow_chain_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_drop_shadow_chain"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864230.017559,
+          "cpu_count": 18,
+          "load": [
+            35.33544921875,
+            32.8642578125,
+            37.49072265625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864252.780843,
+          "load": [
+            36.6455078125,
+            33.35009765625,
+            37.55859375
+          ]
+        }
+      },
+      {
+        "label": "native_skia_drop_shadow_chain-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_drop_shadow_chain-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_drop_shadow_chain-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_drop_shadow_chain",
+          "--require-gpu"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864252.83775,
+          "cpu_count": 18,
+          "load": [
+            36.6455078125,
+            33.35009765625,
+            37.55859375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864253.726994,
+          "load": [
+            36.6455078125,
+            33.35009765625,
+            37.55859375
+          ]
+        }
+      },
+      {
+        "label": "native_skia_shadow_recording_bounds-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shadow_recording_bounds-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shadow_recording_bounds-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-fno-rtti",
+          "-x",
+          "objective-c++",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_skia_shadow_recording_bounds_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shadow_recording_bounds"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864253.812236,
+          "cpu_count": 18,
+          "load": [
+            36.6455078125,
+            33.35009765625,
+            37.55859375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864273.401483,
+          "load": [
+            38.82666015625,
+            34.017578125,
+            37.697265625
+          ]
+        }
+      },
+      {
+        "label": "native_skia_shadow_recording_bounds-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shadow_recording_bounds-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shadow_recording_bounds-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_skia_shadow_recording_bounds"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864273.464386,
+          "cpu_count": 18,
+          "load": [
+            38.82666015625,
+            34.017578125,
+            37.697265625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864273.941938,
+          "load": [
+            38.82666015625,
+            34.017578125,
+            37.697265625
+          ]
+        }
+      },
+      {
+        "label": "native_picture_typeface_cache-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_typeface_cache-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_typeface_cache-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+          "/Users/alex/code/vox2/tools/native_picture_typeface_cache_test.cpp",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_typeface_cache"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864274.010596,
+          "cpu_count": 18,
+          "load": [
+            38.82666015625,
+            34.017578125,
+            37.697265625
+          ]
+        },
+        "host_after": {
+          "unix": 1793864277.671353,
+          "load": [
+            39.32080078125,
+            34.19970703125,
+            37.73974609375
+          ]
+        }
+      },
+      {
+        "label": "native_picture_typeface_cache-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_typeface_cache-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_typeface_cache-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/native_picture_typeface_cache"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864277.741314,
+          "cpu_count": 18,
+          "load": [
+            39.32080078125,
+            34.19970703125,
+            37.73974609375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864278.365597,
+          "load": [
+            39.32080078125,
+            34.19970703125,
+            37.73974609375
+          ]
+        }
+      },
+      {
+        "label": "ast-default-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-default-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-default-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-default",
+          "/Users/alex/code/vox2/tools/libjs_ast_corpus.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864278.446193,
+          "cpu_count": 18,
+          "load": [
+            39.32080078125,
+            34.19970703125,
+            37.73974609375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864281.936196,
+          "load": [
+            40.015625,
+            34.4287109375,
+            37.7998046875
+          ]
+        }
+      },
+      {
+        "label": "ast-default-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-default-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-default-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-default",
+          "--all"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864282.004919,
+          "cpu_count": 18,
+          "load": [
+            40.015625,
+            34.4287109375,
+            37.7998046875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864282.486051,
+          "load": [
+            40.015625,
+            34.4287109375,
+            37.7998046875
+          ]
+        }
+      },
+      {
+        "label": "ast-none-compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-none-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-none-compile.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-none",
+          "/Users/alex/code/vox2/tools/libjs_ast_corpus.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864282.5932438,
+          "cpu_count": 18,
+          "load": [
+            40.015625,
+            34.4287109375,
+            37.7998046875
+          ]
+        },
+        "host_after": {
+          "unix": 1793864285.991235,
+          "load": [
+            39.53369140625,
+            34.42138671875,
+            37.77734375
+          ]
+        }
+      },
+      {
+        "label": "ast-none-run",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-none-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-none-run.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-input-cache-production-20261105-r1/broad/ast-none",
+          "--all"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793864286.0658822,
+          "cpu_count": 18,
+          "load": [
+            39.53369140625,
+            34.42138671875,
+            37.77734375
+          ]
+        },
+        "host_after": {
+          "unix": 1793864286.580255,
+          "load": [
+            39.53369140625,
+            34.42138671875,
+            37.77734375
+          ]
+        }
+      }
+    ]
+  },
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "qualification": "Four alternating launch-through-encoded-document-PNG Vox/Brave pairs with base-only control/candidate/candidate/control modes on one completed parallel-C/ThinLTO executable. Source/input aggregate hashes are stable across that completed build; raw parser disassembly proves the final admission filter, arena retirement and independent-copy path. Separate execution diagnostics confirm cache hits. Original author bytes and frozen single SOCKS fixture, unchanged content/pixel references, fresh private profiles/caches, JavaScriptCore bootstrap, five-second unfocused settle, 1024x768 viewport and scale 2 remain unchanged. Exclusive resource-coalition counters for both engines; OS filesystem/shader caches retained. All twelve browser/kernel exits zero, every page content/pixel check exact and all measurement inputs stable. Driver exit 1 records the unmet target. Four pairs (two candidate observations) are below seven-pair acceptance. Focused sanitizer compilation overlaps the cohort; host load ranges 22.64-33.19 on 18 CPUs and frame counts vary. These conditions qualify causal attribution; observed four-pair medians do not establish an accepted Brave advantage or isolated rendering time. No comparison across historical single/parallel compiler modes receives credit. The broad screenshot set passes 17 exact cases and three within its existing bounds; its tolerances are unchanged.",
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "target_fraction": "0.95",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-url-input-cache-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "753d1df1600a83dcbc446fc8c6846da93870db2343d0fbdb980da503684bda61",
+      "bytes": 1345846
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-cache-production-r1-matched-20261105-evidence.zip",
+      "sha256": "6b0d5305543d75a1628ce23792c55c039f774ebef248f9e8865916c660f7211c",
+      "bytes": 2747914
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-cache-production-r1-broad-20261105-evidence.zip",
+      "sha256": "13624f8212d5045232c814b5dd0fee710eb1cb066ae0a2213e18476971a0ee66",
+      "bytes": 374271
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-cache-production-20261105-controller-evidence.zip",
+      "sha256": "38c443e24797e2a186b13a088fc2944a8d0cbaa9059a56db5cbc814390cb166a",
+      "bytes": 108298
+    }
+  ],
+  "broad_visual_results": {
+    "visual-7-selection-moves-between-subtrees.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-12-gradient-stop-added.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-0-inline-node.log": [
+      "13 (0.0027%)"
+    ],
+    "visual-1-ordered-list.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-9-caret-after-first-character.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-4-canvas-text.log": [
+      "2033 (0.4235%)"
+    ],
+    "visual-14-gradient-href-chain-update.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-13-gradient-stop-color-animation.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-3-line-clamp-properties.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-6-selection-insert-between-boundaries.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-10-default-ignorable-code-points-not-painted.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-19-paint-server-html-id-collision.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-5-selection-focus-between-text-controls.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-17-gradient-stop-move-before.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-15-gradient-transform-attribute-update.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-8-empty-caret-with-placeholder.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-18-paint-server-id-collision.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-16-gradient-stop-offset-update.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-11-svg-image-source-switch-same-size.log": [
+      "0 (0.0000%)"
+    ],
+    "visual-2-text-decorations.log": [
+      "1341 (0.2794%)"
+    ]
+  }
+}
