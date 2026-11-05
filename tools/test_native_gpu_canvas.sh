@@ -45,6 +45,7 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
 "$output_dir/native_gpu_canvas_test" --deferred-video-barriers
 "$output_dir/native_gpu_canvas_test" --failed-readback
+"$output_dir/native_gpu_canvas_test" --failed-readonly
 "$output_dir/native_gpu_canvas_test" --iosurface-readback
 "$output_dir/native_gpu_canvas_test" --partial-readback
 "$output_dir/native_gpu_canvas_test" --native-grid

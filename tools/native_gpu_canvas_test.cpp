@@ -117,15 +117,20 @@ static void draw_inset_leaves(CGContextRef context, bool canvas)
 
 // Outlines and ellipses draw through the same native rounded-rectangle shape.
 // A polygon outline (flag 512) draws CPU lines and stays off the canvas.
-static void draw_outline_leaves(CGContextRef context, bool canvas)
+static void draw_outline_content(CGContextRef context, bool canvas)
 {
-    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("stroke_rounded_rect", 19, 512) == 0);
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("stroke_rounded_rect", 19, 0) == 1);
     assert(ladybird_v_skia_draw_rounded_rect(context, 30.5f, 85, 320, 100, 6, 6, 6, 6, 6, 6, 6, 6,
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 200, 210, 230, 255, 0, 1, 1, 1));
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_ellipse", 12, 0) == 1);
     assert(ladybird_v_skia_draw_rounded_rect(context, 150, 110, 70, 50, 35, 25, 35, 25, 35, 25, 35, 25,
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 240, 80, 60, 255, 1, 0, 1, 1));
+}
+
+static void draw_outline_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("stroke_rounded_rect", 19, 512) == 0);
+    draw_outline_content(context, canvas);
 }
 
 static int s_mixed_fill, s_mixed_alpha;
@@ -366,9 +371,13 @@ static std::vector<uint8_t> render_video_backdrop(bool canvas, bool callbacks, i
     }
     draw_outline_leaves(context, canvas);
     unsigned before_capture = canvas ? s_gpu_canvas->flushes : 0;
+    unsigned before_upload = canvas ? s_gpu_canvas->uploads : 0;
     if (canvas) ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0);
     native_capture_video_backdrop(40, 210, 100.5, 51.5);
     if (canvas) assert(!s_gpu_canvas->cpu_stale && s_gpu_canvas->flushes == before_capture + 1);
+    bool retained_capture = canvas && callbacks && std::getenv("VOX_GPU_CANVAS_READONLY_VIDEO_CAPTURE")
+        && (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") || std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS"));
+    if (canvas) assert(s_gpu_canvas->gpu_valid == retained_capture);
     long geometry[] {80, 420, 201, 103};
     auto* source = native_video_backdrop_find(&native_scroll_raster, geometry, 0); assert(source);
     for (int y = 0; y < 103; ++y) {
@@ -379,7 +388,10 @@ static std::vector<uint8_t> render_video_backdrop(bool canvas, bool callbacks, i
             p[2] = (x * 11 + y * 5) % (alpha + 1); p[3] = alpha;
         }
     }
-    draw_outline_leaves(context, canvas);
+    // No CPU polygon follows this read. Keep that command-decline probe in
+    // draw_outline_leaves, and check the real GPU leaves can reuse the copy.
+    draw_outline_content(context, canvas);
+    if (retained_capture) assert(s_gpu_canvas->uploads == before_upload);
     unsigned before_restore = canvas ? s_gpu_canvas->flushes : 0;
     auto cpu_before = pixels;
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == int(callbacks
@@ -726,7 +738,9 @@ int main(int argc, char** argv)
         ladybird_v_skia_set_msaa_grid(nullptr,0,0,0,0);
         s_raster_layer_height=0; s_video_rounded=false;
         s_real_backdrop_copy=api->copy_pixels; api->copy_pixels=maybe_fail_backdrop_copy;
-        for (bool gpu_restore : {false,true}) {
+        for (bool read_only : {false,true}) for (bool gpu_restore : {false,true}) {
+            if (read_only) setenv("VOX_GPU_CANVAS_READONLY_VIDEO_CAPTURE","1",1);
+            else unsetenv("VOX_GPU_CANVAS_READONLY_VIDEO_CAPTURE");
             if (gpu_restore) setenv("VOX_GPU_CANVAS_VIDEO_BACKDROP","1",1);
             else unsetenv("VOX_GPU_CANVAS_VIDEO_BACKDROP");
             for (int alpha : {128,255}) for (bool callbacks : {false,true}) for (bool fail : {false,true}) {
@@ -892,7 +906,8 @@ int main(int argc, char** argv)
         std::cout<<"IOSurface GPU readback matches pooled publication exactly, including CPU barriers, reuse, legacy host and unsupported fallback\n";
         return 0;
     } }
-    if (argc == 2 && !std::strcmp(argv[1], "--failed-readback")) {
+    if (argc == 2 && (!std::strcmp(argv[1], "--failed-readback")
+        || !std::strcmp(argv[1], "--failed-readonly"))) {
         auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api);
         s_backend_read = api->read; api->read = counted_read;
         auto pixels = backdrop();
@@ -911,7 +926,10 @@ int main(int argc, char** argv)
             1,0,0,1,0,0,0,0,0,css_width,css_height,230,240,250,255,1,0,1,1));
         assert(s_gpu_canvas->cpu_stale);
         s_fail_reads = 2;
-        ladybird_v_skia_gpu_canvas_cpu_access();
+        if (!std::strcmp(argv[1], "--failed-readonly")) {
+            assert(!ladybird_v_skia_gpu_canvas_context_read(context));
+            assert(!s_gpu_canvas->gpu_valid);
+        } else ladybird_v_skia_gpu_canvas_cpu_access();
         assert(s_read_calls == 2 && !s_successful_reads && !s_fail_reads);
         assert(s_gpu_canvas_read_failed && !gpu_canvas_enabled());
         assert(!ladybird_v_skia_gpu_canvas_command("fill_rect",9,0));

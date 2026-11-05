@@ -843,6 +843,22 @@ extern "C" void ladybird_v_skia_gpu_canvas_context_access(CGContextRef destinati
     if (s_gpu_canvas && s_gpu_canvas->destination == destination) ladybird_v_skia_gpu_canvas_cpu_access();
 }
 
+// A snapshot reader does not change the CPU canvas. After its synchronized
+// read the GPU copy is still current, so the next GPU leaf need not upload it
+// again. Writers must continue using context_access, including after this read.
+extern "C" int ladybird_v_skia_gpu_canvas_context_read(CGContextRef destination)
+{
+    auto* frame = s_gpu_canvas.get();
+    if (!frame || frame->destination != destination || !frame->gpu_valid
+        || s_gpu_canvas_read_failed) return 0;
+    gpu_canvas_flush();
+    if (s_gpu_canvas_read_failed) return 0;
+    frame->gpu_valid = true;
+    if (std::getenv("VOX_GPU_CANVAS_READONLY_VIDEO_CAPTURE_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_GPU_VIDEO_READONLY_CAPTURE reused=1\n");
+    return 1;
+}
+
 extern "C" int ladybird_v_skia_gpu_canvas_defer_layers()
 {
     return s_gpu_canvas && !s_gpu_canvas_read_failed && std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")

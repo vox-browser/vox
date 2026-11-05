@@ -41,6 +41,7 @@ extern void ladybird_v_skia_gpu_canvas_document_top(int) __attribute__((weak_imp
 extern int ladybird_v_skia_gpu_canvas_defer_filters(void) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_layers(void) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_context_access(CGContextRef) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_context_read(CGContextRef) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_layer_pixels(CGContextRef, const uint8_t *,
     int, int, int, int, int, float, int) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_filter_image(CGContextRef, CGImageRef,
@@ -2928,7 +2929,11 @@ void native_set_scroll_damage_rects(float const *rects, int count) {
 // A top-level video's retained backdrop, in document CSS pixels.
 void native_capture_video_backdrop(double x, double y, double width, double height) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-    ladybird_v_skia_gpu_canvas_cpu_access();
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    if (!getenv("VOX_GPU_CANVAS_READONLY_VIDEO_CAPTURE")
+        || !ladybird_v_skia_gpu_canvas_context_read
+        || !ladybird_v_skia_gpu_canvas_context_read(context))
+        ladybird_v_skia_gpu_canvas_cpu_access();
 #endif
     native_video_backdrop_capture([[NSGraphicsContext currentContext] CGContext],
         x, y, width, height);
