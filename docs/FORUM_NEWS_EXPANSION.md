@@ -13,7 +13,7 @@ source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
 The latest rendering checkpoint passes **135 tests / 141 captures at zero
-pixels** on `18e8a898…`, with unchanged inputs and references. The AVIF sampling
+pixels** on `8d0d0946…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -1497,6 +1497,56 @@ claimed.
 
 [Results and qualifications](evidence/techcrunch-font-cache-guards-20261105.json),
 [complete attempts and captures](evidence/techcrunch-font-cache-guards-20261105.zip).
+
+## TechCrunch: full-cascade font geometry snapshots (2026-11-05)
+
+Commit `74843ff26` closes the observed warm-cache sidebar font mismatch.
+Full style invalidation previously resolved the old style's expired font cache
+before comparing fonts. Both old and new styles then selected the downloaded
+face, hiding the fallback glyphs retained by existing geometry. The comparison
+now uses the original font-input refresh snapshot. Pending-cascade reuse skips
+value comparison only when it retains that exact geometry owner; unchanged
+pending and settled fonts keep their existing reuse behavior.
+
+Three focused cases pass with default GC, GC disabled and poisoned
+preallocation. They cover a selected face completing before full recomputation,
+an intervening font query, unrelated completion and unchanged settled fonts.
+All **47 related controls** pass in both GC modes. The corrected reducer fails
+before the implementation change and explicitly verifies that completion
+expires its owning FontComputer's cascade. An earlier reducer omitted font-set
+registration and is retained as invalid evidence, alongside the disk failures.
+
+An unchanged-bundle diagnostic reproduces 51,841 pixels with default reuse;
+disabling either intrinsic-font reuse or pending-text reuse gives 34,838.
+Private O0 traces subsequently show the medium face finishing after the last
+layout pass, divergent DOM/layout style owners and retained fallback chunks.
+Those traces locate the invalidation path; their raster output supplies no
+pixel qualification. Production keeps all reuse paths enabled.
+
+On production executable `8d0d0946…`, the fresh strict comparisons give:
+
+| Cache | Saved source → Brave | Independent Brave replay | Vox → Brave |
+| --- | ---: | ---: | ---: |
+| Cold | 0 | 0 | **34,710** |
+| Complete | 0 | 0 | **34,710** |
+
+Both native PNGs and a separate warm-cache native capture have identical RGBA
+bytes. The sidebar text is exact in all three. The remaining difference is
+34,709 one-level image/edge pixels and one larger SVG-logo pixel at `(698,181)`.
+The archive manifest, publisher response bytes, references and zero-pixel
+thresholds remain unchanged. **Full TechCrunch equality remains open.**
+
+All seven focused browser fixtures, Hacker News, first-frame WIRED and the SVG
+source-switch control pass. The complete **135-test / 141-capture** rendering
+suite also passes on that same executable, with inputs and native libraries
+unchanged throughout each finite bundle lease. The earlier production attempt
+ran out of disk while writing a Brave reference and final reports; its partial
+and empty files remain recorded without whole-cohort pass credit. Separate
+cache diagnostics reuse a previously qualified Brave reference and are labelled
+accordingly. No live-site, animation, scrolling or performance claim is added.
+
+[Results, source pins and limitations](evidence/techcrunch-full-style-font-snapshot-20261105.json),
+[all retained attempts and captures](evidence/techcrunch-full-style-font-snapshot-20261105.zip).
 
 ## The Register: block-content centering (2026-11-03)
 
