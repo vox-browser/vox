@@ -1,0 +1,158 @@
+{
+  "status": "Single fresh58129def664e production trace validates originalcontent/pixels,72exactexternalscripts,actualnativeimagepins andnormalnative/driver/guardexits. Qualitative only,noinstruction oracceptancecredit.",
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "58129def664e8367a17cd04b3f8e8e313d3665ac31187ba71fe475b33a920ef9",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-112409-8bb6c959/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "eb3466de3462636f471061b0e67ad244301eb741e63f93b79a0eafb6ce2a7037",
+      "dirty": true,
+      "head": "6835e42ea2ef974e5a27e881c727783d2401ca33",
+      "repository_sha256": "8ed76e847df3893f01ca0dc836c6028e2c4cbb5126021e6c2355cde20b3ff502"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "7ab510200ac20f1214edc6411c6721377740c3119fa7ecd532e65cc1055b20a9",
+      "dirty": true,
+      "head": "9aca40cd852ea4680522bb47b741d3bf6b0c05fc",
+      "repository_sha256": "028775feb8d8303b3a097e3722810d7a354a1bae5cd27a9608c68c15e6ddb26f"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "6835e42ea2ef974e5a27e881c727783d2401ca33",
+      "id": "0e11b8509dc040b6bfd9458ea7baca88"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "eb3466de3462636f471061b0e67ad244301eb741e63f93b79a0eafb6ce2a7037",
+      "dirty": true,
+      "head": "6835e42ea2ef974e5a27e881c727783d2401ca33",
+      "repository_sha256": "4a63866e9626aa7dbb140a165afc557bc8c4d6d8833acee809e5992b078190e0"
+    }
+  },
+  "page": {
+    "native_exit": 0,
+    "pixels_exact": true,
+    "content_exact": true,
+    "external_sources": 72,
+    "all_hashes_exact": true,
+    "native_images_pinned": true
+  },
+  "summary": {
+    "cumulative_style_causes_before_png": {
+      "0": 5148,
+      "1": 6877,
+      "6": 1043,
+      "7": 8
+    },
+    "dirty_element_records": 6877,
+    "dirty_tags": {
+      "img": 307,
+      "head": 2,
+      "style": 1,
+      "div": 4051,
+      "a": 704,
+      "button": 173,
+      "section": 75,
+      "ul": 9,
+      "li": 120,
+      "h2": 411,
+      "p": 189,
+      "html": 1,
+      "script": 3,
+      "body": 2,
+      "header": 2,
+      "nav": 8,
+      "label": 2,
+      "span": 254,
+      "main": 2,
+      "article": 2,
+      "h3": 48,
+      "footer": 2,
+      "h4": 2,
+      "b": 2,
+      "noscript": 2,
+      "svg": 241,
+      "path": 230,
+      "title": 2,
+      "input": 3,
+      "hr": 25,
+      "next-route-announcer": 2
+    },
+    "invalidation_source_records": [
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node NodeInsertBefore document=false",
+      "Vox style invalidation source: node MediaQueryChangedMatchState document=true",
+      "Vox style invalidation source: node ElementSetShadowRoot input id=:R35tbdm: class=SearchInput-styles__SearchInputStyled-sc-50f6a0bc-1 fiGGev",
+      "Vox style invalidation source: node NodeRemove document=false",
+      "Vox style invalidation source: node NodeRemove document=false",
+      "Vox style invalidation source: node StyleSheetInsertRule document=true",
+      "Vox style invalidation source: node NodeRemove style id= class=",
+      "Vox style invalidation source: node StyleSheetListRemoveSheet document=true",
+      "Vox style invalidation source: node NodeRemove document=false",
+      "Vox style invalidation source: node NodeRemove button id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__RoundButton-sc-c0f7f974-8 fqPOWH kFiPxM",
+      "Vox style invalidation source: node NodeRemove button id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__RoundButton-sc-c0f7f974-8 fqPOWH kFiPxM",
+      "Vox style invalidation source: node NodeRemove button id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__RoundButton-sc-c0f7f974-8 fqPOWH kFiPxM",
+      "Vox style invalidation source: node NodeRemove button id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__RoundButton-sc-c0f7f974-8 fqPOWH kFiPxM",
+      "Vox style invalidation source: attribute(class) ElementAttributeChange div id= class=Backdrop-styles__BackdropStyled-sc-9f7d4825-0 dya-dBg",
+      "Vox style invalidation source: attribute(class) ElementAttributeChange div id= class=Drawer-styles__DrawerBackgroundStyled-sc-211ba7ec-0 bNHlia"
+    ],
+    "qualifications": "Final cumulative value per cause, not sum of repeated frame reports. Cause0full5148,1ordinarydirty6877,6fontrefresh1043,7fontfallback8. Source tracer limits each source/reason to8 and skips elements without computed style. No existing-styled-element data/ARIA mutation appears; unlogged precascade mutations remain possible. Only2class changes are shown. CSSmemo early-return hits are not logged, so4false memo records are not totalCSSqueries. Diagnostic does not isolate source instruction cost or prove any new fastpath eligibility."
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-post-cache-style-trace-20261105-1150/native-diagnostic.py",
+      "--capture-reference",
+      "--reference-engine",
+      "vox",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-post-cache-style-trace-20261105-1150/page",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-post-cache-style-trace-20261105-1150/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-post-cache-style-trace-20261105-1150/pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-post-cache-style-trace-20261105-1150/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-post-cache-style-trace-20261105-1150/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg",
+      "--retain-degenerate-border-msaa"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "33180": "Thu Nov  5 11:44:06 2026    ",
+      "33183": "Thu Nov  5 11:44:06 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1475346432,
+    "elapsed_seconds": 11.62792675,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-post-cache-style-trace-20261105.tar.gz",
+    "bytes": 11270907,
+    "sha256": "df25111c09b8f7466d9bc76355f7ac4e142b051e736862ddb048046e3477eb9e",
+    "members": 37,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793868425.7975738
+}

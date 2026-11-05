@@ -6225,3 +6225,57 @@ shared build is already running. BBC workload eligibility, native correctness
 and matched instruction effect remain pending. This change receives no
 performance credit yet; the 10% target remains open and the homepage stays
 outside the catalog. [Focused checks, failures, source hashes and archive](performance/bbc-adblock-token-focus-20261105.json).
+
+
+## Adblock token cache cohort 106 and broad checks (2026-11-05)
+
+Fresh single-unit production `58129def664e` contains the cache. Both native arms
+pass original pixels/content, all 72 exact external author-script witnesses,
+loaded-image pins, endpoint ownership and normal exits. Token reuse fires
+before PNG only in the candidate. The SVG source-switch guard remains exact
+in both arms and across policies. Its sealed generated C and dirty build
+provenance are retained; the final unchanged feature code is committed as
+`af9b7abd0`. No cross-C-mode difference from parallel cohort 105 receives credit.
+
+Cohort **106** completes all seven alternating triples: **all 21 audits pass**
+with unchanged identities. Launch-to-PNG medians are **27,233,969,558 Vox**,
+**28,259,580,188 control**, and **17,438,679,519 Brave lower bound**. The point
+reduction is **1,025,610,630 (3.629%)**, with five improvements and two
+regressions. Highest candidate / lowest control is **1.08964**, so no robust
+saving is credited. The strict 10% gate fails: `288620237310 > 155541965742`,
+conservative Vox/Brave ratio **1.67002**. Driver/guard exit 1 reflects the failed
+target; every actual browser exits 0.
+
+The broader batch executes **606 unique cases per memory mode**: 532 layout
+and 74 main. Each mode has 601 passes and the same five baseline failures,
+with matching main candidate/control results. Including repeated controls,
+1,360 executions yield 1,346 passes and 14 baseline failures. All calls and
+checked inputs are verified. No full-suite pass or cadence reset is claimed.
+A local postprocessing error initially read the raw navigation diagnostic
+field; that calculation is retained explicitly as invalid for acceptance. The
+corrected audit uses the launch field matching the predeclared protocol and
+canonical driver logs/summary. No measurement boundary, workload, reference,
+retry or sample inclusion changes.
+
+Scope remains exclusive coalition creation through encoded PNG, including
+startup/window/target setup, readiness and two-second settlement. Vox stops
+before file writing; Brave includes CDP delivery; semantic audits/teardown are
+after the endpoint. Exited aggregates and allowed owned services are included,
+GPU/outside work excluded. The fixed 609-response original-origin replay,
+original scripts, 1024×768 CSS viewport at scale 2, fresh private profiles and
+caches, retained OS caches, original per-engine references and three historical
+rendering policies remain unchanged. Cross-engine pixels still differ by
+82.7154%, with the recorded DOM/script/font/decoded-paint limitations. No live,
+isolated rendering-time or scrolling result is established.
+
+History is now **105 measured cohorts / 2,272 acceptance browser attempts**,
+last measured ID 106; ID 104 remains preflight-only. The target stays open and
+BBC homepage remains outside the catalog. [Complete measurements and broad/native evidence](performance/bbc-adblock-token-cohort106-20261105.json).
+
+A separate fresh instrumented trace on that same executable passes original
+pixels/content, 72 scripts, native-image identity and normal exits. Before PNG,
+its final cumulative style causes show 5,148 full-cascade and 6,877 ordinary dirty
+elements, plus 1,043 font refreshes and eight fallbacks. The capped source tracer
+shows two class changes and no existing-styled-element data/ARIA mutations; it
+cannot count all invalidations or precascade edits. This does not establish
+workload eligibility for relaxing data/ARIA invalidation. [Trace and raw evidence](performance/bbc-post-cache-style-trace-20261105.json).

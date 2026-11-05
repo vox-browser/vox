@@ -1,0 +1,511 @@
+{
+  "status": "All21cohort106capture audits pass;10%Brave gate fails. Cache point reduction1.025610630B(3.629%) but5improvements/2regressions and worstcandidate/bestcontrol1.08964: no robustsaving credited. All30focused newcase executions pass. Broad606eachmode has same5baselinefailures,no cadence reset/fullsuitepass.",
+  "implementation_commit": "af9b7abd0",
+  "control_commit": "9aca40cd8",
+  "statistics": {
+    "valid_capture_cohort": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 28524635165,
+            "upper": 28524635165
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28821278209,
+            "upper": 28821278209
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17491981546,
+            "upper": 17492476207
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 26659407335,
+            "upper": 26659407335
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28259580188,
+            "upper": 28259580188
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17282440638,
+            "upper": 17303292045
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 27233969558,
+            "upper": 27233969558
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28348747897,
+            "upper": 28348747897
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17438679519,
+            "upper": 17447155692
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 28320692480,
+            "upper": 28320692480
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27952643906,
+            "upper": 27952643906
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17506878953,
+            "upper": 17524771494
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 26421854830,
+            "upper": 26421854830
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27925312414,
+            "upper": 27925312414
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17402851837,
+            "upper": 17422676830
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 26699228314,
+            "upper": 26699228314
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28445562306,
+            "upper": 28445562306
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17437143398,
+            "upper": 17456448072
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 28862023731,
+            "upper": 28862023731
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26487672665,
+            "upper": 26487672665
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17607369963,
+            "upper": 17610213831
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true
+        }
+      }
+    ],
+    "median_vox": 27233969558,
+    "median_control": 28259580188,
+    "median_brave_lower": 17438679519,
+    "point_reduction": 1025610630,
+    "point_fraction": 0.03629249348988949,
+    "paired_control_minus_vox": [
+      296643044,
+      1600172853,
+      1114778339,
+      -368048574,
+      1503457584,
+      1746333992,
+      -2374351066
+    ],
+    "improvements": 5,
+    "regressions": 2,
+    "worst_vox_over_best_control": 1.0896398523203359,
+    "strict_left": 288620237310,
+    "strict_right": 155541965742,
+    "conservative_brave_ratio": 1.6700201282647102,
+    "target_met": false,
+    "broad_trigger": true,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 105,
+      "acceptance_browser_attempts": 2272,
+      "last_measured_id": 106,
+      "preflight_only104": true
+    }
+  },
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "token_reuse_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "token_reuse_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel"
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "58129def664e8367a17cd04b3f8e8e313d3665ac31187ba71fe475b33a920ef9",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-112409-8bb6c959/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "eb3466de3462636f471061b0e67ad244301eb741e63f93b79a0eafb6ce2a7037",
+        "dirty": true,
+        "head": "6835e42ea2ef974e5a27e881c727783d2401ca33",
+        "repository_sha256": "8ed76e847df3893f01ca0dc836c6028e2c4cbb5126021e6c2355cde20b3ff502"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "7ab510200ac20f1214edc6411c6721377740c3119fa7ecd532e65cc1055b20a9",
+        "dirty": true,
+        "head": "9aca40cd852ea4680522bb47b741d3bf6b0c05fc",
+        "repository_sha256": "028775feb8d8303b3a097e3722810d7a354a1bae5cd27a9608c68c15e6ddb26f"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "6835e42ea2ef974e5a27e881c727783d2401ca33",
+        "id": "0e11b8509dc040b6bfd9458ea7baca88"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "eb3466de3462636f471061b0e67ad244301eb741e63f93b79a0eafb6ce2a7037",
+        "dirty": true,
+        "head": "6835e42ea2ef974e5a27e881c727783d2401ca33",
+        "repository_sha256": "4a63866e9626aa7dbb140a165afc557bc8c4d6d8833acee809e5992b078190e0"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; only adblock token survey reuse disabled in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793867659.342916
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/token-survey-disabled arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793867670.852501
+  },
+  "broad": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "cadence_reset": false,
+    "inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "layout_entered": 532,
+        "layout_passes": 529,
+        "layout_failures": [
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+        ],
+        "main_arms": {
+          "candidate": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "unique_cases": 606,
+        "unique_passes": 601,
+        "unique_known_failures": 5
+      },
+      {
+        "mode": "none",
+        "layout_entered": 532,
+        "layout_passes": 529,
+        "layout_failures": [
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+        ],
+        "main_arms": {
+          "candidate": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "entered": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "unique_cases": 606,
+        "unique_passes": 601,
+        "unique_known_failures": 5
+      }
+    ],
+    "actual_case_executions": 1360,
+    "actual_passes": 1346,
+    "actual_baseline_failures": 14,
+    "notes": "532layout cases plus74main cases perGC mode. Main repeats both candidate/control arms, producing148main executions permode, including74repeated cases. Every original assertion is retained. Three layout andtwo main baseline failures persist; no full-pass/cadence reset claim.",
+    "unix": 1793868241.912138
+  },
+  "scope": "Pinned58129def664e single-unit build, unlike parallel33unit cohort105. No cross-C-mode credit. Exclusive coalitioncreation through encodedPNG inclfreshstartup/window/targetsetup;Vox beforefilewrite,Brave inclCDPdelivery;readiness+2ssettle included,audits/teardown afterendpoint. Exitedtaskaggregates/allowedownedservices included,GPU/outsideexcluded. Fixed609response originaloriginHTTPS replay,originalauthorJS,1024x768CSS,DPR2,freshprivateprofiles/caches,OSfilesystem/shadercachesretained,originalperenginerefs and3historicalrenderpolicies common. Crossengine82.7154%different;knownunsupportedDOM/script/localfonts/decodedpaintlimitations. No livepage,isolatedrenderingtime or scrolling claim.",
+  "postprocessing_correction": {
+    "reason": "First local auditor read raw instruction_interval, which stores the asymmetric navigation diagnostic. Corrected to launch_instruction_interval matching predeclared protocol, canonical driver selected logs and summary. No browser rerun/exclusion/boundary/reference changes. Earlier mistaken calculation retained explicitly as invalid for acceptance. Initial module filename also shadowed statistics stdlib and was renamed before final audit.",
+    "wrong_output_sha256": "5c1840ccc2c67b0d5b8357ff04f1e497c5e5101c375b00ea28197df158bada04",
+    "unix": 1793868012.9973319
+  },
+  "qualifications": "Local firstauditor mistakenlyread navigationdiagnostic rawfield; retained explicitly invalidforacceptance. Finalrecomputations use launch_instruction_interval matchingoriginalprotocol,canonicaldriverlogs andsummary; no remeasurement,boundarychange,retries/exclusions orrefchange. Allrawattempts retained. Driver/guard1 solelyfailedtarget withallactualbrowser0. Sharedbuildsupersession/provenance metadata retained; sealedgeneratedC preserved. BuildHEAD6835e42eadirty alreadycontainscache, finalizedunchangedenginecode subsequentlycommittedaf9b7abd0; no claim that cleanbuildHEADcontainedit.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-adblock-token-cohort106-20261105.tar.gz",
+    "bytes": 82763741,
+    "sha256": "8ab1bae88960a1edf00c646b634f75154405c9c8622cd9ad98b72a9e96df55d8",
+    "members": 2630,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793868316.1495528
+}
