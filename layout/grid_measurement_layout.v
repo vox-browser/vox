@@ -125,6 +125,9 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 	// inputs, as the closed inline measurement cache does, without clearing them.
 	if !inline_measurement_inputs_are_current(inputs) { return false }
 	for input in inputs {
+		if image := input.measurement_image {
+			if (measurement_image_input(input.node) or { return false }) != image { return false }
+		}
 		if saved := input.simple_svg {
 			owner := input.node.dom_node() or { return false }
 			if saved.elements.len == 0 || voidptr(owner) != voidptr(saved.elements[0].element.as_node())
@@ -143,13 +146,15 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 
 fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
-	if !collect_retained_block_inputs(root, mut inputs, mut rejected) { return false }
+	if !collect_retained_block_inputs_in_svg(root, false, !disable_extended_image_measurements,
+		mut inputs, mut rejected) { return false }
 	for index, input in inputs {
 		// Controls, subgrids, floats, fragmentation and shifted positions
 		// keep their full algorithms. Every containing block must be inside the
 		// captured subtree; only the root may depend on the keyed outer block.
-		// The shared collector already proves relative insets are all auto and
-		// rejects any out-of-flow descendants, as for committed block retention.
+		// The shared collector proves relative insets are all auto. Its
+		// measurement-only exception admits validated absolute HTML images;
+		// their final absolute layout still runs after restoring static positions.
 		// It also admits only closed SVG shapes, with complete DOM attributes
 		// and child identities retained under the caller's document owner.
 		if (disable_svg_measurement_reuse && (input.node.is_svg_box() || input.simple_svg != none))
@@ -215,6 +220,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		if committed { report_committed_grid_measurement_reuse() }
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
+		report_extended_image_measurement(cached.inputs)
 		return cached.result
 	}
 	// A committed miss must not populate, reject or evict disposable entries.
@@ -228,7 +234,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	if !eligible { pool.grid_measurement_rejections_[node_key] = true }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	if eligible {
-		for input in inputs { owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() } }
+		for input in inputs { owned_inputs << own_image_measurement_input(input) }
 	}
 	retained_inputs.finish()
 	result := run_uncached_grid_formatting_context_internal(mut state, container, mut used,

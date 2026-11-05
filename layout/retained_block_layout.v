@@ -53,10 +53,10 @@ mut:
 // run through the complete algorithm.
 fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
-	return collect_retained_block_inputs_in_svg(node, false, mut inputs, mut rejected)
+	return collect_retained_block_inputs_in_svg(node, false, false, mut inputs, mut rejected)
 }
 
-fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, mut inputs []RetainedInlineInput,
+fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurement_images bool, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
 	key := u64(voidptr(node))
 	if !in_simple_svg && !disable_retained_block_rejection_cache && rejected[key] {
@@ -67,13 +67,19 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, mut inpu
 	defer { if !accepted { remember_rejected_block_input(mut rejected, key) } }
 	computed := node.computed_values()
 	image := if node.is_replaced_box() { retained_block_image_input(node) } else { none }
+	measurement_image := if measurement_images && node.is_image_box()
+		&& (node.is_absolutely_positioned() || image == none) {
+		measurement_image_input(node)
+	} else { none }
 	simple_svg := retained_simple_svg_input(node)
 	inside_svg := in_simple_svg || simple_svg != none
 	if inside_svg && !retained_simple_svg_style_is_closed(node) { return false }
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| node.is_in_ua_internal_shadow_tree() || (node.is_svg_box() && !inside_svg)
-		|| (node.is_replaced_box() && image == none && simple_svg == none)
-		|| node.is_floating() || !retained_layout_position_is_unshifted(node) || node.is_list_item_box()
+		|| (node.is_replaced_box() && image == none && simple_svg == none && measurement_image == none)
+		|| node.is_floating() || (!retained_layout_position_is_unshifted(node)
+			&& !(measurement_image != none && node.is_absolutely_positioned() && !node.is_fixed_position()))
+		|| node.is_list_item_box()
 		|| node.is_list_item_marker_box() || node.is_fieldset_box()
 		|| node.has_layout_containment() || node.has_paint_containment()
 		|| computed.writing_mode() != .horizontal_tb || computed.has_animated_properties()
@@ -113,10 +119,11 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, mut inpu
 		root_font_size: computed.root_font_size_px_
 		root_line_height: computed.root_line_height_px_
 		image: image
+		measurement_image: measurement_image
 		simple_svg: simple_svg
 	}
 	for child in node.children() {
-		if !collect_retained_block_inputs_in_svg(child, inside_svg, mut inputs, mut rejected) { return false }
+		if !collect_retained_block_inputs_in_svg(child, inside_svg, measurement_images, mut inputs, mut rejected) { return false }
 	}
 	accepted = true
 	return true

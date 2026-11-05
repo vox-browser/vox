@@ -102,6 +102,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		}
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
+		report_extended_image_measurement(cached.inputs)
 		if committed && committed_flex_measurement_diagnostics && !committed_flex_measurement_reported {
 			committed_flex_measurement_reported = true
 			eprintln('Vox flex measurement: promoted measured flex into committed geometry')
@@ -116,14 +117,14 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	mut inputs := []RetainedInlineInput{}
 	mut eligible := collect_grid_measurement_inputs(container, mut inputs,
 		mut pool.flex_measurement_rejections_)
-	// The shared collector accepts only available, non-SVG HTML images, and the
-	// live input validator checks their source and natural size before replay.
+	// The shared collector validates non-SVG HTML image inputs, including
+	// pending requests and absolute images, against their live provider.
 	// Keep the earlier text-only policy as an isolated measurement control.
-	if disable_flex_image_measurement_reuse && inputs.any(it.image != none) { eligible = false }
+	if disable_flex_image_measurement_reuse && inputs.any(it.image != none || it.measurement_image != none) { eligible = false }
 	if !eligible { pool.flex_measurement_rejections_[node_key] = true }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	if eligible {
-		for input in inputs { owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() } }
+		for input in inputs { owned_inputs << own_image_measurement_input(input) }
 	}
 	retained_inputs.finish()
 	result := run_uncached_flex_formatting_context_with_mode(mut state, container, mut used, mode, space)

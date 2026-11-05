@@ -17,6 +17,7 @@ struct RetainedInlineInput {
 	root_font_size f64
 	root_line_height f64
 	image          ?RetainedBlockImageInput
+	measurement_image ?MeasurementImageInput
 	simple_svg     ?&RetainedSimpleSVGInput
 }
 
