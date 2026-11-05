@@ -3261,6 +3261,10 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		messages << 'JavaScript WebSocket bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_engine_async_completion_binding() or {
+		messages << 'JavaScript engine completion bindings: ${err.msg()}'
+		return none
+	}
 	install_browser_page_storage(document, runtime) or {
 		messages << 'JavaScript storage bindings: ${err.msg()}'
 		return none
