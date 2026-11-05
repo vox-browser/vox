@@ -13920,6 +13920,12 @@ fn compare_custom_property_maps(left map[string]dom.CSSCustomProperty_,
 	if left.len != right.len {
 		return false
 	}
+	if left.len == 0 { return true }
+	// V clones string map keys during iteration. Equality publishes only a
+	// boolean, so those keys and temporary typed-value projections can be freed
+	// after the comparison instead of accumulating in the style owner's arena.
+	mut scratch := platform.begin_thread_scratch('custom property comparison')
+	defer { scratch.finish() }
 	for name, left_property in left {
 		if name !in right { return false }
 		// Compare the live map entry synchronously. Passing an optional value to
