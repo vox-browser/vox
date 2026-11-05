@@ -1660,3 +1660,44 @@ quiet host it delivers 59.9 versus 59.3–59.6 FPS at 60 Hz (598 versus
 versus 112.1–112.4 FPS at 120 Hz (p95 10 versus 14 ms). Per-leaf verification
 differs by at most 5 levels. Design, guards, verification, cohorts and
 remaining readbacks: [VLANG_GPU_PASS.md](VLANG_GPU_PASS.md).
+
+## Leaf costs at a 1708 px window (2026-11-05)
+
+The user's 1708×1065 window (1708×953 document viewport) scrolls vlang.io far
+below 60 FPS: delta 8 at 120 Hz measured 16.5 FPS with a 68.7 ms mean
+scroll-frame draw loop, on a host at load 40–140 from concurrent sessions. The
+site's stylesheet has changed since the earlier work: its code panels use
+`inset 0 1px #ffffff05`, sponsor logos use `filter: grayscale(1)` under
+`mix-blend-mode: screen`, and the hero shows a 3993×2317 mascot and a
+1426×1080 video. Leaf timings (`VOX_LEAF_TIMING_DIAGNOSTICS=1`) per scroll
+frame, and the fixes:
+
+| Leaf | Cause | Fix |
+| --- | --- | --- |
+| Inset shadows, 37–65 ms each | backdrop of the whole 581×447 box serialized into a picture and replayed in every root tile, for any strip | `2247795d5` crops to the damage rows as outer shadows do; `11e71c035` renders the tiles in one GPU submission (12.5 → 7.2 ms per slow leaf) |
+| CSS filter layers, 21 ms (300 ms frames as logos enter) | canvas-sized offscreen layer filtered and composited entirely | `0c5028c48` filters and composites only the clip bounds for color filters (21 → 15 ms); `19e9d038a` also crops the Core Image input |
+| Mascot image, 22 ms | 37 MB source exceeds the upload cache's copy budget, so every draw rescaled it | `404e5ef4d` keeps a seeded digest instead of a source copy (21.7 → 11.2 ms; all 57 draws reuse the upload) |
+
+Each fix has a pixel-exact native test against the complete or serial
+replay. Measured with injected libraries or kill switches on one executable,
+the mean scroll-frame loop fell from 68.7 to about 25 ms and FPS rose to
+23–27. Host load swung between 20 and 150 during these runs, and unprofiled
+pairs often disagreed in direction, so only the per-leaf diagnostic
+reductions are firm. The CSS filter input crop is in the executable and has no
+scroll measurement yet.
+
+Two experiments are rejected and kept as patches in the evidence archive:
+inset shadows as pictures on the GPU canvas (exact, but most vlang.io insets
+overlap Chromium MSAA tiles and are declined: 6.7 versus 6.0 ms per frame,
+FPS slightly lower), and video frames on the GPU canvas (exact, but the slow
+video leaf rose from 28.4 to 33.7 ms).
+
+The largest remaining cost is outside the leaves. A sample of the idle page
+with its video playing spends 28% of main-thread time in
+`native_scroll_raster_copy_rows`: every reused frame copies the complete
+retained viewport (about 26 MB at this window size) from the ring into
+AppKit's fresh canvas before replay. Chromium never copies retained tiles;
+the compositor offsets them. Presenting the ring through Core Animation
+(two wrapped sublayers, or layer-anchored tiles) would remove that copy and
+the per-frame full-canvas upload with it. Evidence:
+`docs/performance/raw/vlang-large-window-leaves-20261105.tar.gz`.
