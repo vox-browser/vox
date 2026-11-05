@@ -46,6 +46,7 @@ fn collect_retained_flow_validation_inputs(node &Node, root bool,
 fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool {
 	if !retained_inline_inputs_are_current(cache.inputs) { return false }
 	for element in cache.elements {
+		if retained_flow_element_has_generated_pseudo_style(element) { return false }
 		computed := css.computed_properties_for_element(element) or { return false }
 		mirror := element.as_node().unsafe_layout_node() or { return false }
 		if mirror.real_layout_handle() == unsafe { nil } { return false }
@@ -71,6 +72,17 @@ fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool 
 		}
 	}
 	return true
+}
+
+fn retained_flow_element_has_generated_pseudo_style(element &dom.Element) bool {
+	// A new generated pseudo invalidates the parent's child construction. The
+	// originating element can still have its old ordinary principal box, with
+	// unchanged main style and DOM children. That old tree cannot supply the
+	// newly generated boxes, even when its cached validation inputs still match.
+	for pseudo in [dom.PseudoElement.before, .after, .first_letter, .marker, .backdrop]! {
+		if dom.AbstractElement.new(element, pseudo).computed_properties() != none { return true }
+	}
+	return false
 }
 
 // TreeBuilder's DOM invalidation flags identify the branches which need new
@@ -158,6 +170,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		eligible = true
 		return true
 	}
+	if retained_flow_element_has_generated_pseudo_style(element) { return false }
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
 		|| (computed.position() !in [.static_, .relative]
