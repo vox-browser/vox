@@ -5739,3 +5739,42 @@ source, not validation of the new callback implementation or a target result.
 The valid failing cohort 100 and its unchanged strict gate remain current.
 [Raw probes, input hashes, disassembly and audit records](performance/bbc-cache-callback-probes-20261105.json)
 are preserved independently of `Build/`.
+
+
+## Captured Function.call callback path (2026-11-05)
+
+`a3824ecec` invokes callable engine objects through a protected
+`Function.prototype.call` captured before author mutation. The target is the
+builtin's object receiver; the original callback receiver is its first
+argument. This keeps strict undefined/primitive receivers and sloppy receiver
+conversion without a C-created JavaScript argument array. Noncallables retain
+the original captured Reflect.apply path, and caught native forwarding stays
+unchanged. Realm preparation/cleanup and actual exception values remain intact.
+Argument packing is confined to the existing JSC ABI adapter, with eight typed
+native stack slots and a checked heap fallback for larger calls.
+
+The final **120 focused executions pass**: 20 unique cases in both arms and
+all three memory modes. Generated main disassembly verifies every test call.
+Cases cover strict/sloppy receivers, 0–100 arguments, symbols/cycles/views,
+author-mutated intrinsics, bound functions/proxies/classes, original thrown
+values, reentry, Promise FIFO, WebIDL callback realm state and retained roots.
+All 322 then-selected instruction-tool tests pass. The isolated control is
+`7d94db9b8`.
+
+An initial V-buffer version passes the same 120 executions, but its generated
+C boxes the supposedly local argument buffer. The final ABI refinement removes
+that allocation. Its first three candidate batches fail the inspector test's
+ordinary-call positive control: the old test probe observes only the former
+ABI wrapper. Extending the observer to the new entry point, without changing
+any assertion, restores both the positive ordinary-call control and zero
+intermediate exceptions for caught forwarding in every final batch. All failed
+runs, source variants and probe changes are retained.
+
+Native BBC eligibility, original-reference checks and unprofiled instruction
+measurement remain pending. The latest completed production `2983f4d0` lacks
+the final helper; the shared build's sealed generated C contains it and is
+still compiling under host contention. No duplicate production build is queued.
+An older executable earns no validation for this feature. Cohort 100 remains
+the latest complete comparison and fails the target. There is no new broad
+trigger, instruction credit, catalog entry or completion claim. See the
+[focused results and retained failures](performance/bbc-native-callback-focus-20261105.json).

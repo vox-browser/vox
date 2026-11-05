@@ -1,0 +1,518 @@
+{
+  "status": "Captured Function.call callback invocation passes final120executions:20cases in3GCmodes and2arms. Native argument packing uses native arrays of typed JSC handles and preserves API exception reporting.322instruction-tool tests pass. Latest completed bundle lacks new helper; production build active. No workload/native/performance credit yet.",
+  "engine_commit": "a3824ecec",
+  "control_commit": "7d94db9b8",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/browserjs/native_callback_call_test.v": "eb68266c03e9e6bce13e32721826f97e569eb5e11751dcd874f3a23d26a40e37",
+      "/Users/alex/code/vox2/browserjs/host_value_function_test.v": "14099b04df0a5e4a66bd818dc5c87205693f5389dbeb93713325229bec8d6f73",
+      "/Users/alex/code/vox2/browserjs/native_forwarding_test.v": "90ea8610b38b0306dbfa4b7c172a2242f9fdf1f0057b1ee088615cdcd7c742be",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_test.v": "5090f7912eac597840cb4f9b0720042a2f39e925f9a6a9d0f4e9094076078dbf",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_order_test.v": "7bb3a225bae0707116294749abaf7e6f4a6af1c27b6d90c160211fae015984cb",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "12153796ab2461bf34d6f324bc883cacc1883b853d5948f650e736cf9a13b604",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "de4b766c371687e75fbea997bdf13ee2a2717f6d41832564a36a41a850c61b82",
+      "/Users/alex/code/vox2/browserjs/host_function_darwin.h": "a40f9e479f5dd45ce0bc6aba77de53a7fe4982f676244a62886fc76ccf63fa57",
+      "/Users/alex/code/vox2/browserjs/jsc_abi.h": "d78bd63f711bddfe51a25e37feff54aaa0d257cf5964aa223e7dda4dba4ea07a",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605",
+      "/Users/alex/code/vox2/browserjs/native_forwarding_test.h": "a8809f16a85395b35822768c0fe0bc928c0cf447e9224870ab4bd5f8045b181b"
+    },
+    "unchanged": true,
+    "cases_per_run": 20,
+    "expected_cases": [
+      "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+      "test_native_callback_call_preserves_argument_counts_and_actual_values",
+      "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+      "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+      "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+      "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+      "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+      "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+      "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+      "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+      "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+      "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+      "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+      "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+      "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+      "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+      "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+      "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+      "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+      "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+    ]
+  },
+  "initial_v_packing": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/browserjs/native_callback_call_test.v": "eb68266c03e9e6bce13e32721826f97e569eb5e11751dcd874f3a23d26a40e37",
+      "/Users/alex/code/vox2/browserjs/host_value_function_test.v": "14099b04df0a5e4a66bd818dc5c87205693f5389dbeb93713325229bec8d6f73",
+      "/Users/alex/code/vox2/browserjs/native_forwarding_test.v": "90ea8610b38b0306dbfa4b7c172a2242f9fdf1f0057b1ee088615cdcd7c742be",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_test.v": "5090f7912eac597840cb4f9b0720042a2f39e925f9a6a9d0f4e9094076078dbf",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_order_test.v": "7bb3a225bae0707116294749abaf7e6f4a6af1c27b6d90c160211fae015984cb",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "12153796ab2461bf34d6f324bc883cacc1883b853d5948f650e736cf9a13b604",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "16960477e5835be9795f19c5a27be9cb45cac6aa17e95dd8c22c97a0068aaa56",
+      "/Users/alex/code/vox2/browserjs/host_function_darwin.h": "a40f9e479f5dd45ce0bc6aba77de53a7fe4982f676244a62886fc76ccf63fa57",
+      "/Users/alex/code/vox2/browserjs/jsc_abi.h": "b5c14c9e2223ebc86095d03e64408a298be66bb236126cbd0654be0b2faa0302",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605"
+    },
+    "unchanged": true,
+    "cases_per_run": 20,
+    "expected_cases": [
+      "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+      "test_native_callback_call_preserves_argument_counts_and_actual_values",
+      "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+      "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+      "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+      "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+      "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+      "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+      "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+      "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+      "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+      "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+      "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+      "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+      "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+      "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+      "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+      "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+      "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+      "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+    ]
+  },
+  "refined_probe_failure": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 1
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 1
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 1
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/browserjs/native_callback_call_test.v": "eb68266c03e9e6bce13e32721826f97e569eb5e11751dcd874f3a23d26a40e37",
+      "/Users/alex/code/vox2/browserjs/host_value_function_test.v": "14099b04df0a5e4a66bd818dc5c87205693f5389dbeb93713325229bec8d6f73",
+      "/Users/alex/code/vox2/browserjs/native_forwarding_test.v": "90ea8610b38b0306dbfa4b7c172a2242f9fdf1f0057b1ee088615cdcd7c742be",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_test.v": "5090f7912eac597840cb4f9b0720042a2f39e925f9a6a9d0f4e9094076078dbf",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_order_test.v": "7bb3a225bae0707116294749abaf7e6f4a6af1c27b6d90c160211fae015984cb",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "12153796ab2461bf34d6f324bc883cacc1883b853d5948f650e736cf9a13b604",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "de4b766c371687e75fbea997bdf13ee2a2717f6d41832564a36a41a850c61b82",
+      "/Users/alex/code/vox2/browserjs/host_function_darwin.h": "a40f9e479f5dd45ce0bc6aba77de53a7fe4982f676244a62886fc76ccf63fa57",
+      "/Users/alex/code/vox2/browserjs/jsc_abi.h": "d78bd63f711bddfe51a25e37feff54aaa0d257cf5964aa223e7dda4dba4ea07a",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605"
+    },
+    "unchanged": true,
+    "cases_per_run": 20,
+    "expected_cases": [
+      "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+      "test_native_callback_call_preserves_argument_counts_and_actual_values",
+      "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+      "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+      "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+      "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+      "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+      "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+      "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+      "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+      "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+      "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+      "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+      "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+      "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+      "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+      "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+      "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+      "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+      "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+    ]
+  },
+  "probe_failure_explanation": "Original test header observes only vox_jsc_JSObjectCallAsFunction. New packing helper calls actual JSObjectCallAsFunction directly, so ordinary-call positive control reports0. Extend test observer to new ABI entry without changing original assertions. All3candidate failures retained; final complete runs pass inbotharms/3GCmodes.",
+  "initial_probe_header_sha256": "9e9721a9f1edf04851de359595f007a05d1dfbb81f7569166a6e8a89e0a19dc6",
+  "tool_tests": {
+    "passed": 322,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 90537984,
+      "elapsed_seconds": 4.968965042000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "native_pending": {
+    "passed": false,
+    "status": "pending; latest bundle lacks final native argument packing"
+  },
+  "implementation": "Capture Function.prototype.call before author mutation; callable engine objects invoke it with target function as object receiver and original this value prepended. JSC retains strict/sloppy primitive semantics. Existing Reflect.apply fallback retains noncallable error behavior; caught forwarding stays unchanged. Typed argument packing remains in existing JSC ABI adapter with8native stack slots and checked heap fallback. Realm preparation/cleanup and real thrown values retained.",
+  "scope": "Focused tests include primitive/object/undefined receivers,bound/proxy/class/noncallable functions,0..100arguments,cycles/symbols/bigints/views,mutatedintrinsics,reentry,PromiseFIFO,WebIDLcallbackrealmcontext,rootownership and existing inspector-exception positive/negative controls.",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-native-callback-focus-20261105.tar.gz",
+    "bytes": 32531762,
+    "sha256": "107f21e8661baffff01913a6e5407bf1bd44700bf0a76b4eebc0920bc3af9882",
+    "members": 159,
+    "all_members_verified": true
+  },
+  "unix": 1793850094.385997
+}
