@@ -1,15 +1,37 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 114**, on pinned parallel production `ae288b903196`:
+Current result — **cohort 115**, on pinned parallel production `01ba55f53219`:
 all 21 capture audits pass, but the 10% target fails. Launch-to-PNG medians are
-**27,939,302,206 Vox**, **27,604,828,574 control**, and **18,387,244,433 Brave
+**27,202,806,333 Vox**, **27,328,966,175 control**, and **17,646,731,221 Brave
 lower bound** instructions. The strict integer check fails
-`288354550670 > 158331016152` (conservative ratio **1.63909**).
-The exact-attribute index has a 334,473,632-instruction median regression and
-is removed in `5871c29`; no saving or catalog entry is credited. History is
-110 measured cohorts / 2,377 acceptance browser attempts; 104, 110, 111 and 113
-are preflight-only. [Complete current evidence](performance/bbc-exact-attribute-cohort114-20261105.json).
+`283596498230 > 158209489989` (conservative ratio **1.61328**).
+Closed SVG tree retention has a noisy 126,159,842-instruction median reduction
+(0.4616%), with four paired improvements and three regressions. The conservative
+control ratio is **1.15502**, so no robust saving or catalog entry is credited.
+History is 111 measured cohorts / 2,398 acceptance browser attempts; 104, 110,
+111 and 113 are preflight-only.
+[Complete current evidence](performance/bbc-flow-svg-tree-cohort115-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
+
+The closed SVG tree change (`cfec8ea09`, isolated control `8142a72c7`) retains
+only validated shape-tree structure and computes fresh geometry. Native checks
+confirm candidate-only execution before PNG, exact original pixels/content, all
+72 external author scripts, actual native-library pins and normal exits. All
+210 initial focused executions and 335 tooling tests pass; the later formatting
+assertion correction passes 234 focused executions across three GC modes.
+[Focused evidence](performance/bbc-flow-svg-tree-focus-20261105.json).
+
+The required broader checks cover **623 unique cases in each default/no-GC
+mode: 618 passes and the same five baseline failures**. There are 1,394 actual
+executions across the layout run and both main control arms. An initial obsolete
+assertion requiring every SVG-containing grid to rebuild is retained as a failed
+attempt; `64032a5c5` permits validated closed SVG retention while preserving the
+full-builder paint oracle and image, generated-content and subgrid fallbacks.
+The repeated layout checks and unchanged main checks have no new failures.
+This is not a full-suite pass or a cadence reset. Cohort 115 retains the original
+launch-to-PNG scope, fixture, references, scripts, cache policy and rendering
+limitations. Its parallel build has complete input/compiler metadata but no
+sealed generated C receipt. BBC homepage remains outside `OPTIMIZED_SITES.md`.
 
 A fresh production **CPU sampling diagnostic** now captures the correct browser
 PID/start identity, verifies the sample's Vox UUID against dyld and checks all Vox
