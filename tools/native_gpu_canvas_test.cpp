@@ -29,7 +29,10 @@ static std::vector<uint8_t> backdrop()
 static void draw_leaves(CGContextRef context, bool canvas)
 {
     auto approve = [&](char const* kind) {
-        if (canvas) assert(ladybird_v_skia_gpu_canvas_command(kind, int(std::strlen(kind)), 0) == 1);
+        if (canvas) {
+            bool expected = !s_gpu_canvas->complete_viewport || !std::strcmp(kind, "paint_outer_box_shadow");
+            assert(ladybird_v_skia_gpu_canvas_command(kind, int(std::strlen(kind)), 0) == int(expected));
+        }
     };
     approve("paint_outer_box_shadow");
     assert(ladybird_v_skia_draw_outer_box_shadow(context, 40, 92, 300, 120, 12, 12, 12, 12, 12, 12, 12, 12,

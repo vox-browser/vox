@@ -34,6 +34,7 @@ struct GpuCanvasFrame {
     // The command being replayed was approved for the GPU canvas. Leaves of
     // other commands use the CPU canvas so their own CPU drawing stays ordered.
     bool in_gpu_command = false;
+    bool complete_viewport = false;
     std::map<std::string, unsigned> flush_reasons;
     // Diagnostics: why GPU-capable leaves still used their own raster path.
     std::map<std::string, unsigned> leaf_misses;
@@ -327,6 +328,16 @@ namespace {
 void gpu_canvas_decline(CGContextRef destination);
 bool gpu_canvas_kind_supported(std::string_view kind, int flags)
 {
+    // A complete viewport exposes MSAA corner coverage that a narrow scroll
+    // strip need not touch. Keep shapes on their established per-tile path
+    // until the full-surface resolve matches that coverage as well.
+    if (s_gpu_canvas && s_gpu_canvas->complete_viewport
+        && (kind == "fill_rounded_rect" || kind == "stroke_rounded_rect"
+            || kind == "fill_ellipse" || kind == "stroke_ellipse"
+            || kind == "paint_uniform_border" || kind == "paint_partial_rounded_border"
+            || kind == "paint_rounded_border_top" || kind == "paint_rounded_border_right"
+            || kind == "paint_rounded_border_bottom" || kind == "paint_rounded_border_left"))
+        return false;
     // Flags from V: 1 outer_shadow, 2 caret, 4 scrollbar, 8 radius, 16 antialiased,
     // 32 clip_outs, 64 rotated/sheared, 128 underlays_next, 256 no antialias,
     // 512 polygon points.
@@ -553,6 +564,10 @@ extern "C" int ladybird_v_skia_gpu_canvas_begin(CGContextRef destination, int co
             rect.x(), rect.y(), rect.width(), rect.height()});
     }
     if (frame->rects.empty()) return 0;
+    frame->complete_viewport = frame->rects.size() == 1
+        && s_shared_viewport_width > 0 && s_shared_viewport_height > 0
+        && frame->rects[0].width() == std::lround(s_shared_viewport_width * frame->scale)
+        && frame->rects[0].height() == std::lround(s_shared_viewport_height * frame->scale);
     frame->device = std::move(device);
     s_gpu_canvas = std::move(frame);
     return 1;
