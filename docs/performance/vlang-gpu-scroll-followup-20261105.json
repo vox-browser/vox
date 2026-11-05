@@ -1,0 +1,1419 @@
+{
+  "schema": 1,
+  "date": "2026-11-05",
+  "target_status": "smooth 60 fps remains open",
+  "archive": "docs/performance/raw/vlang-gpu-scroll-followup-20261105.tar.gz",
+  "archive_sha256": "2d3a7007859fb009a956044b2a2ed26e94ae5f74b91e56d91e8877959066eb55",
+  "feature_commits": [
+    "8e3b30e54",
+    "3e0c785d7"
+  ],
+  "runtime_validation": "Grayscale workload eligibility and paired timing pending production publication.",
+  "attempts": [
+    {
+      "name": "published-native-1",
+      "run": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1708",
+          "--window-height",
+          "1065",
+          "https://vlang.io/"
+        ],
+        "compile_command": [
+          "clang",
+          "-O2",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-dynamiclib",
+          "-fobjc-arc",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m",
+          "-framework",
+          "Cocoa",
+          "-framework",
+          "QuartzCore",
+          "-Wl,-undefined,dynamic_lookup",
+          "-o",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1/precise-scroll.dylib"
+        ],
+        "diagnostic_only": false,
+        "source_and_binary_sha256": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "3d6fe53904e7301744cb78baabd5939e0496649f04dd7e4e792a40c4a7f88432",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "e2f9b533298d1e0aa69363dea6e70bf6bc21f9216615cd300247f2b97d91d078",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "4f95aaa4877e97499bc9650166c334f5b5e1a0b1b84fd76ba7ece7f613d11d1c",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b",
+          "/Users/alex/code/vox2/tools/precise_scroll_faults.h": "c4c9b278cdd523f9bc43012d2073f831bb70c7081b5b0bec632b00878ac85c7a",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1/precise-scroll.dylib": "2adb0310a3bfc2381dcf165ac236e897395198b1f46979dc85afabe111c49cfa",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+          "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+          "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+          "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+          "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+          "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+        },
+        "cache_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "runtime_input_sha256": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+          "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+          "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+          "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+          "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+          "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+        },
+        "input_file_identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": [
+            16777230,
+            474945685,
+            30026896,
+            1793881326031500487,
+            1793881326031576529
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": [
+            16777230,
+            474945678,
+            1013408,
+            1793881325760523218,
+            1793881325760593135
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": [
+            16777230,
+            474945676,
+            34352,
+            1793881325737783786,
+            1793881325737851119
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": [
+            16777230,
+            474945680,
+            4439696,
+            1793881325792930699,
+            1793881325793000740
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": [
+            16777230,
+            474945682,
+            13041776,
+            1793881325838299396,
+            1793881325838376438
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": [
+            16777230,
+            474945672,
+            2192096,
+            1793881325713942936,
+            1793881325714016312
+          ],
+          "/Users/alex/code/vox2/tools/measure_precise_scroll.py": [
+            16777230,
+            451632786,
+            26236,
+            1793845482728837989,
+            1793845482728837989
+          ],
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": [
+            16777230,
+            450354625,
+            14302,
+            1793644714101002980,
+            1793644714101002980
+          ],
+          "/Users/alex/code/vox2/tools/precise_scroll_faults.h": [
+            16777230,
+            450354627,
+            6806,
+            1793644714101229189,
+            1793644714101229189
+          ],
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1/precise-scroll.dylib": [
+            16777230,
+            474963694,
+            76632,
+            1793881772287558937,
+            1793881772287558937
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": [
+            16777230,
+            474944670,
+            293408,
+            1793881263968852390,
+            1793881263978189855
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": [
+            16777230,
+            474940955,
+            50450,
+            1793881238466711396,
+            1793881238473380734
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": [
+            16777230,
+            474940954,
+            21679,
+            1793881238449045634,
+            1793881238456015681
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": [
+            16777230,
+            474940948,
+            28599847,
+            1793881238430241413,
+            1793881238437715210
+          ],
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": [
+            16777230,
+            271474051,
+            22876,
+            1792030822448348981,
+            1792082750902417034
+          ],
+          "/Users/alex/code/vox2/aria/aria_roles.json": [
+            16777230,
+            2762254,
+            121440,
+            1786883031375494274,
+            1792082750908920812
+          ],
+          "/Users/alex/code/vox2/browserhistory/history.css": [
+            16777230,
+            393647579,
+            5830,
+            1793113553948299372,
+            1793113553948299372
+          ],
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": [
+            16777230,
+            431770823,
+            20560,
+            1793422492237388062,
+            1793422492237388062
+          ],
+          "/Users/alex/code/vox2/css/ua_default.css": [
+            16777230,
+            1219763,
+            91086,
+            1790255625544030586,
+            1790255625544030586
+          ],
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": [
+            16777230,
+            1219764,
+            2415,
+            1790255625546527814,
+            1790255625546527814
+          ],
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": [
+            16777230,
+            1219765,
+            1083,
+            1790255625544834384,
+            1790255625544834384
+          ],
+          "/Users/alex/code/vox2/css/ua_svg_default.css": [
+            16777230,
+            1219766,
+            478,
+            1790255625545972810,
+            1790255625545972810
+          ],
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": [
+            16777230,
+            64550126,
+            65952,
+            1789263380459367896,
+            1789263380459367896
+          ],
+          "/Users/alex/code/vox2/html/media_controls.css": [
+            16777230,
+            393628086,
+            3913,
+            1793113537377476438,
+            1793113537377476438
+          ],
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": [
+            16777230,
+            393649463,
+            448,
+            1793113555524613250,
+            1793113555524613250
+          ],
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": [
+            16777230,
+            393649464,
+            810,
+            1793113555524793626,
+            1793113555524793626
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": [
+            16777230,
+            450348847,
+            7527,
+            1793644646433419357,
+            1793644646433419357
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": [
+            16777230,
+            438507301,
+            1662,
+            1793499692361344179,
+            1793499692361344179
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": [
+            16777230,
+            438507302,
+            29026,
+            1793499692361946056,
+            1793499692361946056
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": [
+            16777230,
+            438507303,
+            2734,
+            1793499692362346224,
+            1793499692362346224
+          ],
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": [
+            16777230,
+            27648235,
+            141881,
+            1788219825204045450,
+            1788219825204045450
+          ]
+        },
+        "initial_profile": "empty private profile; default bookmark bar; no saved proxy override",
+        "native_configuration": "installed bundle",
+        "native_renderer_bridge": null,
+        "picture_renderer_bridge": null,
+        "image_renderer_bridge": null,
+        "chrome_height": 112,
+        "script_policy": "automatic",
+        "viewport": [
+          1708,
+          953
+        ],
+        "network_policy": "Live HTTPS with fresh private profile/cache; OS filesystem/shader caches retained; 1708x953 at 2x; GPU canvas on",
+        "schedule": {
+          "inputs": 600,
+          "hz": 60.0,
+          "delta": 8,
+          "reverse_every": 150,
+          "settle_seconds": 10.0,
+          "required_title": "V \u2014 The V Programming Language",
+          "settle_basis": "matching document title"
+        },
+        "environment": {
+          "VOX_TEST_WINDOW": "1",
+          "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1/cache",
+          "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1/profile",
+          "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1/precise-scroll.dylib",
+          "VOX_PRECISE_INPUTS": "600",
+          "VOX_PRECISE_REVERSE": "150",
+          "VOX_PRECISE_HZ": "60.0",
+          "VOX_PRECISE_DELTA": "8",
+          "VOX_PRECISE_SETTLE": "10.0",
+          "VOX_PRECISE_RESET_V_PROFILE": "",
+          "VOX_PRECISE_CAPTURE_FAULTS": "",
+          "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1/navigation-error.png",
+          "VOX_PRECISE_REQUIRED_TITLE": "V \u2014 The V Programming Language"
+        },
+        "started_unix": 1793881772.393551,
+        "host": {
+          "cpu_count": 18,
+          "load_average_before": [
+            67.5517578125,
+            49.5947265625,
+            32.37255859375
+          ],
+          "load_average_after": [
+            69.86572265625,
+            51.55810546875,
+            33.5771484375
+          ]
+        },
+        "browser_pid": 87240,
+        "browser_exit_code": 0,
+        "native_fault_recorded": false,
+        "native_images": {
+          "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+          "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+          "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+        },
+        "valid": true,
+        "finished_unix": 1793881796.774013
+      },
+      "summary": {
+        "protocol_version": 2,
+        "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+        "start": "SCROLL_START precise=1 delta_y=-8 view_width=1708 view_height=1065 document_width=1708 document_height=953 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-05 12:21:04 UTC]",
+        "completion": "SCROLL_DONE inputs=600 publications=802 duration_us=11454234.292",
+        "completed_inputs": 600,
+        "completed_publications": 802,
+        "measured_publications": 771,
+        "moving_intervals": 500,
+        "measurement_window_us": 11191719.333,
+        "mean_publication_fps": 68.89021937198002,
+        "mean_scroll_fps": 44.67588804927369,
+        "mean_publication_interval_fps": 69.15218012688034,
+        "mean_scroll_interval_fps": 44.90401306940281,
+        "first_publication_delay_us": 35227.5,
+        "last_publication_gap_us": 21629.583000000566,
+        "first_counted_scroll_delay_us": 67027.125,
+        "last_scroll_publication_gap_us": 21629.583000000566,
+        "input_delivery_hz": 53.52171388302988,
+        "input_interval_us": {
+          "n": 599,
+          "mean": 18684.00556427379,
+          "median": 17186.875,
+          "p95": 30362.208999998868,
+          "max": 107227.375
+        },
+        "publication_interval_us": {
+          "n": 770,
+          "mean": 14460.860064935065,
+          "median": 11551.062500000466,
+          "p95": 39772.45900000073,
+          "max": 189599.45799999998
+        },
+        "scroll_interval_us": {
+          "n": 500,
+          "mean": 22269.7245,
+          "median": 17680.52100000065,
+          "p95": 48163.125,
+          "max": 189599.45799999998
+        },
+        "update_layer_us": {
+          "n": 771,
+          "mean": 12280.209472114137,
+          "median": 8514.667,
+          "p95": 38683.25,
+          "max": 189224.125
+        },
+        "target_hz": 60,
+        "frame_budget_us": 16666.666666666668,
+        "intervals_over_budget": 311,
+        "fraction_over_budget": 0.622
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/measure_precise_scroll.py",
+          "--binary",
+          "Build/v/Vox.app/Contents/MacOS/Vox",
+          "--url",
+          "https://vlang.io/",
+          "--output",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-1",
+          "--width",
+          "1708",
+          "--height",
+          "953",
+          "--chrome-height",
+          "112",
+          "--inputs",
+          "600",
+          "--input-hz",
+          "120",
+          "--delta",
+          "8",
+          "--reverse-every",
+          "150",
+          "--require-title",
+          "V \u2014 The V Programming Language",
+          "--settle-seconds",
+          "10",
+          "--script-policy",
+          "automatic",
+          "--timeout",
+          "240",
+          "--network-policy",
+          "Live HTTPS with fresh private profile/cache; OS filesystem/shader caches retained; 1708x953 at 2x; GPU canvas on",
+          "--input-hz",
+          "60"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1659682816,
+        "elapsed_seconds": 28.116032417,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "published-native-2",
+      "run": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1708",
+          "--window-height",
+          "1065",
+          "https://vlang.io/"
+        ],
+        "compile_command": [
+          "clang",
+          "-O2",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-dynamiclib",
+          "-fobjc-arc",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m",
+          "-framework",
+          "Cocoa",
+          "-framework",
+          "QuartzCore",
+          "-Wl,-undefined,dynamic_lookup",
+          "-o",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2/precise-scroll.dylib"
+        ],
+        "diagnostic_only": false,
+        "source_and_binary_sha256": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "3d6fe53904e7301744cb78baabd5939e0496649f04dd7e4e792a40c4a7f88432",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "e2f9b533298d1e0aa69363dea6e70bf6bc21f9216615cd300247f2b97d91d078",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "4f95aaa4877e97499bc9650166c334f5b5e1a0b1b84fd76ba7ece7f613d11d1c",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b",
+          "/Users/alex/code/vox2/tools/precise_scroll_faults.h": "c4c9b278cdd523f9bc43012d2073f831bb70c7081b5b0bec632b00878ac85c7a",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2/precise-scroll.dylib": "bb0a189e3d083b93f19df32fc140bdebfaab4809dc2a3b7cdb6a814187f9789b",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+          "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+          "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+          "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+          "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+          "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+        },
+        "cache_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "runtime_input_sha256": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+          "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+          "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+          "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+          "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+          "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+        },
+        "input_file_identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": [
+            16777230,
+            474945685,
+            30026896,
+            1793881326031500487,
+            1793881326031576529
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": [
+            16777230,
+            474945678,
+            1013408,
+            1793881325760523218,
+            1793881325760593135
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": [
+            16777230,
+            474945676,
+            34352,
+            1793881325737783786,
+            1793881325737851119
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": [
+            16777230,
+            474945680,
+            4439696,
+            1793881325792930699,
+            1793881325793000740
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": [
+            16777230,
+            474945682,
+            13041776,
+            1793881325838299396,
+            1793881325838376438
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": [
+            16777230,
+            474945672,
+            2192096,
+            1793881325713942936,
+            1793881325714016312
+          ],
+          "/Users/alex/code/vox2/tools/measure_precise_scroll.py": [
+            16777230,
+            451632786,
+            26236,
+            1793845482728837989,
+            1793845482728837989
+          ],
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": [
+            16777230,
+            450354625,
+            14302,
+            1793644714101002980,
+            1793644714101002980
+          ],
+          "/Users/alex/code/vox2/tools/precise_scroll_faults.h": [
+            16777230,
+            450354627,
+            6806,
+            1793644714101229189,
+            1793644714101229189
+          ],
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2/precise-scroll.dylib": [
+            16777230,
+            474964188,
+            76632,
+            1793881801580792950,
+            1793881801580792950
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": [
+            16777230,
+            474944670,
+            293408,
+            1793881263968852390,
+            1793881263978189855
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": [
+            16777230,
+            474940955,
+            50450,
+            1793881238466711396,
+            1793881238473380734
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": [
+            16777230,
+            474940954,
+            21679,
+            1793881238449045634,
+            1793881238456015681
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": [
+            16777230,
+            474940948,
+            28599847,
+            1793881238430241413,
+            1793881238437715210
+          ],
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": [
+            16777230,
+            271474051,
+            22876,
+            1792030822448348981,
+            1792082750902417034
+          ],
+          "/Users/alex/code/vox2/aria/aria_roles.json": [
+            16777230,
+            2762254,
+            121440,
+            1786883031375494274,
+            1792082750908920812
+          ],
+          "/Users/alex/code/vox2/browserhistory/history.css": [
+            16777230,
+            393647579,
+            5830,
+            1793113553948299372,
+            1793113553948299372
+          ],
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": [
+            16777230,
+            431770823,
+            20560,
+            1793422492237388062,
+            1793422492237388062
+          ],
+          "/Users/alex/code/vox2/css/ua_default.css": [
+            16777230,
+            1219763,
+            91086,
+            1790255625544030586,
+            1790255625544030586
+          ],
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": [
+            16777230,
+            1219764,
+            2415,
+            1790255625546527814,
+            1790255625546527814
+          ],
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": [
+            16777230,
+            1219765,
+            1083,
+            1790255625544834384,
+            1790255625544834384
+          ],
+          "/Users/alex/code/vox2/css/ua_svg_default.css": [
+            16777230,
+            1219766,
+            478,
+            1790255625545972810,
+            1790255625545972810
+          ],
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": [
+            16777230,
+            64550126,
+            65952,
+            1789263380459367896,
+            1789263380459367896
+          ],
+          "/Users/alex/code/vox2/html/media_controls.css": [
+            16777230,
+            393628086,
+            3913,
+            1793113537377476438,
+            1793113537377476438
+          ],
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": [
+            16777230,
+            393649463,
+            448,
+            1793113555524613250,
+            1793113555524613250
+          ],
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": [
+            16777230,
+            393649464,
+            810,
+            1793113555524793626,
+            1793113555524793626
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": [
+            16777230,
+            450348847,
+            7527,
+            1793644646433419357,
+            1793644646433419357
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": [
+            16777230,
+            438507301,
+            1662,
+            1793499692361344179,
+            1793499692361344179
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": [
+            16777230,
+            438507302,
+            29026,
+            1793499692361946056,
+            1793499692361946056
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": [
+            16777230,
+            438507303,
+            2734,
+            1793499692362346224,
+            1793499692362346224
+          ],
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": [
+            16777230,
+            27648235,
+            141881,
+            1788219825204045450,
+            1788219825204045450
+          ]
+        },
+        "initial_profile": "empty private profile; default bookmark bar; no saved proxy override",
+        "native_configuration": "installed bundle",
+        "native_renderer_bridge": null,
+        "picture_renderer_bridge": null,
+        "image_renderer_bridge": null,
+        "chrome_height": 112,
+        "script_policy": "automatic",
+        "viewport": [
+          1708,
+          953
+        ],
+        "network_policy": "Live HTTPS with fresh private profile/cache; OS filesystem/shader caches retained; 1708x953 at 2x; GPU canvas on",
+        "schedule": {
+          "inputs": 600,
+          "hz": 60.0,
+          "delta": 8,
+          "reverse_every": 150,
+          "settle_seconds": 10.0,
+          "required_title": "V \u2014 The V Programming Language",
+          "settle_basis": "matching document title"
+        },
+        "environment": {
+          "VOX_TEST_WINDOW": "1",
+          "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2/cache",
+          "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2/profile",
+          "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2/precise-scroll.dylib",
+          "VOX_PRECISE_INPUTS": "600",
+          "VOX_PRECISE_REVERSE": "150",
+          "VOX_PRECISE_HZ": "60.0",
+          "VOX_PRECISE_DELTA": "8",
+          "VOX_PRECISE_SETTLE": "10.0",
+          "VOX_PRECISE_RESET_V_PROFILE": "",
+          "VOX_PRECISE_CAPTURE_FAULTS": "",
+          "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2/navigation-error.png",
+          "VOX_PRECISE_REQUIRED_TITLE": "V \u2014 The V Programming Language"
+        },
+        "started_unix": 1793881801.7661529,
+        "host": {
+          "cpu_count": 18,
+          "load_average_before": [
+            70.11669921875,
+            51.9140625,
+            33.80810546875
+          ],
+          "load_average_after": [
+            76.1279296875,
+            54.71728515625,
+            35.33837890625
+          ]
+        },
+        "browser_pid": 89055,
+        "browser_exit_code": 0,
+        "native_fault_recorded": false,
+        "native_images": {
+          "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+          "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+          "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+        },
+        "valid": true,
+        "finished_unix": 1793881827.050797
+      },
+      "summary": {
+        "protocol_version": 2,
+        "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+        "start": "SCROLL_START precise=1 delta_y=-8 view_width=1708 view_height=1065 document_width=1708 document_height=953 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-05 12:21:04 UTC]",
+        "completion": "SCROLL_DONE inputs=600 publications=697 duration_us=12021643.083",
+        "completed_inputs": 600,
+        "completed_publications": 697,
+        "measured_publications": 667,
+        "moving_intervals": 474,
+        "measurement_window_us": 11761522.167,
+        "mean_publication_fps": 56.71034671612842,
+        "mean_scroll_fps": 40.300906062136235,
+        "mean_publication_interval_fps": 56.663528299864325,
+        "mean_scroll_interval_fps": 40.32809671792146,
+        "first_publication_delay_us": 6072.084000000001,
+        "last_publication_gap_us": 1857.9580000005662,
+        "first_counted_scroll_delay_us": 59776.542,
+        "last_scroll_publication_gap_us": 1857.9580000005662,
+        "input_delivery_hz": 50.92878213337469,
+        "input_interval_us": {
+          "n": 599,
+          "mean": 19635.26238230384,
+          "median": 17946.292000000365,
+          "p95": 34637.125,
+          "max": 112886.20800000057
+        },
+        "publication_interval_us": {
+          "n": 666,
+          "mean": 17648.036223723724,
+          "median": 11961.854000000283,
+          "p95": 46276.41600000113,
+          "max": 457895.2910000002
+        },
+        "scroll_interval_us": {
+          "n": 474,
+          "mean": 24796.607858649786,
+          "median": 18630.1044999999,
+          "p95": 55424.917000000365,
+          "max": 756549.7080000001
+        },
+        "update_layer_us": {
+          "n": 667,
+          "mean": 15739.639485757121,
+          "median": 10046.292,
+          "p95": 43190.375,
+          "max": 457383.042
+        },
+        "target_hz": 60,
+        "frame_budget_us": 16666.666666666668,
+        "intervals_over_budget": 294,
+        "fraction_over_budget": 0.620253164556962
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/measure_precise_scroll.py",
+          "--binary",
+          "Build/v/Vox.app/Contents/MacOS/Vox",
+          "--url",
+          "https://vlang.io/",
+          "--output",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-native-2",
+          "--width",
+          "1708",
+          "--height",
+          "953",
+          "--chrome-height",
+          "112",
+          "--inputs",
+          "600",
+          "--input-hz",
+          "120",
+          "--delta",
+          "8",
+          "--reverse-every",
+          "150",
+          "--require-title",
+          "V \u2014 The V Programming Language",
+          "--settle-seconds",
+          "10",
+          "--script-policy",
+          "automatic",
+          "--timeout",
+          "240",
+          "--network-policy",
+          "Live HTTPS with fresh private profile/cache; OS filesystem/shader caches retained; 1708x953 at 2x; GPU canvas on",
+          "--input-hz",
+          "60"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1604108288,
+        "elapsed_seconds": 29.972840167,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "name": "published-profile",
+      "run": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1708",
+          "--window-height",
+          "1065",
+          "https://vlang.io/"
+        ],
+        "compile_command": [
+          "clang",
+          "-O2",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-dynamiclib",
+          "-fobjc-arc",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m",
+          "-framework",
+          "Cocoa",
+          "-framework",
+          "QuartzCore",
+          "-Wl,-undefined,dynamic_lookup",
+          "-o",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile/precise-scroll.dylib"
+        ],
+        "diagnostic_only": false,
+        "source_and_binary_sha256": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "3d6fe53904e7301744cb78baabd5939e0496649f04dd7e4e792a40c4a7f88432",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "e2f9b533298d1e0aa69363dea6e70bf6bc21f9216615cd300247f2b97d91d078",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "4f95aaa4877e97499bc9650166c334f5b5e1a0b1b84fd76ba7ece7f613d11d1c",
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b",
+          "/Users/alex/code/vox2/tools/precise_scroll_faults.h": "c4c9b278cdd523f9bc43012d2073f831bb70c7081b5b0bec632b00878ac85c7a",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile/precise-scroll.dylib": "749c2671078375d7314ae5b660c2d90a21effbf801609590469007edd7b6b474",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+          "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+          "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+          "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+          "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+          "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+        },
+        "cache_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "runtime_input_sha256": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+          "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+          "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+          "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+          "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+          "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+        },
+        "input_file_identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": [
+            16777230,
+            474945685,
+            30026896,
+            1793881326031500487,
+            1793881326031576529
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": [
+            16777230,
+            474945678,
+            1013408,
+            1793881325760523218,
+            1793881325760593135
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": [
+            16777230,
+            474945676,
+            34352,
+            1793881325737783786,
+            1793881325737851119
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": [
+            16777230,
+            474945680,
+            4439696,
+            1793881325792930699,
+            1793881325793000740
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": [
+            16777230,
+            474945682,
+            13041776,
+            1793881325838299396,
+            1793881325838376438
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": [
+            16777230,
+            474945672,
+            2192096,
+            1793881325713942936,
+            1793881325714016312
+          ],
+          "/Users/alex/code/vox2/tools/measure_precise_scroll.py": [
+            16777230,
+            451632786,
+            26236,
+            1793845482728837989,
+            1793845482728837989
+          ],
+          "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": [
+            16777230,
+            450354625,
+            14302,
+            1793644714101002980,
+            1793644714101002980
+          ],
+          "/Users/alex/code/vox2/tools/precise_scroll_faults.h": [
+            16777230,
+            450354627,
+            6806,
+            1793644714101229189,
+            1793644714101229189
+          ],
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile/precise-scroll.dylib": [
+            16777230,
+            474964777,
+            76632,
+            1793881832377378386,
+            1793881832377378386
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": [
+            16777230,
+            474944670,
+            293408,
+            1793881263968852390,
+            1793881263978189855
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": [
+            16777230,
+            474940955,
+            50450,
+            1793881238466711396,
+            1793881238473380734
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": [
+            16777230,
+            474940954,
+            21679,
+            1793881238449045634,
+            1793881238456015681
+          ],
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": [
+            16777230,
+            474940948,
+            28599847,
+            1793881238430241413,
+            1793881238437715210
+          ],
+          "/Users/alex/code/vox2/adblock/extended/procedural.js": [
+            16777230,
+            271474051,
+            22876,
+            1792030822448348981,
+            1792082750902417034
+          ],
+          "/Users/alex/code/vox2/aria/aria_roles.json": [
+            16777230,
+            2762254,
+            121440,
+            1786883031375494274,
+            1792082750908920812
+          ],
+          "/Users/alex/code/vox2/browserhistory/history.css": [
+            16777230,
+            393647579,
+            5830,
+            1793113553948299372,
+            1793113553948299372
+          ],
+          "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": [
+            16777230,
+            431770823,
+            20560,
+            1793422492237388062,
+            1793422492237388062
+          ],
+          "/Users/alex/code/vox2/css/ua_default.css": [
+            16777230,
+            1219763,
+            91086,
+            1790255625544030586,
+            1790255625544030586
+          ],
+          "/Users/alex/code/vox2/css/ua_mathml_default.css": [
+            16777230,
+            1219764,
+            2415,
+            1790255625546527814,
+            1790255625546527814
+          ],
+          "/Users/alex/code/vox2/css/ua_quirks_mode.css": [
+            16777230,
+            1219765,
+            1083,
+            1790255625544834384,
+            1790255625544834384
+          ],
+          "/Users/alex/code/vox2/css/ua_svg_default.css": [
+            16777230,
+            1219766,
+            478,
+            1790255625545972810,
+            1790255625545972810
+          ],
+          "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": [
+            16777230,
+            64550126,
+            65952,
+            1789263380459367896,
+            1789263380459367896
+          ],
+          "/Users/alex/code/vox2/html/media_controls.css": [
+            16777230,
+            393628086,
+            3913,
+            1793113537377476438,
+            1793113537377476438
+          ],
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": [
+            16777230,
+            393649463,
+            448,
+            1793113555524613250,
+            1793113555524613250
+          ],
+          "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": [
+            16777230,
+            393649464,
+            810,
+            1793113555524793626,
+            1793113555524793626
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": [
+            16777230,
+            450348847,
+            7527,
+            1793644646433419357,
+            1793644646433419357
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": [
+            16777230,
+            438507301,
+            1662,
+            1793499692361344179,
+            1793499692361344179
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": [
+            16777230,
+            438507302,
+            29026,
+            1793499692361946056,
+            1793499692361946056
+          ],
+          "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": [
+            16777230,
+            438507303,
+            2734,
+            1793499692362346224,
+            1793499692362346224
+          ],
+          "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": [
+            16777230,
+            27648235,
+            141881,
+            1788219825204045450,
+            1788219825204045450
+          ]
+        },
+        "initial_profile": "empty private profile; default bookmark bar; no saved proxy override",
+        "native_configuration": "installed bundle",
+        "native_renderer_bridge": null,
+        "picture_renderer_bridge": null,
+        "image_renderer_bridge": null,
+        "chrome_height": 112,
+        "script_policy": "automatic",
+        "viewport": [
+          1708,
+          953
+        ],
+        "network_policy": "Live HTTPS with fresh private profile/cache; OS filesystem/shader caches retained; 1708x953 at 2x; GPU canvas on",
+        "schedule": {
+          "inputs": 1200,
+          "hz": 120.0,
+          "delta": 8,
+          "reverse_every": 150,
+          "settle_seconds": 10.0,
+          "required_title": "V \u2014 The V Programming Language",
+          "settle_basis": "matching document title"
+        },
+        "environment": {
+          "VOX_TEST_WINDOW": "1",
+          "VOX_LEAF_TIMING_DIAGNOSTICS": "1",
+          "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile/cache",
+          "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile/profile",
+          "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile/precise-scroll.dylib",
+          "VOX_PRECISE_INPUTS": "1200",
+          "VOX_PRECISE_REVERSE": "150",
+          "VOX_PRECISE_HZ": "120.0",
+          "VOX_PRECISE_DELTA": "8",
+          "VOX_PRECISE_SETTLE": "10.0",
+          "VOX_PRECISE_RESET_V_PROFILE": "",
+          "VOX_PRECISE_CAPTURE_FAULTS": "",
+          "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile/navigation-error.png",
+          "VOX_PRECISE_REQUIRED_TITLE": "V \u2014 The V Programming Language"
+        },
+        "started_unix": 1793881832.5244732,
+        "host": {
+          "cpu_count": 18,
+          "load_average_before": [
+            84.44580078125,
+            56.796875,
+            36.185546875
+          ],
+          "load_average_after": [
+            90.708984375,
+            60.98193359375,
+            38.4169921875
+          ]
+        },
+        "browser_pid": 90766,
+        "browser_exit_code": 0,
+        "native_fault_recorded": false,
+        "native_images": {
+          "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+          "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+          "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+        },
+        "valid": true,
+        "finished_unix": 1793881866.396917
+      },
+      "summary": {
+        "protocol_version": 2,
+        "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+        "start": "SCROLL_START precise=1 delta_y=-8 view_width=1708 view_height=1065 document_width=1708 document_height=953 chrome_height=112 scale=2 input_hz=120 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-05 12:21:04 UTC]",
+        "completion": "SCROLL_DONE inputs=1200 publications=990 duration_us=20645389.250",
+        "completed_inputs": 1200,
+        "completed_publications": 990,
+        "measured_publications": 961,
+        "moving_intervals": 950,
+        "measurement_window_us": 20391578.958,
+        "mean_publication_fps": 47.12729710530736,
+        "mean_scroll_fps": 46.5878587409386,
+        "mean_publication_interval_fps": 47.18435105843956,
+        "mean_scroll_interval_fps": 46.69284740158081,
+        "first_publication_delay_us": 45601.625,
+        "last_publication_gap_us": 248.75,
+        "first_counted_scroll_delay_us": 95697.083,
+        "last_scroll_publication_gap_us": 248.75,
+        "input_delivery_hz": 58.798781716195144,
+        "input_interval_us": {
+          "n": 1199,
+          "mean": 17007.155094245205,
+          "median": 14445.708000000566,
+          "p95": 33330.832999999984,
+          "max": 305333.75
+        },
+        "publication_interval_us": {
+          "n": 960,
+          "mean": 21193.467273958333,
+          "median": 14074.145500000566,
+          "p95": 51670.625,
+          "max": 868855.1670000004
+        },
+        "scroll_interval_us": {
+          "n": 950,
+          "mean": 21416.556403157894,
+          "median": 14362.020500000566,
+          "p95": 52254.41599999997,
+          "max": 868855.1670000004
+        },
+        "update_layer_us": {
+          "n": 961,
+          "mean": 19220.970073881374,
+          "median": 12332.375,
+          "p95": 47086.25,
+          "max": 865392.833
+        },
+        "target_hz": 60,
+        "frame_budget_us": 16666.666666666668,
+        "intervals_over_budget": 380,
+        "fraction_over_budget": 0.4
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/measure_precise_scroll.py",
+          "--binary",
+          "Build/v/Vox.app/Contents/MacOS/Vox",
+          "--url",
+          "https://vlang.io/",
+          "--output",
+          "/Users/alex/code/vox2/Build/vlang-finish-20261105/published-profile",
+          "--width",
+          "1708",
+          "--height",
+          "953",
+          "--chrome-height",
+          "112",
+          "--inputs",
+          "600",
+          "--input-hz",
+          "120",
+          "--delta",
+          "8",
+          "--reverse-every",
+          "150",
+          "--require-title",
+          "V \u2014 The V Programming Language",
+          "--settle-seconds",
+          "10",
+          "--script-policy",
+          "automatic",
+          "--timeout",
+          "240",
+          "--network-policy",
+          "Live HTTPS with fresh private profile/cache; OS filesystem/shader caches retained; 1708x953 at 2x; GPU canvas on",
+          "--inputs",
+          "2400",
+          "--inputs",
+          "1200",
+          "--input-hz",
+          "120",
+          "--env",
+          "VOX_LEAF_TIMING_DIAGNOSTICS=1"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1827995648,
+        "elapsed_seconds": 38.781621958,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "copy_experiment": "Rejected before a production build: 4 lanes regress all four microbenchmark p95 measurements. Exact and sanitized tests passed. Patch retained.",
+  "scope": "Changed native layer contents with changed scroll position after updateLayer; first-to-last precise input window; not physical scanout.",
+  "protocol": "Live HTTPS, automatic script policy, fresh private profile/cache; title readiness plus 10 seconds settle, 1708x953 document viewport at 2x, 600 delta-8 inputs reversing every 150. OS filesystem/shader caches retained."
+}

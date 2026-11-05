@@ -1868,3 +1868,49 @@ lease; the available production bundle still used the older opt-in policy.
 The corrected full-frame measurements therefore use the explicitly pinned
 native candidate. They validate that rendering path, but do not substitute
 for a fresh launch of a subsequently published default-on executable.
+
+## Published defaults and remaining filter work (2026-11-05, continuation)
+
+The default-on policies are now present in production executable
+`e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c`
+(parallel C). Two fresh installed-bundle trials at the same 1708×953, 2×,
+600-input, 60 Hz protocol measured 44.68 and 40.30 FPS. Actual input delivery
+was 53.52 and 50.93 Hz; p95 scroll intervals were 48.16 and 55.42 ms, maxima
+189.60 and 756.55 ms. Host load was 67.55 and 70.12 on 18 CPUs. These are
+installation checks under contention, not a new optimization comparison or a
+60 FPS acceptance result. `inline-node`, `canvas-text`, and the same-size SVG
+source-switch check pass their unchanged bounds on the published bundle.
+
+A separate profile puts 195 of 1590 main-thread samples in the retained pixel
+copy and substantial work in Core Image filters and synchronous readback.
+A four-lane retained-copy experiment passed exact ring/wrap/row-padding and
+sanitizer checks, but was rejected before a production build. Its four serial
+versus parallel p95 copy measurements were 999→1785, 697→1293, 747→992, and
+1081→1318 microseconds. A smaller median in some rounds does not compensate
+for worsening every p95. The patch and all measurements are retained.
+
+`8e3b30e54` adds an opt-in identity check for grayscale-only filter chains over
+already-gray sRGB pixels (`VOX_ENABLE_GRAYSCALE_IDENTITY=1`, with
+`VOX_DISABLE_GRAYSCALE_IDENTITY=1` taking precedence). It scans the visible
+rows of the live source bitmap before its context becomes an immutable image,
+then skips the Core Image submission only when every inspected pixel is gray.
+Colored input, other filters, other profiles and unsupported formats retain
+the existing filter path. The check creates no provider-sized byte copy.
+Direct Core Image probes preserve every tested gray/alpha byte exactly at
+five grayscale amounts. The new real-publication test and the existing canvas
+checks pass all eight optimized/sanitized jobs, including RGBA/BGRA input,
+padded rows, fractional clips, 1×/2× and colored/profile/filter fallbacks.
+Workload eligibility and unprofiled comparison are required before enabling
+this path by default. Follow-up evidence is retained separately from the
+original archive so earlier results remain immutable.
+
+`3e0c785d7` also verifies the observable submission count: an accepted gray
+source makes zero Core Image render calls, while a colored source still makes
+one. Optimized and sanitized variants pass. The new source has not yet had a
+live scrolling comparison: completed shared builds have been superseded by
+concurrent edits, and the next production build is still compiling. A later
+host sample recorded load 209.60 on 18 CPUs. Neither the unit-level identity
+result nor these contended installed-bundle trials establishes 60 FPS.
+See the [continuation evidence](performance/vlang-gpu-scroll-followup-20261105.json)
+for raw runs, profiles, pixel comparisons, rejected copy experiment and filter
+checks; the original evidence archive is preserved.
