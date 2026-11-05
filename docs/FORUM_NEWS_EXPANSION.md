@@ -1041,6 +1041,54 @@ build; this is pixel evidence, with no performance comparison or claim.
 [Commands, exit receipts, hashes and verdicts](evidence/engadget-repaint-oracle-20261105.json),
 [raw attempts and reconstructable candidate delta](evidence/engadget-repaint-oracle-20261105.zip).
 
+## Engadget: readiness audits and navigation failures (2026-11-05)
+
+Commit `759b62d8b` retains navigation identity when the pixel-reference
+precondition rejects an error or challenge page. Previously that early failure
+left only a generic exception. The sidecar now records `stable:false` and the
+supplied requested/actual URL, status, coverage and load error, without auditing
+or screenshotting the error document. Successful capture behavior is unchanged.
+All **136 Node checks and 32 Python checks pass**, including eight focused
+pixel-reference cases. The exact predecessor module, imported from Git in
+memory, fails the new receipt assertion as expected.
+
+The frozen Engadget audit finds that both nonempty inline stylesheets match
+their authored text, with no adopted stylesheets. All 34 readable raster bodies
+(31 WebP and three JPEG) are single-frame images. The animation audit finds one
+infinite OpenWeb CSS animation; it does not identify a finite animation whose
+completion would repair the source gap. These are instrumented observations,
+not a new site pass. Current Chromium's
+[background opacity predicate](https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/core/layout/layout_box.cc)
+and [image opacity check](https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/core/layout/layout_image.cc)
+support investigating opacity/lifecycle state, but do not prove the installed
+Brave call path.
+
+Two fresh five-second audit processes reproduce the old frozen PNG exactly
+and retain **295 source pixels**. A separate 30-second process instead differs
+by **11,030 photo pixels** from that reference and **11,310** from saved source,
+with maximum channel error 15. It still differs from source at every original
+border sample. These are separate processes, so this does not isolate settle
+time from decode/history variation. No longer settle period, inspected frame
+or altered background is promoted into production.
+
+The earlier acquisition proxy at `127.0.0.1:51241` is no longer listening. The
+new failure receipt retains `net::ERR_PROXY_CONNECTION_FAILED`. A visit without
+the explicit proxy, using the prepared template, times out in `Runtime.evaluate`;
+a fresh-profile visit without that proxy fails full-uBO readiness and exits
+normally. No replacement
+archive qualifies. The templated Hacker News control also times out while
+clearing its HTTP cache and fails shutdown. A separate **fresh cold-profile
+Hacker News control passes every strict gate at zero pixels** with normal
+oracle exits and unchanged inputs. All failed attempts remain recorded.
+
+The host reports load above 200 on 18 CPUs; this is context, not a proven cause
+for every failure. Engadget's registered archive and candidate remain unchanged
+and separate. Its source gate remains open; the earlier 134-test/140-capture
+rendering pass retains its original build qualification.
+
+[Commands, receipts, identities and limits](evidence/engadget-readiness-navigation-20261105.json),
+[raw audits and failed attempts](evidence/engadget-readiness-navigation-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged

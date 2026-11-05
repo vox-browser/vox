@@ -1,0 +1,1700 @@
+{
+  "status": "Navigation failure metadata is retained; Engadget source qualification remains open. No renderer correction or replacement archive is claimed.",
+  "commit": "759b62d8b",
+  "checks": {
+    "pixel-tests": {
+      "command": [
+        "node",
+        "--test",
+        "tools/adblock/pixel_reference_test.mjs"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 99254272,
+      "elapsed_seconds": 1.259727375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "node-tests": {
+      "command": [
+        "node",
+        "--test",
+        "tools/adblock/archive_focus_test.mjs",
+        "tools/adblock/audit_scripts_test.mjs",
+        "tools/adblock/capture_archive_test.mjs",
+        "tools/adblock/classic_script_test.mjs",
+        "tools/adblock/lazy_base64_test.mjs",
+        "tools/adblock/lazy_parser_test.mjs",
+        "tools/adblock/lazy_resources_test.mjs",
+        "tools/adblock/lazy_snapshot_test.mjs",
+        "tools/adblock/lazy_url_test.mjs",
+        "tools/adblock/oracle_assets_test.mjs",
+        "tools/adblock/oracle_cache_test.mjs",
+        "tools/adblock/oracle_cosmetics_test.mjs",
+        "tools/adblock/oracle_failure_test.mjs",
+        "tools/adblock/oracle_network_test.mjs",
+        "tools/adblock/oracle_profile_test.mjs",
+        "tools/adblock/oracle_shutdown_test.mjs",
+        "tools/adblock/oracle_target_test.mjs",
+        "tools/adblock/pixel_reference_test.mjs",
+        "tools/adblock/popular_sites_test.mjs",
+        "tools/adblock/request_stream_test.mjs",
+        "tools/adblock/runtime_test.mjs",
+        "tools/adblock/snapshot_test.mjs",
+        "tools/adblock/visibility_probe_test.mjs"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 872415232,
+      "elapsed_seconds": 12.841611875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "python-tests": {
+      "command": [
+        "python3",
+        "tools/forum_news_pixels_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 63356928,
+      "elapsed_seconds": 2.485022,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "counts": {
+    "node": 136,
+    "python": 32,
+    "focused_pixel_reference": 8
+  },
+  "negative_control": {
+    "guard": {
+      "command": [
+        "node",
+        "Build/engadget-image-opacity-20261105/old_negative_pinned.mjs"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 42811392,
+      "elapsed_seconds": 0.442122666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "inputs": {
+      "git_parent": "21bb7c6333e0606f9fe2d86ed41887d3f7209451",
+      "module_sha256": "41e03c45b5843dab4f81a655f0faea449fa3e8dece357863e5c5277beb37ea27"
+    },
+    "scope": "Imports the exact predecessor Git object in memory; the new failed-navigation receipt assertion correctly fails because the predecessor creates no sidecar. The earlier HEAD-based attempt remains recorded separately."
+  },
+  "observed_failure": {
+    "stable": false,
+    "navigation": {
+      "requested_url": "https://www.engadget.com/",
+      "url": "chrome-error://chromewebdata/",
+      "title": "www.engadget.com",
+      "status": null,
+      "ready_state": "complete",
+      "body_text_length": 187,
+      "body_text_sample": "No internet\n\nThere is something wrong with the proxy server, or the address is incorrect.\n\nTry:\n\nContacting the system admin\nChecking the proxy address\nERR_PROXY_CONNECTION_FAILED\nDetails",
+      "element_count": 43,
+      "challenge_detected": false,
+      "challenge_evidence": [],
+      "load_error": "net::ERR_PROXY_CONNECTION_FAILED",
+      "coverage": "error"
+    }
+  },
+  "scope": "Non-page pixel-reference preconditions now retain stable:false and the full supplied navigation object before rejecting; they do not query or screenshot the error page. Successful reference semantics are unchanged.",
+  "frozen_css_audit": {
+    "nonempty_inline_sheets": 2,
+    "all_rules_match": true,
+    "adopted_sheets": 0
+  },
+  "frozen_animation_audit": [
+    {
+      "name": "openweb-built-in-host-trigger",
+      "playState": "running",
+      "currentTime": 5216.5,
+      "timing": {
+        "delay": 0,
+        "direction": "alternate",
+        "duration": 1000,
+        "easing": "linear",
+        "endDelay": 0,
+        "fill": "none",
+        "iterationStart": 0,
+        "iterations": null
+      },
+      "computed": {
+        "delay": 0,
+        "direction": "alternate",
+        "duration": 1000,
+        "easing": "linear",
+        "endDelay": 0,
+        "fill": "none",
+        "iterationStart": 0,
+        "iterations": null,
+        "activeDuration": null,
+        "currentIteration": 5,
+        "endTime": null,
+        "localTime": 5216.5,
+        "progress": 0.7835000000000001
+      },
+      "target": "<div data-spotim-module=\"pitc\"><ow-6obpk985h1s></ow-6obpk985h1s></div>"
+    }
+  ],
+  "raster_audit": [
+    {
+      "file": "647e94bcf91d305cf259576f24aaa4093e1661cc302194a0d98af6f482300575",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "6b3c1da0c174ede643adfb498edfe2d8625c2fba56b2473954e16648f6752219",
+      "format": "JPEG",
+      "frames": 1,
+      "width": 500,
+      "height": 500
+    },
+    {
+      "file": "e68f8f2c98b4cdfd6f105630cac3d7210d382405c500a99a7c156726a85448f2",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "4bc23ccf01b1075f7b59527388bdcdda9e96f2c206ff4964abf84a40b05c9f27",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "d0e1f88fa16f8fa3a33e60c0b6da2b76e43c15940bbacf4a5827bd6e28ac1e20",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "210dd198138f4ac70d8bb6238a3fb0d938331003d76bd20ea3e82c0b4344df41",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "5f850a3e804e8b1f49295cb2973101b661dec8855eddbeb5c48734fa7cb2d0a1",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "708bdf9b9b36f8e594278e49959ef043e9a823f2ef6195f3afc4559f1202bb1f",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "fda6faa589d3c8083b507188a29fcdf22216ce5d665ae0d3b6d1d80a4cb94519",
+      "format": "JPEG",
+      "frames": 1,
+      "width": 500,
+      "height": 500
+    },
+    {
+      "file": "082f4b6c212fa6519da118f4d2b59173d7dab340c30de074ca945fcc4d706294",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 780,
+      "height": 438
+    },
+    {
+      "file": "a4454807b9a2a90d146ea77e5dee3cec4fb77c46136681bb9b9f7be5ce24c424",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 780,
+      "height": 438
+    },
+    {
+      "file": "0702dc26e5fa7985dd5b3afda5144f3bf1f6b119635521b1cc668dc49e0f2896",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "f45046fb8918ddd80221ba1a4f450984c9e3e13e80c9e9b317fca40e87177cbd",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "acdc990a2816688d9abf5420480200a61a66678cd27d6d0ae615b08c89bb3d49",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "4be9af9c3a00b87e6f1e46ae424eedb5bd767ae1074908bfaa4f8585c4fcf2f9",
+      "format": "JPEG",
+      "frames": 1,
+      "width": 500,
+      "height": 500
+    },
+    {
+      "file": "af8b25615c3182ad42f663c0f43ba7a4b1f16abc569dae7ce2188b3ca1e2a40f",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "b31a156ad554e87c97dc607881bcd6c4d356ef78ecd3b295cc22094c181dc11f",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 780,
+      "height": 438
+    },
+    {
+      "file": "231bbb279de58f8dbb67e22b7cabadb5c2b791476d2cfbb9d464cd72b43df7f6",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "59941809715281935d8b3cd85e923908297b4cdab6bf41a5811d1d8f820e7d6c",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "ea3293359c04bd6c02930626f38e980128032c163deff0778b05ceaea5f0d704",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "a59aae38594ccb244a56f55f1c7a295379dee799490fcb33a68c79de773400d0",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "b30223d5d3ee0fac93fb850d5309485613420590e923930c9368db609753774d",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "81d58700ec81bc40f90ce7d5615b6e75bd2ca79871adf5b42b0196c2bb6949ef",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "88b9f7fe16e805ba4745b8e0c21cc297d0aab7ea1afe42e7751aa592c377bce3",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "7875b49d13299f0730bdc821fd09eb30d52efe7151e925f6515d2b88ec563e81",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "f15f3dcc635315df786af8fbfd71589821960cade1afe7a8fd5fcad53ba4e6fb",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 780,
+      "height": 438
+    },
+    {
+      "file": "68abd2fbec963161274f1291198e7d684c193208a983684d03017a662291a110",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "437dac70cb0086f76fa9922c26c945b9f11dd38de778078038ff61f36b7fe52d",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 780,
+      "height": 438
+    },
+    {
+      "file": "e1437ac9f3702ec57fd68150e51ed87e6a6722b152c308b795712debee1be30b",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "ba3f5a86e6ba90cea75f7889e87a17791d1ab83d2f4348c5055d360a2655fd14",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "8f2bbc52feb0e2f7496b9560a8663bf4909d35d2b629b73505a13abc336537c8",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "89c38bef2dfd850e45d049265edd239b00ed3e9b8dfffe17414de10f63276f03",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "7455bfbfa12465ed0c93622730fa22e82febab4fdc7ccdb77b380a88a9dd77f8",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    },
+    {
+      "file": "f74a042fa699552afacc4474c6b5dd163341b52124c093217592277af400b790",
+      "format": "WEBP",
+      "frames": 1,
+      "width": 428,
+      "height": 241
+    }
+  ],
+  "pixels": [
+    {
+      "case": "Build/engadget-image-opacity-20261105/frozen-css/brave.png",
+      "source_pixels": 295,
+      "frozen_pixels": 0
+    },
+    {
+      "case": "Build/engadget-image-opacity-20261105/frozen-animation/brave.png",
+      "source_pixels": 295,
+      "frozen_pixels": 0
+    },
+    {
+      "case": "Build/engadget-image-opacity-20261105/frozen-long/brave.png",
+      "source_pixels": 11310,
+      "frozen_pixels": 11030
+    }
+  ],
+  "long_trial": {
+    "original_295_pixel_subset_source_differences": 295,
+    "original_subset_frozen_differences": 15,
+    "difference_bounds": [
+      789,
+      427,
+      998,
+      543
+    ],
+    "maximum_channel_error": 15,
+    "scope": "The 5- and 30-second captures use separate fresh processes. The longer trial differs by 11,030 photo pixels from the earlier frozen frame and 11,310 from saved source; this does not isolate elapsed time from process/decode-history variation and does not qualify a new reference."
+  },
+  "site_control": {
+    "started_at": "2026-11-05T15:49:54+0300",
+    "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+    "threshold": "zero differing RGBA pixels",
+    "cache_policy": "complete",
+    "sites": [
+      {
+        "id": "hacker-news",
+        "name": "Hacker News",
+        "url": "https://news.ycombinator.com/",
+        "status": "failure",
+        "error": "Command exited 125; see /Users/alex/code/vox2/Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.log"
+      }
+    ],
+    "passed": 0
+  },
+  "fresh_control": {
+    "started_at": "2026-11-05T15:56:46+0300",
+    "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+    "threshold": "zero differing RGBA pixels",
+    "cache_policy": "cold",
+    "sites": [
+      {
+        "id": "hacker-news",
+        "name": "Hacker News",
+        "url": "https://news.ycombinator.com/",
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/engadget-image-opacity-20261105/fresh-control/hacker-news",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+      }
+    ],
+    "passed": 1
+  },
+  "fresh_control_inputs": {
+    "files": {
+      "tools/adblock/archive_focus.mjs": "70c5f0260d7de4b027ed920e0a6585da69e4c70edff334ddf76aa16c9fa48bac",
+      "tools/adblock/archive_focus_test.mjs": "61f02500073e9f8b294a2b6880a8e1209c36a4147ba19e3a0d7e3a456a366f32",
+      "tools/adblock/audit_scripts.mjs": "ee29d85d6c0d253f683ce156f99fd0fe0c44b6b4b4a6b96af1bbfca6d2e16779",
+      "tools/adblock/audit_scripts_test.mjs": "77c2a9e265258bc38cb0e31dafd9c3a238403b315fafbe154c6a0c2a3b6ae8fc",
+      "tools/adblock/brave_parity.mjs": "879a621a4e6cd276aec73f76d74271b50e230dd4057a851579dd32c0002a3abd",
+      "tools/adblock/build.mjs": "0317e2254f2d29dd46da22e7f52fd9aecd39b98634bb2a85de440871eccb8624",
+      "tools/adblock/capture_archive.mjs": "003999d9f240b01215c45135518a0fa91179953b5f0fd50d1c33f7baaf254d4b",
+      "tools/adblock/capture_archive_test.mjs": "c9600baa474d38cac0b7d99238c9cf5027fa656323af55e8653693df6031b705",
+      "tools/adblock/classic_script.mjs": "8ea6328d2d95d9ca0849c5cf45e8f6dcb1a5ea36b8b2f9860037b967bf1f5635",
+      "tools/adblock/classic_script_test.mjs": "ed68bc2ec2b107dc604272352d869489f317e6299517d4cecb6e92250ff3d811",
+      "tools/adblock/lazy_base64.mjs": "12381e5f7a30c0b5413767e1516d4b2c9d7bed3ebef4089df4dc10519495250d",
+      "tools/adblock/lazy_base64_test.mjs": "468d68d2aca51e9e3bd36c1ec82c818bd4b70253e9e45c4e3933167301d5ba03",
+      "tools/adblock/lazy_parser.mjs": "5acc88f5a530fb1d4779079ccf54b642cc5d6606663ce5a864d3b1ebe451d320",
+      "tools/adblock/lazy_parser_test.mjs": "65054d009ed885eccd17183908d6a2edfd211bd4f46e838c04ec8e271a735d13",
+      "tools/adblock/lazy_resources.mjs": "bd51ccb46a1b93bcfce6aef130862c6c26363f8a88f9c731ebe49da82d6e870e",
+      "tools/adblock/lazy_resources_test.mjs": "f5070bb5c4ca7c7e9c6f4ee497e6f2b2bccb24e7462eba5454f3c012c0f023b2",
+      "tools/adblock/lazy_snapshot.mjs": "dafd596228043792e5deee7bc16ec7c1a3f69947391585b19b59a3a989f08fd6",
+      "tools/adblock/lazy_snapshot_test.mjs": "cf4fa7161309730d85a9a58e9033df8373ee6a030a16521b76b61639f1c32d49",
+      "tools/adblock/lazy_url.mjs": "acb987dfb6f5608c4a852f69210f20fef91ca47cc1cc344592bb460b30d2f3c0",
+      "tools/adblock/lazy_url_test.mjs": "1853431beea614598ab7cfbb3eaa36b94c9a9aa45750f6fae651b5d8f454d9c0",
+      "tools/adblock/navigation.mjs": "de7755a963b1b0ce1a886429345cb239c3812e12c650e7a574ea7ecc820314b2",
+      "tools/adblock/navigation.test.mjs": "664be73f5793be77fa16f8be1c48b493769fe31b306d25a7ba40ae710d6bb1f1",
+      "tools/adblock/oracle_assets.mjs": "7333c6de7513177fa90b2ba816db2bfe48de3eb2bc4ad80cdea00bfa62decff0",
+      "tools/adblock/oracle_assets_test.mjs": "a42507957d3c09fe3685026afd76de3b2ea6a0eb33d6bbbbaf89ec6818c205c5",
+      "tools/adblock/oracle_cache.mjs": "cbb4ff2e583c20afccefb15dbe9868df42f6033a6a6d33093d291d6d028d83bb",
+      "tools/adblock/oracle_cache_test.mjs": "ea8e670d03df8a1523c939a14390f075f7f02c7fd59e2baf8e3fb7bd9a4e9ee8",
+      "tools/adblock/oracle_cosmetics.mjs": "b87a652132e7a14bec281458a78e766a8a873702ba659d55dabc111514aae8ce",
+      "tools/adblock/oracle_cosmetics_test.mjs": "28b6feea5bcb4bfe7f49ac2acbee5f238c4f6536315664ca370aa0b6ffdb40f0",
+      "tools/adblock/oracle_failure.mjs": "5c3a1de2c0f38274c44f08704a5c7961a14643d4a63ec1aec079ce1e1cb808eb",
+      "tools/adblock/oracle_failure_test.mjs": "c8f020988646702ad069c1f5232c1604b0dfc8edd8968ce45fb2b16a77de67a1",
+      "tools/adblock/oracle_network.mjs": "706d9de749d4dc1bcbcdbeffa896828424f2f4a3c29442bff118ee49103d02ec",
+      "tools/adblock/oracle_network_test.mjs": "12e348f967f35e2dd7a7371538ff9fb5d6152f9ac24e33f91287f9a07f8d98ca",
+      "tools/adblock/oracle_profile.mjs": "03959a4d75199bbf982eb6d31e7239b6af60fe6586b781443b2fc807e8f8a7b2",
+      "tools/adblock/oracle_profile_test.mjs": "573ae4c268861eb7ef6b982de68b7b7db33759f5bdb00ece8bdcbfd7b52c2831",
+      "tools/adblock/oracle_shutdown.mjs": "f23268dd0f7337be9c5834301deb4d225c9f1e4b128c6e4c5d7c6980095c3e89",
+      "tools/adblock/oracle_shutdown_test.mjs": "f81d9bf4c68c6951db17b9c7ca05eaf043cbbb4375b9348a4289496aa2fe5081",
+      "tools/adblock/oracle_target.mjs": "c6c7b8e21de3e5d7f73e3e9a531ca3ec8731c2291f27880438ef520094286024",
+      "tools/adblock/oracle_target_test.mjs": "1fe82c7bff1cb5a1b9cd9ac9b5f84c0b006ccfc9cf3cd5d56fa8bfef61bf3588",
+      "tools/adblock/pixel_reference.mjs": "9e22a1eed6f6d8ad46bad5baa593bc810e8eea609ea1b670b187649c1979699f",
+      "tools/adblock/pixel_reference_test.mjs": "3c06d11a7d4104d9c229f978ea2391baf70cf1802ab0159d752deed11a38795b",
+      "tools/adblock/popular_sites.mjs": "0357c9423cb8366b3a74bac0569c7bbc0884c3b88bc693e420f65b0ffa0f6c8f",
+      "tools/adblock/popular_sites_test.mjs": "4c161b25f1c98c5fdd65e556393b0e80edc21f84dec4071bfcaa50ca48da124d",
+      "tools/adblock/refresh-extended.mjs": "6740458e8fedb6708ef526b467472f99a13a20d5274e2c21f94a4cba158f30aa",
+      "tools/adblock/refresh-source.mjs": "3e3e224b3a382f983e8b00f759c79ab5bda7b8a10e11e638d4b8500f9c541111",
+      "tools/adblock/refresh.mjs": "be316455074119e7772e8423b96f59a36afde78b8d31dfa845ea6f19d0b26d7b",
+      "tools/adblock/request_stream.mjs": "207c4d6bb5d140df799d0aa3d6929e1770ac0d40113139287dc011eea432b222",
+      "tools/adblock/request_stream_test.mjs": "dfb7a764790e73e272656718830966e55da2275028e917bdac803b7e8d33a524",
+      "tools/adblock/runtime_test.mjs": "ba03d429a3b5a0ebd3b70c7d49ac6055117d2f10cb0dcb607e9e338248cee319",
+      "tools/adblock/snapshot.mjs": "8cd095df8d5a4066fe2ebec55d441463f911d23b2cb76013e04ba0cdf3ae890c",
+      "tools/adblock/snapshot_test.mjs": "409de70576392191a93980edd4585ad21a907e76adf6bc590f37999fe94151df",
+      "tools/adblock/visibility_probe.mjs": "c8758003ec8baf42c78a046e2b2337967617727acb1d830f733b008f66289026",
+      "tools/adblock/visibility_probe_test.mjs": "2fd08d4675628f8711c02e50bfde1eb52bff25b6dce8730e0320f21b616a3f24",
+      "tools/forum_news_pixels.py": "07f65da5ce936214e4cd6398ae368599c3811a26f6bd2a08e9772ef80f49ec4a",
+      "tools/page_archive.py": "05d2b13aba6e42c66fea166cf2035263579a47828b7627ad112720755d328524",
+      "tools/check_pixel_equality.py": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b",
+      "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+      "tools/browser_bundle_lease.py": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+      "adblock/lists/RUS-0.txt": "c131a1ca4a61e5a107dcc1cc2d5717b912dadb2e895caf42b93e162a64faa1f2",
+      "adblock/lists/easylist.txt": "75dad8d3b219649590427fe8c3257e10461dc403c5e8afc315d94fdeaaeb078b",
+      "adblock/lists/easyprivacy.txt": "9fab16346701f525c0d41f340071f0d72f767df8a399c48c545643eaad4e927e",
+      "adblock/lists/manifest.json": "5ee0e65c221da574f5559393dc39e4480a6d693f7da7e13659cc4000f8e1cc4d",
+      "adblock/lists/plowe-0.txt": "25e97ac24ebf04c6df613c0726d66121725af6c2a68504ee2560b66df9092a20",
+      "adblock/lists/public_suffix_list.dat": "ba7d836c0ea57a8bcf9f1fcb868066a7554bed029b441ecc6204ad8494a32612",
+      "adblock/lists/ublock-badware.txt": "dbb7b3a6e20266b92fb35e940a4ace8e023259078a3d6a2f716eaebc9b653d0f",
+      "adblock/lists/ublock-filters.txt": "b6d908ab04d5ea5dc99360eb9a79531ad6470833a08fdbd39b3b3135082fe9da",
+      "adblock/lists/ublock-privacy.txt": "980c6860384e9158e6f51e134d710e11aef00fdea3b96be1092f8e3c73fd7637",
+      "adblock/lists/ublock-quick-fixes.txt": "ad334cfe66a3523dd82a954a2efdfd065c99f613dc093b8ce3d5597fd0632f9b",
+      "adblock/lists/ublock-unbreak.txt": "e9d95cbb61cc83990e75104a4103585af146c6c6e8dfda07cad6c9713ddbb632",
+      "adblock/lists/urlhaus-1.txt": "05243718a2a12f3e998487a4bced75d16d111209ebc5f2872fb531fb22019ed9",
+      "Tests/Browser/Brave/sites/hacker-news/capture.json": "26aa3a05be8365c5cf8c7b5c14ff779c333309a74355bfd6664f6b4eda62d1e8",
+      "Tests/Browser/Brave/sites/hacker-news/manifest.json": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b",
+      "Tests/Browser/Brave/sites/hacker-news/live.png": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+      "Tests/Browser/Brave/sites/hacker-news/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0",
+      "Tests/Browser/Brave/sites/hacker-news/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff",
+      "Tests/Browser/Brave/sites/hacker-news/bodies/f88337cfb794e5dbf9a4169e0170e3e2aac3052c7785582718d487b67bdc6358": "f88337cfb794e5dbf9a4169e0170e3e2aac3052c7785582718d487b67bdc6358",
+      "Tests/Browser/Brave/sites/hacker-news/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8",
+      "Tests/Browser/Brave/sites/hacker-news/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363",
+      "Tests/Browser/Brave/sites/hacker-news/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+    },
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "3d6fe53904e7301744cb78baabd5939e0496649f04dd7e4e792a40c4a7f88432",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "e2f9b533298d1e0aa69363dea6e70bf6bc21f9216615cd300247f2b97d91d078",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "359bd5da0dd9ca8cec6ce121178afd81f8eb99a3f6282f52522f4bc0467d54b4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+        "dirty": true,
+        "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
+        "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
+        "id": "1b43c5971b0d41c2b49b36a83be6a96e"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+        "dirty": true,
+        "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
+        "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
+      }
+    }
+  },
+  "fresh_control_guard": {
+    "command": [
+      "python3",
+      "Build/engadget-image-opacity-20261105/fresh_control.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2212560896,
+    "elapsed_seconds": 106.6140555,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "live_attempts": {
+    "live-css": {
+      "guard": {
+        "command": [
+          "python3",
+          "Build/engadget-image-opacity-20261105/css_audit.py",
+          "live-css"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2138783744,
+        "elapsed_seconds": 17.021697375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "failure": {
+        "status": "failed",
+        "error": {
+          "name": "Error",
+          "message": "Pixel reference requires successful page coverage",
+          "stack": "Error: Pixel reference requires successful page coverage\n    at capturePixelReference (file:///Users/alex/code/vox2/tools/adblock/pixel_reference.mjs:74:48)\n    at file:///Users/alex/code/vox2/tools/adblock/brave_parity.mjs:308:17"
+        }
+      }
+    },
+    "live-css2": {
+      "guard": {
+        "command": [
+          "python3",
+          "Build/engadget-image-opacity-20261105/css_audit.py",
+          "live-css2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2125234176,
+        "elapsed_seconds": 52.671288833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "failure": {
+        "status": "failed",
+        "error": {
+          "name": "Error",
+          "message": "Pixel reference requires successful page coverage",
+          "stack": "Error: Pixel reference requires successful page coverage\n    at capturePixelReference (file:///Users/alex/code/vox2/tools/adblock/pixel_reference.mjs:80:15)\n    at async file:///Users/alex/code/vox2/tools/adblock/brave_parity.mjs:308:11"
+        }
+      }
+    },
+    "live-direct": {
+      "guard": {
+        "command": [
+          "python3",
+          "Build/engadget-image-opacity-20261105/direct_audit.py",
+          "live-direct"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2026110976,
+        "elapsed_seconds": 98.767613625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "failure": {
+        "status": "failed",
+        "error": {
+          "name": "Error",
+          "message": "Brave debugger timed out: Runtime.evaluate",
+          "stack": "Error: Brave debugger timed out: Runtime.evaluate\n    at Timeout._onTimeout (file:///Users/alex/code/vox2/tools/adblock/brave_parity.mjs:140:24)\n    at listOnTimeout (node:internal/timers:685:17)\n    at process.processTimers (node:internal/timers:618:7)"
+        }
+      }
+    },
+    "live-fresh": {
+      "guard": {
+        "command": [
+          "python3",
+          "Build/engadget-image-opacity-20261105/fresh_direct_audit.py",
+          "live-fresh"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1513848832,
+        "elapsed_seconds": 138.014658834,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "failure": {
+        "status": "failed",
+        "error": {
+          "name": "Error",
+          "message": "Full uBO did not become ready",
+          "stack": "Error: Full uBO did not become ready\n    at file:///Users/alex/code/vox2/tools/adblock/brave_parity.mjs:208:50"
+        }
+      }
+    }
+  },
+  "shutdowns": [
+    {
+      "path": "Build/engadget-image-opacity-20261105/frozen-css/brave.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 8505,
+      "initial_owned": [
+        {
+          "pid": 8505,
+          "parent": 8478,
+          "state": "R",
+          "started": "Thu Nov 5 15:35:33 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 8529,
+          "parent": 8505,
+          "state": "S",
+          "started": "Thu Nov 5 15:35:33 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 8530,
+          "parent": 8505,
+          "state": "S",
+          "started": "Thu Nov 5 15:35:33 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 8532,
+          "parent": 8505,
+          "state": "S",
+          "started": "Thu Nov 5 15:35:33 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 8575,
+          "parent": 8505,
+          "state": "S",
+          "started": "Thu Nov 5 15:35:33 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 8580,
+          "parent": 8505,
+          "state": "S",
+          "started": "Thu Nov 5 15:35:33 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 8932,
+          "parent": 8505,
+          "state": "S",
+          "started": "Thu Nov 5 15:35:38 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 8947,
+          "parent": 8505,
+          "state": "S",
+          "started": "Thu Nov 5 15:35:38 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 200
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/live-css2/brave.json.shutdown.json",
+      "status": "failed",
+      "root_pid": 44460,
+      "initial_owned": [
+        {
+          "pid": 44460,
+          "parent": 44307,
+          "state": "R",
+          "started": "Thu Nov 5 15:45:24 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 44484,
+          "parent": 44460,
+          "state": "S",
+          "started": "Thu Nov 5 15:45:25 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 44489,
+          "parent": 44460,
+          "state": "S",
+          "started": "Thu Nov 5 15:45:25 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 44493,
+          "parent": 44460,
+          "state": "S",
+          "started": "Thu Nov 5 15:45:25 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 44695,
+          "parent": 44460,
+          "state": "S",
+          "started": "Thu Nov 5 15:45:27 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 45306,
+          "parent": 44460,
+          "state": "S",
+          "started": "Thu Nov 5 15:45:36 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 46911,
+          "parent": 44460,
+          "state": "R",
+          "started": "Thu Nov 5 15:45:58 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [
+        {
+          "pid": 44460,
+          "parent": 44307,
+          "state": "S",
+          "started": "Thu Nov 5 15:45:24 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        }
+      ],
+      "error": {
+        "name": "Error",
+        "message": "Oracle shutdown left owned processes running: 44460"
+      },
+      "exit_code": null,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 8067
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/frozen-long/brave.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 24294,
+      "initial_owned": [
+        {
+          "pid": 24294,
+          "parent": 24021,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:45 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 24311,
+          "parent": 24294,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:45 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 24312,
+          "parent": 24294,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:45 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 24314,
+          "parent": 24294,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:45 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 24332,
+          "parent": 24294,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:45 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 24336,
+          "parent": 24294,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:45 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 24599,
+          "parent": 24294,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:52 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 24605,
+          "parent": 24294,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:52 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 123
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.json.shutdown.json",
+      "status": "failed",
+      "root_pid": 63229,
+      "initial_owned": [
+        {
+          "pid": 63229,
+          "parent": 63111,
+          "state": "R",
+          "started": "Thu Nov 5 15:50:01 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 63249,
+          "parent": 63229,
+          "state": "R",
+          "started": "Thu Nov 5 15:50:02 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 63250,
+          "parent": 63229,
+          "state": "R",
+          "started": "Thu Nov 5 15:50:02 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 63257,
+          "parent": 63229,
+          "state": "S",
+          "started": "Thu Nov 5 15:50:02 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 63411,
+          "parent": 63229,
+          "state": "S",
+          "started": "Thu Nov 5 15:50:04 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 63446,
+          "parent": 63229,
+          "state": "S",
+          "started": "Thu Nov 5 15:50:05 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 64039,
+          "parent": 63229,
+          "state": "R",
+          "started": "Thu Nov 5 15:50:13 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [
+        {
+          "pid": 63229,
+          "parent": 63111,
+          "state": "R",
+          "started": "Thu Nov 5 15:50:01 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        }
+      ],
+      "error": {
+        "name": "Error",
+        "message": "Oracle shutdown left owned processes running: 63229"
+      },
+      "exit_code": null,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 8050
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/live-css/brave.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 12271,
+      "initial_owned": [
+        {
+          "pid": 12271,
+          "parent": 12248,
+          "state": "R",
+          "started": "Thu Nov 5 15:36:59 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 12284,
+          "parent": 12271,
+          "state": "S",
+          "started": "Thu Nov 5 15:36:59 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 12285,
+          "parent": 12271,
+          "state": "S",
+          "started": "Thu Nov 5 15:36:59 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 12286,
+          "parent": 12271,
+          "state": "S",
+          "started": "Thu Nov 5 15:36:59 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 12306,
+          "parent": 12271,
+          "state": "S",
+          "started": "Thu Nov 5 15:37:00 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 12861,
+          "parent": 12271,
+          "state": "S",
+          "started": "Thu Nov 5 15:37:07 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 13017,
+          "parent": 12271,
+          "state": "S",
+          "started": "Thu Nov 5 15:37:08 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 358
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/frozen-animation/brave.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 20739,
+      "initial_owned": [
+        {
+          "pid": 20739,
+          "parent": 20498,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:18 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 20774,
+          "parent": 20739,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:18 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 20775,
+          "parent": 20739,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:18 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 20790,
+          "parent": 20739,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:19 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 20917,
+          "parent": 20739,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:20 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 20937,
+          "parent": 20739,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:20 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 21788,
+          "parent": 20739,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:27 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 23077,
+          "parent": 20739,
+          "state": "S",
+          "started": "Thu Nov 5 15:38:36 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 386
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/live-direct/brave.json.shutdown.json",
+      "status": "failed",
+      "root_pid": 53460,
+      "initial_owned": [
+        {
+          "pid": 53460,
+          "parent": 53356,
+          "state": "R",
+          "started": "Thu Nov 5 15:47:30 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 53491,
+          "parent": 53460,
+          "state": "S",
+          "started": "Thu Nov 5 15:47:30 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 53492,
+          "parent": 53460,
+          "state": "R",
+          "started": "Thu Nov 5 15:47:30 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 53504,
+          "parent": 53460,
+          "state": "S",
+          "started": "Thu Nov 5 15:47:30 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 53617,
+          "parent": 53460,
+          "state": "S",
+          "started": "Thu Nov 5 15:47:32 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 53639,
+          "parent": 53460,
+          "state": "S",
+          "started": "Thu Nov 5 15:47:32 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 54051,
+          "parent": 53460,
+          "state": "R",
+          "started": "Thu Nov 5 15:47:40 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [
+        {
+          "pid": 53460,
+          "parent": 53356,
+          "state": "R",
+          "started": "Thu Nov 5 15:47:30 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        }
+      ],
+      "error": {
+        "name": "Error",
+        "message": "Oracle shutdown left owned processes running: 53460"
+      },
+      "exit_code": null,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 8065
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/live-fresh/brave.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 96034,
+      "initial_owned": [
+        {
+          "pid": 96034,
+          "parent": 95988,
+          "state": "R",
+          "started": "Thu Nov 5 16:00:17 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 96050,
+          "parent": 96034,
+          "state": "S",
+          "started": "Thu Nov 5 16:00:17 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 96051,
+          "parent": 96034,
+          "state": "S",
+          "started": "Thu Nov 5 16:00:17 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 96056,
+          "parent": 96034,
+          "state": "S",
+          "started": "Thu Nov 5 16:00:17 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 96140,
+          "parent": 96034,
+          "state": "S",
+          "started": "Thu Nov 5 16:00:19 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 96141,
+          "parent": 96034,
+          "state": "S",
+          "started": "Thu Nov 5 16:00:19 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 96153,
+          "parent": 96034,
+          "state": "S",
+          "started": "Thu Nov 5 16:00:19 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 5200
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 88516,
+      "initial_owned": [
+        {
+          "pid": 88516,
+          "parent": 88495,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:16 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 88555,
+          "parent": 88516,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:16 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 88556,
+          "parent": 88516,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:16 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 88568,
+          "parent": 88516,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:16 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 88685,
+          "parent": 88516,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:18 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 88714,
+          "parent": 88516,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:18 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 89537,
+          "parent": 88516,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:31 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 350
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 86878,
+      "initial_owned": [
+        {
+          "pid": 86878,
+          "parent": 86828,
+          "state": "S",
+          "started": "Thu Nov 5 15:56:51 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 86912,
+          "parent": 86878,
+          "state": "S",
+          "started": "Thu Nov 5 15:56:51 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 86913,
+          "parent": 86878,
+          "state": "S",
+          "started": "Thu Nov 5 15:56:51 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 86927,
+          "parent": 86878,
+          "state": "S",
+          "started": "Thu Nov 5 15:56:51 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 87019,
+          "parent": 86878,
+          "state": "S",
+          "started": "Thu Nov 5 15:56:53 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 87030,
+          "parent": 86878,
+          "state": "S",
+          "started": "Thu Nov 5 15:56:53 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 87708,
+          "parent": 86878,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:05 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 2327
+    },
+    {
+      "path": "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.ubo.json.shutdown.json",
+      "status": "closed",
+      "root_pid": 90580,
+      "initial_owned": [
+        {
+          "pid": 90580,
+          "parent": 90563,
+          "state": "R",
+          "started": "Thu Nov 5 15:57:49 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        },
+        {
+          "pid": 90596,
+          "parent": 90580,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:49 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 90598,
+          "parent": 90580,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:49 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 90610,
+          "parent": 90580,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:50 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        },
+        {
+          "pid": 90702,
+          "parent": 90580,
+          "state": "S",
+          "started": "Thu Nov 5 15:57:52 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 90712,
+          "parent": 90580,
+          "state": "R",
+          "started": "Thu Nov 5 15:57:52 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        },
+        {
+          "pid": 91654,
+          "parent": 90580,
+          "state": "S",
+          "started": "Thu Nov 5 15:58:14 2026",
+          "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)"
+        }
+      ],
+      "remaining_owned": [],
+      "exit_code": 0,
+      "signal": null,
+      "close_request_error": null,
+      "elapsed_ms": 274
+    }
+  ],
+  "shutdown_statuses": {
+    "closed": 8,
+    "failed": 3
+  },
+  "host": {
+    "captured_at": "2026-11-05T15:54:21+0300",
+    "cpu_count": 18,
+    "load_average": [
+      204.89306640625,
+      176.39453125,
+      124.3154296875
+    ],
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "disk": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   1.8Ti   1.8Ti   6.3Gi   100%     46M   66M   41%   /System/Volumes/Data\n",
+    "latest_production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+        "dirty": true,
+        "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
+        "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
+        "id": "1b43c5971b0d41c2b49b36a83be6a96e"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+        "dirty": true,
+        "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
+        "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
+      }
+    }
+  },
+  "research": [
+    {
+      "url": "https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/layout/layout_box.cc",
+      "path": "Build/engadget-image-opacity-20261105/layout_box.cc",
+      "sha256": "18c3d93150ced437f9519d62798cc8b836a268d83c053d96da3f9e31f235e33c"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/layout/layout_image.cc",
+      "path": "Build/engadget-image-opacity-20261105/layout_image.cc",
+      "sha256": "2ffde1af86f026971dfee1b9d64a3bae4bdc7c590d6cd31405181e3046d79769"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/inspector/inspector_layer_tree_agent.cc",
+      "path": "Build/engadget-image-opacity-20261105/inspector_layer_tree_agent.cc",
+      "sha256": "a079e13bdd8c2d61481a6a7e02d59a668ef8fcde09ca5d9d270900caa24c72de"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/paint/image_painter.cc",
+      "path": "Build/engadget-image-opacity-20261105/image_painter.cc",
+      "sha256": "5bd70857442afdcced3365e468d2c1bde44df1ea686c2fd7b2ad8037e0398705"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/paint/box_painter.cc",
+      "path": "Build/engadget-image-opacity-20261105/box_painter.cc",
+      "sha256": "226a08e305b31c148d942de6eaedf141af39dbf20c64a216cdde1f33e04339ad"
+    }
+  ],
+  "research_scope": "Current upstream Chromium sources support opacity/lifecycle hypotheses; no installed Brave internal call path is established. The raw research source copies are omitted from this evidence ZIP.",
+  "fixture_identities": {
+    "candidate_manifest": "fa56c7cadcecec450594be5cb646778a8cddd6d482853fcf56429772b8f4d46d",
+    "registered_manifest": "53ea109a6418706286f6401849a4a1f6aa5be20f42f24ee498ac6e59c8ad3872"
+  },
+  "limits": [
+    "The registered Engadget archive, unregistered candidate, source PNGs and existing goldens/tolerances are unchanged.",
+    "Frozen audit PNGs match the old frozen reference but retain 295 source pixels. Inspecting CSS adds detached parsed sheets; these instrumented audits do not supply site acceptance.",
+    "No background removal, synthetic repaint, settle increase or reference selection was promoted into production.",
+    "The previous local acquisition proxy is no longer listening. The direct templated visit times out in Runtime.evaluate; the fresh direct visit fails full-uBO readiness and exits normally.",
+    "The templated Hacker News control times out clearing the HTTP cache and fails shutdown. A separate fresh cold profile passes every strict gate. These differ in profile/cache conditions and run time; they do not isolate one cause.",
+    "Host load was over 200 on 18 CPUs. Contention is recorded without attributing every failure to it.",
+    "No new broad rendering pass or performance result is claimed; the prior 134-test/140-capture result remains tied to its pinned build.",
+    "Generated profiles, response caches, TLS secrets and upstream research source copies are omitted; commands, captures, identities and failed attempts remain."
+  ],
+  "files": {
+    "Build/engadget-image-opacity-20261105/animation-frozen.guard.json": "87aa03f534d1d685da38329970a998cc72f628ff5d4dbc6b426cb3a35107f48f",
+    "Build/engadget-image-opacity-20261105/animation-frozen.log": "2f6dd1ea07a66db472b0f18b3c494f941622ff2bbc0f05cb43dee758ec0420e6",
+    "Build/engadget-image-opacity-20261105/animation_audit.mjs": "b967c52fdd7d43cf8bcca8b3a38a5324f9c884b679b80383edcbe9e3986ed71d",
+    "Build/engadget-image-opacity-20261105/animation_audit.py": "fe6b625c27acc547013c109ea9323063921cb1c859f19a8e809756299101c006",
+    "Build/engadget-image-opacity-20261105/control.py": "e4b82dbe00cd01ef840dec3f7bd0ab27164f58d636ffcaf18f7ab7bc608c976f",
+    "Build/engadget-image-opacity-20261105/css-frozen.guard.json": "87a05fadcc794b7c4e2abe175eaada11bfc124f64f30e469a17ec6a2274545c7",
+    "Build/engadget-image-opacity-20261105/css-frozen.log": "6632c98d3efc44b0c71cf75cc60133556f859057e8124ba1353a5c422497bf6e",
+    "Build/engadget-image-opacity-20261105/css-live.guard.json": "9fb9491cc6b4f353700df1d30ef87fb96e6d7594da516e309ec2e4610c5b931b",
+    "Build/engadget-image-opacity-20261105/css-live.log": "9a4be49cacb177e3f803405ce28113ebf7d57a817d7ca51af06ef48fbf3b019e",
+    "Build/engadget-image-opacity-20261105/css-live2.guard.json": "d431fa5ac5e3a5cfd90e8196baaba7cf3ff8b461b776c2ab9744a1d6b3bb6e87",
+    "Build/engadget-image-opacity-20261105/css-live2.log": "5d942694d0a6137db91caf99ed07a064c3d0137fb60e6ea8561123ba76ae9531",
+    "Build/engadget-image-opacity-20261105/css_audit.mjs": "099644be9672f06601c7379c2c10cfeb01714429fdb2e2dba320c9c6f96ab3f0",
+    "Build/engadget-image-opacity-20261105/css_audit.py": "e621cdb692c8329b4478821d75e4cff20d5ba003beeaeef5cc2a51fe1f64b1f6",
+    "Build/engadget-image-opacity-20261105/diagnostic-pixels.json": "cc3782b2e2bb9321e258ae692d4a4f0a6d23ca26becf91ce209533c53e0bdb0d",
+    "Build/engadget-image-opacity-20261105/direct-live.guard.json": "f125e68c362debf7b69dd2183a8d0206f2ec868d9b7b27977c429fba93630f94",
+    "Build/engadget-image-opacity-20261105/direct-live.log": "bdacd558be36ddd8fe8f8b8da8c8b7c9d6b2c2cd08eace5376ba49e7c7167b5e",
+    "Build/engadget-image-opacity-20261105/direct_audit.py": "5b98c997ab06d01e3c50cfc15ae26e680882c496a62573419133c4a98aa01fd2",
+    "Build/engadget-image-opacity-20261105/evidence-verification.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/audit-config.json": "ec0e24fdf228276dc26545141fdceb554435b06f2e74eb6bbbde89b49bb481d3",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.command.json": "226e3347650f2a32cc0944983eabcc0af7253493024fe3e215e10a06a23ba1f8",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.guard.json": "4eb47a75d45af29289f6e8ccd0ad4d675ebf1f6a0a9de2d9d7e19a1a2bce3699",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.json": "b08cc113438382f5d692f3eeef88d32be93947006e5bdee7de441cd2652e5176",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.json.list-identity.json": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.json.shutdown.json": "af0bca6d28b745c419b98ac4ab279425cd3207d703ca6a4298d8f7c6b7976dec",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.log": "ecf2ded4dc1e8711c7c8aadbaf09dd0c5698f28478f1b6f4b696829f611737f0",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.png": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave-repeat.png.json": "f97593a35d31d350a6c1597131ae2cb94a9921f76db8c2696f8f5145686af75a",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.command.json": "7398d443080924db815422191e16ac34c2da913bf371637e2d5db1b46332bad7",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.guard.json": "8c25563f72b81fdb6feb8db569a9fe911757f52051e4ca8a907b0daf6c8b73d8",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.json": "341c9566046c693e6a5577822bb8bda4f9a11f280d4d6397fe092d364cbefc16",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.json.list-identity.json": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.json.shutdown.json": "9922991b2d01dba9561b6ddcfd8c193c9902727f3c4cdc250d6eedc517072129",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.log": "7cb00b51143ff6020923f8f7a4bc555c521df453be0bd0b0b830b7ba8081b5a4",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.png": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/brave.png.json": "f97593a35d31d350a6c1597131ae2cb94a9921f76db8c2696f8f5145686af75a",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/browser-identities-after.json": "310117094539bbfa98622714c73adc6386c3cbdbc401ec5ef838dab8172eac48",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/browser-identities.json": "310117094539bbfa98622714c73adc6386c3cbdbc401ec5ef838dab8172eac48",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/cache-policy.json": "6b48c39b387bc1d8591ae9e70eb9b4aef6acc78ed28286515bf5fcc806c4d57b",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/identity.json": "be4e9a2f1ca74526a7d12f459363ffa4938f5b91cd35a21fc5b386813287c051",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/live-to-frozen.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/live-to-frozen.json": "99ac8b5e600b57eed812120819d3fe16e52c6dd098197891d8c5971d6216c9c5",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/pixels.json": "169f7533282187dce2f99cd20e638f3b2fd81a630045d7a919c92d3b03b1dfeb",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/reference-replay.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/reference-replay.json": "7b9c717cf3626f67463f3a61f70f55c883d65b5c7aeb0ac8d905b7c0117c7ec6",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.audit.json": "ff3bbc5522a3810d473356d78e7db6811fb8908e9cbef557cd4fa8c06a9eef56",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.command.json": "04bee1e09398eef7a26c14835485a08520587da234c155d11e5a2ce2031cbee3",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.guard.json": "6466f9d42e63fc776cddbaae34d107ea41faac551fd99f381ee893bc01847eab",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.log": "43dbd938204f419cdbfc1ba4abc93f4a4ddadc73b9e3121ce5aac755033fda81",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.png": "75423e1774abde26ee131961d08a7a73fd2833564cfd884964898be1230ef889",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.requests.jsonl": "aac8482c6a650188d7334c055a192bccd90fd6fd2d085d63f7a10be3dafc8bbe",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.ubo.command.json": "576d7b9acdb738534d0a58f52e941d5a6f740681886571a0c3a6c01c226c570d",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.ubo.guard.json": "e0499a0da5b1d4a835468832d5ed0176fa24a20814115f9dcd34f100d7213fa0",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.ubo.json": "6b09617c0f66870e079b0434d80ffcd507d387addee6a41994f3ae20ea97901c",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.ubo.json.list-identity.json": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.ubo.json.shutdown.json": "1311d2a474ba6ee29858a3891baf904371db4ed567a57ac263bf6b2f88686442",
+    "Build/engadget-image-opacity-20261105/fresh-control/hacker-news/vox.ubo.log": "fa459cefa9130bd48f93e56147eea9390a051b5f4d550ff46d3d81bc0a0668c5",
+    "Build/engadget-image-opacity-20261105/fresh-control/summary.json": "8fada507a8b9c8934c2d9a73930eeffa1381e1c6d4d01074166e04f51b087b90",
+    "Build/engadget-image-opacity-20261105/fresh-control-command.json": "86022badfef3106a4e8b859acb638400a0d39a61e21a9cb57a803d3eeb230d01",
+    "Build/engadget-image-opacity-20261105/fresh-control.guard.json": "09831aba4ec3c2afbff5e78b31246e61b410f0d2c7b238c2c447de5757bd1f49",
+    "Build/engadget-image-opacity-20261105/fresh-control.log": "cbb40cc2b35cc7384581917d2b5a4241c563d95a5419bfcacb8fba0d2b8d0871",
+    "Build/engadget-image-opacity-20261105/fresh-inputs-after.json": "fdf7e0e6346f4f7eecad73edc33d4f243832ca74aedebe0f3c696fae4a172acb",
+    "Build/engadget-image-opacity-20261105/fresh-inputs.json": "a351ec74af3508dd115122f3e120d7b39e66ca2da55a2c8afd2ccb1c456b8e0b",
+    "Build/engadget-image-opacity-20261105/fresh_control.py": "ccf0661fdc29e9e35e57089a3f5b671b10ec5711d076097a0ccaa66a9b0baa37",
+    "Build/engadget-image-opacity-20261105/fresh_direct_audit.py": "961f1c9d15aae032c4d4984798d4e73e79c29d5faa9edce0b3e37db2a75d982a",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.command.json": "1041b68764591f4771a98224053b1a718bfc7f08b3099f3b10ee06275ef36361",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.guard.json": "14ed8a22b9200533b16be14948f685ad1e6ffbfbe283e6d10c55404761900f18",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.json": "c436b7de94bfe518d15eb8a2c1e31094b799ec8117f0e3ce5b7221b1bce251a3",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.json.list-identity.json": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.json.shutdown.json": "ea7485424d43633b50d12802c8b9d0ef6f71c53384e215905dcd1171bc00e024",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.log": "a78c67e2a5069977052277241e066e9e7b5f1e740af070e2e10ead5e7d674d0b",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.png": "bd39d2af659a5086b3fa610d20d68f79a1d3b3aa2184d2f43fad5047879549ce",
+    "Build/engadget-image-opacity-20261105/frozen-animation/brave.png.json": "bf5d93c5ba9945018b273083978abdce56b87793d8d5d761bb41221b2f66bda5",
+    "Build/engadget-image-opacity-20261105/frozen-animation/identity-after.json": "7cc718841cefbd4217b3258e067e95f33d88cafcf4407fbe0c6ee17108c224ec",
+    "Build/engadget-image-opacity-20261105/frozen-animation/identity.json": "7cc718841cefbd4217b3258e067e95f33d88cafcf4407fbe0c6ee17108c224ec",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.command.json": "fba0f54014bda28e429623223f1a7273ae53786ffff85bd2ac12e4c04eca5731",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.guard.json": "9adbd44ddb5bf408a74005164a518f9cb79057128ea3567faa985363917590fd",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.json": "a9a870578c45049ca05aeabaaa9f3f96786a9b4673502a39e5e25d32b95b25d5",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.json.list-identity.json": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.json.shutdown.json": "d3818b0a7f688650fd586e367149f0c326c694b6c157bd281fc3a9ea66872f7a",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.log": "c3c3da43fadba9824ff7f0077809155f0fafeb0b8c07d6e18ad9c2a95bc7d274",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.png": "bd39d2af659a5086b3fa610d20d68f79a1d3b3aa2184d2f43fad5047879549ce",
+    "Build/engadget-image-opacity-20261105/frozen-css/brave.png.json": "9481abf3db51d6034de1ee58a2211a805a84e8ebe6d7ff56869c3b8f57de8941",
+    "Build/engadget-image-opacity-20261105/frozen-css/identity-after.json": "92c22601676fd72c0653145a9b2c368c4dc607affac917adde6fc122aaff9349",
+    "Build/engadget-image-opacity-20261105/frozen-css/identity.json": "92c22601676fd72c0653145a9b2c368c4dc607affac917adde6fc122aaff9349",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.command.json": "78802c3bd2def04cc5069d0307440f2ef5b08d89678c9db5923549815cf12dd9",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.guard.json": "f56edd96e1b99ac323705493dfd4e5f49ce7a9919eff1665ee9bdc3e791af9c4",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.json": "5a8dc37fd9a6fd6c097db13566955614183d8f30b22551f2bd70123e1c816fbb",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.json.list-identity.json": "b723f6b302bed505781cac7a0e464fa1b22d0124681827dd4474eb99a2b4997e",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.json.shutdown.json": "ab91ec2cb44746e70da549659be9ff796af3e28ecd6ee80fffeca7fe375890cc",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.log": "fb88c11eb3aab910b80a1db011372db6e166baffa9493c4fa9350d4ab1badeed",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.png": "dba6057c305caf274a8cbb73f7ed68e7ee877ccd9f081679467edf8bbb05e013",
+    "Build/engadget-image-opacity-20261105/frozen-long/brave.png.json": "4b267b5a3b2b2504f3cca805027bb33d5333e58a0a52594e7c9fecf93eb68987",
+    "Build/engadget-image-opacity-20261105/frozen-long/identity-after.json": "7cc718841cefbd4217b3258e067e95f33d88cafcf4407fbe0c6ee17108c224ec",
+    "Build/engadget-image-opacity-20261105/frozen-long/identity.json": "7cc718841cefbd4217b3258e067e95f33d88cafcf4407fbe0c6ee17108c224ec",
+    "Build/engadget-image-opacity-20261105/host.json": "d9bea4562bf95e9f0c824373a0875011aed9dff91b9f7d922cf47916f881777a",
+    "Build/engadget-image-opacity-20261105/live-css/brave.command.json": "e79214f8b07179e6b63f724d610af235153c7c627424db0342994c589b33b728",
+    "Build/engadget-image-opacity-20261105/live-css/brave.guard.json": "7837fb375b7071ea886593f06f672a2f463b721b35cefc3febe00fe11835f6c3",
+    "Build/engadget-image-opacity-20261105/live-css/brave.json.failure.json": "cd4bfd3634c8d016c775bba8c9a6308269851c20fe5f4028922dd33b098eed67",
+    "Build/engadget-image-opacity-20261105/live-css/brave.json.list-identity.json": "1fc11925bc4be7ddb4a260c1a370fb8c08fd6ee33e81fc4461ebf40f6e6a617f",
+    "Build/engadget-image-opacity-20261105/live-css/brave.json.shutdown.json": "f6e26fadc65fee47a38b30bd16926c7f546a45cef5fff8681eeb47e92733ac59",
+    "Build/engadget-image-opacity-20261105/live-css/brave.log": "f9deca1ed2165840fbba1fe6716785947fabfcb1039f4ecdd9664e916500b1cf",
+    "Build/engadget-image-opacity-20261105/live-css/identity-after.json": "92c22601676fd72c0653145a9b2c368c4dc607affac917adde6fc122aaff9349",
+    "Build/engadget-image-opacity-20261105/live-css/identity.json": "92c22601676fd72c0653145a9b2c368c4dc607affac917adde6fc122aaff9349",
+    "Build/engadget-image-opacity-20261105/live-css2/brave.command.json": "9fc7839a76fd1eae13a5a392ae4ce6601572e898db6eac0746e36a1e229f3a8b",
+    "Build/engadget-image-opacity-20261105/live-css2/brave.guard.json": "18dcc2c5dd632af84972428b957091d0bdd1b6923d945a8a9f6d0bf2a6c2a9d9",
+    "Build/engadget-image-opacity-20261105/live-css2/brave.json.failure.json": "05e22eca86127cc7d046c0ddb5f06af6946ad7f460e7bace50ef9ad0d33ee8c5",
+    "Build/engadget-image-opacity-20261105/live-css2/brave.json.list-identity.json": "1fc11925bc4be7ddb4a260c1a370fb8c08fd6ee33e81fc4461ebf40f6e6a617f",
+    "Build/engadget-image-opacity-20261105/live-css2/brave.json.shutdown.json": "de4db74d349a03407c59ea6077245c803c6c25f89eda1aab76b86d814cb823bb",
+    "Build/engadget-image-opacity-20261105/live-css2/brave.log": "4ebb897ddfc8cc12349ea474a8463a444bc9efb3e716710d1e63e74896aca527",
+    "Build/engadget-image-opacity-20261105/live-css2/brave.png.json": "4d0f1134bb2b5eb12bf08aa1a9feb8a13fe90b9768208e24f018fe6e42a4e226",
+    "Build/engadget-image-opacity-20261105/live-css2/identity-after.json": "3547325a3cabe8643afe90bbd60eaeff9a79ba09b2a2d08dde72169fb07806ac",
+    "Build/engadget-image-opacity-20261105/live-css2/identity.json": "3547325a3cabe8643afe90bbd60eaeff9a79ba09b2a2d08dde72169fb07806ac",
+    "Build/engadget-image-opacity-20261105/live-direct/brave.command.json": "6c77b787c72c6e9f51a26aa94425d5ae9b5dd911a2a63e7d56c58deed220abb1",
+    "Build/engadget-image-opacity-20261105/live-direct/brave.guard.json": "b2ceb9c4a16864d43c825ebae4eb1d0d7a9ce1d4863cc9c80746e82529478ac3",
+    "Build/engadget-image-opacity-20261105/live-direct/brave.json.failure.json": "d438a866cc79c1427b262a16d12c0d42fb396c4fcdef964b006313b5f1630f11",
+    "Build/engadget-image-opacity-20261105/live-direct/brave.json.list-identity.json": "1fc11925bc4be7ddb4a260c1a370fb8c08fd6ee33e81fc4461ebf40f6e6a617f",
+    "Build/engadget-image-opacity-20261105/live-direct/brave.json.shutdown.json": "152ac8a2301469e005e36533ec4f9aba6f39e46f55b308886aa921e45b89f17e",
+    "Build/engadget-image-opacity-20261105/live-direct/brave.log": "981b150eadd244318900e9b2f13b2f011583cf849be6275421cd2f632db66d28",
+    "Build/engadget-image-opacity-20261105/live-direct/identity-after.json": "3547325a3cabe8643afe90bbd60eaeff9a79ba09b2a2d08dde72169fb07806ac",
+    "Build/engadget-image-opacity-20261105/live-direct/identity.json": "3547325a3cabe8643afe90bbd60eaeff9a79ba09b2a2d08dde72169fb07806ac",
+    "Build/engadget-image-opacity-20261105/live-fresh/brave.command.json": "10101b783ec3287ebe99524ae93420ac0d5ad5fe6a60bb19068bd570741e3c07",
+    "Build/engadget-image-opacity-20261105/live-fresh/brave.guard.json": "6b6745b5fa43656a2094e71722545c371f2d8621ad90c1d907253d9304e1773e",
+    "Build/engadget-image-opacity-20261105/live-fresh/brave.json.failure.json": "410e5f46f2c177401e698d4ab3965c500404c3844761aeb622218ac8a5d62025",
+    "Build/engadget-image-opacity-20261105/live-fresh/brave.json.shutdown.json": "fc359befb219f24289c3a65e2494bbd7e28b4d9b573545ece18bcc8e70d1f31c",
+    "Build/engadget-image-opacity-20261105/live-fresh/brave.log": "ce7845e40330c2109acf17c0258d5b1b216a94b2711bae8a81f13011779275ae",
+    "Build/engadget-image-opacity-20261105/live-fresh/identity-after.json": "3547325a3cabe8643afe90bbd60eaeff9a79ba09b2a2d08dde72169fb07806ac",
+    "Build/engadget-image-opacity-20261105/live-fresh/identity.json": "3547325a3cabe8643afe90bbd60eaeff9a79ba09b2a2d08dde72169fb07806ac",
+    "Build/engadget-image-opacity-20261105/live-fresh.guard.json": "42b2a08f6e3c1d1647c8a10e86595df0de438333f040d6b8ca3f6a72fa437e8e",
+    "Build/engadget-image-opacity-20261105/live-fresh.log": "8c2280c02f1febe3288c5257816ac435c7b6456a8902454d773f3bc6f6266cea",
+    "Build/engadget-image-opacity-20261105/long-diff.guard.json": "ee2d7b197246040922e1662c04e8be95968a3c8597159cd708a5672f371ede95",
+    "Build/engadget-image-opacity-20261105/long-diff.log": "e82665d15cdeea44ca2eff84fc4aaceef5b60d78bd87b38ac49ebe97a9c19514",
+    "Build/engadget-image-opacity-20261105/long-frozen.guard.json": "c386812074578051ce22db7eeed5a20bec25f1625cfaa855a0ba7668089906f0",
+    "Build/engadget-image-opacity-20261105/long-frozen.log": "916c8e6e74f5d78e1d10823512b86f73484d763d816ff7224d2030eae2395f24",
+    "Build/engadget-image-opacity-20261105/long.diff.png": "edf4885760de905957eb81f7c36730130d8a21d0ff81f614db1bbdbe969bf095",
+    "Build/engadget-image-opacity-20261105/long_capture.py": "859eb0a3d82ce149da96dc4535dac9ac06c7ce3f8f264af8d18932afec164552",
+    "Build/engadget-image-opacity-20261105/negative-input.json": "47beea2f72aa90194e402ca170358237e88a5c762e4e892b046d0844a22c3bc8",
+    "Build/engadget-image-opacity-20261105/negative-pinned.guard.json": "533b703434b30f4e68e01acf15c6d84e45585ac7833b118ccb37343ae50d6591",
+    "Build/engadget-image-opacity-20261105/negative-pinned.log": "2e826975c2eede0071ee444c578c4fd2399351eec2b530fddad416ecf0bf202d",
+    "Build/engadget-image-opacity-20261105/negative.guard.json": "11828c14932f04732fe98747252e040d88070f2afb2138a5d3ec94b7090dd979",
+    "Build/engadget-image-opacity-20261105/negative.log": "943dcc2637453b758a7ac70cbf1a13c30ec06c321f56147b79bf5e9417c4c3f8",
+    "Build/engadget-image-opacity-20261105/node-tests.guard.json": "4d82aeea0845b2a740a86a19d3aae19431831d5a087e0e821553ef81b0db5195",
+    "Build/engadget-image-opacity-20261105/node-tests.log": "2bef155862faee523ae3ffe57199c610e77dbe4e5d684f82efefc9718a1826eb",
+    "Build/engadget-image-opacity-20261105/old_negative.mjs": "76480f3036ecfa1845b629bbcb2d273b87330eda49209e06d93f8bdbf81149f9",
+    "Build/engadget-image-opacity-20261105/old_negative_pinned.mjs": "40450f2cff14ac04350d82c91601e89d31e2c4e4e05a53352d81d1f737502be8",
+    "Build/engadget-image-opacity-20261105/pixel-tests.guard.json": "5cd6fd291350da00b846dc2d85506bd8382b58c01501a64b4424533c5387cdee",
+    "Build/engadget-image-opacity-20261105/pixel-tests.log": "f08ef5db6913bfe7cba5333b99fd98a93d5c699e6c6ffdcf5452ce6021b70390",
+    "Build/engadget-image-opacity-20261105/python-tests.guard.json": "64422ed2ff3991beb17cbc14c506189e4c809531399f77829d41fb2d011d3d27",
+    "Build/engadget-image-opacity-20261105/python-tests.log": "b0b829d17dc568278c564b24b5b724a25f6d88e15ee81ec93a56ddbfb9640b98",
+    "Build/engadget-image-opacity-20261105/raster-audit.json": "7e00afbb69ab2aae08e92b3f2699d60f89ecf5e93f1e1afd10229bac03ae2d6f",
+    "Build/engadget-image-opacity-20261105/record_evidence.py": "e0f1996ba4a5bf77aece70c7b7eed6e52d873b8ee9baeda9f3bff9256cf5347e",
+    "Build/engadget-image-opacity-20261105/research.json": "a8aed38eb3efd8808f4b3fe6b3a9b1b2eaac47e9a79e195ba131b52018ea3630",
+    "Build/engadget-image-opacity-20261105/site-control.guard.json": "6267747383a18c531d2c70f256629a529ead40b76133575adc599f47706b1d86",
+    "Build/engadget-image-opacity-20261105/site-control.log": "c0ecb44622bd83ce64faa1a06b7b42fd0b6e4ebe764d0234d0afd4997774503f",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.command.json": "c1f19d645ff8f378e9e0d68445e90436a7c0d97f34bad75a5c1f92367858e74d",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.guard.json": "0ec20b491aa0a59bf1ef11bb0f142fefb58548c9cdc88076c5f80c133aea0681",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.json.failure.json": "2612ed9fe721a193be4878a441585a7fa84b4d85543d1c2d701c7765fcdf4f31",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.json.list-identity.json": "1fc11925bc4be7ddb4a260c1a370fb8c08fd6ee33e81fc4461ebf40f6e6a617f",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.json.shutdown.json": "94d891fa95d962fab114e37e0e1cf068f9621597954a212832dfef2d647e59b2",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/brave-warm.log": "4f69d8635b3ea180c35545919df2a045c0fb3468912a69b197792c20a6333550",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/browser-identities-after.json": "310117094539bbfa98622714c73adc6386c3cbdbc401ec5ef838dab8172eac48",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/browser-identities.json": "310117094539bbfa98622714c73adc6386c3cbdbc401ec5ef838dab8172eac48",
+    "Build/engadget-image-opacity-20261105/site-controls/hacker-news/cache-policy.json": "4af7f5f76175416ba1f81e25711edac66c5e259d80aa3722a9c957b6398bec49",
+    "Build/engadget-image-opacity-20261105/site-controls/summary.json": "cb19a34bfa584fa44afe1c7cadae30ee768c30db74b18286c4715dd76ca8f78b",
+    "Build/engadget-image-opacity-20261105/site-controls-command.json": "69fbb5dedb86b7327d26679d0593fa4033cce191833786621b7079d0050c9301",
+    "Build/engadget-image-opacity-20261105/site-inputs-after.json": "fdf7e0e6346f4f7eecad73edc33d4f243832ca74aedebe0f3c696fae4a172acb",
+    "Build/engadget-image-opacity-20261105/site-inputs.json": "a351ec74af3508dd115122f3e120d7b39e66ca2da55a2c8afd2ccb1c456b8e0b"
+  }
+}
