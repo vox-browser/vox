@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Transparent document keeps the raster origin around atomic SVG and opacity paint</title>
+<style>
+html,body{margin:0;background:transparent}body{height:4000px}
+.banner{height:48px;background:#512be6;position:relative}.banner svg{position:absolute;left:20px;top:16px}
+main{position:absolute;top:96px;left:0;width:1024px;height:3000px;background:#0a8935}
+.fade{position:absolute;top:500px;left:900px;width:20px;height:20px;background:#f64c38;opacity:.5}
+.card{position:absolute;top:229.09375px;width:242px;height:242px;overflow:hidden;background:#0a8935}
+.card img{position:absolute;left:0;top:-242px;width:484px;height:484px;object-fit:cover}
+#plain{left:4px}#masked{left:260px}#overlay{left:516px}#both{left:772px}
+#masked img,#both img{mask-image:linear-gradient(180deg,#000 70%,transparent)}
+.overlay{position:absolute;left:0;top:-242px;width:484px;height:484px;z-index:2;background:linear-gradient(0deg,rgba(0,0,0,.95),rgba(0,0,0,.25))}
+p{position:absolute;top:1500px}
+</style>
+<div class="banner"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="white" d="m13.06 12 6.44-6.44-1.06-1.06L12 10.94 5.56 4.5 4.5 5.56 10.94 12 4.5 18.44l1.06 1.06L12 13.06l6.44 6.44 1.06-1.06z"/></svg></div><main></main><div class="fade"></div>
+<div class="card" id="plain"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"></div>
+<div class="card" id="masked"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"></div>
+<div class="card" id="overlay"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"><div class="overlay"></div></div>
+<div class="card" id="both"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"><div class="overlay"></div></div>
+<p>The four columns show the same bottom-left quarter of a 484 by 484 image. They retain the original encoded WebP response from the publisher. The first has no effect, the second has the authored gradient mask, the third has the authored dark gradient overlay, and the fourth combines both effects. The image size, object fitting and fractional vertical paint offset match the homepage. These words remain outside the document capture to satisfy the full-uBlock guest-page reference readiness check. The four columns show the same bottom-left quarter of a 484 by 484 image. They retain the original encoded WebP response from the publisher. The first has no effect, the second has the authored gradient mask, the third has the authored dark gradient overlay, and the fourth combines both effects. The image size, object fitting and fractional vertical paint offset match the homepage. These words remain outside the document capture to satisfy the full-uBlock guest-page reference readiness check. The four columns show the same bottom-left quarter of a 484 by 484 image. They retain the original encoded WebP response from the publisher.</p>

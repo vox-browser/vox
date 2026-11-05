@@ -16,6 +16,7 @@ import time
 from types import SimpleNamespace
 
 from check_pixel_equality import compare
+from browser_bundle_lease import canonical_bundle_lease
 from forum_news_pixels import (BRAVE, REPO, VOX, brave_identity, capture_site_archive,
                                executable_identity, oracle_command, run_case, write_json)
 from page_archive import Replay, digest, load_archive
@@ -26,31 +27,45 @@ IMAGE_SHA256 = '3598da0413efb545f388773186fad4a8df49d1cbfb5f346db47fae94e858eb89
 FIXTURE = REPO / 'Tests/Browser/Brave/input/techcrunch-gradient-image.html'
 IMAGE = REPO / 'Tests/Browser/Brave/resources/techcrunch-hero.webp'
 REFERENCE = REPO / 'Tests/Browser/Brave/expected/techcrunch-gradient-image.png'
+ROOT_FIXTURE = REPO / 'Tests/Browser/Brave/input/transparent-root-atomic-effects.html'
+ROOT_REFERENCE = REPO / 'Tests/Browser/Brave/expected/transparent-root-atomic-effects.png'
+ROOT_URL = 'https://techcrunch.com/__vox_regressions__/input/transparent-root-atomic-effects.html'
 
 
-def create_seed(directory):
+def case_files(case='image-effects'):
+    if case == 'image-effects':
+        return FIXTURE, REFERENCE, URL
+    if case == 'root-origin':
+        return ROOT_FIXTURE, ROOT_REFERENCE, ROOT_URL
+    raise ValueError('Unknown image-effects case: ' + case)
+
+
+def create_seed(directory, case='image-effects'):
+    fixture, _, url = case_files(case)
     image = IMAGE.read_bytes()
     if digest(image) != IMAGE_SHA256:
         raise RuntimeError('The original encoded publisher response changed')
     directory.mkdir(parents=True, exist_ok=False)
     (directory / 'bodies').mkdir()
     responses = {}
-    for url, body, mime in [(URL, FIXTURE.read_bytes(), 'text/html;charset=utf-8'),
-                            (IMAGE_URL, image, 'image/webp')]:
+    for resource_url, body, mime in [(url, fixture.read_bytes(), 'text/html;charset=utf-8'),
+                                    (IMAGE_URL, image, 'image/webp')]:
         sha = digest(body)
         (directory / 'bodies' / sha).write_bytes(body)
-        responses[url] = dict(status=200, sha256=sha, bytes=len(body), headers=[
+        responses[resource_url] = dict(status=200, sha256=sha, bytes=len(body), headers=[
             dict(name='Content-Type', value=mime),
             dict(name='Content-Length', value=str(len(body)))])
-    write_json(directory / 'manifest.json', dict(version=1, url=URL,
+    write_json(directory / 'manifest.json', dict(version=1, url=url,
         sealed_unix=time.time(), responses=responses,
         workload='Authored image-effects regression; original encoded publisher WebP'))
     load_archive(directory)
 
 
-def source_pins():
-    sources = [FIXTURE, IMAGE, REFERENCE, Path(__file__).resolve(),
+def source_pins(case='image-effects'):
+    fixture, reference, _ = case_files(case)
+    sources = [fixture, IMAGE, reference, Path(__file__).resolve(),
                REPO / 'tools/forum_news_pixels.py', REPO / 'tools/page_archive.py',
+               REPO / 'tools/browser_bundle_lease.py',
                REPO / 'tools/check_pixel_equality.py', REPO / 'tools/run_memory_bounded.py']
     sources += sorted((REPO / 'tools/adblock').rglob('*.mjs'))
     return {str(path): digest(path.read_bytes()) for path in sources}
@@ -58,11 +73,13 @@ def source_pins():
 
 def input_identity(args):
     return dict(brave=brave_identity(args.brave), vox=executable_identity(args.vox),
-                sources=source_pins(), tools={str(path): digest(path.read_bytes())
+                sources=source_pins(getattr(args, 'case', 'image-effects')), tools={str(path): digest(path.read_bytes())
                     for path in [args.checker, args.diff_tool]})
 
 
 def run(args):
+    case_name = getattr(args, 'case', 'image-effects')
+    _, reference_file, url = case_files(case_name)
     output = args.output
     output.mkdir(parents=True, exist_ok=False)
     before = input_identity(args)
@@ -70,11 +87,11 @@ def run(args):
     result = dict(status='failure', workload='Synthetic HTTP image-effects regression')
     try:
         seed = output / 'seed'
-        create_seed(seed)
+        create_seed(seed, case_name)
         replay = Replay(seed, output / 'seed-replay')
         thread = threading.Thread(target=replay.server.serve_forever, daemon=True)
         thread.start()
-        site = dict(id='image-effects', name='Synthetic TechCrunch image effects', url=URL)
+        site = dict(id=case_name, name='Synthetic TechCrunch ' + case_name, url=url)
         case = SimpleNamespace(**vars(args), fixtures=output / 'fixtures', capture=False,
             profile_template=None, capture_proxy=None, cache_policy='cold', audit_config=None)
         case.output = output / 'comparison'
@@ -93,7 +110,7 @@ def run(args):
             replay.server.shutdown()
             replay.server.server_close()
             thread.join()
-        reference = compare(REFERENCE, case.fixtures / site['id'] / 'live.png',
+        reference = compare(reference_file, case.fixtures / site['id'] / 'live.png',
                             output / 'checked-reference.diff.png', args.diff_tool)
         write_json(output / 'checked-reference.json', reference)
         if not reference['exact']:
@@ -113,6 +130,7 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--case', choices=['image-effects', 'root-origin'], default='image-effects')
     parser.add_argument('--extension', type=Path, required=True)
     parser.add_argument('--checker', type=Path, required=True)
     parser.add_argument('--diff-tool', type=Path, required=True)
@@ -125,7 +143,8 @@ def main():
         parser.error('settle must be in (0,120], timeout in (0,3600]')
     for name in ['output', 'extension', 'checker', 'diff_tool', 'brave', 'vox']:
         setattr(args, name, getattr(args, name).resolve())
-    result = run(args)
+    with canonical_bundle_lease(args.vox.parent.parent.parent):
+        result = run(args)
     print(json.dumps(result), flush=True)
     return 0 if result['status'] == 'pass' else 1
 
