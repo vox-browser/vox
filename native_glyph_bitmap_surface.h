@@ -1,4 +1,27 @@
 #pragma once
+#include <utility>
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#endif
+
+// Swap red and blue in place across a tile. Sixteen pixels per step load as
+// separate channel planes, instead of one bounded copy call for every row.
+static void swap_red_blue_tile(uint8_t* tile, size_t pitch, int width, int height)
+{
+    for (int row = 0; row < height; ++row) {
+        auto* pixels = tile + size_t(row) * pitch;
+        int x = 0;
+#if defined(__aarch64__)
+        for (; width - x >= 16; x += 16) {
+            auto planes = vld4q_u8(pixels + size_t(x) * 4);
+            std::swap(planes.val[0], planes.val[2]);
+            vst4q_u8(pixels + size_t(x) * 4, planes);
+        }
+#endif
+        if (x < width)
+            swap_red_blue_pixels(pixels + size_t(x) * 4, pixels + size_t(x) * 4, size_t(width - x));
+    }
+}
 
 // A private frame can supply the raster leaf directly. Keep the same crop,
 // matrix, paint and Skia surface properties as the ordinary BGRA tile, while
@@ -56,12 +79,10 @@ static bool draw_glyph_bitmap_surface(CGContextRef context, int width, int heigh
     auto* tile = data + offset;
     // Raster in precisely the old BGRA format. RGBA CPU blitters can round
     // coverage differently; temporarily swap this private bounded region.
-    for (int row = 0; row < height; ++row)
-        swap_red_blue_pixels(tile + size_t(row) * pitch, tile + size_t(row) * pitch, width);
+    swap_red_blue_tile(tile, pitch, width, height);
     auto surface = SkSurfaces::WrapPixels(info, tile, pitch, properties);
     if (!surface) {
-        for (int row = 0; row < height; ++row)
-            swap_red_blue_pixels(tile + size_t(row) * pitch, tile + size_t(row) * pitch, width);
+        swap_red_blue_tile(tile, pitch, width, height);
         return false;
     }
     auto* canvas = surface->getCanvas();
@@ -69,7 +90,6 @@ static bool draw_glyph_bitmap_surface(CGContextRef context, int width, int heigh
     canvas->setMatrix(matrix);
     canvas->drawTextBlob(blob, x, y, paint);
     surface.reset();
-    for (int row = 0; row < height; ++row)
-        swap_red_blue_pixels(tile + size_t(row) * pitch, tile + size_t(row) * pitch, width);
+    swap_red_blue_tile(tile, pitch, width, height);
     return true;
 }
