@@ -131,7 +131,8 @@ int vox_graphite_canvas_begin(int const* rects, int count)
             canvas_surface_pool.erase(best);
         } else {
             surface = vox_shared_surface(canvas_recorder.get(),
-                canvas_info(canvas_rounded_size(rect[2], 256), canvas_rounded_size(rect[3], 128)));
+                canvas_info(canvas_rounded_size(rect[2], 256), canvas_rounded_size(rect[3], 128)),
+                std::getenv("VOX_GPU_CANVAS_LINEAR_TEXTURES") != nullptr);
         }
         if (!surface) {
             canvas_release_tiles();
@@ -154,6 +155,11 @@ int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
     auto* gpu = context();
     if (!gpu || index < 0 || index >= int(canvas_tiles.size()) || !bgra) return 0;
     auto& tile = canvas_tiles[size_t(index)];
+    if (std::getenv("VOX_GPU_CANVAS_LINEAR_DIAGNOSTICS")) {
+        auto texture = vox_shared_metal_texture(tile.surface.get());
+        std::fprintf(stderr, "Vox GPU canvas texture: linear=%d size=%dx%d\n",
+            int(texture && texture.buffer), tile.width, tile.height);
+    }
     vox_shared_write(gpu, tile.surface, SkPixmap(canvas_info(tile.width, tile.height), bgra, pitch), 0, 0);
     return 1;
 }

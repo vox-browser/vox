@@ -19,7 +19,7 @@ static id<MTLDevice> vox_shared_metal_device(skgpu::graphite::Recorder* recorder
 }
 
 static sk_sp<SkSurface> vox_shared_surface(skgpu::graphite::Recorder* recorder,
-    SkImageInfo const& info)
+    SkImageInfo const& info, bool linear = false)
 { @autoreleasepool {
     id<MTLDevice> device = vox_shared_metal_device(recorder);
     if (!device || info.colorType() != kBGRA_8888_SkColorType
@@ -31,7 +31,21 @@ static sk_sp<SkSurface> vox_shared_surface(skgpu::graphite::Recorder* recorder,
         width:info.width() height:info.height() mipmapped:NO];
     desc.storageMode = MTLStorageModeShared;
     desc.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
-    id<MTLTexture> texture = [device newTextureWithDescriptor:desc];
+    id<MTLTexture> texture = nil;
+    if (linear) {
+        NSUInteger alignment = [device minimumLinearTextureAlignmentForPixelFormat:desc.pixelFormat];
+        size_t row_bytes = size_t(info.width()) * 4;
+        size_t pitch = alignment ? (row_bytes + alignment - 1) / alignment * alignment : 0;
+        if (pitch && pitch <= 64 * 1024 * 1024 / size_t(info.height())) {
+            id<MTLBuffer> buffer = [device newBufferWithLength:pitch * size_t(info.height())
+                options:MTLResourceStorageModeShared];
+            if (buffer) {
+                texture = [buffer newTextureWithDescriptor:desc offset:0 bytesPerRow:pitch];
+                [buffer release]; // The texture retains its backing buffer.
+            }
+        }
+    }
+    if (!texture) texture = [device newTextureWithDescriptor:desc];
     if (!texture) return SkSurfaces::RenderTarget(recorder, info);
     auto backend = skgpu::graphite::BackendTextures::MakeMetal(info.dimensions(), (CFTypeRef)texture);
     auto surface = SkSurfaces::WrapBackendTexture(recorder, backend, info.refColorSpace(), nullptr);
