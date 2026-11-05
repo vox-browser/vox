@@ -178,6 +178,9 @@ int vox_picture_pixels_acquire(uint64_t token, VoxSharedPicturePixelsLease* out)
 namespace {
 
 VoxRasterBufferPool s_sparse_raster_pool;
+uint64_t begin_deferred_gradient_text_input();
+void finish_deferred_gradient_text_input(uint64_t epoch, bool completed);
+void reject_deferred_gradient_text_input();
 
 struct IsolatedInputRecording {
     SkPictureRecorder recorder;
@@ -187,9 +190,17 @@ struct IsolatedInputRecording {
     SkRect bounds = SkRect::MakeEmpty();
     bool unsupported = false;
     bool defer_leaf_raster = false;
+    bool deferred_gradient_text = false;
+    bool gradient_text_completed = false;
+    uint64_t gradient_text_epoch = 0;
+    unsigned deferred_leaf_calls = 0;
     // Scroll-independent identity of the recorded content, or zero. A gradient
     // blur reuses its rasterized layer while this identity is unchanged.
     uint64_t content_key = 0;
+    ~IsolatedInputRecording() {
+        if (deferred_gradient_text)
+            finish_deferred_gradient_text_input(gradient_text_epoch, gradient_text_completed);
+    }
 };
 std::unordered_map<CGContextRef, std::unique_ptr<IsolatedInputRecording>> s_isolated_input_recordings;
 
@@ -205,8 +216,10 @@ SkCanvas* isolated_input_recording_canvas(CGContextRef context)
 bool isolated_input_defers_leaf_raster(CGContextRef context)
 {
     auto found = s_isolated_input_recordings.find(context);
-    return found != s_isolated_input_recordings.end()
+    bool defer = found != s_isolated_input_recordings.end()
         && found->second->defer_leaf_raster && !found->second->unsupported;
+    if (defer && found->second->deferred_gradient_text) ++found->second->deferred_leaf_calls;
+    return defer;
 }
 
 // The strip and damage rectangles of a reused scroll frame, in top-left
@@ -214,14 +227,6 @@ bool isolated_input_defers_leaf_raster(CGContextRef context)
 // ladybird_v_skia_set_scroll_damage_rects).
 static std::vector<SkRect> s_scroll_damage_rects;
 static CGContextRef s_scroll_damage_canvas = nullptr;
-
-// Only cached gradient-blur inputs carry a content identity.
-static bool isolated_input_defers_cached_blur_leaf(CGContextRef context)
-{
-    auto found = s_isolated_input_recordings.find(context);
-    return found != s_isolated_input_recordings.end() && found->second->content_key
-        && found->second->defer_leaf_raster && !found->second->unsupported;
-}
 
 bool shared_recording_defers_leaf_raster(CGContextRef, SkRect const&);
 SkCanvas* shared_recording_canvas(CGContextRef);
@@ -1662,7 +1667,8 @@ static int draw_retained_glyph_run(CGContextRef destination,
     }
     auto device_bounds = matrix.mapRect(local_bounds);
     shared_recording_speculative_content(destination, device_bounds.makeOutset(2, 2), page_y, scroll_y);
-    if (shared_recording_defers_leaf_raster(destination, device_bounds.makeOutset(2, 2))) return 1;
+    if (isolated_input_defers_leaf_raster(destination)
+        || shared_recording_defers_leaf_raster(destination, device_bounds.makeOutset(2, 2))) return 1;
     RasterRegion region;
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 2.0f, region))
         return 1;
@@ -2855,6 +2861,17 @@ extern "C" void ladybird_v_skia_set_isolated_input_key(CGContextRef context, uin
     if (found != s_isolated_input_recordings.end()) found->second->content_key = key;
 }
 
+extern "C" int ladybird_v_skia_begin_gradient_text_input(CGContextRef context,
+    float width, float height)
+{
+    if (!ladybird_v_skia_begin_isolated_input(context, width, height)) return 0;
+    auto& recording = *s_isolated_input_recordings[context];
+    recording.gradient_text_epoch = begin_deferred_gradient_text_input();
+    recording.deferred_gradient_text = recording.gradient_text_epoch != 0;
+    recording.defer_leaf_raster = recording.deferred_gradient_text;
+    return 1;
+}
+
 // A mask context is released before its content context is allocated. Detach
 // its owned recording first, so CoreGraphics can safely reuse that address.
 extern "C" void* ladybird_v_skia_take_isolated_input(CGContextRef context)
@@ -2939,7 +2956,10 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
             0.0, double(pixel_height)));
         output_width = right - region_x;
         output_height = bottom - region_y;
-        if (output_width <= 0 || output_height <= 0) return 1;
+        if (output_width <= 0 || output_height <= 0) {
+            mask->gradient_text_completed = content->gradient_text_completed = true;
+            return 1;
+        }
     }
     std::vector<uint32_t> pixels(size_t(output_width) * output_height);
     auto original = read_backdrop(destination, {}, scale, pixel_width, pixel_height);
@@ -3026,6 +3046,13 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
         : CGRectMake(0, 0, canvas_width, canvas_height), true);
     CGImageRelease(output_image);
     CGContextRestoreGState(destination);
+    if (drawn) {
+        mask->gradient_text_completed = content->gradient_text_completed = true;
+        if ((mask->deferred_gradient_text || content->deferred_gradient_text)
+            && std::getenv("VOX_GRADIENT_TEXT_INPUT_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_GRADIENT_TEXT_INPUT deferred=1 completed=1 leaves=%u\n",
+                mask->deferred_leaf_calls + content->deferred_leaf_calls);
+    }
     return drawn;
 }
 
@@ -6712,7 +6739,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         // even when no earlier rectangle expanded this picture's bounds.
         if (!ink.isEmpty())
             shared_recording_speculative_content(destination, ink.makeOutset(2, 2), page_y, scroll_y);
-        if (isolated_input_defers_cached_blur_leaf(destination)
+        if (isolated_input_defers_leaf_raster(destination)
             || shared_recording_defers_leaf_raster(destination, ink.makeOutset(2, 2))) return 1;
     }
     RasterRegion region;

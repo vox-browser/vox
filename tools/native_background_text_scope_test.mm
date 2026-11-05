@@ -1,11 +1,13 @@
 // Compile the real mask entry points with the production shared clip state.
 #import <Cocoa/Cocoa.h>
 #include "../native_skia_text_darwin.cpp"
+#include "../native_initial_document_clear.h"
 #include <cassert>
 #include <iostream>
 
 #define LADYBIRD_V_HAS_SKIA_TEXT 1
 static CGFloat test_scale = 1;
+static VoxInitialDocumentClear native_layer_initial_document_clear;
 static CGFloat native_svg_mask_backing_scale(void) { return test_scale; }
 static void native_begin_tracked_transparency_layer(CGContextRef context, CFDictionaryRef info)
 {

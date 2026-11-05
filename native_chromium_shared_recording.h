@@ -39,6 +39,10 @@ extern "C" void ladybird_v_skia_set_opaque_layer_continuation(int enabled)
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 bool s_deferred_layer_frame_enabled = false;
 bool s_deferred_layer_frame_failed = false;
+bool s_deferred_layer_frame_open = false;
+bool s_gradient_text_deferral_abandoned = false;
+uint64_t s_gradient_text_deferral_epoch = 0;
+unsigned s_gradient_text_inputs_pending = 0;
 std::unordered_map<CGContextRef, CGRect> s_deferred_layer_destinations;
 std::unordered_map<CGContextRef, bool> s_mapped_opacity_destinations;
 
@@ -46,6 +50,9 @@ extern "C" void ladybird_v_skia_begin_deferred_layer_frame(int enabled)
 {
     s_deferred_layer_frame_enabled = enabled && !std::getenv("VOX_DISABLE_DEFERRED_LAYERS");
     s_deferred_layer_frame_failed = false;
+    s_deferred_layer_frame_open = true;
+    if (++s_gradient_text_deferral_epoch == 0) ++s_gradient_text_deferral_epoch;
+    s_gradient_text_inputs_pending = 0;
     s_speculative_layer_enabled = false;
     s_deferred_layer_destinations.clear();
     s_mapped_opacity_destinations.clear();
@@ -53,12 +60,40 @@ extern "C" void ladybird_v_skia_begin_deferred_layer_frame(int enabled)
 
 extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
 {
+    if (s_gradient_text_inputs_pending) reject_deferred_gradient_text_input();
     int result = !s_deferred_layer_frame_failed;
+    s_deferred_layer_frame_open = false;
     s_deferred_layer_frame_enabled = false;
     s_speculative_layer_enabled = false;
     s_deferred_layer_destinations.clear();
     s_mapped_opacity_destinations.clear();
     return result;
+}
+
+uint64_t begin_deferred_gradient_text_input()
+{
+    if (!s_deferred_layer_frame_open || s_gradient_text_deferral_abandoned
+        || !std::getenv("VOX_DEFER_GRADIENT_TEXT_INPUTS")) return 0;
+    ++s_gradient_text_inputs_pending;
+    return s_gradient_text_deferral_epoch;
+}
+
+void reject_deferred_gradient_text_input()
+{
+    // The browser retries painting from unchanged commands before publishing.
+    // Stop speculating after any failure so that retry and later frames retain
+    // their ordinary bitmap fallback, including unsupported/discarded inputs.
+    s_deferred_layer_frame_failed = true;
+    s_gradient_text_deferral_abandoned = true;
+}
+
+void finish_deferred_gradient_text_input(uint64_t epoch, bool completed)
+{
+    // Detached mask inputs can be discarded by the adapter during a later
+    // retry. They must not invalidate that new frame or alter its accounting.
+    if (epoch != s_gradient_text_deferral_epoch || !s_deferred_layer_frame_open) return;
+    if (s_gradient_text_inputs_pending) --s_gradient_text_inputs_pending;
+    if (!completed) reject_deferred_gradient_text_input();
 }
 
 // The native adapter calls this only for its private opacity bitmap, whose
@@ -960,6 +995,7 @@ extern "C" int ladybird_v_skia_defer_recorded_rect(CGContextRef destination,
     float x, float y, float width, float height)
 {
     if (gpu_canvas_defer_rect(destination, x, y, width, height, s_last_recorded_rect_rgba)) return 1;
+    if (isolated_input_defers_leaf_raster(destination)) return 1;
     if (!s_shared_root_recording || s_shared_root_recording->destination != destination
         || !s_shared_root_recording->speculative
         || !complete_speculative_picture_enabled()) return 0;

@@ -243,6 +243,7 @@ extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
 extern int ladybird_v_skia_begin_isolated_input(CGContextRef context, float width, float height);
+extern int ladybird_v_skia_begin_gradient_text_input(CGContextRef context, float width, float height);
 extern void ladybird_v_skia_set_isolated_input_key(CGContextRef context, uint64_t key);
 extern int ladybird_v_skia_defer_cached_gradient_blur_input(CGContextRef context);
 extern void ladybird_v_skia_set_scroll_damage_rects(CGContextRef canvas, float const *rects, int count);
@@ -5028,7 +5029,7 @@ void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	CGContextSetShouldAntialias(native_background_text_clip_build_context, true);
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	if (native_background_text_gradient_recording) {
-		native_background_text_gradient_recording = ladybird_v_skia_begin_isolated_input(
+		native_background_text_gradient_recording = ladybird_v_skia_begin_gradient_text_input(
 			native_background_text_clip_build_context, canvas_width, canvas_height);
 	}
 #endif
@@ -5126,7 +5127,7 @@ void native_finish_background_text_clip(void) {
 				flipped:NO]];
 			native_background_text_clip_active = 2;
 			if (native_background_text_mask_input != NULL) {
-				ladybird_v_skia_begin_isolated_input(native_background_text_content_context,
+				ladybird_v_skia_begin_gradient_text_input(native_background_text_content_context,
 					native_background_text_canvas_width, native_background_text_canvas_height);
 			}
 			return;

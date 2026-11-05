@@ -24,7 +24,7 @@ static std::vector<uint32_t> cached_text_frame(bool cache, bool regional, int sc
     assert(context); CGColorSpaceRelease(color);
     CGContextScaleCTM(context, scale, scale);
     s_chromium_painting = true;
-    assert(ladybird_v_skia_begin_isolated_input(context, css_w, css_h));
+    assert(ladybird_v_skia_begin_gradient_text_input(context, css_w, css_h));
     auto* mask_canvas = isolated_input_recording_canvas(context);
     SkPaint mask_paint; mask_paint.setColor(changed_mask ? 0x70000000 : 0xe0000000); mask_paint.setAntiAlias(true);
     mask_canvas->drawRoundRect(SkRect::MakeXYWH(9 + phase, 11.5, 37, 29), 4.5, 3.5, mask_paint);
@@ -35,7 +35,7 @@ static std::vector<uint32_t> cached_text_frame(bool cache, bool regional, int sc
         10 + phase, 28, font, mask_paint);
     s_isolated_input_recordings[context]->bounds = SkRect::MakeWH(css_w, css_h);
     auto* mask = ladybird_v_skia_take_isolated_input(context);
-    assert(ladybird_v_skia_begin_isolated_input(context, css_w, css_h));
+    assert(ladybird_v_skia_begin_gradient_text_input(context, css_w, css_h));
     auto* content = s_isolated_input_recordings[context].get();
     content->bounds = SkRect::MakeWH(css_w, css_h);
     SkPoint points[] {{0, 0}, {css_w, css_h}};
@@ -48,6 +48,58 @@ static std::vector<uint32_t> cached_text_frame(bool cache, bool regional, int sc
     assert(s_isolated_input_recordings.empty());
     CGContextFlush(context); CGContextRelease(context);
     return pixels;
+}
+
+static std::vector<uint8_t> deferred_text_frame(bool defer, int scale, float phase,
+    bool unsupported = false)
+{
+    constexpr int w = 80, h = 64;
+    std::vector<uint8_t> output(w * h * scale * scale * 4), mask(output.size()), content(output.size());
+    for (size_t i = 0; i < output.size(); i += 4) {
+        output[i] = 37; output[i+1] = 61; output[i+2] = 89; output[i+3] = 255;
+    }
+    auto original = output;
+    auto make_context = [&](auto& pixels) {
+        auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto ctx = CGBitmapContextCreate(pixels.data(), w * scale, h * scale, 8, w * scale * 4,
+            color, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+        assert(ctx); CGColorSpaceRelease(color); CGContextScaleCTM(ctx, scale, scale);
+        return ctx;
+    };
+    auto destination = make_context(output), mask_context = make_context(mask), source = make_context(content);
+    if (defer) setenv("VOX_DEFER_GRADIENT_TEXT_INPUTS", "1", 1);
+    else unsetenv("VOX_DEFER_GRADIENT_TEXT_INPUTS");
+    ladybird_v_skia_begin_deferred_layer_frame(0);
+    ladybird_v_skia_set_shared_recording(0, w, h);
+    assert(ladybird_v_skia_begin_gradient_text_input(mask_context, w, h));
+    bool omitted = isolated_input_defers_leaf_raster(mask_context);
+    assert(omitted == (defer && !s_gradient_text_deferral_abandoned));
+    if (!s_typefaces[RegularFont])
+        s_typefaces[RegularFont] = font_manager()->matchFamilyStyle("Arial", SkFontStyle());
+    auto* face = select_typeface("", 0, 400, 0); assert(face);
+    uint16_t glyphs[] {face->unicharToGlyph('V'), face->unicharToGlyph('0')};
+    double positions[] {0, 0, 12, 0};
+    assert(ladybird_v_skia_draw_glyph_run(mask_context, "", 0, glyphs, positions, 2,
+        16, 400, 0, 10 + phase, 30, 1, 0, 0, 1, 0, 0, 0, 0, 0, w, h, 255, 255, 255, 255, 16));
+    CGContextFlush(mask_context);
+    auto empty = [](auto const& pixels) {
+        return std::all_of(pixels.begin(), pixels.end(), [](auto byte) { return byte == 0; });
+    };
+    assert(empty(mask) == omitted);
+    auto* input = ladybird_v_skia_take_isolated_input(mask_context);
+    assert(ladybird_v_skia_begin_gradient_text_input(source, w, h));
+    assert(ladybird_v_skia_draw_rounded_rect(source, 0, 0, w, h, 0,0,0,0,0,0,0,0,
+        1,0,0,1,0,0,0,0,0,w,h, 173,37,91,255,1,0,0,0));
+    CGContextFlush(source);
+    assert(empty(content) == omitted);
+    if (unsupported) ladybird_v_skia_block_shared_clip(source);
+    int drawn = ladybird_v_skia_draw_gradient_text(source, input, destination, w, h, scale, 0, 0, w, h);
+    assert(drawn == !unsupported);
+    bool completed = ladybird_v_skia_finish_deferred_layer_frame();
+    assert(completed == !(omitted && unsupported));
+    if (unsupported) assert(output == original);
+    CGContextRelease(destination); CGContextRelease(mask_context); CGContextRelease(source);
+    return output;
 }
 
 int main()
@@ -98,8 +150,6 @@ int main()
     assert(s_isolated_input_recordings.empty());
     ladybird_v_skia_discard_isolated_input(nullptr);
     s_shared_clips.erase(context);
-    CGContextRelease(context);
-    CGColorSpaceRelease(color_space);
     unsigned cases = 0;
     for (bool regional : {false, true}) for (int scale : {1, 2})
         for (bool mask : {false, true}) for (bool color : {false, true})
@@ -133,7 +183,38 @@ int main()
         assert(reference == first && reference == reused);
     }
     unsetenv("VOX_REUSE_DAWN_REGION_RECORDER");
+    for (int scale : {1, 2}) for (float phase : {0.f, .25f, .5f, .75f}) {
+        auto expected = deferred_text_frame(false, scale, phase);
+        assert(deferred_text_frame(true, scale, phase) == expected);
+    }
+    deferred_text_frame(true, 2, .25f, true);
+    assert(s_gradient_text_deferral_abandoned);
+    assert(deferred_text_frame(true, 2, .25f) == deferred_text_frame(false, 2, .25f));
+    // Discarded mask inputs also invalidate the transaction, even before the
+    // compositor is called, so their omitted pixels cannot be published.
+    s_gradient_text_deferral_abandoned = false;
+    setenv("VOX_DEFER_GRADIENT_TEXT_INPUTS", "1", 1);
+    ladybird_v_skia_begin_deferred_layer_frame(0);
+    assert(ladybird_v_skia_begin_gradient_text_input(context, 64, 64));
+    assert(isolated_input_defers_leaf_raster(context));
+    ladybird_v_skia_discard_isolated_input(ladybird_v_skia_take_isolated_input(context));
+    assert(!ladybird_v_skia_finish_deferred_layer_frame() && s_gradient_text_deferral_abandoned);
+    s_gradient_text_deferral_abandoned = false;
+    ladybird_v_skia_begin_deferred_layer_frame(0);
+    assert(ladybird_v_skia_begin_gradient_text_input(context, 64, 64));
+    auto* unfinished = ladybird_v_skia_take_isolated_input(context);
+    assert(!ladybird_v_skia_finish_deferred_layer_frame());
+    ladybird_v_skia_begin_deferred_layer_frame(0);
+    assert(ladybird_v_skia_begin_gradient_text_input(context, 64, 64));
+    assert(!isolated_input_defers_leaf_raster(context));
+    ladybird_v_skia_discard_isolated_input(unfinished);
+    ladybird_v_skia_discard_isolated_input(ladybird_v_skia_take_isolated_input(context));
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+    CGContextRelease(context);
+    CGColorSpaceRelease(color_space);
+    unsetenv("VOX_DEFER_GRADIENT_TEXT_INPUTS");
     unsetenv("VOX_CACHE_GRADIENT_TEXT"); unsetenv("VOX_DISABLE_PICTURE_REGIONS");
     std::cout << "Gradient text cache: " << cases << " exact cold/warm frames, changed mask/color/backdrop, region modes and 1x/2x passed\n";
     std::cout << "Retained text mask ownership, fallback and GPU composition passed\n";
+    std::cout << "Gradient text deferral: eight exact glyph/shape scenes, untouched input bitmaps, rejection and ordinary retry passed\n";
 }

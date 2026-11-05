@@ -64,7 +64,7 @@ def main():
     for mode, flags in (("o2", ["-O2"]),
                         ("sanitized", ["-O1", "-g", "-fsanitize=address,undefined"])):
         binary = output / ("native_background_text_scope-" + mode)
-        command = [str(compiler), "-std=c++20", "-fno-objc-arc", *flags,
+        command = [str(compiler), "-std=c++20", "-fno-rtti", "-fno-objc-arc", *flags,
                    "-I", str(output), "-I", str(skia / "include/skia"),
                    "-I", str(skia / "include"), str(fixture), "-L", str(skia / "lib"), "-lskia"]
         for framework in ("Cocoa", "CoreFoundation", "CoreGraphics", "CoreText", "Foundation", "Metal"):
