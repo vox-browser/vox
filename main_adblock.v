@@ -49,12 +49,19 @@ fn collect_browser_adblock_tokens(node &dom.Node, mut tokens map[string]bool,
 // uBO inserts cosmetic rules at the user cascade origin, so !important page
 // rules cannot reveal an advert. Keep the user's page stylesheet alongside it.
 fn install_browser_adblock_styles(document &dom.Document, procedural_css string) ! {
+	mut tokens := BrowserAdblockTokenCache{}
+	defer { tokens.release() }
+	install_browser_adblock_styles_with_tokens(document, procedural_css, mut tokens)!
+}
+
+fn install_browser_adblock_styles_with_tokens(document &dom.Document, procedural_css string,
+	mut token_cache BrowserAdblockTokenCache) ! {
 	scope := css.style_scope_for_dom_node(unsafe { &dom.Node(document) })
 	existing := scope.user_style_source or {
 		if document.has_page() { document.page().user_style() or { '' } } else { '' }
 	}
 	marker := '/* vox-adblock-start */'
-	tokens := browser_adblock_tokens(document)
+	tokens := token_cache.survey(document)
 	filter_css := adblock.document_css(document.url.serialize(), tokens)!
 	// An unchanged sheet is common during timestamp updates. Its composed
 	// source is comparison storage; only an actual replacement must survive.
@@ -108,6 +115,13 @@ fn install_browser_adblock_scriptlets(document &dom.Document, runtime &browserjs
 }
 
 fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, mut messages []string) {
+	mut tokens := BrowserAdblockTokenCache{}
+	defer { tokens.release() }
+	refresh_browser_adblock_with_tokens(document, runtime, mut messages, mut tokens)
+}
+
+fn refresh_browser_adblock_with_tokens(document &dom.Document, runtime &browserjs.Runtime,
+	mut messages []string, mut tokens BrowserAdblockTokenCache) {
 	mut procedural_css := ''
 	if runtime != unsafe { nil } && adblock.is_enabled() {
 		// Upstream primes action styles before evaluating selectors. Publish them
@@ -117,7 +131,7 @@ fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, m
 			''
 		}
 		if primed_css != '' {
-			install_browser_adblock_styles(document, primed_css) or { messages << 'Adblock styles: ${err.msg()}' }
+			install_browser_adblock_styles_with_tokens(document, primed_css, mut tokens) or { messages << 'Adblock styles: ${err.msg()}' }
 		}
 		procedural_css = runtime.evaluate_host('typeof __voxAdblockApplyProcedural==="function"?__voxAdblockApplyProcedural():""') or {
 			messages << 'Adblock procedural filters: ${err.msg()}'
@@ -135,5 +149,5 @@ fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, m
 	// Consent widgets can arrive in delayed callbacks or be shown again by
 	// scripts. Apply the independent cookie policy after replay, before layout.
 	apply_cookie_banner_policy(document)
-	install_browser_adblock_styles(document, procedural_css) or { messages << 'Adblock styles: ${err.msg()}' }
+	install_browser_adblock_styles_with_tokens(document, procedural_css, mut tokens) or { messages << 'Adblock styles: ${err.msg()}' }
 }

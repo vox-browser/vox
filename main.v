@@ -461,6 +461,7 @@ mut:
 	memory_status                       BrowserMemoryStatus
 	memory_maintenance                  BrowserMemoryMaintenance
 	js_messages                         []string
+	adblock_tokens                      BrowserAdblockTokenCache
 	history                             []HistoryEntry
 	history_index                       int = -1
 	hovered_link                        string
@@ -3683,7 +3684,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	app.sync_layout_coordinate_scale()
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
-	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
+	app.refresh_browser_adblock()
 	// Cosmetic filtering consumes facade effects; ordinary paint recording can
 	// happen later in a frame after another callback has queued new effects.
 	if app.js_runtime != unsafe { nil } { app.js_runtime.take_document_replay_effects() }
@@ -3821,6 +3822,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.script_stylesheet_links.clear()
 	app.script_stylesheet_responses.clear()
 	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
+	app.adblock_tokens.release()
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
 		parse_loaded_browser_navigation_document(loaded, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
@@ -3850,7 +3852,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 			outgoing.release_native_storage()
 		}
 	}
-	install_browser_adblock_styles(app.document, '') or { app.js_messages << 'Adblock styles: ${err.msg()}' }
+	install_browser_adblock_styles_with_tokens(app.document, '', mut app.adblock_tokens) or { app.js_messages << 'Adblock styles: ${err.msg()}' }
 	$if vox_document_retention_diagnostics ? {
 	if replaced := previous_document {
 		if !replaced.has_been_destroyed() && voidptr(replaced) != voidptr(app.document)

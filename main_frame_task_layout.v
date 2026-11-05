@@ -29,7 +29,7 @@ fn (mut app BrowserApp) defer_javascript_layout_to_current_frame() bool {
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
 	app.sync_layout_coordinate_scale()
-	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
+	app.refresh_browser_adblock()
 	if app.js_runtime != unsafe { nil } { app.js_runtime.take_document_replay_effects() }
 	app.sync_window_activity()
 	app.paint_commands_pending = true

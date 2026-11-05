@@ -275,6 +275,7 @@ fn (mut app BrowserApp) close_browser_tab(index int) {
 }
 
 fn (mut app BrowserApp) dispose_browser_tab() {
+	app.adblock_tokens.release()
 	app.stop_browser_tab_loading_animation()
 	$if linux || ui2_custom_rendering ? { app.stop_browser_memory_chrome() }
 	app.dismiss_browser_popup()

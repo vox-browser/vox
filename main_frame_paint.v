@@ -29,7 +29,7 @@ fn (mut app BrowserApp) synchronize_javascript_task_paint(replayed_effects bool)
 	if !stale_paint { return }
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
-	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
+	app.refresh_browser_adblock()
 	if app.js_runtime != unsafe { nil } { app.js_runtime.take_document_replay_effects() }
 	mut document := unsafe { &dom.Document(app.document) }
 	document.update_layout(.html_event_loop_rendering_update)
