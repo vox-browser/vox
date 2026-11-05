@@ -1,0 +1,77 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-calc-fold-production-20261105-evidence.zip",
+      "sha256": "fcbeebf40545c48ca043ea2fe9e6703e68ced434cb7fad423e290dafaf810a5f",
+      "bytes": 1353909
+    },
+    {
+      "path": "docs/performance/chatgpt-calc-fold-20261105-evidence.zip",
+      "sha256": "275fc47a1f08540526a4d7d9de61a38ce05fdae59d420731dedda5b674acf092",
+      "bytes": 46085559
+    },
+    {
+      "path": "docs/performance/chatgpt-calc-fold-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "e610b2dd0fe27f633ebf85587f52eabc37a0af20f6c3d4c0a0dfb118d5c740ef",
+      "bytes": 1327666
+    },
+    {
+      "path": "docs/performance/chatgpt-calc-fold-production-r1-matched-20261105-evidence.zip",
+      "sha256": "cec89128d3f64c385a6868a1de06118b6382a7d3720c9bd4eca46ef6705f3e46",
+      "bytes": 2690354
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "29fbee8c8ef36b55aad8f9f95037b2ab6cc8ed0fbe57440269ea3f1d8ee24d91",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available calculation parser and term-fold function disassembly",
+      "proof_sha256": "d181726fb8801ff2f7d8cdcf055e9a27bcfcb83a7a60625837964398592340ca",
+      "source_hashes": {
+        "css/calc_parsing.v": "c5292941f3099c7b29adb3f93dece2cf1fe6cd1092253b010ec6d7b960892b50",
+        "css/calc_term_fold.v": "66ffda85ab278f4cd7bc0bee63361ee62d67db5ef2b2e36fb35fc34733f5cf49"
+      },
+      "qualification": "The parser validates the same complete alternating term sequence, then folds products and sums without four intermediate arrays. Exact unsimplified tree shape and arithmetic association are retained, including per-operand inversion and per-product negation. Control retains the original arrays. Separate execution markers establish eligibility; no source-proof timing credit."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-calc-fold-production-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 436895744,
+    "elapsed_seconds": 0.768958833,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "css/calc_parsing.v": "c5292941f3099c7b29adb3f93dece2cf1fe6cd1092253b010ec6d7b960892b50",
+    "css/calc_term_fold.v": "66ffda85ab278f4cd7bc0bee63361ee62d67db5ef2b2e36fb35fc34733f5cf49",
+    "css/calc_term_fold_test.v": "20e89ccd2c442a01f36836f1e1df7f88f85f4e4fd7725b4c2898686b3ecd65e3"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 544,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 30582191856,
+    "min_brave_lower": 16360145975,
+    "numerator": 611643837120,
+    "denominator": 310842773525,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Matched ranges overlap; no whole-page savings or broad checkpoint is credited. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. Both independent component workloads and the invalid-input observation remain retained. The 5%-below-Brave target remains unmet."
+}

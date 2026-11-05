@@ -3823,3 +3823,58 @@ source and raw count. Its verified content-addressed archive preserves
 385,535,771 generated C bytes before deleting redundant Build outputs.
 Whole-page credit and the broad cadence remain zero pending the production
 comparison. The 5%-below-Brave goal remains unmet.
+
+### Calculation term folding: complete production comparison (2026-11-05)
+
+The completed canonical 33-unit executable has SHA-256
+`29fbee8c8ef36b55aad8f9f95037b2ab6cc8ed0fbe57440269ea3f1d8ee24d91`.
+Its stable build-input receipt matches the final owned sources at `3eac0d2ac`;
+raw available parser/fold disassembly is retained. A separate source check
+confirms that the control fold body is byte-for-byte identical to its original
+body before extraction. No manual production build or app copy is used.
+
+A nonblocking shared publication lease pins the bundle through four diagnostic
+and eight unprofiled captures. All twelve pass bootstrap, complete content and
+button identity, unchanged pixels, normal browser/kernel exits and input-hash
+checks. The separate fold marker appears only in the candidate diagnostic,
+confirming that the changed parser executes on the captured page.
+
+The matched order is control/candidate/candidate/control, each paired with a
+fresh Brave reference. Scope is exclusive-coalition creation through encoded
+document PNG, including startup/window and target setup. Original SOCKS replay,
+author scripts and references, fresh private profiles/caches, 1024×768 viewport,
+scale 2 and an unfocused five-second settle remain unchanged. OS filesystem and
+shader caches are retained; GPU execution and outside-coalition services are
+excluded. These remain observed CPU counts for the full startup/capture workflow.
+
+| Unprofiled observed Vox instructions | Control | Candidate |
+| --- | ---: | ---: |
+| First observation | 30,582,191,856 | 30,544,345,135 |
+| Second observation | 30,541,903,415 | 30,356,128,928 |
+| Median | 30,562,047,635.5 | 30,450,237,031.5 |
+
+The observed candidate median is **0.3658% lower**, but the ranges overlap:
+30,544,345,135 candidate instructions exceed the lower control by 2,441,720.
+Conservative separation is therefore **-2,441,720**, so no whole-page gain is
+credited and no 5,000,000-instruction broad checkpoint is triggered. Controls
+complete 454 and 455 frame checkpoints; candidates complete 453 and 460.
+The counts are not normalized by frame count. One-minute host load spans about
+13.4–26.6 on 18 CPUs, further limiting attribution of a small point difference.
+No attempt is dropped or repeated to improve the result.
+
+The mixed diagnostic cohort's highest Vox upper bound divided by its lowest
+Brave lower bound is 1.8693, far above 0.95. Every candidate also exceeds its
+Brave reference. Four pairs remain below seven-pair acceptance. The requested
+5%-below-Brave target remains unmet.
+
+The controller and outer guard exit zero over 119.99 seconds, peak at
+1,734,328,320 sampled RSS bytes, and adopt 44 process identities without an
+adoption error. The publication lease is released. Finalization and independent
+verification also exit zero. The
+[production receipt](performance/chatgpt-calc-fold-production-20261105.json)
+and [verification receipt](performance/chatgpt-calc-fold-production-verification-20261105.json)
+authenticate all four archives, 544 focused test calls, both component workloads,
+12 valid captures, raw counters, commands, source/control proof, original PNGs,
+audits, actual exits and exact comparison arithmetic. Whole-page credit and the
+broad cadence remain zero. No live-site, isolated rendering-time or scrolling
+improvement is claimed.
