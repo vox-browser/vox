@@ -22,8 +22,8 @@ fn test_unused_perspective_keeps_independent_scroll_raster_layers() {
 	assert plan.command_layers[wide] > 0
 }
 
-fn test_painted_perspective_descendants_keep_root_raster_fallback() {
-	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#perspective{perspective:1000px}#child{width:20px;height:20px;background:rgb(4 5 6)}#scroll{width:100px;height:30px;overflow:auto}#wide{width:400px;height:30px;background:rgb(1 2 3)}</style><div id="perspective"><div><div id="child"></div></div></div><div id="scroll"><div id="wide"></div></div>')
+fn test_depth_transformed_perspective_descendants_keep_root_raster_fallback() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#perspective{perspective:1000px}#child{transform:translateZ(1px);width:20px;height:20px;background:rgb(4 5 6)}#scroll{width:100px;height:30px;overflow:auto}#wide{width:400px;height:30px;background:rgb(1 2 3)}</style><div id="perspective"><div><div id="child"></div></div></div><div id="scroll"><div id="wide"></div></div>')
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 300, 200)
 	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })

@@ -113,6 +113,8 @@ mut:
 	paint_chunk_context int = -1
 	paint_chunk_client u64
 	paint_visible_effects map[u64]bool
+	perspective_owners []int
+	perspective_root_rasters []bool
 }
 
 __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
@@ -566,6 +568,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	}
 	tree := result.visual_context_tree
 	scratch.prepare(tree.nodes.len, commands.len)
+	scratch.prepare_perspective_rasters(&tree)
 	for index in 1 .. tree.nodes.len {
 		node := tree.nodes[index]
 		if node.parent_index >= 0 && node.parent_index < index {
@@ -579,7 +582,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				scratch.properties[index].scroll_frame = node.data.scroll_frame_index
 			}
 		} else if node.data is painting.ScrollCompensationVisualData
-			|| node.data is painting.PerspectiveVisualData {
+			|| (node.data is painting.PerspectiveVisualData && scratch.perspective_root_rasters[index]) {
 			// These contexts need a separate transform/raster policy only when
 			// painting uses them. Empty perspective containers still contribute
 			// retained nodes, but must not disable independent page layers.
