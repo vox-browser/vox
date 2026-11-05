@@ -62,14 +62,31 @@ int main() { @autoreleasepool {
         auto reused = read_surface(gpu, recorder.get(), linear.get());
         assert(actual == expected && reused != expected);
     }
-    setenv("VOX_GPU_CANVAS_LINEAR_TEXTURES", "1", 1);
+    for (int linear = 0; linear < 2; ++linear) for (int staged = 0; staged < 2; ++staged) {
+    canvas_reset();
+    if (linear) setenv("VOX_GPU_CANVAS_LINEAR_TEXTURES", "1", 1);
+    else unsetenv("VOX_GPU_CANVAS_LINEAR_TEXTURES");
+    if (staged) setenv("VOX_GPU_CANVAS_STAGED_UPLOAD", "1", 1);
+    else unsetenv("VOX_GPU_CANVAS_STAGED_UPLOAD");
     int rects[] {3, 7, 37, 29, 3, 7, 37, 29, 48, 1, 19, 13, 48, 1, 19, 13};
     assert(vox_graphite_canvas_begin(rects, 2));
     for (size_t index = 0; index < canvas_tiles.size(); ++index) {
         auto const& tile = canvas_tiles[index];
-        assert(vox_shared_metal_texture(tile.surface.get()).buffer);
+        assert(bool(vox_shared_metal_texture(tile.surface.get()).buffer) == bool(linear));
+        // A queued draw precedes the replacement. The upload owns its bytes
+        // before returning, even though that replacement runs later on the GPU.
+        tile.surface->getCanvas()->clear(SK_ColorRED);
         std::vector<uint32_t> pixels(size_t(tile.width + 3) * tile.height, 0xff20a040 + index);
+        assert(!vox_graphite_canvas_upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), tile.width * 4 - 1));
         assert(vox_graphite_canvas_upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), (tile.width + 3) * 4));
+        std::fill(pixels.begin(), pixels.end(), 0xdeadc0de);
+    }
+    if (staged) {
+        auto recording = canvas_recorder->snap();
+        assert(recording); // The uploads stayed queued with their pending draws.
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording = recording.get();
+        assert(gpu->insertRecording(insertion) == skgpu::graphite::InsertStatus::kSuccess);
     }
     std::vector<uint8_t> first(43 * 4 * 29, 0xa7), second(24 * 4 * 13, 0xa7);
     VoxGraphitePixelRegion views[] {{0, 0, 37, 29, 43 * 4, first.data()},
@@ -84,6 +101,7 @@ int main() { @autoreleasepool {
         for (int x = 19 * 4; x < 24 * 4; ++x) assert(second[y * 24 * 4 + x] == 0xa7);
     }
     vox_graphite_canvas_end();
+    }
     canvas_reset(); recorder.reset(); gpu_context.reset();
-    std::puts("Linear Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, partial/padded uploads, reuse, buffer lifetime, direct readback and row padding passed");
+    std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }

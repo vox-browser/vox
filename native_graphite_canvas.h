@@ -155,12 +155,23 @@ int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
     auto* gpu = context();
     if (!gpu || index < 0 || index >= int(canvas_tiles.size()) || !bgra) return 0;
     auto& tile = canvas_tiles[size_t(index)];
+    if (pitch < tile.width * 4) return 0;
     if (std::getenv("VOX_GPU_CANVAS_LINEAR_DIAGNOSTICS")) {
         auto texture = vox_shared_metal_texture(tile.surface.get());
         std::fprintf(stderr, "Vox GPU canvas texture: linear=%d size=%dx%d\n",
             int(texture && texture.buffer), tile.width, tile.height);
     }
-    vox_shared_write(gpu, tile.surface, SkPixmap(canvas_info(tile.width, tile.height), bgra, pitch), 0, 0);
+    auto pixels = SkPixmap(canvas_info(tile.width, tile.height), bgra, pitch);
+    if (std::getenv("VOX_GPU_CANVAS_STAGED_UPLOAD")) {
+        // Graphite copies the source into its upload buffer now and orders the
+        // transfer with subsequent draws. Finish them together at readback,
+        // rather than submitting/waiting before a CPU texture replacement.
+        bool written = tile.surface->getCanvas()->writePixels(pixels.info(), pixels.addr(), pixels.rowBytes(), 0, 0);
+        if (written && std::getenv("VOX_GPU_CANVAS_STAGED_UPLOAD_DIAGNOSTICS"))
+            std::fprintf(stderr, "Vox GPU canvas staged upload: size=%dx%d\n", tile.width, tile.height);
+        return written;
+    }
+    vox_shared_write(gpu, tile.surface, pixels, 0, 0);
     return 1;
 }
 
