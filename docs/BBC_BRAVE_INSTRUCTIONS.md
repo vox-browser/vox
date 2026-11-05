@@ -5699,3 +5699,43 @@ no full-pass claim or cadence reset. History is **100 attempted cohorts /
 2,167 acceptance browser attempts**. BBC homepage remains outside
 `OPTIMIZED_SITES.md`. [Focused, native and complete cohort evidence](performance/bbc-image-measurement-cohort100-20261105.json)
 retains every attempt and its raw counts.
+
+
+## Cache and callback attribution diagnostics (2026-11-05)
+
+Three standalone C-O0 probes use the sealed generated C for `e4705bb1`, with
+thread-local counters sampled immediately before the encoded PNG marker.
+They pass original pixels/content, all 72 exact external author scripts and
+unchanged actual native-image identities. These instrumented processes are
+separate from acceptance; elapsed timing and counter frequencies earn no
+performance credit. Native link inputs are pinned before and after compilation.
+An initial probe compile rejects C struct comparisons; the corrected probe
+uses CSSPixels raw values. A subsequent wrapper rejects reuse of an existing
+exclusive guard report. Both failures remain recorded, followed by successful
+compilation under unique guard names; the initial source is reconstructed and
+hash-verified from the retained final source.
+
+The first probe records 21,521 grid entries and 17,348 flex entries. Grid has
+1,348 cache hits and 11,415 committed misses; flex has 2,882 hits and 8,013
+committed misses. Thousands of key mismatches have equal widths but different
+stored root/containing heights. These counts motivate a dependency audit;
+they do not authorize dropping height-sensitive keys.
+
+A second probe attributes 14,944 engine-helper calls through nine distinct
+return sites. All nine preceding call instructions are checked against the
+pinned executable after independently verifying the inferred image slide.
+The largest caller is `Runtime.call_javascript_function` (12,428 calls),
+while native function metadata accounts for only 378 and native forwarding
+for 52. The third probe traces all 118 outer return sites, verifies their
+preceding call instructions and records 12,438 generic callback invocations.
+The largest groups are generic WebIDL callbacks (4,463), microtask enqueue
+(2,922), and microtask delivery (2,927). Receivers include 4,845 objects and
+7,593 undefined values, so an object-receiver-only shortcut would miss most
+calls. The proposed captured-Function.call path preserves undefined/primitive
+receivers while avoiding the C-created JavaScript argument array.
+
+These are diagnostic observations on an older, explicitly pinned production
+source, not validation of the new callback implementation or a target result.
+The valid failing cohort 100 and its unchanged strict gate remain current.
+[Raw probes, input hashes, disassembly and audit records](performance/bbc-cache-callback-probes-20261105.json)
+are preserved independently of `Build/`.
