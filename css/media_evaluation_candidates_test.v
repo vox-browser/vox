@@ -163,10 +163,16 @@ fn test_media_candidate_storage_survives_scratch_and_document_retirement() {
 		if !disable_media_rule_candidates {
 			assert document.native_storage().arena.contains(author.rules.media_evaluation_candidates_.data)
 		}
-		assert voidptr(author.rules.media_evaluation_candidates()[0]) == voidptr(author.rules.rules[0])
+		author_expected := if disable_media_rule_candidates || retain_media_group_recursion {
+			author.rules.rules[0]
+		} else { (author.rules.rules[0].rules or { panic('author layer') }).rules[0] }
+		assert voidptr(author.rules.media_evaluation_candidates()[0]) == voidptr(author_expected)
 		owner.finish()
 		document.release_native_storage()
-		assert voidptr(shared.rules.media_evaluation_candidates()[0]) == voidptr(shared.rules.rules[0])
+		shared_expected := if disable_media_rule_candidates || retain_media_group_recursion {
+			shared.rules.rules[0]
+		} else { (shared.rules.rules[0].rules or { panic('shared layer') }).rules[0] }
+		assert voidptr(shared.rules.media_evaluation_candidates()[0]) == voidptr(shared_expected)
 		mut child := shared.rules.rules[0].rules or { panic('shared layer') }
 		assert child.media_evaluation_candidates().len == 1
 		assert child.media_evaluation_candidates()[0].type_ == .media

@@ -215,6 +215,7 @@ pub mut:
 mut:
 	media_evaluation_candidates_ []&CSSRule
 	media_evaluation_generation_ u64
+	media_evaluation_flattened_groups_ bool
 }
 
 pub fn CSSRuleList.create(rules []&CSSRule) &CSSRuleList {
@@ -495,7 +496,9 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule_with_context(order Trave
 pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document) bool {
 	mut any_media_queries_changed_match_state := false
 
-	for mut rule in rule_list.media_evaluation_candidates() {
+	mut candidates := rule_list.media_evaluation_candidates()
+	report_media_group_evaluation(rule_list)
+	for mut rule in candidates {
 		match rule.type_ {
 			.container_rule {
 				if mut child_rules := rule.rules {

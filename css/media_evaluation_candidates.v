@@ -41,15 +41,33 @@ fn (mut rule_list CSSRuleList) media_evaluation_candidates() []&CSSRule {
 		rule_list.media_evaluation_candidates_[i] = unsafe { nil }
 	}
 	rule_list.media_evaluation_candidates_.clear()
+	rule_list.media_evaluation_flattened_groups_ = false
 	for rule in rule_list.rules {
 		match rule.type_ {
 			.media, .import_rule {
 				// Keep imports even before loading: the imported sheet can arrive later.
 				rule_list.media_evaluation_candidates_ << rule
 			}
-			.container_rule, .function_rule, .layer_block, .scope, .style, .supports {
+			.container_rule, .function_rule, .layer_block, .scope, .style {
 				if mut children := rule.rules {
-					// Include inactive groups too, preserving their delayed first evaluation.
+					child_candidates := children.media_evaluation_candidates()
+					if child_candidates.len != 0 {
+						if retain_media_group_recursion || child_candidates.len > media_group_flatten_limit
+							- rule_list.media_evaluation_candidates_.len {
+							rule_list.media_evaluation_candidates_ << rule
+						} else {
+							// Evaluation traverses these groups unconditionally. Keep
+							// their live descendants in the same order and avoid
+							// reentering each intermediate list on every evaluation.
+							rule_list.media_evaluation_candidates_ << child_candidates
+							rule_list.media_evaluation_flattened_groups_ = true
+						}
+					}
+				}
+			}
+			.supports {
+				if mut children := rule.rules {
+					// Preserve the live supports gate and its delayed first evaluation.
 					if children.media_evaluation_candidates().len != 0 {
 						rule_list.media_evaluation_candidates_ << rule
 					}
