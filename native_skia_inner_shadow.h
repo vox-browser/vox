@@ -31,8 +31,49 @@ static sk_sp<SkData> inset_picture_bytes(SkPicture* picture, bool multisampled)
 }
 
 #ifdef VOX_TEST_CLIPPED_INSET_SHADOWS
-static unsigned s_test_clipped_inset_shadows;
+static unsigned s_test_clipped_inset_shadows, s_test_batched_inset_shadows;
 #endif
+
+// The root tiles a picture covers render and read back in one GPU submission
+// instead of one per tile. Each request keeps its complete tile target and
+// multisampling choice, so every pixel matches the serial tiled replay.
+static bool draw_root_picture_batch(std::vector<uint32_t>& pixels, int width, int height,
+    RasterRegion const& region, float page_x, float page_y, float scroll_y, float scale,
+    SkPicture* picture, sk_sp<SkData> const& bytes, sk_sp<SkData>& multisampled_bytes,
+    bool direct_backdrop = false)
+{
+    auto draw = direct_backdrop ? picture_regions_backdrop_draw() : picture_regions_draw();
+    auto const* disabled = std::getenv("VOX_DISABLE_INSET_PICTURE_BATCH");
+    if (!draw || (disabled && disabled[0] && std::strcmp(disabled, "0") != 0)
+        || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
+        || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2) return false;
+    long first_x = std::lround((region.left - page_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y + s_root_raster_scroll_y) * scale);
+    int content_height = std::max(1, int(std::ceil(s_raster_layer_height * scale)));
+    int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2));
+    VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
+    return vox_draw_chromium_raster_grid_batch(pixels, width, height,
+        first_x, first_y, grid, [&](auto& tiles) {
+            std::vector<VoxGraphitePictureRegion> requests;
+            requests.reserve(tiles.size());
+            for (auto& tile : tiles) {
+                bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), tile.cell);
+                if (msaa && !multisampled_bytes) multisampled_bytes = inset_picture_bytes(picture, true);
+                auto const& selected = msaa ? multisampled_bytes : bytes;
+                if (!selected) return false;
+                requests.push_back({
+                    {tile.x, tile.y, tile.width, tile.height, tile.width * 4,
+                        reinterpret_cast<uint8_t*>(tile.pixels.data())},
+                    selected->data(), selected->size(),
+                    {1, 0, float(tile.offset_x), 0, 1, float(tile.offset_y), 0, 0, 1}});
+            }
+            int result = draw(requests.data(), int(requests.size()), grid.width, grid.height);
+            if (result && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_PICTURE_BATCH inset tiles=%zu target=%dx%d\n",
+                    requests.size(), grid.width, grid.height);
+            return result != 0;
+        }, std::getenv("VOX_DISABLE_LARGE_DECORATION_BATCH") ? 1024 * 1024 : 4 * 1024 * 1024);
+}
 
 extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
     float const* outer_data, float const* inner_data, float const* content_data,
@@ -156,7 +197,13 @@ extern "C" int ladybird_v_skia_draw_inner_box_shadow(CGContextRef destination,
         auto bytes = inset_picture_bytes(picture.get(), false);
         sk_sp<SkData> multisampled_bytes;
         if (!bytes) return failed;
-        bool rendered = draw_chromium_root_raster_grid(pixels, width, height,
+        static bool const batched = !std::getenv("VOX_DISABLE_INSET_SHADOW_BATCH");
+        bool rendered = batched && draw_root_picture_batch(pixels, width, height, region,
+            page_x, page_y, scroll_y, scale, picture.get(), bytes, multisampled_bytes);
+#ifdef VOX_TEST_CLIPPED_INSET_SHADOWS
+        if (rendered) ++s_test_batched_inset_shadows;
+#endif
+        if (!rendered) rendered = draw_chromium_root_raster_grid(pixels, width, height,
             region, page_x, page_y, scroll_y, scale,
             [&](auto& tile, long offset_x, long offset_y, bool multisampled) {
                 if (multisampled && !multisampled_bytes)
@@ -254,38 +301,9 @@ static bool draw_inset_picture_batch(InsetDecorationRecording const& group, SkPi
     sk_sp<SkData> const& bytes, sk_sp<SkData>& multisampled_bytes, std::vector<uint32_t>& pixels,
     bool direct_backdrop = false)
 {
-    auto draw = direct_backdrop ? picture_regions_backdrop_draw() : picture_regions_draw();
-    auto const* disabled = std::getenv("VOX_DISABLE_INSET_PICTURE_BATCH");
-    if (!draw || (disabled && disabled[0] && std::strcmp(disabled, "0") != 0)
-        || !s_raster_layer_is_root || s_msaa_grid_columns <= 0
-        || s_msaa_grid_width <= 2 || s_msaa_grid_height <= 2) return false;
-    long first_x = std::lround(group.region.left * group.scale);
-    long first_y = std::lround((group.region.top - group.page_y + group.scroll_y
-        + s_root_raster_scroll_y) * group.scale);
-    int content_height = std::max(1, int(std::ceil(s_raster_layer_height * group.scale)));
-    int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2));
-    VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
-    return vox_draw_chromium_raster_grid_batch(pixels, group.width, group.height,
-        first_x, first_y, grid, [&](auto& tiles) {
-            std::vector<VoxGraphitePictureRegion> requests;
-            requests.reserve(tiles.size());
-            for (auto& tile : tiles) {
-                bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), tile.cell);
-                if (msaa && !multisampled_bytes) multisampled_bytes = inset_picture_bytes(picture, true);
-                auto const& selected = msaa ? multisampled_bytes : bytes;
-                if (!selected) return false;
-                requests.push_back({
-                    {tile.x, tile.y, tile.width, tile.height, tile.width * 4,
-                        reinterpret_cast<uint8_t*>(tile.pixels.data())},
-                    selected->data(), selected->size(),
-                    {1, 0, float(tile.offset_x), 0, 1, float(tile.offset_y), 0, 0, 1}});
-            }
-            int result = draw(requests.data(), int(requests.size()), grid.width, grid.height);
-            if (result && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
-                std::fprintf(stderr, "VOX_PICTURE_BATCH inset tiles=%zu target=%dx%d\n",
-                    requests.size(), grid.width, grid.height);
-            return result != 0;
-        }, std::getenv("VOX_DISABLE_LARGE_DECORATION_BATCH") ? 1024 * 1024 : 4 * 1024 * 1024);
+    return draw_root_picture_batch(pixels, group.width, group.height, group.region, 0,
+        group.page_y, group.scroll_y, group.scale, picture, bytes, multisampled_bytes,
+        direct_backdrop);
 }
 
 #ifdef VOX_TEST_CLIPPED_DECORATION_GROUPS

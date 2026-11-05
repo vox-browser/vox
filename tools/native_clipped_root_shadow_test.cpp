@@ -122,18 +122,24 @@ int main()
     ++cases;
     // Inset shadows replay a picture of the box over its backdrop in the same
     // document-anchored tiles; a strip rasterizes and composites only its rows.
+    // The reference replays tile by tile; strips render their tiles in one
+    // batched submission.
     for (float scroll : {0.f, 37.5f, 240.f}) {
+        setenv("VOX_DISABLE_INSET_PICTURE_BATCH", "1", 1);
         auto full = draw_card_shadow(scroll, 0, 0, {}, true);
+        unsetenv("VOX_DISABLE_INSET_PICTURE_BATCH");
         if (full == untouched) {
             std::cerr << "Inset shadow painted nothing\n";
             return 1;
         }
         for (float strip_top : {42.f, 121.f, 131.5f, 400.f, 620.f, 700.f}) {
             auto before = s_test_clipped_inset_shadows;
+            auto batched = s_test_batched_inset_shadows;
             auto strip = draw_card_shadow(scroll, strip_top, 20, {}, true);
             // A strip outside the box leaves nothing to rasterize.
             bool touches = strip_top + 20 > 120.5f - 2 && strip_top < 640.5f + 2;
             assert(s_test_clipped_inset_shadows == before + (touches ? 1 : 0));
+            if (touches) assert(s_test_batched_inset_shadows == batched + 1);
             int first = int(strip_top * scale), last = int((strip_top + 20) * scale);
             for (int y = 0; y < css_height * scale; ++y) {
                 auto const& expected = y >= first && y < last ? full : untouched;
