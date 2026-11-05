@@ -608,7 +608,12 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
     static bool const disable_video = std::getenv("VOX_GPU_CANVAS_DISABLE_VIDEO") != nullptr;
     bool video = (descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME) && !disable_video
         && gpu_canvas_api()->draw_image_msaa;
-    if (rounded_mask || (msaa && !video)) {
+    // Explicit clip coverage and nearest sampling retain their isolated path.
+    // The mixed-MSAA pass can batch ordinary filtered images like video.
+    bool static_msaa = !(descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME)
+        && !(descriptor.flags & VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP)
+        && !descriptor.nearest && std::getenv("VOX_GPU_CANVAS_MSAA_IMAGES") && gpu_canvas_api()->draw_image_msaa;
+    if (rounded_mask || (msaa && !video && !static_msaa)) {
         gpu_canvas_note_miss(destination, leaf, msaa);
         gpu_canvas_decline(destination);
         return 0;
@@ -636,7 +641,7 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
         gpu_canvas_flush();
         return 0;
     }
-    gpu_canvas_name_leaf(*frame, video ? (msaa ? "video-msaa" : "video") : "image",
+    gpu_canvas_name_leaf(*frame, video ? (msaa ? "video-msaa" : "video") : (msaa ? "image-msaa" : "image"),
         bounds, descriptor.flags, clips.size());
     frame->cpu_stale = true;
     ++frame->draws;

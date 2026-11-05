@@ -193,6 +193,21 @@ static void draw_video_leaves(CGContextRef context, bool canvas)
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 140, 1, 0, 1, 1));
 }
 
+static float s_static_image_offset;
+static int s_static_image_nearest;
+static bool s_static_image_explicit_clip;
+static void draw_static_msaa_image(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_replaced_image", 19, 0));
+    float radii[] {13, 13, 13, 13, 0, 0, 0, 0};
+    assert(ladybird_v_skia_draw_rgba_image(context, s_video_frame.data(), 1426, 1080, 1426 * 4,
+        52.5f + s_static_image_offset, 81.25f, 238, 180, 0, 0, 1426, 1080,
+        52.5f + s_static_image_offset, 81.25f, 238, 180,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, .85f, s_static_image_nearest,
+        2 | (s_static_image_explicit_clip ? VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP : 0),
+        s_video_rounded ? radii : nullptr));
+}
+
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
 static unsigned s_read_calls, s_successful_reads, s_fail_reads;
 static bool s_expect_native_grid;
@@ -649,6 +664,39 @@ static void test_bitmap_inspection_pending_inputs()
 int main(int argc, char** argv)
 {
     test_bitmap_inspection_pending_inputs();
+    if (argc == 2 && !std::strcmp(argv[1], "--static-msaa-images")) {
+        setenv("VOX_GPU_CANVAS_MSAA_IMAGES", "1", 1);
+        assert(gpu_canvas_api()->draw_image_msaa);
+        auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        s_backend_read = api->read; api->read = counted_read;
+        int tiles[] {0, 1, 2, 3, 4, 5, 6, 7};
+        int error = 0; unsigned cases = 0;
+        for (bool full : {false, true}) for (int coverage : {1, 2})
+        for (bool rounded : {false, true}) for (int alpha : {128, 255})
+        for (float offset : {0.f, .375f}) for (int nearest : {0, 1}) for (bool explicit_clip : {false, true}) {
+            s_video_rounded=rounded; s_static_image_offset=offset; s_static_image_nearest=nearest;
+            s_static_image_explicit_clip=explicit_clip;
+            for (size_t at=3; at<s_video_frame.size(); at+=4) s_video_frame[at]=alpha;
+            s_raster_layer_height=css_height;
+            ladybird_v_skia_set_msaa_grid(coverage ? tiles : nullptr,
+                coverage == 1 ? 8 : coverage == 2 ? 1 : 0,512,256,2);
+            auto reference=render(false,false,draw_static_msaa_image,full);
+            auto candidate=render(true,false,draw_static_msaa_image,full);
+            bool admitted=!nearest && !explicit_clip;
+            assert(s_draws == unsigned(admitted) && s_declined == unsigned(!admitted)
+                && s_uploads == unsigned(admitted));
+            for (size_t at=0; at<reference.size(); ++at)
+                error=std::max(error,std::abs(int(reference[at])-int(candidate[at])));
+            if (error>3) {
+                std::cerr << "Static MSAA image full=" << full << " coverage=" << coverage
+                    << " rounded=" << rounded << " alpha=" << alpha << " offset=" << offset
+                    << " nearest=" << nearest << " max error=" << error << '\n'; return 1;
+            }
+            ++cases;
+        }
+        std::cout << "Static MSAA images: " << cases << " ordinary/canvas frames, max error " << error << '\n';
+        return 0;
+    }
     if (argc == 2 && !std::strcmp(argv[1], "--layer-pixels")) {
         setenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS", "1", 1);
         assert(gpu_canvas_api()->draw_layer_pixels);

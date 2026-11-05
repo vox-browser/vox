@@ -41,6 +41,7 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     -Wl,-rpath,"$repo_dir/Build/v/Vox.app/Contents/MacOS" \
     -o "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test"
+"$output_dir/native_gpu_canvas_test" --static-msaa-images
 "$output_dir/native_gpu_canvas_test" --failed-readback
 "$output_dir/native_gpu_canvas_test" --iosurface-readback
 "$output_dir/native_gpu_canvas_test" --partial-readback
