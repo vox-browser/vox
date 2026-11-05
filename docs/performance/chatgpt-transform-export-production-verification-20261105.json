@@ -1,0 +1,101 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-transform-export-production-20261105-evidence.zip",
+      "sha256": "66a248408f02df0c8fab8d628cf7288b75bb76d495f4f1923e7e62db2dd5e340",
+      "bytes": 1366574
+    },
+    {
+      "path": "docs/performance/chatgpt-transform-export-20261105-evidence.zip",
+      "sha256": "c2c97cd09f76a1ecee7c46735154448c0519a33cf7143a4be079a4025c78930e",
+      "bytes": 19746645
+    },
+    {
+      "path": "docs/performance/chatgpt-transform-export-development-20261105.zip",
+      "sha256": "4caeefa204626b668108e259a3c1f02ae492f14b4b416f79e5e74e0a1340e351",
+      "bytes": 18913
+    },
+    {
+      "path": "docs/performance/chatgpt-transform-export-focused-20261105-evidence.zip",
+      "sha256": "283be61f85a49622ac4a9410aaf76236f080dc8e284de04f4cec2f2a93b685ca",
+      "bytes": 39913656
+    },
+    {
+      "path": "docs/performance/chatgpt-completed-output-retirement-20261105.zip",
+      "sha256": "1d48d06919a9dcca81fd80dfa25a682179fb5e9b658059f7073449d8c1facd70",
+      "bytes": 58008078
+    },
+    {
+      "path": "docs/performance/chatgpt-legacy-generated-retirement-20261105.zip",
+      "sha256": "37b1fbd940c35348a272f61ea2dc4ca7b0cec9ccf3da71b393cc2606c798523c",
+      "bytes": 70690897
+    },
+    {
+      "path": "docs/performance/chatgpt-transform-export-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "c0f47e3438eebdf36cef138c4316cd101c86013947519d43251525e2708dbc41",
+      "bytes": 1310361
+    },
+    {
+      "path": "docs/performance/chatgpt-transform-export-production-r1-matched-20261105-evidence.zip",
+      "sha256": "f1e21fcef5c9f2fa161cf38b63594d7012e30583167af4dddeb8a472f65b8b78",
+      "bytes": 2699323
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "2ef9f79d170a63c3a26e413cd8bd387760928564e671be48e61ceef2724ad1c7",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available property-parser and value-export function disassembly",
+      "proof_sha256": "5e5685a9116c62937ef8a6e7bb5114d7ee746ec46475ed5105c8840e7fe99d2b",
+      "source_hashes": {
+        "css/value_parse_export.v": "50fd3b41dce0d9731500139eb3a954c5f9eb9f4fec7070998790b4a26f25b89e",
+        "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+        "css/transformation_value_export.v": "ea6c17b30f12dbb0c62ff098e52a61f23b4c35d2c714b371b6f816f22bee0cdf"
+      },
+      "qualification": "The transform exporter validates one to sixteen numeric arguments before publication and reconstructs its boxed payload and argument vector into the caller owner. Closed calculated children use the existing bounded deep exporter; dependent, oversized and unsupported graphs retain the original reparse. Control disables only transform export while calculated export remains enabled in both variants. No retained cache or new owner. Separate execution markers establish eligibility; no source-proof timing credit."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-transform-export-production-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 1131216896,
+    "elapsed_seconds": 2.0301998329999997,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "css/value_parse_export.v": "50fd3b41dce0d9731500139eb3a954c5f9eb9f4fec7070998790b4a26f25b89e",
+    "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+    "css/calculated_value_export_test.v": "116a627cb5e98f1ee3d3b2ac1be60d1225c08b2850a25d490179561792af858d",
+    "css/value_parse_export_test.v": "3cbbf262911d9afba343153c482b6faa3605295b3802f1ebafc6e641c34af847",
+    "css/transformation_value_export.v": "ea6c17b30f12dbb0c62ff098e52a61f23b4c35d2c714b371b6f816f22bee0cdf",
+    "css/transformation_value_export_test.v": "9a489359cf79f5e6dfb075d41926d0608b1623e5e5764838ecbe599bc185c52a"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 1392,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 30171170996,
+    "min_brave_lower": 18683879412,
+    "numerator": 603423419920,
+    "denominator": 354993708828,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Raw control/candidate arithmetic and the required broad-check cadence are verified independently. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. The component gain, dependent-fallback regression and rejected development and infrastructure checks remain retained. The 5%-below-Brave target remains unmet."
+}

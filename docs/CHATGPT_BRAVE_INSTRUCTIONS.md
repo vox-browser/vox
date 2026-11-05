@@ -4076,3 +4076,61 @@ The latest completed browser contains the transform diagnostic flag but predates
 its committed source proof; the newer shared build failed. A source-verified
 production comparison remains pending. Whole-page credit and broad cadence remain
 zero. The **5%-below-Brave target remains unmet**.
+
+
+### Numeric transform export: production comparison (2026-11-05)
+
+The subsequent completed parallel bundle includes `013c9d6b9` at recorded source
+head `6ccf1b4998d0d6863e98b500d269e870f4e4ddcf`. Its executable SHA-256 is
+`2ef9f79d170a63c3a26e413cd8bd387760928564e671be48e61ceef2724ad1c7`, with 33
+C units. Exact owned-source Git blobs, stable aggregate build-input hashes and
+available parser/export disassembly authenticate the candidate and independent
+transform-only reparse control. A nonblocking shared publication lease pins the
+canonical executable and native libraries throughout all captures. The previous
+shared build failure remains retained; no manual or duplicate build is requested.
+
+Four separate diagnostic captures verify actual transform export only in the
+candidate. Eight subsequent unprofiled captures form four alternating Vox/Brave
+pairs with Vox control/candidate/candidate/control order. All 12 captures pass
+script bootstrap, full content/button identity, unchanged per-engine exact pixel
+references and normal browser/kernel exits. Cross-browser pixel equality is not
+claimed. The original SOCKS fixture and author scripts remain unchanged.
+
+The workload retains the fresh-launch exclusive-coalition interval through
+completed encoded document PNG capture, including startup and native target/window
+setup, with the existing audit/delivery/teardown endpoints. Each process uses a
+fresh private profile/cache, 1024 by 768 CSS-pixel viewport, backing scale two and
+unfocused five-second settle. OS filesystem/shader caches remain retained; GPU
+execution and outside-coalition services remain excluded. This is a frozen-page
+diagnostic rather than live-site, isolated rendering or scrolling evidence.
+
+| Unprofiled Vox observation | Reparse control instructions | Export candidate instructions |
+| --- | ---: | ---: |
+| First | 30,171,170,996 | 29,699,357,426 |
+| Second | 29,676,642,247 | 30,026,960,878 |
+| Median | 29,923,906,621.5 | 29,863,159,152.0 |
+
+The candidate median is 0.2030% lower, but the ranges overlap. The highest
+candidate exceeds the lowest control by 350,318,631 instructions, making
+conservative separation **-350,318,631**. Whole-page credit remains zero;
+no 5,000,000-instruction broad checkpoint is due and cadence remains zero.
+The supported component gains and fallback regressions remain component results.
+No attempt is dropped or repeated to improve these counts.
+
+Control captures complete 456 and 457 frame checkpoints; candidates complete
+455 and 460. Counts are not normalized by frame count. One-minute host load spans
+about 8.1–16.0 on 18 CPUs, further qualifying attribution of the small point
+difference. The observed Vox/Brave bounds remain well above the requested 0.95,
+and four pairs remain below seven-pair acceptance. The **5%-below-Brave target
+remains unmet**.
+
+The controller and outer guard exit zero over 116.95 seconds, peak at
+1,679,917,056 sampled RSS bytes and adopt 42 process identities without an
+adoption error. The publication lease is released. Finalization and independent
+verification also exit zero. The
+[production receipt](performance/chatgpt-transform-export-production-20261105.json)
+and [verification receipt](performance/chatgpt-transform-export-production-verification-20261105.json)
+authenticate eight archives, all 1,392 focused calls, every failed development and
+infrastructure attempt, all component scenes, 12 valid captures, raw commands and
+counters, source/control proof, original PNGs, audits and exact comparison
+arithmetic. No whole-page, Brave, live-site or scrolling improvement is claimed.
