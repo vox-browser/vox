@@ -114,6 +114,15 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 	return true
 }
 
+fn retained_inline_text_fonts_are_current(inputs []RetainedInlineInput) bool {
+	for input in inputs {
+		if text := input.node.as_text_node() {
+			if !retained_text_font_owner_is_current(text) { return false }
+		}
+	}
+	return true
+}
+
 fn retained_inline_inputs_are_current(inputs []RetainedInlineInput) bool {
 	for index, input in inputs {
 		if svg_input := input.simple_svg {
@@ -140,7 +149,8 @@ fn retained_inline_inputs_are_current(inputs []RetainedInlineInput) bool {
 			}
 		}
 		if text := input.node.as_text_node() {
-			if text.text_for_rendering() != input.text { return false }
+			if text.text_for_rendering() != input.text
+				|| !retained_text_font_owner_is_current(text) { return false }
 		}
 	}
 	return true
@@ -270,6 +280,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	}
 	result := run_closed_inline_layout(mut state, containing_block, mut used, mode,
 		space, context)
+	if !retained_inline_text_fonts_are_current(inputs) { return result }
 	if used.line_boxes.len == 0 || !used.line_boxes.any(it.fragments_.len > 0) { return result }
 	mut snapshots := []RetainedInlineValues{cap: inputs.len - 1}
 	for input in inputs[1..] {

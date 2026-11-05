@@ -211,6 +211,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	width_constraint := used.width_constraint
 	height_constraint := used.height_constraint
 	result := layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
+	if !retained_inline_text_fonts_are_current(inputs) { return result }
 	mut retained := retain_geometry_allocations()
 	defer { retained.finish() }
 	mut snapshots := []RetainedBlockValues{cap: inputs.len - 1}

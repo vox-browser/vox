@@ -94,7 +94,8 @@ fn inline_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 			return false
 		}
 		if text := input.node.as_text_node() {
-			if text.text_for_rendering() != input.text { return false }
+			if text.text_for_rendering() != input.text
+				|| !retained_text_font_owner_is_current(text) { return false }
 		}
 	}
 	return true
@@ -160,7 +161,8 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	mut inputs := []RetainedInlineInput{}
-	if !collect_retained_inline_inputs(root, true, mut inputs) { return result }
+	if !collect_retained_inline_inputs(root, true, mut inputs)
+		|| !retained_inline_text_fonts_are_current(inputs) { return result }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	for input in inputs {
 		owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() }
