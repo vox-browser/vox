@@ -2933,3 +2933,60 @@ with **no whole-page instruction credit**. The broad-check cadence remains
 zero. Browser validation requires a completed bundle whose source receipt
 proves the final change; the original SOCKS capture, scripts and references
 remain unchanged. **The 5%-below-Brave target remains unmet**.
+
+
+## November 5: matrix multiplication production comparison
+
+The initial available bundles contain a matrix diagnostic string, but their
+recorded source heads do not match the owned feature files. No browser samples
+are launched against them. A later shared build completes with identical
+before/after aggregate build-input hashes and exact owned-source blobs at its
+recorded head. The harness acquires a nonblocking shared publication lease on
+33-unit parallel executable
+`25c6fc5a0763e211baa538fe8746649a58381e25b62ab603e5dc1ee45b5e081e`.
+Available multiplication/accessor disassembly is retained; no sealed-C claim
+is made. No browser bundle is copied and no additional build is requested.
+
+All **12 fresh production captures pass bootstrap, complete content and exact
+unchanged pixels**. The direct-field marker appears only in the candidate
+diagnostic. Matched captures disable diagnostics and retain the original
+accessor loop as their control.
+
+| Unprofiled frozen-page variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Accessor control 1 | 29,692,488,336 |
+| Direct-field candidate 1 | 29,703,629,551 |
+| Direct-field candidate 2 | 29,587,253,808 |
+| Accessor control 2 | 29,421,808,702 |
+| Control median | 29,557,148,519 |
+| Candidate median | 29,645,441,679.5 |
+
+The candidate median is **0.299% higher**. The observed ranges overlap, with a
+conservative separation of **−281,820,849 instructions**. Therefore **no
+whole-page saving is credited**, no broad checkpoint is triggered and the
+cadence remains zero. Both candidates and controls remain retained; the
+component reductions do not establish a whole-page improvement.
+
+Control frame checkpoints are 420/360 versus 378/376 for candidates. One-minute
+host load ranges from 19.80 to 71.23 on 18 CPUs. The four Brave reference
+intervals span 16,395,030,859 to 17,237,823,506 observed instructions. Heavy
+contention, varying frame work and only two samples per variant limit causal
+attribution. Four total matched pairs fall short of seven-pair acceptance,
+and **the requested 5% advantage over Brave remains unmet**.
+
+The original SOCKS fixture, author scripts, content/pixel references, fresh
+private profiles/caches, five-second unfocused settle, 1024×768 viewport,
+scale 2 and exclusive-coalition creation-through-encoded-document-PNG scope
+remain unchanged. OS filesystem/shader caches are retained; GPU and
+outside-coalition services are excluded. The outer guard exits zero, adopts
+47 process identities without error and peaks at 1,736,146,944 sampled RSS
+bytes under 12 GiB. Both phase controllers exit zero; the comparison driver's
+separate exit one records the unmet Brave gate. No live-site,
+isolated-rendering or scrolling improvement is established.
+
+The [completed production receipt](performance/chatgpt-matrix-multiply-production-20261105.json)
+links all raw counters, audits, PNGs, source proofs, commands, actual exits and
+four verified archives. It retains the unavailable source-proof checks and
+the wider CSS provenance/opacity failures in both variants; **no overall CSS
+suite pass is claimed**. The publication lease is released. This result earns
+no page instruction credit or 5%-below-Brave acceptance.
