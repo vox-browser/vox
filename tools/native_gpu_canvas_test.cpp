@@ -112,6 +112,30 @@ static void draw_outline_leaves(CGContextRef context, bool canvas)
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 240, 80, 60, 255, 1, 0, 1, 1));
 }
 
+// vlang.io's code panels: a translucent CSS linear-gradient background in a
+// rounded clip repeats a picture of its generated-image tile.
+static void draw_pattern_leaves(CGContextRef context, bool canvas)
+{
+    float segments[5 * 12] {};
+    auto segment = [&](int index, float op, float x, float y) {
+        segments[index * 12] = op; segments[index * 12 + 1] = x; segments[index * 12 + 2] = y;
+    };
+    segment(0, 0, 45, 84); segment(1, 1, 335, 84); segment(2, 1, 335, 196);
+    segment(3, 1, 45, 196); segment(4, 5, 0, 0);
+    float stops[] {0.07f, 0.11f, 0.16f, 0.56f, 0, 0.06f, 0.08f, 0.12f, 0.56f, 1};
+    float clip[] {45, 84, 290, 112, 10, 10, 10, 10, 10, 10, 10, 10};
+    float tile[] {45, 84, 290, 112};
+    ladybird_v_skia_set_css_gradient_tile_bounds(tile);
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_gradient", 13, 0) == 1);
+    assert(ladybird_v_skia_draw_clipped_svg_linear_gradient_path(context, segments, 5, 0,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 0, 0, 0, 0, 4,
+        45, 84, 335, 196, 1, 0, 0, 1, 0, 0, 3, 0, stops, 2, 1, 1, clip, nullptr));
+    ladybird_v_skia_set_css_gradient_tile_bounds(nullptr);
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 70, 120, 200, 60, 8, 8, 8, 8, 8, 8, 8, 8,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 140, 1, 0, 1, 1));
+}
+
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
@@ -279,6 +303,20 @@ int main()
             << s_uploads << " flushes=" << s_flushes << " error=" << outline_error << '\n';
         return 1;
     }
+    auto pattern_reference = render(false, false, draw_pattern_leaves);
+    auto pattern_candidate = render(true, false, draw_pattern_leaves);
+    int pattern_error = 0;
+    size_t pattern_painted = 0;
+    for (size_t at = 0; at < pattern_reference.size(); ++at) {
+        pattern_error = std::max(pattern_error, std::abs(int(pattern_candidate[at]) - int(pattern_reference[at])));
+        if (pattern_reference[at] != original[at]) ++pattern_painted;
+    }
+    if (s_draws != 2 || s_declined || s_uploads != 1 || s_flushes || pattern_error > 3
+        || pattern_painted < 50000) {
+        std::cerr << "Gradient tile took the wrong path: draws=" << s_draws << " uploads=" << s_uploads
+            << " flushes=" << s_flushes << " error=" << pattern_error << " painted=" << pattern_painted << '\n';
+        return 1;
+    }
     // Over Chromium MSAA tiles they draw in a multisampled scratch pass, as
     // their tiled replay multisamples each tile.
     int const msaa_tiles[] {0, 1, 2, 3, 4, 5, 6, 7};
@@ -318,5 +356,6 @@ int main()
         << differing << " channels differ), inset shadows within " << inset_error
         << " (" << msaa_error << " in MSAA tiles, where plain replay differs by " << msaa_shift
         << "), outlines and ellipses within " << outline_error
+        << ", CSS gradient tiles within " << pattern_error
         << "; outside pixels, CPU paint order, CPU leaves and shared recordings preserved\n";
 }

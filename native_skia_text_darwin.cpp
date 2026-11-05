@@ -6693,8 +6693,36 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         if (s_gpu_canvas && s_gpu_canvas->destination == destination) {
             std::vector<VoxGraphiteCanvasClip> clips;
             GpuCanvasFrame* frame = nullptr;
-            if (picture_pattern) gpu_canvas_decline(destination);
+            static bool const patterns = !std::getenv("VOX_GPU_CANVAS_DISABLE_GRADIENT_TILES");
+            if (picture_pattern && !(patterns && gpu_canvas_api()->draw_picture))
+                gpu_canvas_decline(destination);
             else frame = gpu_canvas_for_leaf(destination, clips);
+            if (frame && picture_pattern) {
+                // A CSS generated-image tile repeats a picture of its gradient.
+                // Record the same clipped, undithered pattern fill in device
+                // space; the canvas replays it in the frame's GPU pass rather
+                // than reading the backdrop into a picture of its own.
+                auto device = SkMatrix::Concat(SkMatrix::Scale(frame->scale, frame->scale), matrix);
+                auto bounds = device.mapRect(local_bounds).makeOutset(4, 4);
+                SkPictureRecorder recorder;
+                auto* canvas = recorder.beginRecording(bounds);
+                canvas->setMatrix(device);
+                if (clip) canvas->clipRRect(rounded_rect_from_data(clip), SkClipOp::kIntersect, true);
+                if (ancestor_clip)
+                    canvas->clipRRect(rounded_rect_from_data(ancestor_clip), SkClipOp::kIntersect, true);
+                canvas->drawPath(path, paint);
+                auto picture = recorder.finishRecordingAsPicture();
+                auto bytes = picture ? picture->serialize() : nullptr;
+                float canvas_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+                if (bytes && gpu_canvas_api()->draw_picture(bytes->bytes(), bytes->size(),
+                        canvas_bounds, clips.data(), int(clips.size()), 0)) {
+                    gpu_canvas_name_leaf(*frame, "pattern", bounds, gradient_kind, clips.size());
+                    frame->cpu_stale = true;
+                    ++frame->draws;
+                    if (!gpu_canvas_verify()) return 1;
+                } else gpu_canvas_flush();
+                frame = nullptr;
+            }
             if (frame) {
                 auto scale = SkMatrix::Scale(frame->scale, frame->scale);
                 auto gpu = descriptor;
