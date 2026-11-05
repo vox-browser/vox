@@ -34,6 +34,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 extern int ladybird_v_skia_gpu_canvas_begin(CGContextRef, const int *, int);
 extern void ladybird_v_skia_gpu_canvas_cpu_access(void);
 extern void ladybird_v_skia_gpu_canvas_end(void);
+extern int ladybird_v_skia_bitmap_pixels_are_current(CGContextRef) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_frame_surface(void *) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_document_top(int) __attribute__((weak_import));
@@ -4452,6 +4453,67 @@ static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
 	return pixels;
 }
 
+#include "native_opacity_group_darwin.h"
+
+#ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
+static unsigned native_test_empty_pointwise_filters;
+#endif
+
+// Pointwise filters preserve zero alpha. If every source pixel that can reach
+// the destination clip is transparent, filtering and source-over publication
+// cannot change that destination. Include the ordinary crop's guard pixels;
+// blur, shadows, SVG graphs and non-integral mappings retain ordinary replay.
+static BOOL native_css_filter_visible_input_is_empty(NativeCSSFilterLayer const *layer) {
+    if (!getenv("VOX_SKIP_EMPTY_POINTWISE_FILTERS") || !layer->active || !layer->context
+        || layer->svg_filter_recording || layer->gradient_blur_recording) return NO;
+    CGContextRef context = layer->context;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (!ladybird_v_skia_bitmap_pixels_are_current
+        || !ladybird_v_skia_bitmap_pixels_are_current(context)) return NO;
+#endif
+    size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
+    size_t pitch = CGBitmapContextGetBytesPerRow(context);
+    CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
+    if (!width || !height || width > INT_MAX || height > INT_MAX
+        || width > SIZE_MAX / 4 || pitch < width * 4 || pitch > 64 * 1024 * 1024 / height
+        || CGBitmapContextGetBitsPerComponent(context) != 8
+        || CGBitmapContextGetBitsPerPixel(context) != 32
+        || (info != (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
+            && info != (kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little))) return NO;
+    CGRect whole = CGRectMake(0, 0, width, height);
+    if (!native_css_filter_has_pointwise_device_mapping(layer, whole)) return NO;
+    for (size_t index = 0; index < layer->operation_count; ++index) {
+        NativeCSSFilterOperation operation = layer->operations[index];
+        if (!isfinite(operation.first) || !isfinite(operation.second)) return NO;
+    }
+    CGContextFlush(context);
+    const uint8_t *pixels = CGBitmapContextGetData(context);
+    if (!pixels) return NO;
+    CGRect rect = native_css_filter_output_rect(layer, whole);
+    size_t left = rect.origin.x, right = CGRectGetMaxX(rect);
+    size_t top = height - CGRectGetMaxY(rect), bottom = height - rect.origin.y;
+    for (size_t y = top; y < bottom; ++y) {
+        const uint32_t *row = (const uint32_t *)(pixels + y * pitch);
+        size_t x = left;
+#if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+        for (; right - x >= 16; x += 16) {
+            uint32x4x4_t block = vld1q_u32_x4(row + x);
+            uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
+                vorrq_u32(block.val[2], block.val[3]));
+            if (vmaxvq_u32(ink)) return NO;
+        }
+#endif
+        for (; x < right; ++x) if (row[x]) return NO;
+    }
+#ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
+    ++native_test_empty_pointwise_filters;
+#endif
+    if (getenv("VOX_EMPTY_POINTWISE_FILTER_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_EMPTY_POINTWISE_FILTER width=%.0f height=%.0f operations=%zu\n",
+            rect.size.width, rect.size.height, layer->operation_count);
+    return YES;
+}
+
 #ifdef VOX_TEST_GRAYSCALE_IDENTITY
 static unsigned native_test_grayscale_identities;
 #endif
@@ -4459,8 +4521,6 @@ static unsigned native_test_grayscale_identities;
 #ifdef VOX_TEST_COMPACT_CSS_FILTER_INPUT
 static unsigned native_test_compact_css_filter_inputs;
 #endif
-
-#include "native_opacity_group_darwin.h"
 
 // A cropped CGImage can retain its complete viewport-sized provider. Give
 // pointwise filters an independently owned compact input when their visible
@@ -4695,6 +4755,13 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
+    if (native_css_filter_visible_input_is_empty(&layer)) {
+        [NSGraphicsContext restoreGraphicsState];
+        CGContextRelease(layer.context);
+        free(layer.operations);
+        native_free_svg_filter_graph(&layer);
+        return;
+    }
 	if (layer.borrows_fresh_frame && layer.operation_count == 0
 		&& layer.graph_node_count == 0) {
 		CGContextRestoreGState(layer.context);

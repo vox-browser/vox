@@ -271,6 +271,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
     ladybird_v_skia_finish_shared_recording();
     ladybird_v_skia_set_shared_recording(0, 0, 0);
     if (canvas) {
+        assert(ladybird_v_skia_bitmap_pixels_are_current(context) == int(!s_gpu_canvas->cpu_stale));
         s_draws = s_gpu_canvas->draws;
         s_uploads = s_gpu_canvas->uploads;
         s_flushes = s_gpu_canvas->flushes;
@@ -280,6 +281,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
         unsigned before_final_read = s_successful_reads;
         ladybird_v_skia_gpu_canvas_end();
         assert(!s_gpu_canvas);
+        assert(ladybird_v_skia_bitmap_pixels_are_current(context));
         // Every earlier flush succeeded; final publication adds at most one.
         assert(s_successful_reads - before_final_read == expected_reads - s_flushes);
     }
@@ -622,8 +624,31 @@ static std::vector<uint8_t> render_native_group(bool gpu, bool nested, int blend
     return pixels;
 }
 
+static void test_bitmap_inspection_pending_inputs()
+{
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(nullptr, 32, 32, 8, 128, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color); assert(context);
+    assert(!ladybird_v_skia_bitmap_pixels_are_current(nullptr));
+    assert(ladybird_v_skia_bitmap_pixels_are_current(context));
+    s_isolated_input_recordings[context] = std::make_unique<IsolatedInputRecording>();
+    assert(!ladybird_v_skia_bitmap_pixels_are_current(context));
+    s_isolated_input_recordings.erase(context);
+    s_shared_root_recording = std::make_unique<SharedRootRecording>();
+    s_shared_root_recording->destination = context;
+    assert(!ladybird_v_skia_bitmap_pixels_are_current(context));
+    s_shared_root_recording.reset();
+    s_deferred_layer_destinations[context] = CGRectMake(0, 0, 32, 32);
+    assert(!ladybird_v_skia_bitmap_pixels_are_current(context));
+    s_deferred_layer_destinations.erase(context);
+    assert(ladybird_v_skia_bitmap_pixels_are_current(context));
+    CGContextRelease(context);
+}
+
 int main(int argc, char** argv)
 {
+    test_bitmap_inspection_pending_inputs();
     if (argc == 2 && !std::strcmp(argv[1], "--layer-pixels")) {
         setenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS", "1", 1);
         assert(gpu_canvas_api()->draw_layer_pixels);

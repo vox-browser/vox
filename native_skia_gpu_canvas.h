@@ -807,6 +807,17 @@ extern "C" void ladybird_v_skia_gpu_canvas_cpu_access()
     gpu_canvas_flush();
 }
 
+// Native bitmap inspection must not mistake an omitted speculative raster or
+// pending GPU leaves for transparent input. Older adapters simply do not use
+// this capability; it does not flush or change the recording transaction.
+extern "C" int ladybird_v_skia_bitmap_pixels_are_current(CGContextRef context)
+{
+    return context && !s_isolated_input_recordings.count(context)
+        && !s_deferred_layer_destinations.count(context)
+        && (!s_shared_root_recording || s_shared_root_recording->destination != context)
+        && (!s_gpu_canvas || s_gpu_canvas->destination != context || !s_gpu_canvas->cpu_stale);
+}
+
 extern "C" int ladybird_v_skia_gpu_canvas_defer_filters()
 {
     return s_gpu_canvas && !s_gpu_canvas_read_failed
