@@ -11,6 +11,7 @@ import { captureArchive, captureEncodedResponseCache, installCSSOMAuthorRecorder
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
 import {closeOracleBrowser,requestOracleBrowserClose} from './oracle_shutdown.mjs';
 import {recordOracleFailure} from './oracle_failure.mjs';
+import {prepareOraclePageCache} from './oracle_cache.mjs';
 import {parseArchiveFocus,restoreArchiveFocus} from './archive_focus.mjs';
 import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
 import { navigationObservation } from './navigation.mjs';
@@ -37,6 +38,8 @@ const options = {
     'focus-state': '',
     'profile-template': '',
     'image-animation-policy': 'allowed',
+    'http-cache-policy': 'preserve',
+    'service-worker-policy': 'allow',
     'profile-output': '',
     'pixel-reference': '',
     'proxy-server': '',
@@ -254,6 +257,9 @@ try {
         source:`(${installCSSOMAuthorRecorder.toString()})();`,
     });
     await page.send('Network.enable', options['capture-dir'] || options['cache-preparation-dir'] ? {maxTotalBufferSize: 128 * 1024 * 1024, maxResourceBufferSize: 16 * 1024 * 1024} : {});
+    const pageCache = await prepareOraclePageCache(page, {
+        httpCachePolicy: options['http-cache-policy'], serviceWorkerPolicy: options['service-worker-policy'],
+    });
     if (options['capture-dir'] || options['pixel-reference']) {
         await page.send('Emulation.setDeviceMetricsOverride', {width:1024,height:768,deviceScaleFactor:1,mobile:false});
         await page.send('Emulation.setFocusEmulationEnabled', {enabled:true});
@@ -425,6 +431,7 @@ try {
         oracle_target:{tab_id:oracleTarget.tab_id,target_id:oracleTarget.target.id,
             initial_url:oracleTarget.initial_url,removed_tab_ids:oracleTarget.removed_tab_ids},
         navigation,
+        page_cache: pageCache,
         ...(pixelReference ? {pixel_reference:pixelReference} : {}),
         ...(cachePreparation ? {cache_preparation:cachePreparation} : {}),
         document_fixture: documentFixture,

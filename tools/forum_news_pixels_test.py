@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_ASSETS, brave_identity, capture_replay_references, capture_site_archive, check_filters, check_native,
+                               check_oracle_page_cache,
                                executable_identity, archive_animation_policy,
                                captured_focus_state,
                                native_capture_environment, oracle_command, pixel_status, run_case, seal_capture,
@@ -413,9 +414,50 @@ class ForumNewsPixelTests(unittest.TestCase):
         self.assertEqual(prepared, fresh + ['--profile-template', '/closed-profile'])
         self.assertEqual(prepared[prepared.index('--extension') + 1], '/extension')
         self.assertEqual(prepared[prepared.index('--checker') + 1], '/checker')
+        self.assertEqual(prepared[prepared.index('--http-cache-policy') + 1], 'empty')
+        self.assertEqual(prepared[prepared.index('--service-worker-policy') + 1], 'bypass')
+
+    def test_only_the_verified_warm_profile_retains_http_cache(self):
+        args = SimpleNamespace(extension=Path('/extension'), checker=Path('/checker'),
+                               brave=Path('/brave'), settle=5, profile_template=Path('/seeded-profile'))
+        common = oracle_command(dict(url='https://news.example/'), args)
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            def capture(command, prefix, timeout):
+                self.assertEqual(command[command.index('--http-cache-policy') + 1], 'empty')
+                Path(command[command.index('--profile-output')+1]).mkdir()
+                write_json(Path(command[command.index('--output')+1]), self.report())
+            with patch('forum_news_pixels.guarded', side_effect=capture):
+                prepared = warm_oracle_cache(common, [], output, 60)
+            self.assertEqual(prepared[prepared.index('--http-cache-policy') + 1], 'preserve')
+            self.assertEqual(common[common.index('--http-cache-policy') + 1], 'empty')
+            self.assertEqual(prepared[prepared.index('--service-worker-policy') + 1], 'bypass')
+
+    def test_requested_cache_preparation_must_be_recorded_by_the_oracle(self):
+        command = ['oracle', '--http-cache-policy', 'empty', '--service-worker-policy', 'bypass']
+        report = self.report()
+        check_oracle_page_cache(report, command)
+        for change in [{}, dict(http_cache_policy='preserve', http_cache_cleared=False, service_worker_policy='bypass'),
+                       dict(http_cache_policy='empty', http_cache_cleared=1, service_worker_policy='bypass'),
+                       dict(http_cache_policy='empty', http_cache_cleared=True, service_worker_policy='allow')]:
+            with self.assertRaisesRegex(RuntimeError, 'cache preparation'):
+                check_oracle_page_cache(dict(report, page_cache=change), command)
+
+    def test_a_live_capture_with_unproven_cache_preparation_cannot_be_sealed(self):
+        common = ['oracle', '--http-cache-policy', 'empty', '--service-worker-policy', 'bypass']
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            def capture(command, prefix, timeout):
+                write_json(output/'capture.json', dict(self.report(), page_cache={}))
+            with patch('forum_news_pixels.guarded', side_effect=capture), \
+                    patch('forum_news_pixels.seal_capture') as seal:
+                with self.assertRaisesRegex(RuntimeError, 'cache preparation'):
+                    capture_site_archive(common, [], output, output/'sealed', 60, 'cold')
+            seal.assert_not_called()
 
     def report(self):
-        return dict(counts=dict(requests=1, blocked=0, allowed=1, mismatches=0, oracle_disagreements=0),
+        return dict(page_cache=dict(http_cache_policy='empty', http_cache_cleared=True, service_worker_policy='bypass'),
+                    counts=dict(requests=1, blocked=0, allowed=1, mismatches=0, oracle_disagreements=0),
                     requests=[dict(actual=dict(blocked=False, exception=False),
                                    expected=dict(blocked=False, exception=False))],
                     navigation=dict(coverage='page', url='https://news.example/'),

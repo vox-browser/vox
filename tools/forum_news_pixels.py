@@ -253,7 +253,8 @@ def guarded(command, prefix, timeout, environment=None):
 
 def oracle_command(site, args):
     command = ['node', str(HARNESS), '--url', site['url'], '--extension', str(args.extension),
-               '--checker', str(args.checker), '--brave', str(args.brave), '--settle', str(args.settle)]
+               '--checker', str(args.checker), '--brave', str(args.brave), '--settle', str(args.settle),
+               '--http-cache-policy', 'empty', '--service-worker-policy', 'bypass']
     if args.profile_template:
         command.extend(['--profile-template', str(args.profile_template)])
     if getattr(args, 'image_animation_policy', None):
@@ -268,10 +269,16 @@ def warm_oracle_cache(common, route, output, timeout, *, capture_archive=False):
     archive_options = ['--cache-preparation-dir', output / 'capture'] if capture_archive else []
     guarded([*common, *route, *archive_options, '--pixel-reference', output / 'brave-warm.png',
              '--output', report, '--profile-output', profile], output / 'brave-warm', timeout)
-    check_filters(read_json(report))
+    observation = read_json(report)
+    check_filters(observation)
+    check_oracle_page_cache(observation, common)
     if not profile.is_dir():
         raise RuntimeError('Brave cache warmup did not save a closed profile')
     prepared = list(common)
+    # The warmup starts empty even when its uBO template has visited the site.
+    # Its successfully closed output is the only encoded cache reused by replay.
+    if '--http-cache-policy' in prepared:
+        prepared[prepared.index('--http-cache-policy') + 1] = 'preserve'
     if '--profile-template' in prepared:
         prepared[prepared.index('--profile-template') + 1] = str(profile)
     else:
@@ -297,7 +304,22 @@ def capture_site_archive(common, route, output, archive, timeout, cache_policy):
     report = output / 'capture.json'
     guarded([*prepared, *route, '--capture-dir', capture, '--output', report],
             output / 'capture', timeout)
+    if '--http-cache-policy' in prepared:
+        check_oracle_page_cache(read_json(report), prepared)
     seal_capture(capture, archive, report)
+
+
+def check_oracle_page_cache(report, command):
+    """Require proof that the current page target applied the requested policy."""
+    if '--http-cache-policy' not in command:
+        return
+    policy = command[command.index('--http-cache-policy') + 1]
+    workers = command[command.index('--service-worker-policy') + 1] if '--service-worker-policy' in command else 'allow'
+    observed = report.get('page_cache', {})
+    if (observed.get('http_cache_policy') != policy
+            or observed.get('http_cache_cleared') is not (policy == 'empty')
+            or observed.get('service_worker_policy') != workers):
+        raise RuntimeError('Brave page cache preparation differs from the requested policy')
 
 
 def capture_replay_references(common, route, output, timeout, diff_tool):
@@ -312,7 +334,9 @@ def capture_replay_references(common, route, output, timeout, diff_tool):
         report = output / (name + '.json')
         guarded([*common, '--pixel-reference', output / (name + '.png'),
                  '--output', report, *route], output / name, timeout)
-        check_filters(read_json(report))
+        observation = read_json(report)
+        check_filters(observation)
+        check_oracle_page_cache(observation, common)
     verdict = compare(output / 'brave.png', output / 'brave-repeat.png',
                       output / 'reference-replay.diff.png', diff_tool)
     write_json(output / 'reference-replay.json', verdict)
