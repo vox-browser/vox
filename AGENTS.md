@@ -115,6 +115,19 @@
 - `build-prod-browser.sh` uses `V_BIN` when set, then `v` from `PATH`, and finally
   `~/code/v/v`. It writes `Build/v/Vox.app` and ad-hoc signs the bundle.
   `build_ladybird.sh` is a compatibility alias for the same build.
+- By default the build compiles the generated C with V's `-parallel-cc` (split
+  units linked with ThinLTO). `sh build-prod-browser.sh --no-parallel-cc`
+  compiles one sealed C unit for maximum binary performance; it is several
+  times slower to build. Without a V that supports native-header splitting
+  (`V3_PARALLEL_CC_REQUIRE_SPLIT`), or when native code cannot be split, the
+  build falls back to one unit. The receipt's `c-compile.json` and
+  `Build/production-build/latest.json` (`c_compile`) record the mode used.
+  Keep mutable native header state in `VOX_NATIVE_STATE` so the split remains
+  possible.
+- Performance comparisons (instruction counts, scrolling, timings) must use
+  builds with the same C mode, recorded with the build identity. Builds before
+  the parallel default used one C unit; compare with them only through
+  `--no-parallel-cc` builds.
 - The browser builds with current V and fails rather than falling back to the
   0.5.2 compatibility compiler; an outdated `v` on `PATH` needs `V_BIN`.
   `LADYBIRD_V_GC=prealloc` builds use `-prealloc -gc none` and need V's
