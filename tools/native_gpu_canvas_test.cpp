@@ -212,7 +212,7 @@ static void direct_read_regions(GpuCanvasApi const* api)
 }
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
-    void (*leaves)(CGContextRef, bool) = draw_leaves)
+    void (*leaves)(CGContextRef, bool) = draw_leaves, bool full = false)
 {
     auto pixels = backdrop();
     auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -223,13 +223,14 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
     assert(context);
     CGContextScaleCTM(context, scale, scale);
     // The scroll raster clips a reused frame to its repainted rectangles.
-    CGContextClipToRect(context, CGRectMake(0, css_height - (strip_top + strip_height) / float(scale),
-        css_width, strip_height / float(scale)));
+    CGContextClipToRect(context, full ? CGRectMake(0, 0, css_width, css_height)
+        : CGRectMake(0, css_height - (strip_top + strip_height) / float(scale),
+            css_width, strip_height / float(scale)));
     ladybird_v_skia_set_chromium_painting(1);
     // Root raster layer: a frame-wide shared recording.
     ladybird_v_skia_set_shared_recording(shared, css_width, css_height);
     if (canvas) {
-        int rect[] {0, strip_top, width, strip_height};
+        int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
         assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
     }
     leaves(context, canvas);
@@ -270,6 +271,12 @@ int main()
     auto retry_candidate = render(true);
     assert(s_read_calls == 5 && s_successful_reads == 4 && !s_fail_reads);
     assert(retry_candidate == candidate);
+    auto full_reference = render(false, false, draw_leaves, true);
+    auto full_candidate = render(true, false, draw_leaves, true);
+    int full_error = 0;
+    for (size_t i = 0; i < full_reference.size(); ++i)
+        full_error = std::max(full_error, std::abs(int(full_reference[i]) - int(full_candidate[i])));
+    assert(full_error <= 3);
     if (api->read_direct) {
         s_backend_direct_read = api->read_direct;
         api->read_direct = counted_direct_read;

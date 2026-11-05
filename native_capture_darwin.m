@@ -2860,8 +2860,17 @@ void native_set_video_frame_image(int active) {
 int native_gpu_canvas_begin(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	VoxScrollRaster *cache = &native_scroll_raster;
-	if (!cache->active || !cache->reused || !cache->damage_optimized || !cache->context
-		|| native_scroll_repainted_count <= 0 || native_scroll_repainted_count > 8) return 0;
+	if (!cache->active || !cache->damage_optimized || !cache->context) return 0;
+	if (!cache->reused) {
+		if (!getenv("VOX_ENABLE_FULL_FRAME_GPU_CANVAS")
+			|| getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")) return 0;
+		int rect[] = {0, (int)cache->top, (int)cache->width, (int)cache->height};
+		int begun = ladybird_v_skia_gpu_canvas_begin(cache->context, rect, 1);
+		if (begun && getenv("VOX_GPU_CANVAS_DIAGNOSTICS"))
+			fprintf(stderr, "VOX_GPU_CANVAS_FULL_FRAME width=%zu height=%zu\n", cache->width, cache->height);
+		return begun;
+	}
+	if (native_scroll_repainted_count <= 0 || native_scroll_repainted_count > 8) return 0;
 	int rects[8 * 4];
 	int count = 0;
 	for (int index = 0; index < native_scroll_repainted_count; ++index) {
