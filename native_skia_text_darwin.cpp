@@ -5460,6 +5460,39 @@ static bool svg_leaf_intersects_raster_clip(CGContextRef destination, SkRect con
     return intersects;
 }
 
+// An axis-aligned clip whose crossing edges lie on device pixel boundaries
+// masks each Quartz pixel completely in or out, so clipping the resolved leaf
+// bitmap cannot attenuate its edge samples twice. Rounded, rotated or
+// fractional cuts keep the joint GPU coverage. The canvas maps to device pixels
+// by `scale` alone, and its pixel height keeps the flipped edges integral.
+static bool svg_leaf_clip_cuts_are_pixel_exact(CGContextRef destination, SkRect const& bounds,
+    float scale = 1)
+{
+    auto found = s_shared_clips.find(destination);
+    if (found == s_shared_clips.end() || !(scale > 0) || !std::isfinite(scale) || !bounds.isFinite())
+        return false;
+    auto coverage = bounds.makeOutset(1 / scale, 1 / scale);
+    auto whole = [scale](float local, float factor, float offset) {
+        float device = (factor * local + offset) * scale;
+        return std::isfinite(device) && std::abs(device - std::round(device)) <= 1e-3f;
+    };
+    for (auto const& clip : found->second.clips) {
+        SkMatrix inverse;
+        if (!clip.matrix.invert(&inverse)) return false;
+        auto local = inverse.mapRect(coverage);
+        auto rect = clip.rect.rect();
+        if (!SkRect::Intersects(rect, local) || clip.rect.contains(local)) continue;
+        if (!clip.rect.isRect() || !clip.matrix.isScaleTranslate()) return false;
+        auto const& m = clip.matrix;
+        if ((local.left() < rect.left() && !whole(rect.left(), m.getScaleX(), m.getTranslateX()))
+            || (local.right() > rect.right() && !whole(rect.right(), m.getScaleX(), m.getTranslateX()))
+            || (local.top() < rect.top() && !whole(rect.top(), m.getScaleY(), m.getTranslateY()))
+            || (local.bottom() > rect.bottom() && !whole(rect.bottom(), m.getScaleY(), m.getTranslateY())))
+            return false;
+    }
+    return true;
+}
+
 static bool solid_svg_has_standard_samples()
 {
     static bool const supported = [] {
@@ -5890,11 +5923,14 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
     // SVG picture. Applying Quartz's clip to an already resolved leaf bitmap
     // attenuates its edge samples again. The batch bridge retains the real
     // clips and publishes without that second application when fully audited.
-    // Fully contained leaves do not meet an edge and keep the cheap path.
+    // Fully contained leaves do not meet an edge and keep the cheap path, as do
+    // leaves cut only along whole device pixels.
     if (s_chromium_painting && has_fill && !has_stroke && fill_alpha == 255
         && (!fill_components || fill_components[3] == 1)
         && !shared_recording_canvas(destination)
         && svg_leaf_intersects_raster_clip(destination, device_bounds,
+            raster_scale_for_context(destination))
+        && !svg_leaf_clip_cuts_are_pixel_exact(destination, device_bounds,
             raster_scale_for_context(destination))
         && svg_batch_has_complete_raster_clips(destination, canvas_width, canvas_height,
             raster_scale_for_context(destination))) {

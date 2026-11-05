@@ -41,11 +41,53 @@ static void check_clip_intersections()
     s_shared_clips.erase(context);
 }
 
+static void check_pixel_exact_cuts()
+{
+    // A rectangular cut on whole device pixels masks Quartz pixels completely.
+    auto context = reinterpret_cast<CGContextRef>(uintptr_t(2));
+    auto crossing = SkRect::MakeXYWH(5, 20, 20, 10);
+    SharedClip clip {SkRRect::MakeRect(SkRect::MakeXYWH(10, 10, 40, 40)), SkMatrix::I()};
+    s_shared_clips[context].clips = {clip};
+    assert(svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 1));
+    assert(svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 2));
+    clip.rect = SkRRect::MakeRect(SkRect::MakeXYWH(10.25f, 10, 40, 40));
+    s_shared_clips[context].clips = {clip};
+    assert(!svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 1));
+    assert(!svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 2));
+    assert(svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 4));
+    // Only crossed edges matter: a fractional edge the leaf does not reach.
+    clip.rect = SkRRect::MakeRect(SkRect::MakeLTRB(10, 10, 50.5f, 50));
+    s_shared_clips[context].clips = {clip};
+    assert(svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 1));
+    assert(!svg_leaf_clip_cuts_are_pixel_exact(context, SkRect::MakeXYWH(40, 20, 20, 10), 1));
+    // A containing clip with fractional edges does not cut the leaf.
+    s_shared_clips[context].clips = {SharedClip {SkRRect::MakeRect(SkRect::MakeXYWH(0.25f, 0.25f, 99, 99)),
+        SkMatrix::I()}, SharedClip {SkRRect::MakeRect(SkRect::MakeXYWH(10, 10, 40, 40)), SkMatrix::I()}};
+    assert(svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 1));
+    // Rounded corners, skewed and fractionally translated clips keep GPU coverage.
+    clip.rect = SkRRect::MakeRectXY(SkRect::MakeXYWH(10, 10, 40, 40), 4, 4);
+    clip.matrix = SkMatrix::I();
+    s_shared_clips[context].clips = {clip};
+    assert(!svg_leaf_clip_cuts_are_pixel_exact(context, crossing, 1));
+    clip.rect = SkRRect::MakeRect(SkRect::MakeXYWH(10, 10, 40, 40));
+    clip.matrix = SkMatrix::MakeAll(1, .25f, 0, 0, 1, 0, 0, 0, 1);
+    s_shared_clips[context].clips = {clip};
+    assert(!svg_leaf_clip_cuts_are_pixel_exact(context, clip.matrix.mapRect(crossing), 1));
+    clip.matrix = SkMatrix::MakeAll(-2, 0, 150, 0, 3, .375f, 0, 0, 1);
+    s_shared_clips[context].clips = {clip};
+    assert(!svg_leaf_clip_cuts_are_pixel_exact(context,
+        clip.matrix.mapRect(SkRect::MakeXYWH(20, 5, 10, 20)), 1));
+    assert(svg_leaf_clip_cuts_are_pixel_exact(context,
+        clip.matrix.mapRect(SkRect::MakeXYWH(5, 20, 20, 10)), 1));
+    s_shared_clips.erase(context);
+}
+
 int main()
 {
     check_clip_intersections();
+    check_pixel_exact_cuts();
     constexpr int width = 320, height = 240;
-    int cases = 0;
+    int cases = 0, pixel_exact_cuts = 0;
     for (int scale : {1, 2}) for (float phase : {.125f, .372f, .5f, .875f})
     for (bool contained : {false, true}) for (int placement : {0, 1, 2, 3}) {
         bool clipped = placement != 0;
@@ -81,6 +123,8 @@ int main()
         auto bounds = path_from_serialized_segments(path, 4).getBounds();
         bounds.offset(0, phase);
         assert(svg_leaf_intersects_raster_clip(context, bounds, scale) == clipped);
+        // Whole-pixel cuts take the ordinary leaf path; it must still match.
+        pixel_exact_cuts += clipped && svg_leaf_clip_cuts_are_pixel_exact(context, bounds, scale);
         assert(ladybird_v_skia_draw_svg_path(context, path, 4, 0,
             1, 0, 0, 1, 0, phase, 0, 0, 0, width, height,
             44, 0, 34, 255, 1, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, nullptr, 0, 0, 1));
@@ -108,5 +152,7 @@ int main()
         }
         CGContextRelease(context); CGContextRelease(control); ++cases;
     }
-    std::printf("PASS: %d contained/clipped SVG leaves match complete GPU pictures\n", cases);
+    assert(pixel_exact_cuts > 0);
+    std::printf("PASS: %d contained/clipped SVG leaves match complete GPU pictures"
+        " (%d cut on whole device pixels)\n", cases, pixel_exact_cuts);
 }
