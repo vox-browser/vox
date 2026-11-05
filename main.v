@@ -5763,9 +5763,6 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 		}
 	}
-	if !app.rounded_underlay_shares_paint_space(source_command) {
-		app.flush_rounded_rect_underlay(page_x, page_y, window_height)
-	}
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
 	app.paint_svg_mask_depth = background_svg_mask_depth_after_command(app.paint_svg_mask_depth,
@@ -5778,6 +5775,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	}
 	defer {
 		app.draw_command_depth--
+	}
+	// Native control geometry can change the command's coordinate space. Match
+	// the underlay against the resolved draw command, with its working copy
+	// reserved while a rejected underlay is replayed recursively.
+	if !app.rounded_underlay_shares_paint_space(command) {
+		app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 	}
 	if command.scrollbar_axis != '' {
 		command.opacity *= app.overlay_scrollbars.paint_opacity

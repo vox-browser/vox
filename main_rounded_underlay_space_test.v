@@ -5,6 +5,30 @@ import layout
 import math
 import platform
 
+fn test_rounded_underlay_compares_native_controls_after_geometry_resolution() {
+	for scale in [f64(1), 2] {
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}
+			input{position:absolute;left:100px;top:40px;width:13px;height:13px}</style><input type="checkbox">')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		document.set_layout_coordinate_scale(scale)
+		_ = layout.layout_document_typed_in_viewport(document, 300, 200)
+		commands := layout.display_list_commands(document.record_display_list() or { panic('paint') })
+		controls := commands.filter(it.checkbox_theme_data != unsafe { nil })
+		assert controls.len == 2
+		mut background := controls[0]
+		raw_border := controls[1]
+		mut border := raw_border
+		background.resolve_chromium_checkbox_geometry()
+		border.resolve_chromium_checkbox_geometry()
+		mut app := BrowserApp{rounded_rect_underlay: background}
+		assert app.rounded_underlay_shares_paint_space(&raw_border) == (scale == 1)
+		assert app.rounded_underlay_shares_paint_space(&border)
+		rect := rounded_underlay_rect(&background, &border, 2)
+		assert rect[0] == f32(background.x) && rect[1] == f32(background.y)
+	}
+}
+
 fn test_transformed_modal_background_keeps_its_position_in_the_border_pass() {
 	for density in [f64(1), 2] {
 		for transform in ['scale(1)', 'translate(.25px, .5px)', 'scale(.95)', 'rotate(12deg)'] {
