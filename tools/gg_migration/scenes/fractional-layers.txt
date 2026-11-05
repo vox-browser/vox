@@ -1,0 +1,72 @@
+scene fractional-layer 64 48 1 0
+cliprect 2.5 2.25 60.5 44.75 0 1
+savelayer
+paint 0.9 0.1 0.1 1 1 0 0 0 0 4
+rect 0 0 64 48
+restore
+end
+
+scene fractional-layer-backdrop 64 48 1 1
+cliprect 2.5 2.25 60.5 44.75 0 1
+savelayer
+paint 0.9 0.1 0.1 1 1 0 0 0 0 4
+rect 0 0 64 48
+restore
+end
+
+scene fractional-layer-msaa 64 48 4 1
+cliprect 2.5 2.25 60.5 44.75 0 1
+savelayer
+paint 0.9 0.1 0.1 1 1 0 0 0 0 4
+rect 0 0 64 48
+restore
+end
+
+scene thin-layer 64 48 1 0
+cliprect 4.125 12.25 59.75 12.625 0 1
+savelayer
+paint 0.9 0.1 0.1 1 1 0 0 0 0 4
+rect 0 0 64 48
+restore
+end
+
+scene small-layer 64 48 1 0
+cliprect 15.125 12.25 15.625 12.75 0 1
+savelayer
+paint 0.9 0.1 0.1 1 1 0 0 0 0 4
+rect 0 0 64 48
+restore
+end
+
+scene nested-fractional-layers 64 48 1 1
+cliprect 2.5 2.25 60.5 44.75 0 1
+savelayer
+paint 0.2 0.4 0.8 0.5 1 0 0 0 0 4
+rect 0 0 64 48
+cliprect 5.125 5.25 58.5 40.75 0 1
+savelayer
+paint 0.9 0.1 0.1 0.75 1 0 0 0 0 4
+rect 0 0 64 48
+restore
+restore
+paint 0.1 0.8 0.2 0.5 1 0 0 0 0 4
+rrect 4 8 35 30 6 6 6 6 6 6 6 6
+end
+
+scene translated-fractional-layer 64 48 1 0
+matrix 2 0 0.5 0 2 0.25 0 0 1
+cliprect 1 1 30 22 0 1
+savelayer
+paint 0.2 0.4 0.8 1 1 0 0 0 0 4
+rrect 3 3 20 18 3 3 3 3 3 3 3 3
+restore
+end
+
+scene fractional-layer-rrect-clip 64 48 1 1
+cliprrect 4.5 4.5 58 42 8 8 8 8 8 8 8 8 0 1
+cliprect 3.5 10.25 60.5 30.75 0 1
+savelayer
+paint 0.9 0.1 0.1 1 1 0 0 0 0 4
+rect 0 0 64 48
+restore
+end
