@@ -47,7 +47,7 @@ Reconciling those histories requires a decision consistent with the repository's
 linear-history and no-rewrite rules; no force push, merge or rebase was attempted.
 
 The upstream implementation is V branch `gg-skia-parity`, PR
-[vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `ff4cd6dc66`.
+[vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `dbfcab86a1`.
 `V_BIN=~/code/v-gg/v sh build-prod-browser.sh` selects that compiler. The build
 recognizes `vlib/gg/canvas` and supplies `-d vox_gg_canvas`; ordinary V builds
 exclude the adapters. Runtime selection remains `VOX_GG_TEXT=1`,
@@ -57,6 +57,39 @@ The GG compiler predates `v root`. Build detection now uses the existing
 `@VEXEROOT` library probe (`aa03e9ba8`), including for moved compilers and
 staged runtimes. Three focused checks pass; real compiler probes detect the
 GG module and leave it disabled for the standard shared V compiler.
+
+### Upstream review fixes
+
+Seven fixes were committed and pushed to the PR's verified source branch,
+`medvednikov/v-pr-fork:gg-skia-parity`, after review of `ff4cd6dc66`:
+
+| Commit | Fix |
+| --- | --- |
+| `01a7922600` | Define `GL_PACK_ALIGNMENT` in the embedded Windows GL loader. |
+| `8e76b07a8f` | Isolate CoreText files; unsupported platforms expose explicit text errors. |
+| `50dad21400` | Restore the temporary DRRect clip/save on every error path. |
+| `0b9adab99b` | Reject CPU gradient text before modifying pixels. |
+| `7b1b0ebb16` | Reject depth exhaustion, reserving the extra depth for deferred clips. |
+| `6ce199418c` | Reserve complete draw and pending-clip uniforms before the 4096-block limit. |
+| `dbfcab86a1` | Bound text caches; release retained fonts, glyph masks and native contexts. |
+
+The text cache retains at most 32 strikes in LRU order, with at most 256 glyphs
+and 256 KiB of masks per strike. Individual masks over 512 pixels in either
+dimension decline. `canvas.clear_text_cache()` releases strikes while preserving
+live faces; `Typeface.free()` also releases that face's retained font. Text
+drawing and cleanup are serial operations on the drawing thread.
+
+All 12 canvas test files pass on macOS, including the retained Metal and CPU-text
+pixel hashes. The text cache, text pixels and draw-list tests also pass with
+`-gc none`. Linux and Windows type checks cover paths and the platform/cache
+tests. The Windows GLCORE regression test compiles the embedded loader with
+MinGW, and a separate GLCORE executable cross-build links successfully. Native
+Windows execution and Linux runtime tests were not run. See the
+[review-fix receipt](gg-migration/pr-reviews-20261105.json) for source pins,
+commands, actual exits and retained failures.
+
+The 262-fixture stage22 browser result below remains pinned to `ff4cd6dc66`;
+it does not validate a production browser built with this newer review-fix head.
 
 Implemented in `gg.canvas`:
 

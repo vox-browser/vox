@@ -1,0 +1,484 @@
+{
+  "date": "2026-11-05",
+  "pull_request": {
+    "headRefName": "gg-skia-parity",
+    "headRefOid": "dbfcab86a1f6427ea075878cff2387a9f91d4929",
+    "headRepository": {
+      "id": "R_kgDOUPelnA",
+      "name": "v-pr-fork",
+      "nameWithOwner": "medvednikov/v-pr-fork"
+    },
+    "headRepositoryOwner": {
+      "id": "MDQ6VXNlcjY4Nzk5Ng==",
+      "name": "Alexander Medvednikov",
+      "login": "medvednikov"
+    },
+    "isDraft": false,
+    "state": "OPEN",
+    "url": "https://github.com/vlang/v/pull/31826"
+  },
+  "source_repository": "/Users/alex/code/v-gg",
+  "base_reviewed_commit": "ff4cd6dc66a3afed64039cfd68c0d4274e2b7867",
+  "fixed_head": "dbfcab86a1f6427ea075878cff2387a9f91d4929",
+  "pushed_and_verified": true,
+  "source_worktree_clean": true,
+  "compiler": {
+    "path": "/Users/alex/code/v-gg/v",
+    "sha256": "29b1cf98ce4b25df0b8547b67e1252952dff7aa29a618917d952ac509ab4e06d",
+    "note": "Existing GG compiler unchanged; vlib/Sokol fixes do not require rebuilding the compiler. VEXE and VFLAGS cleared for checks."
+  },
+  "commits": [
+    "01a7922600885c61ffd0ccb6d90612a6b604f16d sokol: define GL_PACK_ALIGNMENT for the Windows GL loader",
+    "8e76b07a8f6b39ea964e1656d1493606604eee5e gg.canvas: isolate CoreText and reject unsupported text platforms",
+    "50dad21400c345cef9bae0a54a6ff09823ce4a4f gg.canvas: restore DRRect clip state on drawing errors",
+    "0b9adab99bba712d10fec6a0e7afb7b0d3c2738e gg.canvas: reject gradient paints in raster text",
+    "7b1b0ebb16be60c4133c3b4cdbedf5feeaac2de0 gg.canvas: reject draw lists before depth exhaustion",
+    "6ce199418c1c8034a53dcb0a4b8035d5b8174979 gg.canvas: reserve draw-list uniforms before recording",
+    "dbfcab86a1f6427ea075878cff2387a9f91d4929 gg.canvas: bound text caches and release retained native fonts"
+  ],
+  "source_identity": {
+    "thirdparty/sokol/sokol_gfx.h": "a70f4c765ff70f5ca6054e23abbeb595ceb26da4a63b98fb40f0dda390768441",
+    "vlib/gg/canvas/README.md": "3c5b2eda25264148d38acb665b8a15a37daf91be09c0a5390c567aad5fa8ed8f",
+    "vlib/gg/canvas/gpu_path.v": "14a3880db6e5cb067fbffc27fc6e32b0edc82fc612fef15d81de2bd7bbdfdf90",
+    "vlib/gg/canvas/gpu_render_steps_test.v": "64a70e1931daed29d64628dbc118e315a2928b5d19345216db13c4a383709e7b",
+    "vlib/gg/canvas/gpu_strokes.v": "6b5c145e84d918bf6d1efaad4065fed60e30a983d0ff822832d20663859b168c",
+    "vlib/gg/canvas/gpu_surface.v": "14d14749264ad60eb215dad8a425842a29462bbaa4b09f491bb82916f2afddfe",
+    "vlib/gg/canvas/raster_surface.v": "2691aab0452e871c016ec3dfdef36dcf99387de7c363c2617e47e0c44a51642a",
+    "vlib/gg/canvas/raster_text_darwin.c.v": "6e726881b31aaa1adedf706637e11ebc6e2afdc8a51c3140b324b2377289f271",
+    "vlib/gg/canvas/raster_text_default.c.v": "769c29e53c9d5b357080b263e62a420392cac5c4b5f454ec69e2d1cc786d0add",
+    "vlib/gg/canvas/text.v": "5983967a53ae1e309dff296f3ea1a609d7e5ddcc30a4ac3cacd13d6d787a3c1b",
+    "vlib/gg/canvas/text_cache_test.v": "6721c7f715d00b5c0311ae5387729cadd73289ef6428fbe41aef25aee51af698",
+    "vlib/gg/canvas/text_darwin.c.v": "24f8810ae645b5f8d39758ffc0bf6bb34edbc4956f9415edb1bfd2ecc05a1314",
+    "vlib/gg/canvas/text_platform_test.v": "2ea8deaafaecdd09711f4d53d0345e199eb731801b6a07e5f5f33e92666c3d27",
+    "vlib/gg/canvas/text_test.v": "76c95f9df3fda18eefa7f50609347e7e4c0541d013d9d0373ec8566f908421d4",
+    "vlib/gg/canvas/typeface.v": "089580d121fd0d35e878bc8b91e38957a2273f911c5209f6f58fe07467758507",
+    "vlib/gg/canvas/typeface_darwin.c.v": "3770a497d462baff4e06e999885e9be0a0100fe140c15fec5d329ecfd1ccfa4e",
+    "vlib/gg/canvas/typeface_default.c.v": "567a0c9919c6be6ca6e31cc73c8fac651819636bcdad55da148a0cc873885870",
+    "vlib/sokol/gfx/gl_transfer_compile_test.v": "a1715edaa37710d970accfb95cde024323b4346bde3e989838414df00c957f3a"
+  },
+  "findings_fixed": [
+    {
+      "priority": "P1",
+      "finding": "Embedded Windows GL loader lacks GL_PACK_ALIGNMENT",
+      "commit": "01a7922600",
+      "validation": "Regression reproduces the C error, then passes with the definition; separate Windows GLCORE executable cross-compiles and links with MinGW."
+    },
+    {
+      "priority": "P2",
+      "finding": "Common text references Darwin-only declarations",
+      "commit": "8e76b07a8f",
+      "validation": "CoreText implementation isolated in Darwin files; common API and unsupported-platform implementations type-check for Linux/Windows; macOS text hashes retained."
+    },
+    {
+      "priority": "P2",
+      "finding": "DRRect fallback leaves save and difference clip active after errors",
+      "commit": "50dad21400",
+      "validation": "Regression reproduces save_count 2 instead of 1; defer unwinds only the internal save and subsequent draw inside the former hole records successfully."
+    },
+    {
+      "priority": "P2",
+      "finding": "CPU gradient text silently renders a solid color",
+      "commit": "0b9adab99b",
+      "validation": "Gradient paint returns an unsupported error before rendering; unchanged destination pixels verified."
+    },
+    {
+      "priority": "P2",
+      "finding": "16-bit draw-list depth wraps",
+      "commit": "7b1b0ebb16",
+      "validation": "65534 repeated-color draws recorded, next draw rejected unchanged; deferred clip consumes depth 65535; void trigger defers errors to flush."
+    },
+    {
+      "priority": "P2",
+      "finding": "Uniform cache/batches exceed shader declaration",
+      "commit": "6ce199418c",
+      "validation": "4096 distinct blocks accepted, new block rejected unchanged, reused paint accepted; pending clip matrices and both path steps reserved atomically; final batch upload guarded."
+    },
+    {
+      "priority": "P2",
+      "finding": "Text strikes and retained native fonts have unbounded ownership",
+      "commit": "dbfcab86a1",
+      "validation": "32-strike LRU; 256 glyphs/256 KiB masks per strike; 512-pixel mask dimension limit. Native contexts, copied fonts, masks, maps and arrays released on eviction/clear; typeface.free is idempotent and removes only its own strikes. Retain/release, LRU, regeneration and no-GC checks pass."
+    }
+  ],
+  "verification": {
+    "canvas_files_passed": 12,
+    "no_gc_files_passed": 3,
+    "no_gc_files": [
+      "text_cache_test.v",
+      "text_test.v",
+      "gpu_render_steps_test.v"
+    ],
+    "cross_type_checks": {
+      "linux": [
+        "path_test.v",
+        "text_platform_test.v",
+        "text_cache_test.v"
+      ],
+      "windows": [
+        "path_test.v",
+        "text_platform_test.v",
+        "text_cache_test.v"
+      ]
+    },
+    "windows_glcore_cross_executable_sha256": "fa75ca29573532e77d1b4949bf47586df7036d8c2bd710abddb7f001e87365f5",
+    "native_windows_execution": false,
+    "linux_runtime_execution": false,
+    "production_browser_rebuilt": false,
+    "browser_limit": "The 262-fixture stage22 result remains pinned to the earlier ff4cd6dc66 renderer. No new browser-cohort result is claimed for this PR fix head."
+  },
+  "retained_attempts": [
+    "Early Windows test attempts were skipped because its initial filename was platform-qualified; renamed to a portable test filename and executed. No skip counted as a pass.",
+    "Windows red probe reproduces undefined GL_PACK_ALIGNMENT (its fixture also initially omitted stdio.h); final probe includes stdio and passes.",
+    "Initial platform split checks exposed a shared copysignf declaration left in the Darwin file, then an import-order mistake; both fixed before platform-fixed3 and final checks.",
+    "DRRect red regression reproduces the leaked save; corrected focused and full tests pass."
+  ],
+  "checks": {
+    "windows-before": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/sokol/gfx/gl_transfer_windows_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 9093120,
+      "elapsed_seconds": 0.446920792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "vox-docs": {
+      "command": [
+        "/Users/alex/code/v-gg/v",
+        "-memory-limit",
+        "10G",
+        "check-md",
+        "docs/GG_MIGRATION.md"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 4243456,
+      "elapsed_seconds": 0.290351625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "platform-fixed": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 293797888,
+      "elapsed_seconds": 2.448825125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "text-cache-tests": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/text_cache_test.v",
+        "vlib/gg/canvas/text_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1081507840,
+      "elapsed_seconds": 17.388687541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "windows-link": {
+      "command": [
+        "/opt/homebrew/bin/x86_64-w64-mingw32-gcc",
+        "-std=c11",
+        "-Werror=implicit-function-declaration",
+        "-O0",
+        "-I",
+        "/Users/alex/code/v-gg/thirdparty/sokol",
+        "-o",
+        "Build/gg-pr-review-20261105/windows-glcore.exe",
+        "Build/gg-pr-review-20261105/windows-glcore.c",
+        "-lopengl32",
+        "-lgdi32",
+        "-luser32"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 139296768,
+      "elapsed_seconds": 4.866353500000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "gradient-text-fixed": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/text_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 548651008,
+      "elapsed_seconds": 16.645045791999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "windows-fixed": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/sokol/gfx/gl_transfer_compile_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 364068864,
+      "elapsed_seconds": 2.993819167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "canvas-final": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 978583552,
+      "elapsed_seconds": 68.751306666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "drrect-fixed": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/gpu_render_steps_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 599326720,
+      "elapsed_seconds": 17.15568025,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "windows-red": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/sokol/gfx/gl_transfer_windows_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 6619136,
+      "elapsed_seconds": 0.17881075000000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "platform-fixed3": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1081327616,
+      "elapsed_seconds": 15.906910209,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "windows-red-probe": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/sokol/gfx/gl_transfer_compile_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 363970560,
+      "elapsed_seconds": 4.1666349590000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "drrect-red": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/gpu_render_steps_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 591822848,
+      "elapsed_seconds": 15.009407625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "platform-fixed2": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 293486592,
+      "elapsed_seconds": 1.438390875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "depth-fixed": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/gpu_render_steps_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 605962240,
+      "elapsed_seconds": 8.858722375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "windows-red-clean": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/sokol/gfx/gl_transfer_windows_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 6635520,
+      "elapsed_seconds": 0.18306433300000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "text-cache-initial": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/text_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 547045376,
+      "elapsed_seconds": 4.097040333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "uniforms-fixed": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/gpu_render_steps_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 595361792,
+      "elapsed_seconds": 17.882064083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "raw_evidence": {
+    "file": "pr-reviews-20261105.tar.gz",
+    "sha256": "536aa81606e3809269f07a6bd18e86a0973d214e14246d654cec760b2a13949d",
+    "bytes": 15838,
+    "manifest_entries": 41,
+    "contents": "PR comment snapshots, focused and full check logs, actual guard exits, retained failed/skipped attempts, remote head verification and generated Windows C probe. No browser bundles, repository source copies or executable binaries."
+  },
+  "evidence_packaging_guard": {
+    "command": [
+      "python3",
+      "-"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 41533440,
+    "elapsed_seconds": 0.9167979579999999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
