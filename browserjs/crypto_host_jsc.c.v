@@ -35,6 +35,9 @@ pub fn (mut host CryptoHost) install(mut runtime Runtime) ! {
 	host.array_is_view = runtime.evaluate_host_value('ArrayBuffer.isView')!
 	host.view_validation = runtime.evaluate_host_value(r'(function(){const apply=Reflect.apply,get=Object.getOwnPropertyDescriptor,tp=Object.getPrototypeOf(Int8Array.prototype),tb=get(tp,"buffer").get,tag=get(tp,Symbol.toStringTag).get,db=get(DataView.prototype,"buffer").get,r=get(ArrayBuffer.prototype,"resizable"),shared=typeof SharedArrayBuffer==="function"?get(SharedArrayBuffer.prototype,"byteLength").get:null;return function(view){let buffer;try{buffer=apply(tb,view,[])}catch(error){buffer=apply(db,view,[])}if(shared){try{apply(shared,buffer,[]);return "The array buffer object cannot be a SharedArrayBuffer"}catch(error){}}if(r&&apply(r.get,buffer,[]))return "Not an object of type fixed-length "+(apply(tag,view,[])||"DataView");return ""}})()')!
 	host.typed_array_witness = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,values=Int8Array.prototype.values;return function(view){return apply(values,view,[])}})()')!
+	// Writes random bytes through a typed array's own intrinsic view when the
+	// engine does not expose its backing store, as for WebAssembly.Memory.
+	host.random_view_writer = runtime.evaluate_host_value(r'(function(){const apply=Reflect.apply,get=Object.getOwnPropertyDescriptor,tp=Object.getPrototypeOf(Int8Array.prototype),buffer=get(tp,"buffer").get,offset=get(tp,"byteOffset").get,length=get(tp,"byteLength").get,U8=Uint8Array,set=U8.prototype.set;return function(view,bytes){apply(set,new U8(apply(buffer,view,[]),apply(offset,view,[]),apply(length,view,[])),[new U8(bytes)])}})()')!
 	installer := runtime.evaluate_host_value(crypto_native_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
 	prototypes := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
@@ -184,7 +187,18 @@ fn (mut host CryptoHost) random_values(value voidptr) !voidptr {
 	offset := C.vox_jsc_JSObjectGetTypedArrayByteOffset(runtime.context, value, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	pointer := C.vox_jsc_JSObjectGetArrayBufferBytesPtr(runtime.context, buffer, &exception)
-	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	if exception != unsafe { nil } {
+		// JavaScriptCore withholds the movable backing store of a
+		// WebAssembly.Memory buffer. Rust's getrandom fills views of that
+		// memory, so copy the bytes through the view instead of failing.
+		mut copy_exception := unsafe { nil }
+		bytes := C.vox_jsc_make_source_array_buffer_copy(runtime.context, random.data,
+			uint(random.len), &copy_exception)
+		if copy_exception != unsafe { nil } { return runtime.actual_javascript_exception(copy_exception) }
+		runtime.call_javascript_function(host.random_view_writer, C.vox_jsc_JSValueMakeUndefined(runtime.context),
+			[value, bytes])!
+		return value
+	}
 	unsafe { C.memcpy(&u8(pointer) + offset, random.data, uint(random.len)) }
 	return value
 }

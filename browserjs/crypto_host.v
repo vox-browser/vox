@@ -33,6 +33,7 @@ mut:
 	array_is_view       voidptr
 	view_validation     voidptr
 	typed_array_witness voidptr
+	random_view_writer  voidptr
 	buffer_validation   voidptr
 	buffer_copy         voidptr
 	to_dom_string       voidptr

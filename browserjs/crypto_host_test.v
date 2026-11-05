@@ -101,3 +101,24 @@ fn test_native_random_binding_does_not_iterate_arguments_or_consult_author_view_
  return same&&calls===0&&input.some(value=>value!==0)&&count instanceof TypeError&&count.message==="getRandomValues() needs one argument";
  })()')! == 'true'
 }
+
+// Rust's getrandom fills a view of WebAssembly.Memory, whose backing store
+// JavaScriptCore does not expose as a raw pointer. Discord's libdiscore
+// panicked on startup when this threw.
+fn test_native_random_values_fill_views_of_webassembly_memory() {
+	$if !darwin {
+		return
+	}
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	mut host := CryptoHost.create(native_crypto_binding_document('https://random-wasm.example/'))!
+	host.install(mut runtime)!
+	assert runtime.evaluate_host(r'(function(){
+ const memory=new WebAssembly.Memory({initial:1}),bytes=new Uint8Array(memory.buffer);bytes.fill(170);
+ const view=new Uint32Array(memory.buffer,64,8);Object.defineProperty(view,"buffer",{get(){throw "author buffer"}});
+ const same=crypto.getRandomValues(view)===view;
+ const filled=bytes.slice(64,96).some(byte=>byte!==170),outside=bytes.slice(0,64).every(byte=>byte===170)&&bytes.slice(96,128).every(byte=>byte===170);
+ const empty=crypto.getRandomValues(new Uint8Array(memory.buffer,8,0)).length===0;
+ return same&&filled&&outside&&empty;
+ })()')! == 'true'
+}
