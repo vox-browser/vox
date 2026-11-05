@@ -225,3 +225,64 @@ fn test_browser_content_window_tracks_eager_contexts_and_detached_receivers() {
 	host.close()
 	assert voidptr(document) !in browser_child_document_hosts_
 }
+
+fn test_browser_pointer_enters_transformed_iframe_with_child_coordinates_and_single_delivery() {
+	$if !darwin { return }
+	mut host, mut document := child_browser_fixture('<!doctype html><style>body{margin:0}iframe{position:absolute;left:40px;top:50px;width:200px;height:120px;border:5px solid black;padding:7px;transform:translate(10px,20px) scale(1.5);transform-origin:0 0}</style><button id=child>Outer button</button><iframe id=frame></iframe>', 'https://parent.example/')
+	mut frame_element := document.get_element_by_id('frame')?
+	frame_element.set_attribute_value('srcdoc', '<!doctype html><style>body{margin:0;height:400px}button{position:absolute;left:20px;top:10px;width:80px;height:40px;border:0}</style><button id=child>Inner button</button><script>globalThis.childPointer=[];window.addEventListener("click",e=>{childPointer.push([e.clientX,e.clientY,e.pageY,e.isTrusted,e.view===window]);parent.postMessage("child-click","*")});</script>')
+	mut runtime := browserjs.Runtime.create()
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'globalThis.outerClicks=0;globalThis.childMessages=0;document.getElementById("child").addEventListener("click",()=>outerClicks++);window.addEventListener("message",e=>{if(e.data==="child-click")childMessages++});'], runtime, mut messages)
+	child_browser_wait(host, 'child', mut messages)
+	service := host.children[0].service?
+	mut owner := unsafe { &page.Page(document.page()) }
+	if !owner.has_local_root_navigable() { owner.set_local_root_navigable(document.navigable()?)! }
+	mut app := &BrowserApp{
+		document: document
+		page_model: owner
+		js_runtime: runtime
+		child_document_host: host
+		layout_tree_only: true
+		viewport_width: 640
+		viewport_height: 400
+		page_zoom: 2
+	}
+	defer {
+		layout.release_paint_tree(app.paint_tree_storage)
+		host.close()
+		runtime.close()
+		document.destroy_a_document_and_its_descendants()
+		document.finalize()
+		document.release_native_storage()
+	}
+	frame := document.get_element_by_id('frame')?
+	assert voidptr(document.element_from_point(128, 118)?) == voidptr(frame)
+	border := browser_document_pointer_hit(document, page.PixelPoint{53, 73})
+	assert voidptr(border.document) == voidptr(document)
+	inner := browser_document_pointer_hit(document, page.PixelPoint{128, 118})
+	assert voidptr(inner.document) == voidptr(service.document)
+	assert inner.position == page.PixelPoint{40, 20}
+	assert inner.hit?.element.get_attribute_value('id') == 'child'
+	initial_viewport := document.viewport_rect()
+	document.set_viewport_rect(dom.Rect{...initial_viewport, y: 20})
+	scrolled := browser_document_pointer_hit(document, page.PixelPoint{128, 98})
+	assert voidptr(scrolled.document) == voidptr(service.document)
+	assert scrolled.position == page.PixelPoint{40, 20}
+	document.set_viewport_rect(initial_viewport)
+	mut child_document := unsafe { &dom.Document(service.document) }
+	child_document.set_viewport_rect(dom.Rect{...child_document.viewport_rect(), y: 10})
+	app.platform_pointer_buttons = 1
+	app.dispatch_chrome_pointer_event_at_viewport_point('pointerdown', 0, 256, 236)
+	app.platform_pointer_buttons = 0
+	app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', 0, 256, 236)
+	app.replay_compact_javascript_click()
+	assert service.runtime.evaluate_host('JSON.stringify(childPointer)')! == '[[40,20,30,true,true]]'
+	mut loop := html.main_thread_event_loop()
+	deadline := time.sys_mono_now() + time.second
+	loop.spin_until(fn [runtime, deadline] () bool {
+		return (runtime.evaluate_host('childMessages') or { '0' }) == '1' || time.sys_mono_now() >= deadline
+	})
+	assert runtime.evaluate_host('outerClicks===0&&childMessages===1')! == 'true'
+	assert app.js_messages == []string{}, app.js_messages.join('\n')
+}

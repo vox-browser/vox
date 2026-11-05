@@ -3577,6 +3577,7 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 	document_before := app.document
 	generation_before := app.navigation_generation
 	app.poll_javascript_tasks()
+	app.poll_browser_child_documents()
 	if voidptr(app.document) != voidptr(document_before)
 		|| app.navigation_generation != generation_before {
 		return ChromePointerDispatchResult{}
@@ -3584,11 +3585,13 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 	mut document := unsafe { &dom.Document(app.document) }
 	reason := chrome_pointer_layout_reason(event_type)
 	document.update_layout(reason)
-	hit := app.hit_test_at_viewport_point(x, y)
+	pointer := browser_document_pointer_hit(document, page.PixelPoint{x / app.page_zoom, y / app.page_zoom})
+	mut pointed_document := unsafe { &dom.Document(pointer.document) }
+	hit := pointer.hit
 	target := if value := hit { value.chrome_widget_id } else { '' }
 	mut cursor := ?painting.ResizeCursor(none)
 	if target != '' {
-		if mut result := layout.document_layout_result(app.document) {
+		if mut result := layout.document_layout_result(pointed_document) {
 			cursor = result.chrome_widget_cursor(target)
 		}
 	}
@@ -3604,14 +3607,14 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 		}
 		if node != unsafe { nil } { input_target = page.InputTarget.from_node_and_chrome_widget(node, target) }
 	}
-	handler.set_document_state(document.is_fully_active(), document.layout_node() != none)
+	handler.set_document_state(pointed_document.is_fully_active(), pointed_document.layout_node() != none)
 	mut screen_x := x
 	mut screen_y := y + f64(app.page_top())
 	$if macos { C.native_pointer_screen_position(x, screen_y, &screen_x, &screen_y) }
 	click_count := if event_type == 'pointerdown' {
 		app.pointer_clicks.press(document, button, x, y, i64(time.sys_mono_now() / u64(time.millisecond)))
 	} else { app.pointer_clicks.count }
-	position := page.PixelPoint{x: x / app.page_zoom, y: y / app.page_zoom}
+	position := pointer.position
 	result := handler.handle_platform_pointer_event(event_type, input_target, position,
 		page.PixelPoint{x: screen_x, y: screen_y}, u32(button), app.platform_pointer_buttons, app.platform_pointer_modifiers, click_count)
 	if event_type == 'pointerdown' && button == 0 && result == .handled
@@ -3619,15 +3622,18 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 		&& voidptr(app.document) == voidptr(document) && document.is_fully_active() {
 		$if macos {
 			if app.platform_pointer_modifiers & dom.modifier_ctrl == 0 {
-				handler.select_mouse_text(document, position, click_count, browser_text_word_range)
+				handler.select_mouse_text(pointed_document, position, click_count, browser_text_word_range)
 			}
 		} $else {
-			handler.select_mouse_text(document, position, click_count, browser_text_word_range)
+			handler.select_mouse_text(pointed_document, position, click_count, browser_text_word_range)
 		}
 	}
 	handled := target != '' || had_capture || handler.has_captured_chrome_widget()
 	// Hover, focus, listeners and chrome widgets can all invalidate the retained
 	// tree during dispatch. Commit that state before the embedder's next frame.
+	if voidptr(pointed_document) != voidptr(document) {
+		pointed_document.update_layout(reason)
+	}
 	document.update_layout(if handled { .event_handler_dispatch_chrome_widget_event } else { reason })
 	app.adopt_current_document_geometry()
 	return ChromePointerDispatchResult{
@@ -7925,6 +7931,9 @@ fn (mut app BrowserApp) replay_compact_javascript_click() {
 	generation := app.navigation_generation
 	if app.page_model != unsafe { nil } {
 		if node := app.page_model.event_handler.last_click_target_node() {
+			// Child realms already received the native click. Replaying its ID in
+			// the root realm could activate an unrelated element with the same ID.
+			if voidptr(node.document()) != voidptr(app.document) { return }
 			if mut target := node.as_element() {
 				if app.dispatch_javascript_event('click', target) {
 					app.close_browser_select_picker(node)
