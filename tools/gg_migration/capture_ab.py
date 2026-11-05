@@ -100,11 +100,11 @@ def classify(row, directory, ignore):
     exits = [row.get('control_exit'), row.get('candidate_exit')]
     row['candidate_vs_control'] = compare(control, candidate, ignore)
     if 'control_repeat_exit' in row or repeat.exists():
-        exits.append(row.get('control_repeat_exit', 0))
+        exits.append(row.get('control_repeat_exit'))
         row['repeat_vs_control'] = compare(control, repeat, ignore)
         row['candidate_vs_repeat'] = compare(repeat, candidate, ignore)
     first = row['candidate_vs_control']
-    if any(code not in (0, None) for code in exits) or first is None:
+    if row.get('error') or any(code != 0 for code in exits) or first is None:
         row['outcome'] = 'failed'
     elif first['equal']:
         row['outcome'] = 'equal'
@@ -149,12 +149,20 @@ def main():
         # Without a summary (an interrupted run), exit codes are unknown.
         path = args.output / 'summary.json'
         summary = json.loads(path.read_text()) if path.exists() else {}
-        if not summary or summary.get('interim'):
+        if not summary:
             summary = {'interim': True}
+        if not args.ignore and summary.get('ignore'):
+            ignore = summary['ignore']
         previous = summary.get('results') or [
             {'fixture': d.name} for d in sorted(args.output.iterdir())
             if (d / 'control.png').exists() and (d / 'candidate.png').exists()]
         rows = [classify(row, args.output / row['fixture'], ignore) for row in previous]
+        renderers = enabled_renderers(summary.get('candidate_env', {}))
+        if renderers:
+            for row in rows:
+                log = args.output / row['fixture'] / 'candidate.log'
+                if not log.exists() or not registration_present(log, renderers):
+                    row.update(outcome='failed', error='requested gg.canvas renderers were not registered')
     else:
         if not args.bundle or not args.inputs:
             parser.error('--bundle and --inputs are required unless --recompare is given')
@@ -166,9 +174,8 @@ def main():
         summary.pop(stale, None)
     (args.output / 'summary.json').write_text(json.dumps(summary, indent=1))
     print(json.dumps({k: v for k, v in summary.items() if k != 'results'}, indent=1))
-    if args.recompare:
-        return 0
-    return 0 if (summary['inputs_unchanged'] and rows
+    return 0 if (summary.get('inputs_unchanged') and not summary.get('interim') and rows
+                 and len(rows) == summary.get('requested_fixtures', len(rows))
                  and all(r['outcome'] in ('equal', 'equal_to_repeat') for r in rows)) else 1
 
 
@@ -222,7 +229,12 @@ def run_captures(args, ignore):
             row.update(outcome='failed', error='requested gg.canvas renderers were not registered')
         rows.append(row)
         # Preserve actual exits and partial progress if the guard stops the run.
-        (args.output / 'summary.json').write_text(json.dumps({'interim': True, 'results': rows}, indent=1))
+        (args.output / 'summary.json').write_text(json.dumps({
+            'interim': True, 'results': rows, 'candidate_env': candidate,
+            'bundle': str(args.bundle), 'input_identity': inputs_before,
+            'executable_sha256_before': identity_before,
+            'requested_fixtures': len(fixtures),
+        }, indent=1))
         print(json.dumps(row), flush=True)
     summary = {
         'bundle': str(args.bundle), 'executable_sha256_before': identity_before,

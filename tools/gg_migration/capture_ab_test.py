@@ -72,7 +72,11 @@ class CaptureValidationTest(unittest.TestCase):
         self.assertEqual([r['fixture'] for r in rows], ['two'])
         self.assertEqual(rows[0]['outcome'], 'equal')
         self.assertTrue(summary['inputs_unchanged'])
-        self.assertEqual(json.loads((self.args.output / 'summary.json').read_text())['results'], rows)
+        progress = json.loads((self.args.output / 'summary.json').read_text())
+        self.assertEqual(progress['results'], rows)
+        self.assertEqual(progress['candidate_env']['VOX_GG_SHAPES'], '1')
+        self.assertEqual(progress['requested_fixtures'], 1)
+        self.assertTrue(progress['input_identity'])
 
     def test_shared_resource_change_is_an_identity_change(self):
         resources = self.inputs.parent / 'resources'
@@ -91,6 +95,71 @@ class CaptureValidationTest(unittest.TestCase):
                 with patch('sys.argv', ['capture_ab', '--bundle', str(self.bundle), '--inputs',
                                         str(self.inputs), '--output', str(self.args.output)]):
                     self.assertEqual(capture_ab.main(), 1)
+
+    def saved_capture(self, **updates):
+        directory = self.args.output / 'one'
+        directory.mkdir(parents=True)
+        for mode in ('control', 'candidate'):
+            self.capture(None, None, directory / f'{mode}.png', directory / f'{mode}.log',
+                         {'VOX_GG_DIAGNOSTICS': '1'} if mode == 'candidate' else {})
+        summary = {'inputs_unchanged': True, 'requested_fixtures': 1,
+                   'candidate_env': {'VOX_GG_SHAPES': '1'}, 'ignore': [[1, 2, 1, 1]],
+                   'results': [{'fixture': 'one', 'control_exit': 0, 'candidate_exit': 0}]}
+        summary.update(updates)
+        (self.args.output / 'summary.json').write_text(json.dumps(summary))
+        return summary
+
+    def recompare(self):
+        with patch('sys.argv', ['capture_ab', '--recompare', '--output', str(self.args.output)]):
+            code = capture_ab.main()
+        return code, json.loads((self.args.output / 'summary.json').read_text())
+
+    def test_recompare_preserves_partial_exit_codes_and_provenance(self):
+        summary = self.saved_capture(interim=True, requested_fixtures=2)
+        summary['results'][0]['candidate_exit'] = -9
+        (self.args.output / 'summary.json').write_text(json.dumps(summary))
+        code, result = self.recompare()
+        self.assertEqual(code, 1)
+        self.assertEqual(result['results'][0]['candidate_exit'], -9)
+        self.assertEqual(result['results'][0]['outcome'], 'failed')
+        self.assertEqual(result['candidate_env'], summary['candidate_env'])
+        self.assertEqual(result['requested_fixtures'], 2)
+
+    def test_recompare_rejects_incomplete_cohort_with_equal_pixels(self):
+        self.saved_capture(interim=True, requested_fixtures=2)
+        code, result = self.recompare()
+        self.assertEqual(code, 1)
+        self.assertEqual(result['equal'], 1)
+        self.assertTrue(result['interim'])
+
+    def test_recompare_never_promotes_missing_registration(self):
+        self.saved_capture()
+        (self.args.output / 'one/candidate.log').unlink()
+        code, result = self.recompare()
+        self.assertEqual(code, 1)
+        self.assertEqual(result['results'][0]['outcome'], 'failed')
+
+    def test_recompare_preserves_recorded_validation_failure(self):
+        summary = self.saved_capture()
+        summary['results'][0]['error'] = 'inputs changed during capture'
+        (self.args.output / 'summary.json').write_text(json.dumps(summary))
+        code, result = self.recompare()
+        self.assertEqual(code, 1)
+        self.assertEqual(result['results'][0]['outcome'], 'failed')
+
+    def test_recompare_rejects_images_without_recorded_exits(self):
+        self.saved_capture()
+        (self.args.output / 'summary.json').unlink()
+        code, result = self.recompare()
+        self.assertEqual(code, 1)
+        self.assertEqual(result['results'][0]['outcome'], 'failed')
+
+    def test_recompare_accepts_complete_run_and_preserves_capture_mask(self):
+        summary = self.saved_capture()
+        code, result = self.recompare()
+        self.assertEqual(code, 0)
+        self.assertEqual(result['equal'], 1)
+        self.assertEqual(result['ignore'], summary['ignore'])
 
 
 if __name__ == '__main__':
