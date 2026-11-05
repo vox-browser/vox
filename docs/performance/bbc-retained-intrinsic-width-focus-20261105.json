@@ -1,0 +1,73 @@
+{
+  "status": "Final102focusedexecutions and335instruction-tooltests pass; native BBC eligibility and unprofiled matched measurements pending. No instruction saving/target/catalog credit.",
+  "implementation_commits": [
+    "31050fb5a",
+    "913e038d5"
+  ],
+  "validator_fix_commit": "5bd6e1e03",
+  "control_commit": "680644503",
+  "focused": {
+    "passed": true,
+    "cases_per_arm": 17,
+    "executions": 102,
+    "new_case_executions": 42,
+    "inputs": {
+      "/Users/alex/code/vox2/layout/retained_intrinsic_inline_width_test.v": "8e4e3458f17880d7a5c62752a3d506e7c3e0825f8d9194a6f3df1c76e58d0c2b",
+      "/Users/alex/code/vox2/layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "7a4e89c2ce193bb60fa7964b6216af2240cdba93460d291852f49545ae21da9f",
+      "/Users/alex/code/vox2/layout/inline_measurement_height_test.v": "c4feae7067924a65758860b0a9465dcd3cc657d0ee2054ca7abd5490730b1dbd",
+      "/Users/alex/code/vox2/layout/retained_intrinsic_inline_width.v": "d754e67174aeb50eb57c357def1e637451f7c22ca22808ff8ecf09f00c55fa49",
+      "/Users/alex/code/vox2/layout/inline_formatting_context.v": "77ffd6115e73e7dc48795a2bbc77ff7271aec8878fa4660300ed3dc24e75fd78",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "d1c706bb9ef9ed85e425749df9d1dd2a56e51c78722bcdee29db72f60e2303e9",
+      "/Users/alex/code/vox2/layout/node.v": "2b5e7ff1eb6a1fee38814ca934b65a6ab35fc2bfb35b722308f9a5f9cd77fbe6",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "8f82c8793b2c058974e8807f1ed176844bd8dc675c96bcd5155e2d425aa2ccdd"
+    },
+    "inputs_unchanged": true,
+    "actual_native_calls_verified": true,
+    "final_matrix": "detached-refined",
+    "tool_tests": 335,
+    "scope": "Both arms and all three memory modes. Six scalar-width cases plus one existing-line-cache detached-child regression; ten existing width/measurement cases retained. Complete uncached oracle, retired scratch/pools, same-count tree replacement, raw style revision and resolved font/root/viewport/scale contexts, percentage edges, fallback and bounded history. Earlier failed attempts retained; no native or performance credit."
+  },
+  "committed_sources": {
+    "layout/retained_intrinsic_inline_width_test.v": "8e4e3458f17880d7a5c62752a3d506e7c3e0825f8d9194a6f3df1c76e58d0c2b",
+    "layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+    "layout/inline_measurement_layout_test.v": "7a4e89c2ce193bb60fa7964b6216af2240cdba93460d291852f49545ae21da9f",
+    "layout/inline_measurement_height_test.v": "c4feae7067924a65758860b0a9465dcd3cc657d0ee2054ca7abd5490730b1dbd",
+    "layout/retained_intrinsic_inline_width.v": "d754e67174aeb50eb57c357def1e637451f7c22ca22808ff8ecf09f00c55fa49",
+    "layout/inline_formatting_context.v": "77ffd6115e73e7dc48795a2bbc77ff7271aec8878fa4660300ed3dc24e75fd78",
+    "layout/inline_measurement_layout.v": "d1c706bb9ef9ed85e425749df9d1dd2a56e51c78722bcdee29db72f60e2303e9",
+    "layout/node.v": "2b5e7ff1eb6a1fee38814ca934b65a6ab35fc2bfb35b722308f9a5f9cd77fbe6",
+    "layout/retained_inline_layout.v": "8f82c8793b2c058974e8807f1ed176844bd8dc675c96bcd5155e2d425aa2ccdd"
+  },
+  "tool_guard": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "*instructions_test.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 62504960,
+    "elapsed_seconds": 2.6042082079999997,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "profile_lead": "Detailed v-profile diagnostic:24,173intrinsic-widthprobes/16layoutpasses,41,216uncachedinlinecalls. Instrumentedelapsed is not instruction credit; linked separate profile source bbc-v-profile-detailed-20261105.json.",
+  "implementation": "Retain only scalar intrinsic width for a closed horizontal text subtree. Preserve dirty flags and ordinary intrinsic cache invalidation. Validate exact measurement key,text/tree identity,rawstyle revision,font epoch/cascade,rootmetrics,viewport/scale/styleenvironment. Document-owned cloned inputs survive retired scratch/pools; boundedfourentryhistory. Public line/geometry APIs unchanged.",
+  "refinements": "Original nested-span fixture lacked containingblock; botharms failed. Refined90 and resolvedcontext96 executions passed. Same-countchildreplacement then exposed oldvalidator readingdetachedtextstyle beforeparent validation; candidatefailed3modes,controlpassed. Parentcheck reordered and explicit sharedlinecache regressionadded. Final17casesx2armsx3modes all102pass. All initialfailed/superseded records retained, noneacceptancemeasurements.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-retained-intrinsic-width-focus-20261105.tar.gz",
+    "bytes": 54601394,
+    "sha256": "a3e97960105ec67963b183478caeda91ef908f32fa5c256a163a79a57c648ff8",
+    "members": 208,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793891251.719444
+}

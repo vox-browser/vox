@@ -6648,3 +6648,28 @@ History is **109 measured cohorts / 2,356 acceptance browser attempts**, last
 ID 112; IDs 104, 110 and 111 are preflight-only. The 10% target remains open and
 BBC homepage stays outside the catalog.
 [Every attempt, native/SVG proofs, image no-hit check and regression evidence](performance/bbc-object-receiver-call-cohort112-20261105.json).
+
+## Retained intrinsic text-width checks (2026-11-05)
+
+The separate detailed `v -profile` diagnostic records 24,173 intrinsic width
+probes across 16 layout passes. Those instrumented elapsed scopes guide this
+experiment; they provide no instruction savings or acceptance totals.
+
+`31050fb5a` retains scalar widths for closed horizontal intrinsic text contexts
+across disposable probes. Dirty flags and ordinary intrinsic-cache invalidation
+remain active. `913e038d5` additionally checks resolved viewport, scale and root
+font contexts that can change without a raw CSS revision. Text, tree membership,
+style revisions, measurement inputs and actual font cascades must still match.
+Document-owned cloned inputs survive released scratch and measurement pools;
+four entries bound each container's retained history. `680644503` supplies the
+isolated control.
+
+A same-count child replacement exposed an existing validator reading a detached
+text node's inherited style before checking its parent. `5bd6e1e03` reverses
+those checks and includes a regression for the within-pass line cache too.
+The final **102 focused executions** pass: 17 cases in both arms across all three
+memory modes, including 42 executions of seven new cases. All **335 instruction
+tool tests** pass. Original fixture failures and the detached-child crash remain
+retained with the superseded checks. Native BBC eligibility and an unprofiled
+matched cohort remain pending; the 10% target and homepage catalog entry stay open.
+[Focused evidence and verified raw archive](performance/bbc-retained-intrinsic-width-focus-20261105.json).
