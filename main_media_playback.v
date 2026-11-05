@@ -8,6 +8,10 @@ $if macos {
 }
 
 import painting
+import os
+
+const retain_native_media_paint = os.getenv('VOX_RETAIN_NATIVE_MEDIA_PAINT') != ''
+const retained_native_media_paint_diagnostics = os.getenv('VOX_RETAINED_NATIVE_MEDIA_PAINT_DIAGNOSTICS') != ''
 
 #flag darwin -framework CoreVideo
 #flag darwin -framework CoreMedia
@@ -74,7 +78,7 @@ fn (player &BrowserMediaPlayback) ranges() []html.MediaBufferedRange {
 	return ranges
 }
 
-fn (mut player BrowserMediaPlayback) update_frame(pixels &u8, width int, height int) {
+fn (mut player BrowserMediaPlayback) update_frame(pixels &u8, width int, height int) bool {
 	// Reuse the pixel storage between frames, including in the prealloc build.
 	// The document is invalidated below before retained painting reads it again.
 	mut previous_generation := u64(0)
@@ -86,7 +90,7 @@ fn (mut player BrowserMediaPlayback) update_frame(pixels &u8, width int, height 
 				// New pixels behind the same frame object: retained-paint
 				// consumers identify them by this counter.
 				frame.generation++
-				return
+				return true
 			}
 		}
 	}
@@ -101,6 +105,29 @@ fn (mut player BrowserMediaPlayback) update_frame(pixels &u8, width int, height 
 	})
 	created.generation = previous_generation + 1
 	player.frame = created
+	return false
+}
+
+// Same-size decoded frames update the retained VideoFrameSource in place.
+// Preserve every ordinary pixel invalidation, including the full document
+// revision, but do not rebuild unchanged geometry and paint transport.
+fn (mut app BrowserApp) invalidate_native_media_frame(mut document dom.Document, stable bool) {
+	if retain_native_media_paint && stable {
+		if app.document != unsafe { nil } && voidptr(&document) == voidptr(app.document) {
+			owner := u64(document.unique_id().value())
+			if app.stationary_media_revision_owner != owner {
+				app.stationary_media_revision_owner = owner
+				app.stationary_media_revision_count = 0
+			}
+			app.stationary_media_revision_count++
+		}
+		document.set_needs_repaint_with_invalidation(.no)
+		if retained_native_media_paint_diagnostics {
+			eprintln('VOX_RETAINED_NATIVE_MEDIA_PAINT generation=${app.paint_generation}')
+		}
+		return
+	}
+	document.set_needs_repaint_with_invalidation(.paint_commands)
 }
 
 fn (mut app BrowserApp) install_media_playback(element &dom.Element) {
@@ -211,10 +238,10 @@ fn (mut app BrowserApp) poll_media_playback() {
 			mut height := i32(0)
 			pixels := C.native_media_copy_frame(player.handle, &width, &height)
 			if pixels != unsafe { nil } {
-				player.update_frame(pixels, int(width), int(height))
+				stable := player.update_frame(pixels, int(width), int(height))
 				C.native_media_free_frame(pixels)
 				mut document := media.document() or { continue }
-				document.set_needs_repaint_with_invalidation(.paint_commands)
+				app.invalidate_native_media_frame(mut document, stable)
 			}
 			media.on_playback_manager_state_change(C.native_media_buffering(player.handle) != 0)
 			media.update_video_frame_and_timeline()

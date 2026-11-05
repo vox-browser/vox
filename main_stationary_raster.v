@@ -102,6 +102,19 @@ fn stationary_document_raster_viewport_eligible(commands []layout.PaintCommand,
 
 // Canvas and media can provide new pixels during replay without replacing the
 // display list. Animated native images also veto storage while being painted.
+fn (app &BrowserApp) stationary_document_revision() u64 {
+	if app.document == unsafe { nil } { return 0 }
+	revision := app.document.paint_content_revision()
+	if !disable_offscreen_video_stationary_reuse
+		&& app.stationary_media_revision_owner == u64(app.document.unique_id().value()) {
+		// Only the viewport eligibility proof permits ignoring these media-only
+		// revisions. The full revision still invalidates every other consumer;
+		// scripts, styles, resources and geometry changes remain in this key.
+		return revision - app.stationary_media_revision_count
+	}
+	return revision
+}
+
 fn (app &BrowserApp) begin_stationary_document_raster() bool {
 	$if macos {
 		// AppKit can request the first frame before navigation creates a document.
@@ -115,12 +128,12 @@ fn (app &BrowserApp) begin_stationary_document_raster() bool {
 			// UI2 updates separate native views after document replay. Nothing
 			// else draws into this bitmap, so an immutable frame can supply it.
 			return C.native_begin_stationary_raster_snapshot(u64(app.document.unique_id().value()),
-				app.document.paint_content_revision(), app.paint_generation, app.scroll_y,
+				app.stationary_document_revision(), app.paint_generation, app.scroll_y,
 				f64(app.page_top()), app.page_zoom, app.overlay_scrollbars.paint_opacity,
 				i32(eligible), 1) != 0
 		}
 		return C.native_begin_stationary_raster(u64(app.document.unique_id().value()),
-			app.document.paint_content_revision(), app.paint_generation, app.scroll_y,
+			app.stationary_document_revision(), app.paint_generation, app.scroll_y,
 			f64(app.page_top()), app.page_zoom, app.overlay_scrollbars.paint_opacity,
 			i32(eligible)) != 0
 	}

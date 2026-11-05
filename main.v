@@ -442,6 +442,8 @@ mut:
 	chromium_raster_plan                layout.ChromiumRasterLayerPlan
 	// Content identities of the frame whose pixels the scroll raster retains.
 	scroll_raster_keys                  ScrollRasterKeyFrame
+	stationary_media_revision_owner     u64
+	stationary_media_revision_count     u64
 	// Whether the last frame's content qualified for viewport scroll reuse, and
 	// whether this replay attempt defers leaf rasters into layer pictures.
 	scroll_raster_content_eligible      bool
