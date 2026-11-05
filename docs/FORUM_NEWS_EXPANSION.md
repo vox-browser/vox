@@ -1426,6 +1426,44 @@ Browser, tool and fixture identities remain unchanged within each cohort.
 [Check receipts, identities and limits](evidence/avif-planar-mipmap-upgrade-20261105.json),
 [raw attempts and screenshots](evidence/avif-planar-mipmap-upgrade-20261105.zip).
 
+## Effect bounds: preserve compositor clips (2026-11-05)
+
+Commit `da666d991` restores **zero pixels** in the SVG paint-opacity and
+Stack Overflow header regressions, previously 60 and 16 pixels. Calculated
+ink bounds had replaced an effect's clip. Compositor eligibility then treated
+that allocation envelope as an ancestor clip, declining shared recording and
+SVG alpha folding. The effect payload now marks calculated bounds and retains
+the original clip separately. Eligibility checks that original clip; fallback
+surface allocation keeps the smaller envelope. Nested replay transforms both
+coordinate spaces without changing an earlier recording.
+
+All **48 focused cases pass with default GC and GC disabled** (96 executions),
+covering effect bounds, original clip guards, nested transforms, SVG folding
+and shared recording. The existing opacity fixture also verifies that its six
+paths retain compositor eligibility after bounding. Initial assertion syntax
+and duplicate-receipt harness failures remain recorded alongside successful
+compile and runtime receipts.
+
+Five focused browser captures pass at zero pixels, including AVIF and the
+previous header controls. The full **134-test / 140-capture** run completes
+with unchanged inputs and **138 exact captures**. Its only failures are the
+two retained Pikabu image cases, at 1,097 pixels each. Existing inputs,
+references and tolerances are unchanged.
+
+The checked executable is `142853c7…`, completed while these renderer changes
+were still uncommitted. Its receipt brackets identical aggregate build-input
+hashes. Focused checks retain the owned source hashes, and fresh browser checks
+pin executable, native libraries, tools and fixtures. This is working-copy
+build provenance, not a sealed-C proof or a performance claim.
+
+Fresh complete-cache Hacker News and WIRED comparisons still pass every strict
+gate. Slate retains **0 native / 0 independent replay / 19,064 source pixels**.
+All 12 full-uBO oracle processes exit normally without surviving observed
+helpers, and inputs remain unchanged within each cohort.
+
+[Commands, attempts, identities and limits](evidence/effect-ancestor-clip-20261105.json),
+[raw checks and captures](evidence/effect-ancestor-clip-20261105.zip).
+
 ## WIRED: exact frozen first-frame viewport (2026-11-05)
 
 The original registered WIRED archive, manifest
