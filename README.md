@@ -49,6 +49,13 @@ errors; the next frame uses the change without restarting. A profile saved
 before this option existed keeps it on. `VOX_DISABLE_GPU_CANVAS=1` turns it off
 for one launch, for example as a measurement control.
 
+On macOS, Vox skips UIIntelligence registration at startup, so Apple Intelligence
+features cannot read Vox's on-screen content through that integration. To restore
+it, launch a fresh process with
+`VOX_ENABLE_UI_INTELLIGENCE=1 Build/v/Vox.app/Contents/MacOS/Vox`.
+Unset, empty and `0` values keep it disabled; any other value enables it.
+Writing Tools remain a separate opt-out, restored with `VOX_ENABLE_WRITING_TOOLS=1`.
+
 The refreshed LibJS frontend lives in [`libjs/`](libjs/PORT_STATUS.md). It exposes
 script/module parsing, positioned diagnostics, scope analysis, and retained AST
 dumps, plus the translated VM record: execution contexts, environment records,

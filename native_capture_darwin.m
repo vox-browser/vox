@@ -6,6 +6,7 @@
 #include "native_test_window_darwin.h"
 #include "native_media_preferences_darwin.h"
 #include "native_writing_tools_darwin.h"
+#include "native_ui_intelligence_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
 #include <malloc/malloc.h>
