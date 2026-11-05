@@ -308,6 +308,29 @@ static inline void* vox_jsc_JSObjectCallAsFunction(void* context, void* function
     return (void*)value;
 }
 
+// Function.prototype.call consumes the desired this value as its first
+// argument. Pack opaque V handles directly into native argument storage.
+static inline void* vox_jsc_call_with_receiver_argument(void* context, void* call,
+    void* function, void* receiver, size_t count, void* const* arguments, void** exception)
+{
+    if (count == SIZE_MAX)
+        abort();
+    size_t total = count + 1;
+    JSValueRef inline_arguments[vox_jsc_inline_argument_count];
+    JSValueRef* native_arguments = total <= vox_jsc_inline_argument_count
+        ? inline_arguments : vox_jsc_allocate_arguments(total, sizeof(JSValueRef));
+    native_arguments[0] = (JSValueRef)receiver;
+    for (size_t i = 0; i < count; ++i)
+        native_arguments[i + 1] = (JSValueRef)arguments[i];
+    JSValueRef native_exception = vox_jsc_exception_value(exception);
+    JSValueRef value = JSObjectCallAsFunction((JSContextRef)context, (JSObjectRef)call,
+        (JSObjectRef)function, total, native_arguments,
+        exception ? &native_exception : NULL);
+    vox_jsc_free_arguments(total, native_arguments);
+    vox_jsc_store_exception(exception, native_exception);
+    return (void*)value;
+}
+
 static inline void* vox_jsc_JSObjectMakeFunction(void* context, void* name,
     unsigned count, void* const* parameters, void* body, void* source_url,
     int starting_line_number, void** exception)
