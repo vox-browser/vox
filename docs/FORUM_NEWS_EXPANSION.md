@@ -3,8 +3,8 @@
 The [forum/news catalog](../Tests/Browser/Brave/forum-news.json) contains
 16 sites, including Discord. TechCrunch, Engadget, The Register, Slate and
 WIRED have sealed guest DOM archives, original response bodies, full-uBlock
-Origin reports and source PNGs. **The Register passes every strict pixel gate
-with cold and complete caches. WIRED passes with its explicit first-frame
+Origin reports and source PNGs. **TechCrunch and The Register pass every strict
+pixel gate with cold and complete caches. WIRED passes with its explicit first-frame
 image policy.** The other additions retain the open gaps documented below.
 
 The original ten are also incomplete: six accessible archives pass both source
@@ -12,8 +12,8 @@ fidelity and native equality; CNN matches frozen Brave but retains its separate
 source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
-The latest rendering checkpoint passes **135 tests / 141 captures at zero
-pixels** on `8d0d0946…`, with unchanged inputs and references. The AVIF sampling
+The latest rendering checkpoint passes **136 tests / 142 captures at zero
+pixels** on `304c4496…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -1661,6 +1661,63 @@ added; the separate four mask-only reducer pixels remain open.
 
 [Results, identities and qualifications](evidence/techcrunch-svg-path-precision-20261106.json),
 [retained attempts, captures and checks](evidence/techcrunch-svg-path-precision-20261106.zip).
+
+## TechCrunch: masked image inputs within parent tiles (2026-11-06)
+
+TechCrunch's original archived guest viewport now passes every strict gate
+with **zero differing RGBA pixels**. Production `4d07a9d0…` contains renderer
+fix `1a8235603`; the original manifest `e96b9b25…`, encoded media, saved source
+PNG and existing references remain unchanged.
+
+| Case | Saved source → Brave | Independent Brave replay | Vox → Brave |
+| --- | ---: | ---: | ---: |
+| TechCrunch, cold cache | 0 | 0 | **0** |
+| TechCrunch, complete cache | 0 | 0 | **0** |
+| Hacker News | 0 | 0 | 0 |
+| WIRED, first-frame policy | 0 | 0 | 0 |
+
+The last 32 pixels came from masked photographs crossing parent raster tiles.
+Vox sampled each image on one tight surface. The correction creates each
+non-composited mask/opacity image input within its parent tile's intersection,
+preserving the scope's horizontal origin and each tile's vertical origin.
+V selects ordinary scopes in single-column root grids; fixed effects, filters,
+independent compositor layers and multi-column parents retain their existing
+policy. It uses the existing GPU backend, image decoding and sampling.
+
+All **48 native GPU scenes** pass optimized and with ASan/UBSan, including
+RGBA/YUV inputs, scale 1/2, three tile heights, wider mask scopes and root
+scrolling. The old implementation fails the new native test. Existing root-row
+controls pass 42 comparisons; scrolling-grid and image-bridge controls pass
+another 80. Three V policy tests pass with default GC, GC disabled and poisoned
+preallocation. Failed test-construction compiles remain recorded.
+
+Commit `1dec84a62` adds the authored
+[`mask-image-parent-tiles`](../Tests/Browser/Brave/input/mask-image-parent-tiles.html)
+HTTP regression, its source-qualified PNG and the `--case mask-tiles` option in
+[`forum_news_image_effects.py`](../tools/forum_news_image_effects.py). Its earlier
+reduced page differed by 29 native pixels with exact source and independent
+references; the committed fixture now passes all strict gates at zero. The
+unchanged `root-origin` fixture also reaches zero, resolving its four mask-only
+pixels. The original image-effects control remains exact. All four archive-tool
+unit checks pass. The regression replays the original encoded WebP over HTTP;
+file-URL loading selects a different decoder and is not substituted.
+
+The complete rendering suite passes **136 tests / 142 captures**, all exact,
+on `304c4496…`. A shared publication completed between the strict site checks
+and the broad cohort; both builds contain the fix, and each cohort verifies
+unchanged executable, native-library, tool, fixture and reference identities.
+Independent RGBA checks confirm the site and synthetic results above.
+
+Private backend, mip, backing-padding, fast-clamping and backdrop probes are
+retained. Padding alone leaves the 32 pixels; fast clamping worsens them to
+113. Only the parent-tile intersection diagnostic reaches zero. The earlier
+shared-build layout crashes remain recorded; the fresh baseline here completes
+at 32 pixels, without establishing a crash fix. This result covers the frozen
+1024×768 guest viewport. Live scripting, ordinary WIRED animation, scrolling
+and performance retain their separate requirements.
+
+[Results, identities and qualifications](evidence/techcrunch-mask-tile-images-20261106.json),
+[retained attempts, captures and checks](evidence/techcrunch-mask-tile-images-20261106.zip).
 
 ## The Register: block-content centering (2026-11-03)
 
