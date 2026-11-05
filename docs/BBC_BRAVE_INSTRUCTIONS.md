@@ -6199,3 +6199,29 @@ made. All attempts remain recorded. [Policy diagnostic and raw evidence](perform
 Acceptance history stays at 104 measured cohorts / 2,251 browser attempts. The
 last valid seven-triple cohort remains 105, the strict 10% target still fails,
 and BBC homepage remains outside the catalog.
+
+
+## Cached cosmetic token surveys (2026-11-05)
+
+`af9b7abd0` stores the browser's sorted light-DOM ID/class tokens until either
+the document tree or attribute version changes. Procedural selectors still run,
+filter CSS is recomputed for toggles and live URLs, and mutations between primed
+and final styles are observed. Independent bounded storage survives temporary
+callers; navigation and tab disposal clear the cache. `9aca40cd8` supplies the
+isolated disabled control without changing the shared rendering policies.
+
+All **30 executions of five new cases** pass in both arms and three memory
+modes. The complete cosmetic/lifecycle batch runs 44 cases per arm/mode: 264
+executions, 258 passes and six occurrences of the same existing internal
+paint-width assertion in both arms. Assertions are unchanged; this is no full
+suite pass. All **331 instruction-tool tests** pass. Initial harness import and
+Option-unwrap errors, ambient-proxy failures and preallocation crashes in an
+unrelated GPU-image fixture remain retained. The final focused batch excludes
+that network-fixture file, uses empty profiles and clears ambient proxies; no
+complete execution is claimed for the earlier aborted batch.
+
+The completed production bundle checked at this stage predates the cache and a
+shared build is already running. BBC workload eligibility, native correctness
+and matched instruction effect remain pending. This change receives no
+performance credit yet; the 10% target remains open and the homepage stays
+outside the catalog. [Focused checks, failures, source hashes and archive](performance/bbc-adblock-token-focus-20261105.json).

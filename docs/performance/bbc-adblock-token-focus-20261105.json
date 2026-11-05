@@ -1,0 +1,155 @@
+{
+  "status": "Committed adblock token survey cache with all30newcase executions passing. Broader focused264executions include6unchanged baseline paint-width failures. BBC eligibility and performance not yet established; target remains unmet.",
+  "implementation_commit": "af9b7abd0",
+  "tooling_commit": "9aca40cd8",
+  "focused": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "total_executions": 264,
+    "passes": 258,
+    "baseline_failures": 6,
+    "new_case_executions": 30,
+    "new_case_failures": 0,
+    "new_cases": [
+      "test_adblock_cached_survey_observes_attribute_tree_and_document_changes",
+      "test_adblock_cached_tokens_survive_caller_storage_and_bound_replacement_storage",
+      "test_cached_adblock_survey_preserves_filter_toggle_and_live_styles",
+      "test_cached_adblock_survey_observes_procedural_mutation_between_primed_and_final_styles",
+      "test_cached_adblock_tokens_follow_navigation_and_are_released_with_the_tab"
+    ],
+    "rows": [
+      {
+        "mode": "default",
+        "arm": "candidate",
+        "executed": 44,
+        "passes": 43,
+        "baseline_failures": [
+          "test_shell_retains_previous_tree_until_geometry_and_scene_are_replaced"
+        ],
+        "new_cases_passed": 5,
+        "runtime_exit": 1
+      },
+      {
+        "mode": "default",
+        "arm": "control",
+        "executed": 44,
+        "passes": 43,
+        "baseline_failures": [
+          "test_shell_retains_previous_tree_until_geometry_and_scene_are_replaced"
+        ],
+        "new_cases_passed": 5,
+        "runtime_exit": 1
+      },
+      {
+        "mode": "none",
+        "arm": "candidate",
+        "executed": 44,
+        "passes": 43,
+        "baseline_failures": [
+          "test_shell_retains_previous_tree_until_geometry_and_scene_are_replaced"
+        ],
+        "new_cases_passed": 5,
+        "runtime_exit": 1
+      },
+      {
+        "mode": "none",
+        "arm": "control",
+        "executed": 44,
+        "passes": 43,
+        "baseline_failures": [
+          "test_shell_retains_previous_tree_until_geometry_and_scene_are_replaced"
+        ],
+        "new_cases_passed": 5,
+        "runtime_exit": 1
+      },
+      {
+        "mode": "prealloc",
+        "arm": "candidate",
+        "executed": 44,
+        "passes": 43,
+        "baseline_failures": [
+          "test_shell_retains_previous_tree_until_geometry_and_scene_are_replaced"
+        ],
+        "new_cases_passed": 5,
+        "runtime_exit": 1
+      },
+      {
+        "mode": "prealloc",
+        "arm": "control",
+        "executed": 44,
+        "passes": 43,
+        "baseline_failures": [
+          "test_shell_retains_previous_tree_until_geometry_and_scene_are_replaced"
+        ],
+        "new_cases_passed": 5,
+        "runtime_exit": 1
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/main_adblock_empty_procedural_style_test.v": "00d3678534a2683ad31cfa5ce03f4b4d2b0a07869bc6d68bd2e83b2dcf6e65ef",
+      "/Users/alex/code/vox2/main_adblock_filter_reuse_test.v": "f17354e03e258ad92b4ebd0dee2afc64fcb7760be0573d623b54768af26a7e78",
+      "/Users/alex/code/vox2/main_adblock_keyed_replay_test.v": "8be547685646062e06e88f07d4c104c9665b834b4635140187d4070bc045dc1e",
+      "/Users/alex/code/vox2/main_adblock_pikabu_test.v": "e7ca5bdaa82d853b431e1c891cb2815aaeb2b83c7bce926488c2b1e961e61129",
+      "/Users/alex/code/vox2/main_adblock_popular_test.v": "9379805a086e03fc4dfc5f8f1e0eda8103bec57ce80adcaa3d144c14cb4578c5",
+      "/Users/alex/code/vox2/main_adblock_procedural_prime_test.v": "b1548d6832fb190f871988c7409b82e0d8812c2ac8c3e2791ec67cf2d2d7c334",
+      "/Users/alex/code/vox2/main_adblock_reddit_test.v": "968faa01388b30776f2058ea6fdb6b808d14719b7ec61eb3536db272099fc293",
+      "/Users/alex/code/vox2/main_adblock_response_test.v": "935e9026242fa8e0474bee3247680abace8f42876ce24283dc5dbffaf6063bf5",
+      "/Users/alex/code/vox2/main_adblock_storage_test.v": "bb8627ae51561aeaa6696aea46c9f2fcf62eaa69c85a4509a24c3c25aee948c8",
+      "/Users/alex/code/vox2/main_adblock_style_identity_test.v": "bf3116c30dc764367008a8d4725f048a7a61115389a78b84b9426d31b4ff06b0",
+      "/Users/alex/code/vox2/main_adblock_style_storage_test.v": "f0f75c674be117a63731ed520539850c4e5cab11c626c2af76df8cf32feb281b",
+      "/Users/alex/code/vox2/main_adblock_test.v": "ce4a4830c2005937ccb4c2bf2bfe4475857d46c43887d4ae18fc3a2db0b63a25",
+      "/Users/alex/code/vox2/main_adblock_token_storage_test.v": "d7bb2c6b2768052ad7cb2ba15c8bf04668eaea78e7eff100825f366e11bed9ac",
+      "/Users/alex/code/vox2/main_adblock_token_survey_test.v": "1ae5edd40d86a9cecb5ae8a2a1dedaf0deb5775da9fc09e9f99251eb18dddab2",
+      "/Users/alex/code/vox2/main_adblock_tokens_test.v": "58abe1f79179fd7bb23e15fc0fabcafd0510efc0682dd98b45defaec60cb5bb0",
+      "/Users/alex/code/vox2/main_adblock.v": "8b61d0d26204d181fe30f602496e151dabbbb9c402ab40b7ea6356bd8e44c585",
+      "/Users/alex/code/vox2/main_adblock_tokens.v": "c6a9b6c9d189e420352fe74d0db51a460b27d219148868e4a599efc2b15ed0c4",
+      "/Users/alex/code/vox2/main.v": "e1d77f9fc697bcad54b081e8d11a7428d4b8d82c36a18cb8f08818a81cde35a2",
+      "/Users/alex/code/vox2/main_frame_paint.v": "2557bbe0812d23bfbce704475feb5635162362139d30099d8c14c0a82aee2044",
+      "/Users/alex/code/vox2/main_frame_task_layout.v": "c403b9852f840d05ea83dc30641986f9751062671063adba83dace75c6624907",
+      "/Users/alex/code/vox2/main_browser_tabs.v": "6b10de8d89566dae4b117a3a6fa0ad4b979c17842105b84d22150836ddd77410",
+      "/Users/alex/code/vox2/main_navigation_lifecycle_test.v": "18665a0eaa8052316563c2c347677646160fada0967c8fd64a9f7d91d7406e89",
+      "/Users/alex/code/vox2/main_paint_tree_retirement_test.v": "b32c33e341186f36ca66a3ec3a96def05ad46999d82540d8706a316565c5166e"
+    },
+    "inputs_unchanged": true,
+    "qualifications": "The same existing internal paint-width assertion expects70CSSpx while device-layout paint geometry uses140px atDPR2; both arms agree, assertion unchanged. Every44case call has its own setjmp boundary and all are in native main. Initial49case batch retains its proxy failures and unrelated preallocGPU-image crashes before newcases; no complete execution claim for those. Final44case cosmetic/lifecycle batch removes only main_adblock_network_test.v, which does not call the token survey. Harness deduplicates json2 imports and replaces old fixtures Result unwraps on optional computed properties with explicit panic on absence; every comparison/assertion remains unchanged. Empty private profiles and removed ambient proxy variables are recorded before final execution.",
+    "unix": 1793867359.1093729
+  },
+  "instruction_tool_tests": {
+    "cases": 331,
+    "exit": 0
+  },
+  "scope": "Own44case cosmetic/filter/token-storage/navigation/tab-lifecycle batch, both cache arms and all3GCmodes. All compiler/test commands guarded,compiler10Gcap,runtime3GiBRSS; checked sources unchanged. Initial duplicateimport and Optionunwrap compiler failures, ambientproxy failures and unrelatedGPU-image fixture crashes retained; no complete execution claim for aborted49case batch. No acceptance cohort or optimization credit.",
+  "source_commit_verification": {
+    "main_adblock_empty_procedural_style_test.v": true,
+    "main_adblock_filter_reuse_test.v": true,
+    "main_adblock_keyed_replay_test.v": true,
+    "main_adblock_pikabu_test.v": true,
+    "main_adblock_popular_test.v": true,
+    "main_adblock_procedural_prime_test.v": true,
+    "main_adblock_reddit_test.v": true,
+    "main_adblock_response_test.v": true,
+    "main_adblock_storage_test.v": true,
+    "main_adblock_style_identity_test.v": true,
+    "main_adblock_style_storage_test.v": true,
+    "main_adblock_test.v": true,
+    "main_adblock_token_storage_test.v": true,
+    "main_adblock_token_survey_test.v": true,
+    "main_adblock_tokens_test.v": true,
+    "main_adblock.v": true,
+    "main_adblock_tokens.v": true,
+    "main.v": true,
+    "main_frame_paint.v": true,
+    "main_frame_task_layout.v": true,
+    "main_browser_tabs.v": true,
+    "main_navigation_lifecycle_test.v": true,
+    "main_paint_tree_retirement_test.v": true
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-adblock-token-focus-20261105.tar.gz",
+    "bytes": 28223495,
+    "sha256": "d4ea06fabe0aa7eaa325f30b5ad803c8691a0cf159e6405c8f844ea62a6913dc",
+    "members": 122,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793867462.92356
+}
