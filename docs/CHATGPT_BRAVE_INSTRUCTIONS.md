@@ -2757,3 +2757,67 @@ links raw counters, audits, PNGs, source proof, host conditions, commands,
 actual exits and five verified archives. Every component and page observation
 is retained. The publication lease is released; **no 5%-below-Brave acceptance
 is claimed**.
+
+
+## November 5: one snapshot and scan for animation property changes
+
+Commit `566c5cb96` takes one owned snapshot of the current animated-property
+map and scans the old/new union once for invalidation, compositor eligibility
+and local/background paint classification. Previously the callback cloned the
+current map three times and repeated overlapping value comparisons. Public
+snapshot callers still receive independent maps, and no map/sample reference
+escapes in the new result. Custom-property handling, sample retirement and
+subsequent descendant/style updates retain their existing ownership rules.
+
+The three original classifiers are byte-identical and remain the control via
+`VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS=1`.
+`VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS=1` reports an executed nonempty candidate
+scan once. All **12 final focused jobs pass**, with **376 test-function
+executions**: 47 cases × four allocation/check modes × two variants. The matrix
+covers every longhand's addition/change/removal, non-longhand and added-key
+classification, mixed insertion orders, public snapshot isolation, inherited
+values, compositor behavior and sample-arena retirement/projection. Both
+variants run with poisoned preallocation, ordinary GC, no GC and ASan/UBSan.
+
+Tooling commit `ed8c5e961` measures 128 deterministic animation/style updates
+on 64 targets. Each counted update checks five computed properties against an
+ordinary-storage reference frame. Setup, reference construction, layout, paint
+and teardown are excluded; updates, snapshot/scanning work and value checks are
+included. Four unprofiled control/candidate/candidate/control runs retain every
+observation, with separate execution diagnostics.
+
+| Animation/style component | Median observed instruction reduction |
+| --- | ---: |
+| Opacity and transform | 3.539% |
+| Inherited color | 0.756% |
+| Mixed layout and paint properties | 2.445% |
+| Unchanged opacity | 2.262% |
+
+The separate correctness preflight and its raw counts are retained outside
+that prescribed comparison: it lacked before/after fingerprints and a
+host-before receipt. Component gains establish no page or Brave result.
+
+### Correcting the focused test runtime
+
+The first poisoning run faults in V's closure live directory. It omitted the
+explicit staged-runtime module search path, so the compiler used its default
+closure runtime. The unchanged standalone
+`platform/closure_metadata_arena_test.v` independently reproduces the same
+poisoned-directory failure without this optimization. The corrected command
+uses the production overlay path; that standalone probe and the entire final
+matrix pass. Generated-C initialization/lock excerpts confirm the metadata
+arena hooks in the corrected tests and their absence in the first binary.
+The component's module path and metadata globals confirm the overlay helper.
+The staged runtime manifest and all its owned-file hashes also verify exactly.
+
+The production build already uses this overlay. This is a test-configuration
+correction, with **no engine/runtime change or instruction credit**. Earlier
+commands in this log that omitted the module search path identify compiler
+bytes but do not establish use of the production closure overlay. Historical
+raw results are preserved; no prior result is silently rewritten.
+
+The [focused/component receipt](performance/chatgpt-animation-change-scan-20261105.json)
+links source/executable hashes, all 376 generated test calls, both closure
+probes and their actual exits, the failed initial matrix, counters, checksums,
+commands, guards and the verified archive. No whole-page saving is credited by
+this component evidence, and the broad-check cadence remains unchanged.

@@ -1,0 +1,1433 @@
+{
+  "version": 1,
+  "complete": true,
+  "recorded_unix": 1793892653.552834,
+  "implementation_commit": "566c5cb96",
+  "benchmark_commit": "ed8c5e961",
+  "change": "Use one owned current animated-property map snapshot and a single union scan to compute invalidation, compositor eligibility and local/background paint classification. Public snapshot ownership and sample lifetimes remain unchanged. Existing individual classifiers remain the separate-scan control.",
+  "original_classifiers_unchanged": true,
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/style_computer.v": "9a65786feff850df5b88aad726ae5659d8dae11353644be4b24b5cdecc942241",
+      "css/animated_property_change_scan.v": "6942c792d8618d2a1d9fb0b8224c2ce48ed78089a28b6bf64074b04279bc6b19",
+      "css/animated_property_change_scan_test.v": "1b58d2fa97dde6588a527869b5a364f8ed8a3973d941a9eb68a16274e6be3948"
+    },
+    "source_after": {
+      "css/style_computer.v": "9a65786feff850df5b88aad726ae5659d8dae11353644be4b24b5cdecc942241",
+      "css/animated_property_change_scan.v": "6942c792d8618d2a1d9fb0b8224c2ce48ed78089a28b6bf64074b04279bc6b19",
+      "css/animated_property_change_scan_test.v": "1b58d2fa97dde6588a527869b5a364f8ed8a3973d941a9eb68a16274e6be3948"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-prealloc",
+          "/Users/alex/code/vox2/css/animated_property_change_scan_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793891639.670437,
+          "cpu_count": 18,
+          "load": [
+            25.86669921875,
+            28.34033203125,
+            27.21533203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891645.175683,
+          "load": [
+            24.115234375,
+            27.93603515625,
+            27.0791015625
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891645.1820328,
+          "cpu_count": 18,
+          "load": [
+            24.115234375,
+            27.93603515625,
+            27.0791015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891646.033503,
+          "load": [
+            24.115234375,
+            27.93603515625,
+            27.0791015625
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "1",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891646.040035,
+          "cpu_count": 18,
+          "load": [
+            24.115234375,
+            27.93603515625,
+            27.0791015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891646.589756,
+          "load": [
+            24.115234375,
+            27.93603515625,
+            27.0791015625
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-file-list",
+          "/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-default",
+          "/Users/alex/code/vox2/css/animated_property_change_scan_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793891646.596289,
+          "cpu_count": 18,
+          "load": [
+            24.115234375,
+            27.93603515625,
+            27.0791015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891652.124598,
+          "load": [
+            24.55859375,
+            27.90478515625,
+            27.078125
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891652.1312408,
+          "cpu_count": 18,
+          "load": [
+            24.55859375,
+            27.90478515625,
+            27.078125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891652.5960739,
+          "load": [
+            24.55859375,
+            27.90478515625,
+            27.078125
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "1",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891652.6025522,
+          "cpu_count": 18,
+          "load": [
+            24.55859375,
+            27.90478515625,
+            27.078125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891652.8039098,
+          "load": [
+            24.55859375,
+            27.90478515625,
+            27.078125
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-none",
+          "/Users/alex/code/vox2/css/animated_property_change_scan_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793891652.810466,
+          "cpu_count": 18,
+          "load": [
+            24.55859375,
+            27.90478515625,
+            27.078125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891658.240232,
+          "load": [
+            25.234375,
+            27.9892578125,
+            27.11279296875
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891658.246977,
+          "cpu_count": 18,
+          "load": [
+            25.234375,
+            27.9892578125,
+            27.11279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891658.727385,
+          "load": [
+            25.234375,
+            27.9892578125,
+            27.11279296875
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "1",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891658.7339158,
+          "cpu_count": 18,
+          "load": [
+            25.234375,
+            27.9892578125,
+            27.11279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891658.929045,
+          "load": [
+            25.234375,
+            27.9892578125,
+            27.11279296875
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-sanitized",
+          "/Users/alex/code/vox2/css/animated_property_change_scan_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793891658.935638,
+          "cpu_count": 18,
+          "load": [
+            25.234375,
+            27.9892578125,
+            27.11279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891671.069546,
+          "load": [
+            25.8798828125,
+            28.0380859375,
+            27.14013671875
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891671.077079,
+          "cpu_count": 18,
+          "load": [
+            25.8798828125,
+            28.0380859375,
+            27.14013671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891672.897354,
+          "load": [
+            26.36962890625,
+            28.103515625,
+            27.16845703125
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "1",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793891672.904752,
+          "cpu_count": 18,
+          "load": [
+            26.36962890625,
+            28.103515625,
+            27.16845703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793891674.2267761,
+          "load": [
+            26.36962890625,
+            28.103515625,
+            27.16845703125
+          ]
+        }
+      }
+    ]
+  },
+  "test_case_executions": 376,
+  "generated_c_test_calls": {
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-prealloc.c": {
+      "sha256": "e36f998695e3917ad34fd8c743904d1e8884f3961b4385c7578ec7d535de00f1",
+      "case_count": 47,
+      "cases": [
+        "css__test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "css__test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "css__test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "css__test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "css__test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "css__test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "css__test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "css__test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "css__test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "css__test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "css__test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "css__test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "css__test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "css__test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "css__test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "css__test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "css__test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "css__test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "css__test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "css__test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "css__test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "css__test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "css__test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "css__test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "css__test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "css__test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "css__test_animation_sample_rotation_preserves_descendant_selector_context",
+        "css__test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "css__test_static_document_clock_advances_without_requesting_another_frame",
+        "css__test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "css__test_css_animation_targets_including_retained_end_states_request_style",
+        "css__test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "css__test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "css__test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "css__test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "css__test_hidden_css_transition_targets_do_not_request_frames",
+        "css__test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "css__test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "css__test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "css__test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "css__test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "css__test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "css__test_existing_css_animation_refreshes_inserted_keyframes",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ]
+    },
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-default.c": {
+      "sha256": "fedfc82a7bfb7f89b0d319468245faa471dfffaaab1cf3e02559ddec77488df7",
+      "case_count": 47,
+      "cases": [
+        "css__test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "css__test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "css__test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "css__test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "css__test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "css__test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "css__test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "css__test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "css__test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "css__test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "css__test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "css__test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "css__test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "css__test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "css__test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "css__test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "css__test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "css__test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "css__test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "css__test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "css__test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "css__test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "css__test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "css__test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "css__test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "css__test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "css__test_animation_sample_rotation_preserves_descendant_selector_context",
+        "css__test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "css__test_static_document_clock_advances_without_requesting_another_frame",
+        "css__test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "css__test_css_animation_targets_including_retained_end_states_request_style",
+        "css__test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "css__test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "css__test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "css__test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "css__test_hidden_css_transition_targets_do_not_request_frames",
+        "css__test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "css__test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "css__test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "css__test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "css__test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "css__test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "css__test_existing_css_animation_refreshes_inserted_keyframes",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ]
+    },
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-none.c": {
+      "sha256": "cbf51d43c383c62b81d0d41396164f85f07b4f422a743a2d3f9f0005adf5a525",
+      "case_count": 47,
+      "cases": [
+        "css__test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "css__test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "css__test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "css__test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "css__test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "css__test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "css__test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "css__test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "css__test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "css__test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "css__test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "css__test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "css__test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "css__test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "css__test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "css__test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "css__test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "css__test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "css__test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "css__test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "css__test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "css__test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "css__test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "css__test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "css__test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "css__test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "css__test_animation_sample_rotation_preserves_descendant_selector_context",
+        "css__test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "css__test_static_document_clock_advances_without_requesting_another_frame",
+        "css__test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "css__test_css_animation_targets_including_retained_end_states_request_style",
+        "css__test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "css__test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "css__test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "css__test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "css__test_hidden_css_transition_targets_do_not_request_frames",
+        "css__test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "css__test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "css__test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "css__test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "css__test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "css__test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "css__test_existing_css_animation_refreshes_inserted_keyframes",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ]
+    },
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-sanitized.c": {
+      "sha256": "e36f998695e3917ad34fd8c743904d1e8884f3961b4385c7578ec7d535de00f1",
+      "case_count": 47,
+      "cases": [
+        "css__test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "css__test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "css__test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "css__test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "css__test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "css__test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "css__test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "css__test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "css__test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "css__test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "css__test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "css__test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "css__test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "css__test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "css__test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "css__test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "css__test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "css__test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "css__test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "css__test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "css__test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "css__test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "css__test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "css__test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "css__test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "css__test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "css__test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "css__test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "css__test_animation_sample_rotation_preserves_descendant_selector_context",
+        "css__test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "css__test_static_document_clock_advances_without_requesting_another_frame",
+        "css__test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "css__test_css_animation_targets_including_retained_end_states_request_style",
+        "css__test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "css__test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "css__test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "css__test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "css__test_hidden_css_transition_targets_do_not_request_frames",
+        "css__test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "css__test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "css__test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "css__test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "css__test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "css__test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "css__test_existing_css_animation_refreshes_inserted_keyframes",
+        "css__test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "css__test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ]
+    }
+  },
+  "test_executable_sha256": {
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-prealloc": "5ca18bd0e9ab6611e3dc484784c28974d1c68606eee1052eeb2a0136c52dc6a1",
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-default": "6a91df53bff866fe6ba74940b755e1ff0e2dca57d9fd94bb548452ae21e346e9",
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-none": "f7f8597ef39f86ea1f73accaa6ec889bd18225a7032eb9e049a8b54508b793e6",
+    "Build/chatgpt-animation-change-scan-20261105-r2/checks-sanitized": "3ded84cc24db80e0219e5973bc4946f1601d4e0f48a5ebe2b923c5d927907e09"
+  },
+  "focused_compile_peak_rss_bytes": 3299557376,
+  "component_compile_guard": {
+    "command": [
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "-path",
+      "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+      "-memory-limit",
+      "10G",
+      "-enable-globals",
+      "-prod",
+      "-prealloc",
+      "-gc",
+      "none",
+      "-cc",
+      "clang",
+      "-nocache",
+      "-keepc",
+      "-ldflags",
+      "-framework CoreGraphics",
+      "-o",
+      "Build/chatgpt-animation-change-scan-20261105-r2/component",
+      "tools/animation_change_scan_benchmark.v"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 5044551680,
+    "elapsed_seconds": 47.147262999999995,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "compile_peak_rss_bytes": 5044551680,
+  "runtime_peak_rss_bytes": 529154048,
+  "component": {
+    "complete": true,
+    "preflight": {
+      "log": "Build/chatgpt-animation-change-scan-20261105-r2/component-initial.log",
+      "guard": "Build/chatgpt-animation-change-scan-20261105-r2/component-initial-guard.json",
+      "qualification": "A separate correctness preflight is retained with its raw counts. It had no before/after fingerprints or host-before receipt and is not included in the prespecified four-run comparison."
+    },
+    "inputs_before": {
+      "Build/chatgpt-animation-change-scan-20261105-r2/component": "1fb97f1f62793a51d84e50397842cafdaf8787c2b27d5aee1738a0d46c919acc",
+      "css/animated_property_change_scan.v": "6942c792d8618d2a1d9fb0b8224c2ce48ed78089a28b6bf64074b04279bc6b19",
+      "css/style_computer.v": "9a65786feff850df5b88aad726ae5659d8dae11353644be4b24b5cdecc942241",
+      "tools/animation_change_scan_benchmark.v": "1fc52e5214a11c848203b2a2879183aac949c8e01fe3d6419697f796ded2d5a1",
+      "Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/manifest.json": "454a6d67464e29152bd17d697a791a85dd132f1725cc0d8bba5180c7ada87fd9"
+    },
+    "inputs_after": {
+      "Build/chatgpt-animation-change-scan-20261105-r2/component": "1fb97f1f62793a51d84e50397842cafdaf8787c2b27d5aee1738a0d46c919acc",
+      "css/animated_property_change_scan.v": "6942c792d8618d2a1d9fb0b8224c2ce48ed78089a28b6bf64074b04279bc6b19",
+      "css/style_computer.v": "9a65786feff850df5b88aad726ae5659d8dae11353644be4b24b5cdecc942241",
+      "tools/animation_change_scan_benchmark.v": "1fc52e5214a11c848203b2a2879183aac949c8e01fe3d6419697f796ded2d5a1",
+      "Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/manifest.json": "454a6d67464e29152bd17d697a791a85dd132f1725cc0d8bba5180c7ada87fd9"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "1",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793892026.921855,
+          "cpu_count": 18,
+          "load": [
+            24.357421875,
+            27.32275390625,
+            27.3310546875
+          ]
+        },
+        "host_after": {
+          "unix": 1793892027.484542,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 232956639,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 3024113249,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 310109424,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 118737404,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793892027.5114639,
+          "cpu_count": 18,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "host_after": {
+          "unix": 1793892027.954864,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 223993546,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 3000276397,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 301401553,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 116058357,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793892027.982324,
+          "cpu_count": 18,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "host_after": {
+          "unix": 1793892028.4151402,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 225371550,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 3001387081,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 301451371,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 116054707,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "1",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793892028.441911,
+          "cpu_count": 18,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "host_after": {
+          "unix": 1793892028.991945,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 232896535,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 3023250030,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 307850843,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 118746678,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793892029.019745,
+          "cpu_count": 18,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "host_after": {
+          "unix": 1793892029.460866,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 224664776,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 3000728574,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 301538152,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 116074992,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SEPARATE_ANIMATION_CHANGE_SCANS": "1",
+          "VOX_ANIMATION_CHANGE_SCAN_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793892029.488356,
+          "cpu_count": 18,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "host_after": {
+          "unix": 1793892029.937073,
+          "load": [
+            23.68798828125,
+            27.134765625,
+            27.2646484375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 232948446,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 3023566516,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 307902575,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 118812868,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "opacity-transform": {
+        "control": [
+          232956639,
+          232896535
+        ],
+        "candidate": [
+          223993546,
+          225371550
+        ],
+        "control_median": 232926587.0,
+        "candidate_median": 224682548.0,
+        "reduction_percent": 3.539329325252166,
+        "conservative_component_reduction": 7524985,
+        "checksum": 378432,
+        "frames": 128,
+        "targets": 64
+      },
+      "inherited-color": {
+        "control": [
+          3024113249,
+          3023250030
+        ],
+        "candidate": [
+          3000276397,
+          3001387081
+        ],
+        "control_median": 3023681639.5,
+        "candidate_median": 3000831739.0,
+        "reduction_percent": 0.7556979611047442,
+        "conservative_component_reduction": 21862949,
+        "checksum": 335808,
+        "frames": 128,
+        "targets": 64
+      },
+      "mixed-layout-paint": {
+        "control": [
+          310109424,
+          307850843
+        ],
+        "candidate": [
+          301401553,
+          301451371
+        ],
+        "control_median": 308980133.5,
+        "candidate_median": 301426462.0,
+        "reduction_percent": 2.4447110610106586,
+        "conservative_component_reduction": 6399472,
+        "checksum": 313440,
+        "frames": 128,
+        "targets": 64
+      },
+      "unchanged-opacity": {
+        "control": [
+          118737404,
+          118746678
+        ],
+        "candidate": [
+          116058357,
+          116054707
+        ],
+        "control_median": 118742041.0,
+        "candidate_median": 116056532.0,
+        "reduction_percent": 2.2616328449331604,
+        "conservative_component_reduction": 2679047,
+        "checksum": 294912,
+        "frames": 128,
+        "targets": 64
+      }
+    },
+    "qualification": "Current-process unprofiled instruction intervals; setup/oracle creation and warmup are excluded. Every counted frame compares five computed properties on all 64 targets with an ordinary-storage reference frame. These intervals include animation sampling and style updates, snapshot classification and verification, but exclude setup, reference creation, paint, layout and teardown. Allocation, batched scratch lifetime and checking are included. Diagnostic runs are separate. Component savings earn no whole-page credit."
+  },
+  "runtime_configuration": {
+    "proof": {
+      "incorrect-test-runtime": {
+        "source_sha256": "5a6c5e184796f452fe50e3149b117780b4bc2491a4a2087d377628a64ccaba1e",
+        "metadata_enter_calls": 0,
+        "metadata_leave_calls": 0,
+        "excerpt_path": "Build/chatgpt-animation-change-scan-20261105-r2/incorrect-test-runtime-closure-runtime.txt"
+      },
+      "production-overlay-test": {
+        "source_sha256": "e36f998695e3917ad34fd8c743904d1e8884f3961b4385c7578ec7d535de00f1",
+        "metadata_enter_calls": 2,
+        "metadata_leave_calls": 2,
+        "excerpt_path": "Build/chatgpt-animation-change-scan-20261105-r2/production-overlay-test-closure-runtime.txt"
+      },
+      "component": {
+        "executable_sha256": "1fb97f1f62793a51d84e50397842cafdaf8787c2b27d5aee1738a0d46c919acc",
+        "metadata_globals": [
+          "_closure__closure_metadata_previous",
+          "_closure__closure_metadata_tail"
+        ],
+        "qualification": "The component uses the same explicit production module path; its compiled metadata globals confirm the overlay helper is present. No generated-C source is claimed for this executable."
+      },
+      "runtime_manifest": {
+        "path": "Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/manifest.json",
+        "sha256": "454a6d67464e29152bd17d697a791a85dd132f1725cc0d8bba5180c7ada87fd9",
+        "owned_files_valid": true
+      }
+    },
+    "incorrect_initial_scan_guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-change-scan-20261105-r1/checks-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": -10,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.420509917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "independent_unpatched_probe": {
+      "command": [
+        "Build/chatgpt-animation-change-scan-20261105-r1/closure-unpatched"
+      ],
+      "reason": "completed",
+      "child_exit_code": -10,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.41101954199999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production_overlay_probe": {
+      "command": [
+        "Build/chatgpt-animation-change-scan-20261105-r2/closure-patched"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.295337584,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "qualification": "The initial command omitted the explicit staged-runtime module search path, so the compiler used its default closure runtime. Poisoning reproduced a stale closure directory in the unchanged standalone platform test, independent of this feature. Final focused and component commands use the production overlay path; generated-C excerpts and component metadata globals prove its presence. Earlier commands that omitted this path identify compiler bytes but do not establish use of the production closure overlay. Historical raw results remain unchanged. This is a test-configuration correction, not an engine/runtime change or an instruction saving."
+  },
+  "evidence": {
+    "path": "docs/performance/chatgpt-animation-change-scan-20261105-evidence.zip",
+    "sha256": "3dee09962eca2aa02ad0b6d058aa37ad73dc4e70f8e9c208bc00ca4cc98f0cdf",
+    "bytes": 96146
+  },
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "qualification": "Twelve final focused jobs pass (47 cases x 4 modes x 2 variants), including poisoned preallocation, ordinary GC, no GC and ASan/UBSan. Property changes, non-longhand and added-key semantics, insertion order, snapshot ownership, sample-arena retirement, projection, inheritance and compositor behavior are covered. Components compare five computed properties on all 64 targets for 128 animation/style updates against ordinary-storage reference frames. Setup/reference creation, layout, paint and teardown are excluded. The correctness preflight and its counts are retained separately from the prescribed four-run cohort. No whole-page, live-site, Brave or scrolling credit.",
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-animation-change-scan-20261105-r2/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 71024640,
+    "elapsed_seconds": 0.33178041700000005,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
