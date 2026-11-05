@@ -5,6 +5,9 @@
 #import <objc/runtime.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
 #include "native_document_submission_darwin.h"
 #include "native_initial_document_clear.h"
 #include "native_frame_snapshot_darwin.h"
@@ -227,6 +230,95 @@ static CGFloat native_layer_effective_scale(NSView *view) {
     return isfinite(scale) && scale > 0 ? scale : 1;
 }
 
+// Every frame paints a fresh, privately owned bitmap. Allocating it anew made
+// each frame fault in and zero every page again (29 MB for a 1708x1065 window
+// at 2x), mostly inside the scroll ring's copy into it. Keep a few buffers
+// mapped instead: a buffer is reused only after the image that owns it has
+// been released, and is cleared to the transparent state of a new one.
+#define VOX_LAYER_FRAME_BUFFERS 3
+typedef struct {
+    void *pixels;
+    size_t bytes, width, height;
+    // Atomic: an image's last release can run on another thread. Builtins keep
+    // this header usable from Objective-C++ alongside <atomic>.
+    int busy;
+} VoxLayerFrameBuffer;
+static VoxLayerFrameBuffer native_layer_frame_buffers[VOX_LAYER_FRAME_BUFFERS];
+#ifdef VOX_TEST_LAYER_FRAME_BUFFERS
+static unsigned native_test_frame_buffer_reuses, native_test_frame_buffer_maps;
+#endif
+
+static void native_layer_release_frame_buffer(void *info, const void *data, size_t size) {
+    (void)data;
+    (void)size;
+    __atomic_store_n(&((VoxLayerFrameBuffer *)info)->busy, 0, __ATOMIC_RELEASE);
+}
+
+static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size_t height) {
+    static int disabled = -1;
+    if (disabled < 0) {
+        const char *value = getenv("VOX_DISABLE_LAYER_FRAME_BUFFER_POOL");
+        disabled = value && *value;
+    }
+    if (disabled || !width || !height || width > SIZE_MAX / 4 / height) return NULL;
+    size_t bytes = width * 4 * height;
+    VoxLayerFrameBuffer *spare = NULL;
+    for (int index = 0; index < VOX_LAYER_FRAME_BUFFERS; ++index) {
+        VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
+        int idle = 0;
+        if (buffer->pixels && buffer->width == width && buffer->height == height
+            && __atomic_compare_exchange_n(&buffer->busy, &idle, 1, false,
+                __ATOMIC_ACQUIRE, __ATOMIC_RELAXED)) {
+            memset(buffer->pixels, 0, bytes);
+#ifdef VOX_TEST_LAYER_FRAME_BUFFERS
+            ++native_test_frame_buffer_reuses;
+#endif
+            return buffer;
+        }
+        if (!spare && !__atomic_load_n(&buffer->busy, __ATOMIC_ACQUIRE)) spare = buffer;
+    }
+    int idle = 0;
+    if (!spare || !__atomic_compare_exchange_n(&spare->busy, &idle, 1, false,
+            __ATOMIC_ACQUIRE, __ATOMIC_RELAXED)) return NULL;
+    if (spare->pixels) munmap(spare->pixels, spare->bytes);
+    spare->pixels = NULL;
+    void *pixels = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    if (pixels == MAP_FAILED) {
+        __atomic_store_n(&spare->busy, 0, __ATOMIC_RELEASE);
+        return NULL;
+    }
+    spare->pixels = pixels;
+    spare->bytes = bytes;
+    spare->width = width;
+    spare->height = height;
+#ifdef VOX_TEST_LAYER_FRAME_BUFFERS
+    ++native_test_frame_buffer_maps;
+#endif
+    return spare;
+}
+
+// The finished frame's image takes ownership of its pooled buffer and
+// returns it when released. A frame that publishes a selected immutable
+// snapshot instead leaves its buffer unowned.
+static CGImageRef native_layer_pooled_frame_image(CGContextRef bitmap,
+    VoxLayerFrameBuffer *buffer, BOOL *owned) {
+    *owned = NO;
+    if (bitmap == vox_frame_snapshot.context && vox_frame_snapshot.image)
+        return CGImageRetain(vox_frame_snapshot.image);
+    CGContextFlush(bitmap);
+    CGDataProviderRef provider = CGDataProviderCreateWithData(buffer, buffer->pixels,
+        buffer->bytes, native_layer_release_frame_buffer);
+    if (!provider) return NULL;
+    *owned = YES;
+    // Match CGBitmapContextCreateImage's interpolation preference.
+    CGImageRef image = CGImageCreate(buffer->width, buffer->height, 8, 32, buffer->width * 4,
+        CGBitmapContextGetColorSpace(bitmap), CGBitmapContextGetBitmapInfo(bitmap), provider,
+        NULL, true, kCGRenderingIntentDefault);
+    // Without an image the provider's release returns the buffer.
+    CGDataProviderRelease(provider);
+    return image;
+}
+
 // The image owns its bitmap storage after the temporary CGContext is released.
 // A complete immutable frame becomes one Core Animation image, avoiding Quartz
 // uploading and retaining a separate texture for each Skia primitive.
@@ -241,11 +333,16 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     if (pixel_width > 16384 || pixel_height > 16384) return NULL;
     size_t width = (size_t)pixel_width, height = (size_t)pixel_height;
     if (!width || !height || width > SIZE_MAX / 4 / height) return NULL;
+    VoxLayerFrameBuffer *pooled = native_layer_acquire_frame_buffer(width, height);
+    BOOL pooled_owned = NO;
     CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-    CGContextRef bitmap = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
-        color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGContextRef bitmap = CGBitmapContextCreate(pooled ? pooled->pixels : NULL, width, height,
+        8, width * 4, color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(color);
-    if (!bitmap) return NULL;
+    if (!bitmap) {
+        if (pooled) __atomic_store_n(&pooled->busy, 0, __ATOMIC_RELEASE);
+        return NULL;
+    }
     CGContextScaleCTM(bitmap, scale, scale);
     CGContextTranslateCTM(bitmap, -bounds.origin.x, -bounds.origin.y);
     NSGraphicsContext *previous = NSGraphicsContext.currentContext;
@@ -265,7 +362,8 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         NSGraphicsContext.currentContext = [NSGraphicsContext
             graphicsContextWithCGContext:bitmap flipped:view.isFlipped];
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
-        image = vox_frame_snapshot_copy(bitmap);
+        image = pooled ? native_layer_pooled_frame_image(bitmap, pooled, &pooled_owned)
+            : vox_frame_snapshot_copy(bitmap);
     } @finally {
         vox_frame_snapshot_restore(previous_snapshot);
         native_document_submission_current = previous_submission;
@@ -274,6 +372,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         native_layer_initial_document_clear = previous_initial_clear;
         NSGraphicsContext.currentContext = previous;
         CGContextRelease(bitmap);
+        if (pooled && !pooled_owned) __atomic_store_n(&pooled->busy, 0, __ATOMIC_RELEASE);
     }
     if (image && submission) *submission = frame;
     return image;
