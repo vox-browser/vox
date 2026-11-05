@@ -2342,7 +2342,7 @@ fn grid_item_preferred_block_size_behaves_as_auto(item &Node, item_state &UsedVa
 // intrinsic track-sizing phase. Constrained, ratio-dependent and subgrid boxes
 // keep the ordinary intrinsic probe.
 fn seed_grid_auto_item_block_height(item &Node, values &UsedValues, containing_height_is_definite bool) bool {
-	if containing_height_is_definite || !item.is_block_container() || item.has_size_containment()
+	if containing_height_is_definite || (!item.is_block_container() && !item.display().is_grid_inside()) || item.has_size_containment()
 		|| !values.has_definite_width() || values.has_definite_height()
 		|| values.height_constraint != .none || item.is_table_wrapper() {
 		return false
@@ -2355,9 +2355,11 @@ fn seed_grid_auto_item_block_height(item &Node, values &UsedValues, containing_h
 	}
 	mut box := item.as_box() or { return false }
 	if box.has_preferred_aspect_ratio() { return false }
+	if !item.is_block_container() && !grid_auto_height_seed_is_closed(item) { return false }
 	mut cache := box.cached_intrinsic_sizes()
 	cache.cache_content_height(false, values.content_width().raw_value(),
 		clamp_to_max_dimension_value(values.content_height()))
+	if !item.is_block_container() { report_grid_auto_height_seed() }
 	return true
 }
 
