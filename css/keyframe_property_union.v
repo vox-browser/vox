@@ -80,6 +80,11 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 		} else {
 			platform.RetainedAllocationScope{}
 		}
+		if resolved := keyframe_value_without_context(property_id, value) {
+			result[property_id] = resolved
+			owned.finish()
+			continue
+		}
 		mut computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := compute_value_of_property_from_source(property_id, value,
