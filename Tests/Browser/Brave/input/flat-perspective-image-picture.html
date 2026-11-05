@@ -1,0 +1,14 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Flat perspective retains transparent image pictures</title>
+<style>
+html,body{margin:0;background:#2437ad}
+body{height:2400px}
+.picture{position:absolute;left:14px;top:18px;width:440px;height:380px;will-change:transform;transform:translate3d(0,0,0)}
+img{position:absolute;width:310.625px;height:310.625px}
+.stage{perspective:999px;position:absolute;width:800px;height:700px}
+.second{left:99px;top:58px}
+p{position:absolute;top:1500px}
+</style>
+<div class="stage"><div class="picture"><img src="../resources/image-decode-reused.png"><img class="second" src="../resources/image-decode-reused.png"></div></div>
+<p>Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture. Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture. Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture. Two transparent bitmap images share a promoted picture. Their edge colors round on a transparent surface before the picture is blended onto its parent. This authored regression keeps image bytes and fractional geometry fixed. Text below the captured viewport supplies ordinary document content without joining the image picture.</p>
