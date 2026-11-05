@@ -17,3 +17,15 @@ fn test_hyphenation_preserves_english_capitalization_and_minimum_lengths() {
 		assert hyphenation_locations(utf16_code_units(word), 'en-US').len == 0
 	}
 }
+
+fn test_closing_punctuation_does_not_hide_dictionary_breaks() {
+	$if !macos { return }
+	for suffix in [",'", '…', '...”', '?!', ')]'] {
+		word := 'incident${suffix}'
+		assert hyphenation_locations(utf16_code_units(word), 'en-US') == [2, 4]
+	}
+	assert hyphenation_locations(utf16_code_units("'incident,'"), 'en-US') == [3, 5]
+	assert hyphenation_locations(utf16_code_units("Incident,'"), 'en-US').len == 0
+	assert hyphenation_locations(utf16_code_units("a,'"), 'en-US').len == 0
+	assert hyphenation_locations(utf16_code_units('...?!'), 'en-US').len == 0
+}

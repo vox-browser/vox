@@ -39,6 +39,23 @@ static int32_t libweb_v_hyphen_locations(const uint16_t* text, int32_t length,
     if (!word) { CFRelease(locale); return 0; }
     int32_t count = 0;
     CFIndex before = length - 1;
+    // CoreFoundation can return kCFNotFound when the initial search position
+    // is inside closing punctuation (for example incident,'). Start before
+    // that suffix, keeping the original string/range and UTF-16 offsets.
+    CFIndex word_end = length;
+    CFCharacterSetRef punctuation = CFCharacterSetGetPredefined(kCFCharacterSetPunctuation);
+    while (word_end > 0) {
+        uint32_t point = text[word_end - 1];
+        CFIndex units = 1;
+        if (point >= 0xdc00 && point <= 0xdfff && word_end > 1
+            && text[word_end - 2] >= 0xd800 && text[word_end - 2] <= 0xdbff) {
+            point = 0x10000 + ((text[word_end - 2] - 0xd800) << 10) + point - 0xdc00;
+            units = 2;
+        }
+        if (!CFCharacterSetIsLongCharacterMember(punctuation, point)) break;
+        word_end -= units;
+    }
+    if (word_end < before) before = word_end;
     while (count < capacity) {
         CFIndex location = CFStringGetHyphenationLocationBeforeIndex(
             word, before, CFRangeMake(0, length), 0, locale, NULL);

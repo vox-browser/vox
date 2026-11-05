@@ -4,6 +4,35 @@ import html
 import math
 import platform
 
+fn test_closing_quotes_preserve_automatic_hyphens_and_source_offsets() {
+	$if !macos { return }
+	for suffix in [",'", '...”', '?!'] {
+		content := 'Some generated${suffix} columns'
+		mut document := html.parse_document('<!doctype html><html lang="en-US"><style>
+			body{margin:0;font:16px/24px Arial}p{width:100px;hyphens:auto}
+		</style><p>${content}</p>')
+		document.set_font_rendering_policy(.chromium)
+		root := layout_document_typed_in_viewport(document, 320, 240)
+		commands := root.paint_commands().filter(it.kind == 'draw_text')
+		assert commands[0].text == 'Some gener‐'
+		assert commands[1].text.starts_with('ated${suffix}')
+		mut hyphens := 0
+		for command in commands {
+			run := command.glyph_run or { panic('missing run') }
+			for glyph in run.glyphs_ {
+				if glyph.is_automatic_hyphen {
+					hyphens++
+					assert glyph.length_in_code_units == 0
+				}
+			}
+		}
+		assert hyphens > 0
+		body := document.body() or { panic('missing body') }
+		assert (body.as_node().text_content() or { '' }) == content
+		document.finalize()
+	}
+}
+
 fn test_paragraph_final_word_wraps_whole_but_an_overlong_first_word_can_hyphenate() {
 	$if !macos { return }
 	for suffix in ['continue', '<span>continue</span>', 'continue   '] {
