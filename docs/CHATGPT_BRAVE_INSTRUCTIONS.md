@@ -3724,7 +3724,7 @@ scripts, fresh private profiles/caches, 1024×768 viewport, scale 2, an unfocuse
 five-second settle, retained OS filesystem/shader caches, and excluded GPU and
 outside-coalition services. All inputs remain pinned; the controller/guard exit
 1 for the ownership rejection after 99.50 seconds, peaking at 1,707,638,784
-sampled RSS bytes with 38 adopted identities and no adoption error. The
+sampled RSS bytes with 39 adopted identities and no adoption error. The
 publication lease is released. No manual production build or app copy is used.
 
 The [production receipt](performance/chatgpt-jsc-string-buffer-production-20261105.json)
