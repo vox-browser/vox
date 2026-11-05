@@ -3241,6 +3241,23 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		messages << 'JavaScript CacheStorage bindings: ${err.msg()}'
 		return none
 	}
+	browserjs.set_websocket_wake(fn () {
+		C.native_wake_browser()
+	})
+	mut websocket_host := browserjs.WebSocketHost.create(document, tls_ca_bundle(), fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
+		mutable_callback_runtime.mark_document_state_dirty()
+	}) or {
+		messages << 'JavaScript WebSocket bindings: ${err.msg()}'
+		return none
+	}
+	websocket_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript WebSocket bindings: ${err.msg()}'
+		return none
+	}
 	install_browser_page_storage(document, runtime) or {
 		messages << 'JavaScript storage bindings: ${err.msg()}'
 		return none
@@ -4066,6 +4083,8 @@ fn (mut app BrowserApp) start_pending_navigation() {
 // are applied. Completing them for the outgoing document would only delay
 // the replacement's first paint, so they stay queued for the next frame.
 fn (mut app BrowserApp) poll_navigation_and_background_resources() {
+	// Connection threads wake the frame loop; queue their events as tasks.
+	browserjs.poll_websocket_hosts()
 	document_before_navigation := voidptr(app.document)
 	app.poll_navigation()
 	if voidptr(app.document) == document_before_navigation {
