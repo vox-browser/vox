@@ -3735,3 +3735,36 @@ verification exit zero; production comparison status remains rejected.
 Whole-page credit and the broad cadence stay at zero, so no broad checkpoint
 is due. The 5%-below-Brave goal remains unmet. The component gain is not a
 live-site, isolated rendering or scrolling claim.
+
+### Current production stack sampling (2026-11-05)
+
+A fresh canonical 33-unit executable, SHA-256
+`1a354e7f5f3e54dbf9e84e6f3d2943ed5ca5fd3a7e712aaa4b0b49374ec7ac61`,
+is sampled through macOS `/usr/bin/sample` under a nonblocking shared publication
+lease. The first requested five-second sample starts immediately after launch;
+the second starts ten seconds after launch. Both request 1 ms sampling cadence.
+These are sampling diagnostics, not instruction or timing acceptance. They
+include idle and worker threads, recursive stack counts and unsymbolized JIT
+frames; no sampled percentage is assigned to engine instruction cost.
+
+The early sample still shows substantial nested grid/flex layout work. The
+settled sample mostly waits in the main event loop, with animation keyframe
+substitution, calculation parsing and compositor style refresh among the active
+stacks. This supports investigating calculation parsing without assuming that
+the older profile's preload visibility cost remains representative after the
+SVG device-layout changes. No visibility policy is changed by this diagnostic.
+
+The original SOCKS fixture, author scripts, private profiles/caches, 1024×768
+viewport, scale 2 and unfocused window are retained. The separate diagnostic
+capture uses a thirty-second settle and passes bootstrap, complete content and
+button identity, exact unchanged pixels, normal exit and all input hash checks.
+Both sampler commands exit zero. The outer controller/guard exit zero over
+32.04 seconds, adopt the actual browser PID and peak at 1,759,608,832 sampled RSS
+bytes under 3 GiB. Host one-minute load is about 7.3 on 18 CPUs. Sampling changes
+scheduling, so no speedup, Brave acceptance or live-site claim follows.
+
+The [receipt](performance/chatgpt-production-native-sample-20261105.json)
+authenticates raw stack reports, commands, browser/guard exits, executable and
+library identities, original audit and PNG in a verified content-addressed
+archive. No app copy or manual production build is used. Whole-page credit and
+the broad cadence remain zero; the 5%-below-Brave target remains unmet.
