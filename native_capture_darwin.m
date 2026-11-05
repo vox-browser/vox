@@ -640,8 +640,24 @@ void native_wake_browser_during_preparation(void) {
 
 void native_wake_browser_after(int milliseconds) {
 	native_trace_browser_redraw("schedule timer");
-	dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
-		(int64_t)MAX(milliseconds, 0) * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+	int64_t delay = (int64_t)MAX(milliseconds, 0) * NSEC_PER_MSEC;
+	dispatch_time_t when = dispatch_time(DISPATCH_TIME_NOW, delay);
+	// Sampling after constructing the dispatch deadline gives a conservative
+	// boundary which cannot precede the timer's actual requested fire time.
+	double deadline = CACurrentMediaTime() + (double)delay / NSEC_PER_SEC;
+	BOOL coalesce = getenv("VOX_COALESCE_EXPIRED_FRAME_TIMERS") != NULL;
+	// The retained block keeps this identity alive. A preparation in another
+	// window, or a worker request without a main-thread target, cannot consume it.
+	NSView *requested_view = coalesce && NSThread.isMainThread ? native_browser_view() : nil;
+	dispatch_after(when, dispatch_get_main_queue(), ^{
+		if (requested_view && requested_view == native_browser_view()
+			&& native_layer_last_preparation_view == (uintptr_t)(__bridge void *)requested_view
+			&& native_layer_last_preparation_started >= deadline) {
+			if (getenv("VOX_FRAME_TIMER_DIAGNOSTICS"))
+				fprintf(stderr, "VOX_EXPIRED_FRAME_TIMER consumed=1 lateness_us=%.3f\n",
+					(native_layer_last_preparation_started - deadline) * 1e6);
+			return;
+		}
 		native_request_browser_redraw();
 	});
 }

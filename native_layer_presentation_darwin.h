@@ -12,6 +12,7 @@
 #include "native_document_submission_darwin.h"
 #include "native_initial_document_clear.h"
 #include "native_frame_snapshot_darwin.h"
+#include "platform/native_state.h"
 #if defined(__aarch64__)
 #include <arm_neon.h>
 #endif
@@ -32,6 +33,12 @@ static uint64_t native_layer_redraw_generation;
 static uint64_t native_layer_paint_generation;
 static uint64_t native_layer_last_prepared_generation;
 static BOOL native_layer_paint_started;
+// Only completed preparation covers work due at its start. Cached image
+// copies leave this boundary unchanged.
+VOX_NATIVE_STATE double native_layer_preparation_started;
+VOX_NATIVE_STATE double native_layer_last_preparation_started;
+VOX_NATIVE_STATE uintptr_t native_layer_preparation_view;
+VOX_NATIVE_STATE uintptr_t native_layer_last_preparation_view;
 static char native_layer_frame_generation_key;
 static char native_layer_frame_bounds_key;
 static char native_layer_frame_image_key;
@@ -199,6 +206,8 @@ static void vox_browser_frame_prepared(void) {
     native_layer_paint_generation = native_layer_redraw_generation;
     native_layer_last_prepared_generation = native_layer_redraw_generation;
     native_layer_paint_started = YES;
+    native_layer_last_preparation_started = native_layer_preparation_started;
+    native_layer_last_preparation_view = native_layer_preparation_view;
 }
 
 static BOOL native_layer_is_browser_view(NSView *view) {
@@ -523,7 +532,11 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     NSRect bounds = view.bounds;
     BOOL previous_started = native_layer_paint_started;
     uint64_t previous_generation = native_layer_paint_generation;
+    double previous_preparation_started = native_layer_preparation_started;
+    uintptr_t previous_preparation_view = native_layer_preparation_view;
     native_layer_paint_started = NO;
+    native_layer_preparation_started = CACurrentMediaTime();
+    native_layer_preparation_view = (uintptr_t)(__bridge void *)view;
     CGImageRef image = NULL;
     NativeDocumentSubmissionFrame submission = {0};
     @try {
@@ -532,6 +545,8 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     } @finally {
         native_layer_paint_started = previous_started;
         native_layer_paint_generation = previous_generation;
+        native_layer_preparation_started = previous_preparation_started;
+        native_layer_preparation_view = previous_preparation_view;
     }
     if (!image) return;
     // Disable implicit content/scale animations: an old frame must not be

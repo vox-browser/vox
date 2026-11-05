@@ -13,7 +13,8 @@
 }
 @end
 
-static NSView *native_browser_view(void) { return nil; }
+static NSView *timer_test_view;
+static NSView *native_browser_view(void) { return timer_test_view; }
 static void native_trace_browser_redraw(const char *point) { (void)point; }
 #include "native_prepared_wakes.inc"
 
@@ -21,6 +22,19 @@ static void pump(void) {
     CFAbsoluteTime until = CFAbsoluteTimeGetCurrent() + .025;
     while (CFAbsoluteTimeGetCurrent() < until)
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, .001, false);
+}
+
+static void run_on_real_worker(dispatch_block_t work) {
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        assert(!NSThread.isMainThread);
+        work();
+        dispatch_semaphore_signal(done);
+    });
+    dispatch_semaphore_wait(done, DISPATCH_TIME_FOREVER);
+#if !__has_feature(objc_arc)
+    dispatch_release(done);
+#endif
 }
 
 static void prepare_phase(void) {
@@ -88,7 +102,7 @@ int main(void) {
 
         prepare_phase();
         vox_browser_frame_prepared();
-        dispatch_sync(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+        run_on_real_worker(^{
             native_wake_browser_during_preparation();
         });
         pump();
@@ -103,16 +117,80 @@ int main(void) {
         view.wantsLayer = YES;
         native_layer_original_draw = (IMP)prepared_draw;
         native_layer_update(view, @selector(updateLayer));
+        assert(native_layer_preparation_started == 0 && native_layer_preparation_view == 0);
+        assert(native_layer_last_preparation_started > 0
+            && native_layer_last_preparation_view == (uintptr_t)(__bridge void *)view);
         view.needsDisplay = NO;
         pump();
         assert(application.postedEvents == posts);
         assert(native_layer_frame_is_current(view, 1));
         assert(native_layer_test_image((__bridge CGImageRef)view.layer.contents, 4, 2));
+        double prepared_boundary = native_layer_last_preparation_started;
+        native_layer_copying_capture = YES;
+        native_layer_update(view, @selector(updateLayer));
+        native_layer_copying_capture = NO;
+        assert(native_layer_last_preparation_started == prepared_boundary);
         native_wake_browser();
         pump();
         assert(application.postedEvents == ++posts);
         assert(!native_layer_frame_is_current(view, 1));
         puts("PASS current pixels remain reusable and later work invalidates them");
+        timer_test_view = view;
+        native_layer_last_preparation_view = (uintptr_t)(__bridge void *)view;
+        setenv("VOX_COALESCE_EXPIRED_FRAME_TIMERS", "1", 1);
+        native_layer_last_preparation_started = 0;
+        native_wake_browser_after(0);
+        pump();
+        assert(application.postedEvents == ++posts);
+        generation = native_layer_redraw_generation;
+        native_wake_browser_after(0);
+        native_layer_last_preparation_started = CACurrentMediaTime() + 1;
+        pump();
+        assert(application.postedEvents == posts && native_layer_redraw_generation == generation);
+        puts("PASS expired frame timer consumed without invalidating current input");
+
+        // Finishing preparation after a deadline is insufficient when that
+        // preparation began before the work became due.
+        native_layer_preparation_started = CACurrentMediaTime() - 1;
+        native_layer_preparation_view = (uintptr_t)(__bridge void *)view;
+        native_wake_browser_after(0);
+        vox_browser_frame_prepared();
+        pump();
+        assert(application.postedEvents == ++posts);
+        native_layer_preparation_started = 0;
+        native_layer_preparation_view = 0;
+        native_layer_last_preparation_started = CACurrentMediaTime();
+        native_wake_browser_after(2);
+        pump();
+        assert(application.postedEvents == ++posts);
+        puts("PASS future deadlines and work due during preparation retain their wake");
+
+        native_wake_browser_after(0);
+        native_layer_last_preparation_started = CACurrentMediaTime() + 1;
+        native_layer_last_preparation_view = 0;
+        pump();
+        assert(application.postedEvents == ++posts);
+        native_layer_last_preparation_view = (uintptr_t)(__bridge void *)view;
+        run_on_real_worker(^{
+            native_wake_browser_after(0);
+        });
+        pump();
+        assert(application.postedEvents == ++posts);
+        puts("PASS other-window preparation and worker timers retain their wake");
+        native_wake_browser_after(0);
+        timer_test_view = nil;
+        pump();
+        assert(application.postedEvents == ++posts);
+        timer_test_view = view;
+        puts("PASS changing the target window retains the original wake");
+
+        unsetenv("VOX_COALESCE_EXPIRED_FRAME_TIMERS");
+        native_wake_browser_after(0);
+        native_layer_last_preparation_started = CACurrentMediaTime() + 1;
+        pump();
+        assert(application.postedEvents == ++posts);
+        puts("PASS timer control keeps the original wake behavior");
+        timer_test_view = nil;
 #if !__has_feature(objc_arc)
         [view release];
 #endif
