@@ -256,6 +256,7 @@ static CGFloat native_layer_effective_scale(NSView *view) {
 // been released. Generic callbacks start transparent; V's opaque-frame
 // contract can defer that clear until an incomplete callback returns.
 #define VOX_LAYER_FRAME_BUFFERS 3
+#define VOX_LAYER_FRAME_BUFFER_CAPACITY 4
 typedef struct {
     void *pixels;
     size_t bytes, width, height, pitch;
@@ -266,14 +267,14 @@ typedef struct {
     // this header usable from Objective-C++ alongside <atomic>.
     int busy;
 } VoxLayerFrameBuffer;
-static VoxLayerFrameBuffer native_layer_frame_buffers[VOX_LAYER_FRAME_BUFFERS];
+static VoxLayerFrameBuffer native_layer_frame_buffers[VOX_LAYER_FRAME_BUFFER_CAPACITY];
 
 // The GPU canvas may finish damage directly in this frame's shared storage.
 // Borrow only the currently locked document buffer; ordinary and nested
 // bitmaps keep the existing readback path.
 static void *native_layer_frame_surface(CGContextRef context) {
     if (!context || context != native_layer_document_bitmap) return NULL;
-    for (int index=0; index<VOX_LAYER_FRAME_BUFFERS; ++index) {
+    for (int index=0; index<VOX_LAYER_FRAME_BUFFER_CAPACITY; ++index) {
         VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
         if (buffer->surface && buffer->locked && __atomic_load_n(&buffer->busy, __ATOMIC_ACQUIRE)
             && CGBitmapContextGetData(context) == buffer->pixels
@@ -313,7 +314,9 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
     if (disabled || !width || !height || width > SIZE_MAX / 4 / height) return NULL;
     size_t bytes = width * 4 * height;
     VoxLayerFrameBuffer *spare = NULL;
-    for (int index = 0; index < VOX_LAYER_FRAME_BUFFERS; ++index) {
+    int count = shared && getenv("VOX_EXTRA_FRAME_BUFFER")
+        ? VOX_LAYER_FRAME_BUFFER_CAPACITY : VOX_LAYER_FRAME_BUFFERS;
+    for (int index = 0; index < count; ++index) {
         VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
         if (buffer->surface && IOSurfaceIsInUse(buffer->surface)) continue;
         int idle = 0;
@@ -412,7 +415,7 @@ static CGImageRef native_layer_pooled_frame_image(CGContextRef bitmap,
 static IOSurfaceRef native_layer_surface_for_image(CGImageRef image) {
     CGDataProviderRef provider = image ? CGImageGetDataProvider(image) : NULL;
     if (!provider) return NULL;
-    for (int index = 0; index < VOX_LAYER_FRAME_BUFFERS; ++index) {
+    for (int index = 0; index < VOX_LAYER_FRAME_BUFFER_CAPACITY; ++index) {
         VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
         if (__atomic_load_n(&buffer->provider, __ATOMIC_ACQUIRE) == provider)
             return buffer->surface;

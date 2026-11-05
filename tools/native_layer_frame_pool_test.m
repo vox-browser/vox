@@ -90,9 +90,39 @@ static void assert_transparent(CGImageRef image)
     for (NSUInteger i = 0; i < data.length; ++i) assert(bytes[i] == 0);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     @autoreleasepool {
+        if(argc==2 && !strcmp(argv[1],"--spare")) {
+            setenv("VOX_EXTRA_FRAME_BUFFER","1",1);
+            MyView2* view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,64,48)];
+            CGImageRef held[4];
+            for(int index=0;index<4;++index) {
+                held[index]=frame(view,40+index);
+                assert(native_layer_surface_for_image(held[index]));
+            }
+            assert(native_test_frame_buffer_maps==4);
+            NSData* first_pixels=image_bytes(held[0]);
+            CGImageRef exhausted=frame(view,5);
+            assert(!native_layer_surface_for_image(exhausted));
+            assert([image_bytes(held[0]) isEqualToData:first_pixels]);
+            CGImageRelease(exhausted);
+            CGImageRelease(held[3]);
+            // The same process can disable the spare while the first three
+            // remain published. Its idle fourth slot must not bypass control.
+            unsetenv("VOX_EXTRA_FRAME_BUFFER");
+            CGImageRef control=frame(view,6);
+            assert(!native_layer_surface_for_image(control));CGImageRelease(control);
+            setenv("VOX_EXTRA_FRAME_BUFFER","1",1);
+            CGImageRef reused=frame(view,7);
+            assert(native_layer_surface_for_image(reused));
+            assert(native_test_frame_buffer_maps==4 && native_test_frame_buffer_reuses==1);
+            assert([image_bytes(held[0]) isEqualToData:first_pixels]);
+            CGImageRelease(reused);
+            for(int index=0;index<3;++index)CGImageRelease(held[index]);
+            puts("Spare IOSurface: four retained frames, bounded fallback, immutable images, explicit three-slot control and cleared reuse passed");
+            return 0;
+        }
         NSView* view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 64, 48)];
         CGImageRef first = frame(view, 200);
         NSData* first_pixels = image_bytes(first);

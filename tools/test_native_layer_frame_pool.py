@@ -31,9 +31,12 @@ def main():
             cleared = subprocess.call([str(binary)], env={**os.environ,
                 'VOX_CLEAR_OPAQUE_FRAME_BUFFERS': '1'}, stdout=log,
                 stderr=subprocess.STDOUT) if compiled == 0 else None
-        failed = failed or tested != 0 or cleared != 0
+            spare = subprocess.call([str(binary), '--spare'], stdout=log,
+                                    stderr=subprocess.STDOUT) if compiled == 0 else None
+        failed = failed or tested != 0 or cleared != 0 or spare != 0
         print(json.dumps(dict(mode=mode, compile_exit=compiled, test_exit=tested,
-                             cleared_test_exit=cleared, log=str(output / (mode + ".log")))), flush=True)
+                             cleared_test_exit=cleared, spare_test_exit=spare,
+                             log=str(output / (mode + ".log")))), flush=True)
     return 1 if failed else 0
 
 
