@@ -1,0 +1,1379 @@
+{
+  "version": 1,
+  "complete": true,
+  "implementation_commit": "099584b70",
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/keyframe_property_union.v": "6966cfa9fc755e23d4786a4483e5e21a7a932e96f7185086748c17903545c571",
+      "css/keyframe_scalar_values.v": "245a0d9e8e0746021ebadfd0b59a6cbebaac4a8efe7f5d3d284188c4bd31b6d5",
+      "css/keyframe_scalar_values_test.v": "0191a6cc108d7807c4d7fe59891ba09bfe1e6362b80741a0f3f669c57d828392"
+    },
+    "source_after": {
+      "css/keyframe_property_union.v": "6966cfa9fc755e23d4786a4483e5e21a7a932e96f7185086748c17903545c571",
+      "css/keyframe_scalar_values.v": "245a0d9e8e0746021ebadfd0b59a6cbebaac4a8efe7f5d3d284188c4bd31b6d5",
+      "css/keyframe_scalar_values_test.v": "0191a6cc108d7807c4d7fe59891ba09bfe1e6362b80741a0f3f669c57d828392"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/resolved_scalar_computation_test.v,/Users/alex/code/vox2/css/scalar_font_computation_test.v,/Users/alex/code/vox2/css/keyframe_property_union_test.v,/Users/alex/code/vox2/css/animated_property_change_scan_test.v,/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-prealloc",
+          "/Users/alex/code/vox2/css/keyframe_scalar_values_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793902820.223308,
+          "cpu_count": 18,
+          "load": [
+            10.98974609375,
+            6.36474609375,
+            6.6123046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902825.808634,
+          "load": [
+            10.669921875,
+            6.375,
+            6.6142578125
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902825.815156,
+          "cpu_count": 18,
+          "load": [
+            10.669921875,
+            6.375,
+            6.6142578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902826.7280781,
+          "load": [
+            10.669921875,
+            6.375,
+            6.6142578125
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "1",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902826.7348192,
+          "cpu_count": 18,
+          "load": [
+            10.669921875,
+            6.375,
+            6.6142578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902827.4079201,
+          "load": [
+            10.669921875,
+            6.375,
+            6.6142578125
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-file-list",
+          "/Users/alex/code/vox2/css/resolved_scalar_computation_test.v,/Users/alex/code/vox2/css/scalar_font_computation_test.v,/Users/alex/code/vox2/css/keyframe_property_union_test.v,/Users/alex/code/vox2/css/animated_property_change_scan_test.v,/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-default",
+          "/Users/alex/code/vox2/css/keyframe_scalar_values_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793902827.4144151,
+          "cpu_count": 18,
+          "load": [
+            10.669921875,
+            6.375,
+            6.6142578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902833.138057,
+          "load": [
+            10.09912109375,
+            6.39501953125,
+            6.6181640625
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902833.144913,
+          "cpu_count": 18,
+          "load": [
+            10.09912109375,
+            6.39501953125,
+            6.6181640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902833.590305,
+          "load": [
+            10.09912109375,
+            6.39501953125,
+            6.6181640625
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "1",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902833.596863,
+          "cpu_count": 18,
+          "load": [
+            10.09912109375,
+            6.39501953125,
+            6.6181640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902833.8002949,
+          "load": [
+            10.09912109375,
+            6.39501953125,
+            6.6181640625
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/resolved_scalar_computation_test.v,/Users/alex/code/vox2/css/scalar_font_computation_test.v,/Users/alex/code/vox2/css/keyframe_property_union_test.v,/Users/alex/code/vox2/css/animated_property_change_scan_test.v,/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-none",
+          "/Users/alex/code/vox2/css/keyframe_scalar_values_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793902833.807445,
+          "cpu_count": 18,
+          "load": [
+            10.09912109375,
+            6.39501953125,
+            6.6181640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902839.432532,
+          "load": [
+            9.5302734375,
+            6.33837890625,
+            6.5966796875
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902839.439233,
+          "cpu_count": 18,
+          "load": [
+            9.5302734375,
+            6.33837890625,
+            6.5966796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902839.882442,
+          "load": [
+            9.5302734375,
+            6.33837890625,
+            6.5966796875
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "1",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902839.8891609,
+          "cpu_count": 18,
+          "load": [
+            9.5302734375,
+            6.33837890625,
+            6.5966796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902840.088452,
+          "load": [
+            9.5302734375,
+            6.33837890625,
+            6.5966796875
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/resolved_scalar_computation_test.v,/Users/alex/code/vox2/css/scalar_font_computation_test.v,/Users/alex/code/vox2/css/keyframe_property_union_test.v,/Users/alex/code/vox2/css/animated_property_change_scan_test.v,/Users/alex/code/vox2/css/animated_property_maps_invalidation_test.v,/Users/alex/code/vox2/css/animated_compositor_changes_test.v,/Users/alex/code/vox2/css/computed_property_storage_test.v,/Users/alex/code/vox2/css/animation_sample_batch_test.v,/Users/alex/code/vox2/css/animation_sample_page_scan_test.v,/Users/alex/code/vox2/css/animation_sample_target_storage_test.v,/Users/alex/code/vox2/css/animation_sample_property_pages_test.v,/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v,/Users/alex/code/vox2/css/animation_sample_projection_test.v,/Users/alex/code/vox2/css/animation_ancestor_filter_test.v,/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v,/Users/alex/code/vox2/css/animation_storage_removal_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/shadow_animation_scope_test.v,/Users/alex/code/vox2/css/compositor_animation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-sanitized",
+          "/Users/alex/code/vox2/css/keyframe_scalar_values_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793902840.095607,
+          "cpu_count": 18,
+          "load": [
+            9.5302734375,
+            6.33837890625,
+            6.5966796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902852.0135,
+          "load": [
+            8.59326171875,
+            6.244140625,
+            6.5595703125
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902852.020215,
+          "cpu_count": 18,
+          "load": [
+            8.59326171875,
+            6.244140625,
+            6.5595703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902853.775168,
+          "load": [
+            8.94580078125,
+            6.35595703125,
+            6.59716796875
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "1",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793902853.7820082,
+          "cpu_count": 18,
+          "load": [
+            8.94580078125,
+            6.35595703125,
+            6.59716796875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793902855.072,
+          "load": [
+            8.94580078125,
+            6.35595703125,
+            6.59716796875
+          ]
+        }
+      }
+    ]
+  },
+  "focused_test_function_executions": 488,
+  "generated_test_calls": {
+    "prealloc": {
+      "test_calls": [
+        "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+        "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+        "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+        "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+        "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+        "test_resolved_scalars_match_the_full_property_algorithm",
+        "test_resolved_scalar_computation_keeps_contextual_values_and_special_property_algorithms",
+        "test_scalar_font_computation_matches_full_resolver_across_parent_weight_boundaries",
+        "test_scalar_font_computation_retains_contextual_and_compatibility_paths",
+        "test_plain_font_family_lists_are_unchanged_by_full_absolutization",
+        "test_keyframe_property_vector_preserves_union_order_and_presence",
+        "test_keyframe_property_vector_reads_current_maps_and_returns_independent_storage",
+        "test_keyframe_property_vector_keeps_resolved_values_and_logical_alias_collisions",
+        "test_keyframe_property_union_scratch_storage_does_not_escape_the_lookup",
+        "test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "test_animation_sample_rotation_preserves_descendant_selector_context",
+        "test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "test_static_document_clock_advances_without_requesting_another_frame",
+        "test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "test_css_animation_targets_including_retained_end_states_request_style",
+        "test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "test_hidden_css_transition_targets_do_not_request_frames",
+        "test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "test_existing_css_animation_refreshes_inserted_keyframes",
+        "test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "functions": 61
+    },
+    "default": {
+      "test_calls": [
+        "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+        "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+        "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+        "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+        "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+        "test_resolved_scalars_match_the_full_property_algorithm",
+        "test_resolved_scalar_computation_keeps_contextual_values_and_special_property_algorithms",
+        "test_scalar_font_computation_matches_full_resolver_across_parent_weight_boundaries",
+        "test_scalar_font_computation_retains_contextual_and_compatibility_paths",
+        "test_plain_font_family_lists_are_unchanged_by_full_absolutization",
+        "test_keyframe_property_vector_preserves_union_order_and_presence",
+        "test_keyframe_property_vector_reads_current_maps_and_returns_independent_storage",
+        "test_keyframe_property_vector_keeps_resolved_values_and_logical_alias_collisions",
+        "test_keyframe_property_union_scratch_storage_does_not_escape_the_lookup",
+        "test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "test_animation_sample_rotation_preserves_descendant_selector_context",
+        "test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "test_static_document_clock_advances_without_requesting_another_frame",
+        "test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "test_css_animation_targets_including_retained_end_states_request_style",
+        "test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "test_hidden_css_transition_targets_do_not_request_frames",
+        "test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "test_existing_css_animation_refreshes_inserted_keyframes",
+        "test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "functions": 61
+    },
+    "none": {
+      "test_calls": [
+        "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+        "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+        "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+        "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+        "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+        "test_resolved_scalars_match_the_full_property_algorithm",
+        "test_resolved_scalar_computation_keeps_contextual_values_and_special_property_algorithms",
+        "test_scalar_font_computation_matches_full_resolver_across_parent_weight_boundaries",
+        "test_scalar_font_computation_retains_contextual_and_compatibility_paths",
+        "test_plain_font_family_lists_are_unchanged_by_full_absolutization",
+        "test_keyframe_property_vector_preserves_union_order_and_presence",
+        "test_keyframe_property_vector_reads_current_maps_and_returns_independent_storage",
+        "test_keyframe_property_vector_keeps_resolved_values_and_logical_alias_collisions",
+        "test_keyframe_property_union_scratch_storage_does_not_escape_the_lookup",
+        "test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "test_animation_sample_rotation_preserves_descendant_selector_context",
+        "test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "test_static_document_clock_advances_without_requesting_another_frame",
+        "test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "test_css_animation_targets_including_retained_end_states_request_style",
+        "test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "test_hidden_css_transition_targets_do_not_request_frames",
+        "test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "test_existing_css_animation_refreshes_inserted_keyframes",
+        "test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "functions": 61
+    },
+    "sanitized": {
+      "test_calls": [
+        "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+        "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+        "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+        "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+        "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+        "test_resolved_scalars_match_the_full_property_algorithm",
+        "test_resolved_scalar_computation_keeps_contextual_values_and_special_property_algorithms",
+        "test_scalar_font_computation_matches_full_resolver_across_parent_weight_boundaries",
+        "test_scalar_font_computation_retains_contextual_and_compatibility_paths",
+        "test_plain_font_family_lists_are_unchanged_by_full_absolutization",
+        "test_keyframe_property_vector_preserves_union_order_and_presence",
+        "test_keyframe_property_vector_reads_current_maps_and_returns_independent_storage",
+        "test_keyframe_property_vector_keeps_resolved_values_and_logical_alias_collisions",
+        "test_keyframe_property_union_scratch_storage_does_not_escape_the_lookup",
+        "test_animation_single_scan_matches_every_longhands_addition_change_and_removal",
+        "test_animation_single_scan_preserves_non_longhand_and_added_key_classification",
+        "test_animation_single_scan_matches_mixed_maps_in_both_insertion_orders",
+        "test_animation_single_snapshot_results_and_public_snapshots_keep_their_ownership",
+        "test_sparse_animation_maps_preserve_each_longhands_addition_replacement_and_removal",
+        "test_sparse_animation_maps_ignore_shorthands_and_unchanged_values",
+        "test_sparse_animation_maps_merge_work_independently_of_insertion_order",
+        "test_sampled_animation_compositor_classification_checks_changed_and_removed_keys",
+        "test_absent_computed_metadata_reads_and_removals_do_not_allocate",
+        "test_each_computed_metadata_first_write_owns_only_its_map_and_survives_gc",
+        "test_computed_metadata_public_snapshots_are_independent_of_later_writes",
+        "test_lazy_animation_storage_preserves_important_transition_and_reset_flags",
+        "test_lazy_font_variation_maps_clone_inputs_snapshots_and_inheritance_then_clear",
+        "test_live_font_variation_normal_resolution_clears_the_existing_map",
+        "test_animation_sample_batch_preserves_the_original_floor_and_caps_only_expansion",
+        "test_animation_sample_batch_defers_the_old_boundary_and_still_rotates",
+        "test_animation_sample_batch_reuses_bounded_storage_over_many_rotations",
+        "test_animation_page_scan_finds_samples_in_every_slot_after_shared_clean_pages",
+        "test_animation_page_scan_rechecks_in_place_changes_between_inspections",
+        "test_animation_page_scan_hash_collisions_and_partial_pages_remain_conservative",
+        "test_animation_page_scan_keeps_projection_tail_after_a_shared_clean_source",
+        "test_animation_page_inspection_does_not_grow_the_callers_arena",
+        "test_retired_animation_target_lists_transfer_their_original_backing_storage",
+        "test_animation_retirement_keeps_sample_owned_property_pages_with_persistent_values",
+        "test_animation_retirement_releases_a_property_page_after_its_installed_style_replaces_it",
+        "test_animation_retirement_keeps_sample_arrays_in_a_persistent_typed_color",
+        "test_animation_retirement_keeps_values_read_by_a_retained_density_projection",
+        "test_animated_custom_property_recascade_preserves_descendant_selectors",
+        "test_animation_sample_rotation_preserves_descendant_selector_context",
+        "test_animation_ancestor_seeding_crosses_shadow_hosts_and_preserves_existing_filter",
+        "test_static_document_clock_advances_without_requesting_another_frame",
+        "test_animation_hook_without_targets_stays_idle_and_new_targets_request_style",
+        "test_css_animation_targets_including_retained_end_states_request_style",
+        "test_hidden_css_animation_targets_keep_their_clock_without_requesting_frames",
+        "test_hidden_pseudo_animation_targets_do_not_request_frames",
+        "test_visibility_and_opacity_do_not_suppress_animation_frame_demand",
+        "test_display_animation_can_request_a_frame_to_reveal_its_hidden_target",
+        "test_hidden_css_transition_targets_do_not_request_frames",
+        "test_initially_hidden_running_animation_does_not_schedule_rendering",
+        "test_animation_storage_noop_removal_preserves_backing_storage_and_animation_state",
+        "test_animation_storage_real_removal_cancels_only_matching_target_names_in_order",
+        "test_inherited_animation_lookup_keeps_transition_flags_and_missing_values",
+        "test_slotted_animation_name_uses_keyframes_from_its_declaration_scope",
+        "test_document_animation_name_prefers_document_keyframes_for_slotted_element",
+        "test_existing_css_animation_refreshes_inserted_keyframes",
+        "test_completed_scroll_effect_keeps_compositor_identity_for_reverse_scrolling",
+        "test_delayed_unfilled_effect_keeps_its_future_compositor_surface"
+      ],
+      "functions": 61
+    }
+  },
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-keyframe-scalar-20261105-r1/component": "491dab8ee0971fceb3aae4e171891fcd3657231b13adb2facd728f413bea73e4",
+      "css/computed_interpolation.v": "256e55a3ea9eee96ebf8de8eaa282df3f2409042b284b92e09af92e49ffb8549",
+      "css/keyframe_property_union.v": "6966cfa9fc755e23d4786a4483e5e21a7a932e96f7185086748c17903545c571",
+      "css/keyframe_scalar_values.v": "245a0d9e8e0746021ebadfd0b59a6cbebaac4a8efe7f5d3d284188c4bd31b6d5",
+      "css/keyframe_scalar_values_test.v": "0191a6cc108d7807c4d7fe59891ba09bfe1e6362b80741a0f3f669c57d828392",
+      "tools/animation_change_scan_benchmark.v": "1fc52e5214a11c848203b2a2879183aac949c8e01fe3d6419697f796ded2d5a1",
+      "Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/manifest.json": "454a6d67464e29152bd17d697a791a85dd132f1725cc0d8bba5180c7ada87fd9"
+    },
+    "inputs_after": {
+      "Build/chatgpt-keyframe-scalar-20261105-r1/component": "491dab8ee0971fceb3aae4e171891fcd3657231b13adb2facd728f413bea73e4",
+      "css/computed_interpolation.v": "256e55a3ea9eee96ebf8de8eaa282df3f2409042b284b92e09af92e49ffb8549",
+      "css/keyframe_property_union.v": "6966cfa9fc755e23d4786a4483e5e21a7a932e96f7185086748c17903545c571",
+      "css/keyframe_scalar_values.v": "245a0d9e8e0746021ebadfd0b59a6cbebaac4a8efe7f5d3d284188c4bd31b6d5",
+      "css/keyframe_scalar_values_test.v": "0191a6cc108d7807c4d7fe59891ba09bfe1e6362b80741a0f3f669c57d828392",
+      "tools/animation_change_scan_benchmark.v": "1fc52e5214a11c848203b2a2879183aac949c8e01fe3d6419697f796ded2d5a1",
+      "Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/manifest.json": "454a6d67464e29152bd17d697a791a85dd132f1725cc0d8bba5180c7ada87fd9"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "1",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793903009.9129689,
+          "cpu_count": 18,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "host_after": {
+          "unix": 1793903010.843509,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 220392713,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 2983527252,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 298494405,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 118204987,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793903010.87363,
+          "cpu_count": 18,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "host_after": {
+          "unix": 1793903011.449514,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 170759041,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 2984731473,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 285083755,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 101151134,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793903011.478163,
+          "cpu_count": 18,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "host_after": {
+          "unix": 1793903012.062319,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 169565091,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 2986863460,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 285833242,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 100483573,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "1",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793903012.093997,
+          "cpu_count": 18,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "host_after": {
+          "unix": 1793903012.6813881,
+          "load": [
+            18.7265625,
+            10.888671875,
+            8.330078125
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 220475605,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 2985498428,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 298980789,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 118308628,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793903012.710757,
+          "cpu_count": 18,
+          "load": [
+            17.70703125,
+            10.80712890625,
+            8.31640625
+          ]
+        },
+        "host_after": {
+          "unix": 1793903013.293522,
+          "load": [
+            17.70703125,
+            10.80712890625,
+            8.31640625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 169700077,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 2985596527,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 288209564,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 100544872,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-keyframe-scalar-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_KEYFRAME_SCALAR_CONTEXT": "1",
+          "VOX_KEYFRAME_SCALAR_CONTEXT_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793903013.325485,
+          "cpu_count": 18,
+          "load": [
+            17.70703125,
+            10.80712890625,
+            8.31640625
+          ]
+        },
+        "host_after": {
+          "unix": 1793903013.904711,
+          "load": [
+            17.70703125,
+            10.80712890625,
+            8.31640625
+          ]
+        },
+        "observations": [
+          {
+            "scene": "opacity-transform",
+            "instructions": 220042680,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 378432
+          },
+          {
+            "scene": "inherited-color",
+            "instructions": 2985375840,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 335808
+          },
+          {
+            "scene": "mixed-layout-paint",
+            "instructions": 298903273,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 313440
+          },
+          {
+            "scene": "unchanged-opacity",
+            "instructions": 118384195,
+            "frames": 128,
+            "targets": 64,
+            "checksum": 294912
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "opacity-transform": {
+        "control": [
+          220392713,
+          220475605
+        ],
+        "candidate": [
+          170759041,
+          169565091
+        ],
+        "control_median": 220434159.0,
+        "candidate_median": 170162066.0,
+        "reduction_percent": 22.805944971532295,
+        "conservative_component_reduction": 49633672,
+        "checksum": 378432,
+        "frames": 128,
+        "targets": 64
+      },
+      "inherited-color": {
+        "control": [
+          2983527252,
+          2985498428
+        ],
+        "candidate": [
+          2984731473,
+          2986863460
+        ],
+        "control_median": 2984512840.0,
+        "candidate_median": 2985797466.5,
+        "reduction_percent": -0.043043088398976366,
+        "conservative_component_reduction": -3336208,
+        "checksum": 335808,
+        "frames": 128,
+        "targets": 64
+      },
+      "mixed-layout-paint": {
+        "control": [
+          298494405,
+          298980789
+        ],
+        "candidate": [
+          285083755,
+          285833242
+        ],
+        "control_median": 298737597.0,
+        "candidate_median": 285458498.5,
+        "reduction_percent": 4.445071070180698,
+        "conservative_component_reduction": 12661163,
+        "checksum": 313440,
+        "frames": 128,
+        "targets": 64
+      },
+      "unchanged-opacity": {
+        "control": [
+          118204987,
+          118308628
+        ],
+        "candidate": [
+          101151134,
+          100483573
+        ],
+        "control_median": 118256807.5,
+        "candidate_median": 100817353.5,
+        "reduction_percent": 14.747103670966258,
+        "conservative_component_reduction": 17053853,
+        "checksum": 294912,
+        "frames": 128,
+        "targets": 64
+      }
+    },
+    "qualification": "Current-process unprofiled instruction intervals for 128 actual animation/style updates of 64 targets. Five computed properties per update match ordinary-storage reference frames. Setup, reference construction, layout, paint and teardown are excluded; updates and all result checks are included. Four matched unprofiled observations retain every result, with separate path diagnostics. Only context-free keyframe value computation differs; property union construction remains unchanged in both variants. No whole-page, live-site, scrolling or Brave credit."
+  },
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence": 0,
+  "evidence": {
+    "path": "docs/performance/chatgpt-keyframe-scalar-20261105-evidence.zip",
+    "sha256": "edab32ee8ee3f341228f5bdbac41ff2b43837e6ba038c4fbe9c55b26a37fd0ee",
+    "bytes": 6699858,
+    "entries": 60
+  },
+  "removed_verified_generated_duplicates": [
+    {
+      "path": "Build/chatgpt-keyframe-scalar-20261105-r1/checks-default.c",
+      "sha256": "5d40b1d20322a5042172cf2f31deca766e57ae6d436143fb01b599761eeb363d",
+      "bytes": 15277682
+    },
+    {
+      "path": "Build/chatgpt-keyframe-scalar-20261105-r1/checks-sanitized.c",
+      "sha256": "694cdfe9e09cb1e14ec83586b9de3d339fcd7184cad2afc281662aac5433e8f3",
+      "bytes": 15645822
+    },
+    {
+      "path": "Build/chatgpt-keyframe-scalar-20261105-r1/checks-prealloc.c",
+      "sha256": "694cdfe9e09cb1e14ec83586b9de3d339fcd7184cad2afc281662aac5433e8f3",
+      "bytes": 15645822
+    },
+    {
+      "path": "Build/chatgpt-keyframe-scalar-20261105-r1/checks-none.c",
+      "sha256": "ff3445e655052b1e5e0d942218c75aedf30e781362168ed7a22995271814eb23",
+      "bytes": 15268354
+    }
+  ],
+  "qualification": "61 test functions execute per runtime across candidate/control in ordinary GC, no-GC, poisoned preallocation and ASan/UBSan: 488 calls, all zero exits. Generated C authenticates each selected call; native arena assertions remain conditional in other modes. Exact oracle comparisons cover constant scalars/transforms, opacity clamping/percentage conversion, substitution, CSS-wide keywords, initial-key presence, logical aliases, mutation, contextual fallback/dependency tracking and native retained ownership after scratch retirement. The existing cascade scalar proof is reused; constant transforms admit only numbers, angles, percentages and px arguments, while other units/calculations keep full context. No endpoint cache or new retained ownership is introduced. Component intervals cover actual 128-frame updates of 64 targets, five output properties checked per target against ordinary-storage reference frames. Four unprofiled samples and two separate path diagnostics retain all data; inherited color regresses 0.043%. An early component driver fails its executable preflight before compilation finishes, launching no sample; that failure is preserved. Later comparison waits for successful compilation. No page, live-site, isolated-rendering, scrolling or Brave advantage is inferred. Raw generated test C is verified in the archive before deleting duplicates."
+}

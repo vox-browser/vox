@@ -3462,3 +3462,45 @@ retains source seals, raw rows, commands, actual exits, audits and PNGs.
 It also authenticates 399,053,950 bytes of generated C/preprocessing output
 before deleting the duplicates. Profile credit and the broad cadence remain
 zero; the 5%-below-Brave target remains unmet.
+
+### Context-free keyframe values (2026-11-05)
+
+`099584b70` avoids building font, viewport and query-container computation
+context for keyframe values whose computation cannot use it. It reuses the
+cascade's existing resolved-scalar allowlist. Numeric/percentage opacity still
+runs the original clamping/conversion algorithm. Constant transforms admit
+only numbers, angles, percentages and pixel lengths. Other lengths,
+calculations, contextual colors and special property algorithms retain the
+full path and its dependency tracking. Substitutions, CSS-wide keywords and
+logical aliases resolve before this shortcut. There is no endpoint cache or
+additional retained owner; temporary lookup and result ownership are unchanged.
+
+All 12 focused compile/runtime jobs pass. The generated runners authenticate
+61 selected test calls per execution in candidate/control across ordinary GC,
+no-GC, poisoned preallocation and ASan/UBSan: 488 function executions total.
+Native arena assertions remain conditional in the other modes. Five new cases
+cover scalar/transform equivalence, contextual rejection, opacity clamping,
+substitutions, CSS-wide keywords, logical aliases, initial-key presence, live
+mutations, viewport dependencies and retained values after scratch retirement.
+
+The unchanged animation/style component benchmark checks five output properties
+for 64 targets over 128 updates against ordinary-storage reference frames.
+Two unprofiled observations per variant, control/candidate/candidate/control,
+and two separate path diagnostics produce matching outputs and checksums.
+
+| Component median | Control instructions | Candidate instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| Opacity/transform | 220,434,159 | 170,162,066 | 22.806% |
+| Inherited color | 2,984,512,840 | 2,985,797,466.5 | -0.043% |
+| Mixed layout/paint | 298,737,597 | 285,458,498.5 | 4.445% |
+| Unchanged opacity | 118,256,807.5 | 100,817,353.5 | 14.747% |
+
+One early component-driver invocation started before compilation finished and
+failed its executable preflight. It launches no sample and remains retained;
+the subsequent cohort waits for the successful compile. The
+[focused/component receipt](performance/chatgpt-keyframe-scalar-20261105.json)
+authenticates every command, guard, raw count, generated runner and source.
+It verifies the archived generated C before removing 61,837,680 duplicate bytes.
+These component results receive no whole-page credit. Production eligibility
+and matched comparison are pending; the broad cadence remains zero and the
+5%-below-Brave target remains unmet.
