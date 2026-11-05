@@ -44,7 +44,10 @@ def inject_entry(source):
             '\n vox_cprofile_start((void *)&' + name + ');' + source[position:])
 
 
-def profile_command(command, source, replacement, helper, binary, libraries, no_inline=False):
+def profile_command(command, source, replacement, helper, binary, libraries, no_inline=False,
+                    optimization='O1'):
+    if optimization not in ('O1', 'production'):
+        raise ValueError('Unsupported diagnostic optimization mode')
     if command.count(str(source)) != 1 or command.count('-o') != 1:
         raise ValueError('Unexpected sealed compiler command')
     result = []
@@ -56,12 +59,13 @@ def profile_command(command, source, replacement, helper, binary, libraries, no_
             continue
         if token == '-o':
             result += ['-x', 'none', str(helper), '-finstrument-functions-after-inlining',
-                       '-O1', *(['-fno-inline-functions'] if no_inline else []), '-o', str(binary)]
+                       *(['-O1'] if optimization == 'O1' else []),
+                       *(['-fno-inline-functions'] if no_inline else []), '-o', str(binary)]
             index += 2
             continue
         if token == str(source):
             token = str(replacement)
-        elif re.fullmatch(r'-O[0-3szgfast]+', token):
+        elif optimization == 'O1' and re.fullmatch(r'-O[0-3szgfast]+', token):
             token = '-O1'
         elif token.startswith('-l') and token[2:] in libraries:
             token = str(libraries[token[2:]])
@@ -114,7 +118,9 @@ def parse_profile(text):
     return result
 
 
-def build(receipt, out, no_inline=False):
+def build(receipt, out, no_inline=False, optimization='O1'):
+    if optimization not in ('O1', 'production'):
+        raise ValueError('Unsupported diagnostic optimization mode')
     production = json.loads(receipt.read_text())
     frozen_path = Path(production['frozen_compilation'])
     frozen = json.loads(frozen_path.read_text())
@@ -141,7 +147,8 @@ def build(receipt, out, no_inline=False):
     source = Path(next(p for p in frozen['sealed_inputs'] if p.endswith('/0-Vox.c.i')))
     out.mkdir(parents=True, exist_ok=False)
     result = dict(complete=False, diagnostic=True, acceptance=False, instruction_credit=0,
-                  production=production, inputs_before=pins, compiler_command=None, no_inline=no_inline)
+                  production=production, inputs_before=pins, compiler_command=None,
+                  no_inline=no_inline, optimization=optimization)
     def save():
         (out / 'build.json').write_text(json.dumps(result, indent=2) + '\n')
     try:
@@ -153,7 +160,7 @@ def build(receipt, out, no_inline=False):
         subprocess.run(result['helper_command'], check=True)
         binary = out / 'Vox-profile'
         command = profile_command(frozen['compiler_command'], source, generated, helper,
-                                  binary, libraries, no_inline=no_inline)
+                                  binary, libraries, no_inline=no_inline, optimization=optimization)
         result['compiler_command'] = command
         result['generated_sha256'] = digest(generated)
         result['helper_sha256'] = digest(helper)
@@ -177,8 +184,11 @@ def main():
     parser.add_argument('--receipt', type=Path, default=ROOT / 'Build/production-build/latest.json')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--no-inline', action='store_true', help='Disable optional function inlining in this diagnostic build')
+    parser.add_argument('--optimization', choices=['O1', 'production'], default='O1',
+                        help='Use O1 or retain the completed production compiler optimization flags')
     args = parser.parse_args()
-    build(args.receipt.resolve(), args.output.resolve(), no_inline=args.no_inline)
+    build(args.receipt.resolve(), args.output.resolve(), no_inline=args.no_inline,
+          optimization=args.optimization)
 
 
 if __name__ == '__main__':

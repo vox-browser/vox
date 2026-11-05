@@ -77,6 +77,32 @@ class SealedProfileTests(unittest.TestCase):
         self.assertIn('-fno-inline-functions', actual)
         self.assertEqual(actual.count('-mllvm'), 1)
 
+    def test_production_optimization_preserves_original_flags_without_an_override(self):
+        command = ['clang', '-O3', '-x', 'objective-c-cpp-output', '/main.i',
+                   '-mllvm', '-inline-threshold=1500', '-O3', '-o', '/old']
+        actual = profile.profile_command(command, Path('/main.i'), Path('/new.i'),
+                                        Path('/helper.o'), Path('/binary'), {},
+                                        optimization='production')
+        self.assertEqual(actual, ['clang', '-O3', '-x', 'objective-c-cpp-output', '/new.i',
+            '-mllvm', '-inline-threshold=1500', '-O3', '-x', 'none', '/helper.o',
+            '-finstrument-functions-after-inlining', '-o', '/binary'])
+        self.assertNotIn('-O1', actual)
+        self.assertNotIn('-fno-inline-functions', actual)
+        with self.assertRaisesRegex(ValueError, 'Unsupported diagnostic optimization'):
+            profile.profile_command(command, Path('/main.i'), Path('/new.i'),
+                                    Path('/helper.o'), Path('/binary'), {}, optimization='O0')
+        with self.assertRaisesRegex(ValueError, 'Unsupported diagnostic optimization'):
+            profile.build(Path('/missing'), Path('/unused'), optimization='O0')
+
+    def test_cli_forwards_production_optimization(self):
+        with mock.patch.object(sys, 'argv', ['profile', '--output', 'Build/example',
+                                            '--optimization', 'production']), \
+                mock.patch.object(profile, 'build') as build:
+            profile.main()
+        build.assert_called_once_with((profile.ROOT/'Build/production-build/latest.json').resolve(),
+                                      Path('Build/example').resolve(), no_inline=False,
+                                      optimization='production')
+
     def test_changed_sealed_input_is_rejected_before_creating_outputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             out = Path(temporary)
@@ -173,6 +199,17 @@ int main(void) {
             self.assertEqual(rows['flush_inside']['partial_calls'], 1)
             self.assertTrue(result['metadata']['instruction_mode'])
             self.assertTrue(all(r['inclusive_instructions'] > 0 for r in rows.values()))
+            subprocess.run(['clang', '-O3', '-fno-optimize-sibling-calls',
+                            '-finstrument-functions-after-inlining', str(out / 'input.c'),
+                            str(out / 'helper.o'), '-o', str(out / 'probe-production')], check=True)
+            completed = subprocess.run([str(out / 'probe-production')], check=True,
+                capture_output=True, text=True,
+                env={**os.environ, 'VOX_CPROFILE_INSTRUCTIONS': 'recursive,flush_inside'})
+            optimized = profile.parse_profile(completed.stdout)
+            optimized_rows = {r['function']: r for r in optimized['rows']}
+            self.assertEqual(set(optimized_rows), {'recursive', 'flush_inside'})
+            self.assertEqual(optimized_rows['recursive']['calls'], 4)
+            self.assertEqual(optimized_rows['flush_inside']['partial_calls'], 1)
 
 
 if __name__ == '__main__':
