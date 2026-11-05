@@ -20843,3 +20843,122 @@ and [raw continuation evidence and full completed generated C](performance/raw/g
 The [original checkpoint](performance/github-lazy-match-memo-20261104.json) and
 [original local evidence](performance/raw/github-lazy-match-memo-20261104.tar.gz)
 remain unchanged.
+
+
+## Failed stylesheet completion reporting, November 5, 2026
+
+Feature `b7f43d21b02a9a2b2d28e819739bc94285c705f7` reports whether completing a link resource actually changes
+its owned CSSOM sheet. A new failed request leaves both sheet pointers null and
+no longer makes resource polling request a full style update, tear down layout
+and relayout unchanged content. A failed replacement that removes an existing
+sheet still reports a change. HTML completion, failure events, response retention,
+request tracking, render unblocking and arena cleanup remain on their existing
+paths.
+
+The same change corrects a cached-navigation owner bug found by the new checks.
+The request scanner previously deduplicated a URL before completing its second
+link's cached navigation response. Cached completions now precede transport
+request deduplication, so each matching link receives its event and retains its
+own sheet state. Fresh transport requests remain deduplicated by URL.
+
+Sixteen focused C-O0 case executions pass: four new cases in each of Boehm,
+GC-disabled and preallocation builds, plus two neighboring script-stylesheet
+cases under Boehm and two preload cases under preallocation. The twelve core
+executions contain the final owner-order correction. The four neighboring
+executions precede that correction and exercise unchanged paths without cached
+navigation responses. Every counted compiler, runtime and guard exits zero;
+compile limits are 12 GiB/V10G and runtime limits 3 GiB. Tests cover unchanged
+layout for a failed new sheet, removal/restyling of initially loaded sheets,
+retained/navigation failures with two owners, native MIME rejection, scratch
+lifetime and existing successful/preload behavior.
+
+Preparatory failures remain retained. The fixture trace shows both documents
+were active; the earlier inactive-document explanation was incorrect. It records
+one error on the first navigation owner and zero on the second, identifying the
+deduplication bug corrected here. The final cases check per-owner error deltas.
+The initial replacement fixture also exposed a separate legacy remote-text-cache
+issue: a failed replacement of a script-fetched sheet can reinstall its previous
+cached text during CSS synchronization. This feature does not fix that fallback.
+The replacement regression uses initially loaded link-owned sheets. Native MIME
+rejection is checked before that legacy fallback; full public MIME/cache parity
+is not claimed.
+
+A separately declared local mechanism diagnostic uses **one C-O0/Boehm
+executable** in three fixed alternating pairs. Its control forces the old
+report-every-completion result; the candidate reports actual sheet identity
+changes. Three reversible diagnostic edits to retained generated C add the mode
+flag, its initialization outside the interval and the report branch. Reversing
+them restores the input byte-for-byte. Both modes retain the pointer snapshot
+and diagnostic branch, so this is not literal old-executable equivalence.
+
+Each interval counts 32 complete resource polls on 128 unchanged paragraphs.
+Setup, eight warmups, forced GC, assertions and printing are outside the interval.
+Every observation validates 40 delivered errors including warmups. The backend
+reads macOS `RUSAGE_INFO_V4.ri_instructions`, inclusive across all threads in the
+local process. Host contention and raw exits are retained.
+
+| Pair | Report every completion | Report sheet changes |
+| --- | ---: | ---: |
+| 1 | 17,781,124,926 | 203,600,935 |
+| 2 | 17,229,959,424 | 201,293,851 |
+| 3 | 17,147,399,294 | 200,379,403 |
+
+Medians are 17,229,959,424 and 201,293,851 retired instructions
+(an observed 98.8317% reduction in this C-O0 mechanism experiment).
+All three pairs improve; all six fresh processes and their 3 GiB guards exit zero
+with unchanged executable/native hashes and all 133 sealed compiler inputs
+verified. No confidence interval is claimed. This generated input predates the
+later navigation-owner ordering correction: the experiment measures completion
+reporting, not that correction or final C-O3 production/page performance.
+
+Two independently generated preliminary programs fail exact whole-C isolation,
+including differing anonymous-context identities, and their availability runs
+receive zero savings credit. The fixed comparison uses the single instrumented
+executable instead. One initial native preparation fails before compilation
+because the live checkout changes; the successful retained-C diagnostic seals
+its actual C/native inputs without claiming a fresh translation of current V
+sources. Compiler/guard exits are zero for that successful diagnostic build.
+The failed large read-only diff, failed fixture-trace compile, corrected trace
+and every earlier functional/API attempt remain archived.
+
+The latest completed shared browser supplies a **component-only installed
+check**. Receipt `20261105-062348-76f1b0f0`, executable SHA-256
+`8a1e86fa09d39144053b74e3df2b6703701d67d85c2b6dfdae02656fd12a2dcb`,
+contains the final sheet-identity helper and asynchronous installer byte-exactly
+after resolving all string constants. Its request scanner still has the old
+navigation ordering. This browser can exercise the contained reporting change;
+it cannot validate the absent navigation-owner correction.
+
+The component API fixture loads one successful stylesheet and completes a
+shared failed request for two script-created links. It checks their error
+handlers, null sheets and unchanged computed color. Against preceding receipt
+`20261105-055644-f5ffd0f5` (which retains the void completion helper), both fresh
+captures pass at 640×480 with browser/controller/3 GiB guard exits zero, zero
+native exceptions and exactly one expected missing-stylesheet HTTP-404 diagnostic.
+Their PNGs are pixel-exact, SHA-256
+`5d95a4141fffd5a18b33724ab99c03337c033404d38118f80de9c1b793ca317d`.
+The earlier fixture that removed its successful sheet fails its color assertion;
+its cause remains unresolved. A later controller rejects the expected 404 despite
+passing page assertions. Both attempts remain retained; a separately declared
+capture fixes the diagnostic expectation and is the counted baseline.
+
+Final-code browser validation remains pending. Shared receipt
+`20261105-064541-50e591d6` is still incomplete at the archived availability
+checkpoint; no native build, signing or final browser success is inferred.
+The normal feature commit and subsequent canonical work share the existing
+coalesced worker. No extra manual production build is queued, no newer app is
+replaced and the user's GUI browser remains untouched. The final API fixture and
+fixed ordinary N=1 strict-193-response/33-row/66-link/21-image GitHub diagnostic
+have not launched. Their plans/controllers are retained for continuation after
+all three final generated functions match a completed bundle.
+
+There is no matching whole-page median, attributed page saving, broad-baseline
+reset, historical sample/reference replacement, hydration or Chrome-parity
+claim. The matching-page savings accumulator remains unchanged; broad suites
+are not rerun for this C-O0 component observation. Current shared production uses
+current V/preallocation/C-O3, distinct from this Boehm/C-O0 diagnostic and the
+historical old-compiler/Boehm/C-O2 cohorts. Concurrent edits and commits are
+preserved.
+
+See [the structured checkpoint](performance/github-failed-stylesheets-20261105.json)
+and [raw checks, failures, fixed counters, PNGs and complete generated C](performance/raw/github-failed-stylesheets-20261105.tar.gz).
