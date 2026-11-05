@@ -30,6 +30,14 @@ static CGImageRef source_image(int format, int wide, int colored, int decode) {
 }
 static CGImageRef selected;
 static int clipped;
+static unsigned filter_submissions;
+static IMP original_create_image;
+static CGImageRef count_create_image(id self, SEL selector, CIImage *image, CGRect rect,
+    CIFormat format, CGColorSpaceRef color) {
+    ++filter_submissions;
+    return ((CGImageRef (*)(id,SEL,CIImage *,CGRect,CIFormat,CGColorSpaceRef))original_create_image)(
+        self,selector,image,rect,format,color);
+}
 static void paint(id view, SEL command, NSRect rect) {
     CGContextRef frame=NSGraphicsContext.currentContext.CGContext;
     CGContextSetRGBFillColor(frame,.15,.3,.6,1);CGContextFillRect(frame,rect);
@@ -67,19 +75,29 @@ int main(void){@autoreleasepool{
             CGContextRelease(context);CGImageRelease(image);
         }
     NSView *view=[[NSView alloc]initWithFrame:NSMakeRect(0,0,257,256)];
+    native_initialize_css_filter_renderer();
+    Method method=class_getInstanceMethod(native_css_filter_ci_context.class,
+        @selector(createCGImage:fromRect:format:colorSpace:));
+    assert(method);
+    original_create_image=method_setImplementation(method,(IMP)count_create_image);
     for(int format=0;format<2;++format)for(int colored=0;colored<2;++colored)
         for(clipped=0;clipped<2;++clipped)for(int scale=1;scale<=2;++scale){
             selected=source_image(format,0,colored,0);
             setenv("VOX_DISABLE_GRAYSCALE_IDENTITY","1",1);
+            unsigned calls=filter_submissions;
             CGImageRef reference=native_layer_raster_frame(view,scale,(IMP)paint);
+            assert(filter_submissions==calls+1);
             unsigned before=native_test_grayscale_identities;
             unsetenv("VOX_DISABLE_GRAYSCALE_IDENTITY");
+            calls=filter_submissions;
             CGImageRef candidate=native_layer_raster_frame(view,scale,(IMP)paint);
+            assert(filter_submissions==calls+colored);
             assert([packed(candidate)isEqualToData:packed(reference)]);
             if ((native_test_grayscale_identities>before)!=!colored)
                 fprintf(stderr,"admission format=%d colored=%d clip=%d scale=%d accepted=%u\n",format,colored,clipped,scale,native_test_grayscale_identities-before);
             assert((native_test_grayscale_identities>before)==!colored);
             CGImageRelease(candidate);CGImageRelease(reference);CGImageRelease(selected);
         }
+    method_setImplementation(method,original_create_image);
     puts("Exact grayscale identity: every valid gray/alpha byte, RGBA/BGRA, padded rows, fractional clips, 1x/2x and colored/filter/profile fallbacks passed");
 }}
