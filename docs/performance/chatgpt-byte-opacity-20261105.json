@@ -1,0 +1,980 @@
+{
+  "version": 1,
+  "complete": true,
+  "recorded_unix": 1793901038.052594,
+  "implementation_commit": "e33f08b32",
+  "tooling_commits": [
+    "80dab8d51",
+    "5d5639bc5"
+  ],
+  "focused": {
+    "passed": true,
+    "runtime_selections": [
+      {
+        "name": "optimized-candidate",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/optimized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/optimized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/optimized"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "optimized-control",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/optimized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/optimized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/optimized"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "scalar-candidate",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/scalar-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/scalar-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/scalar"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "sanitized-candidate",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/sanitized"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "sanitized-control",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/sanitized"
+        ],
+        "exit": 0
+      }
+    ],
+    "per_selection": {
+      "exhaustive_pixels": 134217728,
+      "additional_large_span_alias_pixels": 2103144,
+      "ink_bounds_comparisons": 33280
+    },
+    "integration": {
+      "pins": {
+        "/Users/alex/code/vox2/native_capture_darwin.m": "dfd4323a970dcd2e4ed120d5fa8b927e8db8540978301298de8350aa3096400d",
+        "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/svg-scope-fixed/native_svg_mask_scope_entry_points.inc": "06627418b64d52126a5959e4b68eef42918a950680564c28d1315ac274bb37a9",
+        "/usr/bin/clang++": "ed6f5284033aa2aae6a58427c25ba3ab119947b40365627b24e5d51a4b70a1cd",
+        "/Users/alex/code/vox2/tools/test_native_svg_mask_scope.py": "2dc3292554978f3f7f9072cc42af1a5c3ab871cb51ba113ea1fe1d6fd279936a",
+        "/Users/alex/code/vox2/tools/native_svg_mask_scope_test.mm": "53e2a6887160324b3ce421fb0cc48c2910408a46fddd080716d5d398b35f958a",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp": "72a1db4770921167d4236c832be3ea0c89b23c8d29b17d6a97de3488856770ae",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+        "/Users/alex/code/vox2/native_history_swipe_darwin.h": "9fe9e469e2fa796130b58ee61609100e3cebd3e7c0e75c9320b72984a51d8351",
+        "/Users/alex/code/vox2/native_webp_darwin.h": "2271286c9773f7ccc4057c2ab35801a3772fb8a8c017bafc99c43e8600e05ac4",
+        "/Users/alex/code/vox2/native_redraw_test_darwin.h": "911c3e462928c13b18d21ab1cfd2fbfbf01a429676ad45a3885a5fda48e092bc",
+        "/Users/alex/code/vox2/native_gg_path.h": "b33a88d6db82eed7f309658e577d4760eea93ef87991012705b456cbf44c9ce4",
+        "/Users/alex/code/vox2/native_graphite_bridge.h": "9dc612f4d191405396403bdf53083f6be61524cd76e94c4ddd79dc2591ef7a19",
+        "/Users/alex/code/vox2/native_svg_image_pattern.h": "0e8dffa63a13dfe10284518151e923e9426feea70ebd9ff55092252c5e5d800b",
+        "/Users/alex/code/vox2/native_svg_path_regions.h": "02da879d9a611d2353f14cd71065f1e4c1b141af204526a46d7b542fc35a7c68",
+        "/Users/alex/code/vox2/native_frame_snapshot_darwin.h": "58cbb96d40ee2b1d37e66c3eef599a0ee4bb306c9551342303cf9118e7c4e64c",
+        "/Users/alex/code/vox2/native_chromium_screen_blend.h": "25533a92984034b03dfcd94241158c7fb99bac5732725c41be7ede232c9ab50d",
+        "/Users/alex/code/vox2/native_layer_presentation_test_darwin.h": "52521046255f7b95d4d247fc9b15a8f9716b11788bb4c4e3ca2177969ae8886e",
+        "/Users/alex/code/vox2/native_browser_chrome_style_darwin.h": "d2b5c0b2867318f9bc629c5085fa6b2bf0b9e0425c88a98469a989926762a65b",
+        "/Users/alex/code/vox2/native_graphite_context_lifetime.h": "cda0718e3d74ebe833cd39b6b938caa1b8e9450c7737de38e6e807dd02faa70a",
+        "/Users/alex/code/vox2/native_plain_rect_raster.h": "f1d04e00629b4e5d016fadf72e34c4efa7de420dbe080b92a6a066d8ef43e19e",
+        "/Users/alex/code/vox2/native_variable_font_descriptor.h": "f45a0399ba5319eb4eaf10f33cccec64920160fe6373bafafe1380076cfed159",
+        "/Users/alex/code/vox2/native_rounded_single_border.h": "896b3142b29eafcbc75a17ab47afcec3aec52dd29b03f17c4459aa428ed7efd3",
+        "/Users/alex/code/vox2/native_solid_svg_polygons.h": "72e94a19876792826d77c7c98e69120615034f0c081d3f646ca7e3cb933eca13",
+        "/Users/alex/code/vox2/native_skia_rect_prefetch_scratch.h": "ac2e29e783b82de29dc33f75d3d1a0cbac6a8514971a263e4f2230043cdacbeb",
+        "/Users/alex/code/vox2/native_rgba_is_opaque.h": "42dc1382ef58b6ac9d2af0577198e1eb4a8e654a2da17ebbf288e29d5719c0ca",
+        "/Users/alex/code/vox2/native_gg_text.h": "08a3939b7be9bc0f76df13d8ab5a82d36432c336834bab930cbef09b34599f5a",
+        "/Users/alex/code/vox2/native_snapshot_pixel_runs.h": "0e1827e90f9b6f6195b0115cb3ec67bf70e725f9524273d9f1fc0669782d7a14",
+        "/Users/alex/code/vox2/native_deferred_font_darwin.h": "d17103d8f453791d66e9e653d5ca41e2b9b497d1b93b5237bcafbe1d1d0c26ca",
+        "/Users/alex/code/vox2/native_media_preferences_darwin.h": "20ff208b285165bee2e4308f97e97cd7167ba7c1249cd4d185e8dfe537a2116f",
+        "/Users/alex/code/vox2/native_browser_tab_process_darwin.h": "b4d529734498eea1d87d5409970818e7247f3dfeb7bb1307258feaa250b5c417",
+        "/Users/alex/code/vox2/native_browser_linux.h": "085b266fec3ed079d8543c85617e202641f2539ccad7231c0a0f4763d8a7ec46",
+        "/Users/alex/code/vox2/native_picture_typeface_cache.h": "4d3e9fc16f6c0224290e8ace8f239cc98e55f11d0434bd2468301d5e6979ad12",
+        "/Users/alex/code/vox2/native_direct_image_raster.h": "7b129483d89f5248c43a17d5ea6a7bbb1c846ef53c8eaf2633a63ebc63ad9e6a",
+        "/Users/alex/code/vox2/native_graphite_image_batch.h": "e69630af5c1f9f704dc6586397f272c3cfea5b5e000666796b0b73988d112e73",
+        "/Users/alex/code/vox2/native_webp_color_profile.h": "8ce5f2d7de6d6439a75b6020352fb5b1402056e58592cef414fc02ea4b9ca395",
+        "/Users/alex/code/vox2/native_chromium_shared_recording.h": "9bb7445861de4ba5252ca4bde87ea8a4fbc82a377417df425eeb816a65b90b40",
+        "/Users/alex/code/vox2/native_navigation_work_darwin.h": "39aa7ac17b19a72c619a739c51621e0d1d701505e5b0892793b7307fad2a9878",
+        "/Users/alex/code/vox2/native_rgba_alpha_bounds.h": "29e69b38366397a803a010757d1d546dc2386db0f889dc6015012446a34353e9",
+        "/Users/alex/code/vox2/native_snapshot_png_darwin.h": "c115e7ea102399c7439b24e32dfd586c6aab641a0ef15766014e1d897a663dba",
+        "/Users/alex/code/vox2/native_skia_image_color_space.h": "2fc0c85c184ccd0e98dba21055ce72b655312e4b753b63fce3650a027e440d74",
+        "/Users/alex/code/vox2/native_chromium_layer_texture_scroll.h": "9cd03e4932ea3842706d8ce628a24c2023af89ded79f2e5bd0ad1749aef4d77b",
+        "/Users/alex/code/vox2/native_browser_tab_detach_darwin.h": "fb5805d4aa96c641464d304298ea38ca5590c8b542b388b2375f70aac76efa6c",
+        "/Users/alex/code/vox2/native_browser_settings_test_darwin.h": "5035d9754dc7cef8324115c25f56acced71954560fdc0eac78e2be1545ae4943",
+        "/Users/alex/code/vox2/native_chromium_raster_phase.h": "7f8767099bcf4de812c9918449ca03250f84bacd182507763999bf02947867dc",
+        "/Users/alex/code/vox2/native_browser_tab_process_linux.h": "4ddf72d089f5af9bb07f0e27f3fe5a25a61707bda530e1ffae42d2eebba03bf9",
+        "/Users/alex/code/vox2/native_media_darwin.h": "2dfa1595f193c3da54468c342fc5f8da97aad621d6237fa7d200bbefaeb177d8",
+        "/Users/alex/code/vox2/native_chromium_raster_grid.h": "007fca0a183db8cad271db4096195f87a6dc3ef9c544a670efe3b77f4b0f87b5",
+        "/Users/alex/code/vox2/native_gradient_visibility.h": "778714bdcde7518da878285e7414e71456afc9bb80550857a76f24593f5358ab",
+        "/Users/alex/code/vox2/native_navigation_test_darwin.h": "d7e39c5986d414b16d0fcdeabba77531c9182329a837175a8961f38ada4a00ab",
+        "/Users/alex/code/vox2/native_chromium_speculative_recording.h": "7dd154448d89d5ade3f8947efeb9200ba4f604bce80da4040eed7a7258ed0b63",
+        "/Users/alex/code/vox2/native_writing_tools_darwin.h": "c4f1b1727f2799c0119f716ccb05bc4e8b38f0eefa883c77c68ebc4d6db3d030",
+        "/Users/alex/code/vox2/native_bitmap_snapshot_darwin.h": "e51bcdbeb64c8d7b90542e0c5d7c1626de1c747192a61c3ffd04058f046f08d6",
+        "/Users/alex/code/vox2/native_graphite_shared_dawn.h": "d1f3ff101e17dad61da5cca5dc0d250bde181aadcc01f32e7c96ed0422718ed1",
+        "/Users/alex/code/vox2/native_browser_window_state_darwin.h": "3a745accc018dab115a322e96e0a601a8197ca60fe20592733f24d8abb5d88da",
+        "/Users/alex/code/vox2/native_initial_document_clear.h": "333b2f96c6692131a70524809ba7e4d08fbc044e1494b9550de91c94a0fb5179",
+        "/Users/alex/code/vox2/native_graphite_solid_rect.h": "78344201e8abea7746f3e465f3b9043a6d445a7a64bb26e183dc6b451d8b6f55",
+        "/Users/alex/code/vox2/native_gg_shape.h": "69bccbf08d16acf77b024d23d624610891025885aea2cc1d3b9138755e8a1301",
+        "/Users/alex/code/vox2/native_chromium_retained_tiles.h": "5a9db44b2b8d31a6281946cc50ee1e77600f0a134eb54259bb2b593546fb5ab1",
+        "/Users/alex/code/vox2/native_snapshot_deflate.h": "461ed3bd9a8112a84ccc88728bb2a864a1bcc752725a08e71901a7f326c77ec1",
+        "/Users/alex/code/vox2/native_picture_image_transport.h": "af13f54db45cdaf23ff7a1938b9420f2970507b5aaa22c002000d76318a14a46",
+        "/Users/alex/code/vox2/native_skia_rounded_image_cache.h": "651a5a4b105ac671124c096643b49209202b14df860d6f262c71c6b9894a5962",
+        "/Users/alex/code/vox2/native_svg_mask_opacity_darwin.h": "020a43131f9aa651ba22e4aa120cc5343c54262e7f2107fdd921df3652dfe4eb",
+        "/Users/alex/code/vox2/native_immutable_rgba_image.h": "cd2bb99fd55f99b6160248413af4177af6659898fee732b1d62a142baf56644f",
+        "/Users/alex/code/vox2/native_raster_row_ranges.h": "e75d9f558a1f3ebbaf03542efb953da9756db9f0c79631c4abe62526146acaa6",
+        "/Users/alex/code/vox2/native_skia_inner_shadow.h": "f59389c92b96b5447f8b69dff0e19553f9de993041bd3d14a44aa859d1e01f1b",
+        "/Users/alex/code/vox2/native_parallel_pixels.h": "95825c824aae2f67b8bc98f4a3a6f47be71c301779505aee76e3b48c82db8b6b",
+        "/Users/alex/code/vox2/native_shared_picture_pixels.h": "1a83f12a454e13d7e3ac0bcfd2fc64b1469d832584696acfe16c74fa033b3d00",
+        "/Users/alex/code/vox2/native_runtime_bounds.h": "e4667730ead6f460a948f2f4bbcdce4b286a1eb3a3ea173003ded15fa66c8cd1",
+        "/Users/alex/code/vox2/native_image_capture_policy_darwin.h": "ae2790c9bbb956d18252fd29891dc9a00ec7f04a23c212e9de054cf01cf94578",
+        "/Users/alex/code/vox2/native_layer_presentation_darwin.h": "5cdeed176db20d8a31f171ca59fe07fd916c681f99044adb2981b4312cd17a66",
+        "/Users/alex/code/vox2/native_graphite_shared_yuva_metal.h": "1fffd618ce6c897372d6e7989cea9a685fb5c1b20deaaf1dfc4398ce300f21c3",
+        "/Users/alex/code/vox2/native_scroll_raster_darwin.h": "3c0a47eee2844d4ec77b0a35fc2858e25dda63492384bbf10878dca4a7bf48f5",
+        "/Users/alex/code/vox2/native_graphite_svg_pattern.h": "8dbae2d4b712a004ca3a0e1b3463b35997304a595cd7c9ca41da093cc5ebf2f8",
+        "/Users/alex/code/vox2/native_browser_tab_titles_test_darwin.h": "13c16ba29966f1c8d8215a9d3732e2c944cc51b785924775ef4ef9935beaee18",
+        "/Users/alex/code/vox2/native_browser_tabs_test_darwin.h": "faf64f1003cf845f52e48288c108f6ef9582e9ab20733bb1b244adbd8ba6f8b9",
+        "/Users/alex/code/vox2/native_chromium_recorded_ink_bounds.h": "0d5c9fbb301d4375bc57144ad9aedda2273e0efae8285de8eecae86cae5d8b13",
+        "/Users/alex/code/vox2/native_png_color_darwin.h": "424bbf610ad02c9624f0c05e979ba1bb34e67da420e0521e8169d17150899fc0",
+        "/Users/alex/code/vox2/native_png_icc_darwin.h": "c2a9f2eee42b0f8a398c15b3334a4426e49a27fcdd3749c268089cca0a133531",
+        "/Users/alex/code/vox2/native_svg_path_segments.h": "bd10ecbae875a1e2b1f16947ae64af0b066888b98cad65a7e81a166b25661aeb",
+        "/Users/alex/code/vox2/native_stationary_raster_darwin.h": "8d80bef9187b675e521feccceb47a94a35b4cd6c75cdc3f9ab46867e790ff13e",
+        "/Users/alex/code/vox2/native_capture_retry_test_darwin.h": "8daf3750c3a7df8ab5eb90654993d156d1364889c069c732bc6a3aa71b1623f5",
+        "/Users/alex/code/vox2/native_graphite_image_upload_cache.h": "68eaaff3e000e5d64ee77a7a3d929d4f11eada496d55d447f6e2032ab5cf8fc5",
+        "/Users/alex/code/vox2/native_image_color_profile.h": "28d21ba1b34b09021b35506c96bc6332546cee03b3957b3d9e927bfb9ef0b462",
+        "/Users/alex/code/vox2/native_graphite_raster_cache.h": "c5bc438dec01c4c2a814b351aa4cd1b141223e7e6d57b8e3b2eaa05e5fcee0d2",
+        "/Users/alex/code/vox2/native_css_color_filter_cache_darwin.h": "d13852b9b370cef3d586804226cbb1370d829db55defd51ffaee730e4dc0e541",
+        "/Users/alex/code/vox2/native_glyph_bitmap_copy.h": "734a4b3eec154c519c6cf9da355a199844031e3f0eb197bd540182ffb3fd07b0",
+        "/Users/alex/code/vox2/native_svg_mask_layer_darwin.h": "524a40a18370371def3371ad620eba2da11ef0d47a8e80e75c1e75d31c8f4899",
+        "/Users/alex/code/vox2/native_allocator_policy_darwin.h": "fe926b512958406f462b80d1b73245a0ff1781ca535e990e8e283bf65d12ddac",
+        "/Users/alex/code/vox2/native_chromium_superellipse.h": "8a77c5dca9c4ec8a9e8d768903ea716a2cb6d90504432019d13c1d07ddeebeda",
+        "/Users/alex/code/vox2/native_document_submission_darwin.h": "e859d615eb9a48f9f8d3f021aae688b2ba784f7ea1a06c007248ea5c80f7be4e",
+        "/Users/alex/code/vox2/native_skia_gpu_canvas.h": "c9725042204160bfcd8ddad01e10e007e007ea9f39d15caa975b75f58ec64869",
+        "/Users/alex/code/vox2/native_drawables_test_darwin.h": "0b1adf7f6dc013b553661fb9525d49a98d9315680cd08f5095b22841b321466f",
+        "/Users/alex/code/vox2/native_parallel_raster.h": "d74d8f9dfd98af90a1af34f1b6c8d7ccd99e4c6da5fb4b2ed4a89d17b9a557d1",
+        "/Users/alex/code/vox2/native_test_window_darwin.h": "6d8d5c0c41873c3882525f5f6b621087a3fe923eb247d49f9db7e7871c6ea9fd",
+        "/Users/alex/code/vox2/native_raster_snapshot.h": "eba4d55db249e88c4f18588854280c5e616a0d770b9068d2f468a9aa20c9f0ab",
+        "/Users/alex/code/vox2/native_graphite_shape_batch.h": "e230b1ca65bbdef894e7e2c8eac2bf48731d4f2bdda76aef62c573003f403c91",
+        "/Users/alex/code/vox2/native_crc32.h": "0a10bab1a9ea0ddf487dc178dd6ccf8bd86f3167f366f8edae54b059f8ed8857",
+        "/Users/alex/code/vox2/native_raster_buffer_pool.h": "3c9bb01194a9410801ddbe4a9b2fc8970c087b93e86f8bd7a9aefe8970d84e69",
+        "/Users/alex/code/vox2/native_browser_bookmarks_test_darwin.h": "9bc92a5894341dab0d72ef73836456058cd74ee7bd4e5b2ba76091c5c71979ae",
+        "/Users/alex/code/vox2/native_jpegxl.h": "e6d6c1c5240e92c878377d21569e42386d329bed2c317761d3276f7e2748442f",
+        "/Users/alex/code/vox2/native_navigation_work_test_darwin.h": "3751da4e834973986a7cc7c3a7c37ca3fca9959023e11b576562c25ab30d7e9e",
+        "/Users/alex/code/vox2/native_presented_pixels_darwin.h": "e303354c75e422bbb54d65b14ba9a081207816323933db0d2ee6f484a6e8b209",
+        "/Users/alex/code/vox2/native_graphite_shared_metal.h": "4df99aecc8357dd423884bb479c070f00b216a536aa068ce17e8ddd3a24bd40c",
+        "/Users/alex/code/vox2/native_glyph_text_blob_cache.h": "4c6d982e15eae53e7db0a589c93d7bb98d036c53db6b855f42bfc6a2d0d38b44",
+        "/Users/alex/code/vox2/native_chromium_corner_shapes_darwin.h": "129f2a2287337c8804ffd80e36560ed012085a2f6ad226bcdf1f13863f11feaf",
+        "/Users/alex/code/vox2/native_chromium_raster_batch.h": "7cd2f1163ba16c8b5db9eaf5562a3b5001e9f2e8b98c408186ca5fea4ac699bd",
+        "/Users/alex/code/vox2/native_sparse_opacity_ink_darwin.h": "87d277cf8c1d2c467f84d79dba2b8a5d2b9b9e8afc334638f13ff41918506519",
+        "/Users/alex/code/vox2/native_ui_intelligence_darwin.h": "581d572944f67b735bc0a8b89457d159344f89070501287e1ad2ecaa6d002922",
+        "/Users/alex/code/vox2/native_chromium_corner_shape_paint.h": "e8e03bad14ba39247670f262c841ba06d150462e9e289d02d79407fb92419338",
+        "/Users/alex/code/vox2/native_avif.h": "0347d0832df15b5afb093136583d8f2386832502747bddd1807e71bc7fafde99",
+        "/Users/alex/code/vox2/native_avfoundation_darwin.h": "5b7fbcccafc29048cff3272b6951b2523487e3a7cf07ad6514284c5126ca7ef1",
+        "/Users/alex/code/vox2/native_frame_metal_queue.h": "0f1af7b4cad23b4eac325bfbf8284d548d81d7f7e040552900c9b83bc72a9de4",
+        "/Users/alex/code/vox2/native_snapshot_png_opaque_darwin.h": "9fc47d5136cde8443dd16ecec272fd69e6a8d05c43f60d5ae827e0c0b9280d45",
+        "/Users/alex/code/vox2/native_presented_capture_darwin.h": "82c1da2cf7193f4a54e23403e61519a8e03bc8429da64ebf2a6594ee84cc9806",
+        "/Users/alex/code/vox2/native_link_context_menu_test_darwin.h": "8a061176c5872aa0e5d5a557a96d012e709e65220bd5dd5ac245315727f3416d",
+        "/Users/alex/code/vox2/native_opacity_group_darwin.h": "3b20aa93e92be19e8cf9601df871b226de668887ffaf35e70c79691ca817fdce",
+        "/Users/alex/code/vox2/native_chromium_raster_rows.h": "63e0f35f5aee1c3048346bccb0ee5a9bf9badc5df3b5ce4c81015b282db86ef2",
+        "/Users/alex/code/vox2/native_document_frame_request_test_darwin.h": "2005099bbc454fa8cee736a9d05ee8ce2215b089952b3292787f6957a476a8c2",
+        "/Users/alex/code/vox2/native_svg_mask_pixels.h": "f988095bc51b4c883cd0aa077d6df7dee0d02ac78b86c2aee517652d7e677cf8",
+        "/Users/alex/code/vox2/native_chromium_svg_cover_pattern.h": "19f6d54eea6ee3205806b6b4354481859928b58978cadb7f3b78761bba65d37f",
+        "/Users/alex/code/vox2/native_direct_image_draw.h": "329cd324105d0663fb2dbdec9cb807a6e102a3ff1f5fe3955e630d9b314fa56d",
+        "/Users/alex/code/vox2/native_glyph_flags.h": "d99d6e35b4962efa2b5cf80943574c378b2e821fa636d2afca50298f755e79a2",
+        "/Users/alex/code/vox2/native_address_bar_test_darwin.h": "3b888ff2eee6de2a4c0835fbaf3f32dca47961996ca2980a166e8cbf096aaa4e",
+        "/Users/alex/code/vox2/native_ffmpeg_darwin.h": "3030f61ee0839da0b1caccb6571990c48e951b3fa9767c6374f4f60943ee4ce8",
+        "/Users/alex/code/vox2/native_chromium_image_decode_cache.h": "065b97a572d91f891c1a06d24a0569b3c691bfcd46456c0b3453ac7064c7cfb5",
+        "/Users/alex/code/vox2/native_glyph_bitmap_surface.h": "8c9c1d10b869b39012c7fc1c2d925221a6655abb805f255567c5d77e87a65eaa",
+        "/Users/alex/code/vox2/native_jpeg_darwin.h": "91b750169f44ad0616dccd82904723ed8cd511c4a2caa58d17b5b3c71873b8f0",
+        "/Users/alex/code/vox2/native_opacity_canvas_pool_darwin.h": "ebfde78a596929cb55a621ddfed6ed8997e76a573e4d07f137eca7f03d20ead6",
+        "/Users/alex/code/vox2/native_rounded_svg_ancestor_darwin.h": "376549eb7929608a3db3dd716a8cd8afc53a08116c9152612fb67cdde1ee7ec9",
+        "/Users/alex/code/vox2/native_graphite_canvas.h": "d5dcc9f573757d6f6b5ab4a8572aede3705f0a23fcebd42cdb6308ccbace33f5",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb"
+      },
+      "source_copies": 0,
+      "jobs": [
+        {
+          "mode": "o2",
+          "command": [
+            "/usr/bin/clang++",
+            "-std=c++20",
+            "-fno-rtti",
+            "-fno-objc-arc",
+            "-O2",
+            "-I",
+            "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/svg-scope-fixed",
+            "-I",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+            "-I",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+            "/Users/alex/code/vox2/tools/native_svg_mask_scope_test.mm",
+            "-L",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+            "-lskia",
+            "-framework",
+            "Cocoa",
+            "-framework",
+            "CoreFoundation",
+            "-framework",
+            "CoreGraphics",
+            "-framework",
+            "CoreText",
+            "-framework",
+            "Foundation",
+            "-framework",
+            "Metal",
+            "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+            "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/svg-scope-fixed/native_svg_mask_scope-o2"
+          ],
+          "compile_exit_code": 0,
+          "binary_sha256": "2d4ed533081f527f834014d1f876fd88331a2297802a7cbb0256315668a3f524",
+          "test_exit_code": 0
+        },
+        {
+          "mode": "sanitized",
+          "command": [
+            "/usr/bin/clang++",
+            "-std=c++20",
+            "-fno-rtti",
+            "-fno-objc-arc",
+            "-O1",
+            "-g",
+            "-fsanitize=address,undefined",
+            "-I",
+            "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/svg-scope-fixed",
+            "-I",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+            "-I",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+            "/Users/alex/code/vox2/tools/native_svg_mask_scope_test.mm",
+            "-L",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+            "-lskia",
+            "-framework",
+            "Cocoa",
+            "-framework",
+            "CoreFoundation",
+            "-framework",
+            "CoreGraphics",
+            "-framework",
+            "CoreText",
+            "-framework",
+            "Foundation",
+            "-framework",
+            "Metal",
+            "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+            "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/svg-scope-fixed/native_svg_mask_scope-sanitized"
+          ],
+          "compile_exit_code": 0,
+          "binary_sha256": "8d24bc5de1ca80e33fad66396d6d6344090c67464e4b381c2b7c9b9582c89988",
+          "test_exit_code": 0
+        }
+      ],
+      "changed_inputs": [],
+      "status": "passed"
+    },
+    "normal_sanitized_integration_cases": 304,
+    "qualification": "Five executed C selections: optimized candidate/control, scalar-only candidate and ASan/UBSan candidate/control. Each uses the unchanged independent scalar oracle. Native SVG mask scope contributes 56 scope/pixel, 24 float opacity GPU and 72 image/alpha-mask GPU cases in each of two builds. No broad-suite claim."
+  },
+  "component": {
+    "started_unix": 1793900835.978337,
+    "host_cpu_count": 18,
+    "source_before": {
+      "native_opacity_group_darwin.h": "3b20aa93e92be19e8cf9601df871b226de668887ffaf35e70c79691ca817fdce",
+      "tools/native_byte_opacity_benchmark.c": "3943e1026c652d3532adef7fc26570f9ec04e7d4a796b3deeca75356ef05a379",
+      "platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+      "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "started_unix": 1793900836.313816,
+        "load": [
+          12.7841796875,
+          8.23828125,
+          8.38525390625
+        ],
+        "scenes": [
+          {
+            "scene": "mixed",
+            "instructions": 46953007,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "mixed-empty-opaque",
+            "instructions": 32843884,
+            "checksum": 5376713330931853450,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "opaque",
+            "instructions": 46475788,
+            "checksum": 3201782423767977984,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "halfway-fallback",
+            "instructions": 46485529,
+            "checksum": 11175584990345297920,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "short-spans",
+            "instructions": 46520819,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 128
+          },
+          {
+            "scene": "unit-opacity",
+            "instructions": 13232758,
+            "checksum": 4816139268565307290,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "empty",
+            "instructions": 5581324,
+            "checksum": 5469604781976584192,
+            "pixels": 2097152,
+            "span": 2048
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "started_unix": 1793900836.645667,
+        "load": [
+          12.7841796875,
+          8.23828125,
+          8.38525390625
+        ],
+        "scenes": [
+          {
+            "scene": "mixed",
+            "instructions": 41313042,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "mixed-empty-opaque",
+            "instructions": 30497074,
+            "checksum": 5376713330931853450,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "opaque",
+            "instructions": 44952210,
+            "checksum": 3201782423767977984,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "halfway-fallback",
+            "instructions": 46370291,
+            "checksum": 11175584990345297920,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "short-spans",
+            "instructions": 46540385,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 128
+          },
+          {
+            "scene": "unit-opacity",
+            "instructions": 13183447,
+            "checksum": 4816139268565307290,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "empty",
+            "instructions": 5357018,
+            "checksum": 5469604781976584192,
+            "pixels": 2097152,
+            "span": 2048
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "started_unix": 1793900836.852334,
+        "load": [
+          12.7841796875,
+          8.23828125,
+          8.38525390625
+        ],
+        "scenes": [
+          {
+            "scene": "mixed",
+            "instructions": 46931029,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "mixed-empty-opaque",
+            "instructions": 32982631,
+            "checksum": 5376713330931853450,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "opaque",
+            "instructions": 46475663,
+            "checksum": 3201782423767977984,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "halfway-fallback",
+            "instructions": 46481642,
+            "checksum": 11175584990345297920,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "short-spans",
+            "instructions": 46520769,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 128
+          },
+          {
+            "scene": "unit-opacity",
+            "instructions": 13190632,
+            "checksum": 4816139268565307290,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "empty",
+            "instructions": 5581249,
+            "checksum": 5469604781976584192,
+            "pixels": 2097152,
+            "span": 2048
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "started_unix": 1793900837.068298,
+        "load": [
+          12.7841796875,
+          8.23828125,
+          8.38525390625
+        ],
+        "scenes": [
+          {
+            "scene": "mixed",
+            "instructions": 41181876,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "mixed-empty-opaque",
+            "instructions": 30455065,
+            "checksum": 5376713330931853450,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "opaque",
+            "instructions": 44910223,
+            "checksum": 3201782423767977984,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "halfway-fallback",
+            "instructions": 46342142,
+            "checksum": 11175584990345297920,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "short-spans",
+            "instructions": 46520744,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 128
+          },
+          {
+            "scene": "unit-opacity",
+            "instructions": 13141397,
+            "checksum": 4816139268565307290,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "empty",
+            "instructions": 5314984,
+            "checksum": 5469604781976584192,
+            "pixels": 2097152,
+            "span": 2048
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "started_unix": 1793900837.271007,
+        "load": [
+          12.7841796875,
+          8.23828125,
+          8.38525390625
+        ],
+        "scenes": [
+          {
+            "scene": "mixed",
+            "instructions": 41178232,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "mixed-empty-opaque",
+            "instructions": 30455065,
+            "checksum": 5376713330931853450,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "opaque",
+            "instructions": 44910282,
+            "checksum": 3201782423767977984,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "halfway-fallback",
+            "instructions": 46322113,
+            "checksum": 11175584990345297920,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "short-spans",
+            "instructions": 46561149,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 128
+          },
+          {
+            "scene": "unit-opacity",
+            "instructions": 13141372,
+            "checksum": 4816139268565307290,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "empty",
+            "instructions": 5314959,
+            "checksum": 5469604781976584192,
+            "pixels": 2097152,
+            "span": 2048
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "started_unix": 1793900837.4635441,
+        "load": [
+          12.7841796875,
+          8.23828125,
+          8.38525390625
+        ],
+        "scenes": [
+          {
+            "scene": "mixed",
+            "instructions": 46933029,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "mixed-empty-opaque",
+            "instructions": 32843784,
+            "checksum": 5376713330931853450,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "opaque",
+            "instructions": 46495810,
+            "checksum": 3201782423767977984,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "halfway-fallback",
+            "instructions": 46475688,
+            "checksum": 11175584990345297920,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "short-spans",
+            "instructions": 46541656,
+            "checksum": 1331700889529026269,
+            "pixels": 2097152,
+            "span": 128
+          },
+          {
+            "scene": "unit-opacity",
+            "instructions": 13190631,
+            "checksum": 4816139268565307290,
+            "pixels": 2097152,
+            "span": 2048
+          },
+          {
+            "scene": "empty",
+            "instructions": 5594471,
+            "checksum": 5469604781976584192,
+            "pixels": 2097152,
+            "span": 2048
+          }
+        ]
+      }
+    ],
+    "jobs": [
+      {
+        "name": "benchmark-compile-fixed",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-compile-fixed.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-compile-fixed-guard.json",
+          "--",
+          "clang",
+          "-O3",
+          "-std=c11",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-Wno-unused-function",
+          "tools/native_byte_opacity_benchmark.c",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "benchmark-0-control",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-0-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "benchmark-1-candidate",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-1-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "benchmark-2-control",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-2-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-2-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "benchmark-3-candidate",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-3-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-3-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "benchmark-4-candidate",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-4-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark"
+        ],
+        "exit": 0
+      },
+      {
+        "name": "benchmark-5-control",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark-5-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-byte-opacity-20261105-r3/benchmark"
+        ],
+        "exit": 0
+      }
+    ],
+    "scope": "Current-process retired instructions for repeated CPU opacity compositing. Inputs, independent scalar oracle, output validation and checksums excluded. Component diagnostic, no page credit.",
+    "executable_sha256": "9ad3c6ca4fb0f51d43003298a39b63f40ea7abaea73fe863012dbff8d16ae9ba",
+    "summaries": [
+      {
+        "scene": "mixed",
+        "counts": {
+          "control": [
+            46931029,
+            46933029
+          ],
+          "candidate": [
+            41181876,
+            41178232
+          ]
+        },
+        "medians": {
+          "control": 46932029.0,
+          "candidate": 41180054.0
+        },
+        "percent_reduction": 12.255969159142898
+      },
+      {
+        "scene": "mixed-empty-opaque",
+        "counts": {
+          "control": [
+            32982631,
+            32843784
+          ],
+          "candidate": [
+            30455065,
+            30455065
+          ]
+        },
+        "medians": {
+          "control": 32913207.5,
+          "candidate": 30455065.0
+        },
+        "percent_reduction": 7.468559544067532
+      },
+      {
+        "scene": "opaque",
+        "counts": {
+          "control": [
+            46475663,
+            46495810
+          ],
+          "candidate": [
+            44910223,
+            44910282
+          ]
+        },
+        "medians": {
+          "control": 46485736.5,
+          "candidate": 44910252.5
+        },
+        "percent_reduction": 3.389177237194041
+      },
+      {
+        "scene": "halfway-fallback",
+        "counts": {
+          "control": [
+            46481642,
+            46475688
+          ],
+          "candidate": [
+            46342142,
+            46322113
+          ]
+        },
+        "medians": {
+          "control": 46478665.0,
+          "candidate": 46332127.5
+        },
+        "percent_reduction": 0.31527906406090267
+      },
+      {
+        "scene": "short-spans",
+        "counts": {
+          "control": [
+            46520769,
+            46541656
+          ],
+          "candidate": [
+            46520744,
+            46561149
+          ]
+        },
+        "medians": {
+          "control": 46531212.5,
+          "candidate": 46540946.5
+        },
+        "percent_reduction": -0.020919291540066887
+      },
+      {
+        "scene": "unit-opacity",
+        "counts": {
+          "control": [
+            13190632,
+            13190631
+          ],
+          "candidate": [
+            13141397,
+            13141372
+          ]
+        },
+        "medians": {
+          "control": 13190631.5,
+          "candidate": 13141384.5
+        },
+        "percent_reduction": 0.373348311640731
+      },
+      {
+        "scene": "empty",
+        "counts": {
+          "control": [
+            5581249,
+            5594471
+          ],
+          "candidate": [
+            5314984,
+            5314959
+          ]
+        },
+        "medians": {
+          "control": 5587860.0,
+          "candidate": 5314971.5
+        },
+        "percent_reduction": 4.883595866753998
+      }
+    ],
+    "source_after": {
+      "native_opacity_group_darwin.h": "3b20aa93e92be19e8cf9601df871b226de668887ffaf35e70c79691ca817fdce",
+      "tools/native_byte_opacity_benchmark.c": "3943e1026c652d3532adef7fc26570f9ec04e7d4a796b3deeca75356ef05a379",
+      "platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+      "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8"
+    },
+    "complete": true,
+    "finished_unix": 1793900837.656147
+  },
+  "source_hashes": {
+    "native_opacity_group_darwin.h": "3b20aa93e92be19e8cf9601df871b226de668887ffaf35e70c79691ca817fdce",
+    "tools/native_opacity_group_test.c": "1d60f467b175b8502c3b6a96be2a2431f362dcfb72d703fb58932377d1dbfffe",
+    "tools/native_byte_opacity_benchmark.c": "3943e1026c652d3532adef7fc26570f9ec04e7d4a796b3deeca75356ef05a379",
+    "platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+    "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8"
+  },
+  "retained_failures": [
+    "Initial benchmark compilation failed on an unused unrelated header function under Werror; the corrected command adds Wno-unused-function without changing tested code. All five passing focused selections are retained, not rerun.",
+    "Initial SVG mask integration builds linked with RTTI against Skia without RTTI and failed to resolve typeinfo for SkNoDrawCanvas. The independently committed harness flag fix passes both normal and sanitized builds."
+  ],
+  "evidence": {
+    "path": "docs/performance/chatgpt-byte-opacity-20261105-evidence.zip",
+    "sha256": "2b350b154bd0aef424ac7680b3bd8eec9dfb6348d6473618beeb6106994e630f",
+    "bytes": 74917,
+    "entries": 66
+  },
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence": 0,
+  "qualification": "Exact float32 coverage is preserved. Byte-unit RGB arithmetic is accepted only beyond a 2^-10 half-level exclusion, wider than the analytical 2^-14 error bound; ambiguous blocks, short spans, scalar tails, nondefault rounding and unusual opacities retain prior arithmetic. Exhaustive and arbitrary-float inputs include invalid premultiplication, saturation, unaligned buffers and exact in-place output. Repeated ambiguous blocks stop probing. Unit-opacity integer behavior is preserved. Mutable diagnostic state uses VOX_NATIVE_STATE. Component counts cover 2,097,152 pixels per scene; source generation, oracle, memcmp and checksum are outside the counter. All six fresh-process outputs match exactly. Control uses an environment flag in the same executable; even empty/unit negative controls vary with environment lookup overhead and system activity, so their observed reductions are not compositing credit. Short spans regress 0.0209%. Component gains do not establish page savings or the 5% Brave target. No new download or script filtering."
+}

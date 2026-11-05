@@ -3332,3 +3332,40 @@ this attribution gap.
 The [rejected counter-probe receipt](performance/chatgpt-native-counter-probe-rejected-20261105.json)
 preserves both actual failed exits, the verifier tests, cleanup hashes and
 source. No instruction credit, broad checkpoint or 5%-below-Brave claim follows.
+
+### Byte-unit opacity compositing (2026-11-05)
+
+The native profile's effect-layer lead prompted an exact CPU compositor change
+in `e33f08b32`. Long nonunit-opacity spans reuse the original normalized alpha
+coverage while computing RGB in byte units. An analytical error bound below
+2^-14 byte levels permits the result only outside a wider 2^-10 exclusion
+around half levels. Ambiguous blocks retain the original float32/FMA and
+double-precision quantization; repeated ambiguity stops probing. Short spans,
+scalar tails, unusual opacity values and nondefault rounding retain the old
+arithmetic. Mutable diagnostic state uses `VOX_NATIVE_STATE`.
+
+Five focused executions pass: optimized candidate/control, scalar-only, and
+ASan/UBSan candidate/control. Each checks 134,217,728 exhaustive pixels,
+2,103,144 additional large-span/alias pixels, tails, all rounding modes and
+33,280 ink-bound comparisons against the unchanged independent oracle. Both
+native SVG integration builds pass another 304 total scope, float-opacity GPU
+and image/mask GPU comparisons. The first integration link failure exposed
+the fixture's missing `-fno-rtti`; `5d5639bc5` corrects that harness separately.
+The original failed commands remain retained.
+
+`80dab8d51` adds a component benchmark with an independent scalar oracle.
+Two unprofiled samples per mode, ordered control/candidate/candidate/control,
+cover 2,097,152 pixels per scene. Median observed instruction reductions are
+12.256% for mixed pixels, 7.469% for mixed empty/opaque spans and 3.389% for
+opaque spans. Short spans regress 0.021%. The halfway fallback, unit-opacity
+and empty controls also remain in the receipt; environment lookup overhead
+and system work can affect these counts, so their reductions receive no
+compositing credit. Two separate diagnostics establish branch execution;
+all output checksums and exact oracle comparisons agree. The first benchmark
+compile's unused-function warning is retained with the corrected command.
+
+The [focused/component receipt](performance/chatgpt-byte-opacity-20261105.json)
+links authenticated source, commands, raw counts, logs and memory guards.
+These are component results. Production page validation is pending, the broad
+cadence remains zero, and the 5%-below-Brave target remains unmet. The original
+SOCKS capture, author scripts and pixel references are unchanged.
