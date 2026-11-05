@@ -385,8 +385,11 @@ fn (mut app BrowserApp) poll_browser_child_documents() {
 	}
 	mut host := app.child_document_host or { return }
 	if host.poll(mut app.js_messages) {
-		app.document.invalidate_layout_tree(.navigable_active_document_changed)
-		app.synchronize_javascript_task_paint(true)
+		// Child service work changes the iframe's pixels, not its parent's
+		// geometry. A real navigation already invalidates the container through
+		// Navigable.set_active_document(); retain that source invalidation.
+		app.document.set_needs_repaint()
+		app.synchronize_javascript_task_paint(false)
 		app.request_document_frame()
 	}
 }
