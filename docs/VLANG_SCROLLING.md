@@ -2267,3 +2267,91 @@ manifest and restore tool; empty expanded cache directories are not empty
 measured caches. Another 116 completed compiler-source receipts are compressed
 and individually verified, recovering about 4 GiB after disk exhaustion. Their
 restore manifests and the original failures are retained.
+
+### Offscreen video and empty damage clips, November 6
+
+The smooth 60 fps target remains open. `b4402f9a2` now culls an offscreen
+video before selecting the GPU command, using its retained video clip and
+transform rather than compatibility bounds. This prevents an unused video
+command from forcing a GPU readback. Culled video still invalidates affected
+backdrop rows. Resource/filter inputs remain protected. The separate live
+diagnostic observes 245 input-window culls and stays within the unchanged
+three-level GPU bound.
+
+`12cd1b133` compares the production V video replay against complete native
+frame pixels: 36 control/candidate frame pairs are exact at both backing
+scales, with a nonblank visible-control assertion. The initial fixture failed
+that assertion because its compatibility coordinates also triggered a later
+legacy vertical cull; that failed attempt remains retained. Pure V cases cover
+the deliberately mismatched geometry independently.
+
+| Offscreen video | Publications/s | Inputs / completed publications / scroll intervals | Median / p95 / maximum interval (ms) | Missed 16.67 ms |
+|---|---:|---|---|---:|
+| Control 1 | 81.41 | 600 / 590 / 490 | 8.84 / 25.68 / 76.02 | 23.06% |
+| Candidate 1 | 89.17 | 600 / 601 / 564 | 8.60 / 24.54 / 59.24 | 15.78% |
+| Control 2 | 85.49 | 600 / 548 / 515 | 8.52 / 27.40 / 88.96 | 15.53% |
+| Candidate 2 | 89.57 | 600 / 603 / 566 | 8.53 / 22.41 / 81.18 | 11.31% |
+
+Both video-cull pairs improve mean throughput, p95 and maximum intervals, so
+this change stays enabled. These are scroll-changing native layer publications
+after `updateLayer`, measured across the full first-to-last actual input window;
+they do not establish physical display scanout. The same live protocol uses a
+1708×953 document viewport at 2×, 600 precise delta-8 native wheel inputs,
+nominal 120 Hz with reversals every 150 inputs, matching-title readiness and a
+ten-second settle. Profiles/caches are private and initially empty; direct live
+HTTPS, automatic scripts and retained OS filesystem/shader caches are unchanged.
+Actual input cadence, host load, boundary gaps, identities and exits are retained.
+
+| Further candidate | Pair 1 publications/s | Pair 2 publications/s | Decision |
+|---|---:|---:|---|
+| Retained media paint plus stationary reuse | 87.53→78.68 | 82.98→87.33 | Off; mixed |
+| Bounded filters, owned upload bytes and static image MSAA together | 86.76→90.20 | 88.04→94.29 | Opt-in; both means/p95 improve, maximum gaps mixed |
+| GPU layer composites, over the preceding combination | 90.07→89.33 | 90.07→89.95 | Off; both means and maximum gaps regress |
+| Skip empty bounded pointwise outputs, over the combination | 88.46→91.21 | 90.74→87.59 | No FPS acceptance; mixed |
+
+`750fdb0ea` preserves retained paint input when a native video frame reuses its
+storage, while keeping the full paint revision for ordinary consumers. Its
+focused ownership, real retained video-source pixels, other invalidations and
+child/new-document cases pass; 41 retained frame updates but only three
+stationary snapshots occur during live input. It remains off after mixed pairs.
+
+`810446a08` balances culling scopes consumed by grouped native replay. The
+focused nested-resource and outer-scope tests pass, including the old-mode
+control. The live diagnostic observes no resource-scope releases through this
+path, so it receives no scrolling performance credit.
+
+`2b39f3ca9` and `44b8ffd4a` avoid filtering a full canvas when a retained
+pointwise output cannot reach the guarded destination clip. Quartz represents
+an empty damage clip as a null rectangle; that case is also a no-op. The first
+implementation's live eligibility gate records zero uses and stops without
+timing arms. The null-clip follow-up records 12 input-window skips, but its
+paired timing is mixed. Both changes are behind the existing opt-in bounded
+filter path. The expanded fixture compares 2,160 complete frames exactly in
+both optimized and sanitizer builds, avoids 704 submissions, and covers empty
+clips, alpha-one edges, both scales, fractional clips and spatial/non-integral
+fallback. Disabling the shortcut also passes.
+
+The combined image/filter diagnostic proves 82 bounded-filter records, 30
+owned mascot-upload hits and seven static MSAA image draws during input, with
+maximum error three. It still misses deadlines: candidate p95 is 24.17/18.25 ms,
+and maximum gaps are 81.74/85.48 ms. Later GPU layer diagnostics prove 70
+opacity composites and maximum error three, but the timing regressions keep
+that path off. The separate combined GPU-backdrop prototype observes no GPU
+backdrop restores and supplies no credit for that feature. Diagnostics and
+profiles, including their large stalls under host contention, are excluded
+from unprofiled performance claims.
+
+The [machine-readable evidence](performance/vlang-gpu-scroll-video-cull-20261106.json)
+and [raw archive](performance/raw/vlang-gpu-scroll-video-cull-20261106.tar.gz)
+retain all 29 attempts and 314 raw files at this checkpoint, including rejected
+eligibility gates and all pairs. The [collection receipt](performance/vlang-gpu-scroll-video-cull-20261106-collection.json)
+records the collector's completed exit; its launch log and outer report were
+still open when the raw snapshot was made. All trial files and other recorded
+inputs remain unchanged. Older archives are preserved.
+
+`576aca87e` separately adds opt-in deferred video command barriers for hosts
+that synchronize capture, restore and final Quartz image fallback. Legacy
+hosts retain the earlier barrier. The full native GPU suite and 90 focused
+ordinary/canvas frame pairs pass, including sanitizer checks, with maximum
+error two. Live validation is in progress at this checkpoint and is not part
+of the preceding archive.

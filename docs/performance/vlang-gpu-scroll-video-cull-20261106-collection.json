@@ -1,0 +1,23 @@
+{
+  "report_sha256": "5dd07fd3a21e1e76a7f160e1bb11f1e12bbcffa1cbf2f13076e23b63b2df958e",
+  "collection_guard": {
+    "command": [
+      "python3",
+      "Build/vlang-finish-20261105/collect-video-cull-evidence.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 43581440,
+    "elapsed_seconds": 2.023578792,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "collector_stdout": "29 attempts; 314 verified raw files; 1893807 archive bytes\n{\"command\": [\"python3\", \"Build/vlang-finish-20261105/collect-video-cull-evidence.py\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 43581440, \"elapsed_seconds\": 2.023578792, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n",
+  "post_collection_changed_files": [
+    "Build/vlang-finish-20261105/video-cull-evidence-guard.json",
+    "Build/vlang-finish-20261105/video-cull-evidence.log"
+  ],
+  "explanation": "The collector launch log and its outer guard report were still open when snapshotted. This companion retains their actual completed exit and output. Every trial and other raw input remained unchanged."
+}
