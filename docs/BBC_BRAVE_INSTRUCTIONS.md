@@ -6466,3 +6466,25 @@ tool tests** pass. [Focused evidence and verified archive](performance/bbc-intri
 Native BBC eligibility and matched instruction effect remain pending at this
 checkpoint. No optimization credit or catalog entry is assigned; the 10% task
 remains open.
+
+
+## Intrinsic-grid no-hit rollback / preflight 110 (2026-11-05)
+
+Completed parallel production `e05f01a6c418` contains the checked intrinsic-grid
+extension. Both native captures pass original pixels/content, all 72 exact
+external author scripts, native-image pins, ownership and normal exits, but
+**neither arm reports the new reuse path before PNG**. Eligibility therefore
+fails, and no acceptance browsers launch for ID 110. No instruction saving is
+credited. The lease helper releases in its exception cleanup; a separately
+recorded nonblocking exclusive-lock probe confirms subsequent availability.
+
+`6c9e9df` removes the provisional implementation, four new cases and control,
+while preserving their commits and evidence. All **168 remaining focused
+executions** (28 cases × both arms × three memory modes) pass, and all **332
+instruction-tool tests** pass after removal. This is a rollback check, with no
+claim of a performance gain. [Native attempts, rollback checks and archive](performance/bbc-intrinsic-grid-no-hit-rollback-20261105.json).
+
+History stays **108 measured cohorts / 2,335 acceptance browser attempts**;
+IDs 104 and 110 are preflight-only. The original workload, references and scope
+remain unchanged. The target is open and BBC homepage remains outside the
+catalog.
