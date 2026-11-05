@@ -1,0 +1,61 @@
+{
+  "site": "Discord",
+  "url": "https://discord.com/",
+  "recorded": "2026-11-05",
+  "protocol": "tools/forum_news_pixels.py --sites discord --cache-policy cold; frozen guest DOM, scripts removed, full uBO 1.75.0, 1024x768, scale 1, sealed replay without forwarding",
+  "acquisition": {
+    "proxy": "socks5://127.0.0.1:1337 (Brave capture only, once)",
+    "removed_scripts": 33,
+    "responses": 113,
+    "manifest_sha256": "ede02bfd8cb2c3587d1d0eb3810635baa5712fea91cb704f22e2dcddde1f732c",
+    "live_png_sha256": "d35fdd8e492515c01681890f2d3b55d5b801934daa1a7862f7740d8406b57f68"
+  },
+  "brave": {
+    "version": "Brave Browser 156.1.98.60",
+    "executable_sha256": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5"
+  },
+  "results": [
+    {
+      "stage": "baseline shared bundle c0203bb8e",
+      "vox_executable_sha256": "9e052f2bdc416f06a3eed27cccd8339232eb2ec4cf514badc607e576cd385cb7",
+      "native_different_pixels": 226441,
+      "reference_replay_different_pixels": 289,
+      "live_to_frozen_different_pixels": 309,
+      "note": "page background cover sampled from a snapped tile; four sections 128-155px short; footer grid 1/32px short"
+    },
+    {
+      "stage": "flex + grid + single-tile geometry (private build 3)",
+      "native_different_pixels": 12512,
+      "note": "layout matches Brave: body 6030.828125px, every section height equal"
+    },
+    {
+      "stage": "unsnapped paint rect (private build 10, commits 140a0b996, 77200c451, 73262c05f)",
+      "vox_executable_sha256": "53c6e33d0530cbc32889b547944f3c13fec10acbd90711fd0fe00fd6140f7083",
+      "native_different_pixels": 6261,
+      "maximum_channel_error": 4,
+      "reference_replay_different_pixels": 0,
+      "live_to_frozen_different_pixels": 598,
+      "brave_reference_sha256": "df7c24bbe330f8f873a0f7ee949fb8a7f3b89656c5ac980f7d7792b504a2c3ab",
+      "vox_png_sha256": "49a51db43e22c6d87bbcc6f23eb6b5610fb0f8037983331f94494a600bd331a4",
+      "regions": {
+        "nav (y<110)": 85,
+        "floating trophy": 25,
+        "hero image": 5088,
+        "hero text": 0,
+        "buttons": 2,
+        "second section": 0
+      }
+    }
+  ],
+  "remaining_gaps": [
+    "Brave composites the hero container, nav brand and Log In button as overlap layers above 3D-transformed (translate3d) elements; their premultiplied 8-bit layer rounding differs at semi-transparent edges (about 5,100 px, max 4). Vox falls back to one root raster for content under the hero's perspective:999px and has no transparent-surface path for overlap-promoted layers.",
+    "Three 14x14 blurred SVG star images (pattern-filled embedded PNG) differ by up to 3 per channel.",
+    "Brave itself renders the hero image in one of four variants (two independent rectangles of sparse +/-1 pixels) across fresh processes; the archived live capture is a rare variant, so the saved-source gate (598 px) fails even when both fresh references agree."
+  ],
+  "focused_checks": {
+    "inline_brave_suite": "131 tests, 128 pass; the 3 pre-existing failures keep 34,796 / 1,097 / 1,097 pixels",
+    "new_fixture": "discord-background-paint-rect: exact on build 10, 19,528 px on build 3",
+    "layout_tests": "chromium_flex_replaced_minimum, chromium_grid_spanning_growth_limit, chromium_background_paint_rect, grid/flex/background suites pass with default GC and -gc none"
+  },
+  "raw_artifacts": "Build/discord-20261105/ (capture-r1, b3-cold, b8-cold, b10-cold, focus/)"
+}

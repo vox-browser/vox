@@ -397,8 +397,9 @@ versions using Cachegrind instruction references, rather than Vox against Brave.
 
 ## Forum/news rendering coverage
 
-All 15 sites from the forum/news session are in the
-[test catalog](Tests/Browser/Brave/forum-news.json) and the bookmark-bar catalog.
+All 15 sites from the forum/news session, plus Discord, are in the
+[test catalog](Tests/Browser/Brave/forum-news.json); the 15 are also in the
+bookmark-bar catalog.
 The bar retains Wikipedia, Old Reddit `/r/programming/` and vlang.io too, and
 lists Hacker News once. These entries track rendering work; the instruction
 comparisons above retain their own acceptance requirements and measured pages.
@@ -427,3 +428,4 @@ with live scripting, scrolling and whole-site behavior outside that claim.
 | [The Register](https://www.theregister.com/) | Open: fresh candidate native 246 pixels; source/replay 0; SVG-picture fix awaits production validation | [Register checkpoint](docs/FORUM_NEWS_EXPANSION.md), [evidence](docs/evidence/register-parity-20261104.json) |
 | [Slate](https://slate.com/) | Open source gate: cold/complete native 0, fresh Brave replay 0; saved-source gap 19,064 pixels on `6e17496f…` | [Slate checkpoint](docs/FORUM_NEWS_EXPANSION.md), [evidence](docs/evidence/slate-svg-publication-parity-20261104.json) |
 | [WIRED](https://www.wired.com/) | Exact frozen first-frame guest viewport: cold/complete source/replay/native 0 on `aa370dd4…`; nine focused browser regressions exact; normal animation remains unstable | [WIRED checkpoint](docs/FORUM_NEWS_EXPANSION.md), [evidence](docs/evidence/wired-parity-20261104.json) |
+| [Discord](https://discord.com/) | Open: 6,261 native pixels (max error 4), down from 226,441; background, text, nav links, buttons and every section height match. Remaining: Brave's composited overlap layers (hero, logo, Log In) and three blurred SVG stars; Brave's own hero raster varies between processes, so the saved-source gate fails at 598 | [Discord checkpoint](docs/FORUM_NEWS_EXPANSION.md#discord-2026-11-05), [evidence](docs/evidence/discord-parity-20261105.json) |

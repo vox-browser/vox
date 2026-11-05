@@ -1189,6 +1189,60 @@ is claimed.
 [4 November rendering captures](evidence/wired-rendering-20261104-raw.zip),
 [5 November rendering captures](evidence/wired-rendering-20261105-raw.zip).
 
+## Discord (2026-11-05)
+
+Discord's guest homepage joined the catalog as its sixteenth site. It was
+downloaded once through the SOCKS proxy by the full-uBO Brave harness; the
+sealed archive keeps 113 original responses, the frozen guest DOM with its 33
+scripts removed, and the live source PNG. Every comparison replays it through
+the local proxy without forwarding. Brave is 156.1.98.60; 1024x768, scale 1,
+cold caches.
+
+| Stage | Vox → frozen Brave pixels |
+| --- | ---: |
+| Shared bundle `c0203bb8e` | 226,441 |
+| Flex, grid and single-tile background fixes | 12,512 |
+| Unsnapped paint rect (`53c6e33d…`) | **6,261** (max error 4) |
+
+Three fixes account for the change:
+
+- `140a0b996`: a percentage-width replaced flex item keeps its specified size
+  as its automatic minimum. Discord's chat images had shrunk to half their
+  row, and four sections were 128-155px short.
+- `77200c451`: Chromium sizes grid rows one span group and one step at a time.
+  The footer's social row had moved 18.66px and the grid lost 1/32px, which
+  changed the page height that the `cover` background depends on.
+- `73262c05f`: single-tile bitmap backgrounds follow Blink's
+  OptimizeToSingleTileDraw, sampling from the unsnapped tile and paint rect.
+  The 131x768 page background upscales 7.85x, so a 0.05-texel source shift
+  changed most background pixels by one level.
+
+With these, the body height (6030.828125px) and every section match Brave,
+and the background, headline, paragraph, nav links and buttons are exact.
+The new `discord-background-paint-rect` fixture matches two agreeing Brave
+captures exactly; the preceding build differs at 19,528 pixels. The 131-case
+inline suite keeps its three known failures with unchanged counts.
+
+Remaining gaps:
+
+- Brave composites the hero container, nav logo and Log In button as overlap
+  layers above Webflow's `translate3d(0,0,0)` elements, and rounds them as
+  premultiplied 8-bit layers. That accounts for about 5,100 pixels along the
+  hero's semi-transparent edges. Vox keeps content under the hero's
+  `perspective: 999px` in one root raster and has no transparent-surface path
+  for overlap-promoted layers. Letting flat perspective subtrees layerize
+  alone was tried and backed out: without that surface it exposed a new
+  difference on the second section's robot image.
+- Three 14x14 blurred SVG stars (a pattern-filled embedded PNG) differ by up
+  to 3 per channel.
+- Brave renders the hero image in one of four variants (two independent
+  rectangles of sparse ±1 pixels) across fresh processes. The archived live
+  capture is a rare variant, so the saved-source gate fails at 598 pixels
+  even in runs where both fresh references agree.
+
+[Evidence](evidence/discord-parity-20261105.json). Raw captures are in
+`Build/discord-20261105/`.
+
 ## Run
 
 ```sh
@@ -1203,7 +1257,7 @@ python3 tools/forum_news_pixels.py --sites wired \
   --output Build/wired-first-frame-replay-UNIQUE
 
 python3 tools/forum_news_pixels.py \
-  --sites techcrunch,engadget,theregister,slate,wired \
+  --sites techcrunch,engadget,theregister,slate,wired,discord \
   --extension Build/engadget-continue-20261103-1002/extension/uBlock0.chromium \
   --checker Build/engadget-continue-20261103-1002/adblock-check \
   --diff-tool Build/engadget-continue-20261103-1002/pixel_diff \

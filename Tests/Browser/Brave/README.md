@@ -18,7 +18,8 @@ the retained stages have 27 and then two differing pixels. Run
 cover live coordinates, sparse contents and layer-local rounded geometry.
 See [the ChatGPT report](../../../docs/CHATGPT_BRAVE_PARITY.md) for evidence.
 
-The [forum/news catalog](forum-news.json) has 15 entries. The five new guest-page
+The [forum/news catalog](forum-news.json) has 16 entries, including Discord's
+guest homepage. The five new guest-page
 archives (TechCrunch, Engadget, The Register, Slate and WIRED) retain full-uBO
 source evidence and original encoded response bodies. Their strict pixel checks
 currently fail; see [the expansion report](../../../docs/FORUM_NEWS_EXPANSION.md)
