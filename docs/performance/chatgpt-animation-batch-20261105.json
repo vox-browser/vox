@@ -1,0 +1,2295 @@
+{
+  "version": 1,
+  "implementation_commit": "d0b4a8c58",
+  "focused_checks": {
+    "complete": true,
+    "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+    "inputs_before": {
+      "css/animation_samples.v": "6e186a4396b292b5443754d4fb1db05cfea04d045318891dc098161cd8d6a749",
+      "css/animation_sample_batch.v": "f81a87cefb3cb6046b00f2e41aef275f2861d4879984e745cf23c42a84ece380",
+      "css/animation_sample_batch_test.v": "40e2b08e1441dc543592e2ebf457c06f6527d69bc23cfdf4c4e64d648f43e96c",
+      "css/animation_ancestor_filter_test.v": "5ade1833ead12e845af9113a4a648462214d6eacad0524a1751b8791ad55c3db",
+      "css/style_computer.v": "94fd7090d306f9b3f30ecb740d99782a179a41696cb1f20a7df10c40c495cdd8",
+      "css/animation_sample_page_scan_test.v": "b6407ac312bc63ca838c80f86fd90a7122b4597611f4e722e4a5d57407013d83",
+      "css/animation_sample_target_storage_test.v": "c81082b00601467701827fb08c50148fcc8a3b12a583bf1833a20d3b3ce952f2",
+      "css/animation_sample_property_pages_test.v": "f3dbb9243c1416c95a37f3c093dcca3efa231fa5144947c714ecac5887d35403",
+      "css/animation_sample_typed_payload_test.v": "d97fc263bd2af60444adbb38a90f21cfa08cb1470cce2bc9c0e655797eef6bca",
+      "css/animation_sample_projection_test.v": "1d24a536fc82c3e033e1a8d0210f582648ad102cf4af305cabfb6e8f0d05b4ff",
+      "css/animation_timeline_invalidation_test.v": "e7b10e45ddfbb453ab8c918f37ee9067fe34b359c4efaa2a605ab0bcfd717f1e",
+      "css/compositor_animation_test.v": "18b82d5766ce0742dae7724f295fb12efadb8fa3a9dcb415219d75b218a3aae2",
+      "css/scroll_animation_sampling_test.v": "9b61bbf7b2156e1f48dd52091d6edd66c986e5f7e5f359e584110f063503a967"
+    },
+    "inputs_after": {
+      "css/animation_samples.v": "6e186a4396b292b5443754d4fb1db05cfea04d045318891dc098161cd8d6a749",
+      "css/animation_sample_batch.v": "f81a87cefb3cb6046b00f2e41aef275f2861d4879984e745cf23c42a84ece380",
+      "css/animation_sample_batch_test.v": "40e2b08e1441dc543592e2ebf457c06f6527d69bc23cfdf4c4e64d648f43e96c",
+      "css/animation_ancestor_filter_test.v": "5ade1833ead12e845af9113a4a648462214d6eacad0524a1751b8791ad55c3db",
+      "css/style_computer.v": "94fd7090d306f9b3f30ecb740d99782a179a41696cb1f20a7df10c40c495cdd8",
+      "css/animation_sample_page_scan_test.v": "b6407ac312bc63ca838c80f86fd90a7122b4597611f4e722e4a5d57407013d83",
+      "css/animation_sample_target_storage_test.v": "c81082b00601467701827fb08c50148fcc8a3b12a583bf1833a20d3b3ce952f2",
+      "css/animation_sample_property_pages_test.v": "f3dbb9243c1416c95a37f3c093dcca3efa231fa5144947c714ecac5887d35403",
+      "css/animation_sample_typed_payload_test.v": "d97fc263bd2af60444adbb38a90f21cfa08cb1470cce2bc9c0e655797eef6bca",
+      "css/animation_sample_projection_test.v": "1d24a536fc82c3e033e1a8d0210f582648ad102cf4af305cabfb6e8f0d05b4ff",
+      "css/animation_timeline_invalidation_test.v": "e7b10e45ddfbb453ab8c918f37ee9067fe34b359c4efaa2a605ab0bcfd717f1e",
+      "css/compositor_animation_test.v": "18b82d5766ce0742dae7724f295fb12efadb8fa3a9dcb415219d75b218a3aae2",
+      "css/scroll_animation_sampling_test.v": "9b61bbf7b2156e1f48dd52091d6edd66c986e5f7e5f359e584110f063503a967"
+    },
+    "rows": [
+      {
+        "label": "compile-animation_sample_batch_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_sample_batch_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-prealloc": "7aa86f932dc72be93431b4764b419176d9c9ad9ed61746bb8ce28eafbc227409",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-prealloc.c": "eaf968e229a1cd3d1f70e2cd41af99089c1693908e979ec4dd67e345bc9fe5fc"
+        }
+      },
+      {
+        "label": "run-animation_sample_batch_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_batch_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_page_scan_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_page_scan_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_page_scan_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_page_scan_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_sample_page_scan_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_page_scan_test-prealloc": "f9106ee9e8c7e7ce1a820cdc4479b9468856fd0fcb2c09fb22df2529db09d19d",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_page_scan_test-prealloc.c": "37b19181aa6356e1db31fb206776a70d12d847e530e4ed4355c9fbf95ffb75b5"
+        }
+      },
+      {
+        "label": "run-animation_sample_page_scan_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_page_scan_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_page_scan_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_page_scan_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_page_scan_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_page_scan_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_page_scan_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_page_scan_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_target_storage_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_target_storage_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_target_storage_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_target_storage_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_sample_target_storage_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_target_storage_test-prealloc": "b41ca5201c07139630caa35b149e6742a8e128332ce4eb42397a7c7b3ad05f1f",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_target_storage_test-prealloc.c": "882f9d5e839b8dbdf4c72251a7dc1d6ccb58bda21c178697f4e710d69d798a5d"
+        }
+      },
+      {
+        "label": "run-animation_sample_target_storage_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_target_storage_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_target_storage_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_target_storage_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_target_storage_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_target_storage_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_target_storage_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_target_storage_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_property_pages_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_property_pages_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_property_pages_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_property_pages_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_sample_property_pages_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_property_pages_test-prealloc": "4b4fbf931e10f2d4a98d004db1a648dd65db023e77c8f68bbe44b0a098de1c44",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_property_pages_test-prealloc.c": "9ea3360348291c298edd6ca505a5494d11266d58df358f59256f812343cf5c40"
+        }
+      },
+      {
+        "label": "run-animation_sample_property_pages_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_property_pages_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_property_pages_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_property_pages_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_property_pages_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_property_pages_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_property_pages_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_property_pages_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_typed_payload_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_typed_payload_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_typed_payload_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_typed_payload_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_sample_typed_payload_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_typed_payload_test-prealloc": "884f8511f6ceed00ff78483ee1c305ef9ac26ac16c497940f2ec31596fc2f877",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_typed_payload_test-prealloc.c": "0c652461226229abe8ec926b9d536cec05e5d7d965bb2123663557e44bae3a33"
+        }
+      },
+      {
+        "label": "run-animation_sample_typed_payload_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_typed_payload_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_typed_payload_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_typed_payload_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_typed_payload_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_typed_payload_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_typed_payload_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_typed_payload_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_projection_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_projection_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_projection_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_projection_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_sample_projection_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_projection_test-prealloc": "ecca434f1a5c9cd7fb29c5547a9e092f85d3ff4f120db2ef386f5420f41f5dad",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_projection_test-prealloc.c": "dcd1038a74c5c08956d3330a77276193696109914868f872fcd0245bc895785e"
+        }
+      },
+      {
+        "label": "run-animation_sample_projection_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_projection_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_projection_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_projection_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_projection_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_projection_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_projection_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_projection_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_ancestor_filter_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_ancestor_filter_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-prealloc": "e60915cdeeb7d32728caddfad5ed669a494c991b8ee654b620789f8e923d4a65",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-prealloc.c": "95b7e3b522ed19fe4030a7ec923e8652e8048e12de8494d4a9d46b7fb1726fc0"
+        }
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_timeline_invalidation_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_timeline_invalidation_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_timeline_invalidation_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_timeline_invalidation_test-prealloc",
+          "/Users/alex/code/vox2/css/animation_timeline_invalidation_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_timeline_invalidation_test-prealloc": "6764879ec2ebfdd1d1a67a7221a70cc7a912be50af34b2177f43aee9182d20e5",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_timeline_invalidation_test-prealloc.c": "10393c6bacafc49d2181b5885c1f0ad6396393994711d602ce0f9e9d97e9c5f2"
+        }
+      },
+      {
+        "label": "run-animation_timeline_invalidation_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_timeline_invalidation_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_timeline_invalidation_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_timeline_invalidation_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_timeline_invalidation_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_timeline_invalidation_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_timeline_invalidation_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_timeline_invalidation_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-compositor_animation_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-compositor_animation_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-compositor_animation_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compositor_animation_test-prealloc",
+          "/Users/alex/code/vox2/css/compositor_animation_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compositor_animation_test-prealloc": "a563b2b18303eb36c144488980d489531149438b621f89ecd4083723b88eeef2",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compositor_animation_test-prealloc.c": "105b71827787c9fa98127192e0383f043f2ca731dd7a682fdc42681bdc73508e"
+        }
+      },
+      {
+        "label": "run-compositor_animation_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-compositor_animation_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-compositor_animation_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compositor_animation_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-compositor_animation_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-compositor_animation_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-compositor_animation_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compositor_animation_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-scroll_animation_sampling_test-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-scroll_animation_sampling_test-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-scroll_animation_sampling_test-prealloc-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/scroll_animation_sampling_test-prealloc",
+          "/Users/alex/code/vox2/css/scroll_animation_sampling_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/scroll_animation_sampling_test-prealloc": "d5233f529969a17818337bd3d62922a8f405dd1ac2e32c57985065e67d953713",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/scroll_animation_sampling_test-prealloc.c": "e0669598d6721b0abc0e477cfcf8afddfb475389656db5c02dbf0dfea875d77e"
+        }
+      },
+      {
+        "label": "run-scroll_animation_sampling_test-prealloc-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-scroll_animation_sampling_test-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-scroll_animation_sampling_test-prealloc-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/scroll_animation_sampling_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-scroll_animation_sampling_test-prealloc-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-scroll_animation_sampling_test-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-scroll_animation_sampling_test-prealloc-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/scroll_animation_sampling_test-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_batch_test-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-default-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-default",
+          "/Users/alex/code/vox2/css/animation_sample_batch_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-default": "dc03d6460f91a30a9908ecbb8cee8c3bbb0a6bfb42bd88c263dbc355b5285c94",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-default.c": "4af45534ce8e05042a1a36f3ca5dea042bb12c5d3545de8436e4be95f65921a5"
+        }
+      },
+      {
+        "label": "run-animation_sample_batch_test-default-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-default-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-default"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_batch_test-default-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-default-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-default"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_ancestor_filter_test-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-default-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-default",
+          "/Users/alex/code/vox2/css/animation_ancestor_filter_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-default": "c24b8ef9291804f2cde7af778c3d59ad2b31d5cf39b3abc90c99ab052ef28e53",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-default.c": "b6c926a98eb8faeb639e0fdbaa43177c13191f2dce43478f4ff5e283ebabd832"
+        }
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-default-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-default-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-default"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-default-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-default-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-default"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_batch_test-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-none-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-none",
+          "/Users/alex/code/vox2/css/animation_sample_batch_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-none": "d442c780bfa2287bdc67de5665fcb2461ed6fa26a003943e531db45dc936090b",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-none.c": "9929de0f6a0d805cfbe9fd47fc9b8d1b46d1536ac90356767d9d6946042db687"
+        }
+      },
+      {
+        "label": "run-animation_sample_batch_test-none-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-none-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-none"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_batch_test-none-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-none-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-none"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_ancestor_filter_test-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-none-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-none",
+          "/Users/alex/code/vox2/css/animation_ancestor_filter_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-none": "e5e6258b2b225111e7253fa42cb20d2a49bc2c4050147144cd281b6e8c20d085",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-none.c": "d4426ccbe215203bc6b5da2fa840339ffd6ad92e8cbe691dbde10ef5698129e4"
+        }
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-none-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-none-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-none"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-none-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-none-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-none"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_batch_test-sanitized",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_sample_batch_test-sanitized-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-cflags",
+          "-O1 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-sanitized",
+          "/Users/alex/code/vox2/css/animation_sample_batch_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-sanitized": "482299db7dc8729358ac7b420808f756cdb25dd4e6e022eb5ad85987568bfa18",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-sanitized.c": "eaf968e229a1cd3d1f70e2cd41af99089c1693908e979ec4dd67e345bc9fe5fc"
+        }
+      },
+      {
+        "label": "run-animation_sample_batch_test-sanitized-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-sanitized-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_batch_test-sanitized-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_sample_batch_test-sanitized-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_sample_batch_test-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_ancestor_filter_test-sanitized",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/compile-animation_ancestor_filter_test-sanitized-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-cflags",
+          "-O1 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-sanitized",
+          "/Users/alex/code/vox2/css/animation_ancestor_filter_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "outputs": {
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-sanitized": "d57092e9c4b834cba739b7c48ad4e2a1b0e3db3e475d0670b248f786671eae0e",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-sanitized.c": "95b7e3b522ed19fe4030a7ec923e8652e8048e12de8494d4a9d46b7fb1726fc0"
+        }
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-sanitized-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-sanitized-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": ""
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_ancestor_filter_test-sanitized-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/run-animation_ancestor_filter_test-sanitized-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/animation_ancestor_filter_test-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1",
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1"
+        },
+        "exit": 0
+      }
+    ]
+  },
+  "component": {
+    "complete": true,
+    "instrumented": false,
+    "acceptance": false,
+    "page_instruction_credit": 0,
+    "inputs_before": {
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-resume.py": "6f0ac4d9e1ba331fd5c8dfa728af4badd64159a9b02054798e9e2afc27ca52ca",
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component_test.v": "15e27f55951bea0f21834238228e7285b1ce01cbc7c0888863f573aba22baf81",
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-files.txt": "588f8cc86f97b87b3ea3ff5b89bb7dc1016bedf28f870363621ca5fa7f5d3b1f",
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+      "/Users/alex/code/vox2/css/animation_samples.v": "6e186a4396b292b5443754d4fb1db05cfea04d045318891dc098161cd8d6a749",
+      "/Users/alex/code/vox2/css/animation_sample_batch.v": "f81a87cefb3cb6046b00f2e41aef275f2861d4879984e745cf23c42a84ece380",
+      "/Users/alex/code/vox2/css/animation_sample_batch_test.v": "40e2b08e1441dc543592e2ebf457c06f6527d69bc23cfdf4c4e64d648f43e96c",
+      "/Users/alex/code/vox2/css/animation_ancestor_filter_test.v": "5ade1833ead12e845af9113a4a648462214d6eacad0524a1751b8791ad55c3db",
+      "/Users/alex/code/vox2/css/style_computer.v": "94fd7090d306f9b3f30ecb740d99782a179a41696cb1f20a7df10c40c495cdd8",
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component": "e316d4b76fc30687285142ddd70876389eb0e1658631d008383180c033eacbbc"
+    },
+    "observations": [
+      {
+        "label": "component-r2-0-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793846769.021179,
+          "cpu_count": 18,
+          "load": [
+            22.873046875,
+            14.74951171875,
+            11.2392578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793846773.255886,
+          "load": [
+            22.72265625,
+            14.85302734375,
+            11.29638671875
+          ]
+        },
+        "variant": "control",
+        "scenes": [
+          {
+            "scene": "inherited-color",
+            "instructions": 16145005132,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 22,
+            "peak_sample_used": 276271
+          },
+          {
+            "scene": "opacity-transform",
+            "instructions": 36525185,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 25,
+            "peak_sample_used": 282656
+          },
+          {
+            "scene": "custom-width",
+            "instructions": 4727227368,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 544978,
+            "rotations": 35,
+            "peak_sample_used": 1030911
+          }
+        ]
+      },
+      {
+        "label": "component-r2-1-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793846773.335754,
+          "cpu_count": 18,
+          "load": [
+            22.72265625,
+            14.85302734375,
+            11.29638671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793846777.040481,
+          "load": [
+            21.70361328125,
+            14.77197265625,
+            11.28857421875
+          ]
+        },
+        "variant": "candidate",
+        "scenes": [
+          {
+            "scene": "inherited-color",
+            "instructions": 16415954706,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 9,
+            "peak_sample_used": 651247
+          },
+          {
+            "scene": "opacity-transform",
+            "instructions": 34881928,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 10,
+            "peak_sample_used": 732336
+          },
+          {
+            "scene": "custom-width",
+            "instructions": 4655264744,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 544978,
+            "rotations": 9,
+            "peak_sample_used": 3737053
+          }
+        ]
+      },
+      {
+        "label": "component-r2-2-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793846777.122259,
+          "cpu_count": 18,
+          "load": [
+            21.70361328125,
+            14.77197265625,
+            11.28857421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793846780.600001,
+          "load": [
+            21.70361328125,
+            14.77197265625,
+            11.28857421875
+          ]
+        },
+        "variant": "candidate",
+        "scenes": [
+          {
+            "scene": "inherited-color",
+            "instructions": 16410628893,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 9,
+            "peak_sample_used": 651247
+          },
+          {
+            "scene": "opacity-transform",
+            "instructions": 34906206,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 10,
+            "peak_sample_used": 732336
+          },
+          {
+            "scene": "custom-width",
+            "instructions": 4653374477,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 544978,
+            "rotations": 9,
+            "peak_sample_used": 3737053
+          }
+        ]
+      },
+      {
+        "label": "component-r2-3-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793846780.670651,
+          "cpu_count": 18,
+          "load": [
+            21.70361328125,
+            14.77197265625,
+            11.28857421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793846784.912653,
+          "load": [
+            20.92626953125,
+            14.7255859375,
+            11.29248046875
+          ]
+        },
+        "variant": "control",
+        "scenes": [
+          {
+            "scene": "inherited-color",
+            "instructions": 16128379253,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 22,
+            "peak_sample_used": 276271
+          },
+          {
+            "scene": "opacity-transform",
+            "instructions": 36469113,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 25,
+            "peak_sample_used": 282656
+          },
+          {
+            "scene": "custom-width",
+            "instructions": 4733562736,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 544978,
+            "rotations": 35,
+            "peak_sample_used": 1030911
+          }
+        ]
+      },
+      {
+        "label": "component-r2-4-diagnostic",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-4-diagnostic.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-4-diagnostic-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793846785.0005918,
+          "cpu_count": 18,
+          "load": [
+            20.92626953125,
+            14.7255859375,
+            11.29248046875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793846788.952134,
+          "load": [
+            20.53173828125,
+            14.74658203125,
+            11.31982421875
+          ]
+        },
+        "variant": "diagnostic",
+        "scenes": [
+          {
+            "scene": "inherited-color",
+            "instructions": 16406186029,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 9,
+            "peak_sample_used": 651247
+          },
+          {
+            "scene": "opacity-transform",
+            "instructions": 35104620,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 10,
+            "peak_sample_used": 732336
+          },
+          {
+            "scene": "custom-width",
+            "instructions": 4649173192,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 544978,
+            "rotations": 9,
+            "peak_sample_used": 3737053
+          }
+        ]
+      },
+      {
+        "label": "component-r2-5-diagnostic-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-5-diagnostic-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-5-diagnostic-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH": "1",
+          "VOX_ANIMATION_SAMPLE_BATCH_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793846789.031026,
+          "cpu_count": 18,
+          "load": [
+            20.53173828125,
+            14.74658203125,
+            11.31982421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793846792.578233,
+          "load": [
+            19.76806640625,
+            14.68408203125,
+            11.31787109375
+          ]
+        },
+        "variant": "diagnostic-control",
+        "scenes": [
+          {
+            "scene": "inherited-color",
+            "instructions": 16128259946,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 22,
+            "peak_sample_used": 276271
+          },
+          {
+            "scene": "opacity-transform",
+            "instructions": 36418472,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 476672,
+            "rotations": 25,
+            "peak_sample_used": 282656
+          },
+          {
+            "scene": "custom-width",
+            "instructions": 4721432790,
+            "frames": 512,
+            "targets": 49,
+            "checksum": 544978,
+            "rotations": 35,
+            "peak_sample_used": 1030911
+          }
+        ]
+      }
+    ],
+    "build": {
+      "label": "component-r2-compile",
+      "command": [
+        "python3",
+        "tools/run_memory_bounded.py",
+        "--limit-gib",
+        "12",
+        "--timeout",
+        "600",
+        "--lock",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-compile.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-r2-compile-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-w",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-cflags",
+        "-O2",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-file-list",
+        "/Users/alex/code/vox2/css/absolute_font_size_computation.v,/Users/alex/code/vox2/css/adopted_style_sheets.v,/Users/alex/code/vox2/css/affine_rounding.c.v,/Users/alex/code/vox2/css/ancestor_filter.v,/Users/alex/code/vox2/css/ancestor_filter_visits.v,/Users/alex/code/vox2/css/ancestor_hash_cache.v,/Users/alex/code/vox2/css/animation_ancestor_filter.v,/Users/alex/code/vox2/css/animation_range.v,/Users/alex/code/vox2/css/animation_rendering_demand.v,/Users/alex/code/vox2/css/animation_sample_batch.v,/Users/alex/code/vox2/css/animation_sample_page_scan.v,/Users/alex/code/vox2/css/animation_samples.v,/Users/alex/code/vox2/css/anonymous_computed_geometry.v,/Users/alex/code/vox2/css/arena_diagnostics.v,/Users/alex/code/vox2/css/attribute_tag_bucket.v,/Users/alex/code/vox2/css/background_resource_urls.v,/Users/alex/code/vox2/css/boolean_expressions.v,/Users/alex/code/vox2/css/borrowed_invalidation_values.v,/Users/alex/code/vox2/css/browser_font_rendering.v,/Users/alex/code/vox2/css/browser_font_size_keywords.v,/Users/alex/code/vox2/css/browser_line_height.v,/Users/alex/code/vox2/css/calc_parsing.v,/Users/alex/code/vox2/css/calc_resolve.v,/Users/alex/code/vox2/css/calc_simplify.v,/Users/alex/code/vox2/css/calculated_or.v,/Users/alex/code/vox2/css/cascade_entry_updates.v,/Users/alex/code/vox2/css/cascade_scratch.v,/Users/alex/code/vox2/css/cascade_value_borrow.v,/Users/alex/code/vox2/css/chromium_input_placeholder.v,/Users/alex/code/vox2/css/chromium_paint_color.v,/Users/alex/code/vox2/css/chromium_selector_alias.v,/Users/alex/code/vox2/css/color_interpolation.v,/Users/alex/code/vox2/css/component_input_lookahead.v,/Users/alex/code/vox2/css/compositor_animation.v,/Users/alex/code/vox2/css/computed_color.v,/Users/alex/code/vox2/css/computed_font_inputs.v,/Users/alex/code/vox2/css/computed_geometry_provenance.v,/Users/alex/code/vox2/css/computed_interpolation.v,/Users/alex/code/vox2/css/computed_layout_cache.v,/Users/alex/code/vox2/css/computed_layout_rare_data.v,/Users/alex/code/vox2/css/computed_length.v,/Users/alex/code/vox2/css/computed_longhand_eligibility.v,/Users/alex/code/vox2/css/computed_longhand_reuse.v,/Users/alex/code/vox2/css/computed_longhand_shapes.v,/Users/alex/code/vox2/css/computed_property_invalidation.v,/Users/alex/code/vox2/css/computed_property_page_semantics.v,/Users/alex/code/vox2/css/computed_property_storage.v,/Users/alex/code/vox2/css/computed_property_store.v,/Users/alex/code/vox2/css/computed_values.v,/Users/alex/code/vox2/css/conditional_style_sheet_invalidation.v,/Users/alex/code/vox2/css/container_query_invalidator.v,/Users/alex/code/vox2/css/container_rule.v,/Users/alex/code/vox2/css/content_counter_styles.v,/Users/alex/code/vox2/css/coordinating_value_queries.v,/Users/alex/code/vox2/css/corner_shape_parameters.v,/Users/alex/code/vox2/css/counter_resolution_workspace.v,/Users/alex/code/vox2/css/counter_values.v,/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v,/Users/alex/code/vox2/css/css.v,/Users/alex/code/vox2/css/css_rule_kind_storage.v,/Users/alex/code/vox2/css/cssom_declaration_builder.v,/Users/alex/code/vox2/css/cssom_events_extra.v,/Users/alex/code/vox2/css/cssom_rules.v,/Users/alex/code/vox2/css/custom_function_evaluation.v,/Users/alex/code/vox2/css/custom_function_scope.v,/Users/alex/code/vox2/css/custom_property_environment_equivalence.v,/Users/alex/code/vox2/css/deferred_declarations.v,/Users/alex/code/vox2/css/deferred_hidden_styles.v,/Users/alex/code/vox2/css/deleted_conditional_style_rules.v,/Users/alex/code/vox2/css/deleted_style_rule_invalidation.v,/Users/alex/code/vox2/css/descriptors.v,/Users/alex/code/vox2/css/device_layout_property_pages.v,/Users/alex/code/vox2/css/device_layout_scale_only.v,/Users/alex/code/vox2/css/device_layout_style.v,/Users/alex/code/vox2/css/dom_css_bridge.v,/Users/alex/code/vox2/css/dom_query.v,/Users/alex/code/vox2/css/empty_deleted_conditional_leaves.v,/Users/alex/code/vox2/css/empty_media_query_lists.v,/Users/alex/code/vox2/css/events_misc.v,/Users/alex/code/vox2/css/exact_layout_lengths.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs.v,/Users/alex/code/vox2/css/fetch_css_api.v,/Users/alex/code/vox2/css/font_face_values.v,/Users/alex/code/vox2/css/font_fetch_transport.v,/Users/alex/code/vox2/css/font_input_refresh.v,/Users/alex/code/vox2/css/font_input_scratch.v,/Users/alex/code/vox2/css/font_key_scratch.v,/Users/alex/code/vox2/css/font_loading.v,/Users/alex/code/vox2/css/font_loading_tasks.v,/Users/alex/code/vox2/css/font_synthesis.v,/Users/alex/code/vox2/css/font_variation_axis_storage.v,/Users/alex/code/vox2/css/function_rules.v,/Users/alex/code/vox2/css/generated_content_storage.v,/Users/alex/code/vox2/css/gradient_color_interpolation.v,/Users/alex/code/vox2/css/grid_values.v,/Users/alex/code/vox2/css/html_attribute_case.v,/Users/alex/code/vox2/css/hyphens.v,/Users/alex/code/vox2/css/identical_layout_inputs.v,/Users/alex/code/vox2/css/idle_computation_pages.v,/Users/alex/code/vox2/css/idle_layout_snapshots.v,/Users/alex/code/vox2/css/image_color_values.v,/Users/alex/code/vox2/css/independent_dom_query.v,/Users/alex/code/vox2/css/inherited_property_iterator.v,/Users/alex/code/vox2/css/initial_layout_snapshots.v,/Users/alex/code/vox2/css/inline_style.v,/Users/alex/code/vox2/css/instruction_diagnostics.v,/Users/alex/code/vox2/css/internal_font_settings.v,/Users/alex/code/vox2/css/invalidation_plan_union.v,/Users/alex/code/vox2/css/layout_inheritance_proof.v,/Users/alex/code/vox2/css/layout_input_diagnostics.v,/Users/alex/code/vox2/css/layout_viewport_overrides.v,/Users/alex/code/vox2/css/legacy_font_size.v,/Users/alex/code/vox2/css/length_percentage_storage.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints.v,/Users/alex/code/vox2/css/marker_counter_styles.v,/Users/alex/code/vox2/css/matching_rule_candidates.v,/Users/alex/code/vox2/css/matching_rule_set_workspace.v,/Users/alex/code/vox2/css/media_evaluation_candidates.v,/Users/alex/code/vox2/css/media_feature.v,/Users/alex/code/vox2/css/media_queries.v,/Users/alex/code/vox2/css/media_query_compatibility.v,/Users/alex/code/vox2/css/misc_values.v,/Users/alex/code/vox2/css/missing_style_query.v,/Users/alex/code/vox2/css/more_style_values.v,/Users/alex/code/vox2/css/native_document_retirement.v,/Users/alex/code/vox2/css/native_font_variations.v,/Users/alex/code/vox2/css/numeric_dimension_diagnostics.v,/Users/alex/code/vox2/css/parser_core.v,/Users/alex/code/vox2/css/parser_helpers.v,/Users/alex/code/vox2/css/parser_rules_selectors.v,/Users/alex/code/vox2/css/parser_stream_eof.v,/Users/alex/code/vox2/css/parser_syntax_helpers.v,/Users/alex/code/vox2/css/parser_value_logic.v,/Users/alex/code/vox2/css/pixel_rounding.c.v,/Users/alex/code/vox2/css/pixel_units.v,/Users/alex/code/vox2/css/primitives_extra.v,/Users/alex/code/vox2/css/properties_data.v,/Users/alex/code/vox2/css/property_calculation_metadata.v,/Users/alex/code/vox2/css/property_shorthand_metadata.v,/Users/alex/code/vox2/css/recursive_value_storage.v,/Users/alex/code/vox2/css/redundant_sheet_removal.v,/Users/alex/code/vox2/css/repeated_rule_matching.v,/Users/alex/code/vox2/css/resolved_box_model_edges.v,/Users/alex/code/vox2/css/resolved_scalar_computation.v,/Users/alex/code/vox2/css/resource_url_candidates.v,/Users/alex/code/vox2/css/retained_layout_style.v,/Users/alex/code/vox2/css/rule_bucket_iterator.v,/Users/alex/code/vox2/css/rule_selector_reuse.v,/Users/alex/code/vox2/css/scalar_font_computation.v,/Users/alex/code/vox2/css/scalar_style_value_equality.v,/Users/alex/code/vox2/css/screen_animation.v,/Users/alex/code/vox2/css/scroll_animation_source.v,/Users/alex/code/vox2/css/selector_input_workspace.v,/Users/alex/code/vox2/css/selector_invalidation_workspace.v,/Users/alex/code/vox2/css/selector_parse_workspace.v,/Users/alex/code/vox2/css/selector_rule_font_sync.v,/Users/alex/code/vox2/css/selector_substring_scan.v,/Users/alex/code/vox2/css/selectors.v,/Users/alex/code/vox2/css/simple_selector_storage.v,/Users/alex/code/vox2/css/size_query_result_reuse.v,/Users/alex/code/vox2/css/static_animation_names.v,/Users/alex/code/vox2/css/static_user_style_filter.v,/Users/alex/code/vox2/css/style_computer.v,/Users/alex/code/vox2/css/style_declarations.v,/Users/alex/code/vox2/css/style_scope_cache.v,/Users/alex/code/vox2/css/style_sheet_invalidation.v,/Users/alex/code/vox2/css/style_values_core.v,/Users/alex/code/vox2/css/style_values_extra.v,/Users/alex/code/vox2/css/stylesheet_conversion_workspace.v,/Users/alex/code/vox2/css/stylesheet_rule_scratch.v,/Users/alex/code/vox2/css/stylesheet_syntax_cache.v,/Users/alex/code/vox2/css/stylesheet_token_scratch.v,/Users/alex/code/vox2/css/substitution_leaf_validation.v,/Users/alex/code/vox2/css/substitution_workspace.v,/Users/alex/code/vox2/css/svg_presentation_path.v,/Users/alex/code/vox2/css/syntax_highlighter.v,/Users/alex/code/vox2/css/text_box.v,/Users/alex/code/vox2/css/transforms.v,/Users/alex/code/vox2/css/typed_om_math.v,/Users/alex/code/vox2/css/ua_only_shadow_style_cache.v,/Users/alex/code/vox2/css/unchanged_has_invalidation.v,/Users/alex/code/vox2/css/unparsed_values.v,/Users/alex/code/vox2/css/url_system.v,/Users/alex/code/vox2/css/user_agent_style_cache_templates.v,/Users/alex/code/vox2/css/user_agent_stylesheet.v,/Users/alex/code/vox2/css/user_style_change_invalidation.v,/Users/alex/code/vox2/css/value_parse_export.v,/Users/alex/code/vox2/css/value_token_workspace.v,/Users/alex/code/vox2/css/value_type_color.v,/Users/alex/code/vox2/css/view_transition_style_sheet.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component_test.v"
+      ],
+      "environment": {},
+      "host_before": {
+        "unix": 1793846642.212372,
+        "cpu_count": 18,
+        "load": [
+          9.115234375,
+          8.9091796875,
+          8.91064453125
+        ]
+      },
+      "exit": 0,
+      "host_after": {
+        "unix": 1793846768.932621,
+        "load": [
+          22.873046875,
+          14.74951171875,
+          11.2392578125
+        ]
+      }
+    },
+    "scenes": {
+      "inherited-color": {
+        "control": [
+          16145005132,
+          16128379253
+        ],
+        "candidate": [
+          16415954706,
+          16410628893
+        ],
+        "control_median": 16136692192.5,
+        "candidate_median": 16413291799.5,
+        "median_reduction_fraction": -0.017141035083296563,
+        "conservative_component_reduction": -287575453
+      },
+      "opacity-transform": {
+        "control": [
+          36525185,
+          36469113
+        ],
+        "candidate": [
+          34881928,
+          34906206
+        ],
+        "control_median": 36497149.0,
+        "candidate_median": 34894067.0,
+        "median_reduction_fraction": 0.04392348563993309,
+        "conservative_component_reduction": 1562907
+      },
+      "custom-width": {
+        "control": [
+          4727227368,
+          4733562736
+        ],
+        "candidate": [
+          4655264744,
+          4653374477
+        ],
+        "control_median": 4730395052.0,
+        "candidate_median": 4654319610.5,
+        "median_reduction_fraction": 0.016082259655636033,
+        "conservative_component_reduction": 71962624
+      }
+    },
+    "inputs_after": {
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-resume.py": "6f0ac4d9e1ba331fd5c8dfa728af4badd64159a9b02054798e9e2afc27ca52ca",
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component_test.v": "15e27f55951bea0f21834238228e7285b1ce01cbc7c0888863f573aba22baf81",
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component-files.txt": "588f8cc86f97b87b3ea3ff5b89bb7dc1016bedf28f870363621ca5fa7f5d3b1f",
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+      "/Users/alex/code/vox2/css/animation_samples.v": "6e186a4396b292b5443754d4fb1db05cfea04d045318891dc098161cd8d6a749",
+      "/Users/alex/code/vox2/css/animation_sample_batch.v": "f81a87cefb3cb6046b00f2e41aef275f2861d4879984e745cf23c42a84ece380",
+      "/Users/alex/code/vox2/css/animation_sample_batch_test.v": "40e2b08e1441dc543592e2ebf457c06f6527d69bc23cfdf4c4e64d648f43e96c",
+      "/Users/alex/code/vox2/css/animation_ancestor_filter_test.v": "5ade1833ead12e845af9113a4a648462214d6eacad0524a1751b8791ad55c3db",
+      "/Users/alex/code/vox2/css/style_computer.v": "94fd7090d306f9b3f30ecb740d99782a179a41696cb1f20a7df10c40c495cdd8",
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+      "/Users/alex/code/vox2/Build/chatgpt-animation-batch-20261105-r1/component": "e316d4b76fc30687285142ddd70876389eb0e1658631d008383180c033eacbbc"
+    },
+    "identity_stable": true,
+    "scope": "Current-process counters around 512 fixed 16ms CSS animation updates, 49 targets and complete color/opacity/transform/width output checks against independently precomputed ordinary-storage reference frames. Three scenes: inherited color, opacity/transform and registered custom-property width. Includes sample-arena usage inspection each frame; excludes reference generation, document construction, startup and teardown. V -prod, C -O2, production prealloc runtime, no GC. Rotation count and peak current+retiring sample bytes are diagnostic observations. Component only, no page credit."
+  },
+  "component_archival_guard": {
+    "command": [
+      "python3",
+      "-"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 359579648,
+    "elapsed_seconds": 5.0635959999999995,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "component_qualification": "512 fixed 16ms animation updates, 49 audited elements, three scenes; source-construction and ordinary-storage oracle generation excluded. Current-process hardware instructions, V -prod/C -O2/prealloc/no-GC. Complete color/opacity/transform/width outputs checked against reference frames. Component costs include per-frame arena usage checks. Arena peak used bytes include current+retiring arenas, excluding spares and allocator overhead. These component results receive no page credit.",
+  "canonical_scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+  "production_after_functional_checks": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "e4705bb167d9077304bc62a8d547a392c2a9dbd98b6be5a61015fe43ce6c70fe",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-054829-58e35bac/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "cce9501e2fa2f8a795c9877202f3b3082b8a88945ee4956b4fd4265b92b8aaf2",
+      "dirty": true,
+      "head": "7725be0d1cc2e639005fa65ae3734255db82d159",
+      "repository_sha256": "9b64917aff5a33a498cd73c4c47c37f53475734eb9dd53df33d2413ebc0dcf4d"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "af1e320ee39d4c9691d1e6e78c7c5ad5027f70dfc5d34a5cb22b41d39d308225",
+      "dirty": true,
+      "head": "d0b4a8c583d44e0005e5d7868cf3d6517d730a0b",
+      "repository_sha256": "b5b43439b08b8a8be506eb1c477bc8de57198947016b2c05927201b09a942478"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "7725be0d1cc2e639005fa65ae3734255db82d159",
+      "id": "a9af3640d1cd48b7989d697d8bef34d5"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "cce9501e2fa2f8a795c9877202f3b3082b8a88945ee4956b4fd4265b92b8aaf2",
+      "dirty": true,
+      "head": "7725be0d1cc2e639005fa65ae3734255db82d159",
+      "repository_sha256": "7d2f2f151ec899fb0a1bf00b9989e816632b0fe0547c39c9cf6c25dc71ee627f"
+    }
+  },
+  "production_executable_sha256": "e4705bb167d9077304bc62a8d547a392c2a9dbd98b6be5a61015fe43ce6c70fe",
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; animation sample batch control/candidate/candidate/control comparison. Four pairs are below seven-pair acceptance.",
+  "source_and_runtime_path_verified": true,
+  "diagnostic_captures": 4,
+  "unprofiled_captures": 8,
+  "all_final_pixels_content_bootstrap_browser_and_kernel_exits_pass": true,
+  "benchmark_driver_exits": {
+    "diagnostic": 1,
+    "matched": 1
+  },
+  "driver_qualification": "Canonical driver exits retain the Brave target and seven-pair requirement; final phase controllers and enclosing guard exit zero.",
+  "control": [
+    {
+      "lower": 32424475410,
+      "upper": 32424475410
+    },
+    {
+      "lower": 31762255706,
+      "upper": 31762255706
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 30465291451,
+      "upper": 30465291451
+    },
+    {
+      "lower": 30933120910,
+      "upper": 30933120910
+    }
+  ],
+  "control_median": 32093365558.0,
+  "candidate_median": 30699206180.5,
+  "median_reduction_fraction": 0.043440734658396485,
+  "conservative_observed_page_instruction_reduction": 829134796,
+  "page_instruction_credit": 0,
+  "causal_optimization_credit": false,
+  "causal_qualification": "Candidate captures complete 297/352 frame checkpoints versus controls 416/350 under starting load 14.99-16.41 on 18 CPUs. Retain the observed 4.344% median difference and 829134796-instruction separation, but do not attribute the whole difference to batching or add it to causal page savings. The observed-count gate still triggered all 47 passing broad checks.",
+  "broad_checkpoint_required": true,
+  "broad_jobs": 47,
+  "broad_all_pass": true,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 416,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          16.4052734375,
+          14.1064453125,
+          12.35009765625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          15.86181640625,
+          14.06884765625,
+          12.35693359375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 297,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          15.275390625,
+          14.0771484375,
+          12.4091796875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          15.23876953125,
+          14.107421875,
+          12.43896484375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 352,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          15.23876953125,
+          14.107421875,
+          12.43896484375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          15.84228515625,
+          14.26904296875,
+          12.51513671875
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 350,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          14.98974609375,
+          14.18408203125,
+          12.533203125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          15.08349609375,
+          14.2275390625,
+          12.5673828125
+        ]
+      }
+    }
+  ],
+  "guard": {
+    "exit": 0,
+    "adopted_processes": 49,
+    "peak_rss_bytes": 1937096704,
+    "limit_bytes": 12884901888
+  },
+  "earlier_attempts": "The first component stress test used V array-initializer index instead of the outer loop index; its failed control/candidate runs remain retained. An interrupted component compile left an empty guard; the resumed compile and every completed run have full receipts. R1 production parser looked for a copied numeric-predicate marker and rejected; an independent archived-log audit verifies the actual marker and ChatGPT URL, retaining the original error. R1 matched phase was interrupted by canonical bundle replacement and receives no performance credit. R2 lease was busy and launched no browsers. R3 uses the completed canonical bundle with before/after input fingerprints and receipt identity throughout.",
+  "publication_policy": "No production build was requested and no bundle or repository source tree was copied. Latest completed bundle used while shared build lock was busy; changed-input attempts retained as invalid.",
+  "brave_intervals": [
+    {
+      "lower": 16470837147,
+      "upper": 16497096416
+    },
+    {
+      "lower": 16568593817,
+      "upper": 16595523855
+    },
+    {
+      "lower": 18830949074,
+      "upper": 18853769958
+    },
+    {
+      "lower": 16360494422,
+      "upper": 16369747858
+    }
+  ],
+  "candidate_worst_over_best_brave": 1.8907204215298135,
+  "observed_brave_inequality": false,
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "qualification": "Four alternating Vox/Brave pairs, two per Vox variant, below seven-pair acceptance. Original single SOCKS capture, author scripts, JavaScriptCore bootstrap, private profiles/caches, viewport/scale, five-second settle and references unchanged; OS filesystem/shader caches retained. Frame/layout and host-load differences limit attribution. No new download, isolated render-time or live interaction claim. The 5% Brave advantage remains unmet.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-animation-batch-production-20261105-evidence.zip",
+      "sha256": "f39bf591816b310c9966db964520a14c162b2526c5fed9db7b26b5447c7cea73",
+      "bytes": 1246553
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-20261105-evidence.zip",
+      "sha256": "459049d08b09e733459f531c087da8138c3a27bdc7d2288f944f89883c28b068",
+      "bytes": 153136
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-component-20261105-evidence.zip",
+      "sha256": "4a8bb8147db2cd18589530c384f2255063a3fcfe287edd3f4f1456c967e381f1",
+      "bytes": 20581505
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r1-matched-20261105-evidence.zip",
+      "sha256": "f91d7c443e9bb822f4b14f49d3a6182559fca191fe991059f1326f5b0683b554",
+      "bytes": 2154320
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r1-controller-20261105.json",
+      "sha256": "92daa54c79589127118a4acb8c217b35db7dec9473335445f7d74f0d3fb74a8f",
+      "bytes": 4323
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r3-matched-20261105.json",
+      "sha256": "61b5d29be3d42209a8e35e1e1d0a412aae81c065c99b537281ecc717ab88cab6",
+      "bytes": 2977808
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r1-matched-20261105.json",
+      "sha256": "2865c5077e48765dbe3c31e78418c8d003bcba959103fd9e59ef3115834cfa0c",
+      "bytes": 2273543
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "69c00f523717ef661a0731a42ef6431050bba0630ce7990f3f8d6cb358b83011",
+      "bytes": 1515409
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r3-diagnostic-20261105.json",
+      "sha256": "d8577abbc45b1bf5420a64a72c73af9fffc7ec343805ecbcf1f5db6a289967af",
+      "bytes": 1847942
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r1-diagnostic-audit-20261105.json",
+      "sha256": "048d7cb40ade71e586ad4b6a0b6f1405e95c7a8743f608118d2021e8767a2588",
+      "bytes": 3367
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r3-broad-20261105-evidence.zip",
+      "sha256": "a60c89507fd4b7873fd03f2d0a4e33f7c90728729b127a7fe9f837c6a4d67ca3",
+      "bytes": 371094
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r1-diagnostic-20261105.json",
+      "sha256": "1541d141eee3f374015ce1c681bcdf4b7e81afe3d99da8a7d7e7fae85eb3d486",
+      "bytes": 1986736
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r3-matched-20261105-evidence.zip",
+      "sha256": "1e10f89f4de2521325c090600dd7bc638dd918a2ba969f650ec8aa5af49399df",
+      "bytes": 3237474
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r2-lease-20261105.json",
+      "sha256": "2a312e91d3ab053a0a4b9b73c9101d72bce434432c96db7549d1afa3b6c2b486",
+      "bytes": 359
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r3-controller-20261105.json",
+      "sha256": "f052968f670f6bafa87d21fcb535eeafc537bd8d72f7c76b096585e88072316f",
+      "bytes": 4855
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-r3-diagnostic-20261105-evidence.zip",
+      "sha256": "0111a1391b1ebc42559f3b720088030dbfb24eb70031d1f9955fb99249f4b2a9",
+      "bytes": 1469352
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-batch-finalize-20261105-guard.json",
+      "sha256": "77961643667345e6589a16450f7da8ec4f73e4329b0b6b459680961f1fac2a14",
+      "bytes": 396
+    }
+  ]
+}

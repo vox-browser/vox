@@ -1,0 +1,67 @@
+{
+  "complete": true,
+  "path_verified": true,
+  "original_controller_complete": false,
+  "original_error": "Unexpected branch execution",
+  "correction": "Independent audit of archived browser logs searches the actual deferred-rotation marker, verifies the ChatGPT document URL and checks original <= used < expanded <= 16 MiB. Original failed parser report is unchanged; no new captures or instruction credit.",
+  "source_report": {
+    "path": "docs/performance/chatgpt-animation-batch-r1-diagnostic-20261105.json",
+    "sha256": "1541d141eee3f374015ce1c681bcdf4b7e81afe3d99da8a7d7e7fae85eb3d486"
+  },
+  "archive": {
+    "path": "docs/performance/chatgpt-animation-batch-r1-diagnostic-20261105-evidence.zip",
+    "sha256": "69c00f523717ef661a0731a42ef6431050bba0630ce7990f3f8d6cb358b83011"
+  },
+  "rows": [
+    {
+      "variant": "candidate",
+      "path": "Build/chatgpt-animation-batch-production-20261105-r1/diagnostic/diagnostic/pair-1-vox/browser.log",
+      "sha256": "511b655548ebd029ae37fa23d175b7088c8c60c3c1b7f61c0b46bb1f80b9da48",
+      "markers": [
+        "Vox animation sample batch: deferred rotation; used=262592; original=262144; expanded=283648; document=https://chatgpt.com/"
+      ]
+    },
+    {
+      "variant": "control",
+      "path": "Build/chatgpt-animation-batch-production-20261105-r1/diagnostic/diagnostic/pair-2-vox/browser.log",
+      "sha256": "1ca2029f110b80169835d32b767b4637385624ef225e69e417ab804527671e2e",
+      "markers": []
+    }
+  ],
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "c74e5d0dce0ac165182f0fa437738086ac67572392d15f37c5152ac32c4dd462",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-054047-15117476/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "61d4204ceecf7b3666b48bcde47c8e9e43caeea01db9e9c7fd1f173c04d4e646",
+      "dirty": true,
+      "head": "08049e92bcb08c1045772a376e2e39bcf11a0b60",
+      "repository_sha256": "67ec5f2b90f8f4ec16e9d6f7bb3d7f04ff198088ad65ca0c579b3273172bb938"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "61d4204ceecf7b3666b48bcde47c8e9e43caeea01db9e9c7fd1f173c04d4e646",
+      "dirty": true,
+      "head": "8759ce3a9e5464f6f88c58e0822ca765ab1f89ff",
+      "repository_sha256": "03504dcf62e38a350a4df1eb7c6a9f669d193ba0fd5cfdd6ac44367c032b7199"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "08049e92bcb08c1045772a376e2e39bcf11a0b60",
+      "id": "512277058e704ad986737a36c267c8d9"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "61d4204ceecf7b3666b48bcde47c8e9e43caeea01db9e9c7fd1f173c04d4e646",
+      "dirty": true,
+      "head": "08049e92bcb08c1045772a376e2e39bcf11a0b60",
+      "repository_sha256": "67ec5f2b90f8f4ec16e9d6f7bb3d7f04ff198088ad65ca0c579b3273172bb938"
+    }
+  },
+  "page_instruction_credit": 0
+}

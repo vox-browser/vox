@@ -1,0 +1,9 @@
+{
+  "started_unix": 1793847350.919952,
+  "lock": "/Users/alex/code/vox2/Build/production-build/build.lock",
+  "acquired": false,
+  "scope": "Nonblocking publication lease across one diagnostic and one matched cohort; no build enqueued. Existing queued requests are woken on release.",
+  "rows": [],
+  "status": "busy",
+  "finished_unix": 1793847350.9200928
+}

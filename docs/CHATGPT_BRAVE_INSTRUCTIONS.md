@@ -1575,3 +1575,88 @@ diagnostic cohort, below seven-pair acceptance. The original single SOCKS
 capture and author scripts, empty private profiles/caches, five-second settle,
 viewport/scale and references remain unchanged. This result establishes neither
 the requested 5% Brave advantage nor live interaction parity.
+
+## November 5: bounded animation sample batching
+
+Commit `d0b4a8c58` extends the animation sample arena's rotation threshold to
+64 updates' estimated demand, while retaining the original 256 KiB floor and
+16-update lower bound. Expansion stops at a 16 MiB threshold; larger original
+thresholds stay unchanged. This bounds the expansion, not total live memory:
+an update can overshoot, and retiring/spare arenas have separate lifetimes.
+`VOX_RETAIN_SHORT_ANIMATION_SAMPLE_BATCH` selects the original policy.
+The diagnostic marker confirms a deferred rotation on the ChatGPT document.
+
+**All 48 final focused jobs pass**: sixteen compilations and thirty-two test
+executions, covering both policies, poisoned preallocation, ordinary GC, no GC,
+AddressSanitizer and UndefinedBehaviorSanitizer. Cases cover threshold floors,
+signed extremes, bounded repeated rotation/reuse, inherited selector context,
+property pages, typed payloads, retained projections, timelines and compositor
+sampling. The initial stress test accidentally used V's array-initializer
+`index` instead of its outer loop counter; both failed runs and the corrected
+source remain retained. A component compile interrupted by session migration
+also remains recorded without a completed-guard claim.
+
+The component compares 512 fixed 16 ms animation updates across 49 elements
+per scene. Every color, opacity, transform and width value matches independently
+precomputed ordinary-storage frames. It uses V `-prod`, C `-O2`, production
+preallocation and current-process hardware counters, excluding construction,
+reference generation, startup and teardown. Control/candidate/candidate/control
+observations retain this tradeoff:
+
+| Scene | Median instruction reduction | Rotations, control → candidate | Peak sample bytes used, control → candidate |
+| --- | ---: | ---: | ---: |
+| Inherited color | **−1.714%** | 22 → 9 | 276,271 → 651,247 |
+| Opacity and transform | 4.392% | 25 → 10 | 282,656 → 732,336 |
+| Registered custom-property width | 1.608% | 35 → 9 | 1,030,911 → 3,737,053 |
+
+These byte peaks include current and retiring arenas, excluding spares and
+allocator overhead. They are not RSS limits. Component runtime guards stay
+below 3 GiB, with a highest observed peak of 2,272,673,792 bytes across the six
+measured/diagnostic executions. The page receives no credit from these results.
+
+The first production diagnostic passes all four captures, but its controller
+searches for an incorrectly copied numeric-predicate marker. An independent
+audit of the archived logs verifies the actual marker, document URL and
+`original <= used < expanded <= 16 MiB`, preserving the initial parser failure.
+Publication then changes the bundle during the first unprofiled cohort; all its
+partial observations remain invalid for performance credit. A second attempt
+finds the nonblocking publication lease busy and launches no browsers.
+
+The final attempt uses completed canonical executable
+`e4705bb167d9077304bc62a8d547a392c2a9dbd98b6be5a61015fe43ce6c70fe`
+with unchanged identities throughout both phases. All four diagnostic and eight
+unprofiled captures pass full content, JavaScriptCore bootstrap, exact reference
+pixels and browser/kernel exits. The deferred-rotation marker appears only with
+the extended policy. No bundle was copied or production build requested.
+
+Control counts are **32,424,475,410** and **31,762,255,706**; candidate counts
+are **30,465,291,451** and **30,933,120,910**. Medians are
+**32,093,365,558** and **30,699,206,180.5**, an observed **4.344%** reduction,
+with **829,134,796** instructions separating the observed ranges.
+
+This difference has a material qualification: control captures complete
+416/350 frame checkpoints, versus 297/352 for candidates, with eleven
+box-building checkpoints in each. Starting load averages range 14.99–16.41 on
+18 CPUs. The candidate's lower frame volume and host contention prevent
+attributing the whole difference to batching. **Causal page savings credit is
+zero.** This is a capture-workflow observation, not an isolated render cost,
+fixed-frame efficiency result or scrolling FPS claim.
+
+The observed-count separation triggers the verification checkpoint. **All 47
+broad jobs pass**, including twenty screenshot/reftest cases with unchanged
+references and tolerances, live image and SVG paint-server mutations, eleven
+compiled/executed native graphics checks, diff controls and all 100 exact AST
+fixtures in each GC mode. The cadence resets to zero. The enclosing guard exits
+zero, adopts 49 process identities and observes peak aggregate RSS of
+1,937,096,704 bytes. Canonical comparison driver exits remain one because the
+Brave threshold and seven-pair minimum are unmet; final validation controllers
+exit zero.
+
+The worst candidate divided by the lowest Brave lower bound is **1.891**,
+above 0.95. These four alternating pairs do not establish seven-pair acceptance
+or live ChatGPT behavior. The original single SOCKS capture, author scripts,
+private profiles/caches, five-second settle, viewport/scale and references stay
+unchanged. The [batching receipt](performance/chatgpt-animation-batch-20261105.json)
+links every attempt, source proof, component result, raw counter, PNG, ownership
+audit, memory guard and broad check in verified durable archives. The requested
+5% advantage over Brave remains unmet.
