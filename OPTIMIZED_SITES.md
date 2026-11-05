@@ -8,7 +8,7 @@ Provisional entries retain unresolved acceptance checks.
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Hacker News homepage | 2026-11-04 | 7 | Median | 1,918,074,453 | 8,056,201,640 | **76.19%** | — | — | 39.2–43.8 frozen | 34.0–46.1 frozen (no canvas frames) | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [ledger](docs/benchmark-results/hacker-news-1800-attempt-2026-11-04.json), [scrolling](docs/HACKER_NEWS_SCROLLING.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) (RAM 559.7/639.2 MiB and scroll 59.7–59.8/59.78–59.79 FPS were measured on earlier builds; the current build repaints every frame, see the HN note below) |
+| Hacker News homepage | 2026-11-04 | 7 | Median | 1,918,074,453 | 8,056,201,640 | **76.19%** | — | — | 59.8–59.9 frozen | 59.8–59.9 frozen | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [ledger](docs/benchmark-results/hacker-news-1800-attempt-2026-11-04.json), [scrolling](docs/HACKER_NEWS_SCROLLING.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) (RAM 559.7/639.2 MiB and Brave scroll 59.78–59.79 FPS were measured on earlier builds; Vox FPS after the `d96b871e4` fix, see the HN note below) |
 | Lobsters homepage | 2026-11-02 | 7 | Median | 8,082,180,934 | 27,446,683,211 | **70.55%** | 535.2 | 992.4 | 59.0–59.6 live | 58.7–58.9 live (no canvas frames) | — | [Comparison](docs/LOBSTERS_BRAVE_INSTRUCTIONS.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) |
 | Old Reddit /r/programming/ | 2026-11-04 | 7 | Median | 3,060,307,260 | 9,374,680,561 | **67.36%** | — | — | — | — | — | [Reduction](docs/OLD_REDDIT_PROGRAMMING_REDUCTION.md), [ledger](docs/benchmark-results/old-reddit-programming-reduction-2026-11-04.json), [2026-11-03 recheck](docs/OLD_REDDIT_PROGRAMMING_RECHECK.md) (RAM 607.1/608.3 MiB, scroll 39.2–53.0/59.56–59.78 FPS on its earlier fixture; unmeasurable on 2026-11-05: fixture deleted, live page redirects guests to login) |
 | CNN homepage (provisional) | 2026-11-01 | 7 | Median | 21,805,542,771 | 32,665,051,523 | **33.25%** | 1,234.0 | 1,031.5 | 33.1–35.9 live | 29.3–35.5 live (no canvas frames) | — | [Comparison](docs/CNN_INSTRUCTIONS.md), [receipts](docs/benchmark-results/cnn-home-thirty-percent-2026-11-01.json), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) |
@@ -107,28 +107,36 @@ only on the live page (2026-11-05), not on the instruction fixture.
 **§ Vox scroll FPS (2026-11-05)** ranges span **two completed trials** per
 column; the trial counts and mean/median labels above refer to instructions.
 Both Vox columns use the shared production build `9e052f2b…` (head
-`c0203bb8e`), fresh processes and private profiles/caches, a 1024×768 document
+`c0203bb8e`; Hacker News: `f1100092…`, head `ee091fb85`, after its fix), fresh
+processes and private profiles/caches, a 1024×768 document
 viewport at native scale 2, 20 seconds settling after the title and 600 precise
 native wheel inputs at nominal 60 Hz, delta 2, reversing every 60 inputs. They
 count scroll-changing native layer publications over the full input window.
 **Vox GPU canvas FPS** sets `VOX_EXPERIMENT_GPU_CANVAS=1`, alternating with the
-default control on the same bundle. A separate verification run per page shows
-that the canvas engages only on the Wikipedia portal (598 frames, at most 1
-level of difference) and vlang.io (1,054 frames; three frames differ by up to
-58 levels at isolated anti-aliased edge pixels). On every other page both
+default control on the same bundle. The canvas only draws frames that reuse
+the previous frame's pixels while scrolling. A verification run per page shows
+it engaging on the Wikipedia portal (598 frames, at most 1 level of difference),
+vlang.io (1,054 frames; three frames differ by up to 58 levels at isolated
+anti-aliased edge pixels) and, after its fix, Hacker News (599 frames, at most
+1 level). CNN and the Wikipedia Main Page repaint every frame because their CSS
+masks (`begin_svg_mask_layer`) are not supported by pixel reuse; Lobsters draws
+each frame as one shared GPU picture, which turns pixel reuse off. There both
 columns measure the same code path, so their difference is run-to-run variation.
 Hacker News uses its frozen archive; the frozen fixtures of the other rows were
 deleted by `Build/` cleanup, so those values come from the **live** pages and
-differ from the instruction workloads. Host load averages were 4.6–13.6 on 18
+differ from the instruction workloads. Host load averages were 4.6–15.2 on 18
 CPUs. See the [Vox scrolling report](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05)
 and [receipt](docs/performance/optimized-sites-scroll-20261105.json).
 
-**Hacker News regression:** every HN frame is now a complete repaint of about
-25 ms. Scroll-raster reuse rejects each frame with
-`nonviewport-vertical-scrollbar`, so HN falls from the earlier 59.7–59.8 FPS
-(frozen, 60 Hz) and 113.1–115.7 FPS (live, 120 Hz) to the values listed here.
-A layout-only reproduction does not show the rejected scrollbar; the browser-path
-cause is open.
+**Hacker News regression and fix:** on build `9e052f2b…` every HN frame was a
+complete repaint of about 25 ms (39.2–43.8 FPS frozen, 39.3–40.3 FPS live at
+120 Hz). The text input editor built by layout lacked upstream's
+`scrollbar-width: none`, so the footer search box painted a 3×6 px overlay
+thumb; as the last painted box, it joined the trailing viewport scrollbars and
+scroll-raster reuse rejected every frame (`nonviewport-vertical-scrollbar`).
+Commit `d96b871e4` restores the upstream editor style. On build `f1100092…`
+every scrolled frame reuses pixels again and HN measures the values listed here
+(load 8.6–15.2). See the [fix report](docs/OPTIMIZED_SITES_SCROLL_FPS.md#hacker-news-fix-2026-11-05).
 
 **† Brave uses CDP wheel input and Chromium presentation feedback, with
 frame-event tracing enabled**; see its [report and raw evidence](docs/BRAVE_SCROLL_FPS.md).
@@ -161,7 +169,7 @@ live Brave reference exactly. Its conservative highest-Vox/lowest-Brave lead is
 | Page | Recorded date | Vox scroll FPS | p95 interval, both trials | Intervals over 16.67 ms | Vox GPU canvas FPS | Evidence |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
 | Wikipedia English Main Page (live) | 2026-11-05 | **64.3–83.3** | 20.87 / 15.48 ms | 18.98% / 2.37% | 68.8–82.0 (no canvas frames) | [Report](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05), [receipt](docs/performance/optimized-sites-scroll-20261105.json); 2026-11-01: 80.2–84.1, [report](docs/WIKIPEDIA_SCROLLING.md) |
-| Hacker News homepage (live) | 2026-11-05 | **39.3–40.3** | 31.13 / 32.42 ms | 100% / 100% | 38.2–39.6 (no canvas frames) | [Report](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05), [receipt](docs/performance/optimized-sites-scroll-20261105.json); 2026-11-01: 113.1–115.7, [report](docs/HACKER_NEWS_SCROLLING.md) |
+| Hacker News homepage (live) | 2026-11-05 | **117.1–119.5** | 9.57 / 8.87 ms | 0.77% / 0.25% | 117.6–119.6 | [Fix report](docs/OPTIMIZED_SITES_SCROLL_FPS.md#hacker-news-fix-2026-11-05), [receipt](docs/performance/hn-scroll-fix-20261105.json); 2026-11-01: 113.1–115.7, [report](docs/HACKER_NEWS_SCROLLING.md) |
 
 **Wikipedia:** These two fresh installed-process trials count scroll-changing native layer
 publications over the full input window. Each completes 600 precise wheel inputs
@@ -181,10 +189,10 @@ reversing every 120 events, with a 1024×768 document viewport at scale 2 and
 20 seconds settling after the title. They use the live page, empty private
 profiles/caches and normal site restrictions. This protocol checks rendering
 headroom above 60 FPS; it differs from the 600-input, 60 Hz frozen-page protocol
-in the main table. On 2026-11-01 the p95 intervals fit a 60 FPS budget. On the
-2026-11-05 build every interval misses it: each frame is a complete repaint
-(see the Hacker News regression note above). Physical display scanout is
-unmeasured.
+in the main table. After the `d96b871e4` fix the p95 intervals are 8.87–9.57 ms,
+close to the 8.33 ms input period and well inside a 60 FPS budget; the build
+before it measured 39.3–40.3 FPS with every interval over 16.67 ms (see the
+Hacker News note above). Physical display scanout is unmeasured.
 
 ## How to benchmark against Brave
 

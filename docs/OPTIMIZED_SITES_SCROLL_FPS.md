@@ -98,7 +98,12 @@ frames are reused:
 | Hacker News (live, 120 Hz) | 0 | 0 | 0 | 0 | 0 | 0 |
 
 On Hacker News, Lobsters, CNN and the Wikipedia Main Page no frame is eligible,
-so both arms run the same path and their difference is run-to-run variation. On
+so both arms run the same path and their difference is run-to-run variation.
+`VOX_SCROLL_RASTER_DAMAGE_DIAGNOSTICS` gives the reasons: CNN and the Wikipedia
+Main Page reject every frame with `unsupported-command:begin_svg_mask_layer`
+(CSS masks keep complete replay); Lobsters qualifies for a frame-wide shared GPU
+picture, which disables pixel reuse before that check; Hacker News had a stray
+input scrollbar, fixed below. On
 the Wikipedia portal both arms stay at about 60 FPS. On vlang.io under load
 10–13 the canvas trials reach 54.84 / 55.68 FPS with p95 25.28 / 26.34 ms,
 against 52.31 / 54.51 FPS and 32.35 / 27.57 ms; the quiet-host cohort in
@@ -116,8 +121,8 @@ in the [earlier reports](HACKER_NEWS_SCROLLING.md). A diagnostic live run with
 frames during input, each a complete repaint of 25–57 ms. A temporary
 layout-package test laying out the archived page (stylesheet inlined) at
 1024×768 with scroll offsets 0, 100 and 400 and viewport scrollbars on and off
-finds only the viewport thumb at x=1016, width 6, and an eligible page, so the
-browser-path cause is still open.
+finds only the viewport thumb at x=1016, width 6, and an eligible page. The
+browser-path cause and its fix are in the [next section](#hacker-news-fix-2026-11-05).
 
 The [receipt](performance/optimized-sites-scroll-20261105.json) holds
 every command, environment, identity, exit, host load and statistic, the
@@ -126,6 +131,56 @@ verification leaves and the Hacker News diagnostic. The
 holds each run's `run.json`, `summary.json`, browser log, guard report and the
 orchestration scripts. The sections below are the original 2026-11-01
 measurements on the pinned instruction builds and frozen fixtures.
+
+## Hacker News fix (2026-11-05)
+
+The Hacker News regression above came from the text input editor that layout
+builds for statically laid-out controls (`build_input_internal_layout_children`).
+It set `overflow: auto` but not the `scrollbar-width: none` of upstream's
+`HTMLInputElement::create_text_input_shadow_tree()`. On the 2× display the empty
+footer search box's editor overflowed its `1lh` box, so it painted a 3×6 px
+overlay scrollbar thumb. `VOX_SCROLLBAR_PAINT_DIAGNOSTICS` identified the owner:
+a `div` with a 282×15.5 padding box and 282×31 scrollable overflow (paint-tree
+units at scale 2), `scrollbar-width: auto`. As the last painted box, its thumb
+joined the trailing viewport scrollbars, and the eligibility check rejected
+every frame with
+`nonviewport-vertical-scrollbar:432/436:fill_rounded_rect:607,1003,3x6`. Brave
+shows no scrollbar inside text inputs.
+
+Commit `d96b871e4` adds `scrollbar-width: none` and `text-overflow: clip` to the
+editor style; `layout/input_editor_scrollbar_test.v` fails without it (three
+editors report `auto`) and passes with it in both the default and
+`-prealloc -gc none` configurations, at device pixel ratios 1 and 2. Commit
+`ee091fb85` makes the rejection reason name the scrollbar command and adds
+`VOX_SCROLLBAR_PAINT_DIAGNOSTICS`. On the fixed shared build `f1100092…`
+(receipt `20261105-045425-50388a9e`, head `ee091fb85`) all 300 scrolled frames
+of a diagnostic live run are eligible and reuse pixels. Same protocols as above;
+all 10 runs exit 0 with unchanged identities:
+
+| Page | Arm | Trial | Scroll FPS | Actual input Hz | Counted scroll changes / inputs | Input window (s) | Interval median / p95 / max (ms) | Intervals >16.67 ms | Leading / trailing scroll gap (ms) | Load |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- | ---: |
+| Hacker News (frozen archive, 60 Hz) | Default | 1 | 59.90 | 60.00 | 598 / 600 | 9.984 | 16.63 / 23.87 / 28.26 | 45.65% | 37.00 / 12.42 | 14.7 |
+| Hacker News (frozen archive, 60 Hz) | GPU canvas | 1 | 59.89 | 59.99 | 598 / 600 | 9.984 | 16.59 / 24.10 / 31.38 | 43.98% | 38.78 / 10.87 | 12.8 |
+| Hacker News (frozen archive, 60 Hz) | Default | 2 | 59.80 | 59.90 | 598 / 600 | 10.000 | 16.65 / 20.55 / 24.71 | 48.33% | 43.26 / 8.37 | 12.1 |
+| Hacker News (frozen archive, 60 Hz) | GPU canvas | 2 | 59.80 | 60.00 | 597 / 600 | 9.983 | 16.65 / 17.97 / 26.79 | 49.58% | 41.89 / 12.06 | 14.3 |
+| Hacker News (live, 120 Hz) | Default | 1 | 117.10 | 119.60 | 1174 / 1200 | 10.025 | 8.35 / 9.57 / 19.68 | 0.77% | 25.17 / 3.70 | 12.7 |
+| Hacker News (live, 120 Hz) | GPU canvas | 1 | 117.56 | 119.45 | 1180 / 1200 | 10.038 | 8.33 / 9.46 / 17.14 | 0.76% | 34.74 / 0.11 | 9.9 |
+| Hacker News (live, 120 Hz) | Default | 2 | 119.49 | 119.59 | 1198 / 1200 | 10.026 | 8.33 / 8.87 / 19.72 | 0.25% | 27.55 / 0.48 | 8.6 |
+| Hacker News (live, 120 Hz) | GPU canvas | 2 | 119.59 | 119.79 | 1197 / 1200 | 10.009 | 8.33 / 9.08 / 16.16 | 0.00% | 34.02 / 0.62 | 9.7 |
+
+| Page | Canvas frames | GPU leaves | Compared pixels | Differing pixels | Max channel error | Frames over 20 levels |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Hacker News (frozen archive, 60 Hz) | 599 | 5,604 | 92,459,080 | 88,140 | 1 | 0 |
+| Hacker News (live, 120 Hz) | 1,195 | 10,043 | 82,849,240 | 82,521 | 1 | 0 |
+
+Both HN protocols now run at their input rate: 59.80–59.90 FPS at 60 Hz and
+117.10–119.59 FPS at 120 Hz, above the 2026-11-01 live result of 113.1–115.7.
+Host load was 8.6–15.2. With pixel reuse back, the GPU canvas engages on HN as
+well; at these rates both arms keep up with the input, so the canvas changes no
+headline number here. See the
+[receipt](performance/hn-scroll-fix-20261105.json) and
+[raw archive](performance/raw/hn-scroll-fix-20261105.tar.gz), which also holds the
+rejection-reason runs for CNN, the Wikipedia Main Page and Lobsters.
 
 ## Conditions
 
