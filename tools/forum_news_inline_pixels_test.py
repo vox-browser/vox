@@ -17,6 +17,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         self.compare_fixture('generated-pseudo-live-font', width=1024, height=768,
                              settle_seconds=2)
 
+    def test_relative_svg_coordinates_round_before_later_curves_and_reflections(self):
+        self.compare_fixture('svg-relative-path-precision', width=1024, height=768)
+
     def test_opaque_headers_resume_ellipse_strokes_after_a_disjoint_svg_clip(self):
         self.compare_fixture('opaque-svg-mask-ellipse-resume', width=1024, height=768)
 
