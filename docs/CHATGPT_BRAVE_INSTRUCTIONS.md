@@ -2596,3 +2596,65 @@ The [focused/component receipt](performance/chatgpt-identity-reply-20261105.json
 links the exact counts, source/executable hashes, commands, guards and verified
 archives. Component gains establish no whole-page saving or Brave acceptance;
 production validation is recorded separately below.
+
+
+## November 5: compact identity reply production comparison
+
+The first production attempt rejects during source preflight: the available
+bundle contains the marker, but neither recorded Git head proves the final
+owned source. Its controller and guard failure are retained, with **zero
+browser launches and no instruction credit**. A later completed canonical
+bundle supplies the final twelve owned implementation blobs at its recorded
+head and stable before/after aggregate build-input hashes. Available reply
+and caller disassembly is retained, without a sealed-C claim.
+
+The valid cohort pins 33-unit parallel executable
+`c5a048a5d30aeb1f1acde7e869d3c6a3a2335657f1499a6964db0b1300b7203f`
+under a nonblocking shared publication lease. All **12 fresh captures pass
+bootstrap, complete content and exact unchanged pixels**. The separate
+diagnostic confirms direct reply execution only in the candidate; matched
+captures disable diagnostics. Both modes preserve hydration and oversized-key
+fallback. No author script or resource bytes are changed.
+
+| Unprofiled frozen-page variant | Observed launch-through-PNG instructions |
+| --- | ---: |
+| Map control 1 | 30,055,670,421 |
+| Direct candidate 1 | 29,358,366,728 |
+| Direct candidate 2 | 29,770,021,754 |
+| Map control 2 | 30,154,698,113 |
+| Control median | 30,105,184,267 |
+| Candidate median | 29,564,194,241 |
+
+The observed median reduction is **1.797%**. The ranges separate by a
+conservative **285,648,667 instructions**, triggering the required broad
+checkpoint. All **47 checks pass**: twenty screenshot cases (seventeen exact,
+three within existing fuzzy limits), twenty-two native compile/runtime jobs,
+four AST compile/runtime jobs covering 100 exact fixtures in each GC mode,
+and one pixel-diff control job. References and tolerances remain unchanged.
+The existing fuzzy cases differ in 13 inline-node pixels, 1,341 text-decoration
+pixels and 2,033 canvas-text pixels (578 sparse outliers).
+
+Control frame checkpoints are 450/472 versus 478/472 for candidates. One-minute
+host load falls from 19.21 to 10.06 on 18 CPUs over the matched cohort. Frame
+variation, changing contention and only two observations per variant limit
+causal attribution. The four Brave reference intervals span 18,488,464,895 to
+19,318,261,884 observed instructions. The candidate's highest observed count
+is still about 1.61 times the lowest Brave count. Four matched pairs remain
+below seven-pair acceptance; **the requested 5% advantage remains unmet**.
+
+The original SOCKS capture and author scripts, fresh private profiles/caches,
+five-second unfocused settle, 1024×768 viewport, scale 2 and exclusive-coalition
+creation-through-encoded-document-PNG scope remain unchanged. OS filesystem/
+shader caches are retained; GPU and outside-coalition services are excluded.
+There is no live-site, isolated-rendering or scrolling claim. The outer guard
+exits zero, adopts 46 process identities without error and peaks at
+1,744,633,856 sampled RSS bytes under 12 GiB. Both phase controllers and broad
+checks exit zero; the comparison driver's separate exit one records the unmet
+Brave gate.
+
+The [completed production receipt](performance/chatgpt-identity-reply-production-20261105.json)
+links raw counters, audits, PNGs, source proofs, host conditions, commands,
+actual exits and six verified archives. The rejected preflight, prototype
+regression and corrected fixture failures remain preserved. The publication
+lease is released and broad-check cadence resets to zero. **No 5%-below-Brave
+acceptance is claimed**.
