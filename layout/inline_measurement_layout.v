@@ -77,19 +77,21 @@ fn inline_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 	// A dirty bit remains set throughout this pass. Compare the actual inputs
 	// rather than treating that bit as a mutation between two intrinsic probes.
 	for index, input in inputs {
-		computed := input.node.computed_values()
-		if voidptr(computed) != voidptr(input.style)
-			|| computed.mutation_revision() != input.style_revision
-			|| computed.has_animated_properties()
-			|| input.node.child_count() != input.child_count {
-			return false
-		}
+		// Detached text has no inherited style. Reject changed membership before
+		// asking the old node for computed_values().
 		if index > 0 {
 			parent := input.node.parent() or { return false }
 			if u64(voidptr(parent)) != input.parent_id
 				|| input.node.index_in_parent_ != input.sibling_index {
 				return false
 			}
+		}
+		computed := input.node.computed_values()
+		if voidptr(computed) != voidptr(input.style)
+			|| computed.mutation_revision() != input.style_revision
+			|| computed.has_animated_properties()
+			|| input.node.child_count() != input.child_count {
+			return false
 		}
 		if text := input.node.as_text_node() {
 			if text.text_for_rendering() != input.text { return false }

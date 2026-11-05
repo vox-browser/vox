@@ -169,6 +169,23 @@ fn test_inline_measurement_does_not_cache_discarded_whitespace() {
 	}
 }
 
+fn test_inline_measurement_rejects_detached_text_before_reading_inherited_style() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut container := measurement_inline_fixture(document, '')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	defer { source.release_measurement_chunk_pool() }
+	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_indefinite())
+	assert !measurement_inline_compare(mut source, container, space, .normal, false)
+	old_text := container.children()[0]
+	container.remove_child(old_text)
+	container.append_child(unsafe { &Node(TextNode.new(document,
+		document.create_text_node('replacement with same child count').as_node(), 'replacement with same child count')) })
+	assign_layout_indexes(unsafe { &Node(container) })
+	assert !measurement_inline_compare(mut source, container, space, .normal, false)
+	assert measurement_inline_compare(mut source, container, space, .normal, false) == !disable_inline_measurement_reuse
+}
+
 fn test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_font_rendering_policy(.chromium)
