@@ -416,6 +416,41 @@ int vox_graphite_canvas_draw_picture(uint8_t const* bytes, size_t size, float co
 }
 
 extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_read_direct(VoxGraphitePixelRegion const* views, int count)
+{
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu || !views || count != int(canvas_tiles.size()) || !canvas_recorder) return 0;
+    // Validate every destination and target before submitting or touching any
+    // output. The caller can fall back to the staged reader on failure.
+    std::vector<id<MTLTexture>> textures;
+    for (int index = 0; index < count; ++index) {
+        auto const& tile = canvas_tiles[size_t(index)];
+        auto const& view = views[index];
+        if (!view.pixels || view.x < 0 || view.y < 0 || view.width <= 0 || view.height <= 0
+            || view.width > tile.width || view.x > tile.width - view.width
+            || view.height > tile.height || view.y > tile.height - view.height
+            || view.width > INT_MAX / 4 || view.pitch < view.width * 4) return 0;
+        auto texture = vox_shared_metal_texture(tile.surface.get());
+        if (!texture) return 0;
+        textures.push_back(texture);
+    }
+    auto recording = canvas_recorder->snap();
+    if (recording) {
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording = recording.get();
+        if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    }
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes))) return 0;
+    for (int index = 0; index < count; ++index) {
+        auto const& view = views[index];
+        [textures[size_t(index)] getBytes:view.pixels bytesPerRow:view.pitch
+            fromRegion:MTLRegionMake2D(view.x, view.y, view.width, view.height) mipmapLevel:0];
+    }
+    return 1;
+}
+
+extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_read(VoxGraphitePixelRegion const* views, int count)
 {
     std::lock_guard lock(gpu_mutex);

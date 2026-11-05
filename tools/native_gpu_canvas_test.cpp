@@ -165,6 +165,18 @@ static void draw_video_leaves(CGContextRef context, bool canvas)
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
 static unsigned s_read_calls, s_successful_reads, s_fail_reads;
 static decltype(&vox_graphite_canvas_read) s_backend_read;
+static decltype(&vox_graphite_canvas_read_direct) s_backend_direct_read;
+static unsigned s_direct_reads;
+static bool s_fail_direct_read;
+
+static int counted_direct_read(VoxGraphitePixelRegion const* views, int count)
+{
+    if (s_fail_direct_read) return 0;
+    int result = s_backend_direct_read(views, count);
+    s_direct_reads += result != 0;
+    s_successful_reads += result != 0;
+    return result;
+}
 
 static int counted_read(VoxGraphitePixelRegion const* views, int count)
 {
@@ -173,6 +185,30 @@ static int counted_read(VoxGraphitePixelRegion const* views, int count)
     int result = s_backend_read(views, count);
     s_successful_reads += result != 0;
     return result;
+}
+
+static void direct_read_regions(GpuCanvasApi const* api)
+{
+    if (!api->read_direct) return; // Compatibility with an older bridge.
+    int rectangles[] {0, 0, 13, 11, 0, 0, 13, 11, 32, 24, 17, 9, 32, 24, 17, 9};
+    assert(api->begin(rectangles, 2));
+    std::vector<uint8_t> source(80 * 12, 0x5a), expected = source, actual = source;
+    for (size_t i = 0; i < source.size(); ++i) source[i] = uint8_t(i * 19);
+    assert(api->upload(0, source.data(), 80));
+    assert(api->upload(1, source.data(), 80));
+    // Odd widths, source offsets, disjoint output regions and row padding.
+    VoxGraphitePixelRegion staged[] {{1, 2, 11, 7, 80, expected.data() + 4},
+        {2, 1, 13, 5, 80, expected.data() + 80 * 7}};
+    VoxGraphitePixelRegion direct[] {{1, 2, 11, 7, 80, actual.data() + 4},
+        {2, 1, 13, 5, 80, actual.data() + 80 * 7}};
+    assert(api->read(staged, 2));
+    // An invalid later region must not leave an earlier one partially written.
+    direct[1].pitch = 1;
+    assert(!api->read_direct(direct, 2));
+    assert(std::all_of(actual.begin(), actual.end(), [](uint8_t v) { return v == 0x5a; }));
+    direct[1].pitch = 80;
+    assert(api->read_direct(direct, 2) && actual == expected);
+    api->end();
 }
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
@@ -224,6 +260,7 @@ int main()
     unsetenv("VOX_DISABLE_GPU_CANVAS");
     assert(gpu_canvas_api());
     auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
+    direct_read_regions(api);
     s_backend_read = api->read;
     api->read = counted_read;
     auto reference = render(false);
@@ -233,6 +270,18 @@ int main()
     auto retry_candidate = render(true);
     assert(s_read_calls == 5 && s_successful_reads == 4 && !s_fail_reads);
     assert(retry_candidate == candidate);
+    if (api->read_direct) {
+        s_backend_direct_read = api->read_direct;
+        api->read_direct = counted_direct_read;
+        setenv("VOX_GPU_CANVAS_DIRECT_READBACK", "1", 1);
+        auto direct_candidate = render(true);
+        assert(s_direct_reads == 2 && direct_candidate == candidate);
+        s_fail_direct_read = true;
+        auto fallback_candidate = render(true);
+        assert(s_direct_reads == 2 && fallback_candidate == candidate);
+        s_fail_direct_read = false;
+        unsetenv("VOX_GPU_CANVAS_DIRECT_READBACK");
+    }
     // All three approved leaves draw on the GPU; the CPU fill between them
     // forces one readback and a fresh upload before the border. The final
     // readback happens when the frame ends.

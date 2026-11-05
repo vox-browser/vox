@@ -51,6 +51,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_shadow) draw_shadow = nullptr;
     decltype(&vox_graphite_canvas_draw_shape) draw_shape = nullptr;
     decltype(&vox_graphite_canvas_read) read = nullptr;
+    decltype(&vox_graphite_canvas_read_direct) read_direct = nullptr;
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
@@ -71,6 +72,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_shadow = reinterpret_cast<decltype(value.draw_shadow)>(dlsym(library, "vox_graphite_canvas_draw_shadow"));
         value.draw_shape = reinterpret_cast<decltype(value.draw_shape)>(dlsym(library, "vox_graphite_canvas_draw_shape"));
         value.read = reinterpret_cast<decltype(value.read)>(dlsym(library, "vox_graphite_canvas_read"));
+        value.read_direct = reinterpret_cast<decltype(value.read_direct)>(dlsym(library, "vox_graphite_canvas_read_direct"));
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
@@ -132,6 +134,30 @@ void gpu_canvas_flush()
         auto* api = gpu_canvas_api();
         auto* data = static_cast<uint8_t*>(CGBitmapContextGetData(frame->destination));
         size_t pitch = CGBitmapContextGetBytesPerRow(frame->destination);
+        if (api && api->read_direct && data && !gpu_canvas_verify()
+            && std::getenv("VOX_GPU_CANVAS_DIRECT_READBACK") && pitch <= INT_MAX) {
+            std::vector<VoxGraphitePixelRegion> direct;
+            for (size_t index = 0; index < frame->rects.size(); ++index) {
+                auto const& rect = frame->rects[index];
+                auto const& tile = frame->tiles[index];
+                direct.push_back({rect.left() - tile.left(), rect.top() - tile.top(), rect.width(),
+                    rect.height(), int(pitch), data + size_t(rect.top()) * pitch + size_t(rect.left()) * 4});
+            }
+            CGContextFlush(frame->destination);
+            if (api->read_direct(direct.data(), int(direct.size()))) {
+                if (gpu_canvas_diagnostics())
+                    std::fprintf(stderr, "VOX_GPU_CANVAS_DIRECT_READBACK rects=%zu\n", direct.size());
+                for (auto const& view : direct)
+                    for (int row = 0; row < view.height; ++row) {
+                        auto* pixels = view.pixels + size_t(row) * view.pitch;
+                        swap_red_blue_pixels(pixels, pixels, size_t(view.width));
+                    }
+                frame->cpu_stale = false;
+                frame->gpu_valid = false;
+                ++frame->flushes;
+                return;
+            }
+        }
         std::vector<std::vector<uint32_t>> pixels(frame->rects.size());
         std::vector<VoxGraphitePixelRegion> views;
         for (size_t index = 0; index < frame->rects.size(); ++index) {

@@ -255,6 +255,9 @@ int vox_graphite_canvas_draw_pixels(const uint8_t *bgra, int width, int height, 
 int vox_graphite_canvas_draw_picture(const uint8_t *bytes, size_t size,
     const float *device_bounds, const VoxGraphiteCanvasClip *clips, int clip_count, int msaa);
 int vox_graphite_canvas_read(const VoxGraphitePixelRegion *views, int count);
+// Shared Metal targets only. Writes BGRA directly into caller-owned rows after
+// one GPU wait. Failure leaves every destination unchanged.
+int vox_graphite_canvas_read_direct(const VoxGraphitePixelRegion *views, int count);
 void vox_graphite_canvas_end(void);
 #ifdef __cplusplus
 }
