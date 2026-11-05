@@ -9,6 +9,15 @@ the C compile differs:
 - **parallel**: the default build, 33 units with `-flto=thin` and the same
   inline threshold at link time.
 
+These prealloc builds optimize C directly; they do not pass V's literal
+`-prod` option. Since November 6, `sh build-prod-browser.sh --prod` requests
+literal V `-prod`, one C unit, and no custom C `-O3` or inlining options.
+The allocator and native rendering backends retain their usual settings.
+Its receipt records `c_compile.v_prod: true`. Automatic commit requests retain
+this explicit selection; `sh build-prod-browser.sh` explicitly restores the
+default build configuration. This additional mode changes V generation as
+well as C compilation, so the historical table below does not measure it.
+
 The main Vox process's own retired instructions at `capture_document_encoded`
 (fresh launch through encoded document PNG), median of 7 alternating pairs:
 
