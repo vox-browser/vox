@@ -1,0 +1,94 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-keyframe-scalar-production-20261105-evidence.zip",
+      "sha256": "3c21bd1fc610653e98fb631669ef7137f8ca9c58dc9c17e9e5d2f63c413f9c98",
+      "bytes": 1382066
+    },
+    {
+      "path": "docs/performance/chatgpt-keyframe-scalar-20261105-evidence.zip",
+      "sha256": "edab32ee8ee3f341228f5bdbac41ff2b43837e6ba038c4fbe9c55b26a37fd0ee",
+      "bytes": 6699858
+    },
+    {
+      "path": "docs/performance/chatgpt-keyframe-scalar-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "ce5250a8824ee21eb221a68884f8c891869be93e7e4e0b661542cef9e56a7ceb",
+      "bytes": 1334373
+    },
+    {
+      "path": "docs/performance/chatgpt-keyframe-scalar-production-r1-matched-20261105-evidence.zip",
+      "sha256": "2277fb1b0e2ed22ef55823a61681b4f2cba1606a91807adb795f6a5605cf6a06",
+      "bytes": 2740581
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "02254e17c54bcee6b71f8f4d2d0f813f156cad0eade69c344c41863b6e864aa4",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available keyframe computation and available scalar-shortcut function disassembly",
+      "proof_sha256": "826abe5ab83a5bccba01e5d289ff3e7ccbda497545f6d73dbb2efe06eba0598d",
+      "source_hashes": {
+        "css/keyframe_property_union.v": "6966cfa9fc755e23d4786a4483e5e21a7a932e96f7185086748c17903545c571",
+        "css/keyframe_scalar_values.v": "245a0d9e8e0746021ebadfd0b59a6cbebaac4a8efe7f5d3d284188c4bd31b6d5"
+      },
+      "qualification": "Resolved scalar and constant-transform keyframe values bypass font/viewport computation context; scalar opacity retains its ordinary clamp/conversion. Relative lengths, calculations and special algorithms retain full context and dependency tracking. Specified-value substitutions, CSS-wide keywords and logical aliases resolve before the shortcut. The same property-union algorithm runs in both variants. Separate execution markers establish eligibility; no source-proof timing receives performance credit."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-keyframe-scalar-production-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 55230464,
+    "elapsed_seconds": 0.399170833,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "css/keyframe_property_union.v": "6966cfa9fc755e23d4786a4483e5e21a7a932e96f7185086748c17903545c571",
+    "css/keyframe_scalar_values.v": "245a0d9e8e0746021ebadfd0b59a6cbebaac4a8efe7f5d3d284188c4bd31b6d5",
+    "css/keyframe_scalar_values_test.v": "0191a6cc108d7807c4d7fe59891ba09bfe1e6362b80741a0f3f669c57d828392"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 488,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 30749907172,
+    "min_brave_lower": 17783527320,
+    "numerator": 614998143440,
+    "denominator": 337887019080,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Matched ranges overlap; the candidate point median is 0.238796% higher, so no whole-page savings or broad checkpoint is credited. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. Component benefits and the inherited-color regression remain retained. The 5%-below-Brave target remains unmet.",
+  "verification_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-keyframe-scalar-production-20261105-r1/verify.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 152518656,
+    "elapsed_seconds": 0.287880166,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "verification_source": "import hashlib,json,pathlib,statistics,zipfile\nroot=pathlib.Path.cwd();out=pathlib.Path(__file__).resolve().parent;perf=root/'docs/performance'\ndef read(p):return json.loads(p.read_text())\ndef sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()\nreport=read(perf/'chatgpt-keyframe-scalar-production-20261105.json')\nassert report['complete']and report['diagnostic_valid']and report['matched_valid']and report['browser_captures']==12\nassert report['page_instruction_credit']==report['broad_cadence_after']==0 and not report['broad_required']\nfocus=read(perf/'chatgpt-keyframe-scalar-20261105.json')\nassert focus['focused']['passed']and focus['focused_test_function_executions']==488\nassert all(sha(root/p)==h for p,h in focus['focused']['source_after'].items())\ndiagnostic=read(perf/'chatgpt-keyframe-scalar-production-r1-diagnostic-20261105.json')\nmatched=read(perf/'chatgpt-keyframe-scalar-production-r1-matched-20261105.json')\nfor data,count in [(diagnostic,4),(matched,8)]:\n    assert data['complete']and data['identity_stable']and len(data['observations'])==count\n    assert all(r['exit']==r['kernel_exit_status']==0 and r['content_exact']and r['pixels_exact']for r in data['observations'])\nassert sorted((r['variant'],r['paths']['keyframe_scalar'])for r in diagnostic['observations']if r['engine']=='vox')==[('candidate',True),('control',False)]\ncontrols=[r['launch_instruction_interval']for r in matched['observations']if r['variant']=='control']\ncandidates=[r['launch_instruction_interval']for r in matched['observations']if r['variant']=='candidate']\nassert statistics.median(r['upper']for r in controls)==report['control_median']\nassert statistics.median(r['upper']for r in candidates)==report['candidate_median']\nassert min(r['lower']for r in controls)-max(r['upper']for r in candidates)==report['conservative_page_instruction_reduction']==-658399115\nfor name in ['run-guard.json','finalize-guard.json']:\n    guard=read(out/name);assert guard['reason']=='completed'and guard['child_exit_code']==0\narchives=[]\nfor entry in report['evidence']:\n    p=root/entry['path'];assert sha(p)==entry['sha256']and p.stat().st_size==entry['bytes']\n    with zipfile.ZipFile(p)as z:\n        assert z.testzip()is None\n        index=json.loads(z.read('index.json'))\n        for name,e in index['entries'].items():\n            b=z.read('blobs/'+e['sha256']);assert len(b)==e['bytes']and hashlib.sha256(b).hexdigest()==e['sha256'],name\n        for name in z.namelist():\n            if name.startswith('blobs/'):assert hashlib.sha256(z.read(name)).hexdigest()==name[6:]\n    archives.append(entry)\nproof=[p for p in (out/'diagnostic').rglob('keyframe-scalar-source-proof.json')]\n# The source proof is journaled directly into the diagnostic archive; inspect\n# its authenticated entry without requiring a duplicated physical file.\nsource_proofs=[]\nwith zipfile.ZipFile(root/diagnostic['evidence']['path'])as z:\n    index=json.loads(z.read('index.json'))\n    for name,e in index['entries'].items():\n        if name.endswith('keyframe-scalar-source-proof.json'):\n            p=json.loads(z.read('blobs/'+e['sha256']));assert p['executable_sha256']==report['production']['executable_sha256'];source_proofs.append(p)\nassert len(source_proofs)==1\nobserved_vox=max(r['launch_instruction_interval']['upper']for r in matched['observations']if r['engine']=='vox')\nobserved_brave=min(r['launch_instruction_interval']['lower']for r in matched['observations']if r['engine']=='brave')\nassert 20*observed_vox>19*observed_brave\nresult=dict(complete=True,archives=archives,source_proofs=source_proofs,finalization_guard=read(out/'finalize-guard.json'),\n    source_hashes=focus['focused']['source_after'],valid_render_captures=12,focused_test_function_executions=488,\n    page_instruction_credit=0,broad_cadence_after=0,acceptance=False,\n    observed_brave_target=dict(max_vox_upper=observed_vox,min_brave_lower=observed_brave,numerator=20*observed_vox,denominator=19*observed_brave,passed=False,minimum_pairs=7,actual_matched_pairs=4),\n    qualification='All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Matched ranges overlap; the candidate point median is 0.238796% higher, so no whole-page savings or broad checkpoint is credited. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. Component benefits and the inherited-color regression remain retained. The 5%-below-Brave target remains unmet.')\n(perf/'chatgpt-keyframe-scalar-production-verification-20261105.json').write_text(json.dumps(result,indent=2)+'\\n')\nprint(json.dumps(dict(complete=True,archives_verified=len(archives),valid_captures=12,focused_calls=488,page_credit=0)))\n",
+  "verification_source_sha256": "9e986a48ed7403ee7577d109dc266e255b88437258aef879f9a2c5bec681020b",
+  "verification_log": "{\"complete\": true, \"archives_verified\": 4, \"valid_captures\": 12, \"focused_calls\": 488, \"page_credit\": 0}\n{\"command\": [\"python3\", \"Build/chatgpt-keyframe-scalar-production-20261105-r1/verify.py\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 152518656, \"elapsed_seconds\": 0.287880166, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+}

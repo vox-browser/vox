@@ -3501,6 +3501,53 @@ the subsequent cohort waits for the successful compile. The
 [focused/component receipt](performance/chatgpt-keyframe-scalar-20261105.json)
 authenticates every command, guard, raw count, generated runner and source.
 It verifies the archived generated C before removing 61,837,680 duplicate bytes.
-These component results receive no whole-page credit. Production eligibility
-and matched comparison are pending; the broad cadence remains zero and the
+These component results receive no whole-page credit. The production comparison
+below completes validation; the broad cadence remains zero and the
 5%-below-Brave target remains unmet.
+
+### Context-free keyframes: production comparison (2026-11-05)
+
+The latest completed 33-unit production bundle contains the exact final sources
+at its recorded `099584b70` head. Executable SHA-256 is
+`02254e17c54bcee6b71f8f4d2d0f813f156cad0eade69c344c41863b6e864aa4`.
+A nonblocking shared publication lease pins that executable and its native
+inputs throughout four diagnostic and eight unprofiled captures. Candidate-only
+execution markers establish that ChatGPT uses the shortcut. Every capture
+passes bootstrap, the complete content/button audit, kernel/browser exits and
+the unchanged pixel reference. The original single SOCKS capture and author
+scripts are retained.
+
+The matched order is control/candidate/candidate/control, each paired with a
+fresh Brave reference. Scope remains exclusive-coalition creation through
+encoded document PNG, including startup/window setup, with fresh private
+profiles/caches, 1024×768 viewport, scale 2 and an unfocused five-second settle.
+OS filesystem/shader caches remain warm; GPU and outside-coalition services
+are excluded.
+
+| Unprofiled observed instructions | Control | Candidate |
+| --- | ---: | ---: |
+| First observation | 30,356,841,053 | 30,749,907,172 |
+| Second observation | 30,091,508,057 | 29,842,790,436 |
+| Median | 30,224,174,555 | 30,296,348,804 |
+
+The candidate median is **0.239% higher**, with overlapping ranges. The
+conservative separation is negative, -658,399,115 instructions, so no page
+reduction is credited and no broad checkpoint is triggered. Controls complete
+477 frame checkpoints each; candidates complete 476 and 489. One-minute host
+load declines from 6.38 to 4.14 on 18 CPUs. These counts are retained without
+normalizing the instruction endpoint by frame count or dropping the outlier.
+
+The highest Vox observation divided by the lowest Brave lower bound is 1.7291,
+far above the requested 0.95. Four pairs also remain below the seven-pair
+acceptance minimum. The 5%-below-Brave target remains unmet.
+
+The outer guard and controller exit zero over 110.69 seconds, peaking at
+1,727,545,344 sampled RSS bytes with 44 adopted process identities and no
+adoption error. Finalization and independent verification also exit zero.
+The [production receipt](performance/chatgpt-keyframe-scalar-production-20261105.json)
+links every raw observation, command, PNG, audit, source proof and guard.
+The [verification receipt](performance/chatgpt-keyframe-scalar-production-verification-20261105.json)
+authenticates all four archives, 488 focused calls, 12 valid captures, source
+hashes, branch selection, exact median/separation arithmetic and the failing
+integer Brave gate. Whole-page credit and broad cadence remain zero. No live
+site, isolated rendering-time or scrolling improvement is claimed.
