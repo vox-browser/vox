@@ -1,0 +1,83 @@
+{
+  "complete": true,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-calculated-export-production-20261105-evidence.zip",
+      "sha256": "3370b1a5a59d414c9ea329e2418f494e68e070dc171608ebc83348030d973b73",
+      "bytes": 1361507
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-20261105-evidence.zip",
+      "sha256": "0204be5cb47b8adf86e3329a5ae5a6b9ad6b358bc4a4df127270e1408dd88d09",
+      "bytes": 28736314
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-development-20261105.zip",
+      "sha256": "f5f8e4fc91c0e70a31ae8d88a29824acd5d7fb57e196d8ae5fe2672132445b0b",
+      "bytes": 26524
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "fb8dd64f6523d29b310759f5a6089bda5c1ffd1f3d9cce98755b40eee368c0e6",
+      "bytes": 1322678
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-production-r1-matched-20261105-evidence.zip",
+      "sha256": "42ea1db9f8fd395df00aea30feda23780b8b0138e14c464d29ca17a3be48d086",
+      "bytes": 2698057
+    }
+  ],
+  "source_proofs": [
+    {
+      "executable_sha256": "988088f68706ab0abf9b602f06ee2b433bb31b902f5afd362334b9e041a0fa57",
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "proof_kind": "Completed parallel receipt with stable aggregate build-input hashes, exact owned-source blobs at its recorded Git head, and raw available property-parser and value-export function disassembly",
+      "proof_sha256": "0e0e533306df8588bafc4f87473b024f2a85233fe6dac17b655c8b32ede2eb93",
+      "source_hashes": {
+        "css/value_parse_export.v": "8bcfd173ea8ac55f0a3c69697bf545794da14ba1b9954ea2debd4ba3ec92a997",
+        "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d"
+      },
+      "qualification": "A bounded allocation-free scan accepts only closed numeric calculation trees. The exporter rebuilds each boxed variant and child array, clones strings, serialization and accepted-type-range maps, and copies inline numeric type and context fields into caller storage. Unsupported leaves and saturated inspections retain the original reparse. Control retains reparsing for all calculated values. No retained cache or new owner. Separate execution markers establish eligibility; no source-proof timing credit."
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-calculated-export-production-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 243154944,
+    "elapsed_seconds": 0.5427212920000001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "source_hashes": {
+    "css/value_parse_export.v": "8bcfd173ea8ac55f0a3c69697bf545794da14ba1b9954ea2debd4ba3ec92a997",
+    "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+    "css/calculated_value_export_test.v": "c3afc4bd80333f996b94decb4bb595dd226fad81e1babf3eb6f6b554f80237cf",
+    "css/value_parse_export_test.v": "a8264ebf2ee6ec56e042128181cbfd2bc27fd3ef8cf8a53658d8baa6ec25a3ef"
+  },
+  "valid_render_captures": 12,
+  "focused_test_function_executions": 640,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "observed_brave_target": {
+    "max_vox_upper": 30565709827,
+    "min_brave_lower": 17103240957,
+    "numerator": 611314196540,
+    "denominator": 324961578183,
+    "passed": false,
+    "minimum_pairs": 7,
+    "actual_matched_pairs": 4
+  },
+  "qualification": "All content/pixel/exit/input gates pass and the separate diagnostic verifies candidate-only execution. Matched ranges overlap and the candidate median is higher; no whole-page savings or broad checkpoint is credited. Counts are the observed exclusive-coalition launch-through-encoded-PNG workflow. Four pairs are diagnostic only. The component gain, dependent-fallback regression and two rejected development checks remain retained. The 5%-below-Brave target remains unmet."
+}

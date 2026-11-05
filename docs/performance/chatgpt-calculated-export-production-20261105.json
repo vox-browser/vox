@@ -1,0 +1,423 @@
+{
+  "version": 1,
+  "complete": true,
+  "status": "complete",
+  "recorded_unix": 1793910841.010931,
+  "implementation_commits": [
+    "3d2562f6f"
+  ],
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "988088f68706ab0abf9b602f06ee2b433bb31b902f5afd362334b9e041a0fa57",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "902301d100a7b91029d8b7a339984e66afe787d417db42c75705988101907f32",
+      "dirty": true,
+      "head": "ec04bb475bb717ca490de0c4d41219b73480b506",
+      "repository_sha256": "584029ff7b3e312c4bb064a5fd954fb62dd808326cbf2cebb993b9009b28ecc5"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "ec04bb475bb717ca490de0c4d41219b73480b506",
+      "id": "54c67dca586a474a822dc9a0481c9f80"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "902301d100a7b91029d8b7a339984e66afe787d417db42c75705988101907f32",
+      "dirty": true,
+      "head": "ec04bb475bb717ca490de0c4d41219b73480b506",
+      "repository_sha256": "584029ff7b3e312c4bb064a5fd954fb62dd808326cbf2cebb993b9009b28ecc5"
+    }
+  },
+  "controller": {
+    "path": "docs/performance/chatgpt-calculated-export-production-r1-controller-20261105.json",
+    "sha256": "6150af64f606255286c681ed955f0901b61045427d2f36d415d5996615ddded4",
+    "bytes": 3324
+  },
+  "diagnostic": {
+    "path": "docs/performance/chatgpt-calculated-export-production-r1-diagnostic-20261105.json",
+    "sha256": "846146b1609f7a9996a73c1dc661d6ac4543c2d3d1df0eb257217145e3e59a40",
+    "bytes": 1617816
+  },
+  "matched": {
+    "path": "docs/performance/chatgpt-calculated-export-production-r1-matched-20261105.json",
+    "sha256": "a2f6585a0798673a8ca35a607c491b3b727aa2418742d4727292693eb8da88c5",
+    "bytes": 2592758
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-calculated-export-production-20261105-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "71805": "Thu Nov  5 23:29:53 2026    ",
+      "71808": "Thu Nov  5 23:29:53 2026    ",
+      "72176": "Thu Nov  5 23:30:01 2026    ",
+      "72178": "Thu Nov  5 23:30:01 2026    ",
+      "72183": "Thu Nov  5 23:30:01 2026    ",
+      "72184": "Thu Nov  5 23:30:01 2026    ",
+      "72186": "Thu Nov  5 23:30:01 2026    ",
+      "72489": "Thu Nov  5 23:30:10 2026    ",
+      "72492": "Thu Nov  5 23:30:10 2026    ",
+      "72498": "Thu Nov  5 23:30:10 2026    ",
+      "72499": "Thu Nov  5 23:30:10 2026    ",
+      "72501": "Thu Nov  5 23:30:10 2026    ",
+      "72749": "Thu Nov  5 23:30:20 2026    ",
+      "72751": "Thu Nov  5 23:30:20 2026    ",
+      "73223": "Thu Nov  5 23:30:34 2026    ",
+      "73226": "Thu Nov  5 23:30:34 2026    ",
+      "73509": "Thu Nov  5 23:30:43 2026    ",
+      "73511": "Thu Nov  5 23:30:43 2026    ",
+      "73514": "Thu Nov  5 23:30:43 2026    ",
+      "73515": "Thu Nov  5 23:30:43 2026    ",
+      "73516": "Thu Nov  5 23:30:43 2026    ",
+      "73606": "Thu Nov  5 23:30:52 2026    ",
+      "73608": "Thu Nov  5 23:30:52 2026    ",
+      "73611": "Thu Nov  5 23:30:52 2026    ",
+      "73612": "Thu Nov  5 23:30:52 2026    ",
+      "73614": "Thu Nov  5 23:30:52 2026    ",
+      "73790": "Thu Nov  5 23:31:01 2026    ",
+      "73792": "Thu Nov  5 23:31:01 2026    ",
+      "74143": "Thu Nov  5 23:31:09 2026    ",
+      "74146": "Thu Nov  5 23:31:09 2026    ",
+      "74423": "Thu Nov  5 23:31:17 2026    ",
+      "74430": "Thu Nov  5 23:31:17 2026    ",
+      "74434": "Thu Nov  5 23:31:17 2026    ",
+      "74435": "Thu Nov  5 23:31:17 2026    ",
+      "74436": "Thu Nov  5 23:31:17 2026    ",
+      "74599": "Thu Nov  5 23:31:26 2026    ",
+      "74603": "Thu Nov  5 23:31:26 2026    ",
+      "74606": "Thu Nov  5 23:31:26 2026    ",
+      "74607": "Thu Nov  5 23:31:26 2026    ",
+      "74610": "Thu Nov  5 23:31:26 2026    ",
+      "74783": "Thu Nov  5 23:31:35 2026    ",
+      "74786": "Thu Nov  5 23:31:35 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1702363136,
+    "elapsed_seconds": 115.373476458,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "diagnostic_path_observations": [
+    {
+      "variant": "candidate",
+      "paths": {
+        "calculated_export": true
+      }
+    },
+    {
+      "variant": "control",
+      "paths": {
+        "calculated_export": false
+      }
+    }
+  ],
+  "matched_observations": [
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30565709827,
+        "upper": 30565709827
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          28.06298828125,
+          12.5234375,
+          10.7548828125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          26.6962890625,
+          12.498046875,
+          10.755859375
+        ]
+      },
+      "frame_checkpoints": 456
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 18049692286,
+        "upper": 18051111558
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          24.71826171875,
+          12.32373046875,
+          10.7041015625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          23.13916015625,
+          12.20166015625,
+          10.67041015625
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 17103240957,
+        "upper": 17149881325
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          23.13916015625,
+          12.20166015625,
+          10.67041015625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          20.28271484375,
+          11.9482421875,
+          10.59765625
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30414734040,
+        "upper": 30414734040
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          20.28271484375,
+          11.9482421875,
+          10.59765625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          19.138671875,
+          11.84912109375,
+          10.5703125
+        ]
+      },
+      "frame_checkpoints": 465
+    },
+    {
+      "engine": "vox",
+      "variant": "candidate",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 30539363129,
+        "upper": 30539363129
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          18.00634765625,
+          11.7353515625,
+          10.53759765625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          16.80419921875,
+          11.58984375,
+          10.4931640625
+        ]
+      },
+      "frame_checkpoints": 463
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 17890643395,
+        "upper": 17933609127
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          16.80419921875,
+          11.58984375,
+          10.4931640625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          15.35107421875,
+          11.45361328125,
+          10.4580078125
+        ]
+      }
+    },
+    {
+      "engine": "brave",
+      "variant": "reference",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 18384639366,
+        "upper": 18398607160
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          15.35107421875,
+          11.45361328125,
+          10.4580078125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          14.2333984375,
+          11.33984375,
+          10.4287109375
+        ]
+      }
+    },
+    {
+      "engine": "vox",
+      "variant": "control",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "launch_instruction_interval": {
+        "lower": 29572954030,
+        "upper": 29572954030
+      },
+      "content_exact": true,
+      "pixels_exact": true,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          14.2333984375,
+          11.33984375,
+          10.4287109375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          13.41357421875,
+          11.2177734375,
+          10.390625
+        ]
+      },
+      "frame_checkpoints": 473
+    }
+  ],
+  "diagnostic_valid": true,
+  "matched_valid": true,
+  "broad_required": false,
+  "broad": null,
+  "focused_component": {
+    "path": "docs/performance/chatgpt-calculated-export-20261105.json",
+    "sha256": "e616c8041534f4d42455685b70511ba7854fc06de65d8e70363f1f45938e5342",
+    "bytes": 70862
+  },
+  "focused_selected_passed": true,
+  "overall_css_suite_pass_claimed": false,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "browser_captures": 12,
+  "manual_build_requests": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-calculated-export-production-20261105-evidence.zip",
+      "sha256": "3370b1a5a59d414c9ea329e2418f494e68e070dc171608ebc83348030d973b73",
+      "bytes": 1361507
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-20261105-evidence.zip",
+      "sha256": "0204be5cb47b8adf86e3329a5ae5a6b9ad6b358bc4a4df127270e1408dd88d09",
+      "bytes": 28736314
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-development-20261105.zip",
+      "sha256": "f5f8e4fc91c0e70a31ae8d88a29824acd5d7fb57e196d8ae5fe2672132445b0b",
+      "bytes": 26524
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-production-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "fb8dd64f6523d29b310759f5a6089bda5c1ffd1f3d9cce98755b40eee368c0e6",
+      "bytes": 1322678
+    },
+    {
+      "path": "docs/performance/chatgpt-calculated-export-production-r1-matched-20261105-evidence.zip",
+      "sha256": "42ea1db9f8fd395df00aea30feda23780b8b0138e14c464d29ca17a3be48d086",
+      "bytes": 2698057
+    }
+  ],
+  "qualification": "The latest completed canonical 33-unit bundle is pinned by a nonblocking shared publication lease across separate path diagnostics and matched unprofiled captures. Stable aggregate build-input hashes, exact owned-source Git blobs and available raw parser/export disassembly establish identity. Closed calculated values are copied from the completed grammar parse into caller storage, rebuilding all boxed tree payloads, vectors, strings, serialization and range maps. Inline numeric type/context fields are copied. Unsupported/saturated graphs retain reparsing, and control retains reparsing for all calculated values. There is no additional retained cache or owner. All 640 selected focused function executions pass across candidate/control, GC/no-GC, poisoned preallocation and ASan/UBSan. The two rejected development checks and the dependent-fallback component regression remain retained. The C O3 single-unit unprofiled component includes complete property parsing, internal workspaces, outer batches and output/tree/context comparisons, with poisoning disabled. It differs from the parallel browser and supplies no whole-page credit. Original frozen SOCKS fixture, author scripts, references, private profiles/caches, 1024x768 viewport, scale 2, unfocused five-second settle and exclusive-coalition creation-through-encoded-PNG scope remain unchanged. OS filesystem/shader caches are retained; GPU execution and outside-coalition services are excluded. Four pairs supply two observations per variant, below seven-pair Brave acceptance. Host load and frame checkpoints qualify attribution. No live-site, isolated rendering or scrolling claim.",
+  "inspected_build_attempts": [],
+  "control": [
+    {
+      "lower": 30565709827,
+      "upper": 30565709827
+    },
+    {
+      "lower": 29572954030,
+      "upper": 29572954030
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 30414734040,
+      "upper": 30414734040
+    },
+    {
+      "lower": 30539363129,
+      "upper": 30539363129
+    }
+  ],
+  "control_median": 30069331928.5,
+  "candidate_median": 30477048584.5,
+  "observed_median_reduction_percent": -1.3559218973320863,
+  "conservative_page_instruction_reduction": -966409099
+}

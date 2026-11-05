@@ -3944,3 +3944,61 @@ authenticates all attempts, source revisions, commands, guards, generated runner
 and raw counts in verified content-addressed archives. It preserves 242,570,562
 generated C bytes before removing redundant Build outputs. Whole-page credit and
 the broad cadence remain zero; the 5%-below-Brave goal remains unmet.
+
+
+### Closed calculated-value export: production comparison (2026-11-05)
+
+The published parallel production bundle contains `3d2562f6f` at recorded source
+head `ec04bb475bb717ca490de0c4d41219b73480b506`. Its executable SHA-256 is
+`988088f68706ab0abf9b602f06ee2b433bb31b902f5afd362334b9e041a0fa57`, with 33
+C compilation units. A nonblocking shared publication lease pins this executable,
+its native libraries, tools, fixture and unchanged pixel references throughout.
+No additional production build or page download is requested.
+
+Four separate diagnostic captures verify the candidate-only closed-tree export
+marker; the reparse control does not emit it. Eight subsequent unprofiled
+captures make four alternating Vox/Brave pairs with the control/candidate order
+control/candidate/candidate/control. All 12 captures pass script bootstrap, full
+content and button identity, unchanged per-engine exact pixel references and
+normal browser/kernel exit checks. Cross-browser pixel equality is not claimed.
+
+The original SOCKS archive and author scripts remain unchanged. This is the
+fresh-launch exclusive-coalition interval through completed document PNG capture,
+including startup, native window/target setup, the unfocused five-second settle
+and encoded PNG delivery, with the existing per-engine audit/teardown endpoints.
+The viewport is 1024 by 768 CSS pixels at backing scale two; each process uses a
+fresh private profile and cache. OS filesystem/shader caches remain retained;
+GPU execution and services outside the owned coalition remain excluded. This is
+a frozen-page diagnostic, not a live-site or isolated rendering-time result.
+
+| Unprofiled Vox observation | Reparse control instructions | Export candidate instructions |
+| --- | ---: | ---: |
+| First | 30,565,709,827 | 30,414,734,040 |
+| Second | 29,572,954,030 | 30,539,363,129 |
+| Median | 30,069,331,928.5 | 30,477,048,584.5 |
+
+The candidate median is **1.3559% higher**. Observed ranges overlap substantially:
+the highest candidate exceeds the lowest control by 966,409,099 instructions.
+Conservative separation is therefore **-966,409,099**; whole-page credit remains
+zero and no 5,000,000-instruction broad checkpoint is due. The component gains
+and dependent-fallback regression above remain valid component observations.
+No attempt is excluded or repeated to improve the result.
+
+Controls complete 456 and 473 frame checkpoints; candidates complete 465 and
+463. Counts are not normalized by frame count. One-minute host load falls from
+about 28.1 to 13.4 on 18 CPUs during the matched cohort, limiting attribution of
+the point difference. The highest Vox upper bound divided by the lowest Brave
+lower bound is 1.7871, far above the requested 0.95. Four pairs also remain below
+the seven-pair acceptance requirement. The **5%-below-Brave target remains unmet**.
+
+The controller and memory guard exit zero over 115.37 seconds, peak at
+1,702,363,136 sampled RSS bytes and adopt 42 process identities without an
+adoption error. The publication lease is released. Finalization and independent
+verification exit zero. The
+[production receipt](performance/chatgpt-calculated-export-production-20261105.json)
+and [verification receipt](performance/chatgpt-calculated-export-production-verification-20261105.json)
+authenticate five archives, 640 focused test calls, both rejected development
+attempts, all component scenes, 12 valid captures, source/control proof, original
+PNGs, audits, raw counters and exact comparison arithmetic. Whole-page credit
+and the broad cadence remain zero. No live-site or scrolling improvement is
+claimed.
