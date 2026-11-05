@@ -39,6 +39,13 @@ The opt-in browser adapters and differential tools now live on canonical Vox
 `7377e0384`; the original worktree and its historical results remain intact.
 Build and test from `/Users/alex/code/vox2`.
 
+The V renderer commit is pushed and verified on the PR. The canonical Vox push
+was rejected as non-fast-forward: `origin/master` at `868e16b99` has three
+commits absent locally, while the shared local history has hundreds absent
+remotely. The tested Vox integration, tooling and report commits remain local.
+Reconciling those histories requires a decision consistent with the repository's
+linear-history and no-rewrite rules; no force push, merge or rebase was attempted.
+
 The upstream implementation is V branch `gg-skia-parity`, PR
 [vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `ff4cd6dc66`.
 `V_BIN=~/code/v-gg/v sh build-prod-browser.sh` selects that compiler. The build
