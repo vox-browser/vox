@@ -992,10 +992,17 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	// identity across unrelated style updates while its font inputs and owning
 	// font environment remain unchanged; loading/display transitions advance
 	// that environment and must continue to invalidate geometry.
+	// Resolving an expired old cache would erase the fallback faces used by
+	// its existing geometry. Compare the same snapshot as a font-only refresh,
+	// even when an earlier metric query already resolved the replacement.
+	old_font_list := if old_style.font_input_refresh_snapshot_ != unsafe { nil } {
+		old_style.font_input_refresh_snapshot_
+	} else { mutable_old_style.computed_font_list(font_computer) }
 	reused_font_cache := mutable_new_style.reuse_unchanged_font_cache(old_style, font_computer)
-	old_font_list := mutable_old_style.computed_font_list(font_computer)
 	new_font_list := mutable_new_style.computed_font_list(font_computer)
-	if !reused_font_cache && !old_font_list.equals(new_font_list) {
+	reused_geometry_fonts := reused_font_cache
+		&& voidptr(old_font_list) == voidptr(new_font_list)
+	if !reused_geometry_fonts && !old_font_list.equals(new_font_list) {
 		invalidation.ensure_at_least(.relayout)
 	}
 	invalidation = required_invalidation_after_style_change_or(invalidation,
