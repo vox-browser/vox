@@ -430,19 +430,6 @@ fn (mut scan AnimationSampleReferenceScan) computed_references_arena_at_depth(co
 	// Density projections normally form a single derived snapshot. Retain an
 	// arena conservatively if a malformed or unusually deep chain appears.
 	if depth >= 8 { return true }
-	// The live and last-applied styles often share this exact owner. Nothing
-	// mutates styles during one inspection, so a complete clean root scan can
-	// be reused. Recursive projections keep the original depth-limit policy.
-	slot := if depth == 0 && scan.use_clean_computed {
-		animation_sample_computed_scan_slot(computed)
-	} else { -1 }
-	if slot >= 0 && scan.clean_computed[slot] == voidptr(computed) {
-		if animation_sample_computed_diagnostics
-			&& animation_sample_computed_scan_reported.compare_and_swap(false, true) {
-			eprintln('Vox animation retirement: reused clean computed style within inspection')
-		}
-		return false
-	}
 	// Fields materialized outside the snapshot, such as content and list
 	// markers, are rewritten by each resolve like the snapshot itself.
 	if retiring.struct_references_arena(voidptr(computed), int(sizeof(ComputedProperties))) {
@@ -516,7 +503,6 @@ fn (mut scan AnimationSampleReferenceScan) computed_references_arena_at_depth(co
 			return true
 		}
 	}
-	if slot >= 0 { scan.clean_computed[slot] = voidptr(computed) }
 	return false
 }
 
