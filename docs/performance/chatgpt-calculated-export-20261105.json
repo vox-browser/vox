@@ -1,0 +1,1673 @@
+{
+  "complete": true,
+  "implementation_commit": "3d2562f6f",
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/value_parse_export.v": "8bcfd173ea8ac55f0a3c69697bf545794da14ba1b9954ea2debd4ba3ec92a997",
+      "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+      "css/calculated_value_export_test.v": "c3afc4bd80333f996b94decb4bb595dd226fad81e1babf3eb6f6b554f80237cf",
+      "css/value_parse_export_test.v": "a8264ebf2ee6ec56e042128181cbfd2bc27fd3ef8cf8a53658d8baa6ec25a3ef"
+    },
+    "source_after": {
+      "css/value_parse_export.v": "8bcfd173ea8ac55f0a3c69697bf545794da14ba1b9954ea2debd4ba3ec92a997",
+      "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+      "css/calculated_value_export_test.v": "c3afc4bd80333f996b94decb4bb595dd226fad81e1babf3eb6f6b554f80237cf",
+      "css/value_parse_export_test.v": "a8264ebf2ee6ec56e042128181cbfd2bc27fd3ef8cf8a53658d8baa6ec25a3ef"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/value_parse_export_test.v,/Users/alex/code/vox2/css/value_token_workspace_test.v,/Users/alex/code/vox2/css/calc_term_fold_test.v,/Users/alex/code/vox2/css/calc_test.v,/Users/alex/code/vox2/css/calc_resolve_test.v,/Users/alex/code/vox2/css/syntax_calculation_context_test.v,/Users/alex/code/vox2/css/typed_om_math_test.v,/Users/alex/code/vox2/css/keyframe_substitution_test.v,/Users/alex/code/vox2/css/keyframe_scalar_values_test.v,/Users/alex/code/vox2/css/substitution_workspace_test.v,/Users/alex/code/vox2/css/substitution_context_storage_test.v,/Users/alex/code/vox2/css/substitution_buffer_test.v,/Users/alex/code/vox2/css/calculated_snapshot_ownership_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-prealloc",
+          "/Users/alex/code/vox2/css/calculated_value_export_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793909968.2816908,
+          "cpu_count": 18,
+          "load": [
+            11.2587890625,
+            11.19287109375,
+            10.677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909974.580152,
+          "load": [
+            10.99755859375,
+            11.1396484375,
+            10.66162109375
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793909974.586973,
+          "cpu_count": 18,
+          "load": [
+            10.99755859375,
+            11.1396484375,
+            10.66162109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909975.174859,
+          "load": [
+            10.99755859375,
+            11.1396484375,
+            10.66162109375
+          ]
+        }
+      },
+      {
+        "label": "run-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "1",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793909975.182577,
+          "cpu_count": 18,
+          "load": [
+            10.99755859375,
+            11.1396484375,
+            10.66162109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909975.507021,
+          "load": [
+            10.99755859375,
+            11.1396484375,
+            10.66162109375
+          ]
+        }
+      },
+      {
+        "label": "compile-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-file-list",
+          "/Users/alex/code/vox2/css/value_parse_export_test.v,/Users/alex/code/vox2/css/value_token_workspace_test.v,/Users/alex/code/vox2/css/calc_term_fold_test.v,/Users/alex/code/vox2/css/calc_test.v,/Users/alex/code/vox2/css/calc_resolve_test.v,/Users/alex/code/vox2/css/syntax_calculation_context_test.v,/Users/alex/code/vox2/css/typed_om_math_test.v,/Users/alex/code/vox2/css/keyframe_substitution_test.v,/Users/alex/code/vox2/css/keyframe_scalar_values_test.v,/Users/alex/code/vox2/css/substitution_workspace_test.v,/Users/alex/code/vox2/css/substitution_context_storage_test.v,/Users/alex/code/vox2/css/substitution_buffer_test.v,/Users/alex/code/vox2/css/calculated_snapshot_ownership_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-default",
+          "/Users/alex/code/vox2/css/calculated_value_export_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793909975.514806,
+          "cpu_count": 18,
+          "load": [
+            10.99755859375,
+            11.1396484375,
+            10.66162109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909981.9692988,
+          "load": [
+            10.91748046875,
+            11.12060546875,
+            10.65771484375
+          ]
+        }
+      },
+      {
+        "label": "run-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793909981.976863,
+          "cpu_count": 18,
+          "load": [
+            10.91748046875,
+            11.12060546875,
+            10.65771484375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909982.549336,
+          "load": [
+            10.5234375,
+            11.03515625,
+            10.63037109375
+          ]
+        }
+      },
+      {
+        "label": "run-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "1",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793909982.557077,
+          "cpu_count": 18,
+          "load": [
+            10.5234375,
+            11.03515625,
+            10.63037109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909982.770174,
+          "load": [
+            10.5234375,
+            11.03515625,
+            10.63037109375
+          ]
+        }
+      },
+      {
+        "label": "compile-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/value_parse_export_test.v,/Users/alex/code/vox2/css/value_token_workspace_test.v,/Users/alex/code/vox2/css/calc_term_fold_test.v,/Users/alex/code/vox2/css/calc_test.v,/Users/alex/code/vox2/css/calc_resolve_test.v,/Users/alex/code/vox2/css/syntax_calculation_context_test.v,/Users/alex/code/vox2/css/typed_om_math_test.v,/Users/alex/code/vox2/css/keyframe_substitution_test.v,/Users/alex/code/vox2/css/keyframe_scalar_values_test.v,/Users/alex/code/vox2/css/substitution_workspace_test.v,/Users/alex/code/vox2/css/substitution_context_storage_test.v,/Users/alex/code/vox2/css/substitution_buffer_test.v,/Users/alex/code/vox2/css/calculated_snapshot_ownership_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-none",
+          "/Users/alex/code/vox2/css/calculated_value_export_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793909982.777876,
+          "cpu_count": 18,
+          "load": [
+            10.5234375,
+            11.03515625,
+            10.63037109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909988.846447,
+          "load": [
+            10.0009765625,
+            10.91796875,
+            10.59130859375
+          ]
+        }
+      },
+      {
+        "label": "run-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793909988.853826,
+          "cpu_count": 18,
+          "load": [
+            10.0009765625,
+            10.91796875,
+            10.59130859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909989.308088,
+          "load": [
+            10.0009765625,
+            10.91796875,
+            10.59130859375
+          ]
+        }
+      },
+      {
+        "label": "run-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "1",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793909989.315727,
+          "cpu_count": 18,
+          "load": [
+            10.0009765625,
+            10.91796875,
+            10.59130859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793909989.5178912,
+          "load": [
+            10.0009765625,
+            10.91796875,
+            10.59130859375
+          ]
+        }
+      },
+      {
+        "label": "compile-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/compile-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/value_parse_export_test.v,/Users/alex/code/vox2/css/value_token_workspace_test.v,/Users/alex/code/vox2/css/calc_term_fold_test.v,/Users/alex/code/vox2/css/calc_test.v,/Users/alex/code/vox2/css/calc_resolve_test.v,/Users/alex/code/vox2/css/syntax_calculation_context_test.v,/Users/alex/code/vox2/css/typed_om_math_test.v,/Users/alex/code/vox2/css/keyframe_substitution_test.v,/Users/alex/code/vox2/css/keyframe_scalar_values_test.v,/Users/alex/code/vox2/css/substitution_workspace_test.v,/Users/alex/code/vox2/css/substitution_context_storage_test.v,/Users/alex/code/vox2/css/substitution_buffer_test.v,/Users/alex/code/vox2/css/calculated_snapshot_ownership_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-sanitized",
+          "/Users/alex/code/vox2/css/calculated_value_export_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793909989.525453,
+          "cpu_count": 18,
+          "load": [
+            10.0009765625,
+            10.91796875,
+            10.59130859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793910001.706589,
+          "load": [
+            9.21875,
+            10.72216796875,
+            10.525390625
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793910001.714392,
+          "cpu_count": 18,
+          "load": [
+            9.21875,
+            10.72216796875,
+            10.525390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793910002.7622552,
+          "load": [
+            8.880859375,
+            10.626953125,
+            10.49267578125
+          ]
+        }
+      },
+      {
+        "label": "run-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/run-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/checks-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "1",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793910002.769687,
+          "cpu_count": 18,
+          "load": [
+            8.880859375,
+            10.626953125,
+            10.49267578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793910003.4421482,
+          "load": [
+            8.880859375,
+            10.626953125,
+            10.49267578125
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "complete": true,
+    "inputs_before": {
+      "Build/chatgpt-calculated-export-20261105-r3/component": "4a62fd46a77ad77053530f6ac8022201ba614f138a40b7ccb2ede8dbc110baac",
+      "Build/chatgpt-calculated-export-20261105-r3/component_test.v": "6a8720fcfda8e30e1e88042352bfc0e9a70fda9d2879ee0ac4ee7d6e37994bcb",
+      "css/value_parse_export.v": "8bcfd173ea8ac55f0a3c69697bf545794da14ba1b9954ea2debd4ba3ec92a997",
+      "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+      "css/calculated_value_export_test.v": "c3afc4bd80333f996b94decb4bb595dd226fad81e1babf3eb6f6b554f80237cf",
+      "css/value_parse_export_test.v": "a8264ebf2ee6ec56e042128181cbfd2bc27fd3ef8cf8a53658d8baa6ec25a3ef"
+    },
+    "inputs_after": {
+      "Build/chatgpt-calculated-export-20261105-r3/component": "4a62fd46a77ad77053530f6ac8022201ba614f138a40b7ccb2ede8dbc110baac",
+      "Build/chatgpt-calculated-export-20261105-r3/component_test.v": "6a8720fcfda8e30e1e88042352bfc0e9a70fda9d2879ee0ac4ee7d6e37994bcb",
+      "css/value_parse_export.v": "8bcfd173ea8ac55f0a3c69697bf545794da14ba1b9954ea2debd4ba3ec92a997",
+      "css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+      "css/calculated_value_export_test.v": "c3afc4bd80333f996b94decb4bb595dd226fad81e1babf3eb6f6b554f80237cf",
+      "css/value_parse_export_test.v": "a8264ebf2ee6ec56e042128181cbfd2bc27fd3ef8cf8a53658d8baa6ec25a3ef"
+    },
+    "rows": [
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "1",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793910193.046761,
+          "cpu_count": 18,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793910193.9895098,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "unchanged-scalar",
+            "instructions": 94567755,
+            "iterations": 10000,
+            "checksum": 80000
+          },
+          {
+            "scene": "calculated-number",
+            "instructions": 339584339,
+            "iterations": 10000,
+            "checksum": 160000
+          },
+          {
+            "scene": "substituted-length-shape",
+            "instructions": 571496024,
+            "iterations": 10000,
+            "checksum": 400000
+          },
+          {
+            "scene": "mixed-units-function",
+            "instructions": 588959753,
+            "iterations": 10000,
+            "checksum": 380000
+          },
+          {
+            "scene": "calculated-ratio",
+            "instructions": 769171302,
+            "iterations": 10000,
+            "checksum": 680000
+          },
+          {
+            "scene": "dependent-fallback",
+            "instructions": 401586607,
+            "iterations": 10000,
+            "checksum": 540000
+          },
+          {
+            "scene": "wrapper-fallback",
+            "instructions": 359897227,
+            "iterations": 10000,
+            "checksum": 180000
+          },
+          {
+            "scene": "invalid",
+            "instructions": 153421512,
+            "iterations": 10000,
+            "checksum": 140000
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793910194.032083,
+          "cpu_count": 18,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793910194.4335701,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "unchanged-scalar",
+            "instructions": 94617386,
+            "iterations": 10000,
+            "checksum": 80000
+          },
+          {
+            "scene": "calculated-number",
+            "instructions": 230192522,
+            "iterations": 10000,
+            "checksum": 160000
+          },
+          {
+            "scene": "substituted-length-shape",
+            "instructions": 366575235,
+            "iterations": 10000,
+            "checksum": 400000
+          },
+          {
+            "scene": "mixed-units-function",
+            "instructions": 378022343,
+            "iterations": 10000,
+            "checksum": 380000
+          },
+          {
+            "scene": "calculated-ratio",
+            "instructions": 505724177,
+            "iterations": 10000,
+            "checksum": 680000
+          },
+          {
+            "scene": "dependent-fallback",
+            "instructions": 403219490,
+            "iterations": 10000,
+            "checksum": 540000
+          },
+          {
+            "scene": "wrapper-fallback",
+            "instructions": 359431155,
+            "iterations": 10000,
+            "checksum": 180000
+          },
+          {
+            "scene": "invalid",
+            "instructions": 152741176,
+            "iterations": 10000,
+            "checksum": 140000
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793910194.474997,
+          "cpu_count": 18,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793910194.875135,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "unchanged-scalar",
+            "instructions": 94709913,
+            "iterations": 10000,
+            "checksum": 80000
+          },
+          {
+            "scene": "calculated-number",
+            "instructions": 230850251,
+            "iterations": 10000,
+            "checksum": 160000
+          },
+          {
+            "scene": "substituted-length-shape",
+            "instructions": 366185092,
+            "iterations": 10000,
+            "checksum": 400000
+          },
+          {
+            "scene": "mixed-units-function",
+            "instructions": 377709418,
+            "iterations": 10000,
+            "checksum": 380000
+          },
+          {
+            "scene": "calculated-ratio",
+            "instructions": 505813347,
+            "iterations": 10000,
+            "checksum": 680000
+          },
+          {
+            "scene": "dependent-fallback",
+            "instructions": 403341470,
+            "iterations": 10000,
+            "checksum": 540000
+          },
+          {
+            "scene": "wrapper-fallback",
+            "instructions": 359896952,
+            "iterations": 10000,
+            "checksum": 180000
+          },
+          {
+            "scene": "invalid",
+            "instructions": 153444892,
+            "iterations": 10000,
+            "checksum": 140000
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": false,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "1",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": ""
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793910194.90891,
+          "cpu_count": 18,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793910195.3225448,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "unchanged-scalar",
+            "instructions": 96374845,
+            "iterations": 10000,
+            "checksum": 80000
+          },
+          {
+            "scene": "calculated-number",
+            "instructions": 339576877,
+            "iterations": 10000,
+            "checksum": 160000
+          },
+          {
+            "scene": "substituted-length-shape",
+            "instructions": 571609227,
+            "iterations": 10000,
+            "checksum": 400000
+          },
+          {
+            "scene": "mixed-units-function",
+            "instructions": 588256941,
+            "iterations": 10000,
+            "checksum": 380000
+          },
+          {
+            "scene": "calculated-ratio",
+            "instructions": 769269536,
+            "iterations": 10000,
+            "checksum": 680000
+          },
+          {
+            "scene": "dependent-fallback",
+            "instructions": 401329536,
+            "iterations": 10000,
+            "checksum": 540000
+          },
+          {
+            "scene": "wrapper-fallback",
+            "instructions": 359865091,
+            "iterations": 10000,
+            "checksum": 180000
+          },
+          {
+            "scene": "invalid",
+            "instructions": 153428981,
+            "iterations": 10000,
+            "checksum": 140000
+          }
+        ]
+      },
+      {
+        "variant": "candidate",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-4-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-4-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793910195.360796,
+          "cpu_count": 18,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793910195.780446,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "unchanged-scalar",
+            "instructions": 94530370,
+            "iterations": 10000,
+            "checksum": 80000
+          },
+          {
+            "scene": "calculated-number",
+            "instructions": 230883465,
+            "iterations": 10000,
+            "checksum": 160000
+          },
+          {
+            "scene": "substituted-length-shape",
+            "instructions": 366614198,
+            "iterations": 10000,
+            "checksum": 400000
+          },
+          {
+            "scene": "mixed-units-function",
+            "instructions": 377832285,
+            "iterations": 10000,
+            "checksum": 380000
+          },
+          {
+            "scene": "calculated-ratio",
+            "instructions": 505821769,
+            "iterations": 10000,
+            "checksum": 680000
+          },
+          {
+            "scene": "dependent-fallback",
+            "instructions": 403260396,
+            "iterations": 10000,
+            "checksum": 540000
+          },
+          {
+            "scene": "wrapper-fallback",
+            "instructions": 359988175,
+            "iterations": 10000,
+            "checksum": 180000
+          },
+          {
+            "scene": "invalid",
+            "instructions": 153428895,
+            "iterations": 10000,
+            "checksum": 140000
+          }
+        ]
+      },
+      {
+        "variant": "control",
+        "diagnostic": true,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-5-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component-5-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-calculated-export-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "",
+          "VOX_RETAIN_CALCULATED_VALUE_REPARSE": "1",
+          "VOX_CALCULATED_VALUE_EXPORT_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793910195.82351,
+          "cpu_count": 18,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793910196.2324538,
+          "load": [
+            13.90087890625,
+            11.1328125,
+            10.70068359375
+          ]
+        },
+        "observations": [
+          {
+            "scene": "unchanged-scalar",
+            "instructions": 94556947,
+            "iterations": 10000,
+            "checksum": 80000
+          },
+          {
+            "scene": "calculated-number",
+            "instructions": 339034197,
+            "iterations": 10000,
+            "checksum": 160000
+          },
+          {
+            "scene": "substituted-length-shape",
+            "instructions": 571584573,
+            "iterations": 10000,
+            "checksum": 400000
+          },
+          {
+            "scene": "mixed-units-function",
+            "instructions": 588263715,
+            "iterations": 10000,
+            "checksum": 380000
+          },
+          {
+            "scene": "calculated-ratio",
+            "instructions": 769418352,
+            "iterations": 10000,
+            "checksum": 680000
+          },
+          {
+            "scene": "dependent-fallback",
+            "instructions": 401416435,
+            "iterations": 10000,
+            "checksum": 540000
+          },
+          {
+            "scene": "wrapper-fallback",
+            "instructions": 359477739,
+            "iterations": 10000,
+            "checksum": 180000
+          },
+          {
+            "scene": "invalid",
+            "instructions": 152741383,
+            "iterations": 10000,
+            "checksum": 140000
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "unchanged-scalar": {
+        "control": [
+          94567755,
+          96374845
+        ],
+        "candidate": [
+          94617386,
+          94709913
+        ],
+        "control_median": 95471300.0,
+        "candidate_median": 94663649.5,
+        "reduction_percent": 0.8459615612231111,
+        "conservative_component_reduction": -142158,
+        "checksum": 80000,
+        "iterations": 10000
+      },
+      "calculated-number": {
+        "control": [
+          339584339,
+          339576877
+        ],
+        "candidate": [
+          230192522,
+          230850251
+        ],
+        "control_median": 339580608.0,
+        "candidate_median": 230521386.5,
+        "reduction_percent": 32.11585671582283,
+        "conservative_component_reduction": 108726626,
+        "checksum": 160000,
+        "iterations": 10000
+      },
+      "substituted-length-shape": {
+        "control": [
+          571496024,
+          571609227
+        ],
+        "candidate": [
+          366575235,
+          366185092
+        ],
+        "control_median": 571552625.5,
+        "candidate_median": 366380163.5,
+        "reduction_percent": 35.897387720074434,
+        "conservative_component_reduction": 204920789,
+        "checksum": 400000,
+        "iterations": 10000
+      },
+      "mixed-units-function": {
+        "control": [
+          588959753,
+          588256941
+        ],
+        "candidate": [
+          378022343,
+          377709418
+        ],
+        "control_median": 588608347.0,
+        "candidate_median": 377865880.5,
+        "reduction_percent": 35.80351307862102,
+        "conservative_component_reduction": 210234598,
+        "checksum": 380000,
+        "iterations": 10000
+      },
+      "calculated-ratio": {
+        "control": [
+          769171302,
+          769269536
+        ],
+        "candidate": [
+          505724177,
+          505813347
+        ],
+        "control_median": 769220419.0,
+        "candidate_median": 505768762.0,
+        "reduction_percent": 34.249176242941104,
+        "conservative_component_reduction": 263357955,
+        "checksum": 680000,
+        "iterations": 10000
+      },
+      "dependent-fallback": {
+        "control": [
+          401586607,
+          401329536
+        ],
+        "candidate": [
+          403219490,
+          403341470
+        ],
+        "control_median": 401458071.5,
+        "candidate_median": 403280480.0,
+        "reduction_percent": -0.45394740556362184,
+        "conservative_component_reduction": -2011934,
+        "checksum": 540000,
+        "iterations": 10000
+      },
+      "wrapper-fallback": {
+        "control": [
+          359897227,
+          359865091
+        ],
+        "candidate": [
+          359431155,
+          359896952
+        ],
+        "control_median": 359881159.0,
+        "candidate_median": 359664053.5,
+        "reduction_percent": 0.060326998113285506,
+        "conservative_component_reduction": -31861,
+        "checksum": 180000,
+        "iterations": 10000
+      },
+      "invalid": {
+        "control": [
+          153421512,
+          153428981
+        ],
+        "candidate": [
+          152741176,
+          153444892
+        ],
+        "control_median": 153425246.5,
+        "candidate_median": 153093034.0,
+        "reduction_percent": 0.21653053039090278,
+        "conservative_component_reduction": -23380,
+        "checksum": 140000,
+        "iterations": 10000
+      }
+    },
+    "qualification": "Unprofiled current-process instruction intervals include complete property parsing from source text, equality and normal/resolved serialization checks, plus exact calculation-tree/type/context comparisons where present. Setup and teardown are excluded; reference trees, serialized text and checksums are identical in every observation. Canonical V sources compile with production source conditions, C O3, explicit runtime overlay and preallocation without poisoning. One hundred published property values share each outer scratch workspace; the real tokenizer and typed-property workspaces remain inside every property parse, and all one hundred workspace retirements per scene remain inside the measured interval; this component executable is a single C unit and does not represent the parallel production browser. Four matched control/candidate/candidate/control observations retain every result, followed by separate path diagnostics. No whole-page, live-site, scrolling or Brave credit."
+  },
+  "runner": {
+    "complete": true,
+    "runners": {
+      "checks-default.c": {
+        "sha256": "ea584ed14f4c32c9093d37c4e3ea628c37faf8e39d450f1847a05944001e2abb",
+        "tests": [
+          "test_calculated_export_owns_all_numeric_tree_payloads_strings_and_context_maps",
+          "test_calculated_export_keeps_numeric_bits_and_every_unit_kind",
+          "test_calculated_export_parser_matches_reparse_in_lists_ratios_and_value_contexts",
+          "test_calculated_export_rejects_dependent_leaves_and_nested_unsupported_values_without_allocating",
+          "test_calculated_export_inspection_bounds_depth_node_count_and_malformed_trees",
+          "test_property_value_export_owns_every_supported_scalar_payload",
+          "test_property_value_export_owns_nested_lists_ratios_shorthands_and_rgb_names",
+          "test_property_value_export_rejects_unsupported_descendants_before_publication",
+          "test_property_value_workspace_preserves_supported_parser_graphs_and_serialization",
+          "test_property_value_workspace_fallback_preserves_unsupported_graphs_and_decoded_input",
+          "test_property_value_workspace_keeps_lazy_initial_values_in_their_persistent_owner",
+          "test_property_value_workspace_retires_failed_large_grammar_candidates",
+          "test_component_text_ownership_updates_the_original_token_payloads",
+          "test_property_values_own_decoded_strings_and_typed_geometry_after_token_retirement",
+          "test_unresolved_property_values_own_nested_components_and_original_token_text",
+          "test_svg_and_document_property_parses_keep_their_context_after_token_retirement",
+          "test_property_parse_retires_large_token_input_instead_of_retaining_its_vectors",
+          "test_cached_property_values_survive_token_retirement_and_cache_reset",
+          "test_calc_term_fold_preserves_exact_trees_for_all_short_operator_sequences",
+          "test_calc_term_fold_keeps_signed_zero_nonfinite_and_nested_operands",
+          "test_calc_term_fold_retains_operator_grammar_and_nonassociative_results",
+          "test_calc_term_fold_result_survives_temporary_workspace_retirement",
+          "test_calc_lengths_parse",
+          "test_calc_length_percentage_mix",
+          "test_min_max_clamp",
+          "test_nested_and_precedence",
+          "test_calc_serialization_sorting_and_non_finite_results",
+          "test_calc_number_and_angle",
+          "test_type_invalid_calc_is_rejected",
+          "test_calc_round_trips",
+          "test_nested_calc_operator_nodes_are_parenthesised",
+          "test_non_finite_leaf_serialization_is_type_specific",
+          "test_sign_folds_any_numeric_leaf",
+          "test_mod_rem_and_log_require_the_same_argument_type",
+          "test_numeric_root_is_clamped_and_censored_for_resolved_values",
+          "test_anchor_functions_are_typed_length_leaves_in_calculations",
+          "test_resolve_arithmetic",
+          "test_resolve_comparison_functions",
+          "test_comparison_functions_propagate_nan_before_top_level_censoring",
+          "test_resolve_stepped_functions",
+          "test_random_function_parsing_and_fixed_evaluation",
+          "test_random_function_value_sharing_and_validation",
+          "test_random_function_absolutization_reuses_the_upstream_cache_key",
+          "test_resolve_percentage_against_basis",
+          "test_percentage_from_literal_and_calculated_style_values",
+          "test_absolutized_uses_computation_context_and_preserves_typed_tree",
+          "test_grid_repeat_accepts_and_absolutizes_calculated_integer_counts",
+          "test_grid_tracks_accept_calculated_flex_values",
+          "test_resolve_numbers",
+          "test_property_calculation_context_and_top_level_range_clamping",
+          "test_value_parsing_context_stack_controls_nested_calculations",
+          "test_resolve_trig_and_constants",
+          "test_sign_and_round_preserve_negative_zero_like_upstream",
+          "test_compute_opacity_uses_the_retained_typed_value",
+          "test_length_percentage_syntax_sets_calculation_context",
+          "test_typed_om_math_builds_a_typed_calculation_tree_without_reparsing",
+          "test_typed_om_min_max_and_clamp_keep_typed_children",
+          "test_css_numeric_value_parse_reifies_the_translated_calculation_tree",
+          "test_css_numeric_value_parse_rejects_non_reifiable_math_nodes",
+          "test_keyframe_lengths_substitute_target_variables_before_computation",
+          "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+          "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+          "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+          "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+          "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+          "test_substitution_retires_large_intermediate_custom_property_tokens",
+          "test_substituted_strings_and_attribute_values_survive_workspace_retirement",
+          "test_property_resolution_keeps_enclosing_substitution_cycle_state",
+          "test_custom_function_lookup_keeps_lazy_document_caches_after_substitution",
+          "test_empty_substitution_contexts_allocate_no_custom_function_maps_and_remain_independent",
+          "test_declaration_span_keeps_boundaries_and_independent_storage",
+          "test_declaration_span_retains_failure_and_eof_behavior",
+          "test_declaration_span_rejects_invalid_nested_values_without_consuming_them",
+          "test_leaf_substitution_preserves_taint_and_has_independent_storage",
+          "test_nested_substitution_keeps_input_and_fallback_values",
+          "test_leaf_substitution_does_not_copy_spare_source_capacity",
+          "test_leaf_substitution_still_applies_and_releases_cycle_guards",
+          "test_leaf_substitution_retains_the_expansion_limit",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "inspection_body_sha256": "af44e31b148373ba7524184987810dadee4b97da6b7e101f6e67b5d560f29cfa"
+      },
+      "checks-sanitized.c": {
+        "sha256": "ce9ce695c49d1ec42a53b26d875665ec2b971f6c496279cf0aed84cfab854cb1",
+        "tests": [
+          "test_calculated_export_owns_all_numeric_tree_payloads_strings_and_context_maps",
+          "test_calculated_export_keeps_numeric_bits_and_every_unit_kind",
+          "test_calculated_export_parser_matches_reparse_in_lists_ratios_and_value_contexts",
+          "test_calculated_export_rejects_dependent_leaves_and_nested_unsupported_values_without_allocating",
+          "test_calculated_export_inspection_bounds_depth_node_count_and_malformed_trees",
+          "test_property_value_export_owns_every_supported_scalar_payload",
+          "test_property_value_export_owns_nested_lists_ratios_shorthands_and_rgb_names",
+          "test_property_value_export_rejects_unsupported_descendants_before_publication",
+          "test_property_value_workspace_preserves_supported_parser_graphs_and_serialization",
+          "test_property_value_workspace_fallback_preserves_unsupported_graphs_and_decoded_input",
+          "test_property_value_workspace_keeps_lazy_initial_values_in_their_persistent_owner",
+          "test_property_value_workspace_retires_failed_large_grammar_candidates",
+          "test_component_text_ownership_updates_the_original_token_payloads",
+          "test_property_values_own_decoded_strings_and_typed_geometry_after_token_retirement",
+          "test_unresolved_property_values_own_nested_components_and_original_token_text",
+          "test_svg_and_document_property_parses_keep_their_context_after_token_retirement",
+          "test_property_parse_retires_large_token_input_instead_of_retaining_its_vectors",
+          "test_cached_property_values_survive_token_retirement_and_cache_reset",
+          "test_calc_term_fold_preserves_exact_trees_for_all_short_operator_sequences",
+          "test_calc_term_fold_keeps_signed_zero_nonfinite_and_nested_operands",
+          "test_calc_term_fold_retains_operator_grammar_and_nonassociative_results",
+          "test_calc_term_fold_result_survives_temporary_workspace_retirement",
+          "test_calc_lengths_parse",
+          "test_calc_length_percentage_mix",
+          "test_min_max_clamp",
+          "test_nested_and_precedence",
+          "test_calc_serialization_sorting_and_non_finite_results",
+          "test_calc_number_and_angle",
+          "test_type_invalid_calc_is_rejected",
+          "test_calc_round_trips",
+          "test_nested_calc_operator_nodes_are_parenthesised",
+          "test_non_finite_leaf_serialization_is_type_specific",
+          "test_sign_folds_any_numeric_leaf",
+          "test_mod_rem_and_log_require_the_same_argument_type",
+          "test_numeric_root_is_clamped_and_censored_for_resolved_values",
+          "test_anchor_functions_are_typed_length_leaves_in_calculations",
+          "test_resolve_arithmetic",
+          "test_resolve_comparison_functions",
+          "test_comparison_functions_propagate_nan_before_top_level_censoring",
+          "test_resolve_stepped_functions",
+          "test_random_function_parsing_and_fixed_evaluation",
+          "test_random_function_value_sharing_and_validation",
+          "test_random_function_absolutization_reuses_the_upstream_cache_key",
+          "test_resolve_percentage_against_basis",
+          "test_percentage_from_literal_and_calculated_style_values",
+          "test_absolutized_uses_computation_context_and_preserves_typed_tree",
+          "test_grid_repeat_accepts_and_absolutizes_calculated_integer_counts",
+          "test_grid_tracks_accept_calculated_flex_values",
+          "test_resolve_numbers",
+          "test_property_calculation_context_and_top_level_range_clamping",
+          "test_value_parsing_context_stack_controls_nested_calculations",
+          "test_resolve_trig_and_constants",
+          "test_sign_and_round_preserve_negative_zero_like_upstream",
+          "test_compute_opacity_uses_the_retained_typed_value",
+          "test_length_percentage_syntax_sets_calculation_context",
+          "test_typed_om_math_builds_a_typed_calculation_tree_without_reparsing",
+          "test_typed_om_min_max_and_clamp_keep_typed_children",
+          "test_css_numeric_value_parse_reifies_the_translated_calculation_tree",
+          "test_css_numeric_value_parse_rejects_non_reifiable_math_nodes",
+          "test_keyframe_lengths_substitute_target_variables_before_computation",
+          "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+          "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+          "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+          "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+          "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+          "test_substitution_retires_large_intermediate_custom_property_tokens",
+          "test_substituted_strings_and_attribute_values_survive_workspace_retirement",
+          "test_property_resolution_keeps_enclosing_substitution_cycle_state",
+          "test_custom_function_lookup_keeps_lazy_document_caches_after_substitution",
+          "test_empty_substitution_contexts_allocate_no_custom_function_maps_and_remain_independent",
+          "test_declaration_span_keeps_boundaries_and_independent_storage",
+          "test_declaration_span_retains_failure_and_eof_behavior",
+          "test_declaration_span_rejects_invalid_nested_values_without_consuming_them",
+          "test_leaf_substitution_preserves_taint_and_has_independent_storage",
+          "test_nested_substitution_keeps_input_and_fallback_values",
+          "test_leaf_substitution_does_not_copy_spare_source_capacity",
+          "test_leaf_substitution_still_applies_and_releases_cycle_guards",
+          "test_leaf_substitution_retains_the_expansion_limit",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "inspection_body_sha256": "af44e31b148373ba7524184987810dadee4b97da6b7e101f6e67b5d560f29cfa"
+      },
+      "checks-prealloc.c": {
+        "sha256": "ce9ce695c49d1ec42a53b26d875665ec2b971f6c496279cf0aed84cfab854cb1",
+        "tests": [
+          "test_calculated_export_owns_all_numeric_tree_payloads_strings_and_context_maps",
+          "test_calculated_export_keeps_numeric_bits_and_every_unit_kind",
+          "test_calculated_export_parser_matches_reparse_in_lists_ratios_and_value_contexts",
+          "test_calculated_export_rejects_dependent_leaves_and_nested_unsupported_values_without_allocating",
+          "test_calculated_export_inspection_bounds_depth_node_count_and_malformed_trees",
+          "test_property_value_export_owns_every_supported_scalar_payload",
+          "test_property_value_export_owns_nested_lists_ratios_shorthands_and_rgb_names",
+          "test_property_value_export_rejects_unsupported_descendants_before_publication",
+          "test_property_value_workspace_preserves_supported_parser_graphs_and_serialization",
+          "test_property_value_workspace_fallback_preserves_unsupported_graphs_and_decoded_input",
+          "test_property_value_workspace_keeps_lazy_initial_values_in_their_persistent_owner",
+          "test_property_value_workspace_retires_failed_large_grammar_candidates",
+          "test_component_text_ownership_updates_the_original_token_payloads",
+          "test_property_values_own_decoded_strings_and_typed_geometry_after_token_retirement",
+          "test_unresolved_property_values_own_nested_components_and_original_token_text",
+          "test_svg_and_document_property_parses_keep_their_context_after_token_retirement",
+          "test_property_parse_retires_large_token_input_instead_of_retaining_its_vectors",
+          "test_cached_property_values_survive_token_retirement_and_cache_reset",
+          "test_calc_term_fold_preserves_exact_trees_for_all_short_operator_sequences",
+          "test_calc_term_fold_keeps_signed_zero_nonfinite_and_nested_operands",
+          "test_calc_term_fold_retains_operator_grammar_and_nonassociative_results",
+          "test_calc_term_fold_result_survives_temporary_workspace_retirement",
+          "test_calc_lengths_parse",
+          "test_calc_length_percentage_mix",
+          "test_min_max_clamp",
+          "test_nested_and_precedence",
+          "test_calc_serialization_sorting_and_non_finite_results",
+          "test_calc_number_and_angle",
+          "test_type_invalid_calc_is_rejected",
+          "test_calc_round_trips",
+          "test_nested_calc_operator_nodes_are_parenthesised",
+          "test_non_finite_leaf_serialization_is_type_specific",
+          "test_sign_folds_any_numeric_leaf",
+          "test_mod_rem_and_log_require_the_same_argument_type",
+          "test_numeric_root_is_clamped_and_censored_for_resolved_values",
+          "test_anchor_functions_are_typed_length_leaves_in_calculations",
+          "test_resolve_arithmetic",
+          "test_resolve_comparison_functions",
+          "test_comparison_functions_propagate_nan_before_top_level_censoring",
+          "test_resolve_stepped_functions",
+          "test_random_function_parsing_and_fixed_evaluation",
+          "test_random_function_value_sharing_and_validation",
+          "test_random_function_absolutization_reuses_the_upstream_cache_key",
+          "test_resolve_percentage_against_basis",
+          "test_percentage_from_literal_and_calculated_style_values",
+          "test_absolutized_uses_computation_context_and_preserves_typed_tree",
+          "test_grid_repeat_accepts_and_absolutizes_calculated_integer_counts",
+          "test_grid_tracks_accept_calculated_flex_values",
+          "test_resolve_numbers",
+          "test_property_calculation_context_and_top_level_range_clamping",
+          "test_value_parsing_context_stack_controls_nested_calculations",
+          "test_resolve_trig_and_constants",
+          "test_sign_and_round_preserve_negative_zero_like_upstream",
+          "test_compute_opacity_uses_the_retained_typed_value",
+          "test_length_percentage_syntax_sets_calculation_context",
+          "test_typed_om_math_builds_a_typed_calculation_tree_without_reparsing",
+          "test_typed_om_min_max_and_clamp_keep_typed_children",
+          "test_css_numeric_value_parse_reifies_the_translated_calculation_tree",
+          "test_css_numeric_value_parse_rejects_non_reifiable_math_nodes",
+          "test_keyframe_lengths_substitute_target_variables_before_computation",
+          "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+          "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+          "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+          "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+          "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+          "test_substitution_retires_large_intermediate_custom_property_tokens",
+          "test_substituted_strings_and_attribute_values_survive_workspace_retirement",
+          "test_property_resolution_keeps_enclosing_substitution_cycle_state",
+          "test_custom_function_lookup_keeps_lazy_document_caches_after_substitution",
+          "test_empty_substitution_contexts_allocate_no_custom_function_maps_and_remain_independent",
+          "test_declaration_span_keeps_boundaries_and_independent_storage",
+          "test_declaration_span_retains_failure_and_eof_behavior",
+          "test_declaration_span_rejects_invalid_nested_values_without_consuming_them",
+          "test_leaf_substitution_preserves_taint_and_has_independent_storage",
+          "test_nested_substitution_keeps_input_and_fallback_values",
+          "test_leaf_substitution_does_not_copy_spare_source_capacity",
+          "test_leaf_substitution_still_applies_and_releases_cycle_guards",
+          "test_leaf_substitution_retains_the_expansion_limit",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "inspection_body_sha256": "af44e31b148373ba7524184987810dadee4b97da6b7e101f6e67b5d560f29cfa"
+      },
+      "checks-none.c": {
+        "sha256": "c39ed476ba68810ee7ad90427cde4d74be738b71082f0b2430679bf51750e5ff",
+        "tests": [
+          "test_calculated_export_owns_all_numeric_tree_payloads_strings_and_context_maps",
+          "test_calculated_export_keeps_numeric_bits_and_every_unit_kind",
+          "test_calculated_export_parser_matches_reparse_in_lists_ratios_and_value_contexts",
+          "test_calculated_export_rejects_dependent_leaves_and_nested_unsupported_values_without_allocating",
+          "test_calculated_export_inspection_bounds_depth_node_count_and_malformed_trees",
+          "test_property_value_export_owns_every_supported_scalar_payload",
+          "test_property_value_export_owns_nested_lists_ratios_shorthands_and_rgb_names",
+          "test_property_value_export_rejects_unsupported_descendants_before_publication",
+          "test_property_value_workspace_preserves_supported_parser_graphs_and_serialization",
+          "test_property_value_workspace_fallback_preserves_unsupported_graphs_and_decoded_input",
+          "test_property_value_workspace_keeps_lazy_initial_values_in_their_persistent_owner",
+          "test_property_value_workspace_retires_failed_large_grammar_candidates",
+          "test_component_text_ownership_updates_the_original_token_payloads",
+          "test_property_values_own_decoded_strings_and_typed_geometry_after_token_retirement",
+          "test_unresolved_property_values_own_nested_components_and_original_token_text",
+          "test_svg_and_document_property_parses_keep_their_context_after_token_retirement",
+          "test_property_parse_retires_large_token_input_instead_of_retaining_its_vectors",
+          "test_cached_property_values_survive_token_retirement_and_cache_reset",
+          "test_calc_term_fold_preserves_exact_trees_for_all_short_operator_sequences",
+          "test_calc_term_fold_keeps_signed_zero_nonfinite_and_nested_operands",
+          "test_calc_term_fold_retains_operator_grammar_and_nonassociative_results",
+          "test_calc_term_fold_result_survives_temporary_workspace_retirement",
+          "test_calc_lengths_parse",
+          "test_calc_length_percentage_mix",
+          "test_min_max_clamp",
+          "test_nested_and_precedence",
+          "test_calc_serialization_sorting_and_non_finite_results",
+          "test_calc_number_and_angle",
+          "test_type_invalid_calc_is_rejected",
+          "test_calc_round_trips",
+          "test_nested_calc_operator_nodes_are_parenthesised",
+          "test_non_finite_leaf_serialization_is_type_specific",
+          "test_sign_folds_any_numeric_leaf",
+          "test_mod_rem_and_log_require_the_same_argument_type",
+          "test_numeric_root_is_clamped_and_censored_for_resolved_values",
+          "test_anchor_functions_are_typed_length_leaves_in_calculations",
+          "test_resolve_arithmetic",
+          "test_resolve_comparison_functions",
+          "test_comparison_functions_propagate_nan_before_top_level_censoring",
+          "test_resolve_stepped_functions",
+          "test_random_function_parsing_and_fixed_evaluation",
+          "test_random_function_value_sharing_and_validation",
+          "test_random_function_absolutization_reuses_the_upstream_cache_key",
+          "test_resolve_percentage_against_basis",
+          "test_percentage_from_literal_and_calculated_style_values",
+          "test_absolutized_uses_computation_context_and_preserves_typed_tree",
+          "test_grid_repeat_accepts_and_absolutizes_calculated_integer_counts",
+          "test_grid_tracks_accept_calculated_flex_values",
+          "test_resolve_numbers",
+          "test_property_calculation_context_and_top_level_range_clamping",
+          "test_value_parsing_context_stack_controls_nested_calculations",
+          "test_resolve_trig_and_constants",
+          "test_sign_and_round_preserve_negative_zero_like_upstream",
+          "test_compute_opacity_uses_the_retained_typed_value",
+          "test_length_percentage_syntax_sets_calculation_context",
+          "test_typed_om_math_builds_a_typed_calculation_tree_without_reparsing",
+          "test_typed_om_min_max_and_clamp_keep_typed_children",
+          "test_css_numeric_value_parse_reifies_the_translated_calculation_tree",
+          "test_css_numeric_value_parse_rejects_non_reifiable_math_nodes",
+          "test_keyframe_lengths_substitute_target_variables_before_computation",
+          "test_keyframe_scalar_shortcut_matches_full_computation_for_constant_values",
+          "test_keyframe_scalar_shortcut_rejects_contextual_and_untyped_values",
+          "test_keyframe_scalar_values_keep_substitution_keywords_logical_aliases_and_mutations",
+          "test_keyframe_scalar_values_preserve_contextual_dependency_tracking",
+          "test_keyframe_scalar_values_keep_native_ownership_after_temporary_lookup_retirement",
+          "test_substitution_retires_large_intermediate_custom_property_tokens",
+          "test_substituted_strings_and_attribute_values_survive_workspace_retirement",
+          "test_property_resolution_keeps_enclosing_substitution_cycle_state",
+          "test_custom_function_lookup_keeps_lazy_document_caches_after_substitution",
+          "test_empty_substitution_contexts_allocate_no_custom_function_maps_and_remain_independent",
+          "test_declaration_span_keeps_boundaries_and_independent_storage",
+          "test_declaration_span_retains_failure_and_eof_behavior",
+          "test_declaration_span_rejects_invalid_nested_values_without_consuming_them",
+          "test_leaf_substitution_preserves_taint_and_has_independent_storage",
+          "test_nested_substitution_keeps_input_and_fallback_values",
+          "test_leaf_substitution_does_not_copy_spare_source_capacity",
+          "test_leaf_substitution_still_applies_and_releases_cycle_guards",
+          "test_leaf_substitution_retains_the_expansion_limit",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "inspection_body_sha256": "af44e31b148373ba7524184987810dadee4b97da6b7e101f6e67b5d560f29cfa"
+      }
+    },
+    "test_calls_per_execution": 80,
+    "executions": 8,
+    "total_test_calls": 640
+  },
+  "rejected_attempts": [
+    {
+      "folder": "Build/chatgpt-calculated-export-20261105-r1",
+      "reason": "V rejects mutable primitive arguments; the inspection budget was replaced with a stack record before runtime testing."
+    },
+    {
+      "folder": "Build/chatgpt-calculated-export-20261105-r2",
+      "reason": "The new test incorrectly expected the rotate transformation wrapper to export as a calculated value; its existing fallback is retained and the fixture expectation corrected."
+    }
+  ],
+  "evidence": {
+    "path": "docs/performance/chatgpt-calculated-export-20261105-evidence.zip",
+    "sha256": "0204be5cb47b8adf86e3329a5ae5a6b9ad6b358bc4a4df127270e1408dd88d09",
+    "bytes": 28736314,
+    "entries": 81
+  },
+  "development": {
+    "path": "docs/performance/chatgpt-calculated-export-development-20261105.zip",
+    "sha256": "f5f8e4fc91c0e70a31ae8d88a29824acd5d7fb57e196d8ae5fe2672132445b0b",
+    "bytes": 26524
+  },
+  "removed_verified_generated_c": [
+    {
+      "path": "Build/chatgpt-calculated-export-20261105-r2/checks-prealloc.c",
+      "sha256": "1fb432f6dd9908ba6024a311906c28bb9b68f00c5b471e518628c8641160a1d1",
+      "bytes": 16376820
+    },
+    {
+      "path": "Build/chatgpt-calculated-export-20261105-r3/component.c",
+      "sha256": "4dd61c73f8cfdf1c7b14e93d925c2aaaa94fc39ae93317d1b9317864f4b7219d",
+      "bytes": 161152374
+    },
+    {
+      "path": "Build/chatgpt-calculated-export-20261105-r3/checks-default.c",
+      "sha256": "ea584ed14f4c32c9093d37c4e3ea628c37faf8e39d450f1847a05944001e2abb",
+      "bytes": 16148338
+    },
+    {
+      "path": "Build/chatgpt-calculated-export-20261105-r3/checks-sanitized.c",
+      "sha256": "ce9ce695c49d1ec42a53b26d875665ec2b971f6c496279cf0aed84cfab854cb1",
+      "bytes": 16377029
+    },
+    {
+      "path": "Build/chatgpt-calculated-export-20261105-r3/checks-prealloc.c",
+      "sha256": "ce9ce695c49d1ec42a53b26d875665ec2b971f6c496279cf0aed84cfab854cb1",
+      "bytes": 16377029
+    },
+    {
+      "path": "Build/chatgpt-calculated-export-20261105-r3/checks-none.c",
+      "sha256": "c39ed476ba68810ee7ad90427cde4d74be738b71082f0b2430679bf51750e5ff",
+      "bytes": 16138972
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_cadence": 0,
+  "qualification": "All final focused jobs pass, with conditional native arena checks outside preallocation. The bounded numeric-tree exporter clones every boxed variant, child vector, string, serialized text and range map into the caller owner; inline numeric types and context fields are copied. Unsupported leaves/parents and inspection saturation retain the original reparse, with no new retained cache or owner. The component measures complete property parsing from text with normal/resolved serialization and tree/context comparisons, no poisoning or profiler, and 100 published values per outer workspace. Real internal tokenizer/grammar scopes and every retirement remain in the interval. The single-C-unit C O3 component differs from the parallel production browser and receives no whole-page, Brave, live-site or scrolling credit. Rejected attempts and fallback regressions are retained; redundant generated C is deleted only after archive verification."
+}

@@ -3878,3 +3878,69 @@ authenticate all four archives, 544 focused test calls, both component workloads
 audits, actual exits and exact comparison arithmetic. Whole-page credit and the
 broad cadence remain zero. No live-site, isolated rendering-time or scrolling
 improvement is claimed.
+
+### Owned export of closed calculated values (2026-11-05)
+
+`3d2562f6f` avoids reparsing a calculated property after its temporary grammar
+workspace has already produced a complete numeric tree. The exporter rebuilds
+each numeric/sum/product/negate/invert/math-function payload and child vector,
+clones unit/function/strategy strings and serialization, clones the accepted
+range map, and copies inline NumericType and calculation-context fields.
+Relative units and percentages keep their original trees and are resolved later
+with the ordinary context. No new retained cache or allocation owner is added.
+
+An allocation-free scan accepts one-root trees up to 64 levels and 4,096 nodes.
+Empty/malformed, saturated, anchor, tree-counting and random graphs keep the
+original reparse path. Unsupported parent values, including transformations,
+retain their complete path even when a numeric child would be exportable.
+Parent graph validation finishes before publishing any caller-owned payload.
+
+All 12 final focused compile/runtime jobs pass. Generated runners authenticate
+80 test calls per candidate/control execution under ordinary GC, no-GC,
+poisoned preallocation and ASan/UBSan: 640 test-function executions. Five new
+cases cover every supported payload and numeric unit kind, signed zero and
+nonfinite bits, copied context maps, source mutation and arena retirement,
+normal/resolved serialization, lists and ratios, unsupported leaves, exact
+inspection limits and malformed trees. Existing parser, calculation, Typed OM,
+keyframe substitution and value-workspace ownership tests pass in the same
+selection. Generated C confirms a stack-local inspection budget. Native arena
+assertions remain conditional outside preallocation.
+
+Two development rejections are preserved separately. The first compile used a
+mutable primitive budget, which V rejects; it was replaced with a stack record.
+The next test incorrectly expected the `rotate` transformation wrapper to be
+eligible. Its existing fallback is retained and the expectation corrected.
+Neither rejected selection supplies performance credit.
+
+The unprofiled component measures complete property parsing from text, including
+its real tokenizer and grammar workspaces, equality, normal/resolved serialization
+and exact calculation-tree/type/context comparisons where present. The parsed
+value cache is disabled. One hundred published values share each outer workspace;
+all internal and outer retirements remain in the instruction interval. Poisoning
+and profiling are disabled. Two observations per variant use control/candidate/
+candidate/control order, followed by separate execution diagnostics. This C O3
+single-unit component uses production source conditions and the explicit runtime
+overlay, and differs from the parallel production browser.
+
+| Component median | Reparse control instructions | Candidate instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| unchanged-scalar | 95,471,300.0 | 94,663,649.5 | 0.8460% |
+| calculated-number | 339,580,608.0 | 230,521,386.5 | 32.1159% |
+| substituted-length-shape | 571,552,625.5 | 366,380,163.5 | 35.8974% |
+| mixed-units-function | 588,608,347.0 | 377,865,880.5 | 35.8035% |
+| calculated-ratio | 769,220,419.0 | 505,768,762.0 | 34.2492% |
+| dependent-fallback | 401,458,071.5 | 403,280,480.0 | -0.4539% |
+| wrapper-fallback | 359,881,159.0 | 359,664,053.5 | 0.0603% |
+| invalid | 153,425,246.5 | 153,093,034.0 | 0.2165% |
+
+Supported calculated values use 32.1–35.9% fewer observed component instructions.
+The dependent-leaf fallback regresses 0.4540% and is retained. Unchanged scalar,
+wrapper and invalid-input ranges overlap, so those point differences receive
+no savings credit. Complete browser attribution still requires a source-verified
+published bundle and an unprofiled matched page cohort.
+
+The [focused/component receipt](performance/chatgpt-calculated-export-20261105.json)
+authenticates all attempts, source revisions, commands, guards, generated runners
+and raw counts in verified content-addressed archives. It preserves 242,570,562
+generated C bytes before removing redundant Build outputs. Whole-page credit and
+the broad cadence remain zero; the 5%-below-Brave goal remains unmet.
