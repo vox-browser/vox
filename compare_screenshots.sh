@@ -189,13 +189,13 @@ for requested in "$@"; do
         sparse_args="$sparse_max_difference $sparse_outlier_pixels"
     fi
     if [ "$reference_relation" = mismatch ]; then
-        if ! "$v_compiler" run "$repo_dir/tools/pixel_diff.v" "$expected_path" "$actual_path" "$diff_path" mismatch; then
+        if ! "$v_compiler" -memory-limit 10G run "$repo_dir/tools/pixel_diff.v" "$expected_path" "$actual_path" "$diff_path" mismatch; then
             comparison_status=1
         fi
     else
         # Intentional word splitting expands the optional pair into two arguments.
         # shellcheck disable=SC2086
-        if ! "$v_compiler" run "$repo_dir/tools/pixel_diff.v" "$expected_path" "$actual_path" "$diff_path" "$max_difference" "$max_different_pixels" $sparse_args; then
+        if ! "$v_compiler" -memory-limit 10G run "$repo_dir/tools/pixel_diff.v" "$expected_path" "$actual_path" "$diff_path" "$max_difference" "$max_different_pixels" $sparse_args; then
             comparison_status=1
         fi
     fi
