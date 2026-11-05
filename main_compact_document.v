@@ -217,6 +217,7 @@ for(const name of ["querySelector","querySelectorAll","getElementById","getEleme
 for(const [name,action] of [["createElement","documentCreateElement"],["createTextNode","createText"],["createDocumentFragment","createFragment"]])Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(name!=="createDocumentFragment"&&!arguments.length)throw new TypeError(name+" requires an argument");return __queryElements(state.bridgeKey,action,name==="createDocumentFragment"?"":__compactDocumentString(value));},writable:true,enumerable:true,configurable:true});
 Object.defineProperty(Document.prototype,"createElementNS",{value:function createElementNS(namespace,name){const state=__compactDocumentState(this);if(arguments.length<2)throw new TypeError("createElementNS requires two arguments");namespace=namespace==null?null:__compactDocumentString(namespace);name=__compactDocumentString(name);const element=__queryElements(state.bridgeKey,"documentCreateElementNS",JSON.stringify({namespace:namespace,name:name}));__compactNodeState(element).tagName=name;return element;},writable:true,enumerable:true,configurable:true});
 function __compactDocumentElementBindings(object,state){
+ __compactHrefTextBindings(object,state);
  if(!state.ownerDocumentKey)return;
  object.appendChild=function appendChild(child){return __compactInsertNode(this,child,null,false);};
  object.insertBefore=function insertBefore(child,reference){return __compactInsertNode(this,child,reference,true);};

@@ -80,6 +80,7 @@ pub fn (mut host URLHost) install(mut runtime Runtime) ! {
 		host.close()
 		url_bindings_.delete(owner)
 	})
+	if !retain_href_url_objects { runtime.install_url_text_binding(accessors[0])! }
 }
 
 fn (host &URLHost) exception(reason IError) IError {

@@ -1874,6 +1874,7 @@ fn javascript_bootstrap() string {
 		'const __nativeImageGet = globalThis.__ladybirdImageGet;',
 		'const __listeners = Object.create(null);',
 		browserjs.compact_attribute_bootstrap(),
+		compact_href_text_bootstrap(),
 		browserjs.media_element_reflection_bootstrap(),
 		'const __canvases = Object.create(null);',
 		'const __elementRecords=new WeakMap(),__elementRecordGet=WeakMap.prototype.get,__elementRecordSet=WeakMap.prototype.set,__elementApply=Reflect.apply,__nativeElementQuery=globalThis.__ladybirdElementQuery;',
