@@ -1,0 +1,103 @@
+{
+  "started_unix": 1793857470.2697332,
+  "scope": "Use latest completed canonical bundle while the shared build lock is busy. No publication lease, copied bundle, queued build or waiting for compilation. Per-capture input fingerprints reject replacement.",
+  "rows": [
+    {
+      "phase": "diagnostic",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-production-20261105-r1/diagnostic/page.py"
+      ],
+      "exit": 0
+    },
+    {
+      "phase": "matched",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-production-20261105-r1/matched/page.py"
+      ],
+      "exit": 0
+    },
+    {
+      "phase": "broad",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-production-20261105-r1/broad.py"
+      ],
+      "exit": 0
+    }
+  ],
+  "status": "complete",
+  "production_before": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+      "dirty": true,
+      "head": "aee2979ffd90632c413742557edf2161fa7e35a5",
+      "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "0d153462c5aa62f4181f37435ccb33819f82e84f7027034404bf1d473e1f2982",
+      "dirty": true,
+      "head": "6930ae8be462118a9fd7b35adcb901fd49869a37",
+      "repository_sha256": "0e17bf5af805279f3ba21f6e2f5cac2fc4195706de4a57fe8b37dc07d2145b5a"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "7c32cd7468542b8ee330ab83b66854273ebed22d",
+      "id": "5135795dc0d94ffc9dde1e686a76cf78"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+      "dirty": true,
+      "head": "b7abaa7083013e740269a03c102776c05e7b6843",
+      "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+    }
+  },
+  "observed_conservative_page_reduction": 380719039,
+  "finished_unix": 1793857831.4134872,
+  "production_after": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+      "dirty": true,
+      "head": "aee2979ffd90632c413742557edf2161fa7e35a5",
+      "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "0d153462c5aa62f4181f37435ccb33819f82e84f7027034404bf1d473e1f2982",
+      "dirty": true,
+      "head": "6930ae8be462118a9fd7b35adcb901fd49869a37",
+      "repository_sha256": "0e17bf5af805279f3ba21f6e2f5cac2fc4195706de4a57fe8b37dc07d2145b5a"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "7c32cd7468542b8ee330ab83b66854273ebed22d",
+      "id": "5135795dc0d94ffc9dde1e686a76cf78"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+      "dirty": true,
+      "head": "b7abaa7083013e740269a03c102776c05e7b6843",
+      "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+    }
+  }
+}

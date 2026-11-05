@@ -1,0 +1,991 @@
+{
+  "version": 1,
+  "complete": true,
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "compiler_sha256": "c6f318c58763a1dd4027acaa50bc3f72f7dd6d8e0bad7c796329943770c62d43",
+    "source_before": {
+      "main_animation_frame.v": "ce868b5b8fe6befb96631033d6ff32479027f4f9b11fefc0129e79b4f301b2ab",
+      "main_animation_clock_test.v": "f8fcdad40a7a94a0a32e6022280bb737f53bf5066e377468c24b9493206ada76"
+    },
+    "source_after": {
+      "main_animation_frame.v": "ce868b5b8fe6befb96631033d6ff32479027f4f9b11fefc0129e79b4f301b2ab",
+      "main_animation_clock_test.v": "f8fcdad40a7a94a0a32e6022280bb737f53bf5066e377468c24b9493206ada76"
+    },
+    "rows": [
+      {
+        "label": "compile-regression-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/compile-regression-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/compile-regression-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-d",
+          "vox_ui2",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/main_animation_frame_test.v,/Users/alex/code/vox2/main_frame_paint_test.v,/Users/alex/code/vox2/main_initial_frame_layout_test.v,/Users/alex/code/vox2/main_image_frames_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-prealloc",
+          "/Users/alex/code/vox2/main_animation_clock_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857100.786379,
+          "cpu_count": 18,
+          "load": [
+            14.88720703125,
+            63.80126953125,
+            79.1982421875
+          ]
+        },
+        "host_after": {
+          "unix": 1793857230.234176,
+          "load": [
+            12.7060546875,
+            45.67724609375,
+            69.732421875
+          ]
+        }
+      },
+      {
+        "label": "run-regression-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "",
+          "VOX_ANIMATION_CLOCK_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857230.253428,
+          "cpu_count": 18,
+          "load": [
+            12.7060546875,
+            45.67724609375,
+            69.732421875
+          ]
+        },
+        "host_after": {
+          "unix": 1793857233.1769469,
+          "load": [
+            12.6494140625,
+            45.11767578125,
+            69.39404296875
+          ]
+        }
+      },
+      {
+        "label": "run-regression-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "1",
+          "VOX_ANIMATION_CLOCK_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857233.1932318,
+          "cpu_count": 18,
+          "load": [
+            12.6494140625,
+            45.11767578125,
+            69.39404296875
+          ]
+        },
+        "host_after": {
+          "unix": 1793857234.8402271,
+          "load": [
+            12.6494140625,
+            45.11767578125,
+            69.39404296875
+          ]
+        }
+      },
+      {
+        "label": "compile-regression-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/compile-regression-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/compile-regression-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-d",
+          "vox_ui2",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/main_animation_frame_test.v,/Users/alex/code/vox2/main_frame_paint_test.v,/Users/alex/code/vox2/main_initial_frame_layout_test.v,/Users/alex/code/vox2/main_image_frames_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-default",
+          "/Users/alex/code/vox2/main_animation_clock_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857234.858728,
+          "cpu_count": 18,
+          "load": [
+            12.6494140625,
+            45.11767578125,
+            69.39404296875
+          ]
+        },
+        "host_after": {
+          "unix": 1793857356.734956,
+          "load": [
+            11.046875,
+            34.00439453125,
+            61.7939453125
+          ]
+        }
+      },
+      {
+        "label": "run-regression-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "",
+          "VOX_ANIMATION_CLOCK_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857356.749755,
+          "cpu_count": 18,
+          "load": [
+            11.046875,
+            34.00439453125,
+            61.7939453125
+          ]
+        },
+        "host_after": {
+          "unix": 1793857357.588636,
+          "load": [
+            10.802734375,
+            33.572265625,
+            61.478515625
+          ]
+        }
+      },
+      {
+        "label": "run-regression-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "1",
+          "VOX_ANIMATION_CLOCK_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857357.601612,
+          "cpu_count": 18,
+          "load": [
+            10.802734375,
+            33.572265625,
+            61.478515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793857358.0702028,
+          "load": [
+            10.802734375,
+            33.572265625,
+            61.478515625
+          ]
+        }
+      },
+      {
+        "label": "compile-regression-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/compile-regression-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/compile-regression-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-d",
+          "vox_ui2",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/main_animation_frame_test.v,/Users/alex/code/vox2/main_frame_paint_test.v,/Users/alex/code/vox2/main_initial_frame_layout_test.v,/Users/alex/code/vox2/main_image_frames_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-none",
+          "/Users/alex/code/vox2/main_animation_clock_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857358.122287,
+          "cpu_count": 18,
+          "load": [
+            10.802734375,
+            33.572265625,
+            61.478515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793857436.489907,
+          "load": [
+            9.92822265625,
+            28.08837890625,
+            57.02978515625
+          ]
+        }
+      },
+      {
+        "label": "run-regression-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "",
+          "VOX_ANIMATION_CLOCK_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857436.508425,
+          "cpu_count": 18,
+          "load": [
+            9.92822265625,
+            28.08837890625,
+            57.02978515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793857437.59834,
+          "load": [
+            9.93359375,
+            27.78759765625,
+            56.75390625
+          ]
+        }
+      },
+      {
+        "label": "run-regression-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/run-regression-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "1",
+          "VOX_ANIMATION_CLOCK_DIAGNOSTICS": "1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857437.615456,
+          "cpu_count": 18,
+          "load": [
+            9.93359375,
+            27.78759765625,
+            56.75390625
+          ]
+        },
+        "host_after": {
+          "unix": 1793857438.165449,
+          "load": [
+            9.93359375,
+            27.78759765625,
+            56.75390625
+          ]
+        }
+      },
+      {
+        "label": "compile-focused-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/compile-focused-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/compile-focused-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-d",
+          "vox_ui2",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized",
+          "/Users/alex/code/vox2/main_animation_clock_test.v"
+        ],
+        "environment": {},
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857640.4016352,
+          "cpu_count": 18,
+          "load": [
+            36.388671875,
+            25.97265625,
+            49.54736328125
+          ]
+        },
+        "host_after": {
+          "unix": 1793857775.3094342,
+          "load": [
+            13.68212890625,
+            20.8310546875,
+            44.037109375
+          ]
+        }
+      },
+      {
+        "label": "run-focused-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857775.325762,
+          "cpu_count": 18,
+          "load": [
+            13.68212890625,
+            20.8310546875,
+            44.037109375
+          ]
+        },
+        "host_after": {
+          "unix": 1793857777.2838058,
+          "load": [
+            13.68212890625,
+            20.8310546875,
+            44.037109375
+          ]
+        }
+      },
+      {
+        "label": "run-focused-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857777.3015401,
+          "cpu_count": 18,
+          "load": [
+            13.68212890625,
+            20.8310546875,
+            44.037109375
+          ]
+        },
+        "host_after": {
+          "unix": 1793857778.54552,
+          "load": [
+            13.46728515625,
+            20.66748046875,
+            43.84326171875
+          ]
+        }
+      },
+      {
+        "label": "run-focused-sanitized-density-2-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-density-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-density-2-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "",
+          "LADYBIRD_SCREENSHOT_SCALE": "2",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857778.5627992,
+          "cpu_count": 18,
+          "load": [
+            13.46728515625,
+            20.66748046875,
+            43.84326171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793857779.945153,
+          "load": [
+            13.46728515625,
+            20.66748046875,
+            43.84326171875
+          ]
+        }
+      },
+      {
+        "label": "run-focused-sanitized-density-2-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-density-2-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/run-focused-sanitized-density-2-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_NATIVE_ANIMATION_TICK": "1",
+          "LADYBIRD_SCREENSHOT_SCALE": "2",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "exit": 0,
+        "host_before": {
+          "unix": 1793857779.962452,
+          "cpu_count": 18,
+          "load": [
+            13.46728515625,
+            20.66748046875,
+            43.84326171875
+          ]
+        },
+        "host_after": {
+          "unix": 1793857781.203414,
+          "load": [
+            13.46728515625,
+            20.66748046875,
+            43.84326171875
+          ]
+        }
+      }
+    ]
+  },
+  "guards": [
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-w",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-cflags",
+        "-O0",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-file-list",
+        "/Users/alex/code/vox2/main_animation_frame_test.v,/Users/alex/code/vox2/main_frame_paint_test.v,/Users/alex/code/vox2/main_initial_frame_layout_test.v,/Users/alex/code/vox2/main_image_frames_test.v",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-prealloc",
+        "/Users/alex/code/vox2/main_animation_clock_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5604409344,
+      "elapsed_seconds": 129.360847541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 136347648,
+      "elapsed_seconds": 2.8325154589999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 129564672,
+      "elapsed_seconds": 1.588550459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-w",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-cflags",
+        "-O0",
+        "-skip-running",
+        "-file-list",
+        "/Users/alex/code/vox2/main_animation_frame_test.v,/Users/alex/code/vox2/main_frame_paint_test.v,/Users/alex/code/vox2/main_initial_frame_layout_test.v,/Users/alex/code/vox2/main_image_frames_test.v",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-default",
+        "/Users/alex/code/vox2/main_animation_clock_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5369085952,
+      "elapsed_seconds": 121.81985999999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 143015936,
+      "elapsed_seconds": 0.794985375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 134725632,
+      "elapsed_seconds": 0.428958709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-w",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-cflags",
+        "-O0",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-file-list",
+        "/Users/alex/code/vox2/main_animation_frame_test.v,/Users/alex/code/vox2/main_frame_paint_test.v,/Users/alex/code/vox2/main_initial_frame_layout_test.v,/Users/alex/code/vox2/main_image_frames_test.v",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-none",
+        "/Users/alex/code/vox2/main_animation_clock_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5597593600,
+      "elapsed_seconds": 78.32090708300001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 215056384,
+      "elapsed_seconds": 1.014928542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r3/regression-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 179421184,
+      "elapsed_seconds": 0.481812,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-w",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-cflags",
+        "-O0",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-cflags",
+        "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+        "-ldflags",
+        "-fsanitize=address,undefined",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized",
+        "/Users/alex/code/vox2/main_animation_clock_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 9123495936,
+      "elapsed_seconds": 134.816244375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 623476736,
+      "elapsed_seconds": 1.908904625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 638828544,
+      "elapsed_seconds": 1.189588542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 606093312,
+      "elapsed_seconds": 1.329575333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-animation-clock-20261105-r4/focused-sanitized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 632799232,
+      "elapsed_seconds": 1.180877917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  ],
+  "focused_jobs": 14,
+  "case_executions": 168,
+  "change": "Let the HTML rendering task own the animation clock for a document attached to the BrowserApp page and its actual local root navigable. Native drawing no longer samples the same timelines again. Standalone or mismatched page/root documents keep native sampling; all paths retain future display wakes. Original native tick remains an opt-in control; separate once-only diagnostics verify the selected path.",
+  "verification": "Twenty-six real main-module frame/paint/font-deferral/image tests pass for both clock modes under poisoned production preallocation, ordinary GC and no GC. Three focused tests pass for both variants with ASan/UBSan at densities 1 and 2. Final generated C and executable hashes retained. Geometry assertions normalize internal device coordinates to DOM CSS pixels. All runtime jobs capped at 3 GiB, compiles at 12 GiB, V frontend at 10G.",
+  "retained_failures": [
+    "Initial compile used Result unwrapping for optional values and omitted the staged UI2 adapter path. Both corrected before runtime.",
+    "Initial grouped compile explicitly listed production sources already included by V, causing duplicate declarations. Corrected list includes only additional tests.",
+    "First grouped runtime used ambient Retina density 2, exposing two legacy test assumptions and the new unnormalized geometry assertion. The same binary passes both clock modes with explicit logical density 1. The new assertion now normalizes density, and final focused sanitized tests also pass at density 2. Original failures and logical reruns retained.",
+    "First sanitizer compile stopped while publishing a cached third-party object because the shared disk filled. Recovered only this task's completed generated profile C and exact verified archived generated C duplicates, plus completed reproducible component binaries with matching recorded hashes. The same sanitizer command then completed."
+  ],
+  "production_availability": {
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel"
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+        "dirty": true,
+        "head": "aee2979ffd90632c413742557edf2161fa7e35a5",
+        "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "0d153462c5aa62f4181f37435ccb33819f82e84f7027034404bf1d473e1f2982",
+        "dirty": true,
+        "head": "6930ae8be462118a9fd7b35adcb901fd49869a37",
+        "repository_sha256": "0e17bf5af805279f3ba21f6e2f5cac2fc4195706de4a57fe8b37dc07d2145b5a"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "7c32cd7468542b8ee330ab83b66854273ebed22d",
+        "id": "5135795dc0d94ffc9dde1e686a76cf78"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "0dcf98fcd33c2e4512e11cdb11c56d35f3a7e60aba498d031744b5e3cdfec438",
+        "dirty": true,
+        "head": "b7abaa7083013e740269a03c102776c05e7b6843",
+        "repository_sha256": "041678465967b167d919b73ba88dd7b6a8e68ed85836a6d888c13992f167cc3c"
+      }
+    },
+    "frozen_source_sha256": "2d7037c96353d6f926c57f545561ed9de4753e6e1cac6740ea0cadcf65fd09fe",
+    "contains_clock_policy": true,
+    "shared_build_busy": false,
+    "queued_separate_build": false
+  },
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "qualification": "No whole-page or component saving is claimed for clock ownership yet. The selected no-inline profile was a diagnostic lead, not a production cost estimate. The frozen original SOCKS capture, author scripts, pixel/content references, five-second settle and launch-through-PNG acceptance scope are unchanged. Prepared production comparison requires sealed-source and execution proof, unchanged pixels/content and stable executable/dependency identities.",
+  "evidence": {
+    "path": "docs/performance/chatgpt-animation-clock-20261105-evidence.zip",
+    "sha256": "7d3e90dcd4f49e26a41bc116a8b852e6dab0e25b173f9bff85fe304e5efd1ce4",
+    "bytes": 12826468,
+    "entries": 76
+  }
+}

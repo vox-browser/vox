@@ -34,6 +34,11 @@ The [sealed-profile and seven-pair receipt](performance/chatgpt-sealed-profile-2
 links all counters, PNGs, ownership audits, host observations, commands, guards
 and build identities in verified durable archives. Earlier cohorts remain below.
 
+A newer four-pair animation-clock diagnostic observes 1.860% fewer candidate
+instructions than its matched control, with exact pixels and 47 broad checks
+passing. It remains below seven-pair acceptance and above Brave's count; see
+[HTML animation clock ownership](#november-5-html-animation-clock-ownership).
+
 ## Previous complete baseline
 
 The requested 5% advantage over Brave remains **unmet**. The earlier complete
@@ -1867,3 +1872,92 @@ children. Recursive inclusive totals overlap and cannot be summed. Module
 initialization is excluded and the standalone adblock worker differs from the
 production helper. This profile establishes neither production function costs
 nor an unprofiled saving; it receives no acceptance or instruction credit.
+
+## November 5: HTML animation clock ownership
+
+Commit `1ff3be42a` removes a second animation sample from native drawing when
+the displayed document belongs to the BrowserApp's actual Page and local-root
+navigable. HTML's rendering task already samples animations before rAF and
+layout, as upstream `HTML/EventLoop/EventLoop.cpp` does. Native sampling after
+that task advanced another timestamp and dirtied the newly produced styles.
+The native callback still requests future display ticks. Standalone documents
+and mismatched or uninstalled page roots retain their native clock. Hidden and
+render-blocked documents keep HTML's eligibility rules. The original native
+sample remains selectable with `VOX_RETAIN_NATIVE_ANIMATION_TICK`; a separate
+opt-in diagnostic marks clock ownership.
+
+**All 14 final focused jobs pass**, covering 168 case executions. The 26-case
+main-module selection passes with both clock modes under poisoned production
+preallocation, ordinary GC and no GC. It covers real HTML rendering tasks,
+unchanged timestamps through native paint, adoption of current animated
+geometry, subsequent frames, hidden/blocked eligibility, standalone fallback,
+existing paint batching, rAF delivery, font deferral and live image replacement.
+The three new clock cases also pass with AddressSanitizer/UndefinedBehaviorSanitizer
+in both modes at densities 1 and 2. Peak compile RSS is 9,123,495,936 bytes under
+12 GiB; peak runtime RSS is 638,828,544 bytes under 3 GiB.
+
+The [focused receipt](performance/chatgpt-animation-clock-20261105.json)
+retains the initial optional-unwrapping/UI2-path compile error, the duplicated
+grouped-source list, and a Retina run that exposed coordinate assumptions in
+two existing tests and the new geometry assertion. The grouped selection then
+passes at an explicit logical density of 1; the new assertion now normalizes
+device coordinates and passes at density 2 as well. A sanitizer compile also
+stopped when the shared disk filled. Only completed generated outputs and
+private benchmark profiles/caches were retired; archived generated-C copies
+were hash-verified before removal. The identical sanitizer flags subsequently
+pass. Every original failure and corrected run remains retained.
+
+The completed single-C-unit executable
+`e9b0f545f8f76ca40e0702a144698e401df74cac834dd27cbde11be8d7300a24`
+contains the final clock policy. Source proofs and a separate two-pair execution
+diagnostic pass. All twelve captures across that diagnostic and the unprofiled
+comparison pass JavaScriptCore bootstrap, complete content identity and the
+unchanged pixel reference. Browser/kernel exits are zero and input identities
+remain stable throughout. No separate production build or app copy is used.
+
+| Four-pair diagnostic, launch through encoded document PNG | Observed instructions |
+| --- | ---: |
+| Native duplicate-sample control observations | 30,544,793,863; 30,709,289,768 |
+| HTML-clock candidate observations | 29,950,837,855; 30,164,074,824 |
+| Control median | 30,627,041,815.5 |
+| Candidate median | 30,057,456,339.5 |
+| Observed median reduction | 1.860% |
+| Conservative control/candidate separation | 380,719,039 |
+
+The positive separation triggers the 5,000,000-instruction checkpoint:
+**all 47 broad checks pass**, including the screenshot set, live image/SVG
+mutation reftests, native rendering checks and 200 exact AST comparisons across
+the two GC modes. The cadence resets to zero. This cohort keeps
+control/candidate/candidate/control Vox order and alternating Brave captures.
+It uses the same saved SOCKS fixture, original scripts, private profiles/caches,
+five-second unfocused settle, 1024×768 viewport, scale 2 and exclusive coalition
+launch-through-PNG boundary. OS filesystem/shader caches remain retained.
+
+Control frame checkpoints are 377/283; candidate checkpoints are 343/349.
+All four record 11 box-build checkpoints. Starting Vox load averages range
+12.56–15.45 on 18 CPUs. Sanitizer compilation overlaps part of the cohort and
+the shared disk fills during that compile. These conditions and the differing
+frame counts qualify causal attribution: the result is an observed four-pair
+diagnostic, with no acceptance credit. Brave's four lower bounds range
+17,576,370,228–19,477,715,158. Vox still exceeds them; four pairs, including only
+two candidate observations, also fall short of the required seven-pair cohort.
+The [production receipt](performance/chatgpt-animation-clock-production-20261105.json)
+links every count, ownership audit, capture, source proof, memory guard and broad
+check. Its guard adopts 46 processes without errors and peaks at 1,932,427,264
+bytes under 12 GiB. Driver exit 1 records the unmet Brave target.
+
+A separate [clock-advancement diagnostic](performance/chatgpt-animation-clock-timeline-20261105.json)
+verifies that the displayed page continues animating. Observations at the
+Document update and native-tick entries join the displayed document pointer to
+**2,470 strictly increasing timestamps**, from 1,783.9 to 35,238.7 ms. The profile
+records exactly 2,470 HTML rendering updates, Document animation updates and
+animation-style callbacks, alongside 2,516 native-tick entries. Full content,
+bootstrap and pixels pass exactly. The first observation compile used an
+unavailable macro in preprocessed C and launched no browser; its failure and
+corrected recipe are retained. C `-O1`, disabled optional inlining, observation
+printing and the thirty-second settle make this eligibility evidence only.
+It receives no timing or instruction acceptance credit.
+
+The requested **5% advantage over Brave remains unmet**. These frozen-page
+results establish neither live-site performance nor isolated rendering time or
+scrolling FPS, and no qualifying catalog entry is added.
