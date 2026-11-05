@@ -122,6 +122,10 @@
   (`V3_PARALLEL_CC_REQUIRE_SPLIT`), or when native code cannot be split, the
   build falls back to one unit. The receipt's `c-compile.json` and
   `Build/production-build/latest.json` (`c_compile`) record the mode used.
+  The shared `~/code/v/v` is built from the `vox-parallel-cc` worktree
+  (`~/code/v-worktrees/vox-parallel-cc`: upstream V plus the split commits),
+  whose vlib it uses. Rebuilding `~/code/v/v` from another V tree drops the
+  split until those commits are upstream.
   Keep mutable native header state in `VOX_NATIVE_STATE` so the split remains
   possible.
 - Performance comparisons (instruction counts, scrolling, timings) must use
