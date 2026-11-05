@@ -224,3 +224,21 @@ summaries, run records, guard reports and stdout of every cohort and
 verification run on the branch, browser logs of the cited final runs, the
 worktree build receipts (results and inputs) and the build/measurement
 scripts used.
+
+## On by default, with an advanced setting (2026-11-05)
+
+The canvas is now the default. **Settings → Advanced → GPU-accelerated
+scrolling** (`disable_gpu_canvas` in `settings.json`, absent meaning on) turns
+it off; the frame loop reads the setting before each reused frame, so Apply
+takes effect on the next frame. `VOX_DISABLE_GPU_CANVAS=1` turns the native
+canvas off for one launch and replaces the earlier opt-in
+`VOX_EXPERIMENT_GPU_CANVAS=1`; `tools/measure_precise_scroll.py
+--disable-gpu-canvas` seeds the setting into its private profile for control
+arms. Checks: the new `browsersettings` setting test and the two existing toggle
+tests, the extended settings UI test, 42 measurement-tool tests and the native
+canvas test pass. On the shared bundle `a829d554…` (receipt
+`20261105-052743-161fbb44`), 300 live vlang.io inputs with an empty profile
+draw 332 canvas frames (2,487 GPU leaves); the seeded setting and the
+environment switch each give zero canvas frames. Since the change, the
+`OPTIMIZED_SITES.md` "Vox GPU canvas FPS" column describes the default
+browser, and its "Vox scroll FPS" column the canvas turned off.

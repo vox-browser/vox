@@ -1649,9 +1649,10 @@ Evidence is under `Build/vlang-fps-20261104` (`rI-*`, `rU-*`, `idlediag-*`,
 [raw logs, experiment sources and guard reports](performance/raw/vlang-gpu-idle-upload-20261104.tar.gz)
 are committed.
 
-## GPU canvas for reused scroll frames (2026-11-05, opt-in)
+## GPU canvas for reused scroll frames (2026-11-05)
 
-`VOX_EXPERIMENT_GPU_CANVAS=1` draws the approved leaves of a reused frame's
+The GPU canvas, on by default since 2026-11-05 (Settings → Advanced →
+GPU-accelerated scrolling turns it off), draws the approved leaves of a reused frame's
 repainted rectangles on GPU surfaces and reads them back once, like
 Chromium's tile raster, instead of a synchronous GPU wait per leaf. On a
 quiet host it delivers 59.9 versus 59.3–59.6 FPS at 60 Hz (598 versus

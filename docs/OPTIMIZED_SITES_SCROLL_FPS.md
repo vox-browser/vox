@@ -28,7 +28,8 @@ All rows of [OPTIMIZED_SITES.md](../OPTIMIZED_SITES.md) were remeasured on the
 shared production build `9e052f2bdc416f06…` (production receipt
 `20261105-020854-53bebf59`, head `c0203bb8e`, built from master plus other
 sessions' uncommitted changes). Each page alternates the default control with
-`VOX_EXPERIMENT_GPU_CANVAS=1` ([GPU canvas](VLANG_GPU_PASS.md)) on the same
+`VOX_EXPERIMENT_GPU_CANVAS=1` ([GPU canvas](VLANG_GPU_PASS.md), then opt-in and
+now the default) on the same
 bundle, two fresh-process trials per arm, after one canvas verification run
 (`VOX_GPU_CANVAS_VERIFY=2`, diagnostic only, not counted). The executable,
 `libLadybirdVSkiaText.dylib` (`59cdfbd9…`) and `libVoxGraphite.dylib`

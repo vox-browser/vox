@@ -41,6 +41,14 @@ persist in `~/Library/Application Support/Vox/settings.json`, or in
 proxy environment variables remain available until settings are first saved;
 saved settings take precedence over ambient proxy and bypass variables.
 
+Under **Advanced**, **GPU-accelerated scrolling** is on by default: while a
+page scrolls, Vox draws the newly exposed and changed regions on the GPU in
+one pass, as Chromium does, instead of waiting for the GPU after each drawing
+operation. Turn it off and choose **Apply** if scrolled pages show drawing
+errors; the next frame uses the change without restarting. A profile saved
+before this option existed keeps it on. `VOX_DISABLE_GPU_CANVAS=1` turns it off
+for one launch, for example as a measurement control.
+
 The refreshed LibJS frontend lives in [`libjs/`](libjs/PORT_STATUS.md). It exposes
 script/module parsing, positioned diagnostics, scope analysis, and retained AST
 dumps, plus the translated VM record: execution contexts, environment records,

@@ -112,8 +112,11 @@ processes and private profiles/caches, a 1024×768 document
 viewport at native scale 2, 20 seconds settling after the title and 600 precise
 native wheel inputs at nominal 60 Hz, delta 2, reversing every 60 inputs. They
 count scroll-changing native layer publications over the full input window.
-**Vox GPU canvas FPS** sets `VOX_EXPERIMENT_GPU_CANVAS=1`, alternating with the
-default control on the same bundle. The canvas only draws frames that reuse
+**Vox GPU canvas FPS** enabled the then opt-in canvas
+(`VOX_EXPERIMENT_GPU_CANVAS=1`), alternating with the canvas-off control on the
+same bundle. The canvas is now the browser default (Settings → Advanced →
+GPU-accelerated scrolling turns it off), so that column describes the current
+default and "Vox scroll FPS" the canvas turned off. The canvas only draws frames that reuse
 the previous frame's pixels while scrolling. A verification run per page shows
 it engaging on the Wikipedia portal (598 frames, at most 1 level of difference),
 vlang.io (1,054 frames; three frames differ by up to 58 levels at isolated
