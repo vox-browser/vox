@@ -4357,6 +4357,57 @@ static CGRect native_css_filter_output_rect(NativeCSSFilterLayer const *layer,
 static unsigned native_test_grayscale_identities;
 #endif
 
+#ifdef VOX_TEST_COMPACT_CSS_FILTER_INPUT
+static unsigned native_test_compact_css_filter_inputs;
+#endif
+
+// A cropped CGImage can retain its complete viewport-sized provider. Give
+// pointwise filters an independently owned compact input when their visible
+// output already qualifies for the established integer-device crop.
+static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *layer,
+    CGContextRef context, CGRect *output_rect) {
+    if (!getenv("VOX_COMPACT_CSS_FILTER_INPUT") || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
+        || !context || CGBitmapContextGetBitsPerComponent(context) != 8
+        || CGBitmapContextGetBitsPerPixel(context) != 32) return NULL;
+    CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
+    if (info != (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
+        && info != (kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little)) return NULL;
+    size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
+    size_t source_pitch = CGBitmapContextGetBytesPerRow(context);
+    if (!width || !height || width > SIZE_MAX / 4 || source_pitch < width * 4
+        || source_pitch > 64 * 1024 * 1024 / height) return NULL;
+    CGRect whole = CGRectMake(0, 0, width, height);
+    CGRect rect = native_css_filter_output_rect(layer, whole);
+    if (CGRectEqualToRect(rect, whole)) return NULL;
+    CGContextFlush(context);
+    const uint8_t *source = CGBitmapContextGetData(context);
+    CGColorSpaceRef color = CGBitmapContextGetColorSpace(context);
+    if (!source || !color) return NULL;
+    size_t left = rect.origin.x, top = height - CGRectGetMaxY(rect);
+    size_t copy_width = rect.size.width, copy_height = rect.size.height, pitch = copy_width * 4;
+    CFMutableDataRef data = CFDataCreateMutable(NULL, pitch * copy_height);
+    if (!data) return NULL;
+    CFDataSetLength(data, pitch * copy_height);
+    uint8_t *pixels = CFDataGetMutableBytePtr(data);
+    for (size_t row = 0; row < copy_height; ++row)
+        memcpy(pixels + row * pitch, source + (top + row) * source_pitch + left * 4, pitch);
+    CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
+    CGImageRef image = provider ? CGImageCreate(copy_width, copy_height, 8, 32, pitch,
+        color, info, provider, NULL, true, kCGRenderingIntentDefault) : NULL;
+    if (provider) CGDataProviderRelease(provider);
+    CFRelease(data);
+    if (image) {
+        *output_rect = rect;
+#ifdef VOX_TEST_COMPACT_CSS_FILTER_INPUT
+        ++native_test_compact_css_filter_inputs;
+#endif
+        if (getenv("VOX_COMPACT_CSS_FILTER_INPUT_DIAGNOSTICS"))
+            fprintf(stderr, "Vox compact CSS filter input: source_bytes=%zu compact_bytes=%zu\n",
+                source_pitch * height, pitch * copy_height);
+    }
+    return image;
+}
+
 #include "native_opacity_group_darwin.h"
 
 // Both grayscale paths require addressable premultiplied sRGB bitmap rows.
@@ -4545,6 +4596,8 @@ void native_end_css_filter_layer(void) {
 	}
 #endif
     CGRect identity_rect = CGRectNull;
+    CGRect compact_rect = CGRectNull;
+    CGImageRef compact_input = native_compact_css_filter_input(&layer, layer.context, &compact_rect);
     CGImageRef grayscale_image = native_css_filter_grayscale_rows(&layer, layer.context, &identity_rect);
     BOOL grayscale_identity = !grayscale_image
         && native_css_grayscale_is_identity(&layer, layer.context, &identity_rect);
@@ -4589,6 +4642,7 @@ void native_end_css_filter_layer(void) {
 #endif
 
 	if (source_image == NULL) {
+		if (compact_input) CGImageRelease(compact_input);
 		if (grayscale_image) CGImageRelease(grayscale_image);
 		free(layer.operations);
 		native_free_svg_filter_graph(&layer);
@@ -4658,10 +4712,12 @@ void native_end_css_filter_layer(void) {
 		} else if (layer.operation_count == 0 && layer.graph_node_count == 0) {
 			filtered_image = CGImageRetain(source_image);
 		} else {
-			filtered_rect = CGRectIsNull(identity_rect) ? native_css_filter_output_rect(&layer, source_rect) : identity_rect;
+			filtered_rect = compact_input ? compact_rect
+				: CGRectIsNull(identity_rect) ? native_css_filter_output_rect(&layer, source_rect) : identity_rect;
 			// The crop's pixels depend on no others, so Core Image reads and
 			// filters only them rather than the complete layer.
-			CGImageRef cropped_source = CGRectEqualToRect(filtered_rect, source_rect) ? NULL
+			CGImageRef cropped_source = compact_input ? CGImageRetain(compact_input)
+				: CGRectEqualToRect(filtered_rect, source_rect) ? NULL
 				: CGImageCreateWithImageInRect(source_image, CGRectMake(filtered_rect.origin.x,
 					source_rect.size.height - CGRectGetMaxY(filtered_rect),
 					filtered_rect.size.width, filtered_rect.size.height));
@@ -4692,6 +4748,7 @@ void native_end_css_filter_layer(void) {
 		}
 	}
 	CGImageRelease(source_image);
+	if (compact_input) CGImageRelease(compact_input);
 	free(layer.operations);
 	native_free_svg_filter_graph(&layer);
 }
