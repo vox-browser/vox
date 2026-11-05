@@ -235,10 +235,15 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 	// An unculled plan retains its established scrolling/image policy. Only
 	// fixed-container geometry is added when root culling cannot be projected.
 	if cull == none { return if has_fixed_metadata { .fixed_bounds } else { .none } }
-	// Root hit-test bounds participate in PendingLayer merging even when
-	// the root paints no background. Sparse ordinary ink must not acquire a
-	// new raster origin merely because it follows a disjoint atomic SVG clip.
-	root_hit_test_geometry := commands.len > 0 && chromium_scrollport_has_range(&result.paint_tree)
+	// A painted canvas already supplies its document bounds. Preserve that
+	// picture policy; only unpainted roots need synthetic geometry to keep
+	// sparse ordinary ink around a disjoint atomic SVG clip in the root raster.
+	root := &result.paint_tree
+	has_canvas_background := root.background_color.a > 0
+		|| root.decorations().background_gradient != none
+		|| root.decorations().background_images.len > 0
+	root_hit_test_geometry := chromium_scrollport_has_range(root)
+		&& (has_fixed_metadata || (commands.len > 0 && !has_canvas_background))
 	// A rounded image's ancestor can contribute a metadata-only chunk before
 	// its overflow clip. It still determines the picture's common clip state,
 	// even when the document has no independently scrolling contents.

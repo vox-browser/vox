@@ -21,7 +21,7 @@ fn test_sparse_scrolling_root_keeps_its_origin_around_atomic_svg_and_opacity() {
 		commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
 		mut plan := ChromiumRasterLayerPlan{}
 		update_chromium_raster_layer_plan_for_viewport(document, commands, 1, LayoutRect{0, 0, 1024, 768}, mut plan)
-		assert plan.has_paint_metadata
+		assert plan.has_paint_metadata == (background == 'transparent')
 		mut gradients := 0
 		mut scopes := 0
 		mut owner := -1

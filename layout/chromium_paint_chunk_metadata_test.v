@@ -82,11 +82,11 @@ fn test_empty_scroll_hit_test_metadata_keeps_overlapping_grid_paint_on_one_raste
 	assert chromium_raster_cull_changed(document, LayoutRect{0, 0, 1280, 800}, 1, &plan)
 	update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
 		LayoutRect{0, 0, 1280, 800}, mut plan)
-	// Normal opacity scopes remain atomic without disabling viewport culling
-	// of ordinary content far below the root's current interest rectangle.
+	// With no interested compositor scrolls, a painted root retains its
+	// established picture policy, including these ordinary offscreen commands.
 	for index, command in commands {
 		if command.kind == 'fill_gradient' {
-			assert plan.command_layers[index] == -1
+			assert plan.command_layers[index] == 0
 		}
 	}
 }
