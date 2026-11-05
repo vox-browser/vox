@@ -83,6 +83,26 @@ the completed library lacks a newly referenced graphics API; that attempt and
 two corrected profiler-only compile failures remain preserved.
 [Diagnostic evidence](performance/bbc-v-profile-thread-cpu-20261105.json).
 
+A fresh **coarse instruction `v -profile` diagnostic** selects 25 scopes before
+execution and retains V's call, nesting and self accounting. Its selected timer
+reads root-process retired instructions; dedicated integer rows avoid time
+labels. All 25 scopes execute, with 525,898 counter reads. Original pixels,
+content, all 72 external author scripts, actual native-image pins and normal
+exit pass. Generation, compilation, capture and analysis guards exit 0, and all
+131 sealed compiler inputs are present and byte-verified in the raw archive.
+
+Selected self counts are 14.669B for object-receiver script calls, 13.190B for
+inline formatting, 10.459B for grid formatting and 9.444B for matching-rule
+collection. Script-call self includes unselected host callbacks and native
+work; it cannot be attributed entirely to JavaScriptCore. This C-O0,
+bounded-preallocation diagnostic includes probe overhead and concurrent root
+worker work during main-thread scopes, excludes separate processes, and can
+include work after PNG. Recursive inclusive rows overlap and root main is
+unfinished. Its 111.961B root count is not comparable to the production
+launch-to-PNG count. It provides investigation leads with no production shares,
+unprofiled saving, Brave ratio or catalog credit.
+[Scope proof, complete sealed inputs and capture audits](performance/bbc-v-profile-instruction-scopes-20261105.json).
+
 The follow-up pending-full-cascade shortcut now covers pseudo-element and
 trailing-universal anchor walks (`bbdaa7475`, isolated control `99c5cfdbe`).
 Its exact paint oracle exposed an existing retention bug: a newly styled
