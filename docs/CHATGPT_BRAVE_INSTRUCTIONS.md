@@ -1,6 +1,42 @@
 # ChatGPT instruction comparison
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
+seven-pair cohort uses executable
+`8a1e86fa09d39144053b74e3df2b6703701d67d85c2b6dfdae02656fd12a2dcb`.
+All fourteen fresh browser captures pass content, readiness, JavaScriptCore
+bootstrap, unchanged reference pixels and browser/kernel exits.
+
+| Launch through encoded document PNG | Retired CPU instructions |
+| --- | ---: |
+| Vox median | 30,006,382,557 |
+| Brave median lower bound | 16,334,249,687 |
+| Highest Vox upper bound | 30,273,445,119 |
+| Lowest Brave lower bound | 16,231,931,273 |
+
+The conservative observed ratio is **1.8651**. The exact gate fails:
+`100 * 30273445119 > 95 * 16231931273`. No samples are excluded. Both engines
+use exclusive coalition counters and the original single SOCKS capture, author
+scripts, five-second unfocused settle, empty private profiles/caches, 1024×768
+viewport and scale 2. OS filesystem/shader caches remain retained. The boundary
+includes browser/window startup and PNG encoding; Brave also includes CDP PNG
+delivery. GPU execution and outside services remain excluded.
+
+Host contention is substantial: starting load averages for Vox captures span
+35.76–91.49 on 18 CPUs, while frame checkpoints range 212–310. An instrumented
+compiler and other host work ran concurrently. This verifies a failed target on
+this pinned build; it does not attribute historical count differences to an
+individual optimization or establish live-site performance. The guard adopts
+51 process identities and peaks at 1,846,689,792 bytes. Driver/guard child exit
+one reflects the failed target, with all browser/kernel exits zero. No broad
+checkpoint is due and no qualifying catalog entry is added.
+
+The [sealed-profile and seven-pair receipt](performance/chatgpt-sealed-profile-20261105.json)
+links all counters, PNGs, ownership audits, host observations, commands, guards
+and build identities in verified durable archives. Earlier cohorts remain below.
+
+## Previous complete baseline
+
+The requested 5% advantage over Brave remains **unmet**. The earlier complete
 cohort uses production executable `95bb7c3db15e05f49facaac092c1e83c012adddaed3c24c3ad74d4a452b21240`
 and seven alternating fresh Vox/Brave pairs. All fourteen observations exited
 successfully and matched the retained document PNG exactly, with complete content,
@@ -1668,3 +1704,56 @@ Neither produces a profiled executable or launches a browser. The
 retains both generated C inputs, commands, source identities, failures and memory
 guards. New profiling remains pending a stable canonical input window; neither
 failed build changes the measured workload or supplies optimization credit.
+
+## November 5: profiling the completed sealed build
+
+Tooling commits `5274bb629` and `af68bcf86` add
+`tools/sealed_browser_profile.py` and its separate native callback helper.
+The builder consumes the completed production receipt's immutable preprocessed
+C and sealed link objects. It injects the profiling gate after module
+initialization, compiles with Clang's after-inlining instrumentation and C
+`-O1`, and pins every consumed input before and after compilation. No V source
+regeneration, source-tree copy or production build request is involved.
+The callback helper is compiled separately without instrumentation.
+
+The first preflight rejects the signed bundle's changed dylib bytes. The final
+resolver finds the byte-identical unsigned linker input in the canonical build
+cache, preserving strict digest checks. It does not accept a newer or merely
+similarly named library. Seven focused tooling tests pass, including real
+compiler callbacks, recursion, background-thread exclusion, partial exits,
+entry-point formats, changed-input rejection and library identity. The initial
+callback test's symlink-spelling assertion failure remains retained; its final
+assertion compares resolved executable paths.
+
+The instrumented executable compiles successfully in 696.85 seconds within the
+default guard, peaking at 9,662,185,472 bytes. A planned stop finds compilation
+already finished; no process is cancelled. The fresh thirty-second diagnostic
+capture exits zero with complete bootstrap/content and **zero differing
+pixels**, using the same original author scripts and fixture. Its 3 GiB guard
+exits zero and peaks at 1,772,044,288 bytes. Input identities remain unchanged.
+
+The profile contains **4,270 uniquely addressed functions**, no unresolved
+symbols and zero callback faults. Three still-active frames are closed at
+shutdown and explicitly marked partial. Selected observations are:
+
+| Function | Calls | Instrumented self ms |
+| --- | ---: | ---: |
+| `native_end_css_effect_layer` | 186 | 3,723.595 |
+| `native_draw_contoured_box_srgb` | 33 | 1,742.533 |
+| `native_draw_rounded_rect_srgb` | 86 | 1,720.982 |
+| `string__eq` | 46,036,873 | 899.556 |
+| `css__string_to_length_unit` | 1,170,716 | 858.522 |
+
+These are elapsed diagnostic timings, including instrumentation and native
+waits. Inlined work belongs to its caller, recursive inclusive totals overlap,
+and main-thread timing excludes background work. Module initialization is
+outside the gate. The standalone adblock self-worker fallback also differs from
+the production minimal helper. The thirty-second settle differs from the
+five-second acceptance protocol. None of these timings or call counts supplies
+instruction, frame-rate or optimization credit.
+
+The [combined receipt](performance/chatgpt-sealed-profile-20261105.json)
+preserves the profiler inputs, source transformation, guards, initial failures,
+full raw profile, exact capture and the separate seven-pair production cohort.
+This resolves the earlier V-source regeneration blocker without relaxing the
+measurement or memory guards. The requested 5% Brave advantage remains unmet.
