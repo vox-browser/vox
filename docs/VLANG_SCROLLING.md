@@ -2138,3 +2138,47 @@ timestamps, host load, identities, test outcomes and failed attempts. Its
 [verified raw archive](performance/raw/vlang-gpu-scroll-dawn-20261105.tar.gz)
 also preserves the failed exit diagnostics and lossless compiler-input archive
 receipts used to recover disk space. Earlier evidence archives are unchanged.
+
+### Retained copies and pointwise filter follow-up, November 5
+
+Smooth 60 fps remains open. The same live native-input protocol gives these
+two alternating pairs; all candidates remain disabled.
+
+| Candidate | Pair 1 publications/s | Pair 2 publications/s |
+|---|---:|---:|
+| Omit retained copies inside large opaque damage | 91.17→89.98 | 91.35→88.48 |
+| Admit smaller opaque damage | 88.10→86.69 | 83.01→84.89 |
+| Skip transparent pointwise input, prototype scan | 91.21→90.22 | 90.32→92.11 |
+| Skip transparent pointwise input, final scan | 88.20→81.63 | 89.60→77.86 |
+| Software Core Image for small pointwise input | 88.83→85.13 | 87.65→79.93 |
+
+`f1d9219c9` requires an explicit opaque-clear promise before omitting retained
+pixels wholly inside damage. Fractional clip edges retain their original bytes.
+`afdd58f96` admits smaller damage: its input diagnostic confirms 107 reduced
+copies and 247,077,552 omitted bytes, but timings remain mixed. Optimized and
+sanitizer tests cover overlapping damage, direction changes, ring wraps,
+padded rows, fractional edges and callers without the clear promise.
+
+`a7c527b83` skips a pointwise filter only when its visible input is transparent
+and no GPU or speculative pixels are pending. The prototype diagnostic finds
+25 input-window skips and lower maxima in both pairs, but means are mixed and
+p95 slightly regresses. The final-code repeat also regresses; a focused native
+verification job overlaps its second candidate, so that cohort supplies no
+optimization acceptance. All attempts are retained.
+
+`83d423923` selects software Core Image for bounded pointwise inputs, preserving
+the existing graph and color management. `25f59dac8` separately compares each
+selected output with GPU output from the same input. All 106 live input-window
+comparisons are exact. Optimized and sanitizer corpora each compare 1,536 real
+frames exactly, including 672 software draws, plus cache and ownership checks.
+The first expanded fixture exceeded the unchanged 3 GiB guard because comparison
+buffers survived across cases; per-case autorelease pools fix that fixture.
+Both live timing pairs regress, with candidate p95 intervals of 24.86 and
+28.19 ms, so software selection remains off.
+
+The [evidence report](performance/vlang-gpu-scroll-filter-copy-20261105.json)
+and [verified raw archive](performance/raw/vlang-gpu-scroll-filter-copy-20261105.tar.gz)
+retain exact build/library identities, input schedules, whole-window rates,
+intervals, misses, gaps, host load, diagnostics, tests and failures. Native
+publications remain distinct from physical display scanout. `69c332f7e` adds
+separate filter-stage timing diagnostics; those supply no unprofiled credit.
