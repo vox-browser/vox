@@ -2,6 +2,14 @@ module main
 
 import gg
 
+fn C.native_test_load_stage_callbacks_balance_returns_and_exceptions() int
+
+fn test_native_load_stage_callbacks_balance_returns_exceptions_and_unregistration() {
+	$if macos {
+		assert C.native_test_load_stage_callbacks_balance_returns_and_exceptions() == 63
+	}
+}
+
 #include "native_layer_presentation_test_darwin.h"
 
 fn C.native_test_parent_tick_frame_ownership(fn (voidptr), voidptr) int

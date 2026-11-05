@@ -1,6 +1,7 @@
 module main
 
 import gg
+import processmetrics
 import sokol.sapp
 import time
 
@@ -9,6 +10,7 @@ import time
 fn C.native_configure_browser_drawables()
 fn C.native_install_browser_layer_presentation()
 fn C.native_set_opaque_browser_frames(i32)
+fn C.native_set_load_stage_callbacks(fn (&char) u64, fn (u64))
 
 // Keep GG's normal input dispatch for events that do not need its font atlas.
 fn C.gg__gg_event_fn(voidptr, voidptr)
@@ -31,6 +33,10 @@ fn configure_native_browser_context(mut context gg.Context) {
 		C.native_window_register_indexing_default()
 		if !context.native_rendering {
 			return
+		}
+		if processmetrics.load_stages_enabled() {
+			C.native_set_load_stage_callbacks(processmetrics.begin_native_instruction_stage,
+				processmetrics.finish_native_instruction_stage)
 		}
 		$if vox_ui2 ? {
 			// UI2 supplies the top row; retain native window capabilities without

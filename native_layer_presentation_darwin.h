@@ -13,6 +13,7 @@
 #include "native_initial_document_clear.h"
 #include "native_frame_snapshot_darwin.h"
 #include "platform/native_state.h"
+#include "native_load_stages.h"
 #if defined(__aarch64__)
 #include <arm_neon.h>
 #endif
@@ -449,6 +450,8 @@ static CGImageRef native_layer_frame_image(NSView *view) {
 // uploading and retaining a separate texture for each Skia primitive.
 static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloat scale, IMP draw,
     NativeDocumentSubmissionFrame *submission) {
+    VoxNativeLoadStage stage = native_begin_load_stage("native_frame_bitmap");
+    @try {
     NSRect bounds = view.bounds;
     if (!draw || !isfinite(scale) || scale <= 0
         || !isfinite(bounds.size.width) || !isfinite(bounds.size.height)
@@ -521,6 +524,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     }
     if (image && submission) *submission = frame;
     return image;
+    } @finally { native_finish_load_stage(stage); }
 }
 
 static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP draw) {
@@ -528,6 +532,8 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
 }
 
 static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
+    VoxNativeLoadStage stage = native_begin_load_stage("native_frame_presentation");
+    @try {
     uint64_t generation = native_layer_redraw_generation;
     NSRect bounds = view.bounds;
     BOOL previous_started = native_layer_paint_started;
@@ -575,6 +581,7 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     objc_setAssociatedObject(view, &native_layer_frame_bounds_key,
         [NSValue valueWithRect:bounds], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     CGImageRelease(image);
+    } @finally { native_finish_load_stage(stage); }
 }
 
 static void native_layer_restore_frame_scale(NSView *view) {

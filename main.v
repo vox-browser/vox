@@ -7528,10 +7528,13 @@ fn (mut app BrowserApp) draw() {
 	preparation_instructions.finish()
 	processmetrics.instruction_checkpoint('frame_prepared')
 	replay_instructions := processmetrics.begin_instruction_stage('native_document_replay')
+	context_instructions := processmetrics.begin_instruction_stage('native_frame_context')
 	begin_browser_frame(app.ctx)
+	context_instructions.finish()
 	if frame_part_diagnostics_enabled {
 		processmetrics.instruction_checkpoint('frame_context_ready')
 	}
+	raster_instructions := processmetrics.begin_instruction_stage('native_raster_replay')
 	app.paint_effect_depth = 0
 	app.paint_svg_mask_depth = 0
 	paint_document := app.document_pixels_ready_for_frame()
@@ -7834,6 +7837,7 @@ fn (mut app BrowserApp) draw() {
 	if frame_part_diagnostics_enabled {
 		processmetrics.instruction_checkpoint('frame_document_replayed')
 	}
+	raster_instructions.finish()
 	replay_instructions.finish()
 	if app.chrome_height() > 0 {
 		$if vox_ui2 ? {

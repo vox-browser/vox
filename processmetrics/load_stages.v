@@ -53,3 +53,20 @@ pub fn begin_javascript_instruction_stage() InstructionStage {
 	if stage.id > 0 { load_stage_current_is_javascript = true }
 	return stage
 }
+
+pub fn load_stages_enabled() bool {
+	return load_stage_diagnostics && instructions_enabled()
+}
+
+// A scalar token crosses the native ABI without allocating a wrapper or
+// maintaining a second identity stack. Native callers finish on the same
+// thread in @finally, including when an Objective-C callback throws.
+pub fn begin_native_instruction_stage(label &char) u64 {
+	stage := begin_instruction_stage(unsafe { cstring_to_vstring(label) })
+	return (stage.id << 1) | u64(stage.previous_is_javascript)
+}
+
+pub fn finish_native_instruction_stage(token u64) {
+	stage := InstructionStage{id: token >> 1, previous_is_javascript: (token & 1) != 0}
+	stage.finish()
+}

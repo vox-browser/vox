@@ -1,8 +1,11 @@
 module main
 
 import css
+import processmetrics
 
 fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[string]PreloadedResource {
+	load_instruction_stage := processmetrics.begin_instruction_stage('initial_resource_preload')
+	defer { load_instruction_stage.finish() }
 	app.prepare_initial_resource_viewport()
 	mut cached := app.resource_cache.clone()
 	for resource_url, resource in app.navigation_preloaded_resources {

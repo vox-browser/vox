@@ -31,6 +31,65 @@ static void native_layer_test_throw(id self, SEL command, NSRect rect) {
     (void)self; (void)command; (void)rect;
     [NSException raise:@"NativeLayerTest" format:@"context restoration"];
 }
+
+static uint64_t native_stage_test_tokens[16];
+static unsigned native_stage_test_depth, native_stage_test_events;
+static uint64_t native_stage_test_sequence;
+static BOOL native_stage_test_balanced;
+static uint64_t native_stage_test_begin(const char *label) {
+    if (strcmp(label, "native_frame_bitmap") && strcmp(label, "native_frame_presentation"))
+        native_stage_test_balanced = NO;
+    uint64_t token = ++native_stage_test_sequence;
+    native_stage_test_tokens[native_stage_test_depth++] = token;
+    native_stage_test_events++;
+    return token;
+}
+static void native_stage_test_finish(uint64_t token) {
+    if (!native_stage_test_depth || native_stage_test_tokens[--native_stage_test_depth] != token)
+        native_stage_test_balanced = NO;
+    native_stage_test_events++;
+}
+static int native_test_load_stage_callbacks_balance_returns_and_exceptions(void) {
+    VoxNativeLoadStageBegin previous_begin = vox_native_load_stage_begin;
+    VoxNativeLoadStageFinish previous_finish = vox_native_load_stage_finish;
+    int result = 0;
+    @try {
+        @autoreleasepool {
+            NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 4, 2)];
+            view.wantsLayer = YES;
+            native_stage_test_depth = native_stage_test_events = 0;
+            native_stage_test_balanced = YES;
+            native_set_load_stage_callbacks(native_stage_test_begin, native_stage_test_finish);
+            CGImageRef image = native_layer_raster_frame(view, 1, (IMP)native_layer_test_draw);
+            if (image && native_stage_test_events == 2 && !native_stage_test_depth)
+                result |= 1;
+            if (image) CGImageRelease(image);
+            unsigned before = native_stage_test_events;
+            native_layer_present_frame(view, 1, (IMP)native_layer_test_draw);
+            if (native_stage_test_events == before + 4 && !native_stage_test_depth)
+                result |= 2;
+            before = native_stage_test_events;
+            BOOL caught = NO;
+            @try { native_layer_present_frame(view, 1, (IMP)native_layer_test_throw); }
+            @catch (NSException *exception) { caught = YES; }
+            if (caught && native_stage_test_events == before + 4 && !native_stage_test_depth)
+                result |= 4;
+            before = native_stage_test_events;
+            image = native_layer_raster_frame(view, 0, (IMP)native_layer_test_draw);
+            if (!image && native_stage_test_events == before + 2 && !native_stage_test_depth)
+                result |= 8;
+            VoxNativeLoadStage stage = native_begin_load_stage("native_frame_bitmap");
+            native_set_load_stage_callbacks(NULL, NULL);
+            native_finish_load_stage(stage);
+            if (!native_stage_test_depth && native_stage_test_balanced) result |= 16;
+            before = native_stage_test_events;
+            stage = native_begin_load_stage("disabled");
+            native_finish_load_stage(stage);
+            if (!stage.token && native_stage_test_events == before) result |= 32;
+        }
+    } @finally { native_set_load_stage_callbacks(previous_begin, previous_finish); }
+    return result;
+}
 static void native_layer_test_asymmetric_draw(id self, SEL command, NSRect rect) {
     native_layer_test_draw(self, command, rect);
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;

@@ -6,6 +6,7 @@ import encoding
 import html
 import highresolutiontime
 import mimesniff
+import processmetrics
 
 // BrowsingContext.cpp::determine_the_origin and navigation document creation.
 // Compact top-level navigation has no inherited creation sandbox flags.
@@ -103,6 +104,8 @@ fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
 }
 
 fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, scripting_enabled bool) &dom.Document {
+	load_instruction_stage := processmetrics.begin_instruction_stage('navigation_html_parsing')
+	defer { load_instruction_stage.finish() }
 	// The parser retains its own source in the document arena. Keep the decoded
 	// response alive only until that publication, while constructing reusable
 	// Document/Window identity in the caller's ordinary allocation owner.

@@ -15,6 +15,7 @@ import indexeddb
 import libjs
 import math
 import platform
+import processmetrics
 import time
 
 pub enum EventLoopType {
@@ -151,6 +152,14 @@ fn Task.create_with_storage(source TaskSource, document ?&dom.Document, steps fn
 }
 
 pub fn (task &Task) execute() {
+	load_instruction_stage := processmetrics.begin_instruction_stage(match task.source {
+		.networking { 'html_networking_task' }
+		.timer_task { 'html_timer_task' }
+		.rendering { 'html_rendering_task' }
+		.posted_message { 'html_posted_message_task' }
+		else { 'html_other_task' }
+	})
+	defer { load_instruction_stage.finish() }
 	if task.is_permanently_unrunnable() { task.cancel(); return }
 	defer { task.cancel() }
 	task.steps()
@@ -560,6 +569,8 @@ pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model
 pub fn (mut event_loop EventLoop) process() {
+	load_instruction_stage := processmetrics.begin_instruction_stage('html_event_loop')
+	defer { load_instruction_stage.finish() }
 	if event_loop.execution_paused { return }
 	if mut timer := event_loop.system_event_loop_timer_ { timer.stop() }
 	event_loop.task_generation_++
