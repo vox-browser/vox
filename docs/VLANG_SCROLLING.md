@@ -2093,3 +2093,48 @@ contains 53 attempts and links a verified archive of 711 raw files: commands,
 build/library identities, actual input schedules, complete interval statistics,
 guard/browser exits, host load, pixels, tests and retained failures. A later
 Dawn recorder experiment has separate pending validation.
+
+### Dawn submission, font transport and scheduling follow-up, November 5
+
+Smooth 60 fps remains open. These are two alternating live-page pairs per
+candidate, using the same 1708×953 document viewport at 2×, 600 precise
+delta-8 inputs at nominal 120 Hz, private empty profiles/caches, title readiness
+and ten seconds of settling. The endpoint is scroll-changing native layer
+publication over the entire input window, not display scanout.
+
+| Opt-in candidate | Pair 1 publications/s | Pair 2 publications/s | Decision |
+|---|---:|---:|---|
+| Reused regional Dawn recorder | 89.66→90.81 | 72.05→90.05 | Off; first p95 regresses |
+| Reused regional Dawn target | 89.39→92.96 | 92.13→90.51 | Off; mixed |
+| Single final Dawn queue wait | 88.70→88.03 | 88.41→91.03 | Off; maxima regress |
+| Owned shared font packets | 78.07→89.74 | 90.06→96.23 | Off; second maximum regresses |
+| Deferred gradient-text input rasters | 79.60→90.31 | 91.19→90.82 | Off; second pair regresses |
+| Compatible GPU flags combined | 87.31→75.95 | 88.22→89.92 | Off; mixed |
+
+Candidate p95 intervals remain about 21–28 ms. The combined experiment reaches
+a 164 ms maximum. Mean rates above 60 do not establish smooth scrolling;
+variation and host contention also limit attribution. Separate diagnostics
+confirm the proposed rendering paths execute during input and retain the
+existing three-level pixel bound. Native optimized and sanitizer tests cover
+font packet ownership, old-backend fallback, exact glyph output, deferred-input
+failure and transactional replay.
+
+`790294447` fixes an independently reproduced shutdown fault: detached HTTP
+workers could read the prealloc arena after its exit cleanup freed it. The
+browser keeps that arena alive until process termination; ordinary document
+and worker retirement remains active. A real pthread fixture reproduces the
+unprotected fault and passes five fresh normal exits with the browser policy.
+Subsequent live cohorts terminate normally.
+
+The expired-timer coalescing and parallel readback diagnostics complete all 600
+inputs but find zero eligible input-window work, so neither proceeds to timing
+pairs. Existing parallel jobs use at most two lanes, below the experimental
+four-lane cap. Large row conversion is faster in a conversion microbenchmark,
+but those copies occur during startup on this page and earn no scrolling credit.
+
+The [evidence report](performance/vlang-gpu-scroll-dawn-20261105.json) retains
+all pairs, interval distributions, deadline misses, boundary gaps, actual input
+timestamps, host load, identities, test outcomes and failed attempts. Its
+[verified raw archive](performance/raw/vlang-gpu-scroll-dawn-20261105.tar.gz)
+also preserves the failed exit diagnostics and lossless compiler-input archive
+receipts used to recover disk space. Earlier evidence archives are unchanged.
