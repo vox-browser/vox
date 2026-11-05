@@ -6078,3 +6078,29 @@ credit. The latest completed `68cec4406133` predates it, and the shared build
 remains busy; a preflight launches no browser. Original-reference native
 validation remains pending. [Focused evidence and tested sources](performance/bbc-archived-border-msaa-focus-20261105.json)
 are archived with full member readback checks.
+
+Production `49a4b05fe332` subsequently validates that historical option in fresh
+native launches: both legacy-cache policies produce PNGs SHA-256-identical to
+the original reference, complete content and all 72 external scripts pass,
+actual loaded images are pinned, and identities/native/driver/guard exits pass.
+Both arms report the historical border policy before PNG. Frame-task layout
+coalescing is explicitly disabled equally in these captures; this does not
+validate that pending optimization or its later focus guard.
+
+This is a **parallel C / 33-unit** production build, unlike the preceding
+single-unit cohorts. No cross-mode difference receives optimization credit.
+`042c69193` lets the instruction driver preserve its matching unique published
+receipt, C-mode metadata, equal complete before/after build-input fingerprints
+and staged compiler identity. These receipts supply **no sealed generated C**;
+the manifest records that limitation instead of treating them as frozen C.
+`7cb12acb0` additionally rejects metadata changed after its initial read. All
+**330 instruction-tool tests** pass. Original references, exact-match checks,
+ownership gates and instruction endpoints remain intact.
+
+The initial parent auditor's `coalescing_present=false` label meant disabled
+eligibility in this policy-only run, not absence of compiled code. Its initial
+records and corrected labels are retained; correction verifies the same
+already captured PNG hashes and launches no new browser. History remains
+103 / 2,230 plus comparison 104's rejected preflight. The target remains unmet.
+[Native captures, parallel provenance, tooling checks and label correction](performance/bbc-parallel-provenance-and-border-native-20261105.json)
+are durably archived and verified.
