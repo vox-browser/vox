@@ -65,24 +65,6 @@ fn stationary_document_raster_command_eligible(command &layout.PaintCommand, dep
 	return true
 }
 
-// A native video is clipped to its retained paintable rectangle even when
-// object-fit places its source elsewhere. Use that rectangle, with a rounding
-// fringe, rather than the compatibility command bounds. Resource scopes can
-// move offscreen source pixels into view and must retain their ordinary veto.
-fn stationary_video_is_outside_canvas(command &layout.PaintCommand, page_y f64,
-	width f64, height f64) bool {
-	paintable := command.video_paintable or { return false }
-	rect := paintable.video_rect
-	return layout.paint_leaf_is_outside_canvas(&layout.PaintCommand{
-		kind: 'fill_rect'
-		x: rect.x - 1
-		y: rect.y - 1
-		width: rect.width + 2
-		height: rect.height + 2
-		transform: command.transform
-	}, 0, page_y, width, height)
-}
-
 fn stationary_document_raster_viewport_eligible(commands []layout.PaintCommand,
 	page_y f64, width f64, height f64) bool {
 	mut culling := PaintCanvasCulling{enabled: true}
@@ -92,7 +74,7 @@ fn stationary_document_raster_viewport_eligible(commands []layout.PaintCommand,
 		if stationary_document_raster_command_eligible(command, 0) { continue }
 		if !disable_static_media_raster_reuse
 			&& command.kind == 'draw_video' && (skipped || (culling.resource_depth == 0
-				&& stationary_video_is_outside_canvas(command, page_y, width, height))) {
+				&& video_is_outside_canvas(command, 0, page_y, width, height))) {
 			continue
 		}
 		return false

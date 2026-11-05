@@ -2,6 +2,28 @@ module main
 
 import layout
 import math
+import os
+
+const disable_offscreen_video_culling = os.getenv('VOX_DISABLE_OFFSCREEN_VIDEO_CULLING') != ''
+const offscreen_video_culling_diagnostics = os.getenv('VOX_OFFSCREEN_VIDEO_CULLING_DIAGNOSTICS') != ''
+
+// Native video always clips its fitted source to this retained rectangle.
+// Compatibility command bounds can differ from it. Keep a rounding fringe
+// before applying the same transform and native precision guard as replay.
+fn video_is_outside_canvas(command &layout.PaintCommand, page_x f64, page_y f64,
+    width f64, height f64) bool {
+    if command.outer_shadow || command.blur != 0 { return false }
+    paintable := command.video_paintable or { return false }
+    rect := paintable.video_rect
+    return layout.paint_leaf_is_outside_canvas(&layout.PaintCommand{
+        kind: 'fill_rect'
+        x: rect.x - 1
+        y: rect.y - 1
+        width: rect.width + 2
+        height: rect.height + 2
+        transform: command.transform
+    }, page_x, page_y, width, height)
+}
 
 // Resource and effect groups retain every input leaf, even beyond the canvas.
 // Unknown ordinary commands also fall through to their established renderer.
@@ -46,6 +68,13 @@ fn (mut culling PaintCanvasCulling) skip(command &layout.PaintCommand, page_x f6
         return false
     }
     if culling.resource_depth != 0 { return false }
+    if command.kind == 'draw_video' && !disable_offscreen_video_culling
+        && video_is_outside_canvas(command, page_x, page_y, width, height) {
+        if offscreen_video_culling_diagnostics {
+            eprintln('VOX_OFFSCREEN_VIDEO_CULL skipped=1')
+        }
+        return true
+    }
     return layout.paint_leaf_is_outside_canvas(command, page_x, page_y, width, height)
 }
 

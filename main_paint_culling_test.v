@@ -1,6 +1,40 @@
 module main
 
 import layout
+import painting
+import math
+
+fn test_video_canvas_culling_uses_the_final_clip_before_gpu_command_selection() {
+	mut culling := PaintCanvasCulling{enabled: true}
+	mut video := layout.PaintCommand{kind: 'draw_video', x: 0, y: 0, width: 20, height: 20,
+		video_paintable: &painting.VideoPaintable{video_rect: painting.Rect{10, -100, 20, 20}}}
+	assert culling.skip(video, 0, 60, 800, 660) == !disable_offscreen_video_culling
+	video.video_paintable = &painting.VideoPaintable{video_rect: painting.Rect{10, -83, 20, 20}}
+	assert !culling.skip(video, 0, 60, 800, 660)
+	video.video_paintable = &painting.VideoPaintable{video_rect: painting.Rect{10, -100, 20, 20}}
+	video.transform = [f64(1), 0, 0, 1, 0, 40]!
+	assert !culling.skip(video, 0, 60, 800, 660)
+	video.transform = [6]f64{}
+	video.video_paintable = &painting.VideoPaintable{video_rect: painting.Rect{-100, 20, 20, 20}}
+	assert !culling.skip(video, 100, 0, 800, 660)
+	video.video_paintable = &painting.VideoPaintable{video_rect: painting.Rect{10, math.nan(), 20, 20}}
+	assert !culling.skip(video, 0, 60, 800, 660)
+	video.video_paintable = none
+	assert !culling.skip(video, 0, 60, 800, 660)
+}
+
+fn test_video_canvas_culling_preserves_offscreen_filter_and_mask_inputs() {
+	video := layout.PaintCommand{kind: 'draw_video',
+		video_paintable: &painting.VideoPaintable{video_rect: painting.Rect{10, -100, 20, 20}}}
+	for kind in ['begin_css_filter_layer', 'begin_svg_mask_layer', 'begin_background_blend_group'] {
+		mut culling := PaintCanvasCulling{enabled: true}
+		assert !culling.skip(layout.PaintCommand{kind: kind}, 0, 60, 800, 660)
+		assert !culling.skip(video, 0, 60, 800, 660)
+	}
+	mut culling := PaintCanvasCulling{enabled: true}
+	assert !culling.skip(layout.PaintCommand{kind: 'begin_css_effect_layer'}, 0, 60, 800, 660)
+	assert culling.skip(video, 0, 60, 800, 660) == !disable_offscreen_video_culling
+}
 
 fn test_canvas_culling_preserves_complete_resource_and_effect_groups() {
 	mut culling := PaintCanvasCulling{enabled: true}

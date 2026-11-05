@@ -257,6 +257,20 @@ fn scroll_raster_nothing_above(keys []ScrollRasterCommandKey, index int) bool {
 	return true
 }
 
+// A culled video paints no pixels, but underlying damage must still retire
+// stale rows before a later visible frame can restore this backdrop.
+fn (app &BrowserApp) invalidate_culled_video_backdrop(command &layout.PaintCommand) {
+	$if macos {
+		ink := scroll_raster_key_ink(command) or {
+			C.native_discard_video_backdrops()
+			return
+		}
+		whole := scroll_raster_snap_rect(scroll_raster_inflate(ink, scroll_raster_damage_fringe))
+		// Updating validity reads no canvas pixels and creates no GPU barrier.
+		C.native_invalidate_video_backdrop(whole.x, whole.y + app.scroll_y, whole.width, whole.height)
+	}
+}
+
 // Just before a video draws: restore its backdrop when this frame planned
 // that, otherwise capture the freshly painted pixels beneath it. A frame with
 // restores does not capture: pixels under a restored rectangle are incomplete

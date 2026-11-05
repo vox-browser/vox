@@ -7617,6 +7617,9 @@ fn (mut app BrowserApp) draw() {
 					command = &projected
 				}
 				if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
+					if command.kind == 'draw_video' {
+						app.invalidate_culled_video_backdrop(command)
+					}
 					continue
 				}
 				if scroll_damage.separate_scrollbars && command.scrollbar_axis != ''
