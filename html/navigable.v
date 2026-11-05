@@ -145,6 +145,7 @@ mut:
 	navigation_fetch_hook_               ?NavigableNavigationFetchHook
 	navigation_fetch_host_               ?&fetch.FetchHost
 	navigation_fetch_controller_         ?&fetch.FetchController
+	document_created_hook_               ?fn (&dom.Document)
 	backing_store_manager_               &painting.BackingStoreManager = unsafe { nil }
 	event_handler_                       &page.EventHandler = unsafe { nil }
 	rendering_thread_                    &RenderingThread = unsafe { nil }
@@ -998,18 +999,21 @@ fn create_navigation_params_from_a_srcdoc_resource(entry &SessionHistoryEntry, n
 		value: 'text/html'
 	})
 	response.set_body_bytes(resource.bytes())
-	response_origin := determine_the_origin(response.url(), target_snapshot_params.sandboxing_flags, state.origin)
+	creator := navigable.container_document() or { navigable.active_document() or { return error('Missing srcdoc creator') } }
 	history_container := history_policy_container_value(state.history_policy_container)
-	policy_container := determine_navigation_params_policy_container(srcdoc_url, history_container, none, none, none)
+	parent_policy := cloned_policy_container(creator.policy_container())
+	policy_container := determine_navigation_params_policy_container(srcdoc_url, history_container, none, parent_policy, none)
+	final_flags := target_snapshot_params.sandboxing_flags.union(csp_derived_sandboxing_flags(policy_container))
+	response_origin := determine_the_origin(response.url(), final_flags, creator.origin())
 	return &NavigationParams{
 		id: navigation_id
 		navigable: navigable
 		response: response
 		origin: response_origin
 		policy_container: policy_container
-		final_sandboxing_flags: target_snapshot_params.sandboxing_flags
+		final_sandboxing_flags: final_flags
 		opener_policy: dom.OpenerPolicy{}
-		about_base_url: state.about_base_url
+		about_base_url: creator.base_url()
 		user_involvement: user_involvement
 	}
 }
@@ -1238,6 +1242,7 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		document.set_document_type(.html)
 		document.set_content_type('text/html')
 		document.set_origin(state.origin or { entry.url.origin() })
+		document.set_about_base_url(state.about_base_url)
 		document.set_navigation_id(navigation_id)
 		document.set_allow_declarative_shadow_roots(true)
 		if params := navigation_params {
@@ -1259,6 +1264,7 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		}
 		state.set_document(document)
 		if context := model.context_ {
+			document.set_cached_navigable(model.host_)
 			context.associate_native_identity_with_document(document)
 			mut mutable_context := unsafe { &BrowsingContextModel(context) }
 			mutable_context.set_active_document(document)
@@ -1274,6 +1280,8 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 				}
 			}
 		}
+		if hook := model.document_created_hook_ { hook(document) }
+		mut payload := document.enter_native_storage()
 		match state.resource {
 			string {
 				markup := state.resource as string
@@ -1283,7 +1291,9 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 					document_pointer := voidptr(document)
 					document.set_deferred_parser_start(fn [document_pointer, markup] () {
 						document := unsafe { &dom.Document(document_pointer) }
+						mut payload := document.enter_native_storage()
 						parse_html_from_a_string(document, markup)
+						payload.finish()
 					})
 				}
 			}
@@ -1296,6 +1306,7 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 				document.populate_with_html_head_and_body() or {}
 			}
 		}
+		payload.finish()
 		state.origin = document.origin()
 		state.ever_populated = true
 	}
@@ -1414,7 +1425,26 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 		entry.navigation_api_state = serialized_state
 	}
 	mut received_navigation_params := NavigableNavigationParamsResult{}
-	if params.url.serialize() == 'about:srcdoc' && params.document_resource is string {
+	if url_matches_about_blank(params.url) {
+		creator := if params.source_document != unsafe { nil } { params.source_document } else { active_document }
+		mut response := fetch.Response.create()
+		response.url_list = [params.url]
+		response.header_list.append(http.Header{name: 'Content-Type', value: 'text/html'})
+		response.set_body_bytes([]u8{})
+		flags := model.snapshot_target_snapshot_params().sandboxing_flags
+		received_navigation_params = NavigableNavigationParamsResult{
+			navigation_params: &NavigationParams{
+				id: navigation_id
+				navigable: &model
+				response: response
+				origin: determine_the_origin(params.url, flags, creator.origin())
+				policy_container: cloned_policy_container(creator.policy_container())
+				final_sandboxing_flags: flags
+				about_base_url: creator.base_url()
+				user_involvement: params.user_involvement
+			}
+		}
+	} else if params.url.serialize() == 'about:srcdoc' && params.document_resource is string {
 		navigation_params := create_navigation_params_from_a_srcdoc_resource(entry, &model, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id) or {
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			return

@@ -25,6 +25,10 @@ pub fn (mut model NavigableModel) set_navigation_fetch_host(host ?&fetch.FetchHo
 	model.navigation_fetch_host_ = host
 }
 
+pub fn (mut model NavigableModel) set_document_created_hook(hook ?fn (&dom.Document)) {
+	model.document_created_hook_ = hook
+}
+
 fn (mut model NavigableModel) start_navigation_fetch(entry &SessionHistoryEntry, params NavigableNavigateParams, source SourceSnapshotParams, target TargetSnapshotParams, history HistoryHandlingBehavior, id string, host &fetch.FetchHost) {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }

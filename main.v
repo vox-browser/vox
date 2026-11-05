@@ -492,6 +492,7 @@ mut:
 	background_resource_results         chan PreloadedResource
 	image_request_loader                ?&BrowserImageRequestLoader
 	script_request_loader               ?&BrowserScriptRequestLoader
+	child_document_host                 ?&BrowserChildDocumentHost
 	background_resource_pending         map[string]bool
 	// Remote stylesheets requested for links that scripts inserted, and the DOM
 	// tree version last scanned for them.
@@ -1930,7 +1931,7 @@ fn javascript_bootstrap() string {
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video")Object.defineProperties(o,{videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}});',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"readyState",{get:function(){return +s.readyState||0;}});',
 		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.insertBefore=function(child,reference){return __compactInsertNode(o,child,reference,true);};',
-		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__ladybirdImageBind(o,s.bridgeKey);delete o.addEventListener;delete o.removeEventListener;} if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__reflectMediaAttribute);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="script"||s.tagName==="link"))__bindScriptElement(o);if(__isTrackElementState(s)){__bindTrackElement(o,s.bridgeKey);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;delete o.dispatchEvent;}}',
+		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__ladybirdImageBind(o,s.bridgeKey);delete o.addEventListener;delete o.removeEventListener;} if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__reflectMediaAttribute);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="script"||s.tagName==="link"||s.tagName==="iframe"))__bindScriptElement(o);if(__isTrackElementState(s)){__bindTrackElement(o,s.bridgeKey);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;delete o.dispatchEvent;}}',
 		'    __compactDocumentElementBindings(o,s);',
 		'  } return s.__object;',
 		'}',
@@ -3795,6 +3796,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.image_request_loader = none
 	if mut old_loader := app.script_request_loader { old_loader.cancel() }
 	app.script_request_loader = none
+	if mut children := app.child_document_host { children.close() }
+	app.child_document_host = none
 	app.address = if loaded.url == browser_new_tab_url { '' } else { loaded.url }
 	app.address_cursor = app.address.runes().len
 	app.address_select = false
@@ -4098,6 +4101,7 @@ fn (mut app BrowserApp) poll_navigation_and_background_resources() {
 	app.poll_navigation()
 	if voidptr(app.document) == document_before_navigation {
 		app.poll_browser_script_requests()
+		app.poll_browser_child_documents()
 		app.poll_browser_image_requests()
 		app.poll_background_resources()
 	} else {
