@@ -1,0 +1,1183 @@
+{
+  "version": 1,
+  "complete": true,
+  "implementation_commit": "3d1dba1a8",
+  "cause": "An explicit fixed pointer-array default becomes a compound array expression in a nested aggregate initializer. Clang interprets it as the first pointer element and stores a temporary stack address. Removing the explicit default uses ordinary aggregate zero initialization.",
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "inputs_before": {
+      "url/percent_encoding.v": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2",
+      "url/percent_encoding_bytes.v": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668",
+      "url/percent_encoding_bytes_test.v": "e2a70acf286ff5a579cd3f10dc5c406dfeb792fab9b1f40e96cd77547ce35117",
+      "url/ascii_membership.v": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
+      "domurl/url_input_parser.v": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792",
+      "domurl/url_input_slots_test.v": "19ba53a73a6cce399f1a3433e5abcbf6515a5db7c84ea44d06513002014e1e29"
+    },
+    "inputs_after": {
+      "url/percent_encoding.v": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2",
+      "url/percent_encoding_bytes.v": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668",
+      "url/percent_encoding_bytes_test.v": "e2a70acf286ff5a579cd3f10dc5c406dfeb792fab9b1f40e96cd77547ce35117",
+      "url/ascii_membership.v": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
+      "domurl/url_input_parser.v": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792",
+      "domurl/url_input_slots_test.v": "19ba53a73a6cce399f1a3433e5abcbf6515a5db7c84ea44d06513002014e1e29"
+    },
+    "rows": [
+      {
+        "label": "compile-domurl-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/domurl/blob_url_entry_record_owner_test.v,/Users/alex/code/vox2/domurl/query_leading_question_owner_test.v,/Users/alex/code/vox2/domurl/url_base_parser_test.v,/Users/alex/code/vox2/domurl/url_constructor_copy_owner_test.v,/Users/alex/code/vox2/domurl/url_input_slots_test.v,/Users/alex/code/vox2/domurl/url_search_params_test.v,/Users/alex/code/vox2/domurl/urlencoded_bom_owner_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-prealloc",
+          "/Users/alex/code/vox2/domurl/url_input_parser_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793882454.7916942,
+          "load": [
+            91.97900390625,
+            64.34619140625,
+            48.75732421875
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882480.227417,
+          "load": [
+            113.74951171875,
+            71.791015625,
+            51.8984375
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882480.242775,
+          "load": [
+            113.74951171875,
+            71.791015625,
+            51.8984375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882496.0416698,
+          "load": [
+            127.673828125,
+            76.99169921875,
+            54.10546875
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882496.058756,
+          "load": [
+            127.673828125,
+            76.99169921875,
+            54.10546875
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882516.14206,
+          "load": [
+            138.12353515625,
+            82.61865234375,
+            56.65283203125
+          ]
+        }
+      },
+      {
+        "label": "compile-bindings-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_object_blob_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_string_conversion_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-prealloc",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793882516.1644878,
+          "load": [
+            138.12353515625,
+            82.61865234375,
+            56.65283203125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882658.94525,
+          "load": [
+            140.81005859375,
+            105.84912109375,
+            70.2158203125
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882658.959285,
+          "load": [
+            140.81005859375,
+            105.84912109375,
+            70.2158203125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882660.245933,
+          "load": [
+            140.81005859375,
+            105.84912109375,
+            70.2158203125
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882660.258455,
+          "load": [
+            140.81005859375,
+            105.84912109375,
+            70.2158203125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882661.277309,
+          "load": [
+            140.81005859375,
+            105.84912109375,
+            70.2158203125
+          ]
+        }
+      },
+      {
+        "label": "compile-domurl-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/domurl/blob_url_entry_record_owner_test.v,/Users/alex/code/vox2/domurl/query_leading_question_owner_test.v,/Users/alex/code/vox2/domurl/url_base_parser_test.v,/Users/alex/code/vox2/domurl/url_constructor_copy_owner_test.v,/Users/alex/code/vox2/domurl/url_input_slots_test.v,/Users/alex/code/vox2/domurl/url_search_params_test.v,/Users/alex/code/vox2/domurl/urlencoded_bom_owner_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-default",
+          "/Users/alex/code/vox2/domurl/url_input_parser_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793882661.2900321,
+          "load": [
+            140.81005859375,
+            105.84912109375,
+            70.2158203125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882673.279637,
+          "load": [
+            126.5849609375,
+            104.41845703125,
+            70.32763671875
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882673.291295,
+          "load": [
+            126.5849609375,
+            104.41845703125,
+            70.32763671875
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882673.754347,
+          "load": [
+            126.5849609375,
+            104.41845703125,
+            70.32763671875
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882673.7698271,
+          "load": [
+            126.5849609375,
+            104.41845703125,
+            70.32763671875
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882674.108384,
+          "load": [
+            126.5849609375,
+            104.41845703125,
+            70.32763671875
+          ]
+        }
+      },
+      {
+        "label": "compile-bindings-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_object_blob_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_string_conversion_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-default",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793882674.121252,
+          "load": [
+            126.5849609375,
+            104.41845703125,
+            70.32763671875
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882779.086111,
+          "load": [
+            121.427734375,
+            110.25,
+            76.63427734375
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882779.099543,
+          "load": [
+            121.427734375,
+            110.25,
+            76.63427734375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882780.328475,
+          "load": [
+            121.427734375,
+            110.25,
+            76.63427734375
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882780.342153,
+          "load": [
+            121.427734375,
+            110.25,
+            76.63427734375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882780.9550169,
+          "load": [
+            121.427734375,
+            110.25,
+            76.63427734375
+          ]
+        }
+      },
+      {
+        "label": "compile-domurl-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/domurl/blob_url_entry_record_owner_test.v,/Users/alex/code/vox2/domurl/query_leading_question_owner_test.v,/Users/alex/code/vox2/domurl/url_base_parser_test.v,/Users/alex/code/vox2/domurl/url_constructor_copy_owner_test.v,/Users/alex/code/vox2/domurl/url_input_slots_test.v,/Users/alex/code/vox2/domurl/url_search_params_test.v,/Users/alex/code/vox2/domurl/urlencoded_bom_owner_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-none",
+          "/Users/alex/code/vox2/domurl/url_input_parser_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793882780.968204,
+          "load": [
+            121.427734375,
+            110.25,
+            76.63427734375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882796.6575968,
+          "load": [
+            126.1435546875,
+            111.79833984375,
+            77.771484375
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882796.6702049,
+          "load": [
+            126.1435546875,
+            111.79833984375,
+            77.771484375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882797.132359,
+          "load": [
+            125.0908203125,
+            111.81787109375,
+            77.9775390625
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882797.145375,
+          "load": [
+            125.0908203125,
+            111.81787109375,
+            77.9775390625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882797.479446,
+          "load": [
+            125.0908203125,
+            111.81787109375,
+            77.9775390625
+          ]
+        }
+      },
+      {
+        "label": "compile-bindings-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_object_blob_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_string_conversion_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-none",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793882797.4920142,
+          "load": [
+            125.0908203125,
+            111.81787109375,
+            77.9775390625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882936.737946,
+          "load": [
+            153.7275390625,
+            125.80859375,
+            88.40771484375
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882936.7506602,
+          "load": [
+            153.7275390625,
+            125.80859375,
+            88.40771484375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882938.230515,
+          "load": [
+            159.3544921875,
+            127.4384765625,
+            89.2021484375
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793882938.243215,
+          "load": [
+            159.3544921875,
+            127.4384765625,
+            89.2021484375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882939.6155121,
+          "load": [
+            159.3544921875,
+            127.4384765625,
+            89.2021484375
+          ]
+        }
+      },
+      {
+        "label": "compile-domurl-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-domurl-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/domurl/blob_url_entry_record_owner_test.v,/Users/alex/code/vox2/domurl/query_leading_question_owner_test.v,/Users/alex/code/vox2/domurl/url_base_parser_test.v,/Users/alex/code/vox2/domurl/url_constructor_copy_owner_test.v,/Users/alex/code/vox2/domurl/url_input_slots_test.v,/Users/alex/code/vox2/domurl/url_search_params_test.v,/Users/alex/code/vox2/domurl/urlencoded_bom_owner_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-sanitized",
+          "/Users/alex/code/vox2/domurl/url_input_parser_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793882939.630452,
+          "load": [
+            159.3544921875,
+            127.4384765625,
+            89.2021484375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793882985.70064,
+          "load": [
+            167.685546875,
+            134.03564453125,
+            93.59423828125
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793882985.7135308,
+          "load": [
+            167.685546875,
+            134.03564453125,
+            93.59423828125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793883037.710665,
+          "load": [
+            201.09423828125,
+            148.9130859375,
+            101.64794921875
+          ]
+        }
+      },
+      {
+        "label": "run-domurl-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-domurl-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793883037.723456,
+          "load": [
+            201.09423828125,
+            148.9130859375,
+            101.64794921875
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793883096.523612,
+          "load": [
+            195.07958984375,
+            156.17236328125,
+            107.31494140625
+          ]
+        }
+      },
+      {
+        "label": "compile-bindings-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/compile-bindings-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/url_object_blob_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_host_test.v,/Users/alex/code/vox2/browserjs/url_search_params_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_source_fixture_test.v,/Users/alex/code/vox2/browserjs/url_string_conversion_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-sanitized",
+          "/Users/alex/code/vox2/browserjs/url_host_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793883096.5364878,
+          "load": [
+            195.07958984375,
+            156.17236328125,
+            107.31494140625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793883378.78765,
+          "load": [
+            157.5615234375,
+            168.61572265625,
+            128.09716796875
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793883378.802866,
+          "load": [
+            157.5615234375,
+            168.61572265625,
+            128.09716796875
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793883382.81669,
+          "load": [
+            154.87353515625,
+            167.875,
+            128.07275390625
+          ]
+        }
+      },
+      {
+        "label": "run-bindings-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/run-bindings-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_RUNE_PERCENT_ENCODING": "1",
+          "VOX_PERCENT_ENCODING_BYTES_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793883382.83061,
+          "load": [
+            154.87353515625,
+            167.875,
+            128.07275390625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793883386.586408,
+          "load": [
+            154.87353515625,
+            167.875,
+            128.07275390625
+          ]
+        }
+      }
+    ]
+  },
+  "focused_jobs": 24,
+  "focused_case_executions": 576,
+  "before_after": {
+    "red-nested": {
+      "source_path": "/tmp/v_501/red-nested.25314.977881416.5792142640.tmp.c",
+      "source_sha256": "7591badf862813cd0733838e497202d9d9d9d9cf7a45ebb27e502097f9a19a87",
+      "binary_sha256": "7e9b5980a7b002933490420796cea1ae3263ab838a3fca55ff83a48715dcd210",
+      "constructor": "domurl__InputParserOwner* domurl__input_parser_from_constructor(void) {\n\treturn (domurl__InputParserOwner*)memdup(&(domurl__InputParserOwner){.parser = (domurl__URLInputParser){.storage_ = NULL, .slots_ = (domurl__URLInputCacheEntry*[512]){0}, .base_parser = (domurl__URLBaseParser){.storage_ = NULL}}}, sizeof(domurl__InputParserOwner));\n}"
+    },
+    "green": {
+      "source_path": "/tmp/v_501/green.26640.857882125.5791650944.tmp.c",
+      "source_sha256": "e5981efc29495a71bb9ec95eed175a38c5dc49c585f9eb28fe74399e649efccb",
+      "binary_sha256": "b9387934b94b776fbe5cecf62cee42b9cf4d79f94e1dee9fc17b25b34b9f3043",
+      "constructor": "domurl__InputParserOwner* domurl__input_parser_from_constructor(void) {\n\treturn (domurl__InputParserOwner*)memdup(&(domurl__InputParserOwner){.parser = (domurl__URLInputParser){.storage_ = NULL, .base_parser = (domurl__URLBaseParser){.storage_ = NULL}}}, sizeof(domurl__InputParserOwner));\n}"
+    }
+  },
+  "diagnostic_evidence": {
+    "path": "docs/performance/url-input-slot-initialization-diagnostics-20261105-evidence.zip",
+    "sha256": "5eca4fe6ce6017e753f5664f5b8722d117b2ea965d17969ce9c80c29538d6a4c",
+    "bytes": 227816,
+    "entries": 178
+  },
+  "final_evidence": {
+    "path": "docs/performance/chatgpt-percent-encoding-bytes-20261105-evidence.zip",
+    "sha256": "1be932b25f6302def899ddca9e3505e025f296344f6e495ec387eb8ab1b16b6e",
+    "bytes": 306688,
+    "entries": 279
+  },
+  "companion_encoder_sources": {
+    "url/percent_encoding.v": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2",
+    "url/percent_encoding_bytes.v": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668",
+    "url/percent_encoding_bytes_test.v": "e2a70acf286ff5a579cd3f10dc5c406dfeb792fab9b1f40e96cd77547ce35117",
+    "url/ascii_membership.v": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68"
+  },
+  "qualification": "The direct constructor alone did not reproduce the problem. The nested-owner regression fails at initial slot zero before the fix, and both nested-constructor/bucket-zero checks pass afterward. A small strict Clang syntax check diagnoses the pointer conversion. Native JSC ASan checks fail in both scalar and byte encoder modes before the fix and pass in both modes afterward. Fresh DOMURL and binding selections cover poisoned preallocation, ordinary GC, no GC and ASan/UBSan. Component encoder instruction results and page performance are separate; no saving credited to this correctness fix.",
+  "acceptance": false,
+  "instruction_credit": 0,
+  "companion_encoder_commit": "78a6b88be",
+  "native_owner_constructor_proof": {
+    "before": {
+      "generated_c_sha256": "b4890a38c8bb2abb97a40d75f2d46aa7518c6f5266f34e33f1dda76dc0331aa1",
+      "constructor": "\treturn (__v_result_browserjs__URLHostptr){.ok = true, .value = (browserjs__URLHost*)memdup(&(browserjs__URLHost){.settings = settings, .runtime = NULL, .records = new_map(sizeof(void*), sizeof(browserjs__URLHostRecord*), map_hash_int_8, map_eq_int_8, map_clone_int_8, map_free_nop), .by_wrapper = new_map(sizeof(void*), sizeof(browserjs__URLHostRecord*), map_hash_int_8, map_eq_int_8, map_clone_int_8, map_free_nop), .parser = (domurl__URLInputParser){.storage_ = NULL, .slots_ = (domurl__URLInputCacheEntry*[512]){0}, .base_parser = (domurl__URLBaseParser){.storage_ = NULL}}}, sizeof(browserjs__URLHost))};"
+    },
+    "after": {
+      "generated_c_sha256": "cbf420c8cfaa89196e5e45026f375cc359390ae4cccdaf9991beaa9cef40c276",
+      "constructor": "\treturn (__v_result_browserjs__URLHostptr){.ok = true, .value = (browserjs__URLHost*)memdup(&(browserjs__URLHost){.settings = settings, .runtime = NULL, .records = new_map(sizeof(void*), sizeof(browserjs__URLHostRecord*), map_hash_int_8, map_eq_int_8, map_clone_int_8, map_free_nop), .by_wrapper = new_map(sizeof(void*), sizeof(browserjs__URLHostRecord*), map_hash_int_8, map_eq_int_8, map_clone_int_8, map_free_nop), .parser = (domurl__URLInputParser){.storage_ = NULL, .base_parser = (domurl__URLBaseParser){.storage_ = NULL}}}, sizeof(browserjs__URLHost))};"
+    }
+  },
+  "test_executable_identities": {
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-prealloc": {
+      "sha256": "058d12b19e2713077267b54abae1f7156c88cd5f1ea5102379f18ad19310e84f",
+      "bytes": 1749808
+    },
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-default": {
+      "sha256": "d9d9688da54a71fdf39e700146c8731bcaaf34ffbcbe28af0bb06dfbf8140b66",
+      "bytes": 1871312
+    },
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-none": {
+      "sha256": "e4f08b37a2608a6d112b0834bfb36abedaf9082616c1bd467af9448dba676633",
+      "bytes": 1694496
+    },
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/domurl-sanitized": {
+      "sha256": "1bb8c7411535dc60cf6c434be5e5d14efbdd16371c5d693d2c35a9c381ee7394",
+      "bytes": 8121632
+    },
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-prealloc": {
+      "sha256": "bac7c1a20de427a7d5d7dcbd02ec2a6ef5b5ac22495d6938a9e0604d9631c30f",
+      "bytes": 12283344
+    },
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-default": {
+      "sha256": "5082fdca305e664bf17347ec0643ed990be07116c67a39170a03a5c92ec1b660",
+      "bytes": 12277216
+    },
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-none": {
+      "sha256": "5c6120ae462de7ef1f725a5918f00267098ed46639602076b1996c5162587b3c",
+      "bytes": 12187408
+    },
+    "Build/chatgpt-percent-encoding-bytes-20261105-r3/bindings-sanitized": {
+      "sha256": "d392f62f61fef01da079e2c26085872bdd1ba4d20a8ece9f4eb6b273b973ac61",
+      "bytes": 51604592
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "complete": false,
+  "status": "pending-final-source-proof",
+  "recorded_unix": 1793883868.338478,
+  "implementation_commits": [
+    "3d1dba1a8",
+    "78a6b88be"
+  ],
+  "availability_preflight": {
+    "unix": 1793883638.580398,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+        "dirty": true,
+        "head": "3576100c0123c4e2a7111c715277ddbb0c3a276b",
+        "repository_sha256": "f9838f64c98d30a4d4c81244de81531b7714f5d3eb4e7baf709f873a91ce4e47"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "a18c9ed6a6e353caa31cafe6dfc8e8870e62b442",
+        "id": "1b43c5971b0d41c2b49b36a83be6a96e"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "52bd5f547b5b955c7b5d1da7897f359ae4db8aa7394a832151fa62dd281d1373",
+        "dirty": true,
+        "head": "5692587f9a5902516d6e377bbffeecb1a31e08f6",
+        "repository_sha256": "ae9951f8814541f08a2a1031ea49c67894ac9348fb855d9b26395d343b61f31b"
+      }
+    },
+    "observed_executable_sha256": "e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c",
+    "marker": true,
+    "source_proof": [
+      {
+        "path": "url/percent_encoding.v",
+        "exists_at_head": true,
+        "matches": false,
+        "current_sha256": "b6ce3c2712322fe01e7536a3b888ffafb4413f4310785e23042ea30385843bc2"
+      },
+      {
+        "path": "url/percent_encoding_bytes.v",
+        "exists_at_head": false,
+        "matches": false,
+        "current_sha256": "b57ff13be6ad29e093890fbb76fd1d73ebaa5bf169c7f060701147f3dc3ec668"
+      },
+      {
+        "path": "url/ascii_membership.v",
+        "exists_at_head": true,
+        "matches": true,
+        "current_sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68"
+      },
+      {
+        "path": "domurl/url_input_parser.v",
+        "exists_at_head": true,
+        "matches": false,
+        "current_sha256": "3edd7da37d4f895b382190fd57e1474fff7b19ffae273543ab113b8ebea2e792"
+      }
+    ],
+    "locks": {
+      "build": "busy",
+      "bundle": "free"
+    },
+    "browser_captures": 0,
+    "manual_build_requests": 0,
+    "current_build_inputs_before": {
+      "head": "754372bf0dac2f7299065e185b3ab5a8bb84b689",
+      "repository_sha256": "c01152d78d320734cd73d9ab5b49339c0f54f13aa733291d15946937bec08b87",
+      "build_inputs_sha256": "733789d21b08d106d58e527b4cdb98d3313f5db96fada18ac7c7086b00fc60a0",
+      "dirty": true
+    },
+    "current_build_inputs_after": {
+      "head": "754372bf0dac2f7299065e185b3ab5a8bb84b689",
+      "repository_sha256": "c01152d78d320734cd73d9ab5b49339c0f54f13aa733291d15946937bec08b87",
+      "build_inputs_sha256": "733789d21b08d106d58e527b4cdb98d3313f5db96fada18ac7c7086b00fc60a0",
+      "dirty": true
+    },
+    "aggregate_source_stable": true,
+    "aggregate_matches_completed_build": false
+  },
+  "host": {
+    "cpu_count": 18,
+    "load": [
+      110.91259765625,
+      138.818359375,
+      130.99609375
+    ]
+  },
+  "browser_captures": 0,
+  "manual_build_requests": 0,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "qualification": "The latest completed executable contains the byte-encoder marker, but its recorded Git head does not contain the final owned source and its stable aggregate build-input hash differs from the current source. It cannot validate the final encoder plus nested cache initialization fix. Another shared build is active. No browser capture, page instruction comparison, copied app or separate manual production build was launched. Prepared eligibility/control/matched/broad scripts retain the same SOCKS fixture, original author bytes and unchanged references. Focused/component checks are complete in their separate receipts; no whole-page or Brave credit.",
+  "evidence": {
+    "path": "docs/performance/chatgpt-percent-encoding-bytes-production-pending-20261105-evidence.zip",
+    "sha256": "04e2fcd14311d8516fc902b7bcf363700b3da7f9c2bbe3e41ea8ea9896a600f9",
+    "bytes": 14215,
+    "entries": 5
+  }
+}

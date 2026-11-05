@@ -2364,3 +2364,79 @@ host condition and verified archive, including the earlier unavailable-bundle
 checkpoint. The requested **5% advantage over Brave remains unmet**. These
 frozen-page results establish neither live-site performance, isolated rendering
 time nor scrolling FPS, and no qualifying catalog entry is added.
+
+
+## November 5: byte percent encoding and nested cache initialization
+
+Commit `78a6b88be` percent-encodes valid UTF-8 with an exact-sized owned byte
+buffer. All encode sets escape non-ASCII code points, so their original UTF-8
+bytes can be escaped directly. Unchanged ASCII still returns an owned clone;
+malformed UTF-8 keeps the original rune decoder and its replacement behavior.
+`VOX_RETAIN_RUNE_PERCENT_ENCODING` selects the original encoder for comparisons.
+
+The native binding sanitizer uncovered a bug in the earlier input cache,
+reproduced with both encoders. An explicit fixed pointer-array default became
+an array expression inside a nested C aggregate initializer. Clang treated that
+expression as the first pointer element, leaving cache slot zero pointing to
+stack storage. Generated-C probes and a small strict Clang reproducer confirm
+the conversion. Commit `3d1dba1a8` removes the explicit default and uses aggregate
+zero initialization. The nested-owner regression fails before this change and
+passes afterward, including all 512 initial slots, bucket-zero admission and
+clear/reuse. The direct constructor alone did not reproduce the bug. The native
+owner's generated constructor and actual JSC sanitizer checks confirm the fix.
+
+The combined **48-job focused verification passes 1,488 case executions**. It
+carries 24 successful URL and isolated file-policy jobs with unchanged encoder
+sources; those generated programs do not include DOMURL. It freshly runs 24
+DOMURL/native binding jobs after the cache fix, covering 576 executions in both
+encoder modes. Poisoned preallocation, ordinary GC, no GC and C `-O0` ASan/UBSan
+pass. Checks cover every ASCII byte, all nine sets and both space policies,
+Unicode boundaries, malformed sequences, random scalar sequences, input-arena
+retirement, actual JSC coercion/reentry, cache eviction and close. Compile peak
+is 5,411,192,832 bytes under 12 GiB; runtime peak is 947,634,176 bytes under 3 GiB.
+
+The component benchmark (`25fb5ec5c`) uses production C `-O3`, **unpoisoned**
+preallocation, exact rune-based output oracles and one executable for
+control/candidate/candidate/control observations. Setup and oracle creation are
+outside the instruction interval; output checks and scratch retirement remain
+inside, with workspace setup amortized across 64 repetitions. Two additional
+execution diagnostics remain separate from the unprofiled summary.
+
+| Component scene | Median instruction reduction |
+| --- | ---: |
+| Single ASCII path characters | 62.042% |
+| Single escaped query characters | 63.010% |
+| Unchanged ASCII string | 86.641% |
+| Mixed query | 46.670% |
+| Space-as-plus form input | 52.881% |
+| Unicode | 80.761% |
+| Malformed UTF-8 | −3.655% |
+
+The malformed-input regression remains retained. Preliminary cohorts used a
+workspace per repetition and/or poisoned allocation; all their observations and
+source versions remain preserved. A preliminary summary accidentally included
+the diagnostic control and is corrected from the unchanged raw observations.
+Changes in benchmark boundaries or poisoning receive no engine optimization
+credit. The initial whole-URL selection also combined a process-wide file-origin
+test with tests requiring default policy; the final selection isolates it without
+changing assertions. The costly full-DWARF diagnostic build was stopped after
+the relevant IR/assembly was retained and receives no validation credit.
+
+The [encoder receipt](performance/chatgpt-percent-encoding-bytes-20261105.json)
+and [cache correctness receipt](performance/url-input-slot-initialization-20261105.json)
+link the focused checks, raw observations, failing controls, source proofs,
+guards, host conditions and verified archives. The cache fix is shared by both
+encoder modes and receives no percent-encoder performance attribution.
+
+Browser validation remains pending. Completed executable
+`e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c`
+contains the encoder marker, but its recorded source head and aggregate input
+hash do not establish the final encoder and cache fix. The current source hash
+is stable across two reads and differs from that receipt. Another shared build
+is active; no separate production build or app copy is made. No page captures
+or instruction trials are launched for this change. The prepared comparison
+retains the original SOCKS fixture, author scripts and content/pixel references.
+The [availability receipt](performance/chatgpt-percent-encoding-bytes-production-20261105.json)
+preserves that preflight and harness. **No whole-page saving is credited**, no
+broad checkpoint is due, and the cadence stays at zero. The requested **5%
+advantage over Brave remains unmet**.
