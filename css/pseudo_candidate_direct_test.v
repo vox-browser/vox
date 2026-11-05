@@ -147,3 +147,48 @@ fn test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists() {
 	}
 	$if prealloc { assert platform.thread_arena_usage().used == before }
 }
+
+fn test_pseudo_candidate_empty_indexes_observe_late_population_and_mutable_hints() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut element := pseudo_candidate_fixture_element(document, 'http://www.w3.org/1999/xhtml')
+	element.set_attribute_value('class', 'CaRD')
+	element.set_attribute_value('id', 'TARGET')
+	element.set_attribute_value('data-x', 'value')
+	mut document_node := document.as_node()
+	document_node.append_child(element.as_node()) or { panic(err) }
+	abstract := dom.AbstractElement.new(element, dom.PseudoElement.before)
+	for slot in 0 .. 7 {
+		mut cache := RuleCache.new()
+		cache.fold_id_and_class_name_case = true
+		for _ in 0 .. 3 {
+			assert !cache.has_candidate_rule_for_pseudo_element(abstract, .after)
+			mut rule := pseudo_candidate_fixture_rule(PseudoElement.after)
+			match slot {
+				0 { cache.rules_by_class['card'] = [rule] }
+				1 { cache.rules_by_id['target'] = [rule] }
+				2 { cache.rules_by_tag_name['div'] = [rule] }
+				3 { cache.rules_by_pseudo_element[.before] = [rule] }
+				4 { cache.root_rules = [rule] }
+				5 { cache.rules_by_attribute_name['data-x'] = [rule] }
+				else { cache.other_rules = [rule] }
+			}
+			assert cache.has_candidate_rule_for_pseudo_element(abstract, .after)
+			rule.pseudo_element = PseudoElement.selection
+			assert !cache.has_candidate_rule_for_pseudo_element(abstract, .after)
+			assert cache.has_candidate_rule_for_pseudo_element(abstract, .selection)
+			assert pseudo_candidate_old_buckets_oracle(cache, abstract, .selection)
+			match slot {
+				0 { cache.rules_by_class.clear() }
+				1 { cache.rules_by_id.clear() }
+				2 { cache.rules_by_tag_name.clear() }
+				3 { cache.rules_by_pseudo_element.clear() }
+				4 { cache.root_rules = []&MatchingRule{} }
+				5 { cache.rules_by_attribute_name.clear() }
+				else { cache.other_rules = []&MatchingRule{} }
+			}
+			gc_collect()
+			assert !cache.has_candidate_rule_for_pseudo_element(abstract, .selection)
+		}
+	}
+}

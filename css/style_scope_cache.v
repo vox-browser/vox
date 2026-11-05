@@ -307,42 +307,52 @@ fn rule_cache_bucket_has_pseudo_element(bucket []&MatchingRule, pseudo_element P
 
 fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
 	element := abstract_element.element()
-	for original_class_name in element.classes {
-		class_name := cache.selector_name_bucket_key(original_class_name)
-		if bucket := cache.rules_by_class[class_name] {
-			if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
-				return true
-			}
-		}
-	}
-	if original_id := element.id() {
-		id := cache.selector_name_bucket_key(original_id)
-		if bucket := cache.rules_by_id[id] {
-			if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
-				return true
-			}
-		}
-	}
-	tag_name := element.lowercased_local_name()
-	if bucket := cache.rules_by_tag_name[tag_name] {
-		if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
-			return true
-		}
-	}
-	if pseudo := style_scope_pseudo_element_from_abstract_element(abstract_element) {
-		if is_known_pseudo_element_type(pseudo) {
-			if bucket := cache.rules_by_pseudo_element[pseudo] {
+	report_empty_pseudo_candidate_indexes(cache, element)
+	if retain_empty_pseudo_candidate_lookups || cache.rules_by_class.len > 0 {
+		for original_class_name in element.classes {
+			class_name := cache.selector_name_bucket_key(original_class_name)
+			if bucket := cache.rules_by_class[class_name] {
 				if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
 					return true
 				}
 			}
-		} else {
-			// NOTE: We don't cache rules for unknown pseudo-elements. They can't
-			// match anything anyway.
+		}
+	}
+	if retain_empty_pseudo_candidate_lookups || cache.rules_by_id.len > 0 {
+		if original_id := element.id() {
+			id := cache.selector_name_bucket_key(original_id)
+			if bucket := cache.rules_by_id[id] {
+				if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
+					return true
+				}
+			}
+		}
+	}
+	if retain_empty_pseudo_candidate_lookups || cache.rules_by_tag_name.len > 0 {
+		tag_name := element.lowercased_local_name()
+		if bucket := cache.rules_by_tag_name[tag_name] {
+			if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
+				return true
+			}
+		}
+	}
+	if retain_empty_pseudo_candidate_lookups || cache.rules_by_pseudo_element.len > 0 {
+		if pseudo := style_scope_pseudo_element_from_abstract_element(abstract_element) {
+			if is_known_pseudo_element_type(pseudo) {
+				if bucket := cache.rules_by_pseudo_element[pseudo] {
+					if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
+						return true
+					}
+				}
+			} else {
+				// NOTE: We don't cache rules for unknown pseudo-elements. They can't
+				// match anything anyway.
+			}
 		}
 	}
 
-	if element.is_document_element() {
+	if (retain_empty_pseudo_candidate_lookups || cache.root_rules.len > 0)
+		&& element.is_document_element() {
 		if rule_cache_bucket_has_pseudo_element(cache.root_rules, pseudo_element) {
 			return true
 		}
