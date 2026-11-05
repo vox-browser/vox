@@ -2343,7 +2343,7 @@ fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_e
 			for attribute in attrs.attrs {
 				name := rule_cache_attribute_bucket_name(attribute.name())
 				if name in cache.rules_by_attribute_name {
-					style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_attribute_name[name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+					style_scope_add_attribute_bucket_rules_to_run(style_computer, abstract_element, name, unsafe { cache.rules_by_attribute_name[name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 				}
 			}
 		}
