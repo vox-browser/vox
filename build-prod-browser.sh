@@ -3,6 +3,13 @@ set -eu
 
 # Build the optimized V-native browser for the current desktop platform.
 #
+# usage: build-prod-browser.sh [--no-parallel-cc]
+#
+# By default V splits the generated C into units, compiles them concurrently
+# (-parallel-cc) and links them with ThinLTO, which keeps cross-unit inlining.
+# --no-parallel-cc compiles one sealed C unit instead: several times slower to
+# build, for maximum binary performance and comparisons with single-unit builds.
+#
 # Environment overrides:
 #   V_BIN                     V compiler executable
 #   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
@@ -14,14 +21,20 @@ set -eu
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
 #   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
 #   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
+#   VOX_BUILD_C_MODE          parallel (default) or single; set by the build supervisor
 
-if [ "$#" -ne 0 ]; then
-    echo "usage: build-prod-browser.sh" >&2
-    exit 2
-fi
+single_c_unit_flag=
+case "$#:${1:-}" in
+    0:) ;;
+    1:--no-parallel-cc) single_c_unit_flag=--no-parallel-cc ;;
+    *)
+        echo "usage: build-prod-browser.sh [--no-parallel-cc]" >&2
+        exit 2
+        ;;
+esac
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build
+    exec python3 "$repo_dir/tools/rebuild_browser.py" --build $single_c_unit_flag
 fi
 
 case "$(uname -s)" in
@@ -33,16 +46,23 @@ esac
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != preprocessed-c-v1 ]; then
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != c-mode-v2 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
 : "${VOX_BUILD_RECEIPT_DIR:?production build receipt directory is required}"
 
-if [ "$#" -ne 0 ]; then
-    echo "usage: build-prod-browser.sh" >&2
-    exit 2
+c_mode=${VOX_BUILD_C_MODE:-parallel}
+if [ -n "$single_c_unit_flag" ]; then
+    c_mode=single
 fi
+case "$c_mode" in
+    parallel|single) ;;
+    *)
+        echo "VOX_BUILD_C_MODE must be parallel or single" >&2
+        exit 2
+        ;;
+esac
 
 build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/v"}
 cache_dir="$repo_dir/Build/v"
@@ -269,6 +289,8 @@ if [ "$gc_mode" = prealloc ]; then
     # The generated translation unit contains many small style/layout adapters.
     # Inline across those adapters without relaxing checks or FP semantics.
     extra_cflags="$extra_cflags -O3 -mllvm -inline-threshold=1500"
+    # ThinLTO inlines across split C units at link time; keep the same threshold.
+    parallel_lto_ldflags=" -Wl,-mllvm,-inline-threshold=1500"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     if [ "$(uname -m)" = arm64 ] && [ "$(getconf PAGESIZE)" = 16384 ]; then
@@ -283,7 +305,10 @@ elif [ "$gc_mode" != none ]; then
 else
     set -- "$@" -prod -gc none
 fi
+requested_c_mode=$c_mode
 if [ -n "${LADYBIRD_V_PROFILE:-}" ]; then
+    # V compiles profiled programs as one unit inside the resident compiler.
+    c_mode=single
     set -- "$@" -profile "$LADYBIRD_V_PROFILE" -profile-no-inline \
         -profile-fns "${LADYBIRD_V_PROFILE_FNS:-main__BrowserApp_install_loaded_page,layout__run_document_layout_with_renderer_mode}"
     # V emits profiling stdio calls ahead of the macOS stdio declarations.
@@ -326,7 +351,7 @@ mv -f "$helper_tmp" "$binary_dir/VoxAdblockWorker"
 
 )
 
-echo "Building Vox with: $* -cflags $extra_cflags"
+echo "Building Vox ($c_mode C) with: $* -cflags $extra_cflags"
 # Root browser features are split across main.v and companion module files.
 if [ "$gc_mode" = prealloc ]; then
     # V resolves builtin from its compiler root rather than -path. The staged
@@ -335,21 +360,34 @@ if [ "$gc_mode" = prealloc ]; then
 else
     cd "$repo_dir"
 fi
-generated_dir="$VOX_BUILD_RECEIPT_DIR/generated"
-mkdir -p "$generated_dir"
-if [ -n "$extra_ldflags" ]; then
-    "$v_compiler" "$@" \
-        -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-        -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+if [ "$c_mode" = parallel ]; then
+    # V compiles the split units itself and links them. Without native-header
+    # split support, or when native code would be duplicated in every unit, the
+    # helper leaves no executable and the sealed single-unit compile below runs.
+    python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+        --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
+        -cflags "$extra_cflags -flto=thin" \
+        -ldflags "$extra_ldflags -flto=thin${parallel_lto_ldflags:-}" "$repo_dir"
 else
-    "$v_compiler" "$@" \
-        -cflags "$extra_cflags" \
-        -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+    printf '{"mode": "single", "requested": "%s"}\n' "$requested_c_mode" > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
 fi
-python3 "$repo_dir/tools/freeze_browser_compile.py" \
-    --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
-    --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" \
-    --output "$compile_dir/Vox"
+if [ ! -f "$compile_dir/Vox" ]; then
+    generated_dir="$VOX_BUILD_RECEIPT_DIR/generated"
+    mkdir -p "$generated_dir"
+    if [ -n "$extra_ldflags" ]; then
+        "$v_compiler" "$@" \
+            -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
+            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+    else
+        "$v_compiler" "$@" \
+            -cflags "$extra_cflags" \
+            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+    fi
+    python3 "$repo_dir/tools/freeze_browser_compile.py" \
+        --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+        --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" \
+        --output "$compile_dir/Vox"
+fi
 mv -f "$compile_dir/Vox" "$binary_dir/Vox"
 python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
 

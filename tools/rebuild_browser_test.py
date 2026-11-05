@@ -415,5 +415,72 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
                 self.assertEqual(evidence['child_exit_code'], 0)
 
 
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_single_unit_request_reaches_the_build_and_its_published_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.app(root / 'Build/v', b'old')
+            build.write_json(root / 'Build/production-build/request.json', dict(id='one', c_mode='single'))
+            def compile(repo, stage, receipt, environment):
+                self.assertEqual(environment['VOX_BUILD_C_MODE'], 'single')
+                build.write_json(receipt / 'c-compile.json', dict(mode='single', requested='single'))
+                self.app(stage, b'single unit')
+                return 0
+            state = dict(head='one', build_inputs_sha256='one')
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', return_value=state):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            latest = json.loads((root / 'Build/production-build/latest.json').read_text())
+            self.assertEqual(latest['c_compile'], dict(mode='single', requested='single'))
+            started = json.loads((root / 'Build/production-build/started.json').read_text())
+            self.assertEqual(started['id'], 'one')
+
+    def test_requests_without_a_mode_build_parallel_c(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            build.write_json(root / 'Build/production-build/request.json', dict(id='one'))
+            modes = []
+            def compile(repo, stage, receipt, environment):
+                modes.append(environment['VOX_BUILD_C_MODE'])
+                return 1
+            state = dict(head='one', build_inputs_sha256='one')
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', return_value=state):
+                self.assertEqual(build.build_pending(root, compile), 1)
+            self.assertEqual(modes, ['parallel'])
+
+    def test_automatic_requests_keep_a_single_unit_request_until_a_build_starts_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / 'Build/production-build'
+            def request():
+                return json.loads((state / 'request.json').read_text())
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'git', return_value=b'head\n'):
+                build.enqueue(root, background=False)
+                self.assertEqual(request()['c_mode'], 'parallel')
+                build.enqueue(root, background=False, c_mode='single')
+                build.enqueue(root, background=False)
+                self.assertEqual(request()['c_mode'], 'single')
+                build.write_json(state / 'started.json', dict(id=request()['id']))
+                build.enqueue(root, background=False)
+                self.assertEqual(request()['c_mode'], 'parallel')
+                build.enqueue(root, background=False, c_mode='single')
+                build.enqueue(root, background=False, c_mode='parallel')
+                self.assertEqual(request()['c_mode'], 'parallel')
+
+    def test_single_unit_flag_is_only_accepted_for_builds(self):
+        tool = Path(build.__file__)
+        result = subprocess.run([sys.executable, str(tool), '--request', '--no-parallel-cc'],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('--no-parallel-cc requires --build', result.stderr)
+        script = tool.parents[1] / 'build-prod-browser.sh'
+        for arguments in (['--parallel'], ['--no-parallel-cc', '--no-parallel-cc']):
+            result = subprocess.run(['sh', str(script), *arguments], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn('usage: build-prod-browser.sh [--no-parallel-cc]', result.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()

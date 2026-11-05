@@ -66,12 +66,29 @@ def production_environment(environment):
             if not k.startswith(('GIT_', 'VOX_', 'LADYBIRD_')) or k in retained}
 
 
-def enqueue(root, background=True):
+def read_json(path):
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def pending_c_mode(state):
+    """An explicit single-unit request survives later automatic requests until a build starts it."""
+    pending = read_json(state / 'request.json') or {}
+    started = read_json(state / 'started.json') or {}
+    if pending.get('c_mode') == 'single' and started.get('id') != pending.get('id'):
+        return 'single'
+    return 'parallel'
+
+
+def enqueue(root, background=True, c_mode=None):
     validate_repository(root)
     state = root / 'Build/production-build'
     with lock(state / 'queue.lock'):
         write_json(state / 'request.json', dict(id=uuid.uuid4().hex,
-                   head=git(root, 'rev-parse', 'HEAD').decode().strip()))
+                   head=git(root, 'rev-parse', 'HEAD').decode().strip(),
+                   c_mode=c_mode or pending_c_mode(state)))
         if background:
             with (state / 'worker.log').open('ab') as log:
                 subprocess.Popen([sys.executable, str(root / 'tools/rebuild_browser.py'), '--worker'],
@@ -164,7 +181,7 @@ def publish(root, stage):
 def run_build(root, stage, receipt, environment):
     environment = {k: v for k, v in environment.items() if not k.startswith('GIT_')}
     environment.update(VOX_BUILD_SUPERVISED='1', VOX_BUILD_OUTPUT_DIR=str(stage),
-                       VOX_BUILD_COMPILE_PROTOCOL='preprocessed-c-v1',
+                       VOX_BUILD_COMPILE_PROTOCOL='c-mode-v2',
                        VOX_BUILD_RECEIPT_DIR=str(receipt))
     guard = root / 'tools/run_memory_bounded.py'
     # sh reads a script file incrementally. Editing that file while the compiler
@@ -202,6 +219,7 @@ def build_pending(root, runner=run_build, foreground=False):
             return 75 if foreground else 0
         while True:
             request = json.loads((state / 'request.json').read_text())
+            write_json(state / 'started.json', dict(id=request.get('id')))
             before = repository_state(root)
             name = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-') + uuid.uuid4().hex[:8]
             receipt = state / 'receipts' / name
@@ -209,8 +227,13 @@ def build_pending(root, runner=run_build, foreground=False):
             with tempfile.TemporaryDirectory(prefix='.production-output-', dir=root / 'Build') as temporary:
                 stage = Path(temporary)
                 write_json(receipt / 'inputs-before.json', before)
-                code = runner(root, stage, receipt, os.environ.copy())
+                environment = os.environ.copy()
+                environment['VOX_BUILD_C_MODE'] = request.get('c_mode') or 'parallel'
+                code = runner(root, stage, receipt, environment)
                 record = dict(request=request, inputs=before, exit=code)
+                c_compile = read_json(receipt / 'c-compile.json')
+                if c_compile is not None:
+                    record['c_compile'] = c_compile
                 if code:
                     write_json(receipt / 'result.json', record)
                     print('Production build failed; previous bundle retained. See ' + str(receipt), flush=True)
@@ -310,7 +333,11 @@ def main():
     modes.add_argument('--build', action='store_true')
     modes.add_argument('--upgrade-worker', action='store_true')
     modes.add_argument('--worker-after-current', action='store_true')
+    parser.add_argument('--no-parallel-cc', action='store_true',
+                        help='with --build: compile one C unit for maximum binary performance')
     args = parser.parse_args()
+    if args.no_parallel_cc and not args.build:
+        parser.error('--no-parallel-cc requires --build')
     if args.install_hook:
         install_hook(ROOT)
         return 0
@@ -323,7 +350,7 @@ def main():
     if args.worker_after_current:
         return worker_after_current(ROOT)
     if args.build:
-        enqueue(ROOT, background=False)
+        enqueue(ROOT, background=False, c_mode='single' if args.no_parallel_cc else 'parallel')
     return build_pending(ROOT, foreground=args.build)
 
 
