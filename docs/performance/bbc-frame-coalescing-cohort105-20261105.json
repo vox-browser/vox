@@ -1,0 +1,983 @@
+{
+  "status": "Frame-task layout coalescing is committed and production-eligible with exact original pixels. Cohort105 completes all21valid capture audits but fails10%Brave gate;285530871median point reduction is variable, no robust saving.600unique broad cases perGC mode retain5known baseline failures. Goal remains open.",
+  "engine_commit": "17841f527",
+  "control_commit": "a0b54475a",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 1
+      },
+      {
+        "name": "default-control",
+        "exit": 1
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 1
+      },
+      {
+        "name": "none-control",
+        "exit": 1
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 1
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 1
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_frame_task_layout_coalesces_unqueried_mutations_into_final_geometry",
+          "test_frame_task_layout_preserves_intermediate_geometry_and_paint_queries",
+          "test_frame_task_layout_applies_cosmetic_filters_before_later_script_queries",
+          "test_frame_task_layout_flushes_nested_frames_and_keeps_initial_layout_synchronous",
+          "test_frame_task_layout_preserves_autofocus_before_later_frame_work",
+          "test_read_only_input_listener_keeps_adopted_paint_without_cosmetic_refresh",
+          "test_input_listener_query_flushed_mutation_still_refreshes_and_adopts_geometry",
+          "test_input_listener_adopts_native_paint_recorded_before_dispatch_finishes",
+          "test_read_only_timer_style_and_selector_queries_keep_the_adopted_paint_and_style",
+          "test_timer_query_flushed_class_change_still_runs_cosmetic_filter_refresh_once",
+          "test_timer_pending_text_and_style_replay_reaches_the_next_shell_paint",
+          "test_query_flushed_timer_effects_after_poll_survive_frame_paint_until_filter_refresh",
+          "test_timer_native_mutation_with_an_already_recorded_list_is_adopted",
+          "test_timer_canvas_and_selection_effects_are_replayed",
+          "test_changed_line_box_diagnostic_setting_repaints_and_equal_replay_stays_clean",
+          "test_scroll_snapshot_with_read_only_task_keeps_committed_paint_geometry",
+          "test_scroll_snapshot_with_read_only_input_keeps_committed_paint_geometry",
+          "test_scroll_snapshot_filter_mutation_still_updates_geometry_once",
+          "test_task_with_current_geometry_still_finishes_pending_initial_layout",
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_frame_preparation_allows_synchronous_geometry_and_paint_queries",
+          "test_nested_frame_preparation_presents_inner_updates_and_retains_outer_deferral",
+          "test_frame_preparation_adopts_a_replacement_documents_already_recorded_list",
+          "test_frame_preparation_refreshes_scroll_snapshot_without_relayout",
+          "test_frame_preparation_samples_animations_before_first_recording",
+          "test_frame_preparation_preserves_layout_tree_only_mode",
+          "test_animation_ticks_keep_unchanged_paint_and_do_not_repeat_procedural_filters",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry",
+          "test_animation_tick_commits_sampled_transform_endpoint_without_rebuilding_geometry",
+          "test_capture_defers_initial_geometry_until_face_requests_settle_without_waiting_for_ready",
+          "test_forced_geometry_bypasses_a_withheld_capture_opportunity_in_nested_preparation",
+          "test_capture_withholds_a_rendering_grant_already_queued_before_document_installation",
+          "test_background_capture_installation_completes_in_its_next_ready_frame",
+          "test_initial_font_layout_keeps_navigation_scripted_tree_and_portable_callers_synchronous",
+          "test_completed_local_css_faces_do_not_defer_initial_capture_layout",
+          "test_capture_rechecks_style_selected_fonts_before_committing_initial_geometry",
+          "test_deferred_native_rendering_preserves_queued_and_active_opportunities",
+          "test_first_relayout_flushes_autofocus_before_recording_paint"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_frame_task_layout_coalesces_unqueried_mutations_into_final_geometry",
+          "test_frame_task_layout_preserves_intermediate_geometry_and_paint_queries",
+          "test_frame_task_layout_applies_cosmetic_filters_before_later_script_queries",
+          "test_frame_task_layout_flushes_nested_frames_and_keeps_initial_layout_synchronous",
+          "test_frame_task_layout_preserves_autofocus_before_later_frame_work",
+          "test_read_only_input_listener_keeps_adopted_paint_without_cosmetic_refresh",
+          "test_input_listener_query_flushed_mutation_still_refreshes_and_adopts_geometry",
+          "test_input_listener_adopts_native_paint_recorded_before_dispatch_finishes",
+          "test_read_only_timer_style_and_selector_queries_keep_the_adopted_paint_and_style",
+          "test_timer_query_flushed_class_change_still_runs_cosmetic_filter_refresh_once",
+          "test_timer_pending_text_and_style_replay_reaches_the_next_shell_paint",
+          "test_query_flushed_timer_effects_after_poll_survive_frame_paint_until_filter_refresh",
+          "test_timer_native_mutation_with_an_already_recorded_list_is_adopted",
+          "test_timer_canvas_and_selection_effects_are_replayed",
+          "test_changed_line_box_diagnostic_setting_repaints_and_equal_replay_stays_clean",
+          "test_scroll_snapshot_with_read_only_task_keeps_committed_paint_geometry",
+          "test_scroll_snapshot_with_read_only_input_keeps_committed_paint_geometry",
+          "test_scroll_snapshot_filter_mutation_still_updates_geometry_once",
+          "test_task_with_current_geometry_still_finishes_pending_initial_layout",
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_frame_preparation_allows_synchronous_geometry_and_paint_queries",
+          "test_nested_frame_preparation_presents_inner_updates_and_retains_outer_deferral",
+          "test_frame_preparation_adopts_a_replacement_documents_already_recorded_list",
+          "test_frame_preparation_refreshes_scroll_snapshot_without_relayout",
+          "test_frame_preparation_samples_animations_before_first_recording",
+          "test_frame_preparation_preserves_layout_tree_only_mode",
+          "test_animation_ticks_keep_unchanged_paint_and_do_not_repeat_procedural_filters",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry",
+          "test_animation_tick_commits_sampled_transform_endpoint_without_rebuilding_geometry",
+          "test_capture_defers_initial_geometry_until_face_requests_settle_without_waiting_for_ready",
+          "test_forced_geometry_bypasses_a_withheld_capture_opportunity_in_nested_preparation",
+          "test_capture_withholds_a_rendering_grant_already_queued_before_document_installation",
+          "test_background_capture_installation_completes_in_its_next_ready_frame",
+          "test_initial_font_layout_keeps_navigation_scripted_tree_and_portable_callers_synchronous",
+          "test_completed_local_css_faces_do_not_defer_initial_capture_layout",
+          "test_capture_rechecks_style_selected_fonts_before_committing_initial_geometry",
+          "test_deferred_native_rendering_preserves_queued_and_active_opportunities",
+          "test_first_relayout_flushes_autofocus_before_recording_paint"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_frame_task_layout_coalesces_unqueried_mutations_into_final_geometry",
+          "test_frame_task_layout_preserves_intermediate_geometry_and_paint_queries",
+          "test_frame_task_layout_applies_cosmetic_filters_before_later_script_queries",
+          "test_frame_task_layout_flushes_nested_frames_and_keeps_initial_layout_synchronous",
+          "test_frame_task_layout_preserves_autofocus_before_later_frame_work",
+          "test_read_only_input_listener_keeps_adopted_paint_without_cosmetic_refresh",
+          "test_input_listener_query_flushed_mutation_still_refreshes_and_adopts_geometry",
+          "test_input_listener_adopts_native_paint_recorded_before_dispatch_finishes",
+          "test_read_only_timer_style_and_selector_queries_keep_the_adopted_paint_and_style",
+          "test_timer_query_flushed_class_change_still_runs_cosmetic_filter_refresh_once",
+          "test_timer_pending_text_and_style_replay_reaches_the_next_shell_paint",
+          "test_query_flushed_timer_effects_after_poll_survive_frame_paint_until_filter_refresh",
+          "test_timer_native_mutation_with_an_already_recorded_list_is_adopted",
+          "test_timer_canvas_and_selection_effects_are_replayed",
+          "test_changed_line_box_diagnostic_setting_repaints_and_equal_replay_stays_clean",
+          "test_scroll_snapshot_with_read_only_task_keeps_committed_paint_geometry",
+          "test_scroll_snapshot_with_read_only_input_keeps_committed_paint_geometry",
+          "test_scroll_snapshot_filter_mutation_still_updates_geometry_once",
+          "test_task_with_current_geometry_still_finishes_pending_initial_layout",
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_frame_preparation_allows_synchronous_geometry_and_paint_queries",
+          "test_nested_frame_preparation_presents_inner_updates_and_retains_outer_deferral",
+          "test_frame_preparation_adopts_a_replacement_documents_already_recorded_list",
+          "test_frame_preparation_refreshes_scroll_snapshot_without_relayout",
+          "test_frame_preparation_samples_animations_before_first_recording",
+          "test_frame_preparation_preserves_layout_tree_only_mode",
+          "test_animation_ticks_keep_unchanged_paint_and_do_not_repeat_procedural_filters",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry",
+          "test_animation_tick_commits_sampled_transform_endpoint_without_rebuilding_geometry",
+          "test_capture_defers_initial_geometry_until_face_requests_settle_without_waiting_for_ready",
+          "test_forced_geometry_bypasses_a_withheld_capture_opportunity_in_nested_preparation",
+          "test_capture_withholds_a_rendering_grant_already_queued_before_document_installation",
+          "test_background_capture_installation_completes_in_its_next_ready_frame",
+          "test_initial_font_layout_keeps_navigation_scripted_tree_and_portable_callers_synchronous",
+          "test_completed_local_css_faces_do_not_defer_initial_capture_layout",
+          "test_capture_rechecks_style_selected_fonts_before_committing_initial_geometry",
+          "test_deferred_native_rendering_preserves_queued_and_active_opportunities",
+          "test_first_relayout_flushes_autofocus_before_recording_paint"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/main_frame_task_layout_test.v": "95ed1f2ed168104272e940187e74b77fee13ea1294cc52fe507c000f1991cd5d",
+      "/Users/alex/code/vox2/main_frame_task_focus_test.v": "41e5034f5d88ee1d8da200f3fa774460996e156d5152fd78ef8375ef880b8262",
+      "/Users/alex/code/vox2/main_javascript_task_paint_test.v": "f6e70a161373a10d07bec374d3bdae5fd4af85d3a9bb2fa6f2f7c61e42c0631c",
+      "/Users/alex/code/vox2/main_frame_paint_test.v": "8192d5720da544a30b7854cc6c5f059602e1e8ae0eac69f00e9ae7809597055b",
+      "/Users/alex/code/vox2/main_initial_frame_layout_test.v": "b5d2a5c5e1f6efa61d0224da041362e60001ba735b74cd4d7c71432489c775a7",
+      "/Users/alex/code/vox2/main_relayout_autofocus_test.v": "aa0181e281ed29f5d9ba14a3ea7fe1d61d7af8baf6331205f5dcf0d5892a60a7",
+      "/Users/alex/code/vox2/main_frame_task_layout.v": "fce51b8f2304e967677282a987bcbc498843994c5eeaa546f29cd0101368e689",
+      "/Users/alex/code/vox2/main_frame_paint.v": "01cb28221fdaca852bf01c2fe463fce64f9ccb646bc7e4c094e8ebf32a32776f",
+      "/Users/alex/code/vox2/main_adblock.v": "7492f69791d25a7c305036a9a2d5cedc1329d264e1d1e31359604e7fe421ab3c",
+      "/Users/alex/code/vox2/main_device_layout.v": "20391809cc59f6ccb67afd0a137403aa947163ac149e30a92fa6e94ca0cba385"
+    },
+    "unchanged": true,
+    "cases_per_run": 38,
+    "expected_cases": [
+      "test_frame_task_layout_coalesces_unqueried_mutations_into_final_geometry",
+      "test_frame_task_layout_preserves_intermediate_geometry_and_paint_queries",
+      "test_frame_task_layout_applies_cosmetic_filters_before_later_script_queries",
+      "test_frame_task_layout_flushes_nested_frames_and_keeps_initial_layout_synchronous",
+      "test_frame_task_layout_preserves_autofocus_before_later_frame_work",
+      "test_read_only_input_listener_keeps_adopted_paint_without_cosmetic_refresh",
+      "test_input_listener_query_flushed_mutation_still_refreshes_and_adopts_geometry",
+      "test_input_listener_adopts_native_paint_recorded_before_dispatch_finishes",
+      "test_read_only_timer_style_and_selector_queries_keep_the_adopted_paint_and_style",
+      "test_timer_query_flushed_class_change_still_runs_cosmetic_filter_refresh_once",
+      "test_timer_pending_text_and_style_replay_reaches_the_next_shell_paint",
+      "test_query_flushed_timer_effects_after_poll_survive_frame_paint_until_filter_refresh",
+      "test_timer_native_mutation_with_an_already_recorded_list_is_adopted",
+      "test_timer_canvas_and_selection_effects_are_replayed",
+      "test_changed_line_box_diagnostic_setting_repaints_and_equal_replay_stays_clean",
+      "test_scroll_snapshot_with_read_only_task_keeps_committed_paint_geometry",
+      "test_scroll_snapshot_with_read_only_input_keeps_committed_paint_geometry",
+      "test_scroll_snapshot_filter_mutation_still_updates_geometry_once",
+      "test_task_with_current_geometry_still_finishes_pending_initial_layout",
+      "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+      "test_frame_preparation_allows_synchronous_geometry_and_paint_queries",
+      "test_nested_frame_preparation_presents_inner_updates_and_retains_outer_deferral",
+      "test_frame_preparation_adopts_a_replacement_documents_already_recorded_list",
+      "test_frame_preparation_refreshes_scroll_snapshot_without_relayout",
+      "test_frame_preparation_samples_animations_before_first_recording",
+      "test_frame_preparation_preserves_layout_tree_only_mode",
+      "test_animation_ticks_keep_unchanged_paint_and_do_not_repeat_procedural_filters",
+      "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry",
+      "test_animation_tick_commits_sampled_transform_endpoint_without_rebuilding_geometry",
+      "test_capture_defers_initial_geometry_until_face_requests_settle_without_waiting_for_ready",
+      "test_forced_geometry_bypasses_a_withheld_capture_opportunity_in_nested_preparation",
+      "test_capture_withholds_a_rendering_grant_already_queued_before_document_installation",
+      "test_background_capture_installation_completes_in_its_next_ready_frame",
+      "test_initial_font_layout_keeps_navigation_scripted_tree_and_portable_callers_synchronous",
+      "test_completed_local_css_faces_do_not_defer_initial_capture_layout",
+      "test_capture_rechecks_style_selected_fonts_before_committing_initial_geometry",
+      "test_deferred_native_rendering_preserves_queued_and_active_opportunities",
+      "test_first_relayout_flushes_autofocus_before_recording_paint"
+    ]
+  },
+  "focused_audit": {
+    "no_new_failures": true,
+    "raw_suite_pass": false,
+    "checked_inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "arm": "candidate",
+        "completed_cases": 38,
+        "passed": 36,
+        "baseline_failures": [
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+        ],
+        "new_case_failures": [],
+        "runtime_exit": 1
+      },
+      {
+        "mode": "default",
+        "arm": "control",
+        "completed_cases": 38,
+        "passed": 36,
+        "baseline_failures": [
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+        ],
+        "new_case_failures": [],
+        "runtime_exit": 1
+      },
+      {
+        "mode": "none",
+        "arm": "candidate",
+        "completed_cases": 38,
+        "passed": 36,
+        "baseline_failures": [
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+        ],
+        "new_case_failures": [],
+        "runtime_exit": 1
+      },
+      {
+        "mode": "none",
+        "arm": "control",
+        "completed_cases": 38,
+        "passed": 36,
+        "baseline_failures": [
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+        ],
+        "new_case_failures": [],
+        "runtime_exit": 1
+      },
+      {
+        "mode": "prealloc",
+        "arm": "candidate",
+        "completed_cases": 38,
+        "passed": 36,
+        "baseline_failures": [
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+        ],
+        "new_case_failures": [],
+        "runtime_exit": 1
+      },
+      {
+        "mode": "prealloc",
+        "arm": "control",
+        "completed_cases": 38,
+        "passed": 36,
+        "baseline_failures": [
+          "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+          "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+        ],
+        "new_case_failures": [],
+        "runtime_exit": 1
+      }
+    ],
+    "new_cases": [
+      "test_frame_task_layout_coalesces_unqueried_mutations_into_final_geometry",
+      "test_frame_task_layout_preserves_intermediate_geometry_and_paint_queries",
+      "test_frame_task_layout_applies_cosmetic_filters_before_later_script_queries",
+      "test_frame_task_layout_flushes_nested_frames_and_keeps_initial_layout_synchronous",
+      "test_frame_task_layout_preserves_autofocus_before_later_frame_work"
+    ],
+    "new_case_executions": 30,
+    "new_case_failures": 0,
+    "total_executions": 228,
+    "passes": 216,
+    "baseline_failures": 12,
+    "explanation": "Both candidate and immediate-layout control share precisely two pre-existing internal-paint assertions expecting CSS widths30/20 while actual device-pixel widths are60/40 at scale2. No test expectation/reference/tolerance is changed. All38test functions execute in every arm/mode. Preserve raw suite failures; this audit checks absence of new failures, not a full-suite pass.",
+    "unix": 1793863410.1437922
+  },
+  "broad_audit": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "cadence_reset": false,
+    "inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "layout_entered": 532,
+        "layout_passes": 529,
+        "layout_failures": [
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+        ],
+        "main_arms": {
+          "candidate": {
+            "entered": 68,
+            "passes": 66,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "entered": 68,
+            "passes": 66,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "unique_cases": 600,
+        "unique_passes": 595,
+        "unique_known_failures": 5
+      },
+      {
+        "mode": "none",
+        "layout_entered": 532,
+        "layout_passes": 529,
+        "layout_failures": [
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+        ],
+        "main_arms": {
+          "candidate": {
+            "entered": 68,
+            "passes": 66,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "entered": 68,
+            "passes": 66,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "unique_cases": 600,
+        "unique_passes": 595,
+        "unique_known_failures": 5
+      }
+    ],
+    "actual_case_executions": 1336,
+    "actual_passes": 1322,
+    "actual_baseline_failures": 14,
+    "notes": "532layout cases plus68main cases perGC mode. Main repeats both candidate/control arms, producing136main executions permode, including68repeated cases. Every original assertion is retained. Three layout andtwo main baseline failures persist; no full-pass/cadence reset claim.",
+    "unix": 1793864880.7944992
+  },
+  "cohort105": {
+    "valid_capture_cohort": true,
+    "rows": [
+      {
+        "pair": 1,
+        "brave": {
+          "instructions": {
+            "lower": 17775265286,
+            "upper": 17797230350
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28127772537,
+            "upper": 28127772537
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "vox": {
+          "instructions": {
+            "lower": 27600990584,
+            "upper": 27600990584
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        }
+      },
+      {
+        "pair": 2,
+        "brave": {
+          "instructions": {
+            "lower": 17636922428,
+            "upper": 17636922428
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28408223031,
+            "upper": 28408223031
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "vox": {
+          "instructions": {
+            "lower": 27734177885,
+            "upper": 27734177885
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        }
+      },
+      {
+        "pair": 3,
+        "brave": {
+          "instructions": {
+            "lower": 17483930203,
+            "upper": 17492233671
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27381757069,
+            "upper": 27381757069
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "vox": {
+          "instructions": {
+            "lower": 27190093542,
+            "upper": 27190093542
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        }
+      },
+      {
+        "pair": 4,
+        "brave": {
+          "instructions": {
+            "lower": 17696880787,
+            "upper": 17697403067
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27228386525,
+            "upper": 27228386525
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "vox": {
+          "instructions": {
+            "lower": 27837124433,
+            "upper": 27837124433
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        }
+      },
+      {
+        "pair": 5,
+        "brave": {
+          "instructions": {
+            "lower": 18005047901,
+            "upper": 18015156145
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27684294759,
+            "upper": 27684294759
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "vox": {
+          "instructions": {
+            "lower": 28169274256,
+            "upper": 28169274256
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        }
+      },
+      {
+        "pair": 6,
+        "brave": {
+          "instructions": {
+            "lower": 17394766194,
+            "upper": 17424136704
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28019708756,
+            "upper": 28019708756
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "vox": {
+          "instructions": {
+            "lower": 28483889941,
+            "upper": 28483889941
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        }
+      },
+      {
+        "pair": 7,
+        "brave": {
+          "instructions": {
+            "lower": 17459053472,
+            "upper": 17482541861
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 28175567985,
+            "upper": 28175567985
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        },
+        "vox": {
+          "instructions": {
+            "lower": 27558418521,
+            "upper": 27558418521
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "pixels": true,
+          "content": true,
+          "ownership": true
+        }
+      }
+    ],
+    "medians": {
+      "vox": 27734177885,
+      "control": 28019708756,
+      "brave": 17636922428
+    },
+    "median_point_reduction": 285530871,
+    "paired_deltas": [
+      526781953,
+      674045146,
+      191663527,
+      -608737908,
+      -484979497,
+      -464181185,
+      617149464
+    ],
+    "improvements": 4,
+    "regressions": 3,
+    "strict_left": 284838899410,
+    "strict_right": 156552895746,
+    "target_met": false,
+    "ratio": 1.6374977176080117,
+    "broad_trigger": true
+  },
+  "cohort_summary": {
+    "brave_median_lower_bound_instructions": 17636922428,
+    "cross_browser_pixels": {
+      "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+      "diff": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/cross-browser.diff.png",
+      "different_pixels": 2602001,
+      "exact": false,
+      "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+      "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/cross-browser.diff.png\n"
+    },
+    "instruction_scope": "launch",
+    "matched_control": {
+      "brave_median_lower_bound_instructions": 28019708756,
+      "instruction_scope": "launch",
+      "pairs": 7,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 27734177885,
+      "worst_vox_over_best_brave": 1.0461100923055888
+    },
+    "pairs": 7,
+    "passed": false,
+    "target_vox_fraction": 0.9,
+    "vox_median_instructions": 27734177885,
+    "worst_vox_over_best_brave": 1.6374977176080117
+  },
+  "cohort_guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort-with-host.py",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105",
+      "--repeat",
+      "7",
+      "--control-vox-app",
+      "Build/v/Vox.app",
+      "--control-disable-frame-task-layout-coalescing",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg",
+      "--retain-degenerate-border-msaa"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {
+      "91867": "Thu Nov  5 10:32:51 2026    ",
+      "91873": "Thu Nov  5 10:32:51 2026    ",
+      "92622": "Thu Nov  5 10:32:59 2026    ",
+      "92628": "Thu Nov  5 10:33:00 2026    ",
+      "94415": "Thu Nov  5 10:33:15 2026    ",
+      "94420": "Thu Nov  5 10:33:15 2026    ",
+      "95383": "Thu Nov  5 10:33:27 2026    ",
+      "95394": "Thu Nov  5 10:33:27 2026    ",
+      "96364": "Thu Nov  5 10:33:38 2026    ",
+      "96370": "Thu Nov  5 10:33:38 2026    ",
+      "97335": "Thu Nov  5 10:33:48 2026    ",
+      "97338": "Thu Nov  5 10:33:48 2026    ",
+      "98124": "Thu Nov  5 10:33:57 2026    ",
+      "98142": "Thu Nov  5 10:33:57 2026    ",
+      "98170": "Thu Nov  5 10:33:58 2026    ",
+      "98171": "Thu Nov  5 10:33:58 2026    ",
+      "98175": "Thu Nov  5 10:33:58 2026    ",
+      "98776": "Thu Nov  5 10:34:08 2026    ",
+      "98785": "Thu Nov  5 10:34:08 2026    ",
+      "98804": "Thu Nov  5 10:34:08 2026    ",
+      "98805": "Thu Nov  5 10:34:08 2026    ",
+      "98811": "Thu Nov  5 10:34:08 2026    ",
+      "99373": "Thu Nov  5 10:34:18 2026    ",
+      "99376": "Thu Nov  5 10:34:18 2026    ",
+      "101": "Thu Nov  5 10:34:27 2026    ",
+      "107": "Thu Nov  5 10:34:27 2026    ",
+      "843": "Thu Nov  5 10:34:36 2026    ",
+      "847": "Thu Nov  5 10:34:36 2026    ",
+      "1736": "Thu Nov  5 10:34:45 2026    ",
+      "1740": "Thu Nov  5 10:34:45 2026    ",
+      "2843": "Thu Nov  5 10:34:55 2026    ",
+      "2850": "Thu Nov  5 10:34:55 2026    ",
+      "2875": "Thu Nov  5 10:34:56 2026    ",
+      "2876": "Thu Nov  5 10:34:56 2026    ",
+      "2877": "Thu Nov  5 10:34:56 2026    ",
+      "3486": "Thu Nov  5 10:35:04 2026    ",
+      "3495": "Thu Nov  5 10:35:04 2026    ",
+      "3507": "Thu Nov  5 10:35:05 2026    ",
+      "3508": "Thu Nov  5 10:35:05 2026    ",
+      "3510": "Thu Nov  5 10:35:05 2026    ",
+      "3908": "Thu Nov  5 10:35:12 2026    ",
+      "3912": "Thu Nov  5 10:35:12 2026    ",
+      "4526": "Thu Nov  5 10:35:20 2026    ",
+      "4530": "Thu Nov  5 10:35:20 2026    ",
+      "5040": "Thu Nov  5 10:35:29 2026    ",
+      "5044": "Thu Nov  5 10:35:29 2026    ",
+      "5446": "Thu Nov  5 10:35:37 2026    ",
+      "5448": "Thu Nov  5 10:35:37 2026    ",
+      "5850": "Thu Nov  5 10:35:45 2026    ",
+      "5854": "Thu Nov  5 10:35:45 2026    ",
+      "5870": "Thu Nov  5 10:35:45 2026    ",
+      "5871": "Thu Nov  5 10:35:45 2026    ",
+      "5876": "Thu Nov  5 10:35:45 2026    ",
+      "6222": "Thu Nov  5 10:35:53 2026    ",
+      "6228": "Thu Nov  5 10:35:53 2026    ",
+      "6241": "Thu Nov  5 10:35:53 2026    ",
+      "6242": "Thu Nov  5 10:35:53 2026    ",
+      "6244": "Thu Nov  5 10:35:53 2026    ",
+      "6592": "Thu Nov  5 10:36:00 2026    ",
+      "6595": "Thu Nov  5 10:36:00 2026    ",
+      "7059": "Thu Nov  5 10:36:08 2026    ",
+      "7062": "Thu Nov  5 10:36:08 2026    ",
+      "7543": "Thu Nov  5 10:36:16 2026    ",
+      "7545": "Thu Nov  5 10:36:16 2026    ",
+      "8130": "Thu Nov  5 10:36:24 2026    ",
+      "8137": "Thu Nov  5 10:36:25 2026    ",
+      "8802": "Thu Nov  5 10:36:33 2026    ",
+      "8807": "Thu Nov  5 10:36:33 2026    ",
+      "8809": "Thu Nov  5 10:36:33 2026    ",
+      "8826": "Thu Nov  5 10:36:34 2026    ",
+      "8827": "Thu Nov  5 10:36:34 2026    ",
+      "8830": "Thu Nov  5 10:36:34 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1586135040,
+    "elapsed_seconds": 237.773834375,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "scripts72": true,
+        "runtime_images_pinned": true,
+        "historical_border_policy_before_png": true,
+        "coalescing_before_png": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "scripts72": true,
+        "runtime_images_pinned": true,
+        "historical_border_policy_before_png": true,
+        "coalescing_before_png": false
+      }
+    ],
+    "executable_unchanged": true,
+    "coalescing_eligibility_required": true,
+    "coalescing_forced_off_in_both_arms": false,
+    "scope": "Fresh production correctness and path eligibility only; JSC/native-image probes, no instruction credit. Original pixel references and workload policies retained.",
+    "unix": 1793863822.984276
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/coalescing-disabled arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793863870.283647
+  },
+  "production": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "f2762ca3223ba199dab08c476096c61accdd00ac812f125c9a6da279f9708b4d",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "f755cf994934823a6d6383e60099be5388b77155138840de54706d988a2a229e",
+      "dirty": true,
+      "head": "17841f527c79a5c9f2a226bd547179599cbfdf0d",
+      "repository_sha256": "94148fa08b93b107f80a27f9b4c8e2517c76e6b1c8bd86357ada964e439d3dfb"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "17841f527c79a5c9f2a226bd547179599cbfdf0d",
+      "id": "24f98834afbb4b51b4da93faa41b8a47"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f755cf994934823a6d6383e60099be5388b77155138840de54706d988a2a229e",
+      "dirty": true,
+      "head": "1226f65b771d2f3fce2d053bd2958662becc52ac",
+      "repository_sha256": "5230aa674814e9a3b2251ba289cf2963d53c3486c0bb4c8d8360f2c5c77e7593"
+    }
+  },
+  "source_provenance": {
+    "source": null,
+    "sha256": null,
+    "generated_c_preserved": false,
+    "source_evidence": {
+      "current": {
+        "head": "1226f65b771d2f3fce2d053bd2958662becc52ac",
+        "repository_sha256": "c74aaa6b93dbf22510aa03f38f80cac0fe11b45b22442d4f091e5b6af820ca6b",
+        "build_inputs_sha256": "69d8fa684216368400b6a49eb375069c5f0404f3a5217454e72523f3e8598f16",
+        "dirty": true
+      },
+      "checked_sources": {
+        "/Users/alex/code/vox2/main_frame_task_layout_test.v": "95ed1f2ed168104272e940187e74b77fee13ea1294cc52fe507c000f1991cd5d",
+        "/Users/alex/code/vox2/main_frame_task_focus_test.v": "41e5034f5d88ee1d8da200f3fa774460996e156d5152fd78ef8375ef880b8262",
+        "/Users/alex/code/vox2/main_javascript_task_paint_test.v": "f6e70a161373a10d07bec374d3bdae5fd4af85d3a9bb2fa6f2f7c61e42c0631c",
+        "/Users/alex/code/vox2/main_frame_paint_test.v": "8192d5720da544a30b7854cc6c5f059602e1e8ae0eac69f00e9ae7809597055b",
+        "/Users/alex/code/vox2/main_initial_frame_layout_test.v": "b5d2a5c5e1f6efa61d0224da041362e60001ba735b74cd4d7c71432489c775a7",
+        "/Users/alex/code/vox2/main_relayout_autofocus_test.v": "aa0181e281ed29f5d9ba14a3ea7fe1d61d7af8baf6331205f5dcf0d5892a60a7",
+        "/Users/alex/code/vox2/main_frame_task_layout.v": "fce51b8f2304e967677282a987bcbc498843994c5eeaa546f29cd0101368e689",
+        "/Users/alex/code/vox2/main_frame_paint.v": "01cb28221fdaca852bf01c2fe463fce64f9ccb646bc7e4c094e8ebf32a32776f",
+        "/Users/alex/code/vox2/main_adblock.v": "7492f69791d25a7c305036a9a2d5cedc1329d264e1d1e31359604e7fe421ab3c",
+        "/Users/alex/code/vox2/main_device_layout.v": "20391809cc59f6ccb67afd0a137403aa947163ac149e30a92fa6e94ca0cba385"
+      },
+      "build_head_checked_sources": {
+        "main_frame_task_layout_test.v": "95ed1f2ed168104272e940187e74b77fee13ea1294cc52fe507c000f1991cd5d",
+        "main_frame_task_focus_test.v": "41e5034f5d88ee1d8da200f3fa774460996e156d5152fd78ef8375ef880b8262",
+        "main_javascript_task_paint_test.v": "f6e70a161373a10d07bec374d3bdae5fd4af85d3a9bb2fa6f2f7c61e42c0631c",
+        "main_frame_paint_test.v": "8192d5720da544a30b7854cc6c5f059602e1e8ae0eac69f00e9ae7809597055b",
+        "main_initial_frame_layout_test.v": "b5d2a5c5e1f6efa61d0224da041362e60001ba735b74cd4d7c71432489c775a7",
+        "main_relayout_autofocus_test.v": "aa0181e281ed29f5d9ba14a3ea7fe1d61d7af8baf6331205f5dcf0d5892a60a7",
+        "main_frame_task_layout.v": "fce51b8f2304e967677282a987bcbc498843994c5eeaa546f29cd0101368e689",
+        "main_frame_paint.v": "01cb28221fdaca852bf01c2fe463fce64f9ccb646bc7e4c094e8ebf32a32776f",
+        "main_adblock.v": "7492f69791d25a7c305036a9a2d5cedc1329d264e1d1e31359604e7fe421ab3c",
+        "main_device_layout.v": "20391809cc59f6ccb67afd0a137403aa947163ac149e30a92fa6e94ca0cba385"
+      },
+      "current_complete_build_inputs_match": false,
+      "build_before_after_inputs_match": true,
+      "generated_c_preserved": false,
+      "qualification": "Every checked V source matches the production build HEAD and the final focused inputs, with a currently clean status for those files. The build verifies unchanged complete input fingerprints before/after. Later unrelated repository inputs can differ; no claim of sealed generated-C identity."
+    },
+    "historical_policy_present": true,
+    "coalescing_eligibility_required": true,
+    "coalescing_forced_off_in_both_arms": false,
+    "placement_present": false,
+    "markerless_present": false
+  },
+  "implementation": "Within an existing frame and laid-out document, synchronize scale/cosmetic filters but defer unqueried geometry to the existing final frame update. Synchronous DOM geometry/paint queries retain their native flush. Initial,tree-only,zoom-changing,pending-autofocus andfocused-element cases keep complete shell layout. No separate pending document or borrowed geometry owner.",
+  "retained_failures": "Initial fixtures used direct evaluations rather than scheduled author tasks and assumed prealloc-only tree storage in otherGC modes. Fixed eligibility uses an existing document layout result. Autofocus regression initially left layout dirty only in candidate; final guard keeps pending autofocus andfocused editors synchronous. Subsequent input-width fixture omitted6pxUA padding/border in both arms; corrected fixture explicitly uses border-box. Both actual regressions and all fixture failures/interrupted compiles are retained. Evidence auditor initially duplicated a directory segment; corrected audit checks committed source hashes and every real test call.",
+  "measured_credit": "Median control minus candidate285530871instructions,1.019%.Four paired improvements andthree regressions; worstcandidate/bestcontrol1.0461100923. No robust saving or cross-C-mode credit. Strict284838899410>156552895746, highestVox/lowestBrave1.6374977176. Positive point difference triggers broad batch; full-suite pass/cadence reset remain false.",
+  "workload": "Frozen609response original-origin BBC home replay with original author scripts;1024x768CSS,DPR/capture2,fresh private profiles/caches,OS caches retained,readiness/visible-image decode then2secondsettle. Original per-engine references unchanged; historical logical paint snapping,CSS-SVG coordinates anddegenerate-border tile MSAA common to both Vox arms. Parallel33-unit production in both Vox arms.",
+  "scope": "Exclusive coalition creation through encoded documentPNG, startup/window/target setup included. Vox before filewrite,Brave includes CDP delivery. Audits/teardown after endpoint. Exited aggregates/allowed owned services included;GPU/outside work excluded.82.7154%cross-engine pixels and existing DOM/script/localfont/decoded-paint limitations remain;no live-site,isolated-render-time orscrolling claim.",
+  "acceptance_history": {
+    "last_measured_cohort_id": 105,
+    "measured_cohorts": 104,
+    "acceptance_browser_attempts": 2251,
+    "reserved_preflight_only104": true
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-frame-coalescing-cohort105-20261105.tar.gz",
+    "bytes": 73800002,
+    "sha256": "8e6dd00a4efaf4881cfa08cab78f9e31a9b9cd43b11b9c441814b908eac6d925",
+    "members": 916,
+    "all_members_verified": true
+  },
+  "unix": 1793865017.520569
+}

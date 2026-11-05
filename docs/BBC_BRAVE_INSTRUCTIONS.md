@@ -6104,3 +6104,72 @@ already captured PNG hashes and launches no new browser. History remains
 103 / 2,230 plus comparison 104's rejected preflight. The target remains unmet.
 [Native captures, parallel provenance, tooling checks and label correction](performance/bbc-parallel-provenance-and-border-native-20261105.json)
 are durably archived and verified.
+
+
+## Frame-task layout coalescing and cohort 105 (2026-11-05)
+
+`17841f527` lets dirty JavaScript synchronization inside an existing frame keep
+scale and cosmetic filters current, then leave unqueried geometry to the normal
+final frame update. Later DOM geometry/paint queries still flush synchronously.
+Initial layout, tree-only mode, changed zoom, pending autofocus and focused
+elements retain the full synchronous shell path. The focused mutation pair
+commits geometry once instead of twice when no query intervenes.
+
+All **30 executions of the five new cases** pass in candidate/control arms and
+default/no-GC/preallocation modes. The full focused matrix executes 228 cases:
+216 pass, and each of its six runtime runs has the same two existing internal
+paint-width assertions expecting 30/20 while device-pixel widths are 60/40.
+Assertions remain unchanged. All test calls and committed input hashes are
+verified. The autofocus test initially exposes a real candidate-only dirty
+layout after completion; the final guard preserves the original shell path.
+Earlier direct-evaluation/storage assumptions and the later input fixture's
+omitted UA padding/border are retained failures. The final input fixture uses
+explicit border-box sizing. The evidence-auditor path correction and its
+successful committed-source verification are recorded separately.
+
+Fresh production `f2762ca3223b` / build HEAD `17841f527` passes original pixels,
+complete content, all 72 original external author scripts, loaded-image pins,
+identities and normal native exits in both arms. Coalescing fires before PNG
+only in the candidate. The SVG source-switch reftest is exact in both arms and
+across policies. This parallel build has no sealed generated C. Every checked
+source matches its build HEAD and final focused inputs with a clean status for
+those files; its complete before/after production input fingerprints match.
+Later unrelated repository inputs differ. The earlier stricter whole-current-
+checkout preflights launch no browser and remain preserved. No sealed-C identity
+claim is made from the parallel receipts.
+
+Cohort **105** completes all seven alternating triples with **all 21 capture
+audits passing**, unchanged identities and valid endpoint ownership. Launch-to-
+PNG medians are **27,734,177,885 Vox**, **28,019,708,756 control**, and
+**17,636,922,428 Brave lower bound**. The point reduction is **285,530,871**
+instructions (1.019%), with four improvements and three regressions. Highest
+candidate / lowest control is **1.04611**; no robust saving is credited. The
+strict Brave gate fails: `284838899410 > 156552895746`, conservative ratio
+**1.63750**. No prior single-unit versus this parallel-build difference receives
+optimization credit.
+
+The positive point difference triggers the broader batch: **600 unique cases
+in each memory mode**, comprising 532 layout cases and 68 main cases. Each mode
+has **595 passes and the same five baseline failures** (three layout cases plus
+the two main cases above). Both main arms agree. Including repeated control
+checks, 1,336 case executions produce 1,322 passes and 14 baseline failures.
+Every case call is verified and checked inputs remain unchanged. There is no
+full-suite pass or cadence reset. The 330 instruction-tool tests pass.
+
+The fixed 609-response replay, author-script policy, viewport/scale, private
+profiles/caches, retained OS caches, readiness/decode and two-second settlement
+are unchanged. Both Vox arms retain the original logical paint snapping,
+CSS-SVG coordinates and degenerate-border tile MSAA. Scope remains exclusive
+coalition creation through encoded PNG, including startup/window/target setup;
+Vox stops before file writing, Brave includes CDP delivery, and audits/teardown
+follow the endpoint. Exited aggregates/allowed services are included and
+GPU/outside work excluded. Cross-engine pixels still differ by 82.7154%, with
+the existing DOM/script/local-font/decoded-paint limitations; this establishes
+no live-page, isolated rendering-time or scrolling result.
+
+History now has **104 measured cohorts / 2,251 acceptance browser attempts**:
+last measured ID 105, with ID 104 retained as a preflight-only comparison.
+BBC homepage remains outside `OPTIMIZED_SITES.md`, and the 10% task remains
+open. [All cohort attempts, focused/broad/native checks, actual exits, source
+proofs and retained failures](performance/bbc-frame-coalescing-cohort105-20261105.json)
+are archived with verified member hashes.
