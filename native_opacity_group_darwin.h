@@ -45,6 +45,7 @@ static void native_composite_opacity_pixels_scalar(const uint8_t *layer, const u
 #if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
 VOX_NATIVE_STATE int vox_unit_opacity_reported;
 VOX_NATIVE_STATE int vox_byte_opacity_reported;
+VOX_NATIVE_STATE int vox_byte_opacity_policy;
 
 static float32x4_t native_opacity_normalize(uint16x4_t bytes)
 {
@@ -104,10 +105,19 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
     if (count >= 8 && opacity >= 0.0f && opacity <= 1.0f && fegetround() == FE_TONEAREST) {
         const char *disabled = opacity == 1.0f ? getenv("VOX_DISABLE_UNIT_OPACITY_INTEGER") : NULL;
         int unit_opacity = opacity == 1.0f && (!disabled || !*disabled), used_unit = 0;
-        int byte_opacity = count >= 256 && opacity > 0 && opacity < 1, used_byte = 0;
+        // Half opacity produces frequent exact half-levels, especially for
+        // opaque layers. Avoid unsuccessful byte-unit probes for this case.
+        int byte_opacity = count >= 32 && opacity > 0 && opacity < 1 && opacity != 0.5f, used_byte = 0;
         if (byte_opacity) {
-            const char *retain_normalized = getenv("VOX_RETAIN_NORMALIZED_OPACITY_FLOAT");
-            byte_opacity = !retain_normalized || !*retain_normalized;
+            // The diagnostic policy is process-start configuration. Cache it
+            // so short raster rows do not repeatedly scan the environment.
+            int policy = __atomic_load_n(&vox_byte_opacity_policy, __ATOMIC_RELAXED);
+            if (!policy) {
+                const char *retain_normalized = getenv("VOX_RETAIN_NORMALIZED_OPACITY_FLOAT");
+                policy = retain_normalized && *retain_normalized ? -1 : 1;
+                __atomic_store_n(&vox_byte_opacity_policy, policy, __ATOMIC_RELAXED);
+            }
+            byte_opacity = policy > 0;
         }
         size_t byte_attempts = 0, ambiguous_blocks = 0;
         float32x4_t alpha = vdupq_n_f32(opacity);

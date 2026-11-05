@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 // Preserve the original arithmetic as an independent pixel oracle. In
 // particular, neither the divisions nor the final double scale may be folded.
@@ -222,8 +223,34 @@ static void test_byte_opacity_large_spans(void)
     printf("Byte opacity: %zu large-span/alias pixels and halfway guards passed\n", pixels);
 }
 
+static void *test_concurrent_spans(void *argument)
+{
+    uint32_t seed = 0xa398d751u + (uint32_t)(uintptr_t)argument;
+    uint8_t source[256 * 4], backdrop[256 * 4], expected[256 * 4], actual[256 * 4];
+    for (int iteration = 0; iteration < 128; ++iteration) {
+        for (size_t i = 0; i < sizeof(source); ++i) {
+            seed = seed * 1664525u + 1013904223u; source[i] = seed >> 24;
+            seed = seed * 1664525u + 1013904223u; backdrop[i] = seed >> 24;
+        }
+        const size_t counts[] = {31, 32, 33, 64, 128, 256};
+        size_t count = counts[iteration % 6];
+        float opacity = iteration % 2 ? 0.37f : 0.5f;
+        reference_composite(source, backdrop, expected, count, opacity);
+        native_composite_opacity_pixels(source, backdrop, actual, count, opacity);
+        assert(!memcmp(expected, actual, count * 4));
+    }
+    return NULL;
+}
+
 int main(void)
 {
+    // Race first-use policy initialization with independent buffers. Retain
+    // exact oracle behavior on both sides of the short-span threshold.
+    pthread_t threads[4];
+    for (uintptr_t i = 0; i < 4; ++i)
+        assert(pthread_create(&threads[i], NULL, test_concurrent_spans, (void *)i) == 0);
+    for (size_t i = 0; i < 4; ++i) assert(pthread_join(threads[i], NULL) == 0);
+    puts("Byte opacity: 512 concurrent first-use/span-boundary comparisons passed");
     test_composite();
     test_bounds();
     test_byte_opacity_large_spans();
