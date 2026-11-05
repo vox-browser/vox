@@ -925,6 +925,30 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
+    def test_intrinsic_grid_measurement_reuse_control_requires_app_and_restores_environment_after_failure(self):
+        base = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
+                '--capture-reference', '--control-disable-intrinsic-grid-measurement-reuse']
+        with self.assertRaises(SystemExit):
+            parse_args(base)
+        args = parse_args(base + ['--control-vox-app', 'Vox.app'])
+        self.assertTrue(args.control_disable_intrinsic_grid_measurement_reuse)
+        environment = {'VOX_PROXY': 'socks5h://fixture', 'VOX_RETAIN_DEGENERATE_BORDER_MSAA': '1'}
+        args.vox_environment = environment
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_INTRINSIC_GRID_MEASUREMENT_REUSE='1')),
+                               ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_input_preservation_is_optional_and_requires_independent_storage(self):
         argv = ['--archive', 'archive', '--output', 'Build/result',
                 '--memory-guard-registry', 'pids.json', '--capture-reference']
