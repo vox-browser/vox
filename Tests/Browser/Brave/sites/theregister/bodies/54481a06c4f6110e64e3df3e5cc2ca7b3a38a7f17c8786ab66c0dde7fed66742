@@ -1,1 +1,0 @@
-export function isDevMode(e=window.location.search){return new URLSearchParams(e).has("dev")}export function applyDevMode(){isDevMode()&&document.body.classList.add("dev")}

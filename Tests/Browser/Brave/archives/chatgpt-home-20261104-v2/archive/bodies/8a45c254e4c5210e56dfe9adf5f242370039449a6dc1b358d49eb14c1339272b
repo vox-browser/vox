@@ -1,1 +1,0 @@
-function e(e){let t=e.name;if(t===``)return[e];let n=e.form;if(n!==null){let e=n.elements.namedItem(t);return e===null?[]:`nodeType`in e?[e]:e}let r=e.getRootNode();return r===e?[e]:r.nodeType===9?r.getElementsByName(t):r.querySelectorAll(`input[type="radio"]`)}function t(e){return typeof e==`string`?e:typeof e==`function`||typeof e==`symbol`?``:String(e)}export{t as n,e as t};

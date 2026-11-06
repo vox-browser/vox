@@ -1,1 +1,0 @@
-var e=[],t,n=n=>{t?t(n):(e.length===16&&e.shift(),e.push(n))},r=n=>{t=n;for(let t of e.splice(0))n(t)};export{r as n,n as t};

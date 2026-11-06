@@ -1,1 +1,0 @@
-var e,t,n,r,i,a=e=>(r=e,()=>{r===e&&(r=void 0)}),o=e=>(i=e,()=>{i===e&&(i=void 0)}),s=(n,r)=>(e=n,t=r,()=>{e===n&&(e=void 0,t=void 0)}),c=e=>(n=e,()=>{n===e&&(n=void 0)}),l=(...t)=>e?.(...t),u=e=>t?.(e),d=e=>n?.(e),f=(e,t)=>{r?.(e,t)},p=e=>{i?.(e)};export{a,f as c,c as i,p as l,l as n,o,s as r,d as s,u as t};

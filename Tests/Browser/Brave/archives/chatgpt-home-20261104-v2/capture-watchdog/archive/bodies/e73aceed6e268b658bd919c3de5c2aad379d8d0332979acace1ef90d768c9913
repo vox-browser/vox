@@ -1,1 +1,0 @@
-import{Wa as e}from"./octane-shell-shared-E0Rom1b6.js";var t=()=>`chat-${e()}`,n=e=>{if(!e||typeof e!=`object`||!(`lightweightWebHomeDraftId`in e))return;let t=e.lightweightWebHomeDraftId;return typeof t==`string`&&t.startsWith(`chat-`)?t:void 0};export{n,t};

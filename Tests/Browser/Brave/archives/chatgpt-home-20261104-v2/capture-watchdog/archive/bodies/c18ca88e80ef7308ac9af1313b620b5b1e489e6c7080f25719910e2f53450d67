@@ -1,1 +1,0 @@
-var e=e=>!("Escape"!==e.key||e.defaultPrevented||e.target instanceof Element&&e.target.closest('dialog:not([role]), dialog[role="dialog"], dialog[role="alertdialog"]'));export{e as t};

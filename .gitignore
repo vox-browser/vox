@@ -25,3 +25,8 @@
 
 # Temporary and local files to ignore
 **/__pycache__/
+
+# Captured response bodies (binary)
+Tests/Browser/Brave/archives/*/archive/bodies/
+Tests/Browser/Brave/archives/*/capture-watchdog/archive/bodies/
+Tests/Browser/Brave/sites/*/bodies/

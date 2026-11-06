@@ -1,1 +1,0 @@
-import{r as e}from"./rolldown-runtime-BflCKaFw.js";var t=e({reportConversationStartupMeasurement:()=>i,setConversationStartupMeasurementReporter:()=>a}),n=[],r,i=e=>{r?r(e):n.push(e)},a=e=>{r=e;for(let t of n.splice(0))e(t)};export{i as n,t};

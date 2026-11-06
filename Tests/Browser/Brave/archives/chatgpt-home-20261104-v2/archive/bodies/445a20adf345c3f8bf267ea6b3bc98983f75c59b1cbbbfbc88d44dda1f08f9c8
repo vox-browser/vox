@@ -1,1 +1,0 @@
-import{M as e,l as t}from"./a-BalXqa4Y.js";import{n}from"./a-Ad8ZpCpb.js";t(1);var r=function(t,r,i){let a=r.block,[o,s,c]=t;e(r,0,a.parentNode,n,{model:o,owner$:s,appUpsellVariant:c?.variant},`c:6556c984`,a.endMarker,2)};export{r as default};

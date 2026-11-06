@@ -1,1 +1,0 @@
-var e=(e,r,s)=>e.backendConversationId&&!e.sharedSource?{starred:e.isStarred??!1,currentNodeId:s??(e.parentMessageId||(e.messages.at(-1)?.id.startsWith("error-")?void 0:e.messages.at(-1)?.id)),title:r}:void 0;export{e as t};

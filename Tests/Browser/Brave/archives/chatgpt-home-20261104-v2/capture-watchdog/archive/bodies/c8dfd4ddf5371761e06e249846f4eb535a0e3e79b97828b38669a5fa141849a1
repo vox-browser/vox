@@ -1,1 +1,0 @@
-var e="web-mobile-sentinel-force-login",n=e=>{window.dispatchEvent(new CustomEvent("web-mobile-sentinel-force-login",{detail:e.message}))};export{n,e as t};

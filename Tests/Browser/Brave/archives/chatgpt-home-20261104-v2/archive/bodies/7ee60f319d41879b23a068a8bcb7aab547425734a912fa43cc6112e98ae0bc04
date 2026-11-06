@@ -1,1 +1,0 @@
-var e=e=>e?.remaining===0&&!(Date.parse(e.resetAfter??``)<=Date.now());export{e as t};

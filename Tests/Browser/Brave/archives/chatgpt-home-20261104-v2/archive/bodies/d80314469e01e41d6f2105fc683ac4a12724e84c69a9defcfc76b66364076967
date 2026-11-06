@@ -1,1 +1,0 @@
-function n(){a??={open:!1,drains:[]}}var a=null;export{n,a as t};
