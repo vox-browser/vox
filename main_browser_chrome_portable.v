@@ -31,6 +31,7 @@ $if !vox_ui2 ? {
 			ui2.install_embedded_wheel(browser_ui_scroll)
 			ui2.draw_embedded_elements(app.ctx, app.browser_chrome_ui_elements(chrome), images, browser_ui_event)
 			app.focus_browser_tab_title_editor()
+			app.focus_browser_find_bar()
 		}
 	}
 }

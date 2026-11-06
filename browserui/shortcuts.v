@@ -13,6 +13,8 @@ pub fn shortcut(event ui2.KeyEvent, editing bool, macos bool) string {
 		if event.code in [.equal, .kp_add, .kp_equal] { return 'zoom-in' }
 		if !event.shift && event.code in [.minus, .kp_subtract] { return 'zoom-out' }
 		if !event.shift && event.code in [._0, .kp_0] { return 'zoom-reset' }
+		if event.code == .f && !event.shift { return 'find-open' }
+		if event.code == .g { return if event.shift { 'find-previous' } else { 'find-next' } }
 		if event.code == .b && event.shift { return 'bookmarks-toggle' }
 		if event.code == .d { return if event.shift { 'debug-toggle' } else { 'bookmark-add' } }
 		if (event.code == .y && !event.shift) || (event.code == .h && event.shift) {

@@ -270,6 +270,10 @@ fn (mut app BrowserApp) activate_browser_chrome(action string) {
 		app.show_browser_tab_title_editor(action.all_after(':'))
 		return
 	}
+	if action.starts_with('find-bar:') {
+		app.browser_find_bar_action(action)
+		return
+	}
 	if action.starts_with('tab-title-editor:') {
 		app.browser_tab_title_editor_action(action)
 		return

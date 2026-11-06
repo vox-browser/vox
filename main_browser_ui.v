@@ -31,6 +31,8 @@ mut:
 	tab_title_target string
 	tab_title_editor ?browserui.TabTitleEditor
 	tab_title_focus_pending bool
+	find_bar        ?browserui.FindBar
+	find_focus_pending bool
 }
 
 fn (app &BrowserApp) browser_ui() &BrowserUIState {
@@ -51,6 +53,7 @@ fn (app &BrowserApp) browser_popup_elements(width int, height int) []ui2.Element
 	state := app.browser_ui()
 	if editor := state.tab_title_editor { return editor.elements(f64(width), f64(height)) }
 	if popup := state.popup { return popup.elements(f64(width), f64(height)) }
+	if bar := state.find_bar { return bar.elements(f64(width), f64(app.page_top())) }
 	return []ui2.Element{}
 }
 
@@ -208,6 +211,18 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		}
 		return
 	}
+	if bar := app.browser_ui().find_bar {
+		if event.code == .escape && !event.cmd && !event.ctrl {
+			app.close_browser_find_bar()
+			ui2.consume_key()
+			return
+		}
+		if event.code in [.enter, .kp_enter] && ui2.focused_id() == bar.input_id() {
+			app.browser_find_bar_action(bar.action(if event.shift { 'previous' } else { 'next' }))
+			ui2.consume_key()
+			return
+		}
+	}
 	mut settings_keys := browser_settings_visible()
 	$if vox_ui2 ? {
 		settings_keys = settings_keys && ui2.embedded_key_panel() == 'settings'
@@ -238,6 +253,8 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		'address-cancel' { app.cancel_address_bar() }
 		'debug-toggle' { app.toggle_browser_debug() }
 		'settings-open' { show_browser_settings() }
+		'find-open' { app.show_browser_find_bar() }
+		'find-next', 'find-previous' { app.find_browser_step(action == 'find-next') }
 		else {
 			if action.starts_with('zoom-') {
 				app.activate_browser_zoom(action)
