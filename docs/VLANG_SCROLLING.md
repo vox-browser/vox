@@ -2805,3 +2805,51 @@ fixtures and the verification wrapper's wrong transport switch; a corrected
 separate run supplies 1,219 exact transport checks. Earlier raw collections
 remain unchanged. GPU experiment switches remain off; only exact identical
 video-pixel reuse is enabled by default.
+
+### Overlap completed rendering with tile export, November 6
+
+`18197303d` adds `VOX_GPU_TILE_EARLY_RENDER_SUBMIT=1`. After validating the
+sources and targets and allocating their textures, it submits the same completed
+Graphite recording before the CPU encodes the following IOSurface copies. Both
+submissions retain their order on the same Metal queue. Raster inputs, MSAA,
+tile coordinates, completion ownership and the final scheduling wait stay the
+same. This overlaps work; it does not move scrolling onto another thread. The
+switch remains off by default.
+
+Two complete alternating unprofiled pairs use pinned literal `-prod`, single
+C unit build `20261106-111718-2cd27807`, executable SHA-256
+`1e885c9a8c1d3ee85c97d261e5354c54b30af03a66e36a549b0d649997188133`.
+The live workload remains unchanged. Both arms use GPU tiles, MSAA images,
+nested GPU canvases, immutable ICC uploads and sparse clear; identical-video
+reuse is the installed default. Video upload keys and both blur switches are
+off. Both arms load the same explicit backend; only earlier submission differs.
+
+| Pair | Publications/s, control→candidate | P95 interval, ms | Maximum interval, ms |
+|---|---:|---:|---:|
+| 1 | 81.05→92.79 | 24.445→22.439 | 114.102→113.134 |
+| 2 | 92.00→95.38 | 23.514→21.647 | 115.994→96.248 |
+
+Candidates publish 563/569 moving frames. Median intervals are 8.441/8.455 ms,
+but 11.72%/10.54% still exceed 16.67 ms. Leading gaps are 25.175/38.417 ms;
+trailing gaps are 70.875/66.800 ms. Every trial completes its 600 inputs and
+exits normally with unchanged identities. Controls vary, and one-minute host
+load declines from approximately 9.83 to 7.49 across the cohort on 18 CPUs.
+Other sessions and retained OS/shader caches remain active. These conditions
+limit attribution; the observed gains do not establish a reliable percentage
+improvement, an improvement over ordinary defaults, or smooth 60 fps.
+
+A separate timestamped diagnostic observes 557 early submissions during input.
+Its helper's inherited stdout label says “GPU blur composites”; the retained
+eligibility rows identify tile submissions. Backend optimized and ASan/UBSan
+checks now exercise both submission orders, including 520 queued frames,
+pending writers, failure/unwind and ownership. The primary native suite passes;
+654 live leaf checks stay within three channel levels and 219 transport checks
+are exact. No reference or tolerance changes supply performance credit.
+
+The [render-submission report](performance/vlang-render-submission-20261106.json),
+[raw archive](performance/raw/vlang-render-submission-20261106.tar.gz) and
+[collection receipt](performance/vlang-render-submission-20261106-collection.json)
+retain the four trials, inputs/publications, diagnostics, checks, native artifact,
+source patch and build identities. The endpoint remains native publication
+following `updateLayer`, rather than physical scanout. The 60 fps goal and
+independent compositor scheduling remain unfinished.

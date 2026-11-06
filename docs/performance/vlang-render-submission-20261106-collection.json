@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "Build/vlang-60fps-20261106/collect_render_submit_evidence.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 3221225472,
+  "observed_peak_rss_bytes": 75087872,
+  "elapsed_seconds": 1.9290315,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}
