@@ -1,0 +1,183 @@
+{
+  "feature_commit": "dbd7404fb3441f0ca3eb8388c666bf364d002070",
+  "scope": "Archived Slashdot guest document at 1024x768, scale1, full MV2 uBO and repository list snapshots; no live-site or animation parity claim",
+  "cause": "Square CSS border paths had no MSAA trigger and were incorrectly treated as unbounded intervening ink. The GPU leaf dispatch also skipped the existing shared header-decoration group.",
+  "negative": {
+    "native_pixels": 7,
+    "source_pixels": 0,
+    "replay_pixels": 0,
+    "coords_match_registered_page": true
+  },
+  "focused": {
+    "functions": 6,
+    "gc_modes": [
+      "default",
+      "none",
+      "prealloc"
+    ],
+    "compile_and_test_exits": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "site": [
+    {
+      "policy": "cold",
+      "source": 0,
+      "replay": 0,
+      "native": 0,
+      "native_source": 0,
+      "native_second": 0
+    },
+    {
+      "policy": "complete",
+      "source": 0,
+      "replay": 1,
+      "native": 0,
+      "native_source": 0,
+      "native_second": 1
+    }
+  ],
+  "production_identity": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "204abd9c10a1f5bc74f6a52a0dae65b0e5967575079a37593825e74debda38ff",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "dced7eead9dd64e3d5238c2d8b0a5b969a94d12168e537d71d8906e38b205b92",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "b4017b0aeddb2af0739b84585a431e3bf458960e1721cc57b26a0fb4ab8117c0",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "6a7024d5810fda9e43cc28823dadcb9ffdbeae1b55d1b5b289945ba767b54852",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "547daba2da62f5b9c4db72ca19794642e2c32fcff0b04f11c76a27e3888cfea6",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "796abeb8f57835bf8512c9546802cf62b8bbd8350c98de004d3e82264eb81ef6",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "8b12920c5d165a9654470e11bc8ce8f0737bd6e658155e8b8b31bff745cc1a80",
+    "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+    "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+    "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+    "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+    "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+    "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+    "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+    "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+    "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+    "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+    "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+    "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+    "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+    "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+    "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+  },
+  "broad": {
+    "tests": 142,
+    "captures": 148,
+    "all_exact": true,
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "3c2d2fc893e3730527c7a4057f68ad791fa46a355db145be5e362d42e1d8adcc",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "dced7eead9dd64e3d5238c2d8b0a5b969a94d12168e537d71d8906e38b205b92",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "b4017b0aeddb2af0739b84585a431e3bf458960e1721cc57b26a0fb4ab8117c0",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "6a7024d5810fda9e43cc28823dadcb9ffdbeae1b55d1b5b289945ba767b54852",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "547daba2da62f5b9c4db72ca19794642e2c32fcff0b04f11c76a27e3888cfea6",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "796abeb8f57835bf8512c9546802cf62b8bbd8350c98de004d3e82264eb81ef6",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "8b12920c5d165a9654470e11bc8ce8f0737bd6e658155e8b8b31bff745cc1a80",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "compiler_feature_review": {
+      "file": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-080955-cdc5ca19/frozen-compiler-inputs/0-Vox.c.i",
+      "sha256": "f1a69ebb52b583826f0347a939d3ba807374d80dc67af6accecaa9e5f5dc0087",
+      "fragments": {
+        "chromium_partial_gap_ink(": "chromium_partial_gap_ink(layout__PaintCommand* command) {\n if (string__starts_with(command->kind, _str_1453) || string__starts_with(command->kind, _str_1454) || (command->blur != 0) || command->outer_shadow) {\n  return (__v_option_layout__LayoutRect){.ok = 0};\n }\n if (string__eq(command->kind, _str_977)) {\n  if (!chromium_svg_compositor_path_supported(command)) {\n   return (__v_option_layout__LayoutRect){.ok = 0};\n  }\n  return layout__paint_svg_path_native_ink_bounds(command);\n }\n if (string__eq(command->kind, _str_936) || string__eq(command->kind, _str_961)) {\n  double outset = math__max_T_f64(command->stroke_width, 0.0);\n  {\n   i64 __for_idx_0 = 0;\n   for (; __for_idx_0 < command->points.len; __for_idx_0++) {\n    double value = *(double*)(array__get(command->points, __for_idx_0));\n    if (math__is_nan(value) || math__is_inf(value, 0)) {\n     return (__v_option_layout__LayoutRect){.ok = 0};\n    }\n    outset = math__max_T_f64(outset, value);\n   }\n  }\n  layout__PaintCommand __assoc_1 = *command;\n  __assoc_1.kind = _str_937;\n  __assoc_1.x = command->x - outset;\n  __assoc_1.y = command->y - outset;\n  __assoc_1.width = command->width + (outset * 2);\n  __assoc_1.height = command->height + (outset * 2);\n  layout__PaintCommand __esc_2 = __assoc_1;\n  layout__PaintCommand* proxy = (layout__PaintCommand*)(memdup(&__esc_2, sizeof(layout__PaintCommand)));\n  return layout__paint_leaf_native_ink_bounds(proxy);\n }\n return layout__paint_leaf_native_ink_bounds(command);\n return (__v_option_layout__LayoutRect){.ok = 1};\n}",
+        "BrowserApp__draw_chromium_disjoint_partial_header(": "BrowserApp__draw_chromium_disjoint_partial_header(main__BrowserApp* app, i64 v_index, float page_y, i64 window_height) {\n {\n  if (!app->ctx->native_rendering || (app->page_zoom != 1) || (app->document == ((void*)0)) || (dom__Document__font_rendering_policy(app->document) != dom__FontRenderingPolicy__chromium) || (app->viewport_width <= 4) || (app->viewport_height <= 4)) {\n   return -1;\n  }\n  i64 header = chromium_disjoint_partial_header_index(app->paint_commands, app->chromium_raster_plan.command_layers, v_index);\n  if (header <= (v_index + 2)) {\n   return -1;\n  }\n  native_gpu_canvas_cpu_access();\n  BrowserApp__flush_rounded_rect_underlay(app, (float)(0), page_y, window_height);\n  _Bool grouped = native_begin_deferred_inset_decorations((float)(2), page_y + 2, (float)((float)(app->viewport_width - 4)), (float)((float)(app->viewport_height - 4)), (float)((float)(app->ctx->width)), (float)((float)(app->ctx->height)), page_y, (float)(app->scroll_y)) != 0;\n  Array __arr_lit_0 = __new_array_noscan(0, 3, sizeof(i64));\n  i64 __arr_val_1 = v_index;\n  { Array* __v3_internal_symbol_scalar_push_base_0 = &__arr_lit_0; i64 __v3_internal_symbol_scalar_push_value_0 = __arr_val_1; if (__v3_internal_symbol_scalar_push_base_0->len >= 0 && __v3_internal_symbol_scalar_push_base_0->len < __v3_internal_symbol_scalar_push_base_0->cap && !(__v3_internal_symbol_scalar_push_base_0->flags & ArrayFlags__is_slice)) { ((i64*)__v3_internal_symbol_scalar_push_base_0->data)[__v3_internal_symbol_scalar_push_base_0->len] = __v3_internal_symbol_scalar_push_value_0; __v3_internal_symbol_scalar_push_base_0->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_0, &__v3_internal_symbol_scalar_push_value_0); } }\n  i64 __arr_val_2 = v_index + 1;\n  { Array* __v3_internal_symbol_scalar_push_base_1 = &__arr_lit_0; i64 __v3_internal_symbol_scalar_push_value_1 = __arr_val_2; if (__v3_internal_symbol_scalar_push_base_1->len >= 0 && __v3_internal_symbol_scalar_push_base_1->len < __v3_internal_symbol_scalar_push_base_1->cap && !(__v3_internal_symbol_scalar_push_base_1->flags & ArrayFlags__is_slice)) { ((i64*)__v3_internal_symbol_scalar_push_base_1->data)[__v3_internal_symbol_scalar_push_base_1->len] = __v3_internal_symbol_scalar_push_value_1; __v3_internal_symbol_scalar_push_base_1->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_1, &__v3_internal_symbol_scalar_push_value_1); } }\n  i64 __arr_val_3 = header;\n  { Array* __v3_internal_symbol_scalar_push_base_2 = &__arr_lit_0; i64 __v3_internal_symbol_scalar_push_value_2 = __arr_val_3; if (__v3_internal_symbol_scalar_push_base_2->len >= 0 && __v3_internal_symbol_scalar_push_base_2->len < __v3_internal_symbol_scalar_push_base_2->cap && !(__v3_internal_symbol_scalar_push_base_2->flags & ArrayFlags__is_slice)) { ((i64*)__v3_internal_symbol_scalar_push_base_2->data)[__v3_internal_symbol_scalar_push_base_2->len] = __v3_internal_symbol_scalar_push_value_2; __v3_internal_symbol_scalar_push_base_2->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_2, &__v3_internal_symbol_scalar_push_value_2); } }\n  {\n   i64 __for_idx_4 = 0;\n   for (; __for_idx_4 < __arr_lit_0.len; __for_idx_4++) {\n    i64 i = *(i64*)(array__get(__arr_lit_0, __for_idx_4));\n    BrowserApp__draw_command(app, &(*(layout__PaintCommand*)array__get(app->paint_commands, i)), (float)(0), page_y, window_height);\n   }\n  }\n  BrowserApp__flush_rounded_rect_underlay(app, (float)(0), page_y, window_height);\n  if (grouped && (native_end_deferred_inset_decorations() == 0)) {\n   return -1;\n  }\n  return header;\n }\n return -1;\n}"
+      },
+      "header_before_coverage": true
+    }
+  },
+  "reference_variation": {
+    "policy": "complete",
+    "coordinate": [
+      741,
+      211
+    ],
+    "first_rgba": [
+      169,
+      169,
+      169,
+      255
+    ],
+    "second_rgba": [
+      178,
+      178,
+      178,
+      255
+    ],
+    "retained": true
+  },
+  "invalid_control_attempt": {
+    "path": "production-tail",
+    "changed": [
+      "/Users/alex/code/vox2/tools/adblock/package.json",
+      "/Users/alex/code/vox2/tools/adblock/site_resources.js",
+      "/Users/alex/code/vox2/tools/adblock/generated-defaults.js",
+      "/Users/alex/code/vox2/tools/adblock/bundle-inputs.json",
+      "/Users/alex/code/vox2/tools/adblock/snapshot-layout.json"
+    ],
+    "whole_cohort_credit": false
+  },
+  "failures_retained": [
+    "empty reduced page rejected by readiness",
+    "pre-fix focused bounds test failed",
+    "reduced and registered native seven-pixel negatives",
+    "two early LayerTree probes produced no command logs",
+    "no-uBO layer trace is diagnostic only",
+    "complete-cache independent reference differs one pixel",
+    "control cohort invalidated when its pinned generated build tools changed"
+  ],
+  "archive": {
+    "path": "slashdot-rounded-header-20261106.zip",
+    "bytes": 25880604,
+    "sha256": "b524ec8c010cc9b2e1e373147192ee2fff2abce0847238de2d70b0cfed081541",
+    "members": 2145
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/slashdot-sidebar-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 55574528,
+    "elapsed_seconds": 10.464836167,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

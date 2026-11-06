@@ -8,13 +8,14 @@ and complete-cache passes. WIRED's earlier strict first-frame passes remain
 recorded; recent cold Brave references vary.** The other additions retain the open gaps documented below.
 
 The original ten remain incomplete. Latest cold controls retain strict zero
-for Hacker News, Lobsters and BBC; Slashdot, Guardian and The Verge have the
-stable-reference rendering gaps listed below. CNN retains source/replay gaps.
+for Hacker News, Lobsters, BBC and Slashdot; Guardian and The Verge retain the
+stable-reference rendering gaps listed below. Slashdot's complete-cache Brave
+references vary by one radio-button pixel. CNN retains source/replay gaps.
 Reddit is blocked, and Stack Overflow/Pikabu remain deferred. See
 [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
-The latest rendering checkpoint passes **141 tests / 147 captures at zero
-pixels** on `0f2d286a…`, with unchanged inputs and references. The AVIF sampling
+The latest rendering checkpoint passes **142 tests / 148 captures at zero
+pixels** on `3c2d2fc8…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2887,6 +2888,54 @@ live scripting, animation, scrolling, performance or whole-site parity claim.
 
 [Byte counts, checks and qualifications](evidence/discord-background-local-origin-20261106.json),
 [sealed captures, commands, guards, failed attempts and patches](evidence/discord-background-local-origin-20261106.zip).
+
+## Rounded Slashdot headers across square borders (2026-11-06)
+
+Commit `dbd7404fb` removes the seven rounded-sidebar pixels on Slashdot.
+The intervening leaf was a square CSS border serialized as an SVG path. Its
+lack of an MSAA trigger was incorrectly treated as unknown ink, preventing
+the later header from sharing its parent's background/border resolve. The
+handler now uses validated path bounds and retains this decoration group
+when its first leaf is eligible for the GPU canvas.
+
+The reduced browser fixture reproduces **the same seven coordinates and RGBA
+values** as the registered page. Its source and two independent Brave
+replays are exact. The unchanged reference is registered as
+`chromium-positioned-header-border-gap`; the old production bundle also fails
+its local-file test by seven pixels. Two new focused functions and four
+existing controls pass with default GC, GC disabled, and preallocation with
+arena poisoning. Six focused production captures are exact.
+
+On executable `204abd9c10a1f5bc74f6a52a0dae65b0e5967575079a37593825e74debda38ff`,
+the registered **cold-cache** page passes all strict gates: source/frozen
+Brave **0**, independent Brave replay **0**, and native/Brave **0**. With
+**complete caches**, native/source and native/first Brave are also **0**,
+but the second fresh Brave process differs at `(741,211)`, a radio-button
+pixel: `(169,169,169,255)` versus `(178,178,178,255)`. That complete-cache
+reference gate remains open; the failed run is retained without changing
+references, tolerance, or cache policy.
+
+The broad **142-test / 148-capture** native rendering suite passes at zero
+pixels on `3c2d2fc893e3730527c7a4057f68ad791fa46a355db145be5e362d42e1d8adcc`.
+Its sealed compiler input contains this fix. All capture and guard exits are
+zero, and runtime inputs and bundle identities remain unchanged. An earlier
+four-site control attempt was invalidated when five files in its overly broad
+generated-tool pin set changed; it receives no whole-cohort credit. The broad
+suite pins its actual native file-fixture inputs and invokes no Brave/Node
+build tools. Earlier valid catalog gaps remain recorded above.
+
+The readiness rejection of the initial empty reduction, pre-fix checks,
+no-uBO diagnostic, two failed layer-log probes, complete-cache variation and
+invalidated controls are preserved with the passing evidence. The final full-uBO
+layer trace matches the saved Slashdot source at zero pixels.
+
+[Machine-readable evidence](evidence/slashdot-rounded-header-20261106.json)
+and its [2,145-member archive](evidence/slashdot-rounded-header-20261106.zip)
+retain the commands, logs, audits, pixel files, guard receipts, input identities
+and source versions. The archive is 25,880,604 bytes, SHA-256
+`b524ec8c010cc9b2e1e373147192ee2fff2abce0847238de2d70b0cfed081541`;
+every archived member passed hash readback and ZIP CRC verification. This is
+archived guest-viewport parity; no fresh live-site or animation claim is added.
 
 ## Run
 
