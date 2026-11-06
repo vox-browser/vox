@@ -212,10 +212,12 @@ fn test_worker_agent_retains_startup_and_received_frames_across_caller_and_deliv
 	mut caller := platform.begin_thread_scratch('worker agent caller')
 	persistent := platform.enter_persistent()
 	state := &WorkerAgentTestNetwork{sources: {'https://worker-agent.test/entry.js': 'onmessage=event=>postMessage({text:event.data.text,url:location.href,name});'}}
+	// The reply's receiving runtime is test infrastructure. Keep it alive
+	// independently of the caller scratch whose agent payload is under test.
+	mut sender := Runtime.create()
 	platform.leave_persistent(persistent)
 	mut agent := worker_agent_test_create(state)!
 	agent.load_entry()!
-	mut sender := Runtime.create()
 	transfer := ArrayBufferTransferBridge.create(sender)!
 	value := sender.evaluate_host_value('({text:"Санкт-Петербург 😀"})')!
 	agent.queue_message(encode_worker_message(transfer.serialize(value, [])!)!)!
