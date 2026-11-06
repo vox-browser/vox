@@ -28,6 +28,22 @@ all prior failures and preflight-only IDs remain retained. The BBC homepage
 still fails the 10% target and remains outside the instruction catalog.
 [All attempts, native audits and verified removal](performance/bbc-positioned-inline-workspace-cohort131-20261106.json).
 
+The separate all-thread TLS diagnostic completes 94 worker fetch scopes before
+encoded PNG. Their selected current-thread deltas total 2,368,809,177 instructions,
+including 2,081,776,985 in TLS connect/handshake and 53,273,711 in connection
+construction/initialization. Nested selected scopes reconcile with zero faults
+and no unfinished scopes; main-thread rows are empty. The selected `read()`
+entry never executes: the backend's pointer-read path remains in enclosing
+fetch self. Calibration, whole-source normalization, original pixels/content,
+72 exact external script evaluations, mapped images, normal exit and private-PID
+memory adoption pass. Probe overhead and unselected callees remain included;
+these are diagnostic scope deltas, with no process shares or acceptance credit.
+The first launcher rejects an empty reserved guard report before launching a
+browser; that failure and the corrected launch remain archived. This follows
+the actual fresh `v -profile` run without changing cipher, trust, workload,
+references, counters or the acceptance history.
+[TLS diagnostic and complete compiler inputs](performance/bbc-tls-instruction-diagnostic-20261106.json).
+
 Retained attempt — **cohort 130**, literal V `-prod` / single-C-unit production
 `dcc694637618`, tests committed same-pass grid reuse against its disabled control.
 All **21 attempts** are retained; **20 capture audits** pass, while Brave pair 6
