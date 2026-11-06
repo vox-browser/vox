@@ -1,6 +1,7 @@
 module main
 
 import devtools
+import devtools.cssinspect
 import dom
 import gg
 import platform
@@ -243,8 +244,54 @@ fn (app &BrowserApp) devtools_state_version() u64 {
 	if app.document != unsafe { nil } {
 		version += app.document.dom_tree_version() * 31 + app.document.attribute_version() * 17 +
 			app.document.character_data_version()
+		if tools.sidebar == .computed {
+			// Resolved values wait for layout; render again once it settles.
+			version += app.document.style_environment_version() * 7 + if app.devtools_layout_current() {
+				u64(1)
+			} else {
+				u64(0)
+			}
+		}
 	}
 	return version
+}
+
+fn (app &BrowserApp) devtools_layout_current() bool {
+	return app.document != unsafe { nil } && app.document.layout_is_up_to_date()
+		&& !app.document.needs_style_update_after_layout()
+}
+
+// refresh_devtools_styles collects the Styles or Computed tab's snapshot when
+// the selection, the document's styles or the tab changed.
+fn (app &BrowserApp) refresh_devtools_styles() {
+	mut tools := app.devtools_panel() or { return }
+	if !tools.open || tools.sidebar == .attributes || app.document == unsafe { nil } {
+		return
+	}
+	node := tools.selected_node() or { return }
+	element := node.as_element() or { return }
+	computed := tools.sidebar == .computed
+	layout_current := app.devtools_layout_current()
+	key := u64(devtools.node_id(node)) * 1000003 + app.document.dom_tree_version() * 31 +
+		app.document.attribute_version() * 17 + app.document.character_data_version() * 13 +
+		app.document.style_environment_version() * 7 + if computed { u64(3) } else { u64(0) } + if layout_current {
+		u64(2)
+	} else {
+		u64(1)
+	}
+	if tools.styles.key == key {
+		return
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut snapshot := cssinspect.snapshot(element, computed && layout_current)
+	if computed && !layout_current && tools.styles.node == snapshot.node {
+		// Keep the previous resolved values until layout settles.
+		snapshot.computed = tools.styles.computed
+		snapshot.box = tools.styles.box
+	}
+	snapshot.key = key
+	tools.styles = snapshot
 }
 
 fn (app &BrowserApp) devtools_elements(width int, height int) []ui2.Element {
@@ -252,6 +299,7 @@ fn (app &BrowserApp) devtools_elements(width int, height int) []ui2.Element {
 		return []ui2.Element{}
 	}
 	app.sync_devtools()
+	app.refresh_devtools_styles()
 	tools := app.devtools_panel() or { return []ui2.Element{} }
 	pane_height := f64(app.devtools_height())
 	return [tools.elements(ui2.rect(0, f64(height) - status_bar_height - pane_height, f64(width),
@@ -357,6 +405,45 @@ fn (mut app BrowserApp) devtools_action(value string) {
 			app.remove_devtools_attribute(id, action.arg)
 			return
 		}
+		'sidebar' {
+			tools.sidebar = match action.arg {
+				'computed' { devtools.SidebarTab.computed }
+				'attributes' { devtools.SidebarTab.attributes }
+				else { devtools.SidebarTab.styles }
+			}
+			tools.styles.key = 0
+			tools.version++
+		}
+		'computed-filter' {
+			tools.computed_filter = ui2.text(devtools.computed_filter_id).clone()
+			tools.version++
+		}
+		'style-set', 'style-remove' {
+			rule_index := action.arg.all_before(':').int()
+			name := action.arg.all_after(':')
+			field, _ := app.devtools_style_field(id, rule_index, name) or { return }
+			text := if action.verb == 'style-set' { ui2.text(field) } else { '' }
+			app.set_devtools_style(id, rule_index, name, text)
+			// The CSSOM ignores invalid values; show what applies.
+			if action.verb == 'style-set' {
+				if current_field, current := app.devtools_style_field(id, rule_index, name) {
+					ui2.set_text(current_field, current)
+				}
+			}
+			return
+		}
+		'style-add' {
+			name_id := devtools.new_style_name_id(id)
+			name := ui2.text(name_id)
+			if name.trim_space() != '' && app.set_devtools_style(id, 0, name,
+				ui2.text(devtools.new_style_value_id(id))) {
+				ui2.set_text(name_id, '')
+				ui2.set_text(devtools.new_style_value_id(id), '')
+			}
+			app.focus_devtools_control(name_id)
+			app.finish_devtools_render()
+			return
+		}
 		'attr-add' {
 			name_id := devtools.new_attribute_name_id(id)
 			name := ui2.text(name_id)
@@ -409,6 +496,56 @@ fn (mut app BrowserApp) delete_devtools_node(id i64) bool {
 	changed := tools.delete(id)
 	app.finish_devtools_edit(changed)
 	return changed
+}
+
+// set_devtools_style sets a declaration of the inline style (rule 0) or of a
+// matched author rule. An empty value removes it.
+fn (mut app BrowserApp) set_devtools_style(id i64, rule_index int, name string, value string) bool {
+	mut tools := app.devtools_panel() or { return false }
+	app.sync_devtools()
+	app.refresh_devtools_styles()
+	if tools.styles.node != id || rule_index < 0 || rule_index >= tools.styles.rules.len
+		|| name.trim_space() == '' {
+		return false
+	}
+	rule := tools.styles.rules[rule_index]
+	mut changed := false
+	if rule.origin == .inline {
+		node := tools.node(id) or { return false }
+		element := node.as_element() or { return false }
+		declarations := devtools.with_declaration(devtools.parse_declarations(element.get_attribute('style') or {
+			''
+		}), name, value)
+		changed = if declarations.len == 0 {
+			tools.remove_attribute(id, 'style')
+		} else {
+			tools.set_attribute(id, 'style', devtools.serialize_declarations(declarations))
+		}
+	} else if rule.editable() {
+		changed = true
+		cssinspect.set_rule_property(rule.handle, name.trim_space(), value) or {
+			tools.error = err.msg()
+			tools.version++
+			changed = false
+		}
+	}
+	tools.styles.key = 0
+	app.finish_devtools_edit(changed)
+	return changed
+}
+
+// devtools_style_field names a declaration's field and the text it should show.
+fn (app &BrowserApp) devtools_style_field(id i64, rule_index int, name string) ?(string, string) {
+	tools := app.devtools_panel() or { return none }
+	if tools.styles.node != id || rule_index < 0 || rule_index >= tools.styles.rules.len {
+		return none
+	}
+	for index, declaration in tools.styles.rules[rule_index].declarations {
+		if declaration.name == name {
+			return devtools.style_value_id(id, rule_index, index), declaration.value_text()
+		}
+	}
+	return none
 }
 
 fn (mut app BrowserApp) finish_devtools_edit(changed bool) {
@@ -467,7 +604,8 @@ fn (mut app BrowserApp) handle_devtools_key(event ui2.KeyEvent) bool {
 		app.refresh_devtools()
 		return true
 	}
-	if focused.starts_with('devtools-attr-') {
+	if focused.starts_with('devtools-attr-') || focused.starts_with('devtools-style-')
+		|| focused == devtools.computed_filter_id {
 		if event.code == .escape {
 			ui2.blur_embedded_textbox()
 			tools.version++

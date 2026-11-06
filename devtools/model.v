@@ -97,6 +97,11 @@ pub mut:
 	// Double-click detection for tree rows.
 	click_node i64
 	click_at   i64
+	// The sidebar tab, and the selected element's styles as last collected
+	// by the host.
+	sidebar         SidebarTab
+	styles          StyleSnapshot
+	computed_filter string
 	// Host input state: the page element under the picker, whether the
 	// pointer is over the panel, and a picker press whose release the page
 	// must not see.
@@ -164,6 +169,7 @@ pub fn (mut tools DevTools) sync(document &dom.Document, generation int) bool {
 	tools.error = ''
 	tools.rows = []Row{}
 	tools.nodes = map[i64]&dom.Node{}
+	tools.styles = StyleSnapshot{}
 	tools.click_node = 0
 	tools.version++
 	if document == unsafe { nil } {

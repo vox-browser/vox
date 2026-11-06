@@ -310,6 +310,8 @@ fn test_elements_declare_tree_sidebar_and_editor() {
 	main_toggle := find_element(pane, 'devtools-row-${node_id(s.main)}-toggle') or { panic('toggle') }
 	assert main_toggle.action_id == action('toggle', node_id(s.main), '')
 	tools.select(node_id(s.main))
+	assert tools.sidebar == .styles
+	tools.sidebar = .attributes
 	pane2 := tools.elements(ui2.rect(0, 500, 1000, 300))
 	class_field := find_element(pane2, attribute_value_id(node_id(s.main), 1)) or { panic('class field') }
 	assert class_field.text == 'card wide'
@@ -325,4 +327,87 @@ fn test_elements_declare_tree_sidebar_and_editor() {
 	assert find_element(pane3, 'devtools-editor-apply') != none
 	// Narrow windows drop the sidebar width proportionally.
 	assert layout(500, 300).sidebar_width == 200
+}
+
+fn styled_tools(s Sample) &DevTools {
+	mut tools := opened(s)
+	tools.select(node_id(s.main))
+	mut rules := [
+		StyleRule{
+			selector:     'element.style'
+			origin:       .inline
+			declarations: parse_declarations('color: red')
+		},
+		StyleRule{
+			selector:     '.card'
+			source:       'style.css'
+			origin:       .author
+			declarations: parse_declarations('color: blue; border: 1px solid')
+		},
+		StyleRule{
+			selector:     'main'
+			source:       'user agent stylesheet'
+			origin:       .user_agent
+			declarations: parse_declarations('display: block')
+		},
+	]
+	mark_overridden(mut rules)
+	tools.styles = StyleSnapshot{
+		node:     node_id(s.main)
+		rules:    rules
+		computed: [ComputedProperty{'display', 'block'}, ComputedProperty{'margin-top', '8px'}]
+		box:      BoxModel{
+			margin:  [8.0, 0, 8, 0]
+			border:  [1.0, 1, 1, 1]
+			padding: [0.0, 0, 0, 0]
+			width:   300
+			height:  40
+		}
+	}
+	return tools
+}
+
+fn test_styles_tab_shows_editable_author_rules_and_read_only_user_agent_rules() {
+	s := sample()
+	mut tools := styled_tools(s)
+	id := node_id(s.main)
+	pane := tools.elements(ui2.rect(0, 500, 1000, 400))
+	tab := find_element(pane, 'devtools-sidebar-tab-styles') or { panic('styles tab') }
+	assert tab.accessibility_value == 'selected'
+	assert tab.action_id == action('sidebar', 0, 'styles')
+	inline_color := find_element(pane, style_value_id(id, 0, 0)) or { panic('inline field') }
+	assert inline_color.text == 'red'
+	assert inline_color.submit_id == action('style-set', id, '0:color')
+	author_color := find_element(pane, style_value_id(id, 1, 0)) or { panic('author field') }
+	assert author_color.text == 'blue'
+	struck := find_element(pane, 'devtools-style-name-1-0') or { panic('author name') }
+	assert struck.text_style.strikethrough
+	assert find_element(pane, style_value_id(id, 2, 0)) == none
+	ua := find_element(pane, 'devtools-style-value-2-0') or { panic('ua value') }
+	assert ua.text == 'block;'
+	assert find_element(pane, new_style_name_id(id)) != none
+	source := find_element(pane, 'devtools-style-source-1') or { panic('source') }
+	assert source.text == 'style.css'
+}
+
+fn test_computed_tab_shows_box_model_and_filtered_values() {
+	s := sample()
+	mut tools := styled_tools(s)
+	tools.sidebar = .computed
+	tools.computed_filter = 'margin'
+	pane := tools.elements(ui2.rect(0, 500, 1000, 400))
+	size := find_element(pane, 'devtools-box-size') or { panic('box size') }
+	assert size.text == '300 × 40'
+	top := find_element(pane, 'devtools-box-margin-top') or { panic('margin top') }
+	assert top.text == '8'
+	assert (find_element(pane, 'devtools-box-padding-left') or { panic('padding') }).text == '-'
+	filter := find_element(pane, computed_filter_id) or { panic('filter') }
+	assert filter.action_id == action('computed-filter', 0, '')
+	name := find_element(pane, 'devtools-computed-name-0') or { panic('computed row') }
+	assert name.text == 'margin-top'
+	assert find_element(pane, 'devtools-computed-name-1') == none
+	// Non-elements keep their text editor whichever tab is chosen.
+	tools.select(node_id(s.comment))
+	comment_pane := tools.elements(ui2.rect(0, 500, 1000, 400))
+	assert find_element(comment_pane, 'devtools-edit-text') != none
 }

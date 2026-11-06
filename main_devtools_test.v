@@ -7,6 +7,10 @@ import page
 import ui2
 
 fn devtools_test_app() &BrowserApp {
+	return devtools_test_app_with('<!doctype html><style>body{margin:0}div,section{display:block;width:300px;height:40px}</style><body><main id="app" class="shell"><div id="target" title="Target">Target text</div><div id="other">Other</div></main><!-- end --></body>')
+}
+
+fn devtools_test_app_with(markup string) &BrowserApp {
 	owner := page.Page.create(1) or { panic(err) }
 	mut app := &BrowserApp{
 		page_model:      owner
@@ -16,7 +20,7 @@ fn devtools_test_app() &BrowserApp {
 	}
 	app.install_loaded_page(LoadedPage{
 		url:          'https://devtools.example/'
-		markup:       '<!doctype html><style>body{margin:0}div,section{display:block;width:300px;height:40px}</style><body><main id="app" class="shell"><div id="target" title="Target">Target text</div><div id="other">Other</div></main><!-- end --></body>'
+		markup:       markup
 		content_type: 'text/html'
 	}, false)
 	return app
@@ -189,4 +193,73 @@ fn test_navigation_resets_the_inspected_document() {
 	body := app.document.body() or { panic('missing body') }
 	assert tools.selected == devtools.node_id(unsafe { &dom.Node(body) })
 	assert tools.rows.any(it.node == devtools_test_id(app, 'next'))
+}
+
+fn devtools_test_rule(tools &devtools.DevTools, selector string) int {
+	for index, rule in tools.styles.rules {
+		if rule.selector == selector {
+			return index
+		}
+	}
+	panic('no rule ${selector} in ${tools.styles.rules.map(it.selector)}')
+}
+
+fn devtools_test_overridden(tools &devtools.DevTools, selector string, name string) bool {
+	rule := tools.styles.rules[devtools_test_rule(tools, selector)]
+	for declaration in rule.declarations {
+		if declaration.name == name {
+			return declaration.overridden
+		}
+	}
+	panic('no ${name} in ${selector}')
+}
+
+fn test_styles_tab_lists_and_edits_matched_rules() {
+	mut app := devtools_test_app_with('<!doctype html><style>body{margin:0} .card{padding:4px;color:blue} #target.card{color:green} div{margin:0;width:200px}</style><body><div id="target" class="card" style="height:40px">Target</div></body>')
+	defer { app.dispose_browser_tab() }
+	target := app.document.get_element_by_id('target') or { panic('missing target') }
+	id := devtools.node_id(target.as_node())
+	app.inspect_devtools_node(target.as_node())
+	_ = app.devtools_elements(800, 900)
+	mut tools := devtools_test_panel(app)
+	assert tools.sidebar == .styles
+	assert tools.styles.node == id
+	selectors := tools.styles.rules.map(it.selector)
+	assert selectors[..4] == ['element.style', '#target.card', '.card', 'div']
+	assert tools.styles.rules[0].declarations.map('${it.name}: ${it.value}') == ['height: 40px']
+	assert tools.styles.rules[1].source == '<style>'
+	assert !devtools_test_overridden(tools, '#target.card', 'color')
+	assert devtools_test_overridden(tools, '.card', 'color')
+	assert !devtools_test_overridden(tools, '.card', 'padding')
+	ua_index := tools.styles.rules.len - 1
+	assert tools.styles.rules[ua_index].origin == .user_agent
+	assert tools.styles.rules.filter(it.origin == .user_agent).any(it.declarations.any(it.name == 'display'))
+	// Author rules change through the CSSOM and relayout the page.
+	assert app.set_devtools_style(id, devtools_test_rule(tools, '.card'), 'padding', '10px')
+	assert target.get_bounding_client_rect().height == 60
+	assert tools.styles.key == 0 || tools.styles.rules.len > 0
+	_ = app.devtools_elements(800, 900)
+	card := tools.styles.rules[devtools_test_rule(tools, '.card')]
+	assert card.declarations.any(it.name == 'padding' && it.value == '10px')
+	// The inline style edits the style attribute.
+	assert app.set_devtools_style(id, 0, 'height', '80px')
+	assert app.set_devtools_style(id, 0, 'outline', '1px solid red !important')
+	assert target.get_attribute('style') or { '' } == 'height: 80px; outline: 1px solid red !important;'
+	assert target.get_bounding_client_rect().height == 100
+	assert app.set_devtools_style(id, 0, 'outline', '')
+	assert target.get_attribute('style') or { '' } == 'height: 80px;'
+	_ = app.devtools_elements(800, 900)
+	assert !app.set_devtools_style(id, tools.styles.rules.len - 1, 'display', 'none')
+	// The Computed tab shows the box model and resolved values.
+	app.devtools_action(devtools.action('sidebar', 0, 'computed'))
+	assert tools.sidebar == .computed
+	_ = app.devtools_elements(800, 900)
+	box := tools.styles.box or { panic('missing box model') }
+	assert box.padding == [10.0, 10, 10, 10]
+	assert box.width == 200 && box.height == 80
+	assert tools.styles.computed.any(it.name == 'color' && it.value == 'rgb(0, 128, 0)')
+	names := tools.styles.computed.map(it.name)
+	standard := names.filter(!it.starts_with('-'))
+	assert standard == standard.sorted()
+	assert names[..standard.len] == standard
 }
