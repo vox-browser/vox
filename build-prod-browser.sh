@@ -192,9 +192,13 @@ if [ -z "$rust_cargo" ]; then
         rust_cargo=/opt/homebrew/opt/rustup/bin/cargo
     fi
 fi
+# A fresh Cargo build fails to load its proc-macro crates (rustc reports
+# "can't find crate for thiserror_impl") whenever MACOSX_DEPLOYMENT_TARGET is
+# set. Build the Rust helpers without it; they keep rustc's lower default
+# minimum, which the release accepts.
 if [ -n "$rust_cargo" ]; then
     rust_target_dir="$cache_dir/rust-yuv"
-    PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$rust_target_dir" \
+    env -u MACOSX_DEPLOYMENT_TARGET PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$rust_target_dir" \
         "$rust_cargo" build --quiet --release --locked \
         --manifest-path "$repo_dir/native_yuv_rust/Cargo.toml"
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_RUST_YUV"
@@ -203,7 +207,7 @@ fi
 jpegxl_library=""
 if [ -n "$rust_cargo" ]; then
     jpegxl_target_dir="$cache_dir/rust-jpegxl"
-    PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$jpegxl_target_dir" \
+    env -u MACOSX_DEPLOYMENT_TARGET PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$jpegxl_target_dir" \
         "$rust_cargo" build --quiet --release --locked \
         --manifest-path "$repo_dir/native_jpegxl_rust/Cargo.toml"
     jpegxl_library="$build_dir/libVoxJPEGXL.dylib"
