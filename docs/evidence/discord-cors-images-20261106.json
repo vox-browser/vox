@@ -1,0 +1,139 @@
+{
+  "recorded_utc": "2026-11-06T04:34:16.811182+00:00",
+  "site": "Discord login / embedded challenge images",
+  "fix_commit": "6cd573249",
+  "finding": "Challenge images set crossOrigin=anonymous. The browser image loader rejected every cross-origin CORS request before fetching; ordinary no-CORS icons could load.",
+  "live_baseline": {
+    "raw": "Build/discord-retry-20261106/auth-r2",
+    "executable_sha256": "4b1ce3741d725cd0947002d089a3a553b4df5ba7937903609a649d183b28d842",
+    "same_asset_probe": {
+      "cors": {
+        "loaded": false,
+        "width": 0
+      },
+      "noCors": {
+        "loaded": true,
+        "size": [
+          480,
+          320
+        ]
+      },
+      "fetch": {
+        "status": 200,
+        "type": "image/jpeg",
+        "bytes": 51613,
+        "signature": [
+          255,
+          216,
+          255,
+          224,
+          0,
+          16,
+          74,
+          70
+        ]
+      }
+    },
+    "direct_response": {
+      "status": 200,
+      "access_control_allow_origin": "*",
+      "content_type": "image/jpeg",
+      "bytes": 51613
+    },
+    "note": "Only request, callback, dimension and header metadata were inspected. No CAPTCHA answer was selected."
+  },
+  "change": "CORS-mode native image requests use the existing Fetch transport and policy checks. In-flight deduplication includes document, policy, credentials, referrer and URL identity. Requests share the existing eight-transfer bound and retire their callbacks on completion or cancellation. Verified CORS pixels remain origin-clean. Legacy unverified cached bytes still cannot approve cross-origin CORS images.",
+  "baseline_regression": {
+    "raw": "Build/discord-retry-20261106/image-events/cors-baseline-default-r1",
+    "compile_exit": 0,
+    "runtime_exit": 1
+  },
+  "checks": {
+    "cases_per_mode": 23,
+    "modes": [
+      "default",
+      "-prealloc -gc none"
+    ],
+    "compile_memory_limit": "10G",
+    "compile_guard_limit_gib": 12,
+    "runtime_guard_limit_gib": 3,
+    "coverage": [
+      "Anonymous wildcard success with exact canvas pixel readback",
+      "Missing or wrong allow-origin rejection",
+      "Credentialed wildcard rejection and exact-origin/allow-credentials acceptance",
+      "Cross-origin redirect success and final-response rejection",
+      "Document image CSP and policy changes during pending requests",
+      "DOM replay request deduplication",
+      "Shared concurrency bound and cancellation of active and queued requests",
+      "Existing async images, legacy cache rejection, child documents, decoding and idle polling storage"
+    ],
+    "runs": {
+      "cors-final-default-r1": {
+        "cases": 23,
+        "focused_sources_unchanged": true,
+        "sources_sha256": {
+          "main_cors_image_requests_test.v": "0446c393fd15fe127361982352572f91de183c5c02d5e9973e71ba6d457f4c30",
+          "main_async_images_test.v": "c18bb18c17ceff14e0cdc82d77547b1d4a33e4ce7d05e1d0a515ab8b2e9e495f",
+          "main_preloaded_image_requests_test.v": "f152ab27d88fb743ba5048c5e6e01c7d991ab850ce7ac53d02a992f8780b5e02",
+          "main_child_documents_test.v": "6cea9dbe4720ff897c8c5bb94b7056e90de727684f59db7275f95b645afbb98b",
+          "main_image_decode_test.v": "9afa75ccc0d56d0448e802eec5bc106a8eeb4c3d0db68b8fa130bc83c770ee30",
+          "main_image_request_poll_storage_test.v": "60f9995ae3745f55ccd94fa2964b8b99aa65e795f3335c331cd84c0f4e81d074",
+          "browserjs/image_host_jsc.c.v": "e4c60e7b253aade6f0e168766962cfb47bb1af1398ab5083acba6f43b576021a",
+          "browserjs/image_host.v": "13667b83f37691bdd107cc29aba3d2bd821f2e275b91151c2278f45896b0477f",
+          "browserjs/canvas_host.v": "89a5806385f9d17120297ce4c770eb3136837f4ed56a29872bdebfc077a7fa53",
+          "main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5",
+          "main_async_images.v": "c81d6137ebd0dd4eab27492e2ceeb516e9bd668168c3d9c1112a790913cb041f",
+          "main_cors_image_requests.v": "42dae09e7c3a5b32cbb5c83fbc29da78b8999d58fa0ef110634d6b74fb8ed74c",
+          "main.v": "5001a74e44a0c7ab97bce52b7d01aaee3c26d40a10c57ec363da65711b62f663",
+          "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550"
+        },
+        "compile_exit": 0,
+        "runtime_exit": 0,
+        "compile_peak_sampled_rss_bytes": 5601787904,
+        "runtime_peak_sampled_rss_bytes": 243892224,
+        "raw": "Build/discord-retry-20261106/image-events/cors-final-default-r1"
+      },
+      "cors-final-prealloc-r1": {
+        "cases": 23,
+        "focused_sources_unchanged": true,
+        "sources_sha256": {
+          "main_cors_image_requests_test.v": "0446c393fd15fe127361982352572f91de183c5c02d5e9973e71ba6d457f4c30",
+          "main_async_images_test.v": "c18bb18c17ceff14e0cdc82d77547b1d4a33e4ce7d05e1d0a515ab8b2e9e495f",
+          "main_preloaded_image_requests_test.v": "f152ab27d88fb743ba5048c5e6e01c7d991ab850ce7ac53d02a992f8780b5e02",
+          "main_child_documents_test.v": "6cea9dbe4720ff897c8c5bb94b7056e90de727684f59db7275f95b645afbb98b",
+          "main_image_decode_test.v": "9afa75ccc0d56d0448e802eec5bc106a8eeb4c3d0db68b8fa130bc83c770ee30",
+          "main_image_request_poll_storage_test.v": "60f9995ae3745f55ccd94fa2964b8b99aa65e795f3335c331cd84c0f4e81d074",
+          "browserjs/image_host_jsc.c.v": "e4c60e7b253aade6f0e168766962cfb47bb1af1398ab5083acba6f43b576021a",
+          "browserjs/image_host.v": "13667b83f37691bdd107cc29aba3d2bd821f2e275b91151c2278f45896b0477f",
+          "browserjs/canvas_host.v": "89a5806385f9d17120297ce4c770eb3136837f4ed56a29872bdebfc077a7fa53",
+          "main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5",
+          "main_async_images.v": "c81d6137ebd0dd4eab27492e2ceeb516e9bd668168c3d9c1112a790913cb041f",
+          "main_cors_image_requests.v": "42dae09e7c3a5b32cbb5c83fbc29da78b8999d58fa0ef110634d6b74fb8ed74c",
+          "main.v": "5001a74e44a0c7ab97bce52b7d01aaee3c26d40a10c57ec363da65711b62f663",
+          "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550"
+        },
+        "compile_exit": 0,
+        "runtime_exit": 0,
+        "compile_peak_sampled_rss_bytes": 5480579072,
+        "runtime_peak_sampled_rss_bytes": 308166656,
+        "raw": "Build/discord-retry-20261106/image-events/cors-final-prealloc-r1"
+      }
+    }
+  },
+  "memory_observation": {
+    "raw_sample": "Build/discord-retry-20261106/image-failure/vox-sample.txt",
+    "sample_guard_exit": 0,
+    "physical_footprint_gib": 9.6,
+    "process_elapsed_minutes": 36,
+    "status": "Growth remains unresolved. The old owned test process was closed after capturing evidence."
+  },
+  "production_validation": {
+    "status": "pending shared production publication",
+    "note": "The latest available canonical executable still contains an earlier CORS implementation. It cannot validate the completed fix. No extra production build has been queued."
+  },
+  "authentication": {
+    "authenticated": false,
+    "human_verification_required": true,
+    "authenticated_channels_verified": false
+  }
+}
