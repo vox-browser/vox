@@ -10,6 +10,13 @@ namespace {
 VoxPictureRasterCache s_picture_raster_cache;
 void clear_picture_raster_cache() { s_picture_raster_cache.clear(); }
 
+static bool picture_raster_cache_enabled()
+{
+    auto* enabled = std::getenv("VOX_ENABLE_PICTURE_RASTER_CACHE");
+    auto* uncached = std::getenv("VOX_RETAIN_UNCACHED_PICTURE_RASTER");
+    return enabled && !std::strcmp(enabled, "1") && (!uncached || !*uncached);
+}
+
 static std::vector<uint8_t> picture_raster_key(SkData const* bytes, int width, int height,
     long first_x, long first_y, VoxChromiumRasterGrid grid, float const* matrix, bool tiled)
 {
@@ -715,8 +722,7 @@ void finish_shared_recording()
             if (!bytes || bytes->size() > 64 * 1024 * 1024) return;
             // Shared image/typeface tokens denote immutable owned resources;
             // they are never recycled. A changed token can only cause a miss.
-            auto* uncached = std::getenv("VOX_RETAIN_UNCACHED_PICTURE_RASTER");
-            if (!uncached || !*uncached) {
+            if (picture_raster_cache_enabled()) {
                 cache_key = picture_raster_key(bytes.get(), width, height,
                     std::lround(first_x), std::lround(first_y), grid, matrix, tiled);
                 cache_hit = s_picture_raster_cache.restore(cache_key,

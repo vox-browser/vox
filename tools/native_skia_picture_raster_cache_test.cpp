@@ -66,6 +66,21 @@ static std::vector<uint8_t> render(SkPicture const* picture, int scale, bool til
 int main()
 {
     assert(shared_picture_draw() && picture_regions_draw());
+    unsetenv("VOX_ENABLE_PICTURE_RASTER_CACHE");
+    unsetenv("VOX_RETAIN_UNCACHED_PICTURE_RASTER");
+    assert(!picture_raster_cache_enabled());
+    auto initial = scene(63, false);
+    auto uncached = render(initial.get(), 1, false, 10, 0, false);
+    assert(render(initial.get(), 1, false, 10, 0, true) == uncached);
+    assert(s_picture_raster_cache.entries() == 0);
+    setenv("VOX_ENABLE_PICTURE_RASTER_CACHE", "0", 1);
+    assert(!picture_raster_cache_enabled());
+    setenv("VOX_ENABLE_PICTURE_RASTER_CACHE", "1", 1);
+    assert(picture_raster_cache_enabled());
+    setenv("VOX_RETAIN_UNCACHED_PICTURE_RASTER", "1", 1);
+    assert(!picture_raster_cache_enabled());
+    setenv("VOX_RETAIN_UNCACHED_PICTURE_RASTER", "", 1);
+    assert(picture_raster_cache_enabled());
     setenv("VOX_PICTURE_RASTER_CACHE_DIAGNOSTICS", "1", 1);
     size_t cases = 0;
     for (int scale : {1, 2}) for (bool tiled : {false, true})
