@@ -31,6 +31,17 @@ fn (mut app BrowserApp) create_local_image_with_profile(image_url string, path s
 		return app.create_avif_resource_image(app.background_image_bytes(image_url)!)
 	}
 	$if macos {
+		if app.ctx.native_rendering && app.document != unsafe { nil }
+			&& app.document.font_rendering_policy() == .chromium && image_bytes_are_webp(prefix) {
+			animated := prefix.len >= 21 && prefix[12..16].bytestr() == 'VP8X'
+				&& prefix[20] & 2 != 0
+			if !animated {
+				bytes := app.background_image_bytes(image_url) or { return app.ctx.create_image(path) }
+				// Static file images need the same libwebp alpha multiplication
+				// and tagged-color upload as fetched images. Keep animated providers.
+				return app.create_image_from_resource_bytes(image_url, bytes)
+			}
+		}
 		if app.ctx.native_rendering && path.to_lower().ends_with('.png')
 			&& app.document != unsafe { nil }
 			&& app.document.font_rendering_policy() == .chromium {
