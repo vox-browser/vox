@@ -11039,12 +11039,7 @@ pub fn StyleComputer.for_each_property_expanding_shorthands_with_context(propert
 }
 
 pub fn StyleComputer.get_non_animated_inherit_value(property_id PropertyID, abstract_element dom.AbstractElement) &dom.StyleValue {
-	parent := parent_computed_properties(abstract_element) or {
-		return computed_interpolation_property_initial_value(property_id)
-	}
-	return parent.property(property_id, .no) or {
-		computed_interpolation_property_initial_value(property_id)
-	}
+	return non_animated_inherit_value_from_parent(property_id, parent_computed_properties(abstract_element))
 }
 
 pub struct AnimatedInheritValue {
@@ -11054,20 +11049,11 @@ pub mut:
 }
 
 pub fn StyleComputer.get_animated_inherit_value(property_id PropertyID, abstract_element dom.AbstractElement) ?AnimatedInheritValue {
-	parent := parent_computed_properties(abstract_element) or { return none }
 	// This lookup runs once for every inherited property on every descendant.
 	// The public accessor returns an owning copy for API callers; style
 	// computation only needs one entry and must not clone the entire animation
 	// map (usually empty) dozens of times per element.
-	animated_value := parent.animated_property_value(property_id) or { return none }
-	return AnimatedInheritValue{
-		value: animated_value
-		is_result_of_transition: if parent.is_animated_property_result_of_transition(property_id) {
-			AnimatedPropertyResultOfTransition.yes
-		} else {
-			AnimatedPropertyResultOfTransition.no
-		}
-	}
+	return animated_inherit_value_from_parent(property_id, parent_computed_properties(abstract_element))
 }
 
 pub fn StyleComputer.user_agent_style_sheet_source(name string) ?string {

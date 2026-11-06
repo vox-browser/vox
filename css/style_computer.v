@@ -1185,6 +1185,8 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	defer { s.publish_computed_property_pages(computed) }
 	mut document := unsafe { &dom.Document(abstract_element.element().document()) }
 	document.record_element_inherited_style_recomputation()
+	inheritance_parent := if retain_repeated_inherited_parent { ?&ComputedProperties(none) }
+		else { parent_computed_properties(*abstract_element) }
 
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut only_color_changes := true
@@ -1209,19 +1211,25 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		// live map answers what a snapshot taken before the loop would.
 		was_animated := computed.has_animated_property(property_id)
 		if computed.is_animated_property_inherited(property_id) || !was_animated {
-			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
+			animated_inherit_value := if retain_repeated_inherited_parent {
+				StyleComputer.get_animated_inherit_value(property_id, abstract_element)
+			} else { animated_inherit_value_from_parent(property_id, inheritance_parent) }
+			if animated_inherit := animated_inherit_value {
 				computed.set_animated_property(property_id, animated_inherit.value, animated_inherit.is_result_of_transition, .yes)
 			} else if was_animated {
 				computed.remove_animated_property(property_id)
 			}
 		}
 
-		new_value := StyleComputer.get_non_animated_inherit_value(property_id, abstract_element)
+		new_value := if retain_repeated_inherited_parent {
+			StyleComputer.get_non_animated_inherit_value(property_id, abstract_element)
+		} else { non_animated_inherit_value_from_parent(property_id, inheritance_parent) }
 		computed.set_property(property_id, new_value, .yes, .no)
 		property_invalidation := compute_property_invalidation(property_id, old_value, computed.property(property_id, .yes))
 		only_color_changes = only_color_changes && (property_id == .color || property_invalidation.is_none())
 		invalidation = required_invalidation_after_style_change_or(invalidation, property_invalidation)
 	}
+	report_inherited_parent_reuse(computed, inheritance_parent)
 
 	if invalidation.is_none() && values_affected_by_inherited_style.len == 0 {
 		document.record_element_inherited_style_noop_recomputation()
