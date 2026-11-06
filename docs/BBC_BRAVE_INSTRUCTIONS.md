@@ -45,6 +45,19 @@ reduction, with existing rendering/script limitations and host contention
 recorded; it does not establish a live-site, rendering-time or scrolling result.
 [All attempts, native checks and broad verification](performance/bbc-tls12-session-cohort133-20261106.json).
 
+A fresh post-cohort-133 **`v -profile -profile-no-inline` diagnostic** uses
+literal V `-prod`, C-O2/LTO, one C unit and bounded preallocation. Of 129
+prospectively selected main-thread scopes, 123 execute. The leading selected
+wall-self rows are object-receiver calls (543.200 ms / 4,789 calls), uncached
+grid (99.031 ms / 15,323), engine calls (69.372 ms / 9,401) and inline-iterator
+construction (63.654 ms / 30,513). These timings include unselected native/JSC
+work, waits and possibly work after PNG; recursive inclusive rows overlap.
+All observer-normalized engine bodies remain unchanged. Original pixels,
+complete content, 72 external source evaluations, actual native-image pins,
+normal exit and private-PID memory adoption pass. This diagnostic supplies
+investigation leads without additional instruction saving or CPU-share credit.
+[Fresh profile and complete compiler evidence](performance/bbc-tls12-v-profile-20261106.json).
+
 Retained attempt — **cohort 132**, literal V `-prod` / single-C-unit production
 `ec6ef38e95bb`, completes **seven alternating candidate/control/Brave triples**.
 All **21 attempts** remain retained; **20 capture audits pass**, while Brave
