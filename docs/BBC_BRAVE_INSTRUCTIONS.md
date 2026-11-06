@@ -1,6 +1,36 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 127**, literal V `-prod` / single-C-unit production
+Latest attempt — **cohort 128**, literal V `-prod` / single-C-unit production
+`c78955b3151b`, tests one configured JSC GC marker against the automatic policy
+on the same executable. This is a runtime-configuration experiment; **production
+GC defaults remain unchanged**. All **21 attempts** are retained, with **20
+passing capture audits**; Brave pair 2 differs from its unchanged pixel reference,
+invalidating acceptance. Launch-to-PNG medians are **25,178,756,043 configured
+Vox**, **25,638,582,747 automatic-marker control** and **17,444,265,271 Brave
+lower bound** instructions. The median point reduction is **459,826,704
+(1.793495%)**, with four paired improvements and three regressions; the
+conservative control ratio **1.07937** fails. The strict Brave gate also fails
+`265789133080 > 155274376149` (ratio **1.54056**). No robust saving or catalog
+credit is claimed. Separate diagnostic option dumps verify seven automatic
+markers versus one configured marker, concurrent GC enabled and the common
+current JIT warmup threshold 10000. Option dumps, GC logging and thread probes
+are absent from the unprofiled cohort. Original native capture/script/image/
+ownership/exit audits and the SVG guard pass in both configurations.
+[All attempts, native checks and broader verification](performance/bbc-gc-markers-cohort128-20261106.json).
+
+The observed point reduction triggers **761 freshly executed unique cases per
+default and no-GC mode: 756 passes and the same five baseline failures**. Layout
+560, main 76, CSS 110 and browser-JS 15 include two current startup/JSC cases
+beyond the previous set. Main/CSS repeat configured and automatic-marker arms;
+browser-JS repeats its existing lexer arms. All **1,924 actual executions**,
+1,910 passes and 14 repeated baseline failures are audited with unchanged checked
+inputs. No full-suite pass or cadence reset is claimed. History through 128 is
+**122 measured cohorts / 2,629 acceptance browser attempts**; preflight-only IDs
+remain 104, 110, 111, 113, 118 and 124. The 10% target remains unmet, and the BBC
+homepage remains outside the qualifying instruction catalog. Earlier builds and
+C modes stay separate, without cross-build gain attribution.
+
+Retained attempt — **cohort 127**, literal V `-prod` / single-C-unit production
 `86088fc0d932`, is invalid for acceptance. Brave pair 2 has a private helper
 outside its resource coalition; pair 3 differs from its unchanged pixel reference.
 All **21 attempts** remain recorded, with **19 passing capture audits**. All
