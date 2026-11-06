@@ -8,14 +8,14 @@ and complete-cache passes. WIRED's earlier strict first-frame passes remain
 recorded; recent cold Brave references vary.** The other additions retain the open gaps documented below.
 
 The original ten remain incomplete. Latest cold controls retain strict zero
-for Hacker News, Lobsters, BBC, Slashdot and Guardian. The Verge retains its
-stable-reference rendering gap. Guardian also passes with complete caches;
-Slashdot's complete-cache Brave references vary by one radio-button pixel. CNN retains source/replay gaps.
+for Hacker News, Lobsters, BBC, Slashdot, Guardian and The Verge. Guardian and
+The Verge also pass with complete caches; Slashdot's complete-cache Brave
+references vary by one radio-button pixel. CNN retains source/replay gaps.
 Reddit is blocked, and Stack Overflow/Pikabu remain deferred. See
 [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
 The latest rendering checkpoint passes **142 tests / 148 captures at zero
-pixels** on `ec6ef38e…`, with unchanged inputs and references. The AVIF sampling
+pixels** on `a1f7b333…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2984,6 +2984,57 @@ probes, input identities, focused checks and memory receipts. The archive is
 23,628,829 bytes, SHA-256
 `a392183aaa3d51fcfa1c58aca23ac355660a77d56b48ca175251127acd52d7d2`;
 all members passed hash readback and ZIP CRC verification.
+
+## Verge retained text and disjoint frame damage (2026-11-06)
+
+The unchanged registered Verge guest viewport now passes every strict gate
+at **zero pixels with cold and complete caches** on production executable
+`a1f7b3339a6778139c03f53a1bccc4007e022434284988ff0478cd892faee078`. Saved source versus frozen Brave, two independent
+Brave replays, and native versus either reference are all **0**, including
+an independent RGBA byte comparison. Both browsers use the same full-uBlock
+Origin policy, 1024×768 viewport, scale 1 and ordinary animation policy.
+No reference, resource body or tolerance was replaced. Guardian, Slashdot
+and Hacker News also pass all cold gates on this build.
+
+The previous **3,889 pixels** were confined to the first headline line.
+The decoded font outlines and glyph positions agree with Brave. An equivalent
+float-color diagnostic and a diagnostic disabling both direct glyph paths
+produce zero pixels, but neither is the production correction. Inspection of
+the actual Quartz clip shows the cause: a reused frame repaints a union of
+damage rectangles, retaining content in a hole to the right of x400. The
+private bitmap paths used the union's bounding rectangle as proof that they
+could write directly. They painted glyph edges into that retained hole again.
+Commit `fc14cc2e2` rejects the active damage canvas in both direct-clip
+selectors so the ordinary Quartz publication enforces its complete clip.
+Other canvases retain their existing direct-raster eligibility.
+
+The new native regression initially fails with **3,663 pixels**. Its four
+cases cover direct raster and bitmap-copy publication, each with and without
+an additional tracked rectangular clip. All four pass after the correction.
+Six native glyph executables pass optimized and under **AddressSanitizer
+and UBSan**, with unchanged source inputs. The controls include 6,240 retained
+cache comparisons, 30 cropped/document-origin comparisons, 36 bitmap
+publications, 216 bitmap surface cases and 16 device-clip cases. The runner
+also carries the current Skia no-RTTI/IOSurface build requirements and the
+bitmap surface test includes its optional glyph-adapter declaration.
+All six focused browser captures pass.
+
+The full **142-test / 148-capture** native suite is pixel-exact on
+`a1f7b3339a6778139c03f53a1bccc4007e022434284988ff0478cd892faee078`. The installed bridge's disassembly contains the early
+damage-canvas rejection; executable, native libraries, fixture bytes and
+runtime-tool identities stay unchanged throughout the passing cohorts.
+All capture, test and supervisor exits are zero. This is archived viewport
+rendering evidence; live interactions, motion and performance remain open.
+The prior catalog baseline retains its documented supplementary archive-input
+audit qualification. Stack Overflow and Pikabu remain deferred, Reddit is
+blocked, and the other recorded source/replay gaps remain open.
+
+[Machine-readable evidence](evidence/verge-glyph-damage-clips-20261106.json)
+and its [2,558-member archive](evidence/verge-glyph-damage-clips-20261106.zip)
+retain source/replay/native PNGs, clip and font diagnostics, reduced controls,
+failed attempts, input identities, native checks and memory receipts. The ZIP
+is 42,831,248 bytes, SHA-256
+`301bd468cf9c27733defa0b6005608bdf9a4a366906f9ed8f8635e412bee3551`; every member passed hash readback and CRC verification.
 
 ## Run
 
