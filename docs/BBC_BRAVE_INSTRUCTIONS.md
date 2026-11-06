@@ -27,6 +27,19 @@ disposal counts (12,521) for repeat intervals of one microsecond and zero. It
 does not represent the native app's run-loop modes or BBC's whole cost.
 [Signing proof, corrected profiles and retained native probes](performance/bbc-profile-jit-signing-20261106.json).
 
+The provisional zero-delay native timer dispatcher (`274964873`; isolated
+control `ea238dcf9`) passes **168 focused executions**: 28 cases in both arms
+across default, no-GC and bounded preallocation. Native ASan/UBSan checks pass
+6,400 cancellations, 1,000 restarts, nested pumping and positive-delay/worker
+fallback in each arm; all 349 instruction-tool tests pass. The shared source
+delivers one main-thread zero-delay callback per invocation and immediately
+unlinks cancelled records. V Timer ownership, cooperative deferral and interval
+policy stay in the existing implementation. This changes the native run-loop
+primitive and phase; BBC path/pixel/content qualification and a matched
+unprofiled cohort remain required. No instruction saving or acceptance-history
+advance is credited by these focused checks.
+[Focused evidence](performance/bbc-zero-native-timer-focus-20261106.json).
+
 
 The verified TLS 1.2 session-cache change (`94f275b6c`; isolated comparison
 control `8d334abb2`) passes **84 explicit C-backend HTTP executions**, 14 cases
