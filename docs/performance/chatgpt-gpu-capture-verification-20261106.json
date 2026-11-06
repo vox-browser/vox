@@ -1,0 +1,393 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "implementation_commit": "1a9dc0764",
+  "production_default_changed": false,
+  "focused_report": {
+    "path": "docs/performance/chatgpt-gpu-capture-focused-verification-20261106.json",
+    "sha256": "e34c3fd7c096307eea00afe21b8b6ee0fcef0cb5f19916bc8ce83662ea481306"
+  },
+  "native_guarded_checks": 16,
+  "native_additional_nested_checks": 6,
+  "native_exact_gpu_frames": 28,
+  "native_gpu_draws": 34,
+  "probes": [
+    {
+      "report": "docs/performance/chatgpt-gpu-capture-probe-r1-diagnostic-20261106.json",
+      "sha256": "e8bf28825de7f7e8fa676750be6e034619d1fcad1e2f5133c3e36e6cbe4e1344",
+      "complete": false,
+      "production": {
+        "c_compile": {
+          "mode": "single",
+          "requested": "single",
+          "v_prod": true
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "7f519bf2f01db83bf45be3da6b09f7031f7c4d894df4b50f07662e8a07e5544e",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-133828-93b254e2/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "5ffe686075abc61cea2181f749f6c55e619c252ba31a4e1f58b53c16906a5aba",
+          "dirty": true,
+          "head": "02a45f4f0bd4aca7c3d8ede594927a208df90fac",
+          "repository_sha256": "5784499c852eb92c0611770aeec2d61770353d33b1533b992aa39ee387b461e4"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "af1d0b536b8fffd35ff12188c6aee9f8357cd5bdd113f2bcc529b4475bd80b63",
+          "dirty": true,
+          "head": "02a45f4f0bd4aca7c3d8ede594927a208df90fac",
+          "repository_sha256": "4c1b3f6dfe915e0e85f06586926ce69d12902a969bbaf2530a9680a5d1fc112b"
+        },
+        "request": {
+          "c_mode": "single",
+          "head": "02a45f4f0bd4aca7c3d8ede594927a208df90fac",
+          "id": "29f3d5e9e8e646df8973dd2caf312a28",
+          "v_prod": true
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "5ffe686075abc61cea2181f749f6c55e619c252ba31a4e1f58b53c16906a5aba",
+          "dirty": true,
+          "head": "02a45f4f0bd4aca7c3d8ede594927a208df90fac",
+          "repository_sha256": "d214412f339bec4584d8eb20d1f5512654235fceb9c7b816e6c3bfcbe1702b03"
+        }
+      },
+      "candidate_gpu": {
+        "full_frames": 4,
+        "draws": 0
+      },
+      "candidate_pixels_exact": true,
+      "different_pixels": 0
+    },
+    {
+      "report": "docs/performance/chatgpt-gpu-capture-probe-r2-diagnostic-20261106.json",
+      "sha256": "3bb198dcf35137d48af9383fc0b0806711d99046ae37ba03a47adf686b0860e7",
+      "complete": false,
+      "production": {
+        "c_compile": {
+          "mode": "single",
+          "requested": "single",
+          "v_prod": true
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "5736e101fcbb58efcad1089f3c88c808fe3a603203e27e1dba5f25f72218d3fa",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-134346-2f1088c2/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "88c62eff2ccdde685d26ed6e3b80dc49e2a822976ed4e43b9f94af8b06513667",
+          "dirty": true,
+          "head": "c3fb0387ed947bc0f3321d034a35b3c847430e96",
+          "repository_sha256": "65988d0a04cec8d3da4a6d1e39e187f405f4343ecd195a155f6ddcaae5004e86"
+        },
+        "renderer": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+          "default": "gg",
+          "gg_adapters": true,
+          "skia_free": false,
+          "skia_required_for": [
+            "text preparation and fallback",
+            "canvas",
+            "shadows",
+            "bitmap export",
+            "recording and picture playback"
+          ]
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "88c62eff2ccdde685d26ed6e3b80dc49e2a822976ed4e43b9f94af8b06513667",
+          "dirty": true,
+          "head": "1a9dc0764264119eee32bbb00442535f8d684b72",
+          "repository_sha256": "093e78fe8caaf69685750de80fb29d2966b7a3719e74d81837b0c49bfedc033c"
+        },
+        "request": {
+          "c_mode": "single",
+          "head": "b4f0ac85b3b18717320264385bddca8ce412d62b",
+          "id": "41595af61dcf4785bb1edee5931a96fc",
+          "renderer": "gg",
+          "v_prod": true
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "88c62eff2ccdde685d26ed6e3b80dc49e2a822976ed4e43b9f94af8b06513667",
+          "dirty": true,
+          "head": "1a9dc0764264119eee32bbb00442535f8d684b72",
+          "repository_sha256": "11c9c4ac1e7fc2f4e21528e48e586565c78c88ec5d61cdcb7076a5a97800a74f"
+        }
+      },
+      "candidate_gpu": {
+        "full_frames": 4,
+        "nested_layers": 40,
+        "draws": 316
+      },
+      "candidate_pixels_exact": false,
+      "different_pixels": 455850
+    },
+    {
+      "report": "docs/performance/chatgpt-gpu-capture-probe-r3-diagnostic-20261106.json",
+      "sha256": "29e3544e38e0a2c16d17c4ea79198b1e9f45f91855b62867708d33794b7ffb0e",
+      "complete": true,
+      "production": {
+        "c_compile": {
+          "mode": "single",
+          "requested": "single",
+          "v_prod": true
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "67df35081692276e13fd5ab9692fbf83e273e253ab571f2b59bba01d59088b70",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-134709-96973505/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "9babcf85029b74d584b3cb5acfad9c47f821e4cc6d5771fe1f69ddcbf7d1de58",
+          "dirty": true,
+          "head": "e76d0e595ade49972ebfa4f2893a5ddec9f6b0e3",
+          "repository_sha256": "fd91659c6ae8e63d3a07833d71ff4e372ad853cf7fcfa6885a5be1ec73131961"
+        },
+        "renderer": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+          "default": "gg",
+          "gg_adapters": true,
+          "skia_free": false,
+          "skia_required_for": [
+            "text preparation and fallback",
+            "canvas",
+            "shadows",
+            "bitmap export",
+            "recording and picture playback"
+          ]
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "66677a8e7c16ac5e8222b884b999efb425dc727a73b5a6afb99a56faea9217f8",
+          "dirty": true,
+          "head": "e76d0e595ade49972ebfa4f2893a5ddec9f6b0e3",
+          "repository_sha256": "339fe67aee0b00b56902c8c1706e13f914f12abeb14d012789076ba3e8e7ff48"
+        },
+        "request": {
+          "c_mode": "single",
+          "head": "e76d0e595ade49972ebfa4f2893a5ddec9f6b0e3",
+          "id": "23fdc63056ad4a0f945782e74b35b5f4",
+          "renderer": "gg",
+          "v_prod": true
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "9babcf85029b74d584b3cb5acfad9c47f821e4cc6d5771fe1f69ddcbf7d1de58",
+          "dirty": true,
+          "head": "e76d0e595ade49972ebfa4f2893a5ddec9f6b0e3",
+          "repository_sha256": "01882817ac40ddd6989a22f8005bef8ba413196e8fca809978b2192ab9f72e12"
+        }
+      },
+      "candidate_gpu": {
+        "full_frames": 4,
+        "nested_layers": 0,
+        "draws": 13
+      },
+      "candidate_pixels_exact": true,
+      "different_pixels": 0
+    }
+  ],
+  "comparison": {
+    "controller": "docs/performance/chatgpt-gpu-capture-comparison-r1-controller-20261106.json",
+    "diagnostic": "docs/performance/chatgpt-gpu-capture-comparison-r1-diagnostic-20261106.json",
+    "matched": "docs/performance/chatgpt-gpu-capture-comparison-r1-matched-20261106.json",
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "57b5b24108d1e21d52e04909206ccf3509d32a4906560d31d5ac34d8dc7c8660",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-135050-46dccb19/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "8f970dda2a532e1aada06ba8a8c4b34962678d4cf0abad1f389aa0d3ac2a6ee8",
+        "dirty": true,
+        "head": "735dec22f94b3bcb0164573f2db24207925e184e",
+        "repository_sha256": "4b3cf7fb5b3df31d25e5f32f7d92cba583fdc33b292ed8ab36d9de1ab78051af"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "b730e401adcf3f6bff24fbbdcbd9b38fb5fd4756fdd1821099f7d3ca3e77d81a",
+        "dirty": true,
+        "head": "a3067a987aafbef9555f707bc1f99b918382c380",
+        "repository_sha256": "74886539eaa4181221b911c466903caefa75526b299c1397f54265297396a590"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "735dec22f94b3bcb0164573f2db24207925e184e",
+        "id": "66d0268f9b19462383bbca2c03b8c981",
+        "renderer": "gg",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "8f970dda2a532e1aada06ba8a8c4b34962678d4cf0abad1f389aa0d3ac2a6ee8",
+        "dirty": true,
+        "head": "d3dcde05c1c25c7bdf0b293c2071c0cbef05f473",
+        "repository_sha256": "4b3cf7fb5b3df31d25e5f32f7d92cba583fdc33b292ed8ab36d9de1ab78051af"
+      }
+    },
+    "control": [
+      {
+        "lower": 25090155444,
+        "upper": 25090155444
+      },
+      {
+        "lower": 24849539460,
+        "upper": 24849539460
+      },
+      {
+        "lower": 24337941655,
+        "upper": 24337941655
+      },
+      {
+        "lower": 24694299463,
+        "upper": 24694299463
+      }
+    ],
+    "candidate": [
+      {
+        "lower": 26992704661,
+        "upper": 26992704661
+      },
+      {
+        "lower": 25396307554,
+        "upper": 25396307554
+      },
+      {
+        "lower": 26192087477,
+        "upper": 26192087477
+      },
+      {
+        "lower": 25326118838,
+        "upper": 25326118838
+      }
+    ],
+    "control_median": 24771919461.5,
+    "candidate_median": 25794197515.5,
+    "median_increase_percent": 4.126761576101523,
+    "conservative_page_instruction_reduction": -2654763006,
+    "matched_valid_captures": 16,
+    "diagnostic_valid_captures": 4,
+    "driver_exit": 1,
+    "driver_exit_qualification": "Driver comparison gate returns 1 because Vox does not meet the requested Brave advantage; every individual browser/kernel/content/pixel audit succeeds. The enclosing validity controller and memory guard return 0."
+  },
+  "guards": [
+    {
+      "path": "Build/chatgpt-gpu-capture-probe-20261106-r1/run-guard.json",
+      "sha256": "61782315a8623708f1222839b340f76cbc4deaf4bba919f5ae1dcb53be4e579c",
+      "exit": 1,
+      "peak_rss_bytes": 2305982464,
+      "adopted_processes": 16,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/chatgpt-gpu-capture-probe-20261106-r2/run-guard.json",
+      "sha256": "d70c3b982c4d0be87b871405deee42b10c6e628fdfe3b8ff4e75f02e83b4b92d",
+      "exit": 1,
+      "peak_rss_bytes": 2498347008,
+      "adopted_processes": 9,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/chatgpt-gpu-capture-probe-20261106-r3/run-guard.json",
+      "sha256": "2408d9ed49b0a446ba62f4834be112d73bcfe03d15469ed2eef2eb6e50fbd75e",
+      "exit": 0,
+      "peak_rss_bytes": 2310914048,
+      "adopted_processes": 14,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/chatgpt-gpu-capture-comparison-20261106-r1/run-guard.json",
+      "sha256": "7d43eb7133b45a327c4a080473979e45a280d05fe34528a19b6c87dcf77a15db",
+      "exit": 0,
+      "peak_rss_bytes": 2344615936,
+      "adopted_processes": 73,
+      "adoption_error": null
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-gpu-capture-checked-20261106-evidence.zip",
+      "sha256": "fe90d7dde698d176420d85d1b5ee39f1b7696a857a33ff7ff34fa4a0de1569d9",
+      "bytes": 1487202,
+      "verified_entries": 94
+    },
+    {
+      "path": "docs/performance/chatgpt-gpu-capture-probe-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "d7a7fc33fdee4264a6d0becd016ed14e5b745e13fa17054616a5ed080a554e4e",
+      "bytes": 1531386,
+      "entries": 62,
+      "checkpoints": 6,
+      "verified_entries": 62
+    },
+    {
+      "path": "docs/performance/chatgpt-gpu-capture-probe-r2-diagnostic-20261106-evidence.zip",
+      "sha256": "bf0abaa5d5dab38227be6e7814aaa452cefeedf44fc5ce692b19d63db43059cb",
+      "bytes": 1037024,
+      "entries": 45,
+      "checkpoints": 4,
+      "verified_entries": 45
+    },
+    {
+      "path": "docs/performance/chatgpt-gpu-capture-probe-r3-diagnostic-20261106-evidence.zip",
+      "sha256": "381ae7eaf407c66c5e8a52e80cac195e97b65b284fd54ddb600d71950a7005bb",
+      "bytes": 1543739,
+      "entries": 62,
+      "checkpoints": 6,
+      "verified_entries": 62
+    },
+    {
+      "path": "docs/performance/chatgpt-gpu-capture-comparison-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "b5b4eb28dfdf22861beb7c4e2042360deaee7e2b13f94ad0edb2c173308183d7",
+      "bytes": 1544389,
+      "entries": 62,
+      "checkpoints": 6,
+      "verified_entries": 62
+    },
+    {
+      "path": "docs/performance/chatgpt-gpu-capture-comparison-r1-matched-20261106-evidence.zip",
+      "sha256": "2ace14bc292731b1b507d371b552c5536cc94bc4cb4e26415d004547d48c3492",
+      "bytes": 8567024,
+      "entries": 164,
+      "checkpoints": 18,
+      "verified_entries": 164
+    },
+    {
+      "path": "docs/performance/chatgpt-gpu-capture-controller-20261106-evidence.zip",
+      "sha256": "2f4c3b4c490fd49e91c371928c9679303900b08cf7265ceb4955288f603d6e57",
+      "bytes": 28644,
+      "verified_entries": 23
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_carry": 0,
+  "broad_checkpoint_due": false,
+  "target_20B_met": false,
+  "qualification": "Opt-in full-frame automatic capture is checked on the actual host boundary; production defaults are unchanged. Native exact comparisons are GPU-versus-GPU. Full-frame alone records no draws. Nested rendering draws but fails fixed page pixels and is rejected. CPU-rasterized offscreen layer GPU composites pass exact page pixels and actual draw proof; an unprofiled four-pair ABBA comparison increases median instructions with fully separated observed ranges. No performance credit, broad checkpoint or acceptance claim. GPU/outside-coalition work is excluded. All original one-time SOCKS bytes, scripts, references and launch-through-encoded-PNG boundaries remain fixed. Different initial probe build identities are retained without cross-build performance attribution.",
+  "finalizer_guard": {
+    "path": "Build/chatgpt-gpu-capture-finalize-20261106-r1/finalize-guard.json",
+    "sha256": "8659586bf1c5bc4e5fad67673b22f8bbf5cf07314ab7e88c214d464a23bd235c",
+    "receipt": {
+      "command": [
+        "python3",
+        "Build/chatgpt-gpu-capture-finalize-20261106-r1/finalize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 61685760,
+      "elapsed_seconds": 0.29318925,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}

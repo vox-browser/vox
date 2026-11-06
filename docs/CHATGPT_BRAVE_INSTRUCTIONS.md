@@ -6098,3 +6098,35 @@ The unprofiled cohort keeps the original SOCKS fixture/scripts/references, origi
 Medians: **24,486,735,339.5 control → 24,474,626,699.5 candidate**, an observed **+0.049% reduction**. Conservative separation `min(control lower) − max(candidate upper)` is **-98,299,756** instructions. The ranges overlap, so no whole-page saving is credited and no new 5M broad checkpoint is due. Carry remains zero.
 
 The candidate median remains **4,474,626,699.5 instructions above 20B**. Four pairs cannot establish seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-font-radius-longhands-verification-20261106.json) retains all focused/component attempts, failures, source witnesses, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Opt-in GPU capture experiment toward 20B (2026-11-06)
+
+Implementation `1a9dc0764` adds `VOX_ENABLE_GPU_CANVAS_CAPTURE` so an explicit diagnostic can exercise the existing full-frame GPU canvas during automatic PNG capture. Production defaults stay unchanged. The opt-in bypasses only the automatic-capture exclusion; explicit full-frame disable, the user GPU setting, active-frame checks, reuse and the 64 MiB size limit retain precedence. Native switches test environment-variable presence, so controls remove them entirely.
+
+All **16 final guarded native checks** pass, including optimized and AddressSanitizer/UndefinedBehaviorSanitizer builds, two expected wrong-backend rejections, ordinary rendering, offscreen text layers and failed readback/transfer paths. The real host begin/end wrapper produces **28 exact GPU-versus-GPU frames and 34 GPU draws** across both builds. These native comparisons do not establish CPU-reference page equality. Six additional nested-layer/failure checks pass under their existing allowances. The controller syntax error and both initial fixture assertion failures remain archived. Consumed compiler/generation inputs and loaded backend identities are verified; changed unconsumed headers are reported separately.
+
+Separate frozen-page diagnostics retain each attempted policy:
+
+| Candidate switches, in addition to capture opt-in | Full-frame contexts | Nested layers | GPU draws | Fixed page pixels | Result |
+|---|---:|---:|---:|---|---|
+| None | 4 | 0 | 0 | Exact | Ineligible: no GPU drawing |
+| Nested layers + text composites | 4 | 40 | 316 | 455,850 differing pixels (14.4911%) | Rejected |
+| Offscreen pixel layers + text composites | 4 | 0 | 13 | Exact | Eligible for measurement |
+| Refreshed offscreen/text diagnostic on comparison build | 4 | 0 | 13 | Exact | Eligible for measurement |
+
+The nested variant loses the composer's rounded background, border and shadow. Its maximum channel error is 43, with difference bounds `520,590 1528×852`; references and tolerances were not changed. All content audits and normal browser/kernel exits pass, but this pixel failure invalidates that policy. The offscreen variant preserves CPU layer rasterization and composites their pixels on the GPU. Its separate diagnostic verifies actual GPU draws and the Wasm module lexer without fallback; controls emit no full-frame/draw markers. Instrumented counts receive no performance credit.
+
+The unprofiled comparison uses executable `57b5b24108d1e21d52e04909206ccf3509d32a4906560d31d5ac34d8dc7c8660`, single C compilation with V production source conditions and the recorded GG default/backend linkage. A nonblocking shared publication lease pins this canonical bundle across the refreshed diagnostic and comparison. All sixteen matched captures pass complete content/bootstrap/button audits, exact per-engine reference pixels and normal browser/kernel exits. The comparison driver returns 1 because its Brave advantage gate fails; individual captures, the enclosing validity controller and memory guard return zero. Source proof, binary markers, executable/native-library/tool/fixture hashes, raw counters, owned helpers, memory adoption and host contention are retained.
+
+The original one-time SOCKS capture, author scripts and references remain fixed. The workload keeps original-origin replay, empty private profiles/caches, 1024×768 at scale two, five-second unfocused settle and retained OS filesystem/shader caches. Exclusive coalition creation through encoded document PNG includes startup/window setup and Brave CDP delivery; GPU/outside-coalition work is excluded. The candidate enables capture, offscreen-layer and text-composite switches together; controls omit all three and the nested switch. Performance diagnostics are absent from both variants.
+
+| Pair | Vox default control instructions | Vox offscreen-GPU candidate instructions |
+|---|---:|---:|
+| 1 | 25,090,155,444 | 26,992,704,661 |
+| 2 | 24,849,539,460 | 25,396,307,554 |
+| 3 | 24,337,941,655 | 26,192,087,477 |
+| 4 | 24,694,299,463 | 25,326,118,838 |
+
+Medians: **24,771,919,461.5 control → 25,794,197,515.5 candidate**, an observed **4.127% increase**. Conservative separation `min(control lower) − max(candidate upper)` is **-2,654,763,006 instructions**. Every candidate exceeds every control in this cohort. The policy earns no saving and remains opt-in. No 5M broad checkpoint is due; carry stays zero. Four pairs do not establish seven-pair acceptance or live-site performance, and differences across earlier probe builds receive no credit.
+
+The [verification receipt](performance/chatgpt-gpu-capture-verification-20261106.json) authenticates the [focused checks](performance/chatgpt-gpu-capture-focused-verification-20261106.json), three retained page probes, refreshed diagnostic, matched cohort and all evidence archives. **The 20B target and original 5%-below-Brave target remain unmet.**
