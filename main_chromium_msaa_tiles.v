@@ -502,6 +502,9 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 				owner := app.chromium_raster_plan.command_layers[index]
 				if owner >= 0 && (command.y + command.height < app.scroll_y || command.y > app.scroll_y + app.viewport_height) { continue }
 				eprintln('VOX_PAINT_COMMAND index=${index} kind=${command.kind} owner=${owner} xywh=${command.x},${command.y},${command.width},${command.height}')
+				if effect := command.visual_layer_data {
+					eprintln('VOX_PAINT_EFFECT index=${index} kind=${effect.kind} opacity=${effect.opacity} blend=${effect.blend_mode} filter=${effect.filter != none} scope=${effect.scope_id}')
+				}
 			}
 		}
 		scale := C.native_display_device_pixel_ratio()

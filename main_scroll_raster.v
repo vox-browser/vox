@@ -241,6 +241,19 @@ fn (app &BrowserApp) mark_video_backdrop_keys(mut keys []ScrollRasterCommandKey)
 			depth = math.max(depth - 1, 0)
 			continue
 		}
+		if command.kind == 'draw_video' && scroll_raster_damage_diagnostics {
+			owner := if index < app.chromium_raster_plan.command_layers.len { app.chromium_raster_plan.command_layers[index] } else { -1 }
+			mut blocker := -1
+			if keys[index].has_ink && scroll_raster_rect_valid(keys[index].ink) {
+				area := [scroll_raster_snap_rect(scroll_raster_inflate(keys[index].ink, scroll_raster_damage_fringe))]
+				for later in index + 1 .. keys.len {
+					key := keys[later]
+					if key.skip_diff || key.kind.starts_with('end_') { continue }
+					if !key.has_ink || scroll_raster_ink_touches(key.ink, area) { blocker = later; break }
+				}
+            }
+            eprintln('VOX_VIDEO_BACKDROP_GATE index=${index} depth=${depth} owner=${owner} source=${command.video_frame_source != none} ink=${keys[index].has_ink} blocker=${blocker}')
+        }
 		if command.kind != 'draw_video' || depth != 0 || command.video_frame_source == none
 			|| !keys[index].has_ink || !scroll_raster_rect_valid(keys[index].ink)
 			|| index >= app.chromium_raster_plan.command_layers.len {
