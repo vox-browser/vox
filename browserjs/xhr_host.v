@@ -46,7 +46,7 @@ pub fn XMLHttpRequestHost.create(document &dom.Document, fetch_host &fetch.Fetch
 }
 
 pub fn XMLHttpRequestHost.create_native(document &dom.Document) !&XMLHttpRequestHost {
-	mut connection := requestserver.CurlConnection.create()!
+	mut connection := requestserver.CurlConnection.create_pooled()!
 	mut host := XMLHttpRequestHost.create(document, connection.fetch_host()) or { connection.close(); return err }
 	host.connection = connection
 	return host

@@ -3,8 +3,11 @@
 // ConnectionFromClient.cpp: curl-multi socket callbacks, due-at single-shot
 // timer, completion drain and active request ownership. CoreFoundation adapts
 // Core::Notifier to the native macOS run loop; request policy remains in Fetch.
+@[has_globals]
 module requestserver
 
+import fetch
+import os
 import platform
 import time
 
@@ -12,6 +15,17 @@ import time
 // duplicates under LaunchServices' 256-descriptor soft limit. libcurl queues
 // excess transfers and still multiplexes streams on established connections.
 const curl_max_total_connections = 32
+
+// Fetch's "obtain a connection" reuses a connection whose network partition key
+// and credentials match. A document's XHR, Fetch and module hosts, its iframes'
+// hosts and child navigations each owned a curl multi handle, so every one of
+// them opened (and handshook) its own connection to an origin the page was
+// already multiplexing on. Pooled connections start main-thread transfers on
+// one shared multi handle per pool key; worker threads keep their own.
+const retain_separate_curl_connections = os.getenv('VOX_RETAIN_SEPARATE_CURL_CONNECTIONS') != ''
+const curl_connection_pool_limit = 8
+
+__global curl_connection_pools_ = map[string]&CurlConnection{}
 
 @[heap]
 pub struct CurlConnection {
@@ -28,6 +42,9 @@ mut:
 	next_id_      u64 = 1
 	closed_       bool
 	in_curl_call_ bool
+	// A pooled client owns no multi handle while it can route transfers to a
+	// shared one; it stops only its own transfers when it closes.
+	pooled_ bool
 }
 
 pub fn CurlConnection.create() !&CurlConnection {
@@ -46,6 +63,42 @@ pub fn CurlConnection.create() !&CurlConnection {
 		connection.socket_action(C.CURL_SOCKET_TIMEOUT, 0)
 	})
 	return connection
+}
+
+// A script host's connection: transfers share the page's established
+// connections. VOX_RETAIN_SEPARATE_CURL_CONNECTIONS restores one per host.
+pub fn CurlConnection.create_pooled() !&CurlConnection {
+	mut connection := CurlConnection.create()!
+	connection.pooled_ = !retain_separate_curl_connections
+	return connection
+}
+
+fn curl_connection_pool_key(request &fetch.Request) ?string {
+	partition := fetch.determine_the_http_cache_partition(request) or { return none }
+	return '${partition.top_level_origin.serialize_for_ipc()}\n${request.includes_credentials()}'
+}
+
+// The shared connection for a request's pool key. Its sockets and timer belong
+// to the main run loop, so other threads (and unpartitioned requests) use the
+// client's own multi handle.
+fn shared_curl_connection(request &fetch.Request) ?&CurlConnection {
+	if !platform.is_main_thread() { return none }
+	key := curl_connection_pool_key(request) or { return none }
+	if pool := curl_connection_pools_[key] {
+		if !pool.closed_ { return pool }
+	}
+	if curl_connection_pools_.len >= curl_connection_pool_limit {
+		for pool_key in curl_connection_pools_.keys() {
+			mut idle := curl_connection_pools_[pool_key] or { continue }
+			if idle.requests_.len == 0 && !idle.in_curl_call_ {
+				idle.close()
+				curl_connection_pools_.delete(pool_key)
+			}
+		}
+	}
+	pool := CurlConnection.create() or { return none }
+	curl_connection_pools_[key] = pool
+	return pool
 }
 
 // Initializing libcurl maps it with its TLS, HTTP/2, HTTP/3 and compression
@@ -143,13 +196,30 @@ fn (mut connection CurlConnection) socket_action(socket int, flags int) {
 	}
 }
 
-pub fn (connection &CurlConnection) active_request_count() int { return connection.requests_.len }
+pub fn (connection &CurlConnection) active_request_count() int {
+	mut count := connection.requests_.len
+	if connection.pooled_ && platform.is_main_thread() {
+		for _, pool in curl_connection_pools_ {
+			for _, request in pool.requests_ {
+				if request.owner_ == voidptr(connection) { count++ }
+			}
+		}
+	}
+	return count
+}
 
 pub fn (mut connection CurlConnection) close() {
 	if connection.closed_ { return }
 	connection.closed_ = true
 	connection.timer_.stop()
 	for _, mut request in connection.requests_.clone() { request.stop() }
+	if connection.pooled_ && platform.is_main_thread() {
+		for _, pool in curl_connection_pools_ {
+			for _, mut request in pool.requests_.clone() {
+				if request.owner_ == voidptr(&connection) { request.stop() }
+			}
+		}
+	}
 	$if darwin || linux {
 		for _, descriptor in connection.sockets_ { C.vox_curl_socket_destroy(descriptor) }
 	}

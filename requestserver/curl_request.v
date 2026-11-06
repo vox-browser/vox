@@ -16,6 +16,9 @@ import platform
 @[heap]
 pub struct CurlRequest {
 	connection_ &CurlConnection
+	// The client that started this transfer; a shared pool's transfers belong
+	// to several clients.
+	owner_ voidptr
 	request_ &fetch.Request
 	params_ &fetch.FetchParams
 	pending_ &fetch.PendingResponse
@@ -72,6 +75,15 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 			return pending
 		}
 	}
+	if connection.pooled_ {
+		if mut pool := shared_curl_connection(request) {
+			return pool.start_transfer(params, request, pending, voidptr(&connection))
+		}
+	}
+	return connection.start_transfer(params, request, pending, voidptr(&connection))
+}
+
+fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, request &fetch.Request, pending &fetch.PendingResponse, owner voidptr) &fetch.PendingResponse {
 	connection.ensure_multi() or {
 		mut output := unsafe { pending }
 		output.resolve(fetch.Response.network_error('RequestServer is currently unavailable: ${err.msg()}'))
@@ -80,6 +92,7 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	body := fetch.Body.streaming()
 	mut native := &CurlRequest{
 		connection_: &connection
+		owner_: owner
 		request_: request
 		params_: params
 		pending_: pending

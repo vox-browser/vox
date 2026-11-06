@@ -76,7 +76,7 @@ pub fn FetchHost.create_for_settings(settings &html.EnvironmentSettingsObject, t
 }
 
 pub fn FetchHost.create_native(document &dom.Document) !&FetchHost {
-	mut connection := requestserver.CurlConnection.create()!
+	mut connection := requestserver.CurlConnection.create_pooled()!
 	mut host := FetchHost.create(document, connection.fetch_host()) or {
 		connection.close()
 		return err
@@ -86,7 +86,7 @@ pub fn FetchHost.create_native(document &dom.Document) !&FetchHost {
 }
 
 pub fn FetchHost.create_native_for_settings(settings &html.EnvironmentSettingsObject) !&FetchHost {
-	mut connection := requestserver.CurlConnection.create()!
+	mut connection := requestserver.CurlConnection.create_pooled()!
 	mut host := FetchHost.create_for_settings(settings, connection.fetch_host()) or {
 		connection.close()
 		return err

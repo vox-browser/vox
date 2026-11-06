@@ -41,7 +41,7 @@ pub fn NativeFontFetchTransport.create() !&NativeFontFetchTransport {
 // need it; most documents make none, so create it with the first such request.
 fn (mut transport NativeFontFetchTransport) ensure_connection() !&CurlConnection {
 	if connection := transport.connection { return connection }
-	connection := CurlConnection.create()!
+	connection := CurlConnection.create_pooled()!
 	transport.connection = connection
 	return connection
 }

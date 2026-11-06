@@ -74,7 +74,7 @@ pub fn ModuleHost.create(settings &html.EnvironmentSettingsObject, transport &fe
 }
 
 pub fn ModuleHost.create_native(settings &html.EnvironmentSettingsObject) !&ModuleHost {
-	mut connection := requestserver.CurlConnection.create()!
+	mut connection := requestserver.CurlConnection.create_pooled()!
 	mut host := ModuleHost.create(settings, connection.fetch_host())
 	host.connection = connection
 	return host

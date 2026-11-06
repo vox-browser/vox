@@ -37,6 +37,11 @@ pub fn native_timer_scheduling_available() bool {
 	$if macos || linux { return true } $else { return false }
 }
 
+// Native sources bound to the main run loop must not be shared with workers.
+pub fn is_main_thread() bool {
+	$if macos || linux { return C.libweb_v_is_main_thread() } $else { return false }
+}
+
 // Core::EventLoop::pump(WaitForEvents). The Cocoa host services timer and input
 // sources on the current thread's run loop, including while XHR spins.
 pub fn pump_native_events(wait_seconds f64) {
