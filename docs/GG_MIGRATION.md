@@ -32,7 +32,7 @@ The ABI between Vox and Graphite is plain values and pixel buffers
 implementation exporting the same symbols and compared against the pinned
 original dylib with the existing `tools/native_graphite_*_test.cpp` harnesses.
 
-## Status (2026-11-05)
+## Status (2026-11-06)
 
 The opt-in browser adapters and differential tools now live on canonical Vox
 `master` (`05ffb14b8`, `edeebc78e`). They were integrated from `gg-migration`
@@ -47,7 +47,7 @@ Reconciling those histories requires a decision consistent with the repository's
 linear-history and no-rewrite rules; no force push, merge or rebase was attempted.
 
 The upstream implementation is V branch `gg-skia-parity`, PR
-[vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `b434ae7005`.
+[vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `5b06b5a56b`.
 `V_BIN=~/code/v-gg/v sh build-prod-browser.sh` selects that compiler. The build
 recognizes `vlib/gg/canvas` and supplies `-d vox_gg_canvas`; ordinary V builds
 exclude the adapters. Runtime selection remains `VOX_GG_TEXT=1`,
@@ -95,6 +95,16 @@ cross-target checks omitted `text_test.v`; verification now typechecks all 12
 canvas test files for both Linux and Windows (24 checks), then runs the text
 and platform test files on macOS. All pass. This follow-up changes only tests;
 see its [verification receipt](gg-migration/pr-review-followup-20261105.json).
+
+A fresh review of `b434ae7005` reproduced two further state-management bugs.
+`6c8b7be581` clears pending clip usage, order and depth when a draw list is
+discarded; otherwise restoring a clip after `clear()` could resurrect the
+discarded depth and reject the first new draw. `5b06b5a56b` unwinds the implicit
+save if layer creation fails, preserving the caller's save and matrix. Both
+regressions failed before the fixes and pass afterwards. All 12 canvas test files,
+three affected files with `-gc none`, and six Linux/Windows type checks pass.
+The new Metal pixel test also checks that clearing pending usage preserves the
+active clip geometry. See the [fresh-review receipt](gg-migration/review-20261106.json).
 
 The 262-fixture stage22 browser result below remains pinned to `ff4cd6dc66`;
 it does not validate a production browser built with this newer review-fix head.

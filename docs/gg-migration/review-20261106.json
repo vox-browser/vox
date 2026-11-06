@@ -1,0 +1,255 @@
+{
+  "date": "2026-11-06",
+  "review_origin": "A fresh local review of the current PR head. GitHub showed no published feedback newer than the text-test issue already fixed by b434ae7005; no review comment was posted.",
+  "base_head": "b434ae70050427315b68de034fef5aa2c25e1caa",
+  "fixed_head": "5b06b5a56b3e19e2073cdb0c68d8ed742082eacc",
+  "pull_request": {
+    "headRefName": "gg-skia-parity",
+    "headRefOid": "5b06b5a56b3e19e2073cdb0c68d8ed742082eacc",
+    "headRepository": {
+      "nameWithOwner": "medvednikov/v-pr-fork"
+    },
+    "isDraft": false,
+    "state": "open",
+    "url": "https://github.com/vlang/v/pull/31826"
+  },
+  "pushed_and_verified": true,
+  "source_worktree_clean": true,
+  "commits": [
+    "6c8b7be581c5aa7cfe3578dd757594c50feb7957 gg.canvas: discard pending clip usage when resetting draws",
+    "5b06b5a56b3e19e2073cdb0c68d8ed742082eacc gg.canvas: unwind implicit saves when layer creation fails"
+  ],
+  "compiler_sha256": "29b1cf98ce4b25df0b8547b67e1252952dff7aa29a618917d952ac509ab4e06d",
+  "source_identity": {
+    "vlib/gg/canvas/gpu_layer.v": "63e6fd4decfa8518eba2e9bc989e5ff37372cd079302253007a259be5c97137f",
+    "vlib/gg/canvas/gpu_layer_test.v": "48c522277f1f730d1c88c5914a9443c2326bb3bdb18da7182c620f7039aa5ecb",
+    "vlib/gg/canvas/gpu_render_steps_test.v": "631bdbc83551d29258f250fc0f56fdd1ec4a6f551fd631fe8624becef7e7046f",
+    "vlib/gg/canvas/gpu_surface.v": "d21ca7eae2f32e218bac556f9fc4d9e6eb2488dc684f613a8eeac3e53a65c412",
+    "vlib/gg/canvas/gpu_surface_metal_test.v": "0120f993b70271422fa9a65607c03f9cc8aedfd9f9f3641761b88a175a8def3c"
+  },
+  "findings": [
+    {
+      "priority": "P2",
+      "title": "Discard pending clip state when resetting a draw list",
+      "base_location": "vlib/gg/canvas/gpu_surface.v:224",
+      "reproduction": "Save, apply two difference clips, record 65534 draws, clear and restore, then draw a new rectangle. The first new draw fails with the depth limit because the discarded clips retain max_z and restore reintroduces depth 65535.",
+      "fix_commit": "6c8b7be581",
+      "fix": "Reset pending clip usage, order and maximum depth together with draw-list state while retaining clip geometry and saves. A Metal pixel regression verifies that active clips still apply after clearing."
+    },
+    {
+      "priority": "P2",
+      "title": "Unwind the implicit save after failed layer creation",
+      "base_location": "vlib/gg/canvas/gpu_layer.v:138",
+      "reproduction": "With one attachment slot, save the identity matrix, translate by four pixels, and call save_layer. Layer allocation fails but leaves an extra save. The caller restore then keeps the translation; the red pixel appears at x=4 instead of x=0.",
+      "fix_commit": "5b06b5a56b",
+      "fix": "Restore the internal save on allocation/clip setup errors, preserving the caller save stack. The native resource-pool regression checks save ownership and rendered pixel positions."
+    }
+  ],
+  "verification": {
+    "initial_public_api_probe_observations": {
+      "clear_restore": "first new draw failed with depth limit",
+      "layer_error": "expected allocation error; red at x=0 was 0, red at x=4 was 255",
+      "note": "These diagnostic programs exit zero after printing the reproduced bugs; their exit alone is not a correctness pass."
+    },
+    "regressions_before_fix": "Both test files failed on the new regressions.",
+    "regressions_after_fix": "Both test files pass.",
+    "final_canvas_files_passed": 12,
+    "final_no_gc_files_passed": 3,
+    "no_gc_files": [
+      "gpu_render_steps_test.v",
+      "gpu_layer_test.v",
+      "gpu_surface_metal_test.v"
+    ],
+    "typechecks": {
+      "linux": 3,
+      "windows": 3
+    },
+    "scope": "Actual headless Metal rendering and CPU recording checks on macOS. Windows/Linux checks are typechecks, not native execution. No production browser rebuild or repeat of the 262-fixture cohort was performed."
+  },
+  "commands": [
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-cc",
+      "clang",
+      "test",
+      "vlib/gg/canvas"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-cc",
+      "clang",
+      "-gc",
+      "none",
+      "test",
+      "vlib/gg/canvas/gpu_render_steps_test.v",
+      "vlib/gg/canvas/gpu_layer_test.v",
+      "vlib/gg/canvas/gpu_surface_metal_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_render_steps_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_layer_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "linux",
+      "-check",
+      "vlib/gg/canvas/gpu_surface_metal_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_render_steps_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_layer_test.v"
+    ],
+    [
+      "./v",
+      "-memory-limit",
+      "10G",
+      "-os",
+      "windows",
+      "-check",
+      "vlib/gg/canvas/gpu_surface_metal_test.v"
+    ]
+  ],
+  "checks": {
+    "probes": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 621215744,
+      "elapsed_seconds": 5.300341833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regressions-red": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/gpu_render_steps_test.v",
+        "vlib/gg/canvas/gpu_layer_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 485556224,
+      "elapsed_seconds": 7.252692167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "regressions-fixed": {
+      "command": [
+        "./v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "vlib/gg/canvas/gpu_render_steps_test.v",
+        "vlib/gg/canvas/gpu_layer_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 484524032,
+      "elapsed_seconds": 7.814551042000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "final": {
+      "command": [
+        "python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 497434624,
+      "elapsed_seconds": 46.627197208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "docs": {
+      "command": [
+        "/Users/alex/code/v-gg/v",
+        "-memory-limit",
+        "10G",
+        "check-md",
+        "docs/GG_MIGRATION.md"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 6520832,
+      "elapsed_seconds": 0.178173333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "raw_evidence": {
+    "file": "review-20261106.tar.gz",
+    "sha256": "7e8b6ea3580ab3d130e9f8458e411a0e7415e1bbad9067624a2d73c75a4668db",
+    "bytes": 4841,
+    "manifest_entries": 15,
+    "contents": "Generated public-API reproducers, native diagnostic observations, failing and passing regression logs, final commands/guard receipts, and verified PR/remote identities. No repository source copies or browser bundles."
+  },
+  "packaging_guard": {
+    "command": [
+      "python3",
+      "-"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 22200320,
+    "elapsed_seconds": 0.289670416,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
