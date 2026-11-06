@@ -94,9 +94,10 @@ the four V selection cases and 55 build/comparison-tool checks pass.
 The requested binary-size reduction remains unfinished. `otool -L` confirms
 both Vox and `libLadybirdVSkiaText.dylib` directly link `libskia.dylib`.
 The Graphite and Dawn picture libraries also retain their Skia implementation.
-The `skia/` package still supplies canvas paths/text/filters, font validation,
-shadows and bitmap export; the native text bridge creates Skia fonts and blobs
-before invoking GG. Removing these links now would leave required symbols and
+The `skia/` package still supplies canvas paths/text/filters and shadows (font
+validation, pixel readback and bitmap export have since moved to Skia-free
+code; see [Removing Skia](#removing-skia-started-2026-11-06)); the native text
+bridge creates Skia fonts and blobs before invoking GG. Removing these links now would leave required symbols and
 rendering operations unimplemented. Runtime environment selection cannot
 eliminate compiled dependencies. See the
 [default-selection receipt](gg-migration/default-20261106.json) for the verified
@@ -549,6 +550,40 @@ and after). Fixtures using each Metal renderer:
 
 Text, images and most decorations of every fixture go through the CPU Skia
 bridge as well.
+
+## Removing Skia (started 2026-11-06)
+
+The goal is a binary with no Skia at all, keeping every pixel Skia produces
+today. Each Skia call is replaced by a Skia-free V port only once it matches the
+pinned build byte for byte, and the Skia code is deleted in the same change.
+CPU ports live in the `cpuraster` module (`gfxfont` for font validation); their
+oracle `tools/gg_migration/skia_cpu_oracle.cpp` keeps the original Skia
+implementations verbatim, and `test_cpu_raster.sh` compares them against
+LibWeb's vcpkg Skia (`google/skia@ee20d565`, the same revision as Linux).
+
+To find the exact arithmetic, run the original call under lldb: breakpoints on
+the `neon::` and `neon::lowp::` stage functions list the raster pipeline Skia
+actually executes, and stage contexts hold its constants (transfer functions,
+gamut matrices, sampling matrices). The disassembly shows which operations
+fuse: this Skia is built with `-ffp-contract=off`, so only explicit `mad()`
+(`fmla`/`fmls`) fuses. V calls `dlsym` pointers without prototypes, so oracle
+entry points take their integer arguments as one `i32` array.
+
+| Dependency | Users | Status |
+| --- | --- | --- |
+| `skia.read_pixels` (SkBitmap::readPixels) | getImageData/putImageData | `cpuraster.read_pixels`; all 65,536 channel/alpha pairs (NEON blocks and tail) plus 20,000 random geometries exact |
+| `skia.font_typeface_is_valid` (SkFontMgr makeFromStream) | CSS font loading | `gfxfont.typeface_data_is_valid`: CoreText descriptor/font creation, or FreeType face, axes and design coordinates on Linux; 3,022 font comparisons equal |
+| `skia.export_bitmap_to_byte_buffer` (drawImageRect into export formats) | WebGL texture uploads | `cpuraster.export_bitmap_to_byte_buffer`: lowp/highp pipelines, Display P3, nearest sampling with draw tiles, legacy fixed-point sampler; 448 exhaustive and 100,016 random exports exact |
+| `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Not started: AA path scan conversion, clips, gradients, patterns, composite ops, filters and SVG filter graphs, glyph masks |
+| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Not started: AA clips under transforms, PathOps difference, blur mask filters, blur image filter layers, glyph masks |
+| `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
+| `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
+| `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
+| Linux `pkg-config skia` | Canvas and portable shadows | Remains until those ports land |
+
+The shared native core (anti-aliased path scan conversion, AA clipping, mask
+blurs and the raster pipeline blitters) is the next prerequisite: Canvas 2D,
+portable shadows and the bridge's CPU raster all need it.
 
 ## Hacker News performance (2026-11-06)
 

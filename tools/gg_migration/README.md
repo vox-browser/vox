@@ -65,6 +65,14 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   same scripts with `gg.canvas.RasterSurface` and compares every byte.
   `gen_text_corpus.py` generates random runs (fonts, sizes, colors,
   backgrounds, matrices and smoothing flags).
+- `test_cpu_raster.sh OUTPUT [COUNT]` builds `skia_cpu_oracle.cpp` (the
+  original LibWeb Skia implementations of everything moved to the Skia-free
+  `cpuraster` and `gfxfont` code) against the vcpkg `libskia`, then
+  `cpu_raster_check.v` compares both byte for byte: `read_pixels` over every
+  premultiplied channel/alpha pair, font validation over every installed font,
+  and WebGL bitmap export over every layout, alpha type, color space, format,
+  premultiplication and flip, plus `COUNT` random cases each. Inputs must stay
+  unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for `-prod -gc none`.
 - `test_clipped_text.sh OUTPUT [COUNT]` builds a native CPU Skia oracle and a
   V driver for the canonical borrowed-frame glyph adapter. It compares the
   original Skia draw with the real `ggtext.glyph_run` callback, including partial
