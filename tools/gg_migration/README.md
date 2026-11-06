@@ -70,9 +70,11 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   `cpuraster` and `gfxfont` code) against the vcpkg `libskia`, then
   `cpu_raster_check.v` compares both byte for byte: `read_pixels` over every
   premultiplied channel/alpha pair, font validation over every installed font,
-  and WebGL bitmap export over every layout, alpha type, color space, format,
-  premultiplication and flip, plus `COUNT` random cases each. Inputs must stay
-  unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for `-prod -gc none`.
+  WebGL bitmap export over every layout, alpha type, color space, format,
+  premultiplication and flip, plus `COUNT` random cases each; random
+  anti-aliased path fills; and random Canvas2D fills and hairline strokes
+  through the production `vox_skia_canvas_path()`. Inputs must stay unchanged
+  during the run; set `CPU_RASTER_TEST_PROD=1` for `-prod -gc none`.
 - `test_clipped_text.sh OUTPUT [COUNT]` builds a native CPU Skia oracle and a
   V driver for the canonical borrowed-frame glyph adapter. It compares the
   original Skia draw with the real `ggtext.glyph_run` callback, including partial
