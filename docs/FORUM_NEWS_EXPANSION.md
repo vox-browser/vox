@@ -12,8 +12,8 @@ fidelity and native equality; CNN matches frozen Brave but retains its separate
 source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
-The latest rendering checkpoint passes **138 tests / 144 captures at zero
-pixels** on `2108b479…`, with unchanged inputs and references. The AVIF sampling
+The latest rendering checkpoint passes **139 tests / 145 captures at zero
+pixels** on `e3659569…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2529,6 +2529,70 @@ identity or tolerance was changed to pass.
 
 [Evidence and independent byte checks](evidence/forum-news-image-pictures-20261106.json),
 [sealed captures, original candidate bodies, commands, guards and patches](evidence/forum-news-image-pictures-20261106.zip).
+
+## SVG pattern bitmap decode reuse (2026-11-06)
+
+`628fc1995` makes SVG patterns reuse compatible bitmap decodes through the
+same cache as direct images. The V bridge identifies the embedded bitmap URL;
+the native pattern helper now honors the cache's selected upload size. Resource
+bytes, color profile, alpha mode, frame history and picture scope retain their
+existing checks. Patterns without a resource identity keep their automatic
+per-draw selection.
+
+Discord's original star SVG contains a 37×38 PNG. Three isolated 14px uses
+already match Brave. Placing a 20px use first exposes **427 native pixels**,
+with source and two independent Brave replays still exact: Brave reuses the
+larger decode for the smaller uses, while Vox previously downsized each use
+independently. The added regression includes blurred and unblurred SVGs plus
+direct-PNG controls. Its reference is the original qualified mixed-size source
+PNG, unchanged after the fix. Both original resource files are retained.
+
+The policy follows Chromium's
+[GPU image decode cache](https://raw.githubusercontent.com/chromium/chromium/main/cc/tiles/gpu_image_decode_cache.cc),
+which checks an exact in-use request before looking for a compatible persistent
+decode. The native regression compares the public SVG drawing helper with
+independently selected full-size and half-size uploads. The old helper fails
+two scale-1 reuse cases at **85 pixels each**; the other ten controls pass.
+All **12 GPU scenes** now pass optimized and under ASan/UBSan. Different URLs,
+changed pixel bytes, completed frames, reversed draw order and scale 2 remain
+covered. Negative and positive input maps differ only in the pattern helper.
+The existing **169 decode-cache checks** also pass with unchanged sources.
+
+Six focused SVG-pattern/decode-policy V functions pass with default GC, GC
+disabled and preallocation with arena poisoning. An additional SVG-container
+control fails while inspecting layout because no nested paint record is
+present, before the changed drawing bridge runs. A visible-path trial fails
+the same assertion; that hypothesis was rejected and its edit restored. Both
+failed checks and the exact trial source remain recorded. No container fix is
+claimed.
+
+The reduced fixture passes **source / independent replay / native 0** on
+the available completed production browser. Its source PNG also equals the
+unchanged checked reference by independent RGBA byte comparison. The final
+cohort uses `e3659569…`; its sealed generated input contains the V identity call,
+and the pinned native bridge disassembly calls the compatible-decode selector.
+The completed shared browser was reused; no manual production build was
+requested for this fix.
+
+On this same unchanged bundle, the regular suite passes **139 tests / 145
+captures**, all at zero pixels, plus one separate focused inline capture.
+Hacker News, TechCrunch and WIRED retain strict cold-cache source/replay/native
+zero. WIRED retains its recorded first-frame image policy. The suite's inputs,
+canonical tools, filters, extension and runtime identities remain unchanged.
+This is screenshot validation, with no performance acceptance.
+
+Discord remains unqualified. Its new cold run records **589 native / 309 source
+/ 289 independent replay pixels**. The selected Brave reference changed, so
+589 is not a matched-reference improvement statistic. Comparing the new Vox to
+the preceding unchanged Brave PNG gives **844 pixels**, down from **1216**;
+the 372 pixels changed between the Vox images lie in the three star regions.
+Sparse pixels in the overlapping hero and lower image remain, alongside the
+source and reference variation. Existing site archives and PNGs are unchanged;
+Stack Overflow and Pikabu site work remains deferred.
+
+[Independent byte checks and receipts](evidence/discord-svg-pattern-decode-20261106.json),
+[sealed captures, original resources, failures, commands and patch](evidence/discord-svg-pattern-decode-20261106.zip).
+
 
 ## Run
 
