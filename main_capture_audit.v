@@ -359,4 +359,7 @@ fn (app &BrowserApp) write_capture_audit_if_requested() {
 		return
 	}
 	write_capture_audit_json(path, audit) or { eprintln('Vox capture audit: ${err.msg()}') }
+	if app.js_runtime != unsafe { nil } {
+		app.js_runtime.report_host_callback_diagnostics('capture_audit')
+	}
 }

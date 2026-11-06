@@ -414,14 +414,14 @@ pub fn (mut runtime Runtime) close() {
 	// runtime that owns them can no longer call them, and they would otherwise
 	// keep their hosts, and through them the document, alive.
 	for index, record in runtime.host_functions_ {
-		report_host_callback_diagnostic(&runtime, 'text', index, record.diagnostic)
+		report_host_callback_diagnostic(&runtime, 'runtime_close', 'text', index, record.diagnostic)
 		if record.callback != unsafe { nil } { platform.release_closure(voidptr(record.callback)) }
 		if record.temporary_callback != unsafe { nil } {
 			platform.release_closure(voidptr(record.temporary_callback))
 		}
 	}
 	for index, record in runtime.value_host_functions_ {
-		report_host_callback_diagnostic(&runtime, 'value', index, record.diagnostic)
+		report_host_callback_diagnostic(&runtime, 'runtime_close', 'value', index, record.diagnostic)
 		platform.release_closure(voidptr(record.callback))
 	}
 	for owned in runtime.owned_closures_ { platform.release_closure(owned) }

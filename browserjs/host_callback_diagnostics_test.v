@@ -76,3 +76,24 @@ fn test_host_callback_diagnostic_labels_survive_retired_scratch_without_retainin
 		assert diagnostic == unsafe { nil }
 	}
 }
+
+fn test_host_callback_diagnostic_observation_keeps_the_runtime_and_counters_live() {
+	$if !darwin && !linux {
+		return
+	}
+	mut runtime := Runtime.create_with_engine(.javascriptcore)
+	defer { runtime.close() }
+	runtime.define_host_function('observed', fn (input string) !string { return input })!
+	assert runtime.evaluate_host('observed("before")')! == 'before'
+	runtime.report_host_callback_diagnostics('test_before')
+	assert !runtime.closed
+	assert runtime.evaluate_host('observed("after")')! == 'after'
+	runtime.report_host_callback_diagnostics('test_after')
+	if host_callback_diagnostics_enabled {
+		for record in runtime.host_functions_ {
+			if record.diagnostic.name == 'observed' {
+				assert record.diagnostic.calls == 2
+			}
+		}
+	}
+}

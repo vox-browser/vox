@@ -62,7 +62,7 @@ fn finish_host_callback_diagnostic(diagnostic &HostCallbackDiagnostic, start pro
 	}
 }
 
-fn report_host_callback_diagnostic(runtime &Runtime, kind string, index int, diagnostic &HostCallbackDiagnostic) {
+fn report_host_callback_diagnostic(runtime &Runtime, boundary string, kind string, index int, diagnostic &HostCallbackDiagnostic) {
 	if diagnostic == unsafe { nil } || diagnostic.calls == 0 { return }
 	// Reporting occurs after the last invocation and before records are dropped.
 	// These are inclusive systematic samples, including concurrent process work
@@ -74,6 +74,18 @@ fn report_host_callback_diagnostic(runtime &Runtime, kind string, index int, dia
 	for i in 0 .. diagnostic.site_count { site << uint(diagnostic.site[i]) }
 	// Generic struct encoders cache reflection metadata. Keep this report on
 	// primitive encoders so no cached descriptor can point into retired scratch.
-	encoded := '{"pid":${os.getpid()},"runtime":${uint(voidptr(runtime))},"kind":${json2.encode(kind)},"name":${json2.encode(diagnostic.name)},"index":${index},"calls":${diagnostic.calls},"sample_stride":${host_callback_sample_stride},"sample_attempts":${diagnostic.sample_attempts},"samples":${diagnostic.samples},"inclusive_sample_instructions":${diagnostic.inclusive_instructions},"minimum_sample_instructions":${diagnostic.minimum_instructions},"maximum_sample_instructions":${diagnostic.maximum_instructions},"image_base":${C.vox_host_callback_image_base()},"registration_stack":${json2.encode(site)}}'
+	encoded := '{"pid":${os.getpid()},"runtime":${uint(voidptr(runtime))},"boundary":${json2.encode(boundary)},"kind":${json2.encode(kind)},"name":${json2.encode(diagnostic.name)},"index":${index},"calls":${diagnostic.calls},"sample_stride":${host_callback_sample_stride},"sample_attempts":${diagnostic.sample_attempts},"samples":${diagnostic.samples},"inclusive_sample_instructions":${diagnostic.inclusive_instructions},"minimum_sample_instructions":${diagnostic.minimum_instructions},"maximum_sample_instructions":${diagnostic.maximum_instructions},"image_base":${C.vox_host_callback_image_base()},"registration_stack":${json2.encode(site)}}'
 	C.vox_host_callback_report(encoded.str)
+}
+
+// Some native application exits bypass realm cleanup. An explicit observer
+// boundary can publish counters without closing the realm or resetting them.
+pub fn (runtime &Runtime) report_host_callback_diagnostics(boundary string) {
+	if !host_callback_diagnostics_enabled { return }
+	for index, record in runtime.host_functions_ {
+		report_host_callback_diagnostic(runtime, boundary, 'text', index, record.diagnostic)
+	}
+	for index, record in runtime.value_host_functions_ {
+		report_host_callback_diagnostic(runtime, boundary, 'value', index, record.diagnostic)
+	}
 }
