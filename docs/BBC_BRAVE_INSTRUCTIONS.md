@@ -1,6 +1,35 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 131**, literal V `-prod` / single-C-unit production
+Latest attempt — **cohort 132**, literal V `-prod` / single-C-unit production
+`ec6ef38e95bb`, completes **seven alternating candidate/control/Brave triples**.
+All **21 attempts** remain retained; **20 capture audits pass**, while Brave
+pair 6 differs from its unchanged pixel reference, invalidating acceptance.
+Launch-to-PNG medians are **26,028,066,509 Vox**, **26,025,097,652 control** and
+**17,472,283,392 Brave lower bound** instructions. Native zero-delay registration
+reuse shows a **2,968,857 (0.011408%) median regression**, with three paired
+improvements and four regressions. The conservative control ratio **1.08145**
+fails; the strict Brave gate also fails `274205269150 > 156672214677`
+(ratio **1.57517**). The experiment and control are removed (`f810ad903`,
+`7d04ac9cf`) after **63 restoration executions** and **347 tooling tests** pass.
+Native retirement confirmation on a subsequent completed bundle remains pending.
+No saving or catalog credit is claimed.
+
+Native candidate/control captures prove candidate-only reuse before encoded PNG,
+exact original pixels/content, 72 external source evaluations, actual native-image
+and ownership checks, normal exits and private-PID memory adoption. The SVG guard
+is exact in both arms. Changed V/native bodies and native context layout match
+focused inputs. An earlier completed bundle lacks the final recycling guard and
+is rejected before any browser launch. The same producer confirms the retired
+positioned-inline allocation path is absent, with its restored wrapper matching
+focused C and both original-reference native captures passing. The negative
+full/partial median triggers **no broad run**; the 798-case prospective plan is
+unexecuted. Last actual broad coverage remains 771 unique cases per mode, 766
+passes and five known baseline failures, without a full-suite pass or cadence
+reset. History through 132 is **126 measured cohorts / 2,713 acceptance attempts**.
+The BBC homepage still fails the 10% target and remains outside the instruction
+catalog. [Every attempt, native checks and removal](performance/bbc-native-timer-registration-cohort132-20261106.json).
+
+Retained valid attempt — **cohort 131**, literal V `-prod` / single-C-unit production
 `fe2d2e8e8f79`, completes **seven alternating candidate/control/Brave triples**.
 All **21 capture audits pass**, with original references, content, identity,
 counters, ownership and normal exits. Launch-to-PNG medians are **26,179,125,789
@@ -10,8 +39,9 @@ instructions. Positioned inline workspace construction shows an observed
 regressions. Its conservative control ratio **1.14682** fails; the strict Brave
 gate also fails `269553763270 > 156397569156` (ratio **1.55116**).
 The workspace and control are removed (`cf93ae100`, `58adea3f4`) after **102
-restoration executions** and **347 tooling tests** pass. Native retirement
-confirmation on a subsequent completed bundle remains pending. No savings or
+restoration executions** and **347 tooling tests** pass. Native retirement is
+confirmed on `ec6ef38e95bb` by the complete producer and both original-reference
+native captures retained with cohort 132. No savings or
 catalog credit is claimed.
 
 Separate native captures prove candidate-only workspace entry before PNG, exact
@@ -55,8 +85,8 @@ tests** passing. All **324** initial, lifetime and refined focused executions
 remain retained. Cancellation, nested restart, repeating interval changes,
 capacity and document-owner retirement are covered. The first completed bundle
 lacks the final native recycling guard and is rejected before browser launch.
-Native workload eligibility and the matched instruction comparison remain
-pending; this adds no instruction saving, broad reset or catalog credit.
+Native workload eligibility passes, but cohort 132 shows no saving and the
+experiment is removed. This adds no instruction saving, broad reset or catalog credit.
 [Focused checks and provenance](performance/bbc-native-timer-registration-focus-20261106.json).
 
 Retained attempt — **cohort 130**, literal V `-prod` / single-C-unit production

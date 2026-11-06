@@ -1,0 +1,1019 @@
+{
+  "status": "All21 cohort132 attempts retained; Brave pair6 pixel mismatch invalidates acceptance, strict target fails, timer-pool median point regresses slightly. Experiment removed.",
+  "implementation": [
+    "1eca8ed5d",
+    "ea62175ec"
+  ],
+  "tooling": "5ee30c331",
+  "retirement": "f810ad903",
+  "control_removal": "7d04ac9cf",
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "ec6ef38e95bbf7d19e99b013358881ff04c464b69f8ef7ce79b47c84ee4c1c36",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-084011-8fdb0443/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "3b3fdfd458c90b543e9f92ba164c716aa1d20bbbbb2c5a054c76b6c34163934c",
+      "dirty": true,
+      "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+      "repository_sha256": "318a776822cb13d3ffea7aef143c64e9d8b907c5c3d89f056f94e72c1e271035"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "34d7f2292ba45c0489b09227c84421d64329a3513fe7fc0b7c22a97f1bd710b5",
+      "dirty": true,
+      "head": "4c27c619fd3673ee7815b2081cc33facea8da521",
+      "repository_sha256": "6141bb94dcd59594d58bad40cebbe2dc13e17d3b244eb098340a1a1916cbba6d"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+      "id": "e0cc6cfb78ab47d7b71f9d090cc43d9b",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "3b3fdfd458c90b543e9f92ba164c716aa1d20bbbbb2c5a054c76b6c34163934c",
+      "dirty": true,
+      "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+      "repository_sha256": "de85ddfdd2852bedc84793d943621255d3439801f36f4106beb78d75043c622a"
+    }
+  },
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "native_timer_reuse_before_png": true,
+        "border_before_png": true,
+        "pid": 52608,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "native_timer_reuse_before_png": false,
+        "border_before_png": true,
+        "pid": 52962,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "ec6ef38e95bbf7d19e99b013358881ff04c464b69f8ef7ce79b47c84ee4c1c36",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-084011-8fdb0443/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "3b3fdfd458c90b543e9f92ba164c716aa1d20bbbbb2c5a054c76b6c34163934c",
+        "dirty": true,
+        "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+        "repository_sha256": "318a776822cb13d3ffea7aef143c64e9d8b907c5c3d89f056f94e72c1e271035"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "34d7f2292ba45c0489b09227c84421d64329a3513fe7fc0b7c22a97f1bd710b5",
+        "dirty": true,
+        "head": "4c27c619fd3673ee7815b2081cc33facea8da521",
+        "repository_sha256": "6141bb94dcd59594d58bad40cebbe2dc13e17d3b244eb098340a1a1916cbba6d"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+        "id": "e0cc6cfb78ab47d7b71f9d090cc43d9b",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "3b3fdfd458c90b543e9f92ba164c716aa1d20bbbbb2c5a054c76b6c34163934c",
+        "dirty": true,
+        "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+        "repository_sha256": "de85ddfdd2852bedc84793d943621255d3439801f36f4106beb78d75043c622a"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; zero-delay registration reuse candidate versus its same-build allocation control; candidate-only native timer reuse required before PNG, including startup. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793943859.198761
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/retained native timer allocation control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793943870.132942
+  },
+  "actual_producer_proof": {
+    "passed": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "ec6ef38e95bbf7d19e99b013358881ff04c464b69f8ef7ce79b47c84ee4c1c36",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-084011-8fdb0443/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "3b3fdfd458c90b543e9f92ba164c716aa1d20bbbbb2c5a054c76b6c34163934c",
+        "dirty": true,
+        "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+        "repository_sha256": "318a776822cb13d3ffea7aef143c64e9d8b907c5c3d89f056f94e72c1e271035"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "34d7f2292ba45c0489b09227c84421d64329a3513fe7fc0b7c22a97f1bd710b5",
+        "dirty": true,
+        "head": "4c27c619fd3673ee7815b2081cc33facea8da521",
+        "repository_sha256": "6141bb94dcd59594d58bad40cebbe2dc13e17d3b244eb098340a1a1916cbba6d"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+        "id": "e0cc6cfb78ab47d7b71f9d090cc43d9b",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "3b3fdfd458c90b543e9f92ba164c716aa1d20bbbbb2c5a054c76b6c34163934c",
+        "dirty": true,
+        "head": "e7a5aec54b7440ae71fc529db9ba29a8586502a1",
+        "repository_sha256": "de85ddfdd2852bedc84793d943621255d3439801f36f4106beb78d75043c622a"
+      }
+    },
+    "generated_c": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-084011-8fdb0443/generated/Vox.c",
+    "generated_c_sha256": "45808277a30c119e1fa2a6911c9f311adcdf99925e574ee8fc867952cc63e59b",
+    "preprocessed_c": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-084011-8fdb0443/frozen-compiler-inputs/0-Vox.c.i",
+    "preprocessed_c_sha256": "2dd7fa027fc46be896249587db86e94973d7867e99461dd70ef2f2d210a83347",
+    "tested_c": "/Users/alex/code/vox2/Build/bbc-timer-registration-reuse-20261106-1900/refined/default.c",
+    "tested_c_sha256": "607533d6723e6aafd5ceb30a3a86475d3df7a75de6e630c9c27f67ac0048775f",
+    "tested_native_header": "/Users/alex/code/vox2/platform/timer_host_bridge.h",
+    "tested_native_header_sha256": "254a9e9ad33259d3007cf06bb68d442b2263424af1379ccf1a1e7c7b659bd961",
+    "functions": [
+      {
+        "function": "platform__register_native_timer",
+        "sha256": "6cc48dd5de4320df0d58a10735df130b62192231a25e4b39ece4b5d36ab08ce6",
+        "normalization": "Generated string constant identifiers only."
+      },
+      {
+        "function": "platform__unregister_native_timer",
+        "sha256": "632ae43c46516fdb28a6eabd3a620a772e536dc1e390e6d396187eed1d92a592",
+        "normalization": "Generated string constant identifiers only."
+      },
+      {
+        "function": "libweb_v_timer_context_release",
+        "sha256": "7388f8275b3536953b5555a6aee4fd49a891e087338fe0f3e6327d0618c7e4fb",
+        "normalization": "Preprocessor line-control directives and whitespace only; every native operation remains exact."
+      },
+      {
+        "function": "libweb_v_recycle_timer",
+        "sha256": "16cd5e69a64654f1a5f636b624337112851114d4c6dea3ac5a9cc3584186b39d",
+        "normalization": "Preprocessor line-control directives and whitespace only; every native operation remains exact."
+      },
+      {
+        "function": "libweb_v_timer_callback",
+        "sha256": "f056e10e54c863df685193c657d503a358ff7b67f5369ac154001229a15afbc1",
+        "normalization": "Preprocessor line-control directives and whitespace only; every native operation remains exact."
+      },
+      {
+        "function": "libweb_v_register_timer",
+        "sha256": "c8b6e9ed717aacb0fe58bed3b9ecb40af5818a1903e3a235dfe26041709d158d",
+        "normalization": "Preprocessor line-control directives and whitespace only; every native operation remains exact."
+      },
+      {
+        "function": "libweb_v_unregister_timer",
+        "sha256": "9e667be25bd70b6c4ae67468987193cd17087bf9a7126dd7288c4774f0682f0e",
+        "normalization": "Preprocessor line-control directives and whitespace only; every native operation remains exact."
+      }
+    ],
+    "complete_native_context_layout_matches": true,
+    "positioned_workspace_retirement_confirmed_in_producer": true,
+    "restored_inline_wrapper_matches_focused": true,
+    "qualification": "Actual completed literal V-prod/single-C producer matches current focused V wrappers and every changed native operation/context layout. Native reference/path/execution audits remain separate; no performance credit."
+  },
+  "statistics": {
+    "valid_capture_cohort": false,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 27420526915,
+            "upper": 27420526915
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26025097652,
+            "upper": 26025097652
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17408023853,
+            "upper": 17442245456
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 25186869546,
+            "upper": 25186869546
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26620020402,
+            "upper": 26620020402
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17420844223,
+            "upper": 17441947730
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 26028066509,
+            "upper": 26028066509
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25673273785,
+            "upper": 25673273785
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17575077197,
+            "upper": 17578472442
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 26138478279,
+            "upper": 26138478279
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26003039882,
+            "upper": 26003039882
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17411164491,
+            "upper": 17431288643
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 26165007977,
+            "upper": 26165007977
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25355295929,
+            "upper": 25355295929
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17500222581,
+            "upper": 17500457138
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 24488070484,
+            "upper": 24488070484
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26318136787,
+            "upper": 26318136787
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17472283392,
+            "upper": 17488546300
+          },
+          "exit": 1,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": false,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "passed": false
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 25796370988,
+            "upper": 25796370988
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27170255739,
+            "upper": 27170255739
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17551709623,
+            "upper": 17572342360
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [
+      {
+        "pair": 6,
+        "arm": "brave",
+        "error": "Captured document differs from its unchanged pixel reference",
+        "native_exit": 0,
+        "cleanup_native_exit": null
+      }
+    ],
+    "attempts_retained": 21,
+    "capture_audits_passed": 20,
+    "median_vox": 26028066509,
+    "median_control": 26025097652,
+    "median_brave_lower": 17472283392,
+    "point_reduction": -2968857,
+    "point_fraction": -0.00011407669011270152,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": -2968857,
+    "paired_control_minus_vox": [
+      -1395429263,
+      1433150856,
+      -354792724,
+      -135438397,
+      -809712048,
+      1830066303,
+      1373884751
+    ],
+    "improvements": 3,
+    "regressions": 4,
+    "worst_vox_over_best_control": 1.0814516616876833,
+    "strict_left": 274205269150,
+    "strict_right": 156672214677,
+    "conservative_brave_ratio": 1.5751659778587965,
+    "target_met": false,
+    "broad_trigger": false,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 126,
+      "acceptance_browser_attempts": 2713,
+      "last_measured_id": 132,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113,
+        118,
+        124
+      ]
+    },
+    "qualification": "Every acceptance attempt retained,including failures and regressions; no retries or exclusions. Only creation-to-encodedPNG launch_instruction_interval used; asymmetric navigation deltas are diagnostic. Native/ownership/inputidentity/originalpixels/content/normalexit/counters required. Seven complete valid triples required for acceptance. No unavailable statistic replaced with zero. Invalid cohort earns no saving/acceptance credit. A positive full/partial matched median point >=5M triggers broad checks even without robust saving.",
+    "unix": 1793944042.901958
+  },
+  "restoration": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-restored",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-restored",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-restored",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_single_shot_fires_from_the_native_run_loop_and_releases_its_activity_root",
+          "test_stopped_native_timer_never_delivers_its_callback",
+          "test_native_repeating_timer_reloads_a_dirty_interval",
+          "test_single_shot_activity_root_is_retained_until_the_handler_returns",
+          "test_start_of_an_active_timer_keeps_the_existing_registration_and_interval",
+          "test_nested_timer_delivery_finishes_after_callbacks_retire_both_allocation_owners",
+          "test_active_timer_keeps_its_retired_document_alive_through_callback_cleanup",
+          "test_stopped_deferred_timer_remains_readable_until_cooperative_delivery",
+          "test_restarting_a_timer_transfers_its_last_activity_lease",
+          "test_process_timer_created_during_document_work_does_not_retain_that_document",
+          "test_cooperative_timer_queue_outlives_a_nested_recording_scratch_arena",
+          "test_cooperative_work_throttles_yields_and_preserves_the_outer_scope",
+          "test_finished_prealloc_work_reuses_its_record_without_retaining_the_last_target",
+          "test_repeated_cooperative_timer_delivery_reuses_queues_timers_and_closures",
+          "test_reentrant_cooperative_delivery_keeps_its_active_batch_independent",
+          "test_native_page_timer_is_deferred_and_coalesced_until_work_completes",
+          "test_stopping_or_restarting_a_deferred_timer_discards_its_old_delivery",
+          "test_sustained_work_adjusts_collection_without_disabling_gc_and_restores_idle_policy",
+          "test_cooperative_heap_adjustment_honors_every_explicit_collector_override",
+          "test_deferred_plugin_callbacks_run_on_the_native_loop_and_nested_work_gets_a_later_turn",
+          "test_plugin_spin_waits_for_a_real_future_timer_even_with_no_initial_deferred_work"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_single_shot_fires_from_the_native_run_loop_and_releases_its_activity_root",
+          "test_stopped_native_timer_never_delivers_its_callback",
+          "test_native_repeating_timer_reloads_a_dirty_interval",
+          "test_single_shot_activity_root_is_retained_until_the_handler_returns",
+          "test_start_of_an_active_timer_keeps_the_existing_registration_and_interval",
+          "test_nested_timer_delivery_finishes_after_callbacks_retire_both_allocation_owners",
+          "test_active_timer_keeps_its_retired_document_alive_through_callback_cleanup",
+          "test_stopped_deferred_timer_remains_readable_until_cooperative_delivery",
+          "test_restarting_a_timer_transfers_its_last_activity_lease",
+          "test_process_timer_created_during_document_work_does_not_retain_that_document",
+          "test_cooperative_timer_queue_outlives_a_nested_recording_scratch_arena",
+          "test_cooperative_work_throttles_yields_and_preserves_the_outer_scope",
+          "test_finished_prealloc_work_reuses_its_record_without_retaining_the_last_target",
+          "test_repeated_cooperative_timer_delivery_reuses_queues_timers_and_closures",
+          "test_reentrant_cooperative_delivery_keeps_its_active_batch_independent",
+          "test_native_page_timer_is_deferred_and_coalesced_until_work_completes",
+          "test_stopping_or_restarting_a_deferred_timer_discards_its_old_delivery",
+          "test_sustained_work_adjusts_collection_without_disabling_gc_and_restores_idle_policy",
+          "test_cooperative_heap_adjustment_honors_every_explicit_collector_override",
+          "test_deferred_plugin_callbacks_run_on_the_native_loop_and_nested_work_gets_a_later_turn",
+          "test_plugin_spin_waits_for_a_real_future_timer_even_with_no_initial_deferred_work"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_single_shot_fires_from_the_native_run_loop_and_releases_its_activity_root",
+          "test_stopped_native_timer_never_delivers_its_callback",
+          "test_native_repeating_timer_reloads_a_dirty_interval",
+          "test_single_shot_activity_root_is_retained_until_the_handler_returns",
+          "test_start_of_an_active_timer_keeps_the_existing_registration_and_interval",
+          "test_nested_timer_delivery_finishes_after_callbacks_retire_both_allocation_owners",
+          "test_active_timer_keeps_its_retired_document_alive_through_callback_cleanup",
+          "test_stopped_deferred_timer_remains_readable_until_cooperative_delivery",
+          "test_restarting_a_timer_transfers_its_last_activity_lease",
+          "test_process_timer_created_during_document_work_does_not_retain_that_document",
+          "test_cooperative_timer_queue_outlives_a_nested_recording_scratch_arena",
+          "test_cooperative_work_throttles_yields_and_preserves_the_outer_scope",
+          "test_finished_prealloc_work_reuses_its_record_without_retaining_the_last_target",
+          "test_repeated_cooperative_timer_delivery_reuses_queues_timers_and_closures",
+          "test_reentrant_cooperative_delivery_keeps_its_active_batch_independent",
+          "test_native_page_timer_is_deferred_and_coalesced_until_work_completes",
+          "test_stopping_or_restarting_a_deferred_timer_discards_its_old_delivery",
+          "test_sustained_work_adjusts_collection_without_disabling_gc_and_restores_idle_policy",
+          "test_cooperative_heap_adjustment_honors_every_explicit_collector_override",
+          "test_deferred_plugin_callbacks_run_on_the_native_loop_and_nested_work_gets_a_later_turn",
+          "test_plugin_spin_waits_for_a_real_future_timer_even_with_no_initial_deferred_work"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/platform/archived_inline_font_grid.v": "def8dfd6c0a4d56333cdda97ed5a3ce4c9e4c8bc8141be0fe0a9d7cbb6953658",
+      "/Users/alex/code/vox2/platform/archived_inline_font_grid_test.v": "1fa10580d3ac915611202baeac38cadde1c672f262a99f294b82dffdad408a87",
+      "/Users/alex/code/vox2/platform/arena_page_retirement.h": "cc6242bffb02ae575371ea44871677911fda477a8ddf7fc2d5f0afd7a3ac84a1",
+      "/Users/alex/code/vox2/platform/arena_page_retirement_test.h": "15975bc2426c58676914bdbae61cdab4050fdb34942deb58d945874210b7a89b",
+      "/Users/alex/code/vox2/platform/arena_page_retirement_test.v": "11e66cd8acbcb37564e99f3d378c0670c6634291000eb0dad2998fa8ea70097e",
+      "/Users/alex/code/vox2/platform/arena_phase_diagnostics.v": "3b8d717852100495afa80fcb25ac86bd209050cca204bc0aef1fd9f390ba7583",
+      "/Users/alex/code/vox2/platform/arena_poison_report.h": "e37ad5cd00b61c8db22cc1630d597ab812afeec695f97cec2ba162321393f768",
+      "/Users/alex/code/vox2/platform/arena_word_scan_test.v": "1effae56d88622371946185d7b78e44cf19c2c5cdbe52f6e56fad16554aada46",
+      "/Users/alex/code/vox2/platform/boehm_gc.h": "0de0de0e53c52cb5c80c67dd3f3dc777a1788cbfdd0f26ddbb8707583eddc8b6",
+      "/Users/alex/code/vox2/platform/browser_activity_heap.v": "f3df9519a47f08bc940bf661e86cbd5bba253e27b1eed589e2087ae3101034cf",
+      "/Users/alex/code/vox2/platform/browser_activity_heap_test.v": "33ec8be49ce1b6f2f16e632246a3d64c96f040f6d5c51f4a306a9b3e7c8d9c2b",
+      "/Users/alex/code/vox2/platform/browser_heap_policy.v": "2a2962ce67bc2d0cdf2b3b2433a301676492297001197a3004305811cd2dd7de",
+      "/Users/alex/code/vox2/platform/browser_heap_policy_test.v": "d7b68fcf8b79f24a630108fdd7789d7a8e8896fbe6df6bdeb22801b3ef1fba23",
+      "/Users/alex/code/vox2/platform/browser_memory.v": "16b489d02a7847f16c26e08986f3d63e7fadf15d699e18248a753743a6e96590",
+      "/Users/alex/code/vox2/platform/browser_memory_test.v": "02128fc566c600ed18427042a8bc12fc1a7c5b002d9987b9344c8b31f462cf02",
+      "/Users/alex/code/vox2/platform/browser_memory_unmap_test.h": "1267276cb272127124bcd318578a7318ee626b96385b5fecb9c934c7698159da",
+      "/Users/alex/code/vox2/platform/browser_memory_unmap_test.v": "ba3f39a8f87bab68f0b3ff2ae911a2ecf1ec37d29c293c57174eef8219d8821c",
+      "/Users/alex/code/vox2/platform/chromium_color_emoji_test.v": "a88a785a1412185c01c5ecc98e9e43b9c07cfc98479ca3acd90943977a92c7e9",
+      "/Users/alex/code/vox2/platform/chromium_coretext_hyphen_test.v": "1395b989d84d591abb277eb8f68a878a4f640861863f97dad0d665214f8298ca",
+      "/Users/alex/code/vox2/platform/chromium_glyph_intercepts.v": "34fa5002dae06438ab7cf00233d1d18e73132b52c13fb09a5691b2b2903d1b27",
+      "/Users/alex/code/vox2/platform/chromium_glyph_intercepts_test.v": "b0c44e7740e393b1b16b4cd78874d0353f4520b618d3a04d199ab7daac043cce",
+      "/Users/alex/code/vox2/platform/chromium_harfbuzz_advance_test.v": "01d50ce72e1e27c5ebd73845b39901f1791dce1ef636a9ee88a2fb255f46f185",
+      "/Users/alex/code/vox2/platform/chromium_monospace_font_test.v": "8803d3f5eb44c5824a418367ebcac59b9446cde6d2531cc85222282b3f427e44",
+      "/Users/alex/code/vox2/platform/chromium_spaced_ligatures_test.v": "ac0404c525b3e62c5cb6b27f45418f9fc065466b32a472bd3cdf504a53eeafdf",
+      "/Users/alex/code/vox2/platform/chromium_text_spacing.v": "fbff0ba32c4e2123fcc0131eb39086b6e7af686593c803315130013afcd13176",
+      "/Users/alex/code/vox2/platform/chromium_text_spacing_test.v": "ee0d72f2dca22990bfe84afac57b8e1d5f9f0340a3de765d66e76c71f8c18c5f",
+      "/Users/alex/code/vox2/platform/closure_metadata_arena_test.v": "910a03eb716dbe758a21fa0ef898d963ca9881d9c5d472197d9a576ee55c5802",
+      "/Users/alex/code/vox2/platform/closure_release.v": "98470892e2dd0dfe3fd1e9511d9204064f7c6833d4418709b9f4ab08c0e047fb",
+      "/Users/alex/code/vox2/platform/closure_release_test.h": "8816a0c4549f9afd3e18bb2cbf688d703463989aa52ebba4e23546ff3cd9f1a5",
+      "/Users/alex/code/vox2/platform/closure_release_test.v": "06a7654800eb6f7cb1e87c132541004ec98c8d75bf66c70657c51638b758189d",
+      "/Users/alex/code/vox2/platform/cold_glyph_transfer_test.v": "9674c81d5fc69e9f6a3c5190c1c14b70d2d9f8d5bf0ba8897d479e587128897c",
+      "/Users/alex/code/vox2/platform/cooperative_work.v": "26c8cc23a17ab8bef9bb7e77501db96d25d9ecc45980fd885a0774033ce01011",
+      "/Users/alex/code/vox2/platform/cooperative_work_test.v": "cfa048505797e2fca7e552c3399d719cc10e1c3da0dfb0449b138c97e4de204e",
+      "/Users/alex/code/vox2/platform/coretext_face_storage_test.v": "35d689b687b04f24f8ffb8bfa832405212846aafc7b34123481e7dbb56d8484c",
+      "/Users/alex/code/vox2/platform/coretext_macos.c.v": "b8744289f71c875e09eda2a77649095ecfc59bd58db1f1a134a0801e053fc695",
+      "/Users/alex/code/vox2/platform/coretext_macos.h": "b5074efc00832a618f68844f5c199835cfa0930d7495bcd23457d4f31aede38f",
+      "/Users/alex/code/vox2/platform/coretext_match_cache_test.v": "84648c85751174ddc5bb4c730ac8d1f88d9f2ce86ee35040c33862981688b145",
+      "/Users/alex/code/vox2/platform/document_heap.v": "d46193c4c850eecc597c8fa4d78a3a2ef3b6662e5eb0fbbb4795aeb632d14ed4",
+      "/Users/alex/code/vox2/platform/document_heap_test.v": "1bbaea5b802b4667fbc93f38cb955f580e1bf9a4c474632d3a0a689d02d0894d",
+      "/Users/alex/code/vox2/platform/embedded_text.v": "42e3c24e20a3fe4ba26a9faeeff1c58778da1baaa8d7c04b1e3913ab380b0b1f",
+      "/Users/alex/code/vox2/platform/embedded_text_test.v": "46dd27cfc432373fcb35a5a95f3160a6a5e0e5ecfa3042002d512edf4097f151",
+      "/Users/alex/code/vox2/platform/event_loop_plugin.v": "3556cfa84bf5218d248824b634df9fa6010c76ddb59c5353bd788747ca20a0ed",
+      "/Users/alex/code/vox2/platform/fallback_font_metrics.v": "713b314bb8342fadc96e9d8d513ca6c89c57884cc8a53e267edcd6408b09e0a6",
+      "/Users/alex/code/vox2/platform/fallback_font_metrics_test.v": "20f1f74691addc1d46b858f7bbfbcfc56a22c23649421b998e341b090aa13ff0",
+      "/Users/alex/code/vox2/platform/font_ascii_coverage_test.v": "0434307e20875bc53d73253584aa67b0fadeca0f7b58d454cf2ef79829f4ec05",
+      "/Users/alex/code/vox2/platform/font_cache_arena_test.v": "06c8d2d95a8d1507e073373daafb4929dd3597664228de6cf6e9d5bf4e51a999",
+      "/Users/alex/code/vox2/platform/font_cap_height_test.v": "94b0c9f9f524b9f51c644698ea66e2adaea58bf476713ee932a358ad45249d5d",
+      "/Users/alex/code/vox2/platform/font_checksum_test.v": "88d0cb29dc16898952e98736175ab9bb3d4bf4256a71c51b9d38717000bc7157",
+      "/Users/alex/code/vox2/platform/font_cmap.v": "dff19fecf5933a6978c236e71bcb6bd2591cb4f32eaf47795156dca4def69be9",
+      "/Users/alex/code/vox2/platform/font_cmap_test.v": "4cf6a3c4070b265f941a086fecae32af7821c80c886c3863a1eeb970c74bf628",
+      "/Users/alex/code/vox2/platform/font_coverage_test.v": "b3b6a3334427299f72276a9fed6cbd663715355fcd34af311af3b3fdb31e9f8d",
+      "/Users/alex/code/vox2/platform/font_face_retention_test.v": "dcc83fe02a2a92a9c0227d60361ce51d4b1c79ea3e3e8a6990fa5977705df69f",
+      "/Users/alex/code/vox2/platform/font_glyph_cache_identity_test.v": "6eb9e1cb353ed666be06dcde4f75bb46c13044f1be9a1a01355e0f02e7d5589c",
+      "/Users/alex/code/vox2/platform/font_metric_policy_test.v": "205f42d52e900be6e6a2c54087cc89775e67c04ae7837cf7146666ab470e4cad",
+      "/Users/alex/code/vox2/platform/font_normalized_init_test.v": "e1151a3106f9dc1f22115df872022b89ea3a2a02e9ecb39d9c29b17c3c7c7583",
+      "/Users/alex/code/vox2/platform/font_outline_format_test.v": "6cdd17f8477b11309eaef1e34acb630477c0d6fb29834df56e5ba8345c2601eb",
+      "/Users/alex/code/vox2/platform/font_pixel_metrics_cache_test.v": "37cc01521ceb836bd82f6900055955d2ea6521cdaaf895be755548b60506f793",
+      "/Users/alex/code/vox2/platform/font_plugin.v": "d0cc3b951cc7b118824c7c8a5923cb7ec84853e4365180b6c51a5872948583f1",
+      "/Users/alex/code/vox2/platform/font_rendering_policy.v": "ea927bd725bab513ece5ba023a7d47da5b2f136c7239e9fad5a064caba8ab2ef",
+      "/Users/alex/code/vox2/platform/font_rendering_policy_test.v": "4038ba8ecad85b57b94db7c9e3a398e08a75674d34e52de28e38742156210fc8",
+      "/Users/alex/code/vox2/platform/font_synthesis.v": "d94cc29ff2eca6584a34ba78e869381f0f6d3d255bd20d742a69c24bed33a2eb",
+      "/Users/alex/code/vox2/platform/font_synthesis_test.v": "d74538bb85f85d0267f43a5665d6032e8ba7711f955b5b1e0da62c4002720f84",
+      "/Users/alex/code/vox2/platform/fontconfig_linux.c.v": "2077946b3872e6ee0f0730bd4d805334fc29cf6a028272d5540f16b5415d6887",
+      "/Users/alex/code/vox2/platform/fontconfig_linux.h": "1d2524b89cea93c04817c187cde7d8366b94326dd0e00232b29fe209e09677d8",
+      "/Users/alex/code/vox2/platform/fontconfig_linux_test.v": "fea1fbf40c2521d1645a3c12e0813db7ed74e308bc6d8eb2af994c5c4bf8ad23",
+      "/Users/alex/code/vox2/platform/form_control_font_metrics.v": "ebdeec0cf31cbcb4a35b45dacda7dfaa079dfeb1bf8469a645dcf3d7b0903230",
+      "/Users/alex/code/vox2/platform/gc_keepalive_linux_test.v": "3540c7029ebfb47715b5ee0d0546abc15f860396535e687f8e36e6d08ba218f6",
+      "/Users/alex/code/vox2/platform/gc_linux.c.v": "32daffc226c24aec719003fa5333f16224e772b4ea7505c6b674d8748283497f",
+      "/Users/alex/code/vox2/platform/gc_linux.h": "bce19c675211d6519c7038122d9a6639470ab90199924df815aa40adf692627d",
+      "/Users/alex/code/vox2/platform/glyph_index_font_init_test.v": "db51792087972f99f576ae296a045232d18bb01d19104802e9713ef15d462e32",
+      "/Users/alex/code/vox2/platform/glyph_owned_storage_test.v": "18be2265d151fe74d3895089f0760e47822bb6ab583024d8600ab3ad70222856",
+      "/Users/alex/code/vox2/platform/glyph_run.v": "16226ddd0994e50b222228266dbb12d3099676a5fd4e97059929b6492b12582e",
+      "/Users/alex/code/vox2/platform/glyph_run_fork_test.v": "7cd7b66373be6f5830da25d996147a8012200844c4f663690d0fddcb1aeeb4d7",
+      "/Users/alex/code/vox2/platform/glyph_slice_storage_test.v": "f55bab99f08ffc92898e28c3b688158195fe5d7a1858d4dd0cffa5ea45d2b8f5",
+      "/Users/alex/code/vox2/platform/harfbuzz.c.v": "f7c3e54a71f5c105a23335603cba769002bc6b03b81defb7ac4a257d14afc491",
+      "/Users/alex/code/vox2/platform/harfbuzz_coretext_macos.h": "ee821efecca98a83a14662c37d65c26cd81608d165b286deb8a4acb3e57d58da",
+      "/Users/alex/code/vox2/platform/harfbuzz_face_cache_test.v": "044e32f09f770be731d82004a78cdaeb08adac7c3b613ea16dcd61cf34f4b2d4",
+      "/Users/alex/code/vox2/platform/harfbuzz_idle.v": "118efc509899141b881393858f5bd4ded8415e8ff7562e4662775c5f5d67c9bc",
+      "/Users/alex/code/vox2/platform/harfbuzz_idle_test.v": "12d2006639cb1ca28bd1f46e4c1e6489f540a84fa8756b1f74ce05eb0d37cc8b",
+      "/Users/alex/code/vox2/platform/harfbuzz_utf16_stream_test.v": "3c1e4b32e341d02629cd1658a186586d458e770f1dfb07a8844abedb08cc60b0",
+      "/Users/alex/code/vox2/platform/hyphenation.c.v": "e869c978198cc5b37e761afb5292f3362c6bde05604f6b1165272be8a5064c69",
+      "/Users/alex/code/vox2/platform/hyphenation_bridge.h": "08b1ac69f2a0c3e0b26ef1d08ece2d18ba93f85f1c94e79f58596e16d5b68943",
+      "/Users/alex/code/vox2/platform/hyphenation_test.v": "06287a4bbc77a71a16bcd0e29234a77c1499132e57e8263f60963df7db54eb49",
+      "/Users/alex/code/vox2/platform/idle_arena_pages_test.v": "df95efac424b2876334ee97e1ae348d0f34013fe11ed686c8418bc4f7a53a163",
+      "/Users/alex/code/vox2/platform/idle_arena_tail_pages_test.v": "4974d59fad2e63fc12b6282730090e85190d6cf5cc580b0b1fc120f11055ecdf",
+      "/Users/alex/code/vox2/platform/image_codec_plugin.v": "6eb5a115258ebffbc191e2f44e390e9415d4e0bb5b92a5dd8b37525d3eb90443",
+      "/Users/alex/code/vox2/platform/inline_font_density_test.v": "d12aa8bb6072be101f48af0a7d12b166f83ccfc6f3133add083cb8bcebf2e3a1",
+      "/Users/alex/code/vox2/platform/inline_font_metrics.v": "f94effb06239924c6ff24f34e39ce811580363c6fa91efe36e95deca78e45eac",
+      "/Users/alex/code/vox2/platform/inline_font_metrics_cache_test.v": "608d255b5c51e9d1e7376afcb9cdf8f3d5fb42f6bfeb99d7b2b0b44cf71645a1",
+      "/Users/alex/code/vox2/platform/inline_font_metrics_test.v": "c085f0b0b59dec896e5e921bd741dea77ca5106048d731af6932e4a2e4b7c0b0",
+      "/Users/alex/code/vox2/platform/italic_font_matching_test.v": "ffde665b8facdae93765080fcdab8e5772a9ab379e1ce7815b13eb4125e23cbb",
+      "/Users/alex/code/vox2/platform/layout_font_policy.h": "0067d78da55fdd4490385a2960b572ac11be57948f83a7985aabf8e302c60eb7",
+      "/Users/alex/code/vox2/platform/layout_font_policy.v": "33f081c2ddcebe7c3ef7107b1d5cd91dee26c805a3132678f0663797b8e3f855",
+      "/Users/alex/code/vox2/platform/layout_font_policy_test.v": "afda5444056dcb1194788277e187e087ce4405f6ccef568dbc7d9a4acedec7a5",
+      "/Users/alex/code/vox2/platform/layout_test_font_override_test.v": "7a1176ad6b76507fa6e4d3bf59140fad455a8f462224fbd0eebdc0b049101c57",
+      "/Users/alex/code/vox2/platform/linux_event_context.h": "1ef72227efd552b1b731a8ed9d03297e6099bed729dde88b9a26319dc4636bc4",
+      "/Users/alex/code/vox2/platform/native_deferred.c.v": "811e6a16a78e713f7b8c29df407005c93d2c8d1635b2b4cdc342ee7cd0752590",
+      "/Users/alex/code/vox2/platform/native_deferred_bridge.h": "82b70378d1308ba75037eac956bb7d25afdc3d6b50b5a6c6598790cd755628ee",
+      "/Users/alex/code/vox2/platform/native_deferred_test.v": "43ac2ad06c081c3ca5cffe3a92323980930f719108831c7dec8424b70a696f27",
+      "/Users/alex/code/vox2/platform/native_event_fairness_test.h": "3858fc40946b65ee72be48c3bc093d220408da0e589fd868a84982756dae9f69",
+      "/Users/alex/code/vox2/platform/native_event_fairness_test.v": "b3dc5c64cf2608b6759602efea2665f0fa7d3893903679888cce3031c9880931",
+      "/Users/alex/code/vox2/platform/native_event_loop_plugin_test.v": "57ee9e25b125b7f86364ab72f8d4c1fe82396587abd9316e76ab11f34a1f815a",
+      "/Users/alex/code/vox2/platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+      "/Users/alex/code/vox2/platform/native_timer_test.v": "e57ee0a92f17771bcc2569eb324823ea42d12f59fa916f24d33136570236646c",
+      "/Users/alex/code/vox2/platform/nested_retained_arena_test.v": "23fb9f071b53fff9aa8af6623d327348ea5462cb7f49393581014fde812b2454",
+      "/Users/alex/code/vox2/platform/nojs_heap_policy_test.v": "4b195850d2eb7e489b4af225e5ebe0abb561bd947d71060943485bf373e0fa20",
+      "/Users/alex/code/vox2/platform/persistent_from_nested_owner_test.v": "12a9e233e4b89845c78310c9d797e8377628c0b012d31f50e9e2d4a401738e5d",
+      "/Users/alex/code/vox2/platform/persistent_scope_jump_test.v": "6dc03b995e3abff07e86f10bd5a9115262ea7e00062f2edf4f46c4e872b28b13",
+      "/Users/alex/code/vox2/platform/persistent_tracked_caller_test.v": "8e25c89b387a2bb354275be8b60bf0842f5da4df176d237849afc5810b96a210",
+      "/Users/alex/code/vox2/platform/platform_test.v": "85176f40ce0d5981ada6ce40fa418ba5ce1bc2352849244dacb28167b4be2ff5",
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+      "/Users/alex/code/vox2/platform/prealloc_arena_test.v": "72e69ec1a59aa3d2c767096e3a7c0a4510c3a870af46d3bbc0d6bb7703c01a49",
+      "/Users/alex/code/vox2/platform/prealloc_shared_pool_test.v": "1c80ab6ef9034c016fbe70992b1578ab19d5d308aff676efa9a2f00112375569",
+      "/Users/alex/code/vox2/platform/retained_allocations.v": "25126d30a12196f6d38235ba854ecd48c2506e7222ff70af89b1258c7b0cd793",
+      "/Users/alex/code/vox2/platform/retained_allocations_test.v": "68331a914e18ef1140c69d53d3ad94d4afb1940d332336a51241e173152b0720",
+      "/Users/alex/code/vox2/platform/retained_arena.v": "f5887cec86302503422a2faea9481e70379c6136baabc0f0cceb3b4e0f3e1bcb",
+      "/Users/alex/code/vox2/platform/retained_arena_growth_test.v": "2d68859a25a1e229b721f1baa93867f6bb68bb3b1b630eb0b40e1a097bff9f8e",
+      "/Users/alex/code/vox2/platform/retained_arena_mapping_test.h": "9bcf0ccdefdda3b7b060c2f03246e3e40c10dfe3c368ba26daeb4012f9adeca1",
+      "/Users/alex/code/vox2/platform/retained_arena_test.v": "7155b1c90c550dd6a5a7915b49d767d7b3d3865e0affecf2f87cceebf47a0b98",
+      "/Users/alex/code/vox2/platform/safe_break_width_cache_test.v": "93d21b0575373faeb6f0d004846e635ba80b655a86cd593d6689ba178817c50a",
+      "/Users/alex/code/vox2/platform/sfnt_face_storage.v": "9a3597567e4eb4e7fdb929ee3850fa4c3b7972dd64211432fa7d0683dae01948",
+      "/Users/alex/code/vox2/platform/sfnt_face_storage_test.v": "99eecb62b387004491c0ae805d10deaa0f1921f03831a18c15c5570513d434d4",
+      "/Users/alex/code/vox2/platform/shaping_baseline_storage_test.v": "854417e8858947e5ac82ea4ab9a2072ba4a98734e76e9d3bc030f175b2330620",
+      "/Users/alex/code/vox2/platform/shaping_cache.v": "f7509c7f9e52f5b265b80a78b4fa1034ea0dee1103b225594c44d222a90210b4",
+      "/Users/alex/code/vox2/platform/shaping_cache_arena_test.v": "83701b7b75f2bbea04d47e34c83a6667f5d0372e0d4118184adb044e1f07857e",
+      "/Users/alex/code/vox2/platform/shaping_cache_transient_test.v": "df5a063ee865c2daa091aa32ef4fcbcc90398c60f9a42a270d79038c3e3f8568",
+      "/Users/alex/code/vox2/platform/shaping_context_cached_metrics_test.v": "7e15977ada12d338f0946c7bcd18355c922ee19d4b5085a000681c688149a607",
+      "/Users/alex/code/vox2/platform/shaping_context_metrics_test.v": "498551bbab29cfa7efa776de2179a0c9e49dca6fbbdc9d74343680cd8e05b734",
+      "/Users/alex/code/vox2/platform/shaping_font_key_test.v": "a9c63f7e43d3fda9c555577aaa5743256b9f55939c291a61be30ac0188983fa9",
+      "/Users/alex/code/vox2/platform/shaping_idle_test.v": "e5bb2f34e10745708e572d43f4a408611d21714aa9be5c1ce46db1cddbdb7dd7",
+      "/Users/alex/code/vox2/platform/shaping_safe_break.v": "7e15d7386eb4de6aba101ad66922926f9f0c6bd1d23a7ca4816f63888c0dd77c",
+      "/Users/alex/code/vox2/platform/shaping_safe_break_index_test.v": "1427fa0ee0808522ec89fa6336175bf0fafae15643de781f456decaddc79343a",
+      "/Users/alex/code/vox2/platform/shaping_safe_break_test.v": "d97f36af278adaa9f4f646597b3ea3a817415491a718c6c98b851eb82db88db7",
+      "/Users/alex/code/vox2/platform/shaping_width_workspace_test.v": "05b6b735de78d103aac970c850eaf5374d7ec04c1b836b59d181f1d04af9ed38",
+      "/Users/alex/code/vox2/platform/specified_size_tracking_test.v": "3d9ba9d0ba43b04110d351ad968cdfc7eeac61a93706617c097f568712a8243e",
+      "/Users/alex/code/vox2/platform/supported_image_types.v": "542d2fd4288c83cdee27a7ee87685bf544ad52bbd2ac53ddd00ca3a30714dee2",
+      "/Users/alex/code/vox2/platform/synthetic_ascii_caps.v": "58a53291a2ff9c855a3025e47abbbc95b22f075491db007e1a2960096ba0de78",
+      "/Users/alex/code/vox2/platform/synthetic_ascii_caps_test.v": "d339b0f6ec6d81c9269776de572773b152322422aeea079f1507a30d4efcdd22",
+      "/Users/alex/code/vox2/platform/system_font_matching.v": "29cedcfa260e42cb1bfacb83ae0fc1e0fff94abc493430066ad9b949a9c04c31",
+      "/Users/alex/code/vox2/platform/system_font_matching_test.v": "69b01baa286caefae38a4a06afe0302082896f68f390505eb3ee8fa77a44f32c",
+      "/Users/alex/code/vox2/platform/system_font_workspace_test.v": "be58c58ad51a81a4db935423db0fd499e898641335ccc7e4e52084cb8ecf3878",
+      "/Users/alex/code/vox2/platform/system_ui_weight_test.v": "e2d32a362cd044ee4957d8391c2a529fcaea099009277093eb14a27c81a9c6af",
+      "/Users/alex/code/vox2/platform/text_mapping.v": "90be8e8db81ec255f15c6c10119f560374c50bb56b521c9112ecabd9c1f2131e",
+      "/Users/alex/code/vox2/platform/thread_scratch.v": "ac880c7ace9b16e3ab79a174ea00c5acb824782253f29763e63829badff6890d",
+      "/Users/alex/code/vox2/platform/thread_scratch_leases.h": "d274f7eacc01f90125def063babc55b11c740e93549014dbe7f0b85a0cf5fdc5",
+      "/Users/alex/code/vox2/platform/thread_scratch_leases_test.v": "c2bda44670b8bc9783d4a5af3128fd87b493e997d3b6bdaacde2eeebcdfd4287",
+      "/Users/alex/code/vox2/platform/thread_scratch_test.v": "0d5313213a2d038d8293dee08b089a07ba74d945630432983a57bc133c2a6f35",
+      "/Users/alex/code/vox2/platform/timer.v": "e68b5e738da36e99349e0757a85d6da209e0491190311f1f4cc01c30b182a984",
+      "/Users/alex/code/vox2/platform/timer_arena_test.v": "f95f9897d4d4e599139e0959b212bd8fd94cac3df5c2ba413e42c91c4ed09bff",
+      "/Users/alex/code/vox2/platform/timer_host.c.v": "ab0fc6a1fba11b3129e25527ebb0e41716484e7f5167de5a5cf68978026c2d88",
+      "/Users/alex/code/vox2/platform/timer_host_bridge.h": "8c61907360f2b76a50b25995e4ad5def9ae0283cca397b0df8573f45bbe677d0",
+      "/Users/alex/code/vox2/platform/trailing_whitespace_storage_test.v": "e3a57f21a8f4e7835d7251f775600bcb7e8f1d8c23d367a6e94e7a2cf3ebd1d4",
+      "/Users/alex/code/vox2/platform/unicode_case.c.v": "609325aadf64b61a360f497150c68bf93fc920077134104e2ab6ac2689605abc",
+      "/Users/alex/code/vox2/platform/unicode_case_bridge.h": "43c79cda0e2592c5640026f8ec2ccfad47da968329ada86973c907be1b99fe8e",
+      "/Users/alex/code/vox2/platform/unicode_case_mapping.c.v": "5822faceb3f008f8c5a06f084f859edb20a158e6296bc6dd64bfd07d6ef10f3b",
+      "/Users/alex/code/vox2/platform/unicode_case_mapping.h": "11a23f94381b2a79019d896d7d091e2b0fe3f98baff5cd36d697237ceac9717a",
+      "/Users/alex/code/vox2/platform/unicode_case_mapping_test.v": "ea1ad25fe66fb2b0863a85cdf809b5c33785128baa00e5bf64908f61057923e1",
+      "/Users/alex/code/vox2/platform/unicode_case_test.v": "c08b6c8b23d54410aafe46ed9ab7c55c6846a1eb8b9ab13f0022e46bce3b4036",
+      "/Users/alex/code/vox2/platform/unicode_categories.c.v": "cd76157ca74b16863e5b82411ecc747c38ab1095cd992ed87fe411569727c40a",
+      "/Users/alex/code/vox2/platform/unicode_categories_bridge.h": "f0b462845959cfbf9c4dbe9c4c79c697bfb2a2fad5e1a5db95c48299b4d2c9e5",
+      "/Users/alex/code/vox2/platform/variable_font.v": "50fe45ea5b6d057b77ca1925d341629d073b209a472bc42ce284b65b4c9b53ea",
+      "/Users/alex/code/vox2/platform/variable_font_test.v": "8396dee2b8e79d97af1b1f18f6096b3c60b022e4c6ebff03c23d6effcc2f9909",
+      "/Users/alex/code/vox2/platform/web_font_decode.c.v": "08e477aee0363ba85b37c15ada7754e1052e8229ad692d92a44eee9f44d4ddf0",
+      "/Users/alex/code/vox2/platform/web_font_decode_test.v": "d163b87fd14a0287384772fff8cc1b0e5e0417b5e7dd10e05ede4727b7b7f758",
+      "/Users/alex/code/vox2/processmetrics/coalition_instructions.v": "79a9c834ec5203b387626b96e2006df255a654cb34453dd07787f9dec1dc030a",
+      "/Users/alex/code/vox2/processmetrics/coalition_instructions_test.v": "1d80d9c25530db65eeebc9262956aad494c0c210d880ae8f4bab1ac15708003a",
+      "/Users/alex/code/vox2/processmetrics/instructions.v": "d7ab2e6b1bfd9a9fc03a4f7a02a4904c66f1064237183cca4a4a6c4fc9a041cf",
+      "/Users/alex/code/vox2/processmetrics/instructions_darwin.c.v": "65b3a1c85d9641015db6f4394285992602333a95effffaf5b549bc4cad1f420c",
+      "/Users/alex/code/vox2/processmetrics/instructions_default.v": "d3282f46965de37cc32a3c8cd180b537e034af3c08660ec869f8c0504eb7cdfd",
+      "/Users/alex/code/vox2/processmetrics/instructions_test.v": "970e51d143c6520d9560474e643173c7c3c9786f9de3ef23425d28c02d6bf1f3",
+      "/Users/alex/code/vox2/processmetrics/load_stages.v": "694e8bd6216f444106c0c67d1ee504c8b20497a8283ea3921814b11b829e217d",
+      "/Users/alex/code/vox2/processmetrics/load_stages_test.v": "667620c1c21f8e463564022e5093feaa892640085a5f2ca6ad04f25d5bb3ef6a",
+      "/Users/alex/code/vox2/processmetrics/memory.v": "52dffac94d24261ff471b840568a7aa997e8bfcdb2a92622f6a2fecf54a71870",
+      "/Users/alex/code/vox2/processmetrics/memory_darwin.c.v": "154e0de9987053027e23138e1995ec2632af665defef6afb8bb6f23abb18bc08",
+      "/Users/alex/code/vox2/processmetrics/memory_default.v": "5576c48dc43bf4144a2e57095db8a1f96c9e8067d3479101318fc29f7618c643",
+      "/Users/alex/code/vox2/processmetrics/memory_test.v": "253712fa796f43ee1579fb1c735b1c7fbc4f638697a2664e11e3134641578dcf"
+    },
+    "unchanged": true,
+    "cases_per_run": 21,
+    "expected_cases": [
+      "test_single_shot_fires_from_the_native_run_loop_and_releases_its_activity_root",
+      "test_stopped_native_timer_never_delivers_its_callback",
+      "test_native_repeating_timer_reloads_a_dirty_interval",
+      "test_single_shot_activity_root_is_retained_until_the_handler_returns",
+      "test_start_of_an_active_timer_keeps_the_existing_registration_and_interval",
+      "test_nested_timer_delivery_finishes_after_callbacks_retire_both_allocation_owners",
+      "test_active_timer_keeps_its_retired_document_alive_through_callback_cleanup",
+      "test_stopped_deferred_timer_remains_readable_until_cooperative_delivery",
+      "test_restarting_a_timer_transfers_its_last_activity_lease",
+      "test_process_timer_created_during_document_work_does_not_retain_that_document",
+      "test_cooperative_timer_queue_outlives_a_nested_recording_scratch_arena",
+      "test_cooperative_work_throttles_yields_and_preserves_the_outer_scope",
+      "test_finished_prealloc_work_reuses_its_record_without_retaining_the_last_target",
+      "test_repeated_cooperative_timer_delivery_reuses_queues_timers_and_closures",
+      "test_reentrant_cooperative_delivery_keeps_its_active_batch_independent",
+      "test_native_page_timer_is_deferred_and_coalesced_until_work_completes",
+      "test_stopping_or_restarting_a_deferred_timer_discards_its_old_delivery",
+      "test_sustained_work_adjusts_collection_without_disabling_gc_and_restores_idle_policy",
+      "test_cooperative_heap_adjustment_honors_every_explicit_collector_override",
+      "test_deferred_plugin_callbacks_run_on_the_native_loop_and_nested_work_gets_a_later_turn",
+      "test_plugin_spin_waits_for_a_real_future_timer_even_with_no_initial_deferred_work"
+    ]
+  },
+  "restored_executions": 63,
+  "instruction_tool_tests": 347,
+  "tool_audit": {
+    "exit": 0,
+    "unchanged": true,
+    "changed": []
+  },
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-native-timer-registration-cohort132-20261106.tar.gz",
+      "bytes": 39479780,
+      "sha256": "aacf067e308364638763d1a2fc35daa1792b4175e9466244717b96ceba2d5a6e",
+      "physical_members": 276,
+      "file_paths": 356,
+      "all_file_paths_verified": true
+    },
+    {
+      "path": "docs/performance/raw/bbc-native-timer-registration-retirement-20261106.tar.gz",
+      "bytes": 899931,
+      "sha256": "74783e23d3886c8dd7e851c1f12a5ae81d9307f056892c0c26dae32752b69833",
+      "physical_members": 41,
+      "file_paths": 41,
+      "all_file_paths_verified": true
+    }
+  ],
+  "history": {
+    "measured_cohorts": 126,
+    "acceptance_browser_attempts": 2713,
+    "last_measured_id": 132,
+    "preflight_only_ids": [
+      104,
+      110,
+      111,
+      113,
+      118,
+      124
+    ]
+  },
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "broad_run": false,
+  "broad_qualification": "Negative full/partial matched median point triggers no broad run. The798case prospective set is unexecuted. Last actual771unique/mode,766passes/fiveknownfailures remain without full-suite pass or cadence reset.",
+  "positioned_workspace_retirement_confirmed": true,
+  "native_timer_retirement_confirmation_pending": true,
+  "qualification": "Same pinned literalV-prod/singleC executable in both Vox arms; only native zero-delay registration allocation policy differs. Candidate-only actual marker beforePNG, exact original nativepixels/content/72external sourcebyte evaluations/mappedimages/ownership/exits plusSVGguard pass. All changed V/native bodies andnative context layout match final focused inputs. Initial bundle lacks final recycling guard and is rejected before browser launch. The complete producer also proves positioned-inline experiment absent and its restored wrapper exact to focused C; both native captures validate that retirement. All21 measured attempts retained; Brave pair6 differs from unchanged reference; three paired improvements andfourregressions, negative2968857medianpoint; no saving credited. Same609responses, originalauthorpolicy/frozenJSclock,1024x768CSS/DPR2,privateprofiles/caches,retainedOScaches,readiness/visibleimages/2secssettle andcommon3rasterpolicies/reference/counter/thresholds. Exclusivecoalitioncreation\u2192encodedPNG includesstartup/window/target/exitedownedaggregates/allowedservices,Voxbeforefilewriting/BraveCDPdeliveryincluded; audit/teardownafter; GPU/outsideexcluded. KnownpartialDOM/script/font/paintlimits,unsupportedperformance.measure and82.7154%crossbrowserpixel difference remain;72sourceevals do notprovefullasyncconformance. Hostload/buildcontention retained,no robustsaving/live-site/render-only/FPS/catalogcredit orcrossbuildattribution. Pool removed with63restorationexecutions and347tooltests; subsequent native retirement confirmation pending.",
+  "unix": 1793944219.728191,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-timer-registration-reuse-20261106-1900/archive-cohort132.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 30326784,
+    "elapsed_seconds": 6.429611041,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

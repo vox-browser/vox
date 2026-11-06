@@ -983,5 +983,9 @@
     "https://developer.apple.com/documentation/corefoundation/cfrunlooptimersetnextfiredate(_:_:)",
     "docs/performance/bbc-frame-v-profile-20261106.json"
   ],
-  "unix": 1793943544.098006
+  "unix": 1793943544.098006,
+  "subsequent_measurement": {
+    "evidence": "docs/performance/bbc-native-timer-registration-cohort132-20261106.json",
+    "status": "Actual native reuse verified; cohort132 invalid due Bravepixel, negative medianpoint, experiment removed; native removal confirmation pending."
+  }
 }
