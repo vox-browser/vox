@@ -3839,3 +3839,69 @@ A final fresh process of the subsequently completed installed bundle
 `74fbd0d8…5d09c` also returns **Rome**, with zero native/script errors and stable
 inputs, in 5.258 seconds after Send. This separate installed-bundle check is not
 included in the paired medians above.
+
+## November 6: compiled-module reuse and precompilation limits
+
+Vox already enables JavaScriptCore's JIT and in-memory code cache. A separate
+production diagnostic reports `useJIT`, `useBaselineJIT`, `useDFGJIT` and
+`useCodeCache` as true. JIT optimization uses runtime feedback; caching parsed
+bytecode and prefetching network resources serve different purposes. See
+[JavaScriptCore's execution tiers](https://docs.webkit.org/Deep%20Dive/JSC/JavaScriptCore.html).
+
+Commit `b91d35603` fixes a cache-eligibility problem: every ModuleHost previously
+put its own allocation identity in rewritten module source. Reloading the same
+URL consequently changed the source presented to JavaScriptCore's code cache.
+The private lexical helper name now stays stable within its agent VM. Its
+resolver closure, import map, module namespace and global objects remain owned
+by each realm. Changed static import mappings and base URLs still change the
+rewritten source; dynamic imports resolve through their own realm, including
+after another realm closes. No site code executes early and no extra script
+downloads are introduced.
+
+A synthetic 4,000-function module uses the canonical native module loader and
+VM-group adapter across twelve new realms in each fresh process. Two sequential
+batches per case retain every sample; the warm statistic covers realms 1–11
+after realm 0 populates the cache:
+
+| Synthetic module compile/link/evaluate endpoint | Changing helper | Stable helper |
+| --- | ---: | ---: |
+| Normal JSC code cache, warm median | 2.832 ms | **1.935 ms** |
+| `JSC_useCodeCache=false`, warm median | 2.948 ms | 2.865 ms |
+
+The normal endpoint is 31.7% shorter in this focused diagnostic, but the saving
+is **0.897 ms**, not a measured ChatGPT load-time reduction. It includes native
+source delivery, compilation, linking and trivial module execution; it does not
+isolate parsing. Functions are defined rather than executed to force speculative
+JIT warm-up. The disabled-cache control and
+[JSC's CodeCache implementation](https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/runtime/CodeCache.cpp)
+support cache reuse as the explanation; no native cache-hit counter is exposed.
+This gives no CPU-instruction optimization credit.
+
+Persistent bytecode caching is not enabled. The tested system `JSScript` API
+rejects an ordinary local cache folder with “is not a data vault”. This agrees
+with the platform validation in
+[JSScript's implementation](https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/API/JSScript.mm).
+The probe does not establish that every possible platform integration is
+unavailable. No private storage workaround or JIT-threshold change is retained.
+
+**No whole-page speedup is established.** An initial ordinary-window reload
+probe never navigates because of the optimized-site allowlist. Subsequent frozen
+control and candidate probes load the first homepage but do not re-establish
+the author bootstrap-ready marker after native Cmd+R; a missing archived
+popover module is observed. A live candidate reload also times out at that
+readiness gate, despite a complete document and no native/script diagnostics.
+These failures remain recorded and receive no reload acceptance; their cause
+is unresolved. The first native microprobe also has a corrected C-callback
+compile failure, and its initial parallel runs are retained separately from
+the sequential measurements.
+
+All **28 focused executions** pass across normal GC and `-prealloc -gc none`,
+covering module cycles, live bindings, dynamic imports, realm/import-map
+isolation, worker modules, thread-local VM ownership and module-worker sandbox
+initialization. The frozen first homepage is content- and pixel-exact at the
+unchanged 2,990,874-byte startup total. A fresh signed production process
+receives **Rome** through native input, with stable executable/resources and
+no native/script errors; its timing is a functional check, not an optimization
+cohort. The headless startup/input smoke check also passes. Exact inputs,
+guards, results, failed attempts and native captures are retained in the
+[compiled-module receipt](performance/chatgpt-module-cache-20261106.json).
