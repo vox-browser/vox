@@ -1,0 +1,367 @@
+{
+  "tooling_commit": "f99e2fede",
+  "scope": "Passive image-response provenance and instrumented source-paint observations; Slate remains unqualified",
+  "focused_checks": {
+    "node": 28,
+    "python": 51,
+    "exit": 0,
+    "unchanged": true,
+    "attempts": [
+      {
+        "name": "tools-check",
+        "results": [
+          {
+            "name": "node",
+            "exit": 0
+          },
+          {
+            "name": "python",
+            "exit": 0
+          }
+        ],
+        "unchanged": true
+      },
+      {
+        "name": "tools-check-v2",
+        "results": [
+          {
+            "name": "node",
+            "exit": 0
+          },
+          {
+            "name": "python",
+            "exit": 0
+          }
+        ],
+        "unchanged": true
+      },
+      {
+        "name": "tools-check-v3",
+        "results": [
+          {
+            "name": "node",
+            "exit": 0
+          },
+          {
+            "name": "python",
+            "exit": 0
+          }
+        ],
+        "unchanged": true
+      }
+    ]
+  },
+  "live_capture": {
+    "image_responses": 13,
+    "image_urls": 8,
+    "repeated_urls": {
+      "https://compote.slate.com/images/73f45926-4c18-4df7-9fea-e4951048bd3c.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390": 2,
+      "https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390": 2,
+      "https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-585": 3,
+      "https://compote.slate.com/images/fb4c8457-41ef-40aa-af43-b03bfc39f962.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-585": 2
+    },
+    "notification_body_matches": 13,
+    "manifest_sha256": "305b7fa18cb369828ffdd2c33ffc1018b5ff6a38003dd04f6418f37df2885ee3",
+    "registered_archive_changed": false
+  },
+  "observed_source_transfers": [
+    {
+      "url": "https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-585",
+      "request_id": "93807.122",
+      "response_timestamp": 212317.115867,
+      "first_paint_timestamp": 212317.125889,
+      "finished_timestamp": 212317.159098,
+      "paint_before_finished": true,
+      "data_notifications": [
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.1159,
+          "dataLength": 4173,
+          "encodedDataLength": 0
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.117855,
+          "dataLength": 2788,
+          "encodedDataLength": 0
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.120755,
+          "dataLength": 2788,
+          "encodedDataLength": 6970
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.122914,
+          "dataLength": 2788,
+          "encodedDataLength": 2788
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.12495,
+          "dataLength": 2788,
+          "encodedDataLength": 2788
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.127111,
+          "dataLength": 2779,
+          "encodedDataLength": 2788
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.129141,
+          "dataLength": 2788,
+          "encodedDataLength": 2788
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.132332,
+          "dataLength": 5576,
+          "encodedDataLength": 2788
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.163877,
+          "dataLength": 6007,
+          "encodedDataLength": 5576
+        },
+        {
+          "requestId": "93807.122",
+          "timestamp": 212317.163962,
+          "dataLength": 0,
+          "encodedDataLength": 6016
+        }
+      ],
+      "paint_event": {
+        "args": {
+          "data": {
+            "frame": "6F581B68193A2915953821EE33156920",
+            "height": 372.9375,
+            "isCSS": false,
+            "isPicture": false,
+            "loadingAttribute": "",
+            "nodeId": 413,
+            "nodeName": "IMG class='lazyautosizes lazyloading'",
+            "srcHeight": 390,
+            "srcWidth": 585,
+            "srcsetAttribute": "https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-390 390w,https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-585 585w,https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-780 780w,https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-1170 1170w,https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-1560 1560w",
+            "url": "https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-585",
+            "width": 559.421875,
+            "x": 0,
+            "y": 0
+          }
+        },
+        "cat": "disabled-by-default-devtools.timeline",
+        "dur": 6,
+        "name": "PaintImage",
+        "ph": "X",
+        "pid": 93807,
+        "tdur": 5,
+        "tid": 69257905,
+        "ts": 212317125889,
+        "tts": 198532
+      }
+    },
+    {
+      "url": "https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390",
+      "request_id": "93807.123",
+      "response_timestamp": 212317.109812,
+      "first_paint_timestamp": 212317.11142,
+      "finished_timestamp": 212317.114283,
+      "paint_before_finished": true,
+      "data_notifications": [
+        {
+          "requestId": "93807.123",
+          "timestamp": 212317.10983,
+          "dataLength": 5122,
+          "encodedDataLength": 0
+        },
+        {
+          "requestId": "93807.123",
+          "timestamp": 212317.111646,
+          "dataLength": 5576,
+          "encodedDataLength": 0
+        },
+        {
+          "requestId": "93807.123",
+          "timestamp": 212317.114288,
+          "dataLength": 20,
+          "encodedDataLength": 5576
+        },
+        {
+          "requestId": "93807.123",
+          "timestamp": 212317.11447,
+          "dataLength": 0,
+          "encodedDataLength": 20
+        }
+      ],
+      "paint_event": {
+        "args": {
+          "data": {
+            "frame": "6F581B68193A2915953821EE33156920",
+            "height": 131.515625,
+            "isCSS": false,
+            "isPicture": false,
+            "loadingAttribute": "",
+            "nodeId": 421,
+            "nodeName": "IMG class='lazyautosizes lazyloading'",
+            "srcHeight": 260,
+            "srcWidth": 390,
+            "srcsetAttribute": "https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390 390w,https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-585 585w,https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-780 780w,https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-1170 1170w,https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-1560 1560w",
+            "url": "https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390",
+            "width": 197.28125,
+            "x": 0,
+            "y": 0
+          }
+        },
+        "cat": "disabled-by-default-devtools.timeline",
+        "dur": 8,
+        "name": "PaintImage",
+        "ph": "X",
+        "pid": 93807,
+        "tdur": 7,
+        "tid": 69257905,
+        "ts": 212317111420,
+        "tts": 196172
+      }
+    }
+  ],
+  "missing_layer_commands": true,
+  "full_layout_controls": [
+    {
+      "name": "full-layout-pngs-v2",
+      "status": "pass",
+      "image_animation_policy": "allowed",
+      "cache_policy": "cold",
+      "different_pixels": 0,
+      "artifacts": "/Users/alex/code/vox2/Build/slate-paint-state-20261106/full-layout-pngs-v2/comparison/full-layout-control",
+      "live_to_frozen_different_pixels": 0,
+      "reference_replay_different_pixels": 0,
+      "manifest_sha256": "5bc4befc59e92e930d1045ec72ee7f95e3024d6bfc2321c085b269fc0f05117f",
+      "rgba_readback": {
+        "source_first": 0,
+        "source_second": 0,
+        "reference": 0,
+        "native_first": 0,
+        "native_second": 0
+      },
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "f639244d029ee81261f3b0b389a5c5a8760c78fba1fa7882ae5c88f7eecdf044",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      }
+    },
+    {
+      "name": "full-layout-mixed",
+      "status": "pass",
+      "image_animation_policy": "allowed",
+      "cache_policy": "cold",
+      "different_pixels": 0,
+      "artifacts": "/Users/alex/code/vox2/Build/slate-paint-state-20261106/full-layout-mixed/comparison/full-layout-control",
+      "live_to_frozen_different_pixels": 0,
+      "reference_replay_different_pixels": 0,
+      "manifest_sha256": "944f9bb35af3940f1ae95f237c7fb1cc28e4f87c4ebb5e5958cdad251598944d",
+      "rgba_readback": {
+        "source_first": 0,
+        "source_second": 0,
+        "reference": 0,
+        "native_first": 0,
+        "native_second": 0
+      },
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "f639244d029ee81261f3b0b389a5c5a8760c78fba1fa7882ae5c88f7eecdf044",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      }
+    }
+  ],
+  "failed_control": {
+    "status": "pixel-mismatch",
+    "image_animation_policy": "allowed",
+    "cache_policy": "cold",
+    "different_pixels": 3589,
+    "artifacts": "/Users/alex/code/vox2/Build/slate-paint-state-20261106/full-layout-pngs/comparison/full-layout-control",
+    "live_to_frozen_different_pixels": 0,
+    "reference_replay_different_pixels": 0,
+    "manifest_sha256": "5e93c942c9d324a0e5d808ba91b445d9616d4498e1951d8e4af436eb1f5fb0c9",
+    "reason": "Diagnostic seed dropped original response headers, including cross-origin font CORS headers; corrected controller retains them. No renderer correction was made."
+  },
+  "limits": [
+    "CDP data notifications are observed decoded response lengths and monotonic event times, not TCP packets or image-generator identity. Observation order is preserved, including finish timestamps earlier than final data timestamps.",
+    "All response audits for a repeated URL are kept in the sealed manifest and bound to the unchanged encoded body by hash and byte length.",
+    "The source trace is instrumented and does not qualify live site parity. LayerTree returned no layer snapshots or command logs; the internal RGB/YUV choice was not directly measured.",
+    "The PNG controls intentionally substitute decoded image bodies and capture their own source/reference PNGs. Their zero pixels do not qualify the original live AVIF page.",
+    "The registered Slate archive, pixel references, tolerances, replay delivery and production decoder policy are unchanged.",
+    "No production browser build was queued and no broad rendering rerun is credited for this tooling-only change."
+  ],
+  "archive": {
+    "path": "slate-image-delivery-audit-20261106.zip",
+    "members": 791,
+    "bytes": 25476467,
+    "sha256": "67c812c9577fdeb738a6ff1c4fc3fd73f94b36a52ea49f8a9354a734d63e36d4"
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/slate-paint-state-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 784547840,
+    "elapsed_seconds": 3.094044791,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

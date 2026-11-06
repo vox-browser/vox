@@ -3143,6 +3143,60 @@ passing native checks, reduced browser cases, injected probes, failed audit,
 identities and memory receipts. The ZIP is 13,674,592 bytes, SHA-256
 `5c0f21bafaf9c85996c1fd0611bd89862bff7c641b24921d78be499b31224df6`; all member hashes and CRCs pass readback.
 
+## Slate image delivery provenance and source painting (2026-11-06)
+
+Commit `f99e2fede` retains passive CDP image-response delivery observations in
+new archives. Each audit records the body hash and length, request identity,
+cache/service-worker flags, data notifications and completion notification.
+The sealer validates the body identity and retains **all response audits for a
+repeated URL**, including later cache requests. Old archives remain readable.
+The records preserve observation order: an observed completion timestamp can
+precede a final data notification's timestamp. These are decoded-response
+notifications, not TCP packet boundaries or measured image-generator state.
+No replay pacing or production decoder policy changes accompany this tooling.
+
+All **28 focused Node checks and 51 Python checks pass**, with unchanged
+inputs. A fresh, ordinary full-uBO Slate capture and its sealed candidate
+retain **13 image responses across eight URLs**. Every response audit matches
+its original encoded body; all 13 observed data-byte sums match their bodies.
+The manifest retains the repeated network/cache responses separately. This
+candidate remains outside the registered site fixtures.
+
+A separate instrumented live trace observes both visible photos being painted
+before their initial transfers finish. The hero's first PaintImage timestamp
+is `212317.125889`, before completion at `212317.159098`; the card's first paint
+is `212317.111420`, before completion at `212317.114283` (CDP monotonic seconds).
+This supports investigating image decode history alongside response bytes.
+It does **not** directly measure Brave's internal RGB/YUV generator choice.
+The LayerTree diagnostic returned no snapshots or paint-command logs, so no
+source/destination command comparison is claimed.
+
+Two full-layout diagnostic controls pass saved source, two independent Brave
+replays and native at **0 pixels**, confirmed by separate RGBA readback. One
+substitutes independently decoded PNG bodies for both visible photos; the
+other substitutes only the hero and retains the original encoded AVIF card.
+Both retain the rest of the archived DOM, original resources and response
+headers, and capture their own source PNGs. Their prospective input pins and
+production identities remain unchanged throughout. These controls intentionally
+isolate painting; they do not qualify the original live AVIF workload.
+
+The first full-layout diagnostic dropped response headers, including font
+CORS headers, and differed by 3,589 header-text pixels. Restoring the original
+headers corrects that diagnostic construction error; no renderer change is
+credited. Its failed result, exact authenticated controller version, PNGs and
+guard exit remain preserved. The earlier all-RGBA photo residual and full-page
+source/replay failures remain open. The registered Slate archive and all
+existing references and tolerances are unchanged; the prior exact rendering
+suite remains the 142-test / 148-capture checkpoint in the Verge section.
+
+[Machine-readable results](evidence/slate-image-delivery-audit-20261106.json)
+and [sealed trace, captures, controls and checks](evidence/slate-image-delivery-audit-20261106.zip)
+retain the captured encoded bodies, raw observations, identities, commands and
+actual test/browser/memory-guard exits.
+The archive contains 791 members and 25,476,467 bytes, SHA-256
+`67c812c9577fdeb738a6ff1c4fc3fd73f94b36a52ea49f8a9354a734d63e36d4`;
+every member passes CRC and SHA-256 readback.
+
 ## Run
 
 ```sh
