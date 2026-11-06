@@ -65,6 +65,13 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   same scripts with `gg.canvas.RasterSurface` and compares every byte.
   `gen_text_corpus.py` generates random runs (fonts, sizes, colors,
   backgrounds, matrices and smoothing flags).
+- `test_clipped_text.sh OUTPUT [COUNT]` builds a native CPU Skia oracle and a
+  V driver for the canonical borrowed-frame glyph adapter. It compares the
+  original Skia draw with the real `ggtext.glyph_run` callback, including partial
+  device clips, fractional affine transforms, 1x/2x backing scales, unsupported
+  fonts/paints, row padding and immutable frame snapshots. A callback that writes
+  before declining verifies that clipped staging preserves the fallback backdrop.
+  Source, compiler, font, GG library and Skia hashes must stay unchanged.
 - `metal_trace_inject.mm` builds `libvox_metal_trace.dylib`, which records the
   Metal work of any process started with `DYLD_INSERT_LIBRARIES` into
   `$VOX_METAL_TRACE_DIR` (used to inventory the pipelines of the Brave fixtures).
@@ -102,8 +109,9 @@ using SkMatrix's inverse and SkM44 concatenation. Perspective strokes still decl
 The adapters on master require `-d vox_gg_canvas` and a V compiler containing
 `gg.canvas`. `build-prod-browser.sh` detects that module in the selected compiler
 through the existing `@VEXEROOT` library probe and supplies the flag. This also
-works with the GG compiler, which predates `v root`. Normal V builds keep the
-original renderer. Renderer selection remains opt-in at runtime (`VOX_GG_TEXT`,
+works with the GG compiler, which predates `v root`. Upstream V includes the module
+since PR #31826 (squash `ac9fbda08a`); older V libraries exclude the adapters.
+Renderer selection remains opt-in at runtime (`VOX_GG_TEXT`,
 `VOX_GG_SHAPES`, `VOX_GG_PATHS`).
 Build and test from the canonical Vox checkout, following its shared-build rules:
 
@@ -131,6 +139,20 @@ Build/gg-oracle/canvas-scene $OUT/script.txt $OUT
 
 `$SKIA` is `Build/deps/skia-brave/source` (Chromium 155 Skia with Vox's Metal
 precision patch) and `$PINNED` holds copies of its `libskia.a`/`libskcms.a`.
+
+The focused borrowed-frame text comparison runs without rebuilding the browser:
+
+```sh
+V_BIN=~/code/v-gg/v python3 tools/run_memory_bounded.py --limit-gib 3 \
+  --lock Build/gg-clipped-text.lock --report Build/gg-clipped-text.json -- \
+  sh tools/gg_migration/test_clipped_text.sh Build/gg-clipped-text 2000
+```
+
+Use a new output directory for each run. Set `GG_TEXT_TEST_PROD=1` for
+`-prod -gc none`. This tests the native adapter directly; browser acceptance
+requires a fresh GG-enabled bundle. With `VOX_GG_DIAGNOSTICS=1`, eligible native
+text callbacks log `text device_clip=0|1 drawn=0|1`. Early native rejections,
+fully hidden tiles, recordings and picture playback are outside those counts.
 
 Text (LibWeb's Skia lives in `$LADYBIRD/Build/release/vcpkg_installed/arm64-osx-dynamic`):
 

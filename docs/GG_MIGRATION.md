@@ -39,18 +39,22 @@ The opt-in browser adapters and differential tools now live on canonical Vox
 `7377e0384`; the original worktree and its historical results remain intact.
 Build and test from `/Users/alex/code/vox2`.
 
-The V renderer commit is pushed and verified on the PR. The canonical Vox push
+The V renderer PR is merged. The canonical Vox push
 was rejected as non-fast-forward: `origin/master` at `868e16b99` has three
 commits absent locally, while the shared local history has hundreds absent
 remotely. The tested Vox integration, tooling and report commits remain local.
 Reconciling those histories requires a decision consistent with the repository's
 linear-history and no-rewrite rules; no force push, merge or rebase was attempted.
 
-The upstream implementation is V branch `gg-skia-parity`, PR
-[vlang/v#31826](https://github.com/vlang/v/pull/31826), now at `5b06b5a56b`.
-`V_BIN=~/code/v-gg/v sh build-prod-browser.sh` selects that compiler. The build
-recognizes `vlib/gg/canvas` and supplies `-d vox_gg_canvas`; ordinary V builds
-exclude the adapters. Runtime selection remains `VOX_GG_TEXT=1`,
+Upstream V merged [vlang/v#31826](https://github.com/vlang/v/pull/31826) on
+November 6 at squash commit `ac9fbda08a140196f9aff3aa377b404868249740`.
+Its `vlib/gg/canvas` directory is byte-identical to the reviewed source head
+`5b06b5a56b` in `~/code/v-gg`. The shared parallel compiler still uses its
+earlier V checkout without this module; it has not been overwritten.
+`V_BIN=~/code/v-gg/v sh build-prod-browser.sh` selects the existing GG compiler.
+The build recognizes `vlib/gg/canvas` and supplies `-d vox_gg_canvas`; builds
+whose V library lacks that module exclude the adapters. A V build containing
+the merged module can compile them, but runtime selection remains `VOX_GG_TEXT=1`,
 `VOX_GG_SHAPES=1`, and `VOX_GG_PATHS=1`. Unsupported draws retain Skia fallback.
 
 The GG compiler predates `v root`. Build detection now uses the existing
@@ -278,6 +282,51 @@ and most stackoverflow, lobsters and forum fixtures) are not routed to
 `gg.canvas` yet. 160 fixtures, mostly gradients, borders, shadows and images,
 draw no bridge text.
 
+Canonical Vox `257add3f9` also routes borrowed-frame tiles with a device clip
+through GG. The native adapter keeps the original raster dimensions and device
+matrix, renders partial clips against a private backdrop, then copies back only
+the visible rectangle. Full-tile clips need no staging. A declined draw leaves
+the original backdrop available for Skia, including if a callback writes before
+returning failure. Quartz snapshot detachment and RGBA/BGRA conversion retain
+their existing behavior.
+
+The focused native integration compares the actual `ggtext.glyph_run` callback
+against the original CPU Skia draw through the same borrowed-frame adapter:
+
+| Configuration | Pixel-exact cases | GG drawn | Fallback | Fully hidden |
+| --- | ---: | ---: | ---: | ---: |
+| Normal | 2000 | 1280 | 231 | 489 |
+| `-prod -gc none` | 2000 | 1280 | 231 | 489 |
+
+Both runs attempt 1,405 GG callbacks and change 1,413 tiles. They cover three
+system fonts, fractional sizes and affine transforms, 1x/2x backing scales,
+transparent and translucent backdrops, narrow/empty/disjoint clips, synthetic
+bold and aliased masks, shader/float-color/perspective/LCD rejection, row padding
+and immutable frame snapshots. The original implementation fails the first
+case because it never invokes GG. Both existing text-adapter test runs pass,
+normally and with `-prod -gc none`. These are correctness checks, with no speed
+claim. See the [clipped-text receipt](gg-migration/clipped-text-20261106.json)
+for input and executable hashes, actual exits and retained failures.
+
+Production receipt `20261106-101340-fca9026b` builds this adapter with the
+reviewed V module (identical to the merge), literal `-prod`, preallocation and
+one C unit. Executable
+`74fbd0d869fef85f67ef07679310566dde0c325f224a70063c1d411883b5d09c`
+passes 12 focused browser A/B fixtures with text, shapes and paths enabled:
+24 successful fresh launches, no different, unstable or failed pairs, and
+unchanged bundle, fixture and resource hashes. Diagnostics count 91 text draws
+without a device clip and **38 with a device clip across three fixtures**,
+all drawn by GG. The latter fixtures are `hacker-news-comment-initial-text`,
+`scrolling-text-raster` and `select-label-ink-clip`. Shapes and paths each
+draw four descriptors, with no declines. The 1024x852 captures exclude only the
+existing status-bar RAM readout; they compare the two Vox modes, not Brave.
+The first build attempt was rejected because shared sources changed before
+preprocessing; the supervisor's retry sealed its compiler inputs and succeeded.
+This focused result does not replace stage22's older 262-fixture acceptance.
+All six existing native glyph executables also pass with AddressSanitizer and
+UBSan, including 216 bitmap-surface cases, 16 device clips and four disjoint
+damage-clip checks. Their source inputs stay unchanged throughout the run.
+
 ### Shapes in the browser (`VOX_GG_SHAPES=1`)
 
 With `VOX_GG_SHAPES=1` the bridge's four `libVoxGraphite` shape entry points
@@ -475,8 +524,12 @@ rotated curved path clips; blurs, filters and shadows.
 
 Remaining text includes synthetic bold, color glyphs, aliased masks, glyphs over
 256px, fractional paint colors/F32 surfaces, shaders, and recording/picture text.
-On canonical master, frame-borrowing glyph tiles with a device clip keep Skia's
-bounded draw because the GG glyph adapter currently has no device-clip argument.
+Frame-borrowing glyph tiles now offer device-clipped draws to GG. Partial clips
+use a private copy of the original backdrop, with unchanged raster dimensions,
+matrix and glyph positions. Only pixels inside the device clip are published
+after a successful draw; a decline leaves the original backdrop for Skia.
+Full-tile clips keep the existing direct path. This is a correctness migration;
+the extra scratch copy has no measured performance benefit.
 
 The shared recording canvas, SkPicture/Dawn picture playback, LibWeb CPU Skia
 paths and Linux still need migration. Remove Skia only after those paths pass
