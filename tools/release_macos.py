@@ -8,6 +8,7 @@ update check reads, at the new version.
 """
 import hashlib
 import json
+import os
 import platform
 import plistlib
 import posixpath
@@ -15,6 +16,8 @@ import re
 import shlex
 import subprocess
 import urllib.request
+
+from rebuild_browser import production_input_path, repository_state
 
 REPOSITORY = 'vox-browser/vox'
 WEBSITE_HOST = 'vpm'
@@ -72,6 +75,45 @@ def set_bundle_version(path, version):
         raise RuntimeError('Could not update the version in ' + str(path))
     path.write_text(text)
     return True
+
+
+def uncommitted_build_inputs(root):
+    """Uncommitted files the production build would compile, besides the version bump.
+
+    The release builds the shared checkout, where other sessions keep work in
+    progress. Tracked inputs must match HEAD. An untracked .v file joins its
+    directory's module, so it counts where tracked .v files already live; a new
+    directory is compiled only once a counted file imports it.
+    """
+    def git(*arguments):
+        return subprocess.run(['git', '-C', str(root), *arguments], capture_output=True,
+                              check=True).stdout.split(b'\0')
+    modules = {posixpath.dirname(os.fsdecode(name)) for name in git('ls-files', '-z')
+               if name.endswith(b'.v')}
+    entries = iter(git('status', '--porcelain=v1', '-z', '--untracked-files=all'))
+    changed = []
+    for entry in entries:
+        if not entry:
+            continue
+        status, path = entry[:2].decode(), os.fsdecode(entry[3:])
+        if status[0] in 'RC':
+            next(entries, None)  # The rename's source path follows.
+        if (path == INFO_PLIST or path.endswith('.swp') or '.v3cc.' in path
+                or not production_input_path(path)):
+            continue
+        if status == '??' and not (path.endswith('.v') and posixpath.dirname(path) in modules):
+            continue
+        changed.append(path)
+    return sorted(changed)
+
+
+def check_committed(root):
+    changed = uncommitted_build_inputs(root)
+    if changed:
+        listed = '\n  '.join(changed[:15]) + ('\n  ... and %d more' % (len(changed) - 15)
+                                              if len(changed) > 15 else '')
+        raise RuntimeError('The release would compile uncommitted changes. Commit or finish them '
+                           'first:\n  ' + listed)
 
 
 def command(arguments, **kwargs):
@@ -172,6 +214,7 @@ def release(root, deploy, output=None, package_only=False, requested=None,
             repository=REPOSITORY, host=WEBSITE_HOST):
     """Bump, build, package and publish; return the DMG path."""
     info = root / INFO_PLIST
+    check_committed(root)
     released = released_version(repository)
     version = next_version(bundle_version(info), released, requested)
     # Fail before the long build when the release cannot be published.
@@ -184,11 +227,17 @@ def release(root, deploy, output=None, package_only=False, requested=None,
                                '--package-only to build %s' % (built, version))
     else:
         set_bundle_version(info, version)
+    # The build receipt names the inputs the compiler consumed; they must be this tree.
+    expected = repository_state(root)['build_inputs_sha256']
     print('Releasing Vox %s (previous release: %s)' % (version, released), flush=True)
     dmg = deploy(root, output, package_only)
-    packaged = json.loads(dmg.with_suffix('.dmg.json').read_text())['version']
-    if packaged != version:
-        raise RuntimeError('The DMG contains Vox %s, not %s' % (packaged, version))
+    manifest = json.loads(dmg.with_suffix('.dmg.json').read_text())
+    if manifest['version'] != version:
+        raise RuntimeError('The DMG contains Vox %s, not %s' % (manifest['version'], version))
+    compiled = manifest.get('source_build', {}).get('verified_inputs', {}).get('build_inputs_sha256')
+    if compiled != expected:
+        raise RuntimeError('The build compiled different sources than the committed release '
+                           '(files changed while it ran); run deploy.vsh again')
     minimum = plistlib.loads(info.read_bytes())['LSMinimumSystemVersion']
     publish_release(repository, version, dmg, minimum)
     commit_version(root, version)

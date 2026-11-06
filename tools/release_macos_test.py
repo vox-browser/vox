@@ -1,6 +1,7 @@
 from contextlib import redirect_stdout
 import io
 import json
+import re
 from pathlib import Path
 import plistlib
 import subprocess
@@ -11,6 +12,14 @@ from unittest.mock import patch
 import release_macos as release
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def info_plist(version='0.1', build='1'):
+    """The real Info.plist at a fixed version, independent of the next release."""
+    text = (ROOT / release.INFO_PLIST).read_text()
+    for key, value in (('CFBundleShortVersionString', version), ('CFBundleVersion', build)):
+        text = re.sub(r'(<key>%s</key>\s*<string>)[^<]*' % key, lambda m: m.group(1) + value, text)
+    return text
 
 
 class VersionTests(unittest.TestCase):
@@ -29,7 +38,7 @@ class VersionTests(unittest.TestCase):
     def test_info_plist_update_keeps_formatting_and_advances_the_build_once(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'Info.plist'
-            original = (ROOT / release.INFO_PLIST).read_text()
+            original = info_plist()
             path.write_text(original)
             before = plistlib.loads(original.encode())
             self.assertTrue(release.set_bundle_version(path, '0.1.1'))
@@ -53,34 +62,38 @@ class ReleaseFlowTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         (self.root / 'packaging').mkdir()
-        (self.root / release.INFO_PLIST).write_text((ROOT / release.INFO_PLIST).read_text())
+        (self.root / release.INFO_PLIST).write_text(info_plist())
         self.calls = []
-        self.fail = None
-        for name in ('check_unreleased', 'check_website', 'publish_release',
+        self.failing = None
+        self.compiled = 'clean tree'
+        for name in ('check_committed', 'check_unreleased', 'check_website', 'publish_release',
                      'commit_version', 'publish_website_version'):
             patcher = patch.object(release, name, side_effect=self.recorder(name))
             patcher.start()
             self.addCleanup(patcher.stop)
-        patcher = patch.object(release, 'released_version', return_value='0.1.0')
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        for name, value in [('released_version', '0.1.0'),
+                            ('repository_state', dict(build_inputs_sha256='clean tree'))]:
+            patcher = patch.object(release, name, return_value=value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def recorder(self, name):
         def record(*arguments):
             self.calls.append((name, arguments))
-            if self.fail == name:
+            if self.failing == name:
                 raise RuntimeError(name + ' failed')
         return record
 
     def deploy(self, root, output, package_only):
         self.calls.append(('deploy', (release.bundle_version(root / release.INFO_PLIST), package_only)))
-        if self.fail == 'deploy':
+        if self.failing == 'deploy':
             raise subprocess.CalledProcessError(1, ['build'])
         dmg = self.root / 'Build/deploy/Vox-0.1.1-arm64.dmg'
         dmg.parent.mkdir(parents=True, exist_ok=True)
         dmg.write_bytes(b'dmg')
         dmg.with_suffix('.dmg.json').write_text(json.dumps(dict(
-            version=release.bundle_version(root / release.INFO_PLIST))))
+            version=release.bundle_version(root / release.INFO_PLIST),
+            source_build=dict(verified_inputs=dict(build_inputs_sha256=self.compiled)))))
         return dmg
 
     def release(self, **kwargs):
@@ -90,32 +103,38 @@ class ReleaseFlowTests(unittest.TestCase):
     def test_release_checks_before_building_and_publishes_github_before_the_website(self):
         dmg = self.release()
         self.assertEqual([name for name, _ in self.calls],
-                         ['check_unreleased', 'check_website', 'deploy', 'publish_release',
-                          'commit_version', 'publish_website_version'])
-        self.assertEqual(self.calls[0][1], (release.REPOSITORY, '0.1.1'))
+                         ['check_committed', 'check_unreleased', 'check_website', 'deploy',
+                          'publish_release', 'commit_version', 'publish_website_version'])
+        self.assertEqual(self.calls[1][1], (release.REPOSITORY, '0.1.1'))
         # The version is bumped before the build embeds Info.plist.
-        self.assertEqual(self.calls[2][1], ('0.1.1', False))
-        self.assertEqual(self.calls[3][1], (release.REPOSITORY, '0.1.1', dmg, '26.0'))
-        self.assertEqual(self.calls[5][1], ('0.1.1', release.WEBSITE_HOST))
+        self.assertEqual(self.calls[3][1], ('0.1.1', False))
+        self.assertEqual(self.calls[4][1], (release.REPOSITORY, '0.1.1', dmg, '26.0'))
+        self.assertEqual(self.calls[6][1], ('0.1.1', release.WEBSITE_HOST))
 
     def test_failed_build_or_upload_publishes_nothing_further_and_a_rerun_keeps_the_version(self):
         for failure, published in [('deploy', []), ('publish_release', ['publish_release'])]:
             self.calls.clear()
-            self.fail = failure
+            self.failing = failure
             with self.assertRaises((RuntimeError, subprocess.CalledProcessError)):
                 self.release()
             names = [name for name, _ in self.calls]
             self.assertEqual([n for n in names if n.startswith(('publish', 'commit'))], published)
             self.assertEqual(release.bundle_version(self.root / release.INFO_PLIST), '0.1.1')
-        self.fail = None
+        self.failing = None
         self.calls.clear()
         self.release()
-        self.assertEqual(self.calls[0][1], (release.REPOSITORY, '0.1.1'))
+        self.assertEqual(self.calls[1][1], (release.REPOSITORY, '0.1.1'))
 
-    def test_unavailable_tag_or_server_stops_before_the_build(self):
-        for failure in ('check_unreleased', 'check_website'):
+    def test_build_of_sources_other_than_the_checked_tree_is_not_published(self):
+        self.compiled = 'tree with another session\'s edits'
+        with self.assertRaisesRegex(RuntimeError, 'different sources'):
+            self.release()
+        self.assertEqual([name for name, _ in self.calls][-1], 'deploy')
+
+    def test_uncommitted_sources_tag_or_server_stop_before_the_build(self):
+        for failure in ('check_committed', 'check_unreleased', 'check_website'):
             self.calls.clear()
-            self.fail = failure
+            self.failing = failure
             with self.assertRaisesRegex(RuntimeError, failure):
                 self.release()
             self.assertNotIn('deploy', [name for name, _ in self.calls])
@@ -124,7 +143,7 @@ class ReleaseFlowTests(unittest.TestCase):
     def test_package_only_requires_a_build_of_the_release_version(self):
         built = self.root / 'Build/v/Vox.app/Contents/Info.plist'
         built.parent.mkdir(parents=True)
-        built.write_text((ROOT / release.INFO_PLIST).read_text())
+        built.write_text(info_plist())
         with self.assertRaisesRegex(RuntimeError, 'version 0.1; run deploy.vsh without --package-only'):
             self.release(package_only=True)
         self.assertNotIn('deploy', [name for name, _ in self.calls])
@@ -132,7 +151,43 @@ class ReleaseFlowTests(unittest.TestCase):
         release.set_bundle_version(built, '0.1.1')
         self.calls.clear()
         self.release(package_only=True)
-        self.assertEqual(self.calls[2], ('deploy', ('0.1.1', True)))
+        self.assertEqual(self.calls[3], ('deploy', ('0.1.1', True)))
+
+
+class CommittedInputsTests(unittest.TestCase):
+    def test_only_uncommitted_compiled_sources_block_a_release(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+
+            def git(*arguments):
+                subprocess.run(['git', '-C', str(root), '-c', 'user.name=Vox', '-c',
+                                'user.email=vox@example.com', *arguments],
+                               check=True, capture_output=True)
+
+            files = {'main.v': 'module main\n', 'layout/box.v': 'module layout\n',
+                     'native.h': '', 'docs/notes.md': '', 'tools/check.py': '',
+                     'tools/check_test.py': '', 'renamed.v': 'module main\n',
+                     release.INFO_PLIST: info_plist()}
+            for name, content in files.items():
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_text(content)
+            git('init', '-q')
+            git('add', '.')
+            git('commit', '-q', '-m', 'fixture')
+            self.assertEqual(release.uncommitted_build_inputs(root), [])
+            release.set_bundle_version(root / release.INFO_PLIST, '0.1.1')
+            for name in ('docs/notes.md', 'tools/check_test.py', 'main_tool_test.v',
+                         'newmodule/model.v', '.main.v.swp', 'stray.o'):
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_text('work in progress')
+            self.assertEqual(release.uncommitted_build_inputs(root), [])
+            for name in ('main.v', 'native.h', 'layout/extra.v', 'main_tool.v'):
+                (root / name).write_text('work in progress')
+            git('mv', 'renamed.v', 'moved.v')
+            self.assertEqual(release.uncommitted_build_inputs(root),
+                             ['layout/extra.v', 'main.v', 'main_tool.v', 'moved.v', 'native.h'])
+            with self.assertRaisesRegex(RuntimeError, 'uncommitted changes.*\n  layout/extra.v'):
+                release.check_committed(root)
 
 
 class PublishingTests(unittest.TestCase):
