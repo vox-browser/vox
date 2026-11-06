@@ -209,6 +209,7 @@ fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f3
 fn C.native_draw_image_tiles_transformed(image &gg.Image, tiles &f32, tile_count int, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
 fn C.native_draw_image_pattern_transformed(image &gg.Image, tile_x f32, tile_y f32, tile_width f32, tile_height f32, bounds_x f32, bounds_y f32, bounds_width f32, bounds_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32, pattern_flags int) int
 fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
+fn C.native_draw_image_part_transformed_background(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32, unclamped_source int)
 fn C.native_draw_image_part_transformed_clipped(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32, explicit_rectangle_clip int)
 fn C.native_set_video_frame_image(active i32)
 
@@ -7078,7 +7079,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				device_clip := pixel_snapped_background_bitmap_rect(original_clip.translated(offset))
 					.translated(painting.Point{-offset.x, -offset.y})
 				$if macos {
-					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y),
+					C.native_draw_image_part_transformed_background(image, f32(destination.x), f32(destination.y),
 						f32(destination.width), f32(destination.height), f32(source.x), f32(source.y),
 						f32(source.width), f32(source.height), f32(device_clip.x), f32(device_clip.y),
 						f32(device_clip.width), f32(device_clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]),
@@ -7087,7 +7088,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						1
 					} else {
 						0
-					}, &tile_clip_radii[0])
+					}, &tile_clip_radii[0], if single.unclamped_source { 1 } else { 0 })
 				}
 			}
 			for original_tile in tiles {

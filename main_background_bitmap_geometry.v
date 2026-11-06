@@ -77,6 +77,7 @@ fn chromium_background_bitmap_tiles_are_bounded(plan painting.BackgroundTilePlan
 struct ChromiumSingleTileBackground {
 	destination painting.Rect
 	source      painting.Rect
+	unclamped_source bool
 }
 
 struct ChromiumBackgroundAxis {
@@ -326,5 +327,8 @@ fn chromium_single_tile_background(layer css.BackgroundLayerData, context css.Le
 		destination: painting.Rect{f64(dest_x) / unit, f64(dest_y) / unit, f64(dest_width) / unit,
 			f64(dest_height) / unit}
 		source: source
+		// BoxPainterBase preserves filtering for a whole snapped tile, while
+		// sprite subsets retain their strict source boundary.
+		unclamped_source: tile_width == dest_width && tile_height == dest_height
 	}
 }

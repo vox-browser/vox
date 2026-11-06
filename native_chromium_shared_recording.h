@@ -610,10 +610,13 @@ bool shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
             canvas->drawImage(bitmap, 0, 0, sampling, &paint);
         } else {
             canvas->drawImageRect(bitmap, source_rect, natural, sampling, &paint,
-                image.nearest || mips ? SkCanvas::kStrict_SrcRectConstraint : SkCanvas::kFast_SrcRectConstraint);
+                (image.nearest || mips) && !(image.flags & VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE)
+                    ? SkCanvas::kStrict_SrcRectConstraint : SkCanvas::kFast_SrcRectConstraint);
         }
     } else {
-        canvas->drawImageRect(bitmap, source_rect, target, sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+        canvas->drawImageRect(bitmap, source_rect, target, sampling, &paint,
+            image.flags & VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE
+                ? SkCanvas::kFast_SrcRectConstraint : SkCanvas::kStrict_SrcRectConstraint);
     }
     canvas->restore();
     return true;

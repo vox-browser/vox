@@ -17,7 +17,9 @@ enum {
     VOX_GRAPHITE_IMAGE_VIDEO_FRAME = 1024,
     // An authored overflow clip remains an operation even when its rectangle
     // equals the image destination: it affects GPU shader interpolation.
-    VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP = 2048
+    VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP = 2048,
+    // A whole background tile keeps filtering beyond its adjusted source.
+    VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE = 4096
 };
 
 enum {

@@ -6960,6 +6960,23 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii, 0);
 }
 
+void native_draw_image_part_transformed_background(gg__Image *image, float destination_x,
+	float destination_y, float destination_width, float destination_height,
+	float source_x, float source_y, float source_width, float source_height,
+	float clip_x, float clip_y, float clip_width, float clip_height,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, float opacity,
+	int nearest_neighbor, float const *clip_radii, int unclamped_source) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	native_draw_image_part_in_context(context, image, destination_x, destination_y,
+		destination_width, destination_height, source_x, source_y, source_width,
+		source_height, clip_x, clip_y, clip_width, clip_height, transform_a,
+		transform_b, transform_c, transform_d, transform_e, transform_f, page_x,
+		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor,
+		clip_radii, unclamped_source ? VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE : 0);
+}
+
 void native_draw_image_part_transformed_clipped(gg__Image *image, float destination_x,
 	float destination_y, float destination_width, float destination_height,
 	float source_x, float source_y, float source_width, float source_height,

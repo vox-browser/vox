@@ -97,6 +97,7 @@ fn test_chromium_cover_samples_the_unsnapped_tile_into_the_snapped_destination()
 	assert tile.source.y == 0
 	assert f32(tile.source.width) == f32(130.39910888671875)
 	assert f32(tile.source.height) == f32(767.9780883789062)
+	assert !tile.unclamped_source
 }
 
 fn test_chromium_single_tile_positions_inside_the_area_and_snaps_integral_subsets() {
@@ -115,6 +116,25 @@ fn test_chromium_single_tile_positions_inside_the_area_and_snaps_integral_subset
 	}
 	assert tile.destination == painting.Rect{270, 190, 40, 30}
 	assert tile.source == painting.Rect{0, 0, 40, 30}
+	assert tile.unclamped_source
+}
+
+fn test_chromium_whole_contained_tiles_preserve_unclamped_source_filtering() {
+	layer := css.BackgroundLayerData{
+		...chromium_cover_layer(0, 50)
+		size_type: .contain
+	}
+	area := painting.Rect{404, 134, 600, 401}
+	tile := chromium_single_tile_background(layer, css.LengthResolutionContext{}, area,
+		area, 2392, 1690) or { panic('whole tile expected') }
+	assert tile.destination == painting.Rect{404, 134, 568, 401}
+	assert tile.source == painting.Rect{0, 0, 2392, 1690}
+	assert tile.unclamped_source
+	// A sprite/subset inside that same tile still needs a strict source edge.
+	subset := chromium_single_tile_background(layer, css.LengthResolutionContext{},
+		painting.Rect{404, 134, 300, 401}, area, 2392, 1690) or { panic('subset expected') }
+	assert subset.destination.width == 300
+	assert !subset.unclamped_source
 }
 
 fn test_chromium_single_tile_rejects_tiles_that_repeat_inside_the_destination() {

@@ -5,6 +5,7 @@
 #include "native_allocator_policy_darwin.h"
 #include "native_glyph_flags.h"
 #include "native_raster_buffer_pool.h"
+#include "native_readback_buffer.h"
 #include "native_parallel_pixels.h"
 #include "native_raster_snapshot.h"
 #include "native_picture_raster_cache.h"
@@ -179,6 +180,7 @@ int vox_picture_pixels_acquire(uint64_t token, VoxSharedPicturePixelsLease* out)
 namespace {
 
 VoxRasterBufferPool s_sparse_raster_pool;
+VoxRasterBufferPool s_gpu_canvas_readback_pool {8 * 1024 * 1024}; // 32 MiB.
 uint64_t begin_deferred_gradient_text_input();
 void finish_deferred_gradient_text_input(uint64_t epoch, bool completed);
 void reject_deferred_gradient_text_input();
@@ -1162,6 +1164,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
     clear_picture_raster_cache();
     clear_native_rounded_image_cache();
     s_sparse_raster_pool.clear();
+    s_gpu_canvas_readback_pool.clear();
     s_glyph_raster_cache.clear();
     s_gradient_text_raster_cache.clear();
     s_glyph_text_blob_cache.clear();
@@ -1175,6 +1178,7 @@ extern "C" int ladybird_v_skia_release_idle_graphics_memory()
 {
     if (!pthread_main_np()) return 0;
     s_sparse_raster_pool.clear(true);
+    s_gpu_canvas_readback_pool.clear(true);
     bool pending = false;
     if (auto* gpu = s_image_gpu_context.get(); gpu &&
         std::chrono::steady_clock::now() - s_image_gpu_context_last_use >= std::chrono::seconds(2)) {
@@ -2653,7 +2657,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         canvas->drawRect(local_destination, paint);
     } else {
         canvas->drawImageRect(source_image.get(), source_rect, local_destination,
-            sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+            sampling, &paint, image_flags & VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE
+                ? SkCanvas::kFast_SrcRectConstraint : SkCanvas::kStrict_SrcRectConstraint);
     }
     canvas->restore();
     if (image_border_width > 0) {
