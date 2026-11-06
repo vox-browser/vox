@@ -65,6 +65,23 @@ outside the instruction catalog, with the existing frozen-fixture and rendering
 limitations. No cross-build difference is attributed to this change.
 [All attempts, native proof and broader checks](performance/bbc-zero-native-timer-cohort134-20261106.json).
 
+A further **149-scope `v -profile` derivative** enables 20 nested grid/style
+timers in the already sealed profile baseline. Reversing only observer edits
+recovers that complete source byte for byte. This baseline predates the timer
+dispatcher and does not validate current HEAD. Current linked native libraries
+are separately pinned throughout compilation/capture; production JIT settings
+and actual browser-host baseline/DFG compilation are verified. Original pixels,
+content, 72 external sources, mapped images, exit and private-PID adoption pass.
+Of 149 selected scopes, 143 execute without negative self rows. Child layout
+(95.840 ms self / 55,034 calls) and inline-item generation (65.117 ms self /
+235,821 calls) stand out below grid layout. These remain instrumented wall
+intervals with unselected work, waits, observer cost, overlapping recursive
+inclusive rows and possible work after PNG; no shares or saving are inferred.
+Three fresh canonical-source attempts reject changing native inputs before C
+compilation; an initial derivative checker rejects a thin wrapper without a
+profiler body. Every attempt is retained, with no acceptance-history advance.
+[Full source proof, captures and rejected attempts](performance/bbc-grid-style-v-profile-20261106.json).
+
 
 The verified TLS 1.2 session-cache change (`94f275b6c`; isolated comparison
 control `8d334abb2`) passes **84 explicit C-backend HTTP executions**, 14 cases

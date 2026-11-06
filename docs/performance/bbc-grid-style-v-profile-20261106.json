@@ -1,0 +1,5829 @@
+{
+  "status": "Audited149scope observer-only extension of sealed V-profile baseline with production JIT; no optimization credit.",
+  "summary": {
+    "passed": true,
+    "diagnostic_only": true,
+    "selected_scopes": 149,
+    "executed_scopes": 143,
+    "source_scope": "Pinned archived sealed V-profile engine baseline predates zero-delay dispatch; not current HEAD or production acceptance.",
+    "attempts": [
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312",
+        "no_browser_launched": true,
+        "source_changes": [
+          "native_frame_publication_darwin.h"
+        ],
+        "exit": 2
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312/refined",
+        "no_browser_launched": true,
+        "source_changes": [
+          "native_capture_darwin.m",
+          "native_frame_publication_darwin.h",
+          "native_layer_presentation_darwin.h"
+        ],
+        "exit": 2
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312/stable-inputs",
+        "no_browser_launched": true,
+        "source_changes": [
+          "tools/measure_precise_scroll_darwin.m"
+        ],
+        "exit": 2
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312/archived-inputs",
+        "no_browser_launched": true,
+        "exit": 1,
+        "reason": "Thin compute_cascaded_values wrapper has no V-profiler body in sealed baseline; narrowed prospective scopes from150to149; original failed check retained."
+      }
+    ],
+    "native": {
+      "diagnostic_only": true,
+      "browser_exit": 0,
+      "input_identity_unchanged": true,
+      "host_after": {
+        "unix": 1793960616.36798,
+        "load_average": [
+          9.47021484375,
+          15.2177734375,
+          17.42919921875
+        ]
+      },
+      "acceptance": false,
+      "performance_credit": 0,
+      "content_audit": {
+        "passed": true,
+        "headlines": 91,
+        "images": 125,
+        "visible_decoded_images": 3,
+        "dom_elements": 2704,
+        "unavailable_local_fallbacks": [
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial"
+            ]
+          },
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial Bold"
+            ]
+          }
+        ],
+        "body_text_sha256": "9f689d46fee94b5f006334ba6fa200ce30df5711b0acf9142caf52e3f63dae29"
+      },
+      "pixels": {
+        "exit": 0,
+        "exact": true,
+        "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312/archived-refined/page-profile-1/diff.png\n"
+      },
+      "before_png_exact_external_sources": true,
+      "encoded_png_marker_present": true,
+      "actual_images": [
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/jsc-author-probe.dylib",
+        "/Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312/archived-refined/Vox-profile",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+      ],
+      "unpinned_actual_images": [],
+      "actual_image_coverage_valid": true,
+      "author_evaluations": [
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c509306a81e47ba10fe0774ebcd79e2bb841e012dfdaafe3b0dd96fb8bd1e17e",
+          "bytes": 403,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "8341cbd9dd4861255d63cb2043ab679e07a95921570377b3d80e72ef0e4d4a3e",
+          "bytes": 26,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "64706be7c32755c1dcc3f01c570bbb1809482ff90353035140e9defe99b6417b",
+          "bytes": 998,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c89389e1183b21a8b36a12c2fffd9701bf2cdb4019e712fc4a1e551f97865849",
+          "bytes": 2252,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "b0a707f6d7cc37e31a1ff909334dd2dae5de86cec510d9758987313ebb21756e",
+          "bytes": 93,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "5fa37dfab923a502bf66b5000fdc4da2200a542d9caba432e75dc8a19cf5261a",
+          "bytes": 51,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "fbc325c2e16d559854d6a056d0bfeb40abafd89bf73f7350abf486cf93d7ad45",
+          "bytes": 107,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js",
+          "sha256": "ac67b60f44b8f1771c6e3ef5b0718f9e2d2e8a764114191e195fadd7876f41c0",
+          "bytes": 26631,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://cdn.tinypass.com/api/tinypass.min.js",
+          "sha256": "b7c42d08846f10e6c2def4ea4ea19867b85a9e956361be06914343da58ac48fb",
+          "bytes": 497751,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://emp.bbci.co.uk/emp/bump-4/bump-4.js",
+          "sha256": "c2c7875f2aab40fd9815ec650f4d34a0b18f8d76037e1b025f7aeef413cf07da",
+          "bytes": 135871,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/03~yq9q893hmn.js",
+          "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+          "bytes": 112594,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b-tgv1_m1uo9.js",
+          "sha256": "8ff3b4fc6689d2b983dd480c82dc932148f428029040cc65809f1cc047ba0fe2",
+          "bytes": 5926,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0d9awe5d081.2.js",
+          "sha256": "75802ee56057653bcc2b605089e5462edbc8474f41c9d7bf03df55a3fbde9aad",
+          "bytes": 34454,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js",
+          "sha256": "43a274c8e775e4745b5675363f437c01feac88662e7f6040a53f21cba5ad272b",
+          "bytes": 25448,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-a6nanpwqpag.js",
+          "sha256": "6382492412736c25323b49c8282e48c2da65de65bfba9fc23ee9b299891e5f31",
+          "bytes": 23644,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/178~uy1pz6ka4.js",
+          "sha256": "0e507fb2b10a6e5f7952b05eccbef421dc85fe59a617fcab505e6d746dc78768",
+          "bytes": 1511,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02w2j6a0szhem.js",
+          "sha256": "eb96b7160f75c0e779c8e775e73bda35fddc31bdb0c616f8e4f15b0c5e0feae7",
+          "bytes": 25157,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/01ahds4cdfgmx.js",
+          "sha256": "73591aedcda1a85382794bcc8647dc1044d879d990f9e50dffc5180938584042",
+          "bytes": 1391,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/004vauwu48azs.js",
+          "sha256": "c6976ec6cc131d87d5e7f11d0e783b85d503b264a28a2751b486fd4ab3321197",
+          "bytes": 7574,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jl4bpoiy-t_p.js",
+          "sha256": "dff644624d905c732f9a0ef6e564d052584e957ae393366d0319fea89b695d48",
+          "bytes": 6821,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0k530rgixl5kt.js",
+          "sha256": "e369265a9d8c40769f6ccdcd0b87cb392a3672fedbba01f16075d4f298d59166",
+          "bytes": 36524,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zpz-874su9ks.js",
+          "sha256": "9ea3f2b34d76ce6a162b709cc65c34cc37a66660de2853e1c305dd93bf294314",
+          "bytes": 29966,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jcf7ay9pl-s0.js",
+          "sha256": "d92c8ba375ebd3e3c604d93124841f2a250371a73291efbeb403ad3188160033",
+          "bytes": 1651,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0gmos.wajd.qx.js",
+          "sha256": "4c946bc766052d9dce2c45f0e6bbaddb4c97f4ef73611d009df80024d56d2891",
+          "bytes": 1433,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0na6onp8uomzi.js",
+          "sha256": "a26e7e6fb52587c33e5b49e4db4a00951b9564e6ca908ca7cce6e655dd7c9edb",
+          "bytes": 4791,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0pr885e78gdj8.js",
+          "sha256": "43278b629a1156a81e375dff43ad5735d9f1cd531c230d4863593d9eabd4570e",
+          "bytes": 23393,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0u17oyz1d609w.js",
+          "sha256": "c10777b2a4195b77c5f897973fe307e71473533852fa91eb8cdee62226569f24",
+          "bytes": 1361,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ogvtm3jmac~r.js",
+          "sha256": "31d3f1f63e416587d220cab1ff104bc18487ceefa94ca33973391d739c32560b",
+          "bytes": 22677,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0~~24znpk8vc1.js",
+          "sha256": "f58b0adb797260e75b3560b55e9a1187ad0a7cebd1592d5146f89f5e4a887c28",
+          "bytes": 1371,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/116azxjox4uhk.js",
+          "sha256": "289638f4f398843c2e4ca6b5b9f52843f4ede9b223346482f6d2e298735fc7f1",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00su1kxuv.aa_.js",
+          "sha256": "a524098545ef1cd851bfe249d8547418701553c1271fa61df83e322d31ef1bda",
+          "bytes": 29178,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05el2iwpn3pyx.js",
+          "sha256": "b41e787f031780654f9aefaf4baf901cebb143defbb07e9d84abc01ee1af33c6",
+          "bytes": 25798,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/12w5u9fluro3i.js",
+          "sha256": "87b2c72ef5a9e6a9ec946db9e608f362b0eaff7f7fcffb6f49eade74019c71da",
+          "bytes": 33911,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00pv_7c.hjx18.js",
+          "sha256": "ecb85f0c77754c57fe55dbd3869570c0dfce669aef10642534b50564e1524976",
+          "bytes": 37329,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06nzlhdny82mu.js",
+          "sha256": "7321beafb2b2fd4ec44c729f04b6fbff625d333de2a3feb6e1caf5ea3e59213c",
+          "bytes": 31925,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0z3rjge5m4grx.js",
+          "sha256": "dd181f9f615bb71d8f0a5b7c0ad50bd47dcee782ef2a3a516577a56bd4d53cfd",
+          "bytes": 15392,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/1556fllq~t8x3.js",
+          "sha256": "880c3492ac7473e1ebcd83c06baf55b55a9a8628626393fc6973fd255fb32e98",
+          "bytes": 37689,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0c.fzizjof3_9.js",
+          "sha256": "15a112fb236ba9ac3559681959e5b63c3a0245be19d7424f0f067b24961c2221",
+          "bytes": 27920,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04n.yg_e~~1ci.js",
+          "sha256": "671df04e43515714028382bc50ac1dd17c9a725934d803433bff1ac0d1f23052",
+          "bytes": 36570,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05bsy3xzra8wq.js",
+          "sha256": "90c64d6b7765acb8ea15202ec1b7e5eb5c5093202291ae13c00fb1bf3d5bb367",
+          "bytes": 246296,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0a--~b-snp6to.js",
+          "sha256": "03b522f1bdba75c82eda171462e44f29263e09779bf61acb06465c126156ceaa",
+          "bytes": 71931,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13ad5orspgznk.js",
+          "sha256": "28a1e4258d181f3e67e1c23bab3850c64c7c42d0ab173d3b65f2f262067c995c",
+          "bytes": 29927,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/18bprfc204vpd.js",
+          "sha256": "f5cb72d4776976e5f53690a42356a1c6a83d8d069c6574ee83c3b5139f714556",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0x01rgvk49mtx.js",
+          "sha256": "2d1c012683cdac3406f62e3c3356b04b6a25655e245ad5134d3e97dd64ee0963",
+          "bytes": 23725,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0y-nyl-getpga.js",
+          "sha256": "5044522b2e87659006670afa4c8b2b418a0aaaa021f8f447f808bebbc3f63d0a",
+          "bytes": 191503,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.ws-k_jzc8i2.js",
+          "sha256": "40ec1bea360585aa83b6ae7aa29eafb0996067d723d1f036da0ced04a18ea25a",
+          "bytes": 45132,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0iid2kl3pm46u.js",
+          "sha256": "82978ff2c40aa53e0e140eca17e3c49276f4b855765289c3ff5495d91a0479c6",
+          "bytes": 104809,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/138t46x7lzh0_.js",
+          "sha256": "39370398a4b17414b2d5de02138c9c8e8cd13e95a33537fe609d653d1a879da2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0n-kjrsnwe2tb.js",
+          "sha256": "eeabd9d60a251b8ae244bda6cfae43d533a163143cea5f870f3a065c095d8ca9",
+          "bytes": 192983,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0sm_sfi0c1mq-.js",
+          "sha256": "6c90bd457fe4dfa7671de01af36c490f6d8ba473a5933bc39def8ee76c40f0b2",
+          "bytes": 91052,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0uleyy2687dl3.js",
+          "sha256": "cbbcbf316e5eadd37b184ca485ac753e4fd082ea39174c7a68acbd71d2574f38",
+          "bytes": 11234,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02-eeonhl._fb.js",
+          "sha256": "3eb4b0ea5e700623fd5a082d70a1d7f915f647a0de76b5b62f0c036fd7001933",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13lckzgg918t5.js",
+          "sha256": "eb66a6c5b6557a50f7bc232d448fff6ad8e3aee32cc5f5c7e1bcff9f3bc45c99",
+          "bytes": 23413,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07ngao.t8frq0.js",
+          "sha256": "6d8c53b4d26e809bd41c2898450138d6f0e277cf410c2bd94da8f9fb4dfa830f",
+          "bytes": 16523,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0fmsfuctu-bad.js",
+          "sha256": "2bec8483b973c921eb7cac7cc629c41b780da563c1f63c862c992730d8095270",
+          "bytes": 29748,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07yl_.h914mqi.js",
+          "sha256": "8af3e6c19c648d2a9be92bcb64b35d720aeaf07907973dbe031fb59a543943fd",
+          "bytes": 41302,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0rn767pe.qoie.js",
+          "sha256": "24b5c759dc0b1743ac6980b5d01a2bee0cc2357b78e77b823bdeff0213f4cc00",
+          "bytes": 70436,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06~h23gcdri8t.js",
+          "sha256": "50f43cfdc412de60ba410311562423de537e03c0d53a89b731751feb4ea0eb80",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b_bpuxw-.1p..js",
+          "sha256": "8763f828f40b14b1147ac48596546e0e63b230d891bb4dad4fe6d6f8fcd4a29f",
+          "bytes": 154276,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ltjlb3luz40f.js",
+          "sha256": "19201380cfad57644d52f26d1da9b3d7d52ce477e9e0ba8e6c9eaef71ecb6eb5",
+          "bytes": 120020,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ua0r8ey9cy9_.js",
+          "sha256": "5e739186cf2cf4ccf0482c1b9ecbae5ef3779c64341b18daf1ad39599dfc51e2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/17t.2dba68ndj.js",
+          "sha256": "825c72eaadac1dfffd882f5f956d45a62a09347d944055ac5f5c195c0b358479",
+          "bytes": 44857,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0eg_6rsvcuq6e.js",
+          "sha256": "4de48db9fc3e1d91ee5907327ee0f1017a4821ba3b52ccbc16f42ceea5afe232",
+          "bytes": 11399,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_buildManifest.js",
+          "sha256": "44ba1dfcdd0ae1d11c4efd797d53811f869baf259d2d59d7eb5440583c5472d0",
+          "bytes": 1693,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_ssgManifest.js",
+          "sha256": "678f6ce2cb80b1fe72fc67e7412be6e2ab6ada083111b64f7c40d35e3cba5e00",
+          "bytes": 80,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_clientMiddlewareManifest.js",
+          "sha256": "95ea07356281f634824367e07931feac78ad1c53ad48fc9080913a8331f04e66",
+          "bytes": 458,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04x.wea_ofqc1.js",
+          "sha256": "72dd68e7e9eace4236a374c4653d79195934ce4b7999f3bf01dad024b4f02d23",
+          "bytes": 37794,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zm-lheg_tx40.js",
+          "sha256": "5396e44b4684df27b645211631585bcb5a618d62624cda64b04424584e004df8",
+          "bytes": 17446,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0_a80-qmpyc3s.js",
+          "sha256": "fe0a1d5f3640b599ff12b7409b7b4ce4272d5396e3983bb8fc07e3e9efe0f4d9",
+          "bytes": 38828,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0r-xplh.6.-03.js",
+          "sha256": "f3561669372187e138a67d11b7ff6e9ccc69781baa82abe5990e1ebb8986864b",
+          "bytes": 12167,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04_rrh.j6.wba.js",
+          "sha256": "5a0825ea07e3075a80d5652fe1b57a8254265e841621fb9892e6810e302ca790",
+          "bytes": 2870,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0w54l~99pq3b9.js",
+          "sha256": "02f2ba1c7b10847bee0af25990cad7772701041e5c7671bc03a5662e7257d183",
+          "bytes": 1851,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.gu_l8v2fg11.js",
+          "sha256": "3e2bd65a17d5f45c51df4036753d0dcd283c45b4dd48e7ca22bf4eeb38449e68",
+          "bytes": 5376,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.44191m_y6r1.js",
+          "sha256": "c0d233d34bde493ebdd970be1680c9c1db7f42fdafe91e5d19ace1622a51b03c",
+          "bytes": 5427,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/127xbfgjo2hre.js",
+          "sha256": "ea2b7ead2c0aebb45328cd673a5f0450d1ab4667cac3729cbf72d416248cd96b",
+          "bytes": 3712,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yoghfwkswxeg.js",
+          "sha256": "edfc0707656673b8095aedee9bf84317dc398e39a762cf59ff68aea7386df26a",
+          "bytes": 15509,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yv_0~sh~88vc.js",
+          "sha256": "7f2a92b3dfe6ad237ddde904dc01caff1fd37de4c13e874cdb71e8b5c0a7a46a",
+          "bytes": 938,
+          "success": true,
+          "exact_external": true
+        }
+      ],
+      "successful_exact_external_sources": 70,
+      "definite_image_path_before_png": false,
+      "edge_path_before_png": true,
+      "logical_font_policy_witness": true
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312/archived-refined/run-page.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "65481": "Fri Nov  6 13:23:31 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1560281088,
+      "elapsed_seconds": 6.5118051249999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "profile": {
+      "functions": 143,
+      "inclusive": [
+        {
+          "function": "css__update_style_recursively",
+          "calls": 19496,
+          "inclusive_ms": 2832.429,
+          "self_ms": 9.504,
+          "average_inclusive_ns": 145283.0
+        },
+        {
+          "function": "layout__run_uncached_grid_formatting_context_internal",
+          "calls": 17124,
+          "inclusive_ms": 1051.955,
+          "self_ms": 31.766,
+          "average_inclusive_ns": 61432.0
+        },
+        {
+          "function": "main__BrowserApp__draw",
+          "calls": 133,
+          "inclusive_ms": 922.963,
+          "self_ms": 56.286,
+          "average_inclusive_ns": 6939574.0
+        },
+        {
+          "function": "layout__layout_independent_child",
+          "calls": 55034,
+          "inclusive_ms": 878.574,
+          "self_ms": 95.84,
+          "average_inclusive_ns": 15964.0
+        },
+        {
+          "function": "dom__Document__update_layout",
+          "calls": 291,
+          "inclusive_ms": 648.312,
+          "self_ms": 13.57,
+          "average_inclusive_ns": 2227877.0
+        },
+        {
+          "function": "platform__Timer__fire",
+          "calls": 11770,
+          "inclusive_ms": 646.953,
+          "self_ms": 6.19,
+          "average_inclusive_ns": 54966.0
+        },
+        {
+          "function": "html__EventLoop__process",
+          "calls": 4601,
+          "inclusive_ms": 589.254,
+          "self_ms": 0.694,
+          "average_inclusive_ns": 128071.0
+        },
+        {
+          "function": "html__Task__execute",
+          "calls": 4604,
+          "inclusive_ms": 577.225,
+          "self_ms": 26.727,
+          "average_inclusive_ns": 125375.0
+        },
+        {
+          "function": "layout__calculate_content_width_with_constraint",
+          "calls": 18344,
+          "inclusive_ms": 527.586,
+          "self_ms": 19.277,
+          "average_inclusive_ns": 28761.0
+        },
+        {
+          "function": "main__BrowserApp__poll_navigation_and_background_resources",
+          "calls": 133,
+          "inclusive_ms": 513.887,
+          "self_ms": 62.489,
+          "average_inclusive_ns": 3863815.0
+        },
+        {
+          "function": "layout__calculate_min_content_width",
+          "calls": 75823,
+          "inclusive_ms": 421.476,
+          "self_ms": 3.001,
+          "average_inclusive_ns": 5559.0
+        },
+        {
+          "function": "layout__finish_document_layout",
+          "calls": 15,
+          "inclusive_ms": 405.023,
+          "self_ms": 62.164,
+          "average_inclusive_ns": 27001555.0
+        },
+        {
+          "function": "browserjs__Runtime__call_with_object_receiver",
+          "calls": 4815,
+          "inclusive_ms": 401.593,
+          "self_ms": 170.097,
+          "average_inclusive_ns": 83405.0
+        },
+        {
+          "function": "main__BrowserApp__install_loaded_page",
+          "calls": 1,
+          "inclusive_ms": 335.062,
+          "self_ms": 45.418,
+          "average_inclusive_ns": 335062500.0
+        },
+        {
+          "function": "browserjs__javascript_core_host_function",
+          "calls": 8647,
+          "inclusive_ms": 308.976,
+          "self_ms": 2.955,
+          "average_inclusive_ns": 35732.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query_with_temporary_reply",
+          "calls": 7774,
+          "inclusive_ms": 300.605,
+          "self_ms": 0.191,
+          "average_inclusive_ns": 38668.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query",
+          "calls": 7774,
+          "inclusive_ms": 300.414,
+          "self_ms": 25.108,
+          "average_inclusive_ns": 38643.0
+        },
+        {
+          "function": "layout__run_uncached_inline_formatting_context_for_width",
+          "calls": 32951,
+          "inclusive_ms": 247.228,
+          "self_ms": 42.561,
+          "average_inclusive_ns": 7503.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 244.52,
+          "self_ms": 38.602,
+          "average_inclusive_ns": 1838497.0
+        },
+        {
+          "function": "layout__grid_intrinsic_outer_width_contribution",
+          "calls": 83403,
+          "inclusive_ms": 239.417,
+          "self_ms": 2.559,
+          "average_inclusive_ns": 2871.0
+        },
+        {
+          "function": "main__compact_element_geometry_query",
+          "calls": 64,
+          "inclusive_ms": 232.281,
+          "self_ms": 0.053,
+          "average_inclusive_ns": 3629398.0
+        },
+        {
+          "function": "browserjs__evaluate_javascript_core_text",
+          "calls": 1820,
+          "inclusive_ms": 226.376,
+          "self_ms": 58.67,
+          "average_inclusive_ns": 124382.0
+        },
+        {
+          "function": "dom__Document__update_style",
+          "calls": 297,
+          "inclusive_ms": 226.048,
+          "self_ms": 2.156,
+          "average_inclusive_ns": 761105.0
+        },
+        {
+          "function": "css__update_style_for_document_from_upstream",
+          "calls": 18,
+          "inclusive_ms": 223.882,
+          "self_ms": 24.855,
+          "average_inclusive_ns": 12437870.0
+        },
+        {
+          "function": "layout__run_uncached_flex_formatting_context_with_mode",
+          "calls": 11733,
+          "inclusive_ms": 220.562,
+          "self_ms": 12.966,
+          "average_inclusive_ns": 18798.0
+        },
+        {
+          "function": "browserjs__invoke_value_host_function_record",
+          "calls": 25303,
+          "inclusive_ms": 210.862,
+          "self_ms": 23.789,
+          "average_inclusive_ns": 8333.0
+        },
+        {
+          "function": "browserjs__javascript_core_value_host_function",
+          "calls": 18615,
+          "inclusive_ms": 201.736,
+          "self_ms": 0.489,
+          "average_inclusive_ns": 10837.0
+        },
+        {
+          "function": "css__StyleComputer__recompute_style_with_invalidation",
+          "calls": 12151,
+          "inclusive_ms": 181.4,
+          "self_ms": 26.048,
+          "average_inclusive_ns": 14929.0
+        },
+        {
+          "function": "browserjs__Runtime__call_engine_function",
+          "calls": 9401,
+          "inclusive_ms": 167.597,
+          "self_ms": 48.767,
+          "average_inclusive_ns": 17828.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_inline_contribution",
+          "calls": 35885,
+          "inclusive_ms": 162.982,
+          "self_ms": 3.775,
+          "average_inclusive_ns": 4542.0
+        },
+        {
+          "function": "css__StyleComputer__compute_style_impl",
+          "calls": 19057,
+          "inclusive_ms": 155.209,
+          "self_ms": 29.126,
+          "average_inclusive_ns": 8144.0
+        },
+        {
+          "function": "dom__Element__get_bounding_client_rect",
+          "calls": 26,
+          "inclusive_ms": 154.982,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 5960864.0
+        },
+        {
+          "function": "dom__Element__get_client_rects",
+          "calls": 26,
+          "inclusive_ms": 154.981,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 5960812.0
+        },
+        {
+          "function": "main__BrowserApp__relayout",
+          "calls": 1,
+          "inclusive_ms": 125.078,
+          "self_ms": 0.756,
+          "average_inclusive_ns": 125077834.0
+        },
+        {
+          "function": "layout__calculate_max_content_width",
+          "calls": 45765,
+          "inclusive_ms": 110.544,
+          "self_ms": 1.22,
+          "average_inclusive_ns": 2415.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_next_item",
+          "calls": 235821,
+          "inclusive_ms": 97.143,
+          "self_ms": 65.117,
+          "average_inclusive_ns": 412.0
+        },
+        {
+          "function": "layout__new_inline_iterator_with_item_storage",
+          "calls": 32951,
+          "inclusive_ms": 91.787,
+          "self_ms": 6.234,
+          "average_inclusive_ns": 2786.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_all_items",
+          "calls": 32951,
+          "inclusive_ms": 82.993,
+          "self_ms": 3.911,
+          "average_inclusive_ns": 2519.0
+        },
+        {
+          "function": "layout__renderer_box_from_document_layout_result",
+          "calls": 15,
+          "inclusive_ms": 82.147,
+          "self_ms": 23.299,
+          "average_inclusive_ns": 5476447.0
+        },
+        {
+          "function": "layout__calculate_content_height_with_constraint",
+          "calls": 1698,
+          "inclusive_ms": 74.374,
+          "self_ms": 2.799,
+          "average_inclusive_ns": 43801.0
+        },
+        {
+          "function": "layout__grid_item_outer_block_content_contribution",
+          "calls": 84922,
+          "inclusive_ms": 71.478,
+          "self_ms": 2.137,
+          "average_inclusive_ns": 842.0
+        },
+        {
+          "function": "layout__calculate_min_content_height",
+          "calls": 57012,
+          "inclusive_ms": 59.73,
+          "self_ms": 1.191,
+          "average_inclusive_ns": 1048.0
+        },
+        {
+          "function": "layout__uncached_block_box_from_typed_layout_shallow",
+          "calls": 31173,
+          "inclusive_ms": 58.349,
+          "self_ms": 57.857,
+          "average_inclusive_ns": 1872.0
+        },
+        {
+          "function": "css__collect_matching_rules_with_storage",
+          "calls": 76208,
+          "inclusive_ms": 55.646,
+          "self_ms": 55.48,
+          "average_inclusive_ns": 730.0
+        },
+        {
+          "function": "main__BrowserApp__draw_command",
+          "calls": 159,
+          "inclusive_ms": 52.602,
+          "self_ms": 52.489,
+          "average_inclusive_ns": 330833.0
+        },
+        {
+          "function": "layout__build_layout_tree_from_computed_styles",
+          "calls": 5,
+          "inclusive_ms": 49.003,
+          "self_ms": 19.049,
+          "average_inclusive_ns": 9800675.0
+        },
+        {
+          "function": "css__StyleComputer__compute_properties",
+          "calls": 12481,
+          "inclusive_ms": 48.659,
+          "self_ms": 48.413,
+          "average_inclusive_ns": 3899.0
+        },
+        {
+          "function": "main__BrowserApp__poll_javascript_tasks",
+          "calls": 252,
+          "inclusive_ms": 48.145,
+          "self_ms": 4.11,
+          "average_inclusive_ns": 191051.0
+        },
+        {
+          "function": "platform__Timer__stop_registration",
+          "calls": 18747,
+          "inclusive_ms": 44.951,
+          "self_ms": 0.308,
+          "average_inclusive_ns": 2398.0
+        },
+        {
+          "function": "platform__unregister_native_timer",
+          "calls": 9415,
+          "inclusive_ms": 44.644,
+          "self_ms": 44.644,
+          "average_inclusive_ns": 4742.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_block_contribution",
+          "calls": 28358,
+          "inclusive_ms": 39.992,
+          "self_ms": 1.442,
+          "average_inclusive_ns": 1410.0
+        },
+        {
+          "function": "css__resolve_computed_values_for_document_impl",
+          "calls": 12517,
+          "inclusive_ms": 37.442,
+          "self_ms": 36.665,
+          "average_inclusive_ns": 2991.0
+        },
+        {
+          "function": "webidl__invoke_callback",
+          "calls": 4435,
+          "inclusive_ms": 25.608,
+          "self_ms": 4.613,
+          "average_inclusive_ns": 5774.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__css_sheet_query",
+          "calls": 754,
+          "inclusive_ms": 24.208,
+          "self_ms": 23.318,
+          "average_inclusive_ns": 32107.0
+        },
+        {
+          "function": "css__StyleComputer__compute_cascaded_values_into",
+          "calls": 14960,
+          "inclusive_ms": 21.572,
+          "self_ms": 21.57,
+          "average_inclusive_ns": 1442.0
+        },
+        {
+          "function": "layout__calculate_max_content_height",
+          "calls": 76562,
+          "inclusive_ms": 19.057,
+          "self_ms": 2.05,
+          "average_inclusive_ns": 249.0
+        },
+        {
+          "function": "browserjs__TimerHost__operate",
+          "calls": 4827,
+          "inclusive_ms": 17.064,
+          "self_ms": 5.014,
+          "average_inclusive_ns": 3535.0
+        },
+        {
+          "function": "platform__Timer__start_with_interval",
+          "calls": 9478,
+          "inclusive_ms": 16.634,
+          "self_ms": 0.334,
+          "average_inclusive_ns": 1755.0
+        },
+        {
+          "function": "platform__register_native_timer",
+          "calls": 9416,
+          "inclusive_ms": 15.724,
+          "self_ms": 15.724,
+          "average_inclusive_ns": 1670.0
+        },
+        {
+          "function": "main__apply_decoded_javascript_state",
+          "calls": 2684,
+          "inclusive_ms": 14.723,
+          "self_ms": 14.702,
+          "average_inclusive_ns": 5486.0
+        },
+        {
+          "function": "html__EventLoop__schedule",
+          "calls": 8818,
+          "inclusive_ms": 11.038,
+          "self_ms": 0.382,
+          "average_inclusive_ns": 1252.0
+        },
+        {
+          "function": "platform__Timer__restart_with_interval",
+          "calls": 4646,
+          "inclusive_ms": 10.758,
+          "self_ms": 0.182,
+          "average_inclusive_ns": 2315.0
+        },
+        {
+          "function": "layout__calculate_fit_content_height",
+          "calls": 25435,
+          "inclusive_ms": 10.428,
+          "self_ms": 0.565,
+          "average_inclusive_ns": 410.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__run_timer_initialization_steps",
+          "calls": 4771,
+          "inclusive_ms": 10.33,
+          "self_ms": 1.911,
+          "average_inclusive_ns": 2165.0
+        },
+        {
+          "function": "browserjs__javascript_core_native_value_host_function",
+          "calls": 6688,
+          "inclusive_ms": 9.869,
+          "self_ms": 0.253,
+          "average_inclusive_ns": 1476.0
+        },
+        {
+          "function": "platform__leave_persistent",
+          "calls": 972679,
+          "inclusive_ms": 9.848,
+          "self_ms": 9.848,
+          "average_inclusive_ns": 10.0
+        },
+        {
+          "function": "main__BrowserApp__update_browser_chrome",
+          "calls": 163,
+          "inclusive_ms": 9.681,
+          "self_ms": 7.558,
+          "average_inclusive_ns": 59394.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+          "calls": 4771,
+          "inclusive_ms": 8.42,
+          "self_ms": 2.027,
+          "average_inclusive_ns": 1765.0
+        },
+        {
+          "function": "platform__enter_persistent",
+          "calls": 645580,
+          "inclusive_ms": 7.968,
+          "self_ms": 7.968,
+          "average_inclusive_ns": 12.0
+        },
+        {
+          "function": "browserjs__js_source_string",
+          "calls": 20293,
+          "inclusive_ms": 7.878,
+          "self_ms": 7.878,
+          "average_inclusive_ns": 388.0
+        },
+        {
+          "function": "layout__place_grid_items",
+          "calls": 17124,
+          "inclusive_ms": 7.862,
+          "self_ms": 7.862,
+          "average_inclusive_ns": 459.0
+        },
+        {
+          "function": "platform__RetainedArena__release",
+          "calls": 20638,
+          "inclusive_ms": 7.233,
+          "self_ms": 7.233,
+          "average_inclusive_ns": 350.0
+        },
+        {
+          "function": "dom__compute_client_rects_assuming_layout_clean",
+          "calls": 16417,
+          "inclusive_ms": 6.72,
+          "self_ms": 1.51,
+          "average_inclusive_ns": 409.0
+        },
+        {
+          "function": "layout__LineBuilder__update_last_line",
+          "calls": 46198,
+          "inclusive_ms": 6.384,
+          "self_ms": 6.377,
+          "average_inclusive_ns": 138.0
+        },
+        {
+          "function": "layout__resolve_grid_tracks",
+          "calls": 30842,
+          "inclusive_ms": 5.769,
+          "self_ms": 5.769,
+          "average_inclusive_ns": 187.0
+        },
+        {
+          "function": "main__compact_query_replay_snapshot",
+          "calls": 2684,
+          "inclusive_ms": 5.732,
+          "self_ms": 5.732,
+          "average_inclusive_ns": 2136.0
+        },
+        {
+          "function": "dom__Document__update_paint_and_hit_testing_properties_if_needed",
+          "calls": 1542,
+          "inclusive_ms": 5.364,
+          "self_ms": 0.067,
+          "average_inclusive_ns": 3478.0
+        },
+        {
+          "function": "layout__viewport_transform_client_rects",
+          "calls": 16417,
+          "inclusive_ms": 5.21,
+          "self_ms": 5.041,
+          "average_inclusive_ns": 317.0
+        },
+        {
+          "function": "layout__viewport_assign_accumulated_visual_contexts",
+          "calls": 15,
+          "inclusive_ms": 5.163,
+          "self_ms": 2.927,
+          "average_inclusive_ns": 344175.0
+        },
+        {
+          "function": "layout__LineBuilder__append_text_item",
+          "calls": 125354,
+          "inclusive_ms": 4.788,
+          "self_ms": 4.788,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "browserjs__js_string_to_v",
+          "calls": 10390,
+          "inclusive_ms": 3.57,
+          "self_ms": 3.57,
+          "average_inclusive_ns": 344.0
+        },
+        {
+          "function": "platform__Timer__stop",
+          "calls": 9799,
+          "inclusive_ms": 3.332,
+          "self_ms": 0.356,
+          "average_inclusive_ns": 340.0
+        },
+        {
+          "function": "layout__DocumentLayoutResult__ensure_boxes_by_layout_cache",
+          "calls": 17045,
+          "inclusive_ms": 2.404,
+          "self_ms": 2.404,
+          "average_inclusive_ns": 141.0
+        },
+        {
+          "function": "layout__grid_lines_for_definition",
+          "calls": 59880,
+          "inclusive_ms": 2.288,
+          "self_ms": 2.288,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "html__TaskQueue__add",
+          "calls": 4601,
+          "inclusive_ms": 2.173,
+          "self_ms": 0.245,
+          "average_inclusive_ns": 472.0
+        },
+        {
+          "function": "main__BrowserApp__browser_chrome_state",
+          "calls": 164,
+          "inclusive_ms": 2.101,
+          "self_ms": 2.091,
+          "average_inclusive_ns": 12810.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_dom_string",
+          "calls": 21840,
+          "inclusive_ms": 1.986,
+          "self_ms": 1.986,
+          "average_inclusive_ns": 91.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__skip_to_next",
+          "calls": 95298,
+          "inclusive_ms": 1.912,
+          "self_ms": 1.9,
+          "average_inclusive_ns": 20.0
+        },
+        {
+          "function": "main__draw_srgb_rect",
+          "calls": 11,
+          "inclusive_ms": 1.819,
+          "self_ms": 1.819,
+          "average_inclusive_ns": 165349.0
+        },
+        {
+          "function": "platform__Timer__release_activity_root",
+          "calls": 14520,
+          "inclusive_ms": 1.456,
+          "self_ms": 1.24,
+          "average_inclusive_ns": 100.0
+        },
+        {
+          "function": "browserjs__Runtime__webidl_value",
+          "calls": 2124,
+          "inclusive_ms": 1.399,
+          "self_ms": 1.349,
+          "average_inclusive_ns": 659.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__compute_is_unidirectional_left_to_right",
+          "calls": 32951,
+          "inclusive_ms": 1.386,
+          "self_ms": 1.386,
+          "average_inclusive_ns": 42.0
+        },
+        {
+          "function": "html__clean_up_after_running_script",
+          "calls": 28118,
+          "inclusive_ms": 1.116,
+          "self_ms": 0.513,
+          "average_inclusive_ns": 40.0
+        },
+        {
+          "function": "browserjs__Runtime__clean_up_html_script",
+          "calls": 23666,
+          "inclusive_ms": 1.105,
+          "self_ms": 0.539,
+          "average_inclusive_ns": 47.0
+        },
+        {
+          "function": "layout__grid_track_sizing_placements",
+          "calls": 34248,
+          "inclusive_ms": 1.074,
+          "self_ms": 1.074,
+          "average_inclusive_ns": 31.0
+        },
+        {
+          "function": "main__browser_window_size",
+          "calls": 134,
+          "inclusive_ms": 1.02,
+          "self_ms": 1.02,
+          "average_inclusive_ns": 7615.0
+        },
+        {
+          "function": "html__EventLoop__perform_a_microtask_checkpoint",
+          "calls": 10721,
+          "inclusive_ms": 0.966,
+          "self_ms": 0.652,
+          "average_inclusive_ns": 90.0
+        },
+        {
+          "function": "platform__RetainedArenaScope__finish",
+          "calls": 56608,
+          "inclusive_ms": 0.955,
+          "self_ms": 0.799,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "main__compact_inline_style_query",
+          "calls": 29,
+          "inclusive_ms": 0.914,
+          "self_ms": 0.912,
+          "average_inclusive_ns": 31501.0
+        },
+        {
+          "function": "browserjs__Runtime__prepare_html_script",
+          "calls": 23666,
+          "inclusive_ms": 0.872,
+          "self_ms": 0.532,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "main__BrowserApp__begin_stationary_document_raster",
+          "calls": 99,
+          "inclusive_ms": 0.608,
+          "self_ms": 0.608,
+          "average_inclusive_ns": 6141.0
+        },
+        {
+          "function": "platform__Timer__take_activity_root",
+          "calls": 9478,
+          "inclusive_ms": 0.576,
+          "self_ms": 0.367,
+          "average_inclusive_ns": 61.0
+        },
+        {
+          "function": "html__TaskQueue__has_runnable_tasks",
+          "calls": 13803,
+          "inclusive_ms": 0.542,
+          "self_ms": 0.342,
+          "average_inclusive_ns": 39.0
+        },
+        {
+          "function": "layout__optimized_text_wrap_breaks",
+          "calls": 32951,
+          "inclusive_ms": 0.469,
+          "self_ms": 0.469,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "html__prepare_to_run_script",
+          "calls": 28118,
+          "inclusive_ms": 0.457,
+          "self_ms": 0.457,
+          "average_inclusive_ns": 16.0
+        },
+        {
+          "function": "main__BrowserApp__poll_background_resources",
+          "calls": 132,
+          "inclusive_ms": 0.437,
+          "self_ms": 0.251,
+          "average_inclusive_ns": 3309.0
+        },
+        {
+          "function": "platform__RetainedArena__enter",
+          "calls": 27994,
+          "inclusive_ms": 0.353,
+          "self_ms": 0.336,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_string",
+          "calls": 1069,
+          "inclusive_ms": 0.331,
+          "self_ms": 0.127,
+          "average_inclusive_ns": 310.0
+        },
+        {
+          "function": "main__BrowserApp__request_script_inserted_images",
+          "calls": 133,
+          "inclusive_ms": 0.307,
+          "self_ms": 0.305,
+          "average_inclusive_ns": 2310.0
+        },
+        {
+          "function": "layout__restore_retained_inline_layout",
+          "calls": 6664,
+          "inclusive_ms": 0.291,
+          "self_ms": 0.291,
+          "average_inclusive_ns": 44.0
+        },
+        {
+          "function": "html__Task__is_runnable",
+          "calls": 17634,
+          "inclusive_ms": 0.242,
+          "self_ms": 0.242,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_memory_activity",
+          "calls": 133,
+          "inclusive_ms": 0.24,
+          "self_ms": 0.044,
+          "average_inclusive_ns": 1808.0
+        },
+        {
+          "function": "html__TaskQueue__take_first_runnable",
+          "calls": 4601,
+          "inclusive_ms": 0.175,
+          "self_ms": 0.133,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "css__StyleComputer__recascade_font_size_if_needed",
+          "calls": 12481,
+          "inclusive_ms": 0.162,
+          "self_ms": 0.162,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "html__Task__cancel",
+          "calls": 4604,
+          "inclusive_ms": 0.155,
+          "self_ms": 0.11,
+          "average_inclusive_ns": 34.0
+        },
+        {
+          "function": "platform__defer_timer_during_cooperative_work",
+          "calls": 11762,
+          "inclusive_ms": 0.154,
+          "self_ms": 0.147,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "main__BrowserApp__prepare_overlay_scrollbars",
+          "calls": 133,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 1148.0
+        },
+        {
+          "function": "main__configure_browser_layout_font",
+          "calls": 1,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 153083.0
+        },
+        {
+          "function": "layout__same_pass_inline_inputs_are_current",
+          "calls": 2908,
+          "inclusive_ms": 0.142,
+          "self_ms": 0.142,
+          "average_inclusive_ns": 49.0
+        },
+        {
+          "function": "layout__viewport_refresh_scroll_state",
+          "calls": 1542,
+          "inclusive_ms": 0.135,
+          "self_ms": 0.108,
+          "average_inclusive_ns": 87.0
+        },
+        {
+          "function": "platform__RetainedArena__retain",
+          "calls": 20636,
+          "inclusive_ms": 0.119,
+          "self_ms": 0.119,
+          "average_inclusive_ns": 6.0
+        },
+        {
+          "function": "main__BrowserApp__begin_chromium_text_scroll_layer",
+          "calls": 34,
+          "inclusive_ms": 0.076,
+          "self_ms": 0.076,
+          "average_inclusive_ns": 2224.0
+        },
+        {
+          "function": "browserjs__Runtime__actual_webidl_value",
+          "calls": 4347,
+          "inclusive_ms": 0.06,
+          "self_ms": 0.06,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "libjs__VM__finish_execution_generation",
+          "calls": 10717,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 5.0
+        },
+        {
+          "function": "main__BrowserApp__sync_window_activity",
+          "calls": 139,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 405.0
+        },
+        {
+          "function": "main__BrowserApp__sync_browser_tab_loading_animation",
+          "calls": 164,
+          "inclusive_ms": 0.054,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 327.0
+        },
+        {
+          "function": "main__BrowserApp__document_pixels_ready_for_frame",
+          "calls": 133,
+          "inclusive_ms": 0.046,
+          "self_ms": 0.024,
+          "average_inclusive_ns": 347.0
+        },
+        {
+          "function": "main__BrowserApp__advance_document_animations",
+          "calls": 133,
+          "inclusive_ms": 0.034,
+          "self_ms": 0.034,
+          "average_inclusive_ns": 257.0
+        },
+        {
+          "function": "layout__refresh_document_paint_tree_if_needed",
+          "calls": 1585,
+          "inclusive_ms": 0.028,
+          "self_ms": 0.028,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "main__BrowserApp__begin_scroll_raster",
+          "calls": 1,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 20542.0
+        },
+        {
+          "function": "main__end_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 158.0
+        },
+        {
+          "function": "main__BrowserApp__finish_scroll_profile_frame",
+          "calls": 133,
+          "inclusive_ms": 0.019,
+          "self_ms": 0.019,
+          "average_inclusive_ns": 146.0
+        },
+        {
+          "function": "main__initial_document",
+          "calls": 1,
+          "inclusive_ms": 0.013,
+          "self_ms": 0.013,
+          "average_inclusive_ns": 13333.0
+        },
+        {
+          "function": "main__BrowserApp__poll_native_navigation",
+          "calls": 133,
+          "inclusive_ms": 0.01,
+          "self_ms": 0.01,
+          "average_inclusive_ns": 77.0
+        },
+        {
+          "function": "main__BrowserApp__poll_media_playback",
+          "calls": 133,
+          "inclusive_ms": 0.007,
+          "self_ms": 0.007,
+          "average_inclusive_ns": 52.0
+        },
+        {
+          "function": "main__begin_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.006,
+          "self_ms": 0.006,
+          "average_inclusive_ns": 48.0
+        },
+        {
+          "function": "main__BrowserApp__frame_canvas_is_blank",
+          "calls": 133,
+          "inclusive_ms": 0.005,
+          "self_ms": 0.005,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "main__BrowserApp__begin_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 0.003,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 24.0
+        },
+        {
+          "function": "main__BrowserApp__begin_native_replay_scratch",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 541.0
+        },
+        {
+          "function": "main__BrowserApp__prefetch_chromium_rects",
+          "calls": 11,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 117.0
+        },
+        {
+          "function": "main__BrowserApp__update_chromium_viewport_raster_plan",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 625.0
+        },
+        {
+          "function": "main__link_translated_modules",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        },
+        {
+          "function": "main__main",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        }
+      ],
+      "self": [
+        {
+          "function": "browserjs__Runtime__call_with_object_receiver",
+          "calls": 4815,
+          "inclusive_ms": 401.593,
+          "self_ms": 170.097,
+          "average_inclusive_ns": 83405.0
+        },
+        {
+          "function": "layout__layout_independent_child",
+          "calls": 55034,
+          "inclusive_ms": 878.574,
+          "self_ms": 95.84,
+          "average_inclusive_ns": 15964.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_next_item",
+          "calls": 235821,
+          "inclusive_ms": 97.143,
+          "self_ms": 65.117,
+          "average_inclusive_ns": 412.0
+        },
+        {
+          "function": "main__BrowserApp__poll_navigation_and_background_resources",
+          "calls": 133,
+          "inclusive_ms": 513.887,
+          "self_ms": 62.489,
+          "average_inclusive_ns": 3863815.0
+        },
+        {
+          "function": "layout__finish_document_layout",
+          "calls": 15,
+          "inclusive_ms": 405.023,
+          "self_ms": 62.164,
+          "average_inclusive_ns": 27001555.0
+        },
+        {
+          "function": "browserjs__evaluate_javascript_core_text",
+          "calls": 1820,
+          "inclusive_ms": 226.376,
+          "self_ms": 58.67,
+          "average_inclusive_ns": 124382.0
+        },
+        {
+          "function": "layout__uncached_block_box_from_typed_layout_shallow",
+          "calls": 31173,
+          "inclusive_ms": 58.349,
+          "self_ms": 57.857,
+          "average_inclusive_ns": 1872.0
+        },
+        {
+          "function": "main__BrowserApp__draw",
+          "calls": 133,
+          "inclusive_ms": 922.963,
+          "self_ms": 56.286,
+          "average_inclusive_ns": 6939574.0
+        },
+        {
+          "function": "css__collect_matching_rules_with_storage",
+          "calls": 76208,
+          "inclusive_ms": 55.646,
+          "self_ms": 55.48,
+          "average_inclusive_ns": 730.0
+        },
+        {
+          "function": "main__BrowserApp__draw_command",
+          "calls": 159,
+          "inclusive_ms": 52.602,
+          "self_ms": 52.489,
+          "average_inclusive_ns": 330833.0
+        },
+        {
+          "function": "browserjs__Runtime__call_engine_function",
+          "calls": 9401,
+          "inclusive_ms": 167.597,
+          "self_ms": 48.767,
+          "average_inclusive_ns": 17828.0
+        },
+        {
+          "function": "css__StyleComputer__compute_properties",
+          "calls": 12481,
+          "inclusive_ms": 48.659,
+          "self_ms": 48.413,
+          "average_inclusive_ns": 3899.0
+        },
+        {
+          "function": "main__BrowserApp__install_loaded_page",
+          "calls": 1,
+          "inclusive_ms": 335.062,
+          "self_ms": 45.418,
+          "average_inclusive_ns": 335062500.0
+        },
+        {
+          "function": "platform__unregister_native_timer",
+          "calls": 9415,
+          "inclusive_ms": 44.644,
+          "self_ms": 44.644,
+          "average_inclusive_ns": 4742.0
+        },
+        {
+          "function": "layout__run_uncached_inline_formatting_context_for_width",
+          "calls": 32951,
+          "inclusive_ms": 247.228,
+          "self_ms": 42.561,
+          "average_inclusive_ns": 7503.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 244.52,
+          "self_ms": 38.602,
+          "average_inclusive_ns": 1838497.0
+        },
+        {
+          "function": "css__resolve_computed_values_for_document_impl",
+          "calls": 12517,
+          "inclusive_ms": 37.442,
+          "self_ms": 36.665,
+          "average_inclusive_ns": 2991.0
+        },
+        {
+          "function": "layout__run_uncached_grid_formatting_context_internal",
+          "calls": 17124,
+          "inclusive_ms": 1051.955,
+          "self_ms": 31.766,
+          "average_inclusive_ns": 61432.0
+        },
+        {
+          "function": "css__StyleComputer__compute_style_impl",
+          "calls": 19057,
+          "inclusive_ms": 155.209,
+          "self_ms": 29.126,
+          "average_inclusive_ns": 8144.0
+        },
+        {
+          "function": "html__Task__execute",
+          "calls": 4604,
+          "inclusive_ms": 577.225,
+          "self_ms": 26.727,
+          "average_inclusive_ns": 125375.0
+        },
+        {
+          "function": "css__StyleComputer__recompute_style_with_invalidation",
+          "calls": 12151,
+          "inclusive_ms": 181.4,
+          "self_ms": 26.048,
+          "average_inclusive_ns": 14929.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query",
+          "calls": 7774,
+          "inclusive_ms": 300.414,
+          "self_ms": 25.108,
+          "average_inclusive_ns": 38643.0
+        },
+        {
+          "function": "css__update_style_for_document_from_upstream",
+          "calls": 18,
+          "inclusive_ms": 223.882,
+          "self_ms": 24.855,
+          "average_inclusive_ns": 12437870.0
+        },
+        {
+          "function": "browserjs__invoke_value_host_function_record",
+          "calls": 25303,
+          "inclusive_ms": 210.862,
+          "self_ms": 23.789,
+          "average_inclusive_ns": 8333.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__css_sheet_query",
+          "calls": 754,
+          "inclusive_ms": 24.208,
+          "self_ms": 23.318,
+          "average_inclusive_ns": 32107.0
+        },
+        {
+          "function": "layout__renderer_box_from_document_layout_result",
+          "calls": 15,
+          "inclusive_ms": 82.147,
+          "self_ms": 23.299,
+          "average_inclusive_ns": 5476447.0
+        },
+        {
+          "function": "css__StyleComputer__compute_cascaded_values_into",
+          "calls": 14960,
+          "inclusive_ms": 21.572,
+          "self_ms": 21.57,
+          "average_inclusive_ns": 1442.0
+        },
+        {
+          "function": "layout__calculate_content_width_with_constraint",
+          "calls": 18344,
+          "inclusive_ms": 527.586,
+          "self_ms": 19.277,
+          "average_inclusive_ns": 28761.0
+        },
+        {
+          "function": "layout__build_layout_tree_from_computed_styles",
+          "calls": 5,
+          "inclusive_ms": 49.003,
+          "self_ms": 19.049,
+          "average_inclusive_ns": 9800675.0
+        },
+        {
+          "function": "platform__register_native_timer",
+          "calls": 9416,
+          "inclusive_ms": 15.724,
+          "self_ms": 15.724,
+          "average_inclusive_ns": 1670.0
+        },
+        {
+          "function": "main__apply_decoded_javascript_state",
+          "calls": 2684,
+          "inclusive_ms": 14.723,
+          "self_ms": 14.702,
+          "average_inclusive_ns": 5486.0
+        },
+        {
+          "function": "dom__Document__update_layout",
+          "calls": 291,
+          "inclusive_ms": 648.312,
+          "self_ms": 13.57,
+          "average_inclusive_ns": 2227877.0
+        },
+        {
+          "function": "layout__run_uncached_flex_formatting_context_with_mode",
+          "calls": 11733,
+          "inclusive_ms": 220.562,
+          "self_ms": 12.966,
+          "average_inclusive_ns": 18798.0
+        },
+        {
+          "function": "platform__leave_persistent",
+          "calls": 972679,
+          "inclusive_ms": 9.848,
+          "self_ms": 9.848,
+          "average_inclusive_ns": 10.0
+        },
+        {
+          "function": "css__update_style_recursively",
+          "calls": 19496,
+          "inclusive_ms": 2832.429,
+          "self_ms": 9.504,
+          "average_inclusive_ns": 145283.0
+        },
+        {
+          "function": "platform__enter_persistent",
+          "calls": 645580,
+          "inclusive_ms": 7.968,
+          "self_ms": 7.968,
+          "average_inclusive_ns": 12.0
+        },
+        {
+          "function": "browserjs__js_source_string",
+          "calls": 20293,
+          "inclusive_ms": 7.878,
+          "self_ms": 7.878,
+          "average_inclusive_ns": 388.0
+        },
+        {
+          "function": "layout__place_grid_items",
+          "calls": 17124,
+          "inclusive_ms": 7.862,
+          "self_ms": 7.862,
+          "average_inclusive_ns": 459.0
+        },
+        {
+          "function": "main__BrowserApp__update_browser_chrome",
+          "calls": 163,
+          "inclusive_ms": 9.681,
+          "self_ms": 7.558,
+          "average_inclusive_ns": 59394.0
+        },
+        {
+          "function": "platform__RetainedArena__release",
+          "calls": 20638,
+          "inclusive_ms": 7.233,
+          "self_ms": 7.233,
+          "average_inclusive_ns": 350.0
+        },
+        {
+          "function": "layout__LineBuilder__update_last_line",
+          "calls": 46198,
+          "inclusive_ms": 6.384,
+          "self_ms": 6.377,
+          "average_inclusive_ns": 138.0
+        },
+        {
+          "function": "layout__new_inline_iterator_with_item_storage",
+          "calls": 32951,
+          "inclusive_ms": 91.787,
+          "self_ms": 6.234,
+          "average_inclusive_ns": 2786.0
+        },
+        {
+          "function": "platform__Timer__fire",
+          "calls": 11770,
+          "inclusive_ms": 646.953,
+          "self_ms": 6.19,
+          "average_inclusive_ns": 54966.0
+        },
+        {
+          "function": "layout__resolve_grid_tracks",
+          "calls": 30842,
+          "inclusive_ms": 5.769,
+          "self_ms": 5.769,
+          "average_inclusive_ns": 187.0
+        },
+        {
+          "function": "main__compact_query_replay_snapshot",
+          "calls": 2684,
+          "inclusive_ms": 5.732,
+          "self_ms": 5.732,
+          "average_inclusive_ns": 2136.0
+        },
+        {
+          "function": "layout__viewport_transform_client_rects",
+          "calls": 16417,
+          "inclusive_ms": 5.21,
+          "self_ms": 5.041,
+          "average_inclusive_ns": 317.0
+        },
+        {
+          "function": "browserjs__TimerHost__operate",
+          "calls": 4827,
+          "inclusive_ms": 17.064,
+          "self_ms": 5.014,
+          "average_inclusive_ns": 3535.0
+        },
+        {
+          "function": "layout__LineBuilder__append_text_item",
+          "calls": 125354,
+          "inclusive_ms": 4.788,
+          "self_ms": 4.788,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "webidl__invoke_callback",
+          "calls": 4435,
+          "inclusive_ms": 25.608,
+          "self_ms": 4.613,
+          "average_inclusive_ns": 5774.0
+        },
+        {
+          "function": "main__BrowserApp__poll_javascript_tasks",
+          "calls": 252,
+          "inclusive_ms": 48.145,
+          "self_ms": 4.11,
+          "average_inclusive_ns": 191051.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_all_items",
+          "calls": 32951,
+          "inclusive_ms": 82.993,
+          "self_ms": 3.911,
+          "average_inclusive_ns": 2519.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_inline_contribution",
+          "calls": 35885,
+          "inclusive_ms": 162.982,
+          "self_ms": 3.775,
+          "average_inclusive_ns": 4542.0
+        },
+        {
+          "function": "browserjs__js_string_to_v",
+          "calls": 10390,
+          "inclusive_ms": 3.57,
+          "self_ms": 3.57,
+          "average_inclusive_ns": 344.0
+        },
+        {
+          "function": "layout__calculate_min_content_width",
+          "calls": 75823,
+          "inclusive_ms": 421.476,
+          "self_ms": 3.001,
+          "average_inclusive_ns": 5559.0
+        },
+        {
+          "function": "browserjs__javascript_core_host_function",
+          "calls": 8647,
+          "inclusive_ms": 308.976,
+          "self_ms": 2.955,
+          "average_inclusive_ns": 35732.0
+        },
+        {
+          "function": "layout__viewport_assign_accumulated_visual_contexts",
+          "calls": 15,
+          "inclusive_ms": 5.163,
+          "self_ms": 2.927,
+          "average_inclusive_ns": 344175.0
+        },
+        {
+          "function": "layout__calculate_content_height_with_constraint",
+          "calls": 1698,
+          "inclusive_ms": 74.374,
+          "self_ms": 2.799,
+          "average_inclusive_ns": 43801.0
+        },
+        {
+          "function": "layout__grid_intrinsic_outer_width_contribution",
+          "calls": 83403,
+          "inclusive_ms": 239.417,
+          "self_ms": 2.559,
+          "average_inclusive_ns": 2871.0
+        },
+        {
+          "function": "layout__DocumentLayoutResult__ensure_boxes_by_layout_cache",
+          "calls": 17045,
+          "inclusive_ms": 2.404,
+          "self_ms": 2.404,
+          "average_inclusive_ns": 141.0
+        },
+        {
+          "function": "layout__grid_lines_for_definition",
+          "calls": 59880,
+          "inclusive_ms": 2.288,
+          "self_ms": 2.288,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "dom__Document__update_style",
+          "calls": 297,
+          "inclusive_ms": 226.048,
+          "self_ms": 2.156,
+          "average_inclusive_ns": 761105.0
+        },
+        {
+          "function": "layout__grid_item_outer_block_content_contribution",
+          "calls": 84922,
+          "inclusive_ms": 71.478,
+          "self_ms": 2.137,
+          "average_inclusive_ns": 842.0
+        },
+        {
+          "function": "main__BrowserApp__browser_chrome_state",
+          "calls": 164,
+          "inclusive_ms": 2.101,
+          "self_ms": 2.091,
+          "average_inclusive_ns": 12810.0
+        },
+        {
+          "function": "layout__calculate_max_content_height",
+          "calls": 76562,
+          "inclusive_ms": 19.057,
+          "self_ms": 2.05,
+          "average_inclusive_ns": 249.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+          "calls": 4771,
+          "inclusive_ms": 8.42,
+          "self_ms": 2.027,
+          "average_inclusive_ns": 1765.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_dom_string",
+          "calls": 21840,
+          "inclusive_ms": 1.986,
+          "self_ms": 1.986,
+          "average_inclusive_ns": 91.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__run_timer_initialization_steps",
+          "calls": 4771,
+          "inclusive_ms": 10.33,
+          "self_ms": 1.911,
+          "average_inclusive_ns": 2165.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__skip_to_next",
+          "calls": 95298,
+          "inclusive_ms": 1.912,
+          "self_ms": 1.9,
+          "average_inclusive_ns": 20.0
+        },
+        {
+          "function": "main__draw_srgb_rect",
+          "calls": 11,
+          "inclusive_ms": 1.819,
+          "self_ms": 1.819,
+          "average_inclusive_ns": 165349.0
+        },
+        {
+          "function": "dom__compute_client_rects_assuming_layout_clean",
+          "calls": 16417,
+          "inclusive_ms": 6.72,
+          "self_ms": 1.51,
+          "average_inclusive_ns": 409.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_block_contribution",
+          "calls": 28358,
+          "inclusive_ms": 39.992,
+          "self_ms": 1.442,
+          "average_inclusive_ns": 1410.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__compute_is_unidirectional_left_to_right",
+          "calls": 32951,
+          "inclusive_ms": 1.386,
+          "self_ms": 1.386,
+          "average_inclusive_ns": 42.0
+        },
+        {
+          "function": "browserjs__Runtime__webidl_value",
+          "calls": 2124,
+          "inclusive_ms": 1.399,
+          "self_ms": 1.349,
+          "average_inclusive_ns": 659.0
+        },
+        {
+          "function": "platform__Timer__release_activity_root",
+          "calls": 14520,
+          "inclusive_ms": 1.456,
+          "self_ms": 1.24,
+          "average_inclusive_ns": 100.0
+        },
+        {
+          "function": "layout__calculate_max_content_width",
+          "calls": 45765,
+          "inclusive_ms": 110.544,
+          "self_ms": 1.22,
+          "average_inclusive_ns": 2415.0
+        },
+        {
+          "function": "layout__calculate_min_content_height",
+          "calls": 57012,
+          "inclusive_ms": 59.73,
+          "self_ms": 1.191,
+          "average_inclusive_ns": 1048.0
+        },
+        {
+          "function": "layout__grid_track_sizing_placements",
+          "calls": 34248,
+          "inclusive_ms": 1.074,
+          "self_ms": 1.074,
+          "average_inclusive_ns": 31.0
+        },
+        {
+          "function": "main__browser_window_size",
+          "calls": 134,
+          "inclusive_ms": 1.02,
+          "self_ms": 1.02,
+          "average_inclusive_ns": 7615.0
+        },
+        {
+          "function": "main__compact_inline_style_query",
+          "calls": 29,
+          "inclusive_ms": 0.914,
+          "self_ms": 0.912,
+          "average_inclusive_ns": 31501.0
+        },
+        {
+          "function": "platform__RetainedArenaScope__finish",
+          "calls": 56608,
+          "inclusive_ms": 0.955,
+          "self_ms": 0.799,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "main__BrowserApp__relayout",
+          "calls": 1,
+          "inclusive_ms": 125.078,
+          "self_ms": 0.756,
+          "average_inclusive_ns": 125077834.0
+        },
+        {
+          "function": "html__EventLoop__process",
+          "calls": 4601,
+          "inclusive_ms": 589.254,
+          "self_ms": 0.694,
+          "average_inclusive_ns": 128071.0
+        },
+        {
+          "function": "html__EventLoop__perform_a_microtask_checkpoint",
+          "calls": 10721,
+          "inclusive_ms": 0.966,
+          "self_ms": 0.652,
+          "average_inclusive_ns": 90.0
+        },
+        {
+          "function": "main__BrowserApp__begin_stationary_document_raster",
+          "calls": 99,
+          "inclusive_ms": 0.608,
+          "self_ms": 0.608,
+          "average_inclusive_ns": 6141.0
+        },
+        {
+          "function": "layout__calculate_fit_content_height",
+          "calls": 25435,
+          "inclusive_ms": 10.428,
+          "self_ms": 0.565,
+          "average_inclusive_ns": 410.0
+        },
+        {
+          "function": "browserjs__Runtime__clean_up_html_script",
+          "calls": 23666,
+          "inclusive_ms": 1.105,
+          "self_ms": 0.539,
+          "average_inclusive_ns": 47.0
+        },
+        {
+          "function": "browserjs__Runtime__prepare_html_script",
+          "calls": 23666,
+          "inclusive_ms": 0.872,
+          "self_ms": 0.532,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "html__clean_up_after_running_script",
+          "calls": 28118,
+          "inclusive_ms": 1.116,
+          "self_ms": 0.513,
+          "average_inclusive_ns": 40.0
+        },
+        {
+          "function": "browserjs__javascript_core_value_host_function",
+          "calls": 18615,
+          "inclusive_ms": 201.736,
+          "self_ms": 0.489,
+          "average_inclusive_ns": 10837.0
+        },
+        {
+          "function": "layout__optimized_text_wrap_breaks",
+          "calls": 32951,
+          "inclusive_ms": 0.469,
+          "self_ms": 0.469,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "html__prepare_to_run_script",
+          "calls": 28118,
+          "inclusive_ms": 0.457,
+          "self_ms": 0.457,
+          "average_inclusive_ns": 16.0
+        },
+        {
+          "function": "html__EventLoop__schedule",
+          "calls": 8818,
+          "inclusive_ms": 11.038,
+          "self_ms": 0.382,
+          "average_inclusive_ns": 1252.0
+        },
+        {
+          "function": "platform__Timer__take_activity_root",
+          "calls": 9478,
+          "inclusive_ms": 0.576,
+          "self_ms": 0.367,
+          "average_inclusive_ns": 61.0
+        },
+        {
+          "function": "platform__Timer__stop",
+          "calls": 9799,
+          "inclusive_ms": 3.332,
+          "self_ms": 0.356,
+          "average_inclusive_ns": 340.0
+        },
+        {
+          "function": "html__TaskQueue__has_runnable_tasks",
+          "calls": 13803,
+          "inclusive_ms": 0.542,
+          "self_ms": 0.342,
+          "average_inclusive_ns": 39.0
+        },
+        {
+          "function": "platform__RetainedArena__enter",
+          "calls": 27994,
+          "inclusive_ms": 0.353,
+          "self_ms": 0.336,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "platform__Timer__start_with_interval",
+          "calls": 9478,
+          "inclusive_ms": 16.634,
+          "self_ms": 0.334,
+          "average_inclusive_ns": 1755.0
+        },
+        {
+          "function": "platform__Timer__stop_registration",
+          "calls": 18747,
+          "inclusive_ms": 44.951,
+          "self_ms": 0.308,
+          "average_inclusive_ns": 2398.0
+        },
+        {
+          "function": "main__BrowserApp__request_script_inserted_images",
+          "calls": 133,
+          "inclusive_ms": 0.307,
+          "self_ms": 0.305,
+          "average_inclusive_ns": 2310.0
+        },
+        {
+          "function": "layout__restore_retained_inline_layout",
+          "calls": 6664,
+          "inclusive_ms": 0.291,
+          "self_ms": 0.291,
+          "average_inclusive_ns": 44.0
+        },
+        {
+          "function": "browserjs__javascript_core_native_value_host_function",
+          "calls": 6688,
+          "inclusive_ms": 9.869,
+          "self_ms": 0.253,
+          "average_inclusive_ns": 1476.0
+        },
+        {
+          "function": "main__BrowserApp__poll_background_resources",
+          "calls": 132,
+          "inclusive_ms": 0.437,
+          "self_ms": 0.251,
+          "average_inclusive_ns": 3309.0
+        },
+        {
+          "function": "html__TaskQueue__add",
+          "calls": 4601,
+          "inclusive_ms": 2.173,
+          "self_ms": 0.245,
+          "average_inclusive_ns": 472.0
+        },
+        {
+          "function": "html__Task__is_runnable",
+          "calls": 17634,
+          "inclusive_ms": 0.242,
+          "self_ms": 0.242,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query_with_temporary_reply",
+          "calls": 7774,
+          "inclusive_ms": 300.605,
+          "self_ms": 0.191,
+          "average_inclusive_ns": 38668.0
+        },
+        {
+          "function": "platform__Timer__restart_with_interval",
+          "calls": 4646,
+          "inclusive_ms": 10.758,
+          "self_ms": 0.182,
+          "average_inclusive_ns": 2315.0
+        },
+        {
+          "function": "css__StyleComputer__recascade_font_size_if_needed",
+          "calls": 12481,
+          "inclusive_ms": 0.162,
+          "self_ms": 0.162,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "main__BrowserApp__prepare_overlay_scrollbars",
+          "calls": 133,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 1148.0
+        },
+        {
+          "function": "main__configure_browser_layout_font",
+          "calls": 1,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 153083.0
+        },
+        {
+          "function": "platform__defer_timer_during_cooperative_work",
+          "calls": 11762,
+          "inclusive_ms": 0.154,
+          "self_ms": 0.147,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "layout__same_pass_inline_inputs_are_current",
+          "calls": 2908,
+          "inclusive_ms": 0.142,
+          "self_ms": 0.142,
+          "average_inclusive_ns": 49.0
+        },
+        {
+          "function": "html__TaskQueue__take_first_runnable",
+          "calls": 4601,
+          "inclusive_ms": 0.175,
+          "self_ms": 0.133,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_string",
+          "calls": 1069,
+          "inclusive_ms": 0.331,
+          "self_ms": 0.127,
+          "average_inclusive_ns": 310.0
+        },
+        {
+          "function": "platform__RetainedArena__retain",
+          "calls": 20636,
+          "inclusive_ms": 0.119,
+          "self_ms": 0.119,
+          "average_inclusive_ns": 6.0
+        },
+        {
+          "function": "html__Task__cancel",
+          "calls": 4604,
+          "inclusive_ms": 0.155,
+          "self_ms": 0.11,
+          "average_inclusive_ns": 34.0
+        },
+        {
+          "function": "layout__viewport_refresh_scroll_state",
+          "calls": 1542,
+          "inclusive_ms": 0.135,
+          "self_ms": 0.108,
+          "average_inclusive_ns": 87.0
+        },
+        {
+          "function": "main__BrowserApp__begin_chromium_text_scroll_layer",
+          "calls": 34,
+          "inclusive_ms": 0.076,
+          "self_ms": 0.076,
+          "average_inclusive_ns": 2224.0
+        },
+        {
+          "function": "dom__Document__update_paint_and_hit_testing_properties_if_needed",
+          "calls": 1542,
+          "inclusive_ms": 5.364,
+          "self_ms": 0.067,
+          "average_inclusive_ns": 3478.0
+        },
+        {
+          "function": "browserjs__Runtime__actual_webidl_value",
+          "calls": 4347,
+          "inclusive_ms": 0.06,
+          "self_ms": 0.06,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "libjs__VM__finish_execution_generation",
+          "calls": 10717,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 5.0
+        },
+        {
+          "function": "main__BrowserApp__sync_window_activity",
+          "calls": 139,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 405.0
+        },
+        {
+          "function": "main__compact_element_geometry_query",
+          "calls": 64,
+          "inclusive_ms": 232.281,
+          "self_ms": 0.053,
+          "average_inclusive_ns": 3629398.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_memory_activity",
+          "calls": 133,
+          "inclusive_ms": 0.24,
+          "self_ms": 0.044,
+          "average_inclusive_ns": 1808.0
+        },
+        {
+          "function": "main__BrowserApp__advance_document_animations",
+          "calls": 133,
+          "inclusive_ms": 0.034,
+          "self_ms": 0.034,
+          "average_inclusive_ns": 257.0
+        },
+        {
+          "function": "layout__refresh_document_paint_tree_if_needed",
+          "calls": 1585,
+          "inclusive_ms": 0.028,
+          "self_ms": 0.028,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "main__BrowserApp__document_pixels_ready_for_frame",
+          "calls": 133,
+          "inclusive_ms": 0.046,
+          "self_ms": 0.024,
+          "average_inclusive_ns": 347.0
+        },
+        {
+          "function": "main__BrowserApp__begin_scroll_raster",
+          "calls": 1,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 20542.0
+        },
+        {
+          "function": "main__BrowserApp__sync_browser_tab_loading_animation",
+          "calls": 164,
+          "inclusive_ms": 0.054,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 327.0
+        },
+        {
+          "function": "main__end_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 158.0
+        },
+        {
+          "function": "main__BrowserApp__finish_scroll_profile_frame",
+          "calls": 133,
+          "inclusive_ms": 0.019,
+          "self_ms": 0.019,
+          "average_inclusive_ns": 146.0
+        },
+        {
+          "function": "main__initial_document",
+          "calls": 1,
+          "inclusive_ms": 0.013,
+          "self_ms": 0.013,
+          "average_inclusive_ns": 13333.0
+        },
+        {
+          "function": "main__BrowserApp__poll_native_navigation",
+          "calls": 133,
+          "inclusive_ms": 0.01,
+          "self_ms": 0.01,
+          "average_inclusive_ns": 77.0
+        },
+        {
+          "function": "main__BrowserApp__poll_media_playback",
+          "calls": 133,
+          "inclusive_ms": 0.007,
+          "self_ms": 0.007,
+          "average_inclusive_ns": 52.0
+        },
+        {
+          "function": "main__begin_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.006,
+          "self_ms": 0.006,
+          "average_inclusive_ns": 48.0
+        },
+        {
+          "function": "main__BrowserApp__frame_canvas_is_blank",
+          "calls": 133,
+          "inclusive_ms": 0.005,
+          "self_ms": 0.005,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "dom__Element__get_client_rects",
+          "calls": 26,
+          "inclusive_ms": 154.981,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 5960812.0
+        },
+        {
+          "function": "main__BrowserApp__begin_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 0.003,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 24.0
+        },
+        {
+          "function": "dom__Element__get_bounding_client_rect",
+          "calls": 26,
+          "inclusive_ms": 154.982,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 5960864.0
+        },
+        {
+          "function": "main__BrowserApp__prefetch_chromium_rects",
+          "calls": 11,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 117.0
+        },
+        {
+          "function": "main__BrowserApp__update_chromium_viewport_raster_plan",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 625.0
+        },
+        {
+          "function": "main__BrowserApp__begin_native_replay_scratch",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 541.0
+        },
+        {
+          "function": "main__link_translated_modules",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        },
+        {
+          "function": "main__main",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        }
+      ],
+      "calls": [
+        {
+          "function": "platform__leave_persistent",
+          "calls": 972679,
+          "inclusive_ms": 9.848,
+          "self_ms": 9.848,
+          "average_inclusive_ns": 10.0
+        },
+        {
+          "function": "platform__enter_persistent",
+          "calls": 645580,
+          "inclusive_ms": 7.968,
+          "self_ms": 7.968,
+          "average_inclusive_ns": 12.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_next_item",
+          "calls": 235821,
+          "inclusive_ms": 97.143,
+          "self_ms": 65.117,
+          "average_inclusive_ns": 412.0
+        },
+        {
+          "function": "layout__LineBuilder__append_text_item",
+          "calls": 125354,
+          "inclusive_ms": 4.788,
+          "self_ms": 4.788,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__skip_to_next",
+          "calls": 95298,
+          "inclusive_ms": 1.912,
+          "self_ms": 1.9,
+          "average_inclusive_ns": 20.0
+        },
+        {
+          "function": "layout__grid_item_outer_block_content_contribution",
+          "calls": 84922,
+          "inclusive_ms": 71.478,
+          "self_ms": 2.137,
+          "average_inclusive_ns": 842.0
+        },
+        {
+          "function": "layout__grid_intrinsic_outer_width_contribution",
+          "calls": 83403,
+          "inclusive_ms": 239.417,
+          "self_ms": 2.559,
+          "average_inclusive_ns": 2871.0
+        },
+        {
+          "function": "layout__calculate_max_content_height",
+          "calls": 76562,
+          "inclusive_ms": 19.057,
+          "self_ms": 2.05,
+          "average_inclusive_ns": 249.0
+        },
+        {
+          "function": "css__collect_matching_rules_with_storage",
+          "calls": 76208,
+          "inclusive_ms": 55.646,
+          "self_ms": 55.48,
+          "average_inclusive_ns": 730.0
+        },
+        {
+          "function": "layout__calculate_min_content_width",
+          "calls": 75823,
+          "inclusive_ms": 421.476,
+          "self_ms": 3.001,
+          "average_inclusive_ns": 5559.0
+        },
+        {
+          "function": "layout__grid_lines_for_definition",
+          "calls": 59880,
+          "inclusive_ms": 2.288,
+          "self_ms": 2.288,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "layout__calculate_min_content_height",
+          "calls": 57012,
+          "inclusive_ms": 59.73,
+          "self_ms": 1.191,
+          "average_inclusive_ns": 1048.0
+        },
+        {
+          "function": "platform__RetainedArenaScope__finish",
+          "calls": 56608,
+          "inclusive_ms": 0.955,
+          "self_ms": 0.799,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "layout__layout_independent_child",
+          "calls": 55034,
+          "inclusive_ms": 878.574,
+          "self_ms": 95.84,
+          "average_inclusive_ns": 15964.0
+        },
+        {
+          "function": "layout__LineBuilder__update_last_line",
+          "calls": 46198,
+          "inclusive_ms": 6.384,
+          "self_ms": 6.377,
+          "average_inclusive_ns": 138.0
+        },
+        {
+          "function": "layout__calculate_max_content_width",
+          "calls": 45765,
+          "inclusive_ms": 110.544,
+          "self_ms": 1.22,
+          "average_inclusive_ns": 2415.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_inline_contribution",
+          "calls": 35885,
+          "inclusive_ms": 162.982,
+          "self_ms": 3.775,
+          "average_inclusive_ns": 4542.0
+        },
+        {
+          "function": "layout__grid_track_sizing_placements",
+          "calls": 34248,
+          "inclusive_ms": 1.074,
+          "self_ms": 1.074,
+          "average_inclusive_ns": 31.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__compute_is_unidirectional_left_to_right",
+          "calls": 32951,
+          "inclusive_ms": 1.386,
+          "self_ms": 1.386,
+          "average_inclusive_ns": 42.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_all_items",
+          "calls": 32951,
+          "inclusive_ms": 82.993,
+          "self_ms": 3.911,
+          "average_inclusive_ns": 2519.0
+        },
+        {
+          "function": "layout__new_inline_iterator_with_item_storage",
+          "calls": 32951,
+          "inclusive_ms": 91.787,
+          "self_ms": 6.234,
+          "average_inclusive_ns": 2786.0
+        },
+        {
+          "function": "layout__optimized_text_wrap_breaks",
+          "calls": 32951,
+          "inclusive_ms": 0.469,
+          "self_ms": 0.469,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "layout__run_uncached_inline_formatting_context_for_width",
+          "calls": 32951,
+          "inclusive_ms": 247.228,
+          "self_ms": 42.561,
+          "average_inclusive_ns": 7503.0
+        },
+        {
+          "function": "layout__uncached_block_box_from_typed_layout_shallow",
+          "calls": 31173,
+          "inclusive_ms": 58.349,
+          "self_ms": 57.857,
+          "average_inclusive_ns": 1872.0
+        },
+        {
+          "function": "layout__resolve_grid_tracks",
+          "calls": 30842,
+          "inclusive_ms": 5.769,
+          "self_ms": 5.769,
+          "average_inclusive_ns": 187.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_block_contribution",
+          "calls": 28358,
+          "inclusive_ms": 39.992,
+          "self_ms": 1.442,
+          "average_inclusive_ns": 1410.0
+        },
+        {
+          "function": "html__clean_up_after_running_script",
+          "calls": 28118,
+          "inclusive_ms": 1.116,
+          "self_ms": 0.513,
+          "average_inclusive_ns": 40.0
+        },
+        {
+          "function": "html__prepare_to_run_script",
+          "calls": 28118,
+          "inclusive_ms": 0.457,
+          "self_ms": 0.457,
+          "average_inclusive_ns": 16.0
+        },
+        {
+          "function": "platform__RetainedArena__enter",
+          "calls": 27994,
+          "inclusive_ms": 0.353,
+          "self_ms": 0.336,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "layout__calculate_fit_content_height",
+          "calls": 25435,
+          "inclusive_ms": 10.428,
+          "self_ms": 0.565,
+          "average_inclusive_ns": 410.0
+        },
+        {
+          "function": "browserjs__invoke_value_host_function_record",
+          "calls": 25303,
+          "inclusive_ms": 210.862,
+          "self_ms": 23.789,
+          "average_inclusive_ns": 8333.0
+        },
+        {
+          "function": "browserjs__Runtime__clean_up_html_script",
+          "calls": 23666,
+          "inclusive_ms": 1.105,
+          "self_ms": 0.539,
+          "average_inclusive_ns": 47.0
+        },
+        {
+          "function": "browserjs__Runtime__prepare_html_script",
+          "calls": 23666,
+          "inclusive_ms": 0.872,
+          "self_ms": 0.532,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_dom_string",
+          "calls": 21840,
+          "inclusive_ms": 1.986,
+          "self_ms": 1.986,
+          "average_inclusive_ns": 91.0
+        },
+        {
+          "function": "platform__RetainedArena__release",
+          "calls": 20638,
+          "inclusive_ms": 7.233,
+          "self_ms": 7.233,
+          "average_inclusive_ns": 350.0
+        },
+        {
+          "function": "platform__RetainedArena__retain",
+          "calls": 20636,
+          "inclusive_ms": 0.119,
+          "self_ms": 0.119,
+          "average_inclusive_ns": 6.0
+        },
+        {
+          "function": "browserjs__js_source_string",
+          "calls": 20293,
+          "inclusive_ms": 7.878,
+          "self_ms": 7.878,
+          "average_inclusive_ns": 388.0
+        },
+        {
+          "function": "css__update_style_recursively",
+          "calls": 19496,
+          "inclusive_ms": 2832.429,
+          "self_ms": 9.504,
+          "average_inclusive_ns": 145283.0
+        },
+        {
+          "function": "css__StyleComputer__compute_style_impl",
+          "calls": 19057,
+          "inclusive_ms": 155.209,
+          "self_ms": 29.126,
+          "average_inclusive_ns": 8144.0
+        },
+        {
+          "function": "platform__Timer__stop_registration",
+          "calls": 18747,
+          "inclusive_ms": 44.951,
+          "self_ms": 0.308,
+          "average_inclusive_ns": 2398.0
+        },
+        {
+          "function": "browserjs__javascript_core_value_host_function",
+          "calls": 18615,
+          "inclusive_ms": 201.736,
+          "self_ms": 0.489,
+          "average_inclusive_ns": 10837.0
+        },
+        {
+          "function": "layout__calculate_content_width_with_constraint",
+          "calls": 18344,
+          "inclusive_ms": 527.586,
+          "self_ms": 19.277,
+          "average_inclusive_ns": 28761.0
+        },
+        {
+          "function": "html__Task__is_runnable",
+          "calls": 17634,
+          "inclusive_ms": 0.242,
+          "self_ms": 0.242,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "layout__place_grid_items",
+          "calls": 17124,
+          "inclusive_ms": 7.862,
+          "self_ms": 7.862,
+          "average_inclusive_ns": 459.0
+        },
+        {
+          "function": "layout__run_uncached_grid_formatting_context_internal",
+          "calls": 17124,
+          "inclusive_ms": 1051.955,
+          "self_ms": 31.766,
+          "average_inclusive_ns": 61432.0
+        },
+        {
+          "function": "layout__DocumentLayoutResult__ensure_boxes_by_layout_cache",
+          "calls": 17045,
+          "inclusive_ms": 2.404,
+          "self_ms": 2.404,
+          "average_inclusive_ns": 141.0
+        },
+        {
+          "function": "dom__compute_client_rects_assuming_layout_clean",
+          "calls": 16417,
+          "inclusive_ms": 6.72,
+          "self_ms": 1.51,
+          "average_inclusive_ns": 409.0
+        },
+        {
+          "function": "layout__viewport_transform_client_rects",
+          "calls": 16417,
+          "inclusive_ms": 5.21,
+          "self_ms": 5.041,
+          "average_inclusive_ns": 317.0
+        },
+        {
+          "function": "css__StyleComputer__compute_cascaded_values_into",
+          "calls": 14960,
+          "inclusive_ms": 21.572,
+          "self_ms": 21.57,
+          "average_inclusive_ns": 1442.0
+        },
+        {
+          "function": "platform__Timer__release_activity_root",
+          "calls": 14520,
+          "inclusive_ms": 1.456,
+          "self_ms": 1.24,
+          "average_inclusive_ns": 100.0
+        },
+        {
+          "function": "html__TaskQueue__has_runnable_tasks",
+          "calls": 13803,
+          "inclusive_ms": 0.542,
+          "self_ms": 0.342,
+          "average_inclusive_ns": 39.0
+        },
+        {
+          "function": "css__resolve_computed_values_for_document_impl",
+          "calls": 12517,
+          "inclusive_ms": 37.442,
+          "self_ms": 36.665,
+          "average_inclusive_ns": 2991.0
+        },
+        {
+          "function": "css__StyleComputer__compute_properties",
+          "calls": 12481,
+          "inclusive_ms": 48.659,
+          "self_ms": 48.413,
+          "average_inclusive_ns": 3899.0
+        },
+        {
+          "function": "css__StyleComputer__recascade_font_size_if_needed",
+          "calls": 12481,
+          "inclusive_ms": 0.162,
+          "self_ms": 0.162,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "css__StyleComputer__recompute_style_with_invalidation",
+          "calls": 12151,
+          "inclusive_ms": 181.4,
+          "self_ms": 26.048,
+          "average_inclusive_ns": 14929.0
+        },
+        {
+          "function": "platform__Timer__fire",
+          "calls": 11770,
+          "inclusive_ms": 646.953,
+          "self_ms": 6.19,
+          "average_inclusive_ns": 54966.0
+        },
+        {
+          "function": "platform__defer_timer_during_cooperative_work",
+          "calls": 11762,
+          "inclusive_ms": 0.154,
+          "self_ms": 0.147,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "layout__run_uncached_flex_formatting_context_with_mode",
+          "calls": 11733,
+          "inclusive_ms": 220.562,
+          "self_ms": 12.966,
+          "average_inclusive_ns": 18798.0
+        },
+        {
+          "function": "html__EventLoop__perform_a_microtask_checkpoint",
+          "calls": 10721,
+          "inclusive_ms": 0.966,
+          "self_ms": 0.652,
+          "average_inclusive_ns": 90.0
+        },
+        {
+          "function": "libjs__VM__finish_execution_generation",
+          "calls": 10717,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 5.0
+        },
+        {
+          "function": "browserjs__js_string_to_v",
+          "calls": 10390,
+          "inclusive_ms": 3.57,
+          "self_ms": 3.57,
+          "average_inclusive_ns": 344.0
+        },
+        {
+          "function": "platform__Timer__stop",
+          "calls": 9799,
+          "inclusive_ms": 3.332,
+          "self_ms": 0.356,
+          "average_inclusive_ns": 340.0
+        },
+        {
+          "function": "platform__Timer__start_with_interval",
+          "calls": 9478,
+          "inclusive_ms": 16.634,
+          "self_ms": 0.334,
+          "average_inclusive_ns": 1755.0
+        },
+        {
+          "function": "platform__Timer__take_activity_root",
+          "calls": 9478,
+          "inclusive_ms": 0.576,
+          "self_ms": 0.367,
+          "average_inclusive_ns": 61.0
+        },
+        {
+          "function": "platform__register_native_timer",
+          "calls": 9416,
+          "inclusive_ms": 15.724,
+          "self_ms": 15.724,
+          "average_inclusive_ns": 1670.0
+        },
+        {
+          "function": "platform__unregister_native_timer",
+          "calls": 9415,
+          "inclusive_ms": 44.644,
+          "self_ms": 44.644,
+          "average_inclusive_ns": 4742.0
+        },
+        {
+          "function": "browserjs__Runtime__call_engine_function",
+          "calls": 9401,
+          "inclusive_ms": 167.597,
+          "self_ms": 48.767,
+          "average_inclusive_ns": 17828.0
+        },
+        {
+          "function": "html__EventLoop__schedule",
+          "calls": 8818,
+          "inclusive_ms": 11.038,
+          "self_ms": 0.382,
+          "average_inclusive_ns": 1252.0
+        },
+        {
+          "function": "browserjs__javascript_core_host_function",
+          "calls": 8647,
+          "inclusive_ms": 308.976,
+          "self_ms": 2.955,
+          "average_inclusive_ns": 35732.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query",
+          "calls": 7774,
+          "inclusive_ms": 300.414,
+          "self_ms": 25.108,
+          "average_inclusive_ns": 38643.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query_with_temporary_reply",
+          "calls": 7774,
+          "inclusive_ms": 300.605,
+          "self_ms": 0.191,
+          "average_inclusive_ns": 38668.0
+        },
+        {
+          "function": "browserjs__javascript_core_native_value_host_function",
+          "calls": 6688,
+          "inclusive_ms": 9.869,
+          "self_ms": 0.253,
+          "average_inclusive_ns": 1476.0
+        },
+        {
+          "function": "layout__restore_retained_inline_layout",
+          "calls": 6664,
+          "inclusive_ms": 0.291,
+          "self_ms": 0.291,
+          "average_inclusive_ns": 44.0
+        },
+        {
+          "function": "browserjs__TimerHost__operate",
+          "calls": 4827,
+          "inclusive_ms": 17.064,
+          "self_ms": 5.014,
+          "average_inclusive_ns": 3535.0
+        },
+        {
+          "function": "browserjs__Runtime__call_with_object_receiver",
+          "calls": 4815,
+          "inclusive_ms": 401.593,
+          "self_ms": 170.097,
+          "average_inclusive_ns": 83405.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+          "calls": 4771,
+          "inclusive_ms": 8.42,
+          "self_ms": 2.027,
+          "average_inclusive_ns": 1765.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__run_timer_initialization_steps",
+          "calls": 4771,
+          "inclusive_ms": 10.33,
+          "self_ms": 1.911,
+          "average_inclusive_ns": 2165.0
+        },
+        {
+          "function": "platform__Timer__restart_with_interval",
+          "calls": 4646,
+          "inclusive_ms": 10.758,
+          "self_ms": 0.182,
+          "average_inclusive_ns": 2315.0
+        },
+        {
+          "function": "html__Task__cancel",
+          "calls": 4604,
+          "inclusive_ms": 0.155,
+          "self_ms": 0.11,
+          "average_inclusive_ns": 34.0
+        },
+        {
+          "function": "html__Task__execute",
+          "calls": 4604,
+          "inclusive_ms": 577.225,
+          "self_ms": 26.727,
+          "average_inclusive_ns": 125375.0
+        },
+        {
+          "function": "html__EventLoop__process",
+          "calls": 4601,
+          "inclusive_ms": 589.254,
+          "self_ms": 0.694,
+          "average_inclusive_ns": 128071.0
+        },
+        {
+          "function": "html__TaskQueue__add",
+          "calls": 4601,
+          "inclusive_ms": 2.173,
+          "self_ms": 0.245,
+          "average_inclusive_ns": 472.0
+        },
+        {
+          "function": "html__TaskQueue__take_first_runnable",
+          "calls": 4601,
+          "inclusive_ms": 0.175,
+          "self_ms": 0.133,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "webidl__invoke_callback",
+          "calls": 4435,
+          "inclusive_ms": 25.608,
+          "self_ms": 4.613,
+          "average_inclusive_ns": 5774.0
+        },
+        {
+          "function": "browserjs__Runtime__actual_webidl_value",
+          "calls": 4347,
+          "inclusive_ms": 0.06,
+          "self_ms": 0.06,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "layout__same_pass_inline_inputs_are_current",
+          "calls": 2908,
+          "inclusive_ms": 0.142,
+          "self_ms": 0.142,
+          "average_inclusive_ns": 49.0
+        },
+        {
+          "function": "main__apply_decoded_javascript_state",
+          "calls": 2684,
+          "inclusive_ms": 14.723,
+          "self_ms": 14.702,
+          "average_inclusive_ns": 5486.0
+        },
+        {
+          "function": "main__compact_query_replay_snapshot",
+          "calls": 2684,
+          "inclusive_ms": 5.732,
+          "self_ms": 5.732,
+          "average_inclusive_ns": 2136.0
+        },
+        {
+          "function": "browserjs__Runtime__webidl_value",
+          "calls": 2124,
+          "inclusive_ms": 1.399,
+          "self_ms": 1.349,
+          "average_inclusive_ns": 659.0
+        },
+        {
+          "function": "browserjs__evaluate_javascript_core_text",
+          "calls": 1820,
+          "inclusive_ms": 226.376,
+          "self_ms": 58.67,
+          "average_inclusive_ns": 124382.0
+        },
+        {
+          "function": "layout__calculate_content_height_with_constraint",
+          "calls": 1698,
+          "inclusive_ms": 74.374,
+          "self_ms": 2.799,
+          "average_inclusive_ns": 43801.0
+        },
+        {
+          "function": "layout__refresh_document_paint_tree_if_needed",
+          "calls": 1585,
+          "inclusive_ms": 0.028,
+          "self_ms": 0.028,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "dom__Document__update_paint_and_hit_testing_properties_if_needed",
+          "calls": 1542,
+          "inclusive_ms": 5.364,
+          "self_ms": 0.067,
+          "average_inclusive_ns": 3478.0
+        },
+        {
+          "function": "layout__viewport_refresh_scroll_state",
+          "calls": 1542,
+          "inclusive_ms": 0.135,
+          "self_ms": 0.108,
+          "average_inclusive_ns": 87.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_string",
+          "calls": 1069,
+          "inclusive_ms": 0.331,
+          "self_ms": 0.127,
+          "average_inclusive_ns": 310.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__css_sheet_query",
+          "calls": 754,
+          "inclusive_ms": 24.208,
+          "self_ms": 23.318,
+          "average_inclusive_ns": 32107.0
+        },
+        {
+          "function": "dom__Document__update_style",
+          "calls": 297,
+          "inclusive_ms": 226.048,
+          "self_ms": 2.156,
+          "average_inclusive_ns": 761105.0
+        },
+        {
+          "function": "dom__Document__update_layout",
+          "calls": 291,
+          "inclusive_ms": 648.312,
+          "self_ms": 13.57,
+          "average_inclusive_ns": 2227877.0
+        },
+        {
+          "function": "main__BrowserApp__poll_javascript_tasks",
+          "calls": 252,
+          "inclusive_ms": 48.145,
+          "self_ms": 4.11,
+          "average_inclusive_ns": 191051.0
+        },
+        {
+          "function": "main__BrowserApp__browser_chrome_state",
+          "calls": 164,
+          "inclusive_ms": 2.101,
+          "self_ms": 2.091,
+          "average_inclusive_ns": 12810.0
+        },
+        {
+          "function": "main__BrowserApp__sync_browser_tab_loading_animation",
+          "calls": 164,
+          "inclusive_ms": 0.054,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 327.0
+        },
+        {
+          "function": "main__BrowserApp__update_browser_chrome",
+          "calls": 163,
+          "inclusive_ms": 9.681,
+          "self_ms": 7.558,
+          "average_inclusive_ns": 59394.0
+        },
+        {
+          "function": "main__BrowserApp__draw_command",
+          "calls": 159,
+          "inclusive_ms": 52.602,
+          "self_ms": 52.489,
+          "average_inclusive_ns": 330833.0
+        },
+        {
+          "function": "main__BrowserApp__sync_window_activity",
+          "calls": 139,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 405.0
+        },
+        {
+          "function": "main__browser_window_size",
+          "calls": 134,
+          "inclusive_ms": 1.02,
+          "self_ms": 1.02,
+          "average_inclusive_ns": 7615.0
+        },
+        {
+          "function": "main__BrowserApp__advance_document_animations",
+          "calls": 133,
+          "inclusive_ms": 0.034,
+          "self_ms": 0.034,
+          "average_inclusive_ns": 257.0
+        },
+        {
+          "function": "main__BrowserApp__begin_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 0.003,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 24.0
+        },
+        {
+          "function": "main__BrowserApp__document_pixels_ready_for_frame",
+          "calls": 133,
+          "inclusive_ms": 0.046,
+          "self_ms": 0.024,
+          "average_inclusive_ns": 347.0
+        },
+        {
+          "function": "main__BrowserApp__draw",
+          "calls": 133,
+          "inclusive_ms": 922.963,
+          "self_ms": 56.286,
+          "average_inclusive_ns": 6939574.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_memory_activity",
+          "calls": 133,
+          "inclusive_ms": 0.24,
+          "self_ms": 0.044,
+          "average_inclusive_ns": 1808.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 244.52,
+          "self_ms": 38.602,
+          "average_inclusive_ns": 1838497.0
+        },
+        {
+          "function": "main__BrowserApp__finish_scroll_profile_frame",
+          "calls": 133,
+          "inclusive_ms": 0.019,
+          "self_ms": 0.019,
+          "average_inclusive_ns": 146.0
+        },
+        {
+          "function": "main__BrowserApp__frame_canvas_is_blank",
+          "calls": 133,
+          "inclusive_ms": 0.005,
+          "self_ms": 0.005,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "main__BrowserApp__poll_media_playback",
+          "calls": 133,
+          "inclusive_ms": 0.007,
+          "self_ms": 0.007,
+          "average_inclusive_ns": 52.0
+        },
+        {
+          "function": "main__BrowserApp__poll_native_navigation",
+          "calls": 133,
+          "inclusive_ms": 0.01,
+          "self_ms": 0.01,
+          "average_inclusive_ns": 77.0
+        },
+        {
+          "function": "main__BrowserApp__poll_navigation_and_background_resources",
+          "calls": 133,
+          "inclusive_ms": 513.887,
+          "self_ms": 62.489,
+          "average_inclusive_ns": 3863815.0
+        },
+        {
+          "function": "main__BrowserApp__prepare_overlay_scrollbars",
+          "calls": 133,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 1148.0
+        },
+        {
+          "function": "main__BrowserApp__request_script_inserted_images",
+          "calls": 133,
+          "inclusive_ms": 0.307,
+          "self_ms": 0.305,
+          "average_inclusive_ns": 2310.0
+        },
+        {
+          "function": "main__begin_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.006,
+          "self_ms": 0.006,
+          "average_inclusive_ns": 48.0
+        },
+        {
+          "function": "main__end_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 158.0
+        },
+        {
+          "function": "main__BrowserApp__poll_background_resources",
+          "calls": 132,
+          "inclusive_ms": 0.437,
+          "self_ms": 0.251,
+          "average_inclusive_ns": 3309.0
+        },
+        {
+          "function": "main__BrowserApp__begin_stationary_document_raster",
+          "calls": 99,
+          "inclusive_ms": 0.608,
+          "self_ms": 0.608,
+          "average_inclusive_ns": 6141.0
+        },
+        {
+          "function": "main__compact_element_geometry_query",
+          "calls": 64,
+          "inclusive_ms": 232.281,
+          "self_ms": 0.053,
+          "average_inclusive_ns": 3629398.0
+        },
+        {
+          "function": "main__BrowserApp__begin_chromium_text_scroll_layer",
+          "calls": 34,
+          "inclusive_ms": 0.076,
+          "self_ms": 0.076,
+          "average_inclusive_ns": 2224.0
+        },
+        {
+          "function": "main__compact_inline_style_query",
+          "calls": 29,
+          "inclusive_ms": 0.914,
+          "self_ms": 0.912,
+          "average_inclusive_ns": 31501.0
+        },
+        {
+          "function": "dom__Element__get_bounding_client_rect",
+          "calls": 26,
+          "inclusive_ms": 154.982,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 5960864.0
+        },
+        {
+          "function": "dom__Element__get_client_rects",
+          "calls": 26,
+          "inclusive_ms": 154.981,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 5960812.0
+        },
+        {
+          "function": "css__update_style_for_document_from_upstream",
+          "calls": 18,
+          "inclusive_ms": 223.882,
+          "self_ms": 24.855,
+          "average_inclusive_ns": 12437870.0
+        },
+        {
+          "function": "layout__finish_document_layout",
+          "calls": 15,
+          "inclusive_ms": 405.023,
+          "self_ms": 62.164,
+          "average_inclusive_ns": 27001555.0
+        },
+        {
+          "function": "layout__renderer_box_from_document_layout_result",
+          "calls": 15,
+          "inclusive_ms": 82.147,
+          "self_ms": 23.299,
+          "average_inclusive_ns": 5476447.0
+        },
+        {
+          "function": "layout__viewport_assign_accumulated_visual_contexts",
+          "calls": 15,
+          "inclusive_ms": 5.163,
+          "self_ms": 2.927,
+          "average_inclusive_ns": 344175.0
+        },
+        {
+          "function": "main__BrowserApp__prefetch_chromium_rects",
+          "calls": 11,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 117.0
+        },
+        {
+          "function": "main__draw_srgb_rect",
+          "calls": 11,
+          "inclusive_ms": 1.819,
+          "self_ms": 1.819,
+          "average_inclusive_ns": 165349.0
+        },
+        {
+          "function": "layout__build_layout_tree_from_computed_styles",
+          "calls": 5,
+          "inclusive_ms": 49.003,
+          "self_ms": 19.049,
+          "average_inclusive_ns": 9800675.0
+        },
+        {
+          "function": "main__BrowserApp__begin_native_replay_scratch",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 541.0
+        },
+        {
+          "function": "main__BrowserApp__begin_scroll_raster",
+          "calls": 1,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 20542.0
+        },
+        {
+          "function": "main__BrowserApp__install_loaded_page",
+          "calls": 1,
+          "inclusive_ms": 335.062,
+          "self_ms": 45.418,
+          "average_inclusive_ns": 335062500.0
+        },
+        {
+          "function": "main__BrowserApp__relayout",
+          "calls": 1,
+          "inclusive_ms": 125.078,
+          "self_ms": 0.756,
+          "average_inclusive_ns": 125077834.0
+        },
+        {
+          "function": "main__BrowserApp__update_chromium_viewport_raster_plan",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 625.0
+        },
+        {
+          "function": "main__configure_browser_layout_font",
+          "calls": 1,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 153083.0
+        },
+        {
+          "function": "main__initial_document",
+          "calls": 1,
+          "inclusive_ms": 0.013,
+          "self_ms": 0.013,
+          "average_inclusive_ns": 13333.0
+        },
+        {
+          "function": "main__link_translated_modules",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        },
+        {
+          "function": "main__main",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        }
+      ],
+      "negative_self_rows": [],
+      "interpretation": "Instrumented elapsed time. Self includes native/JSC callees, waits and uninstrumented/inlined functions. Inclusive rows overlap; do not sum them. Counter overhead changes the workload. No CPU instruction, unprofiled speedup or Brave acceptance claim.",
+      "rows": [
+        {
+          "function": "main__BrowserApp__advance_document_animations",
+          "calls": 133,
+          "inclusive_ms": 0.034,
+          "self_ms": 0.034,
+          "average_inclusive_ns": 257.0
+        },
+        {
+          "function": "main__BrowserApp__begin_chromium_text_scroll_layer",
+          "calls": 34,
+          "inclusive_ms": 0.076,
+          "self_ms": 0.076,
+          "average_inclusive_ns": 2224.0
+        },
+        {
+          "function": "main__BrowserApp__begin_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 0.003,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 24.0
+        },
+        {
+          "function": "main__BrowserApp__begin_native_replay_scratch",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 541.0
+        },
+        {
+          "function": "main__BrowserApp__begin_scroll_raster",
+          "calls": 1,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 20542.0
+        },
+        {
+          "function": "main__BrowserApp__begin_stationary_document_raster",
+          "calls": 99,
+          "inclusive_ms": 0.608,
+          "self_ms": 0.608,
+          "average_inclusive_ns": 6141.0
+        },
+        {
+          "function": "main__BrowserApp__browser_chrome_state",
+          "calls": 164,
+          "inclusive_ms": 2.101,
+          "self_ms": 2.091,
+          "average_inclusive_ns": 12810.0
+        },
+        {
+          "function": "main__BrowserApp__document_pixels_ready_for_frame",
+          "calls": 133,
+          "inclusive_ms": 0.046,
+          "self_ms": 0.024,
+          "average_inclusive_ns": 347.0
+        },
+        {
+          "function": "main__BrowserApp__draw",
+          "calls": 133,
+          "inclusive_ms": 922.963,
+          "self_ms": 56.286,
+          "average_inclusive_ns": 6939574.0
+        },
+        {
+          "function": "main__BrowserApp__draw_command",
+          "calls": 159,
+          "inclusive_ms": 52.602,
+          "self_ms": 52.489,
+          "average_inclusive_ns": 330833.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_memory_activity",
+          "calls": 133,
+          "inclusive_ms": 0.24,
+          "self_ms": 0.044,
+          "average_inclusive_ns": 1808.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 244.52,
+          "self_ms": 38.602,
+          "average_inclusive_ns": 1838497.0
+        },
+        {
+          "function": "main__BrowserApp__finish_scroll_profile_frame",
+          "calls": 133,
+          "inclusive_ms": 0.019,
+          "self_ms": 0.019,
+          "average_inclusive_ns": 146.0
+        },
+        {
+          "function": "main__BrowserApp__frame_canvas_is_blank",
+          "calls": 133,
+          "inclusive_ms": 0.005,
+          "self_ms": 0.005,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "main__BrowserApp__install_loaded_page",
+          "calls": 1,
+          "inclusive_ms": 335.062,
+          "self_ms": 45.418,
+          "average_inclusive_ns": 335062500.0
+        },
+        {
+          "function": "main__BrowserApp__poll_background_resources",
+          "calls": 132,
+          "inclusive_ms": 0.437,
+          "self_ms": 0.251,
+          "average_inclusive_ns": 3309.0
+        },
+        {
+          "function": "main__BrowserApp__poll_javascript_tasks",
+          "calls": 252,
+          "inclusive_ms": 48.145,
+          "self_ms": 4.11,
+          "average_inclusive_ns": 191051.0
+        },
+        {
+          "function": "main__BrowserApp__poll_media_playback",
+          "calls": 133,
+          "inclusive_ms": 0.007,
+          "self_ms": 0.007,
+          "average_inclusive_ns": 52.0
+        },
+        {
+          "function": "main__BrowserApp__poll_native_navigation",
+          "calls": 133,
+          "inclusive_ms": 0.01,
+          "self_ms": 0.01,
+          "average_inclusive_ns": 77.0
+        },
+        {
+          "function": "main__BrowserApp__poll_navigation_and_background_resources",
+          "calls": 133,
+          "inclusive_ms": 513.887,
+          "self_ms": 62.489,
+          "average_inclusive_ns": 3863815.0
+        },
+        {
+          "function": "main__BrowserApp__prefetch_chromium_rects",
+          "calls": 11,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 117.0
+        },
+        {
+          "function": "main__BrowserApp__prepare_overlay_scrollbars",
+          "calls": 133,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 1148.0
+        },
+        {
+          "function": "main__BrowserApp__relayout",
+          "calls": 1,
+          "inclusive_ms": 125.078,
+          "self_ms": 0.756,
+          "average_inclusive_ns": 125077834.0
+        },
+        {
+          "function": "main__BrowserApp__request_script_inserted_images",
+          "calls": 133,
+          "inclusive_ms": 0.307,
+          "self_ms": 0.305,
+          "average_inclusive_ns": 2310.0
+        },
+        {
+          "function": "main__BrowserApp__sync_browser_tab_loading_animation",
+          "calls": 164,
+          "inclusive_ms": 0.054,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 327.0
+        },
+        {
+          "function": "main__BrowserApp__sync_window_activity",
+          "calls": 139,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 405.0
+        },
+        {
+          "function": "main__BrowserApp__update_browser_chrome",
+          "calls": 163,
+          "inclusive_ms": 9.681,
+          "self_ms": 7.558,
+          "average_inclusive_ns": 59394.0
+        },
+        {
+          "function": "main__BrowserApp__update_chromium_viewport_raster_plan",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 625.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__css_sheet_query",
+          "calls": 754,
+          "inclusive_ms": 24.208,
+          "self_ms": 23.318,
+          "average_inclusive_ns": 32107.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query",
+          "calls": 7774,
+          "inclusive_ms": 300.414,
+          "self_ms": 25.108,
+          "average_inclusive_ns": 38643.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query_with_temporary_reply",
+          "calls": 7774,
+          "inclusive_ms": 300.605,
+          "self_ms": 0.191,
+          "average_inclusive_ns": 38668.0
+        },
+        {
+          "function": "main__apply_decoded_javascript_state",
+          "calls": 2684,
+          "inclusive_ms": 14.723,
+          "self_ms": 14.702,
+          "average_inclusive_ns": 5486.0
+        },
+        {
+          "function": "main__begin_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.006,
+          "self_ms": 0.006,
+          "average_inclusive_ns": 48.0
+        },
+        {
+          "function": "main__browser_window_size",
+          "calls": 134,
+          "inclusive_ms": 1.02,
+          "self_ms": 1.02,
+          "average_inclusive_ns": 7615.0
+        },
+        {
+          "function": "browserjs__Runtime__actual_webidl_value",
+          "calls": 4347,
+          "inclusive_ms": 0.06,
+          "self_ms": 0.06,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_dom_string",
+          "calls": 21840,
+          "inclusive_ms": 1.986,
+          "self_ms": 1.986,
+          "average_inclusive_ns": 91.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_string",
+          "calls": 1069,
+          "inclusive_ms": 0.331,
+          "self_ms": 0.127,
+          "average_inclusive_ns": 310.0
+        },
+        {
+          "function": "browserjs__Runtime__call_engine_function",
+          "calls": 9401,
+          "inclusive_ms": 167.597,
+          "self_ms": 48.767,
+          "average_inclusive_ns": 17828.0
+        },
+        {
+          "function": "browserjs__Runtime__call_with_object_receiver",
+          "calls": 4815,
+          "inclusive_ms": 401.593,
+          "self_ms": 170.097,
+          "average_inclusive_ns": 83405.0
+        },
+        {
+          "function": "browserjs__Runtime__clean_up_html_script",
+          "calls": 23666,
+          "inclusive_ms": 1.105,
+          "self_ms": 0.539,
+          "average_inclusive_ns": 47.0
+        },
+        {
+          "function": "browserjs__Runtime__prepare_html_script",
+          "calls": 23666,
+          "inclusive_ms": 0.872,
+          "self_ms": 0.532,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "browserjs__Runtime__webidl_value",
+          "calls": 2124,
+          "inclusive_ms": 1.399,
+          "self_ms": 1.349,
+          "average_inclusive_ns": 659.0
+        },
+        {
+          "function": "browserjs__TimerHost__operate",
+          "calls": 4827,
+          "inclusive_ms": 17.064,
+          "self_ms": 5.014,
+          "average_inclusive_ns": 3535.0
+        },
+        {
+          "function": "browserjs__evaluate_javascript_core_text",
+          "calls": 1820,
+          "inclusive_ms": 226.376,
+          "self_ms": 58.67,
+          "average_inclusive_ns": 124382.0
+        },
+        {
+          "function": "browserjs__invoke_value_host_function_record",
+          "calls": 25303,
+          "inclusive_ms": 210.862,
+          "self_ms": 23.789,
+          "average_inclusive_ns": 8333.0
+        },
+        {
+          "function": "browserjs__javascript_core_host_function",
+          "calls": 8647,
+          "inclusive_ms": 308.976,
+          "self_ms": 2.955,
+          "average_inclusive_ns": 35732.0
+        },
+        {
+          "function": "browserjs__javascript_core_native_value_host_function",
+          "calls": 6688,
+          "inclusive_ms": 9.869,
+          "self_ms": 0.253,
+          "average_inclusive_ns": 1476.0
+        },
+        {
+          "function": "browserjs__javascript_core_value_host_function",
+          "calls": 18615,
+          "inclusive_ms": 201.736,
+          "self_ms": 0.489,
+          "average_inclusive_ns": 10837.0
+        },
+        {
+          "function": "browserjs__js_source_string",
+          "calls": 20293,
+          "inclusive_ms": 7.878,
+          "self_ms": 7.878,
+          "average_inclusive_ns": 388.0
+        },
+        {
+          "function": "browserjs__js_string_to_v",
+          "calls": 10390,
+          "inclusive_ms": 3.57,
+          "self_ms": 3.57,
+          "average_inclusive_ns": 344.0
+        },
+        {
+          "function": "main__compact_element_geometry_query",
+          "calls": 64,
+          "inclusive_ms": 232.281,
+          "self_ms": 0.053,
+          "average_inclusive_ns": 3629398.0
+        },
+        {
+          "function": "main__compact_inline_style_query",
+          "calls": 29,
+          "inclusive_ms": 0.914,
+          "self_ms": 0.912,
+          "average_inclusive_ns": 31501.0
+        },
+        {
+          "function": "main__compact_query_replay_snapshot",
+          "calls": 2684,
+          "inclusive_ms": 5.732,
+          "self_ms": 5.732,
+          "average_inclusive_ns": 2136.0
+        },
+        {
+          "function": "main__configure_browser_layout_font",
+          "calls": 1,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 153083.0
+        },
+        {
+          "function": "css__StyleComputer__compute_cascaded_values_into",
+          "calls": 14960,
+          "inclusive_ms": 21.572,
+          "self_ms": 21.57,
+          "average_inclusive_ns": 1442.0
+        },
+        {
+          "function": "css__StyleComputer__compute_properties",
+          "calls": 12481,
+          "inclusive_ms": 48.659,
+          "self_ms": 48.413,
+          "average_inclusive_ns": 3899.0
+        },
+        {
+          "function": "css__StyleComputer__compute_style_impl",
+          "calls": 19057,
+          "inclusive_ms": 155.209,
+          "self_ms": 29.126,
+          "average_inclusive_ns": 8144.0
+        },
+        {
+          "function": "css__StyleComputer__recascade_font_size_if_needed",
+          "calls": 12481,
+          "inclusive_ms": 0.162,
+          "self_ms": 0.162,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "css__StyleComputer__recompute_style_with_invalidation",
+          "calls": 12151,
+          "inclusive_ms": 181.4,
+          "self_ms": 26.048,
+          "average_inclusive_ns": 14929.0
+        },
+        {
+          "function": "css__collect_matching_rules_with_storage",
+          "calls": 76208,
+          "inclusive_ms": 55.646,
+          "self_ms": 55.48,
+          "average_inclusive_ns": 730.0
+        },
+        {
+          "function": "css__resolve_computed_values_for_document_impl",
+          "calls": 12517,
+          "inclusive_ms": 37.442,
+          "self_ms": 36.665,
+          "average_inclusive_ns": 2991.0
+        },
+        {
+          "function": "css__update_style_for_document_from_upstream",
+          "calls": 18,
+          "inclusive_ms": 223.882,
+          "self_ms": 24.855,
+          "average_inclusive_ns": 12437870.0
+        },
+        {
+          "function": "css__update_style_recursively",
+          "calls": 19496,
+          "inclusive_ms": 2832.429,
+          "self_ms": 9.504,
+          "average_inclusive_ns": 145283.0
+        },
+        {
+          "function": "dom__Document__update_layout",
+          "calls": 291,
+          "inclusive_ms": 648.312,
+          "self_ms": 13.57,
+          "average_inclusive_ns": 2227877.0
+        },
+        {
+          "function": "dom__Document__update_paint_and_hit_testing_properties_if_needed",
+          "calls": 1542,
+          "inclusive_ms": 5.364,
+          "self_ms": 0.067,
+          "average_inclusive_ns": 3478.0
+        },
+        {
+          "function": "dom__Document__update_style",
+          "calls": 297,
+          "inclusive_ms": 226.048,
+          "self_ms": 2.156,
+          "average_inclusive_ns": 761105.0
+        },
+        {
+          "function": "dom__Element__get_bounding_client_rect",
+          "calls": 26,
+          "inclusive_ms": 154.982,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 5960864.0
+        },
+        {
+          "function": "dom__Element__get_client_rects",
+          "calls": 26,
+          "inclusive_ms": 154.981,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 5960812.0
+        },
+        {
+          "function": "dom__compute_client_rects_assuming_layout_clean",
+          "calls": 16417,
+          "inclusive_ms": 6.72,
+          "self_ms": 1.51,
+          "average_inclusive_ns": 409.0
+        },
+        {
+          "function": "main__draw_srgb_rect",
+          "calls": 11,
+          "inclusive_ms": 1.819,
+          "self_ms": 1.819,
+          "average_inclusive_ns": 165349.0
+        },
+        {
+          "function": "main__end_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 158.0
+        },
+        {
+          "function": "html__EventLoop__perform_a_microtask_checkpoint",
+          "calls": 10721,
+          "inclusive_ms": 0.966,
+          "self_ms": 0.652,
+          "average_inclusive_ns": 90.0
+        },
+        {
+          "function": "html__EventLoop__process",
+          "calls": 4601,
+          "inclusive_ms": 589.254,
+          "self_ms": 0.694,
+          "average_inclusive_ns": 128071.0
+        },
+        {
+          "function": "html__EventLoop__schedule",
+          "calls": 8818,
+          "inclusive_ms": 11.038,
+          "self_ms": 0.382,
+          "average_inclusive_ns": 1252.0
+        },
+        {
+          "function": "html__TaskQueue__add",
+          "calls": 4601,
+          "inclusive_ms": 2.173,
+          "self_ms": 0.245,
+          "average_inclusive_ns": 472.0
+        },
+        {
+          "function": "html__TaskQueue__has_runnable_tasks",
+          "calls": 13803,
+          "inclusive_ms": 0.542,
+          "self_ms": 0.342,
+          "average_inclusive_ns": 39.0
+        },
+        {
+          "function": "html__TaskQueue__take_first_runnable",
+          "calls": 4601,
+          "inclusive_ms": 0.175,
+          "self_ms": 0.133,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "html__Task__cancel",
+          "calls": 4604,
+          "inclusive_ms": 0.155,
+          "self_ms": 0.11,
+          "average_inclusive_ns": 34.0
+        },
+        {
+          "function": "html__Task__execute",
+          "calls": 4604,
+          "inclusive_ms": 577.225,
+          "self_ms": 26.727,
+          "average_inclusive_ns": 125375.0
+        },
+        {
+          "function": "html__Task__is_runnable",
+          "calls": 17634,
+          "inclusive_ms": 0.242,
+          "self_ms": 0.242,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+          "calls": 4771,
+          "inclusive_ms": 8.42,
+          "self_ms": 2.027,
+          "average_inclusive_ns": 1765.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__run_timer_initialization_steps",
+          "calls": 4771,
+          "inclusive_ms": 10.33,
+          "self_ms": 1.911,
+          "average_inclusive_ns": 2165.0
+        },
+        {
+          "function": "html__clean_up_after_running_script",
+          "calls": 28118,
+          "inclusive_ms": 1.116,
+          "self_ms": 0.513,
+          "average_inclusive_ns": 40.0
+        },
+        {
+          "function": "html__prepare_to_run_script",
+          "calls": 28118,
+          "inclusive_ms": 0.457,
+          "self_ms": 0.457,
+          "average_inclusive_ns": 16.0
+        },
+        {
+          "function": "main__initial_document",
+          "calls": 1,
+          "inclusive_ms": 0.013,
+          "self_ms": 0.013,
+          "average_inclusive_ns": 13333.0
+        },
+        {
+          "function": "layout__DocumentLayoutResult__ensure_boxes_by_layout_cache",
+          "calls": 17045,
+          "inclusive_ms": 2.404,
+          "self_ms": 2.404,
+          "average_inclusive_ns": 141.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__compute_is_unidirectional_left_to_right",
+          "calls": 32951,
+          "inclusive_ms": 1.386,
+          "self_ms": 1.386,
+          "average_inclusive_ns": 42.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_all_items",
+          "calls": 32951,
+          "inclusive_ms": 82.993,
+          "self_ms": 3.911,
+          "average_inclusive_ns": 2519.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_next_item",
+          "calls": 235821,
+          "inclusive_ms": 97.143,
+          "self_ms": 65.117,
+          "average_inclusive_ns": 412.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__skip_to_next",
+          "calls": 95298,
+          "inclusive_ms": 1.912,
+          "self_ms": 1.9,
+          "average_inclusive_ns": 20.0
+        },
+        {
+          "function": "layout__LineBuilder__append_text_item",
+          "calls": 125354,
+          "inclusive_ms": 4.788,
+          "self_ms": 4.788,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "layout__LineBuilder__update_last_line",
+          "calls": 46198,
+          "inclusive_ms": 6.384,
+          "self_ms": 6.377,
+          "average_inclusive_ns": 138.0
+        },
+        {
+          "function": "layout__build_layout_tree_from_computed_styles",
+          "calls": 5,
+          "inclusive_ms": 49.003,
+          "self_ms": 19.049,
+          "average_inclusive_ns": 9800675.0
+        },
+        {
+          "function": "layout__calculate_content_height_with_constraint",
+          "calls": 1698,
+          "inclusive_ms": 74.374,
+          "self_ms": 2.799,
+          "average_inclusive_ns": 43801.0
+        },
+        {
+          "function": "layout__calculate_content_width_with_constraint",
+          "calls": 18344,
+          "inclusive_ms": 527.586,
+          "self_ms": 19.277,
+          "average_inclusive_ns": 28761.0
+        },
+        {
+          "function": "layout__calculate_fit_content_height",
+          "calls": 25435,
+          "inclusive_ms": 10.428,
+          "self_ms": 0.565,
+          "average_inclusive_ns": 410.0
+        },
+        {
+          "function": "layout__calculate_max_content_height",
+          "calls": 76562,
+          "inclusive_ms": 19.057,
+          "self_ms": 2.05,
+          "average_inclusive_ns": 249.0
+        },
+        {
+          "function": "layout__calculate_max_content_width",
+          "calls": 45765,
+          "inclusive_ms": 110.544,
+          "self_ms": 1.22,
+          "average_inclusive_ns": 2415.0
+        },
+        {
+          "function": "layout__calculate_min_content_height",
+          "calls": 57012,
+          "inclusive_ms": 59.73,
+          "self_ms": 1.191,
+          "average_inclusive_ns": 1048.0
+        },
+        {
+          "function": "layout__calculate_min_content_width",
+          "calls": 75823,
+          "inclusive_ms": 421.476,
+          "self_ms": 3.001,
+          "average_inclusive_ns": 5559.0
+        },
+        {
+          "function": "layout__finish_document_layout",
+          "calls": 15,
+          "inclusive_ms": 405.023,
+          "self_ms": 62.164,
+          "average_inclusive_ns": 27001555.0
+        },
+        {
+          "function": "layout__grid_intrinsic_outer_width_contribution",
+          "calls": 83403,
+          "inclusive_ms": 239.417,
+          "self_ms": 2.559,
+          "average_inclusive_ns": 2871.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_block_contribution",
+          "calls": 28358,
+          "inclusive_ms": 39.992,
+          "self_ms": 1.442,
+          "average_inclusive_ns": 1410.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_inline_contribution",
+          "calls": 35885,
+          "inclusive_ms": 162.982,
+          "self_ms": 3.775,
+          "average_inclusive_ns": 4542.0
+        },
+        {
+          "function": "layout__grid_item_outer_block_content_contribution",
+          "calls": 84922,
+          "inclusive_ms": 71.478,
+          "self_ms": 2.137,
+          "average_inclusive_ns": 842.0
+        },
+        {
+          "function": "layout__grid_lines_for_definition",
+          "calls": 59880,
+          "inclusive_ms": 2.288,
+          "self_ms": 2.288,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "layout__grid_track_sizing_placements",
+          "calls": 34248,
+          "inclusive_ms": 1.074,
+          "self_ms": 1.074,
+          "average_inclusive_ns": 31.0
+        },
+        {
+          "function": "layout__layout_independent_child",
+          "calls": 55034,
+          "inclusive_ms": 878.574,
+          "self_ms": 95.84,
+          "average_inclusive_ns": 15964.0
+        },
+        {
+          "function": "layout__new_inline_iterator_with_item_storage",
+          "calls": 32951,
+          "inclusive_ms": 91.787,
+          "self_ms": 6.234,
+          "average_inclusive_ns": 2786.0
+        },
+        {
+          "function": "layout__optimized_text_wrap_breaks",
+          "calls": 32951,
+          "inclusive_ms": 0.469,
+          "self_ms": 0.469,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "layout__place_grid_items",
+          "calls": 17124,
+          "inclusive_ms": 7.862,
+          "self_ms": 7.862,
+          "average_inclusive_ns": 459.0
+        },
+        {
+          "function": "layout__refresh_document_paint_tree_if_needed",
+          "calls": 1585,
+          "inclusive_ms": 0.028,
+          "self_ms": 0.028,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "layout__renderer_box_from_document_layout_result",
+          "calls": 15,
+          "inclusive_ms": 82.147,
+          "self_ms": 23.299,
+          "average_inclusive_ns": 5476447.0
+        },
+        {
+          "function": "layout__resolve_grid_tracks",
+          "calls": 30842,
+          "inclusive_ms": 5.769,
+          "self_ms": 5.769,
+          "average_inclusive_ns": 187.0
+        },
+        {
+          "function": "layout__restore_retained_inline_layout",
+          "calls": 6664,
+          "inclusive_ms": 0.291,
+          "self_ms": 0.291,
+          "average_inclusive_ns": 44.0
+        },
+        {
+          "function": "layout__run_uncached_flex_formatting_context_with_mode",
+          "calls": 11733,
+          "inclusive_ms": 220.562,
+          "self_ms": 12.966,
+          "average_inclusive_ns": 18798.0
+        },
+        {
+          "function": "layout__run_uncached_grid_formatting_context_internal",
+          "calls": 17124,
+          "inclusive_ms": 1051.955,
+          "self_ms": 31.766,
+          "average_inclusive_ns": 61432.0
+        },
+        {
+          "function": "layout__run_uncached_inline_formatting_context_for_width",
+          "calls": 32951,
+          "inclusive_ms": 247.228,
+          "self_ms": 42.561,
+          "average_inclusive_ns": 7503.0
+        },
+        {
+          "function": "layout__same_pass_inline_inputs_are_current",
+          "calls": 2908,
+          "inclusive_ms": 0.142,
+          "self_ms": 0.142,
+          "average_inclusive_ns": 49.0
+        },
+        {
+          "function": "layout__uncached_block_box_from_typed_layout_shallow",
+          "calls": 31173,
+          "inclusive_ms": 58.349,
+          "self_ms": 57.857,
+          "average_inclusive_ns": 1872.0
+        },
+        {
+          "function": "layout__viewport_assign_accumulated_visual_contexts",
+          "calls": 15,
+          "inclusive_ms": 5.163,
+          "self_ms": 2.927,
+          "average_inclusive_ns": 344175.0
+        },
+        {
+          "function": "layout__viewport_refresh_scroll_state",
+          "calls": 1542,
+          "inclusive_ms": 0.135,
+          "self_ms": 0.108,
+          "average_inclusive_ns": 87.0
+        },
+        {
+          "function": "layout__viewport_transform_client_rects",
+          "calls": 16417,
+          "inclusive_ms": 5.21,
+          "self_ms": 5.041,
+          "average_inclusive_ns": 317.0
+        },
+        {
+          "function": "libjs__VM__finish_execution_generation",
+          "calls": 10717,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 5.0
+        },
+        {
+          "function": "main__link_translated_modules",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        },
+        {
+          "function": "main__main",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        },
+        {
+          "function": "platform__RetainedArenaScope__finish",
+          "calls": 56608,
+          "inclusive_ms": 0.955,
+          "self_ms": 0.799,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "platform__RetainedArena__enter",
+          "calls": 27994,
+          "inclusive_ms": 0.353,
+          "self_ms": 0.336,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "platform__RetainedArena__release",
+          "calls": 20638,
+          "inclusive_ms": 7.233,
+          "self_ms": 7.233,
+          "average_inclusive_ns": 350.0
+        },
+        {
+          "function": "platform__RetainedArena__retain",
+          "calls": 20636,
+          "inclusive_ms": 0.119,
+          "self_ms": 0.119,
+          "average_inclusive_ns": 6.0
+        },
+        {
+          "function": "platform__Timer__fire",
+          "calls": 11770,
+          "inclusive_ms": 646.953,
+          "self_ms": 6.19,
+          "average_inclusive_ns": 54966.0
+        },
+        {
+          "function": "platform__Timer__release_activity_root",
+          "calls": 14520,
+          "inclusive_ms": 1.456,
+          "self_ms": 1.24,
+          "average_inclusive_ns": 100.0
+        },
+        {
+          "function": "platform__Timer__restart_with_interval",
+          "calls": 4646,
+          "inclusive_ms": 10.758,
+          "self_ms": 0.182,
+          "average_inclusive_ns": 2315.0
+        },
+        {
+          "function": "platform__Timer__start_with_interval",
+          "calls": 9478,
+          "inclusive_ms": 16.634,
+          "self_ms": 0.334,
+          "average_inclusive_ns": 1755.0
+        },
+        {
+          "function": "platform__Timer__stop",
+          "calls": 9799,
+          "inclusive_ms": 3.332,
+          "self_ms": 0.356,
+          "average_inclusive_ns": 340.0
+        },
+        {
+          "function": "platform__Timer__stop_registration",
+          "calls": 18747,
+          "inclusive_ms": 44.951,
+          "self_ms": 0.308,
+          "average_inclusive_ns": 2398.0
+        },
+        {
+          "function": "platform__Timer__take_activity_root",
+          "calls": 9478,
+          "inclusive_ms": 0.576,
+          "self_ms": 0.367,
+          "average_inclusive_ns": 61.0
+        },
+        {
+          "function": "platform__defer_timer_during_cooperative_work",
+          "calls": 11762,
+          "inclusive_ms": 0.154,
+          "self_ms": 0.147,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "platform__enter_persistent",
+          "calls": 645580,
+          "inclusive_ms": 7.968,
+          "self_ms": 7.968,
+          "average_inclusive_ns": 12.0
+        },
+        {
+          "function": "platform__leave_persistent",
+          "calls": 972679,
+          "inclusive_ms": 9.848,
+          "self_ms": 9.848,
+          "average_inclusive_ns": 10.0
+        },
+        {
+          "function": "platform__register_native_timer",
+          "calls": 9416,
+          "inclusive_ms": 15.724,
+          "self_ms": 15.724,
+          "average_inclusive_ns": 1670.0
+        },
+        {
+          "function": "platform__unregister_native_timer",
+          "calls": 9415,
+          "inclusive_ms": 44.644,
+          "self_ms": 44.644,
+          "average_inclusive_ns": 4742.0
+        },
+        {
+          "function": "webidl__invoke_callback",
+          "calls": 4435,
+          "inclusive_ms": 25.608,
+          "self_ms": 4.613,
+          "average_inclusive_ns": 5774.0
+        }
+      ],
+      "self_sorted": [
+        {
+          "function": "browserjs__Runtime__call_with_object_receiver",
+          "calls": 4815,
+          "inclusive_ms": 401.593,
+          "self_ms": 170.097,
+          "average_inclusive_ns": 83405.0
+        },
+        {
+          "function": "layout__layout_independent_child",
+          "calls": 55034,
+          "inclusive_ms": 878.574,
+          "self_ms": 95.84,
+          "average_inclusive_ns": 15964.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_next_item",
+          "calls": 235821,
+          "inclusive_ms": 97.143,
+          "self_ms": 65.117,
+          "average_inclusive_ns": 412.0
+        },
+        {
+          "function": "main__BrowserApp__poll_navigation_and_background_resources",
+          "calls": 133,
+          "inclusive_ms": 513.887,
+          "self_ms": 62.489,
+          "average_inclusive_ns": 3863815.0
+        },
+        {
+          "function": "layout__finish_document_layout",
+          "calls": 15,
+          "inclusive_ms": 405.023,
+          "self_ms": 62.164,
+          "average_inclusive_ns": 27001555.0
+        },
+        {
+          "function": "browserjs__evaluate_javascript_core_text",
+          "calls": 1820,
+          "inclusive_ms": 226.376,
+          "self_ms": 58.67,
+          "average_inclusive_ns": 124382.0
+        },
+        {
+          "function": "layout__uncached_block_box_from_typed_layout_shallow",
+          "calls": 31173,
+          "inclusive_ms": 58.349,
+          "self_ms": 57.857,
+          "average_inclusive_ns": 1872.0
+        },
+        {
+          "function": "main__BrowserApp__draw",
+          "calls": 133,
+          "inclusive_ms": 922.963,
+          "self_ms": 56.286,
+          "average_inclusive_ns": 6939574.0
+        },
+        {
+          "function": "css__collect_matching_rules_with_storage",
+          "calls": 76208,
+          "inclusive_ms": 55.646,
+          "self_ms": 55.48,
+          "average_inclusive_ns": 730.0
+        },
+        {
+          "function": "main__BrowserApp__draw_command",
+          "calls": 159,
+          "inclusive_ms": 52.602,
+          "self_ms": 52.489,
+          "average_inclusive_ns": 330833.0
+        },
+        {
+          "function": "browserjs__Runtime__call_engine_function",
+          "calls": 9401,
+          "inclusive_ms": 167.597,
+          "self_ms": 48.767,
+          "average_inclusive_ns": 17828.0
+        },
+        {
+          "function": "css__StyleComputer__compute_properties",
+          "calls": 12481,
+          "inclusive_ms": 48.659,
+          "self_ms": 48.413,
+          "average_inclusive_ns": 3899.0
+        },
+        {
+          "function": "main__BrowserApp__install_loaded_page",
+          "calls": 1,
+          "inclusive_ms": 335.062,
+          "self_ms": 45.418,
+          "average_inclusive_ns": 335062500.0
+        },
+        {
+          "function": "platform__unregister_native_timer",
+          "calls": 9415,
+          "inclusive_ms": 44.644,
+          "self_ms": 44.644,
+          "average_inclusive_ns": 4742.0
+        },
+        {
+          "function": "layout__run_uncached_inline_formatting_context_for_width",
+          "calls": 32951,
+          "inclusive_ms": 247.228,
+          "self_ms": 42.561,
+          "average_inclusive_ns": 7503.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 244.52,
+          "self_ms": 38.602,
+          "average_inclusive_ns": 1838497.0
+        },
+        {
+          "function": "css__resolve_computed_values_for_document_impl",
+          "calls": 12517,
+          "inclusive_ms": 37.442,
+          "self_ms": 36.665,
+          "average_inclusive_ns": 2991.0
+        },
+        {
+          "function": "layout__run_uncached_grid_formatting_context_internal",
+          "calls": 17124,
+          "inclusive_ms": 1051.955,
+          "self_ms": 31.766,
+          "average_inclusive_ns": 61432.0
+        },
+        {
+          "function": "css__StyleComputer__compute_style_impl",
+          "calls": 19057,
+          "inclusive_ms": 155.209,
+          "self_ms": 29.126,
+          "average_inclusive_ns": 8144.0
+        },
+        {
+          "function": "html__Task__execute",
+          "calls": 4604,
+          "inclusive_ms": 577.225,
+          "self_ms": 26.727,
+          "average_inclusive_ns": 125375.0
+        },
+        {
+          "function": "css__StyleComputer__recompute_style_with_invalidation",
+          "calls": 12151,
+          "inclusive_ms": 181.4,
+          "self_ms": 26.048,
+          "average_inclusive_ns": 14929.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query",
+          "calls": 7774,
+          "inclusive_ms": 300.414,
+          "self_ms": 25.108,
+          "average_inclusive_ns": 38643.0
+        },
+        {
+          "function": "css__update_style_for_document_from_upstream",
+          "calls": 18,
+          "inclusive_ms": 223.882,
+          "self_ms": 24.855,
+          "average_inclusive_ns": 12437870.0
+        },
+        {
+          "function": "browserjs__invoke_value_host_function_record",
+          "calls": 25303,
+          "inclusive_ms": 210.862,
+          "self_ms": 23.789,
+          "average_inclusive_ns": 8333.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__css_sheet_query",
+          "calls": 754,
+          "inclusive_ms": 24.208,
+          "self_ms": 23.318,
+          "average_inclusive_ns": 32107.0
+        },
+        {
+          "function": "layout__renderer_box_from_document_layout_result",
+          "calls": 15,
+          "inclusive_ms": 82.147,
+          "self_ms": 23.299,
+          "average_inclusive_ns": 5476447.0
+        },
+        {
+          "function": "css__StyleComputer__compute_cascaded_values_into",
+          "calls": 14960,
+          "inclusive_ms": 21.572,
+          "self_ms": 21.57,
+          "average_inclusive_ns": 1442.0
+        },
+        {
+          "function": "layout__calculate_content_width_with_constraint",
+          "calls": 18344,
+          "inclusive_ms": 527.586,
+          "self_ms": 19.277,
+          "average_inclusive_ns": 28761.0
+        },
+        {
+          "function": "layout__build_layout_tree_from_computed_styles",
+          "calls": 5,
+          "inclusive_ms": 49.003,
+          "self_ms": 19.049,
+          "average_inclusive_ns": 9800675.0
+        },
+        {
+          "function": "platform__register_native_timer",
+          "calls": 9416,
+          "inclusive_ms": 15.724,
+          "self_ms": 15.724,
+          "average_inclusive_ns": 1670.0
+        },
+        {
+          "function": "main__apply_decoded_javascript_state",
+          "calls": 2684,
+          "inclusive_ms": 14.723,
+          "self_ms": 14.702,
+          "average_inclusive_ns": 5486.0
+        },
+        {
+          "function": "dom__Document__update_layout",
+          "calls": 291,
+          "inclusive_ms": 648.312,
+          "self_ms": 13.57,
+          "average_inclusive_ns": 2227877.0
+        },
+        {
+          "function": "layout__run_uncached_flex_formatting_context_with_mode",
+          "calls": 11733,
+          "inclusive_ms": 220.562,
+          "self_ms": 12.966,
+          "average_inclusive_ns": 18798.0
+        },
+        {
+          "function": "platform__leave_persistent",
+          "calls": 972679,
+          "inclusive_ms": 9.848,
+          "self_ms": 9.848,
+          "average_inclusive_ns": 10.0
+        },
+        {
+          "function": "css__update_style_recursively",
+          "calls": 19496,
+          "inclusive_ms": 2832.429,
+          "self_ms": 9.504,
+          "average_inclusive_ns": 145283.0
+        },
+        {
+          "function": "platform__enter_persistent",
+          "calls": 645580,
+          "inclusive_ms": 7.968,
+          "self_ms": 7.968,
+          "average_inclusive_ns": 12.0
+        },
+        {
+          "function": "browserjs__js_source_string",
+          "calls": 20293,
+          "inclusive_ms": 7.878,
+          "self_ms": 7.878,
+          "average_inclusive_ns": 388.0
+        },
+        {
+          "function": "layout__place_grid_items",
+          "calls": 17124,
+          "inclusive_ms": 7.862,
+          "self_ms": 7.862,
+          "average_inclusive_ns": 459.0
+        },
+        {
+          "function": "main__BrowserApp__update_browser_chrome",
+          "calls": 163,
+          "inclusive_ms": 9.681,
+          "self_ms": 7.558,
+          "average_inclusive_ns": 59394.0
+        },
+        {
+          "function": "platform__RetainedArena__release",
+          "calls": 20638,
+          "inclusive_ms": 7.233,
+          "self_ms": 7.233,
+          "average_inclusive_ns": 350.0
+        },
+        {
+          "function": "layout__LineBuilder__update_last_line",
+          "calls": 46198,
+          "inclusive_ms": 6.384,
+          "self_ms": 6.377,
+          "average_inclusive_ns": 138.0
+        },
+        {
+          "function": "layout__new_inline_iterator_with_item_storage",
+          "calls": 32951,
+          "inclusive_ms": 91.787,
+          "self_ms": 6.234,
+          "average_inclusive_ns": 2786.0
+        },
+        {
+          "function": "platform__Timer__fire",
+          "calls": 11770,
+          "inclusive_ms": 646.953,
+          "self_ms": 6.19,
+          "average_inclusive_ns": 54966.0
+        },
+        {
+          "function": "layout__resolve_grid_tracks",
+          "calls": 30842,
+          "inclusive_ms": 5.769,
+          "self_ms": 5.769,
+          "average_inclusive_ns": 187.0
+        },
+        {
+          "function": "main__compact_query_replay_snapshot",
+          "calls": 2684,
+          "inclusive_ms": 5.732,
+          "self_ms": 5.732,
+          "average_inclusive_ns": 2136.0
+        },
+        {
+          "function": "layout__viewport_transform_client_rects",
+          "calls": 16417,
+          "inclusive_ms": 5.21,
+          "self_ms": 5.041,
+          "average_inclusive_ns": 317.0
+        },
+        {
+          "function": "browserjs__TimerHost__operate",
+          "calls": 4827,
+          "inclusive_ms": 17.064,
+          "self_ms": 5.014,
+          "average_inclusive_ns": 3535.0
+        },
+        {
+          "function": "layout__LineBuilder__append_text_item",
+          "calls": 125354,
+          "inclusive_ms": 4.788,
+          "self_ms": 4.788,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "webidl__invoke_callback",
+          "calls": 4435,
+          "inclusive_ms": 25.608,
+          "self_ms": 4.613,
+          "average_inclusive_ns": 5774.0
+        },
+        {
+          "function": "main__BrowserApp__poll_javascript_tasks",
+          "calls": 252,
+          "inclusive_ms": 48.145,
+          "self_ms": 4.11,
+          "average_inclusive_ns": 191051.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__generate_all_items",
+          "calls": 32951,
+          "inclusive_ms": 82.993,
+          "self_ms": 3.911,
+          "average_inclusive_ns": 2519.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_inline_contribution",
+          "calls": 35885,
+          "inclusive_ms": 162.982,
+          "self_ms": 3.775,
+          "average_inclusive_ns": 4542.0
+        },
+        {
+          "function": "browserjs__js_string_to_v",
+          "calls": 10390,
+          "inclusive_ms": 3.57,
+          "self_ms": 3.57,
+          "average_inclusive_ns": 344.0
+        },
+        {
+          "function": "layout__calculate_min_content_width",
+          "calls": 75823,
+          "inclusive_ms": 421.476,
+          "self_ms": 3.001,
+          "average_inclusive_ns": 5559.0
+        },
+        {
+          "function": "browserjs__javascript_core_host_function",
+          "calls": 8647,
+          "inclusive_ms": 308.976,
+          "self_ms": 2.955,
+          "average_inclusive_ns": 35732.0
+        },
+        {
+          "function": "layout__viewport_assign_accumulated_visual_contexts",
+          "calls": 15,
+          "inclusive_ms": 5.163,
+          "self_ms": 2.927,
+          "average_inclusive_ns": 344175.0
+        },
+        {
+          "function": "layout__calculate_content_height_with_constraint",
+          "calls": 1698,
+          "inclusive_ms": 74.374,
+          "self_ms": 2.799,
+          "average_inclusive_ns": 43801.0
+        },
+        {
+          "function": "layout__grid_intrinsic_outer_width_contribution",
+          "calls": 83403,
+          "inclusive_ms": 239.417,
+          "self_ms": 2.559,
+          "average_inclusive_ns": 2871.0
+        },
+        {
+          "function": "layout__DocumentLayoutResult__ensure_boxes_by_layout_cache",
+          "calls": 17045,
+          "inclusive_ms": 2.404,
+          "self_ms": 2.404,
+          "average_inclusive_ns": 141.0
+        },
+        {
+          "function": "layout__grid_lines_for_definition",
+          "calls": 59880,
+          "inclusive_ms": 2.288,
+          "self_ms": 2.288,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "dom__Document__update_style",
+          "calls": 297,
+          "inclusive_ms": 226.048,
+          "self_ms": 2.156,
+          "average_inclusive_ns": 761105.0
+        },
+        {
+          "function": "layout__grid_item_outer_block_content_contribution",
+          "calls": 84922,
+          "inclusive_ms": 71.478,
+          "self_ms": 2.137,
+          "average_inclusive_ns": 842.0
+        },
+        {
+          "function": "main__BrowserApp__browser_chrome_state",
+          "calls": 164,
+          "inclusive_ms": 2.101,
+          "self_ms": 2.091,
+          "average_inclusive_ns": 12810.0
+        },
+        {
+          "function": "layout__calculate_max_content_height",
+          "calls": 76562,
+          "inclusive_ms": 19.057,
+          "self_ms": 2.05,
+          "average_inclusive_ns": 249.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+          "calls": 4771,
+          "inclusive_ms": 8.42,
+          "self_ms": 2.027,
+          "average_inclusive_ns": 1765.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_dom_string",
+          "calls": 21840,
+          "inclusive_ms": 1.986,
+          "self_ms": 1.986,
+          "average_inclusive_ns": 91.0
+        },
+        {
+          "function": "html__WindowOrWorkerGlobalScopeMixin__run_timer_initialization_steps",
+          "calls": 4771,
+          "inclusive_ms": 10.33,
+          "self_ms": 1.911,
+          "average_inclusive_ns": 2165.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__skip_to_next",
+          "calls": 95298,
+          "inclusive_ms": 1.912,
+          "self_ms": 1.9,
+          "average_inclusive_ns": 20.0
+        },
+        {
+          "function": "main__draw_srgb_rect",
+          "calls": 11,
+          "inclusive_ms": 1.819,
+          "self_ms": 1.819,
+          "average_inclusive_ns": 165349.0
+        },
+        {
+          "function": "dom__compute_client_rects_assuming_layout_clean",
+          "calls": 16417,
+          "inclusive_ms": 6.72,
+          "self_ms": 1.51,
+          "average_inclusive_ns": 409.0
+        },
+        {
+          "function": "layout__grid_item_minimum_outer_block_contribution",
+          "calls": 28358,
+          "inclusive_ms": 39.992,
+          "self_ms": 1.442,
+          "average_inclusive_ns": 1410.0
+        },
+        {
+          "function": "layout__InlineLevelIterator__compute_is_unidirectional_left_to_right",
+          "calls": 32951,
+          "inclusive_ms": 1.386,
+          "self_ms": 1.386,
+          "average_inclusive_ns": 42.0
+        },
+        {
+          "function": "browserjs__Runtime__webidl_value",
+          "calls": 2124,
+          "inclusive_ms": 1.399,
+          "self_ms": 1.349,
+          "average_inclusive_ns": 659.0
+        },
+        {
+          "function": "platform__Timer__release_activity_root",
+          "calls": 14520,
+          "inclusive_ms": 1.456,
+          "self_ms": 1.24,
+          "average_inclusive_ns": 100.0
+        },
+        {
+          "function": "layout__calculate_max_content_width",
+          "calls": 45765,
+          "inclusive_ms": 110.544,
+          "self_ms": 1.22,
+          "average_inclusive_ns": 2415.0
+        },
+        {
+          "function": "layout__calculate_min_content_height",
+          "calls": 57012,
+          "inclusive_ms": 59.73,
+          "self_ms": 1.191,
+          "average_inclusive_ns": 1048.0
+        },
+        {
+          "function": "layout__grid_track_sizing_placements",
+          "calls": 34248,
+          "inclusive_ms": 1.074,
+          "self_ms": 1.074,
+          "average_inclusive_ns": 31.0
+        },
+        {
+          "function": "main__browser_window_size",
+          "calls": 134,
+          "inclusive_ms": 1.02,
+          "self_ms": 1.02,
+          "average_inclusive_ns": 7615.0
+        },
+        {
+          "function": "main__compact_inline_style_query",
+          "calls": 29,
+          "inclusive_ms": 0.914,
+          "self_ms": 0.912,
+          "average_inclusive_ns": 31501.0
+        },
+        {
+          "function": "platform__RetainedArenaScope__finish",
+          "calls": 56608,
+          "inclusive_ms": 0.955,
+          "self_ms": 0.799,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "main__BrowserApp__relayout",
+          "calls": 1,
+          "inclusive_ms": 125.078,
+          "self_ms": 0.756,
+          "average_inclusive_ns": 125077834.0
+        },
+        {
+          "function": "html__EventLoop__process",
+          "calls": 4601,
+          "inclusive_ms": 589.254,
+          "self_ms": 0.694,
+          "average_inclusive_ns": 128071.0
+        },
+        {
+          "function": "html__EventLoop__perform_a_microtask_checkpoint",
+          "calls": 10721,
+          "inclusive_ms": 0.966,
+          "self_ms": 0.652,
+          "average_inclusive_ns": 90.0
+        },
+        {
+          "function": "main__BrowserApp__begin_stationary_document_raster",
+          "calls": 99,
+          "inclusive_ms": 0.608,
+          "self_ms": 0.608,
+          "average_inclusive_ns": 6141.0
+        },
+        {
+          "function": "layout__calculate_fit_content_height",
+          "calls": 25435,
+          "inclusive_ms": 10.428,
+          "self_ms": 0.565,
+          "average_inclusive_ns": 410.0
+        },
+        {
+          "function": "browserjs__Runtime__clean_up_html_script",
+          "calls": 23666,
+          "inclusive_ms": 1.105,
+          "self_ms": 0.539,
+          "average_inclusive_ns": 47.0
+        },
+        {
+          "function": "browserjs__Runtime__prepare_html_script",
+          "calls": 23666,
+          "inclusive_ms": 0.872,
+          "self_ms": 0.532,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "html__clean_up_after_running_script",
+          "calls": 28118,
+          "inclusive_ms": 1.116,
+          "self_ms": 0.513,
+          "average_inclusive_ns": 40.0
+        },
+        {
+          "function": "browserjs__javascript_core_value_host_function",
+          "calls": 18615,
+          "inclusive_ms": 201.736,
+          "self_ms": 0.489,
+          "average_inclusive_ns": 10837.0
+        },
+        {
+          "function": "layout__optimized_text_wrap_breaks",
+          "calls": 32951,
+          "inclusive_ms": 0.469,
+          "self_ms": 0.469,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "html__prepare_to_run_script",
+          "calls": 28118,
+          "inclusive_ms": 0.457,
+          "self_ms": 0.457,
+          "average_inclusive_ns": 16.0
+        },
+        {
+          "function": "html__EventLoop__schedule",
+          "calls": 8818,
+          "inclusive_ms": 11.038,
+          "self_ms": 0.382,
+          "average_inclusive_ns": 1252.0
+        },
+        {
+          "function": "platform__Timer__take_activity_root",
+          "calls": 9478,
+          "inclusive_ms": 0.576,
+          "self_ms": 0.367,
+          "average_inclusive_ns": 61.0
+        },
+        {
+          "function": "platform__Timer__stop",
+          "calls": 9799,
+          "inclusive_ms": 3.332,
+          "self_ms": 0.356,
+          "average_inclusive_ns": 340.0
+        },
+        {
+          "function": "html__TaskQueue__has_runnable_tasks",
+          "calls": 13803,
+          "inclusive_ms": 0.542,
+          "self_ms": 0.342,
+          "average_inclusive_ns": 39.0
+        },
+        {
+          "function": "platform__RetainedArena__enter",
+          "calls": 27994,
+          "inclusive_ms": 0.353,
+          "self_ms": 0.336,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "platform__Timer__start_with_interval",
+          "calls": 9478,
+          "inclusive_ms": 16.634,
+          "self_ms": 0.334,
+          "average_inclusive_ns": 1755.0
+        },
+        {
+          "function": "platform__Timer__stop_registration",
+          "calls": 18747,
+          "inclusive_ms": 44.951,
+          "self_ms": 0.308,
+          "average_inclusive_ns": 2398.0
+        },
+        {
+          "function": "main__BrowserApp__request_script_inserted_images",
+          "calls": 133,
+          "inclusive_ms": 0.307,
+          "self_ms": 0.305,
+          "average_inclusive_ns": 2310.0
+        },
+        {
+          "function": "layout__restore_retained_inline_layout",
+          "calls": 6664,
+          "inclusive_ms": 0.291,
+          "self_ms": 0.291,
+          "average_inclusive_ns": 44.0
+        },
+        {
+          "function": "browserjs__javascript_core_native_value_host_function",
+          "calls": 6688,
+          "inclusive_ms": 9.869,
+          "self_ms": 0.253,
+          "average_inclusive_ns": 1476.0
+        },
+        {
+          "function": "main__BrowserApp__poll_background_resources",
+          "calls": 132,
+          "inclusive_ms": 0.437,
+          "self_ms": 0.251,
+          "average_inclusive_ns": 3309.0
+        },
+        {
+          "function": "html__TaskQueue__add",
+          "calls": 4601,
+          "inclusive_ms": 2.173,
+          "self_ms": 0.245,
+          "average_inclusive_ns": 472.0
+        },
+        {
+          "function": "html__Task__is_runnable",
+          "calls": 17634,
+          "inclusive_ms": 0.242,
+          "self_ms": 0.242,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "main__CompactElementQueryBinding__query_with_temporary_reply",
+          "calls": 7774,
+          "inclusive_ms": 300.605,
+          "self_ms": 0.191,
+          "average_inclusive_ns": 38668.0
+        },
+        {
+          "function": "platform__Timer__restart_with_interval",
+          "calls": 4646,
+          "inclusive_ms": 10.758,
+          "self_ms": 0.182,
+          "average_inclusive_ns": 2315.0
+        },
+        {
+          "function": "css__StyleComputer__recascade_font_size_if_needed",
+          "calls": 12481,
+          "inclusive_ms": 0.162,
+          "self_ms": 0.162,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "main__BrowserApp__prepare_overlay_scrollbars",
+          "calls": 133,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 1148.0
+        },
+        {
+          "function": "main__configure_browser_layout_font",
+          "calls": 1,
+          "inclusive_ms": 0.153,
+          "self_ms": 0.153,
+          "average_inclusive_ns": 153083.0
+        },
+        {
+          "function": "platform__defer_timer_during_cooperative_work",
+          "calls": 11762,
+          "inclusive_ms": 0.154,
+          "self_ms": 0.147,
+          "average_inclusive_ns": 13.0
+        },
+        {
+          "function": "layout__same_pass_inline_inputs_are_current",
+          "calls": 2908,
+          "inclusive_ms": 0.142,
+          "self_ms": 0.142,
+          "average_inclusive_ns": 49.0
+        },
+        {
+          "function": "html__TaskQueue__take_first_runnable",
+          "calls": 4601,
+          "inclusive_ms": 0.175,
+          "self_ms": 0.133,
+          "average_inclusive_ns": 38.0
+        },
+        {
+          "function": "browserjs__Runtime__binding_string",
+          "calls": 1069,
+          "inclusive_ms": 0.331,
+          "self_ms": 0.127,
+          "average_inclusive_ns": 310.0
+        },
+        {
+          "function": "platform__RetainedArena__retain",
+          "calls": 20636,
+          "inclusive_ms": 0.119,
+          "self_ms": 0.119,
+          "average_inclusive_ns": 6.0
+        },
+        {
+          "function": "html__Task__cancel",
+          "calls": 4604,
+          "inclusive_ms": 0.155,
+          "self_ms": 0.11,
+          "average_inclusive_ns": 34.0
+        },
+        {
+          "function": "layout__viewport_refresh_scroll_state",
+          "calls": 1542,
+          "inclusive_ms": 0.135,
+          "self_ms": 0.108,
+          "average_inclusive_ns": 87.0
+        },
+        {
+          "function": "main__BrowserApp__begin_chromium_text_scroll_layer",
+          "calls": 34,
+          "inclusive_ms": 0.076,
+          "self_ms": 0.076,
+          "average_inclusive_ns": 2224.0
+        },
+        {
+          "function": "dom__Document__update_paint_and_hit_testing_properties_if_needed",
+          "calls": 1542,
+          "inclusive_ms": 5.364,
+          "self_ms": 0.067,
+          "average_inclusive_ns": 3478.0
+        },
+        {
+          "function": "browserjs__Runtime__actual_webidl_value",
+          "calls": 4347,
+          "inclusive_ms": 0.06,
+          "self_ms": 0.06,
+          "average_inclusive_ns": 14.0
+        },
+        {
+          "function": "main__BrowserApp__sync_window_activity",
+          "calls": 139,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 405.0
+        },
+        {
+          "function": "libjs__VM__finish_execution_generation",
+          "calls": 10717,
+          "inclusive_ms": 0.056,
+          "self_ms": 0.056,
+          "average_inclusive_ns": 5.0
+        },
+        {
+          "function": "main__compact_element_geometry_query",
+          "calls": 64,
+          "inclusive_ms": 232.281,
+          "self_ms": 0.053,
+          "average_inclusive_ns": 3629398.0
+        },
+        {
+          "function": "main__BrowserApp__finish_frame_memory_activity",
+          "calls": 133,
+          "inclusive_ms": 0.24,
+          "self_ms": 0.044,
+          "average_inclusive_ns": 1808.0
+        },
+        {
+          "function": "main__BrowserApp__advance_document_animations",
+          "calls": 133,
+          "inclusive_ms": 0.034,
+          "self_ms": 0.034,
+          "average_inclusive_ns": 257.0
+        },
+        {
+          "function": "layout__refresh_document_paint_tree_if_needed",
+          "calls": 1585,
+          "inclusive_ms": 0.028,
+          "self_ms": 0.028,
+          "average_inclusive_ns": 17.0
+        },
+        {
+          "function": "main__BrowserApp__document_pixels_ready_for_frame",
+          "calls": 133,
+          "inclusive_ms": 0.046,
+          "self_ms": 0.024,
+          "average_inclusive_ns": 347.0
+        },
+        {
+          "function": "main__BrowserApp__begin_scroll_raster",
+          "calls": 1,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 20542.0
+        },
+        {
+          "function": "main__BrowserApp__sync_browser_tab_loading_animation",
+          "calls": 164,
+          "inclusive_ms": 0.054,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 327.0
+        },
+        {
+          "function": "main__end_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.021,
+          "self_ms": 0.021,
+          "average_inclusive_ns": 158.0
+        },
+        {
+          "function": "main__BrowserApp__finish_scroll_profile_frame",
+          "calls": 133,
+          "inclusive_ms": 0.019,
+          "self_ms": 0.019,
+          "average_inclusive_ns": 146.0
+        },
+        {
+          "function": "main__initial_document",
+          "calls": 1,
+          "inclusive_ms": 0.013,
+          "self_ms": 0.013,
+          "average_inclusive_ns": 13333.0
+        },
+        {
+          "function": "main__BrowserApp__poll_native_navigation",
+          "calls": 133,
+          "inclusive_ms": 0.01,
+          "self_ms": 0.01,
+          "average_inclusive_ns": 77.0
+        },
+        {
+          "function": "main__BrowserApp__poll_media_playback",
+          "calls": 133,
+          "inclusive_ms": 0.007,
+          "self_ms": 0.007,
+          "average_inclusive_ns": 52.0
+        },
+        {
+          "function": "main__begin_browser_frame",
+          "calls": 133,
+          "inclusive_ms": 0.006,
+          "self_ms": 0.006,
+          "average_inclusive_ns": 48.0
+        },
+        {
+          "function": "main__BrowserApp__frame_canvas_is_blank",
+          "calls": 133,
+          "inclusive_ms": 0.005,
+          "self_ms": 0.005,
+          "average_inclusive_ns": 37.0
+        },
+        {
+          "function": "main__BrowserApp__begin_frame_preparation",
+          "calls": 133,
+          "inclusive_ms": 0.003,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 24.0
+        },
+        {
+          "function": "dom__Element__get_client_rects",
+          "calls": 26,
+          "inclusive_ms": 154.981,
+          "self_ms": 0.003,
+          "average_inclusive_ns": 5960812.0
+        },
+        {
+          "function": "main__BrowserApp__prefetch_chromium_rects",
+          "calls": 11,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 117.0
+        },
+        {
+          "function": "main__BrowserApp__update_chromium_viewport_raster_plan",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 625.0
+        },
+        {
+          "function": "dom__Element__get_bounding_client_rect",
+          "calls": 26,
+          "inclusive_ms": 154.982,
+          "self_ms": 0.001,
+          "average_inclusive_ns": 5960864.0
+        },
+        {
+          "function": "main__BrowserApp__begin_native_replay_scratch",
+          "calls": 1,
+          "inclusive_ms": 0.001,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 541.0
+        },
+        {
+          "function": "main__link_translated_modules",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        },
+        {
+          "function": "main__main",
+          "calls": 1,
+          "inclusive_ms": 0.0,
+          "self_ms": 0.0,
+          "average_inclusive_ns": 0.0
+        }
+      ]
+    },
+    "whole_source_proof": {
+      "passed": true,
+      "base_source": "/Users/alex/code/vox2/Build/bbc-tls12-profile-20261106-2200/frozen-compiler-inputs/0-Vox.c.i",
+      "base_sha256": "ccff353d75706f3bacbb56e96859c7b8ba6c031257af117e76e65a7cabf7d095",
+      "derived_source": "/Users/alex/code/vox2/Build/bbc-grid-style-v-profile-20261106-1312/archived-refined/wall-profile.i",
+      "derived_sha256": "6a78cd63907cef33a748332e4d15cdf7598d74f57ec85965f191536b51dd775c",
+      "exact_complete_source_recovered_by_reversing_only_observer_edits": true,
+      "selected_entries": 149,
+      "newly_enabled_scopes": [
+        "css__StyleComputer__compute_cascaded_values_into",
+        "css__StyleComputer__recascade_font_size_if_needed",
+        "layout__InlineLevelIterator__compute_is_unidirectional_left_to_right",
+        "layout__InlineLevelIterator__generate_all_items",
+        "layout__InlineLevelIterator__generate_next_item",
+        "layout__InlineLevelIterator__skip_to_next",
+        "layout__calculate_fit_content_height",
+        "layout__calculate_max_content_height",
+        "layout__calculate_max_content_width",
+        "layout__calculate_min_content_height",
+        "layout__calculate_min_content_width",
+        "layout__grid_intrinsic_outer_width_contribution",
+        "layout__grid_item_minimum_outer_block_contribution",
+        "layout__grid_item_minimum_outer_inline_contribution",
+        "layout__grid_item_outer_block_content_contribution",
+        "layout__grid_lines_for_definition",
+        "layout__grid_track_sizing_placements",
+        "layout__layout_independent_child",
+        "layout__place_grid_items",
+        "layout__resolve_grid_tracks"
+      ],
+      "qualification": "Only V-profile observer entry clocks, saved nesting state, call counter guards and profiler exit guards change. Complete reversal recovers sealed base C byte for byte. All engine bodies, real timers, workload and JIT warmup unchanged. Pinned archived engine baseline predates zero-delay dispatch; not current HEAD or acceptance validation. Current native link libraries are explicitly pinned and audited."
+    },
+    "jit_enabled": true,
+    "baseline_and_dfg_enabled": true,
+    "warmup": 10000,
+    "jit_compilation_reports_before_png": 738,
+    "known_browser_host_compilations_before_png": [
+      "Optimized __pendingElementStates#Cy92TA:[0x14ce88f00->0x14cc42700, LLIntFunctionCall, 530] using Baseline with Baseline into 8960 bytes in 0.142750 ms.",
+      "Optimized __queryElements#APvv7o:[0x14ce88e20->0x14cc42980, LLIntFunctionCall, 934] using Baseline with Baseline into 17664 bytes in 0.163417 ms.",
+      "Optimized __queryElements#C6Dw89:[0x14ce88d40->0x14cc7c300, LLIntFunctionCall, 101] using Baseline with Baseline into 1360 bytes in 0.012500 ms.",
+      "Optimized __queryElements#C6Dw89:[0x14e6c8fe0->0x14ce88d40->0x14cc7c300, NoneFunctionCall, 101] using DFG with DFG into 1536 bytes in 0.145208 ms.",
+      "Optimized __queryElements#APvv7o:[0x14eab3120->0x14ce88e20->0x14cc42980, NoneFunctionCall, 934] using DFG with DFG into 9216 bytes in 0.838167 ms.",
+      "Optimized __queryElements#C6Dw89:[0x1523179e0->0x14ce88d40->0x14cc7c300, NoneFunctionCall, 101] using DFG with DFG into 1536 bytes in 0.151083 ms.",
+      "Optimized __queryElement#A3cUAW:[0x14ce897c0->0x14cc42600, LLIntFunctionCall, 137] using Baseline with Baseline into 1536 bytes in 0.014875 ms.",
+      "Optimized __queryElement#A3cUAW:[0x152964640->0x14ce897c0->0x14cc42600, NoneFunctionCall, 137] using DFG with DFG into 1792 bytes in 0.128542 ms.",
+      "Optimized __pendingElementStates#Cy92TA:[0x152964c60->0x14ce88f00->0x14cc42700, NoneFunctionCall, 530] using DFG with DFG into 4352 bytes in 0.453667 ms.",
+      "Optimized __element#Afqfy5:[0x14cc2ab00->0x14cc74b00, LLIntFunctionCall, 2715] using Baseline with Baseline into 34816 bytes in 0.193500 ms.",
+      "Optimized __element#Afqfy5:[0x152ee2240->0x14cc2ab00->0x14cc74b00, NoneFunctionCall, 2715] using DFG with DFG into 36864 bytes in 1.187625 ms.",
+      "Optimized __pendingElementStates#Cy92TA:[0x7047e109c0->0x14ce88f00->0x14cc42700, NoneFunctionCall, 530 (DidTryToEnterInLoop)] using DFG with DFG into 4864 bytes in 0.463417 ms."
+    ],
+    "native_library_changes_from_base": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "base": "87ee2102cccf1b948f9e3c6c6308196036a2756f6a97a168e35ec81dae75d73f",
+        "current": "05c549c65782a4b2f7aa437e14fbd2e3dd56f95ee588cf8c2a88b7c2af7deb08"
+      }
+    },
+    "continuous_lease": true,
+    "history": {
+      "last_cohort": 134,
+      "measured_cohorts": 128,
+      "acceptance_browser_attempts": 2755
+    },
+    "performance_credit": 0,
+    "target_met": false,
+    "catalog_added": false,
+    "qualification": "Three canonical-source V-profile attempts reject changing native inputs before C compilation/browser launch. First sealed derivative checker rejects a non-profiled thin wrapper; refined149scope derivative reverses observer-only edits to exact complete sealed base C byteforbyte and reuses exact sealed compiler/object inputs. Native linked libraries are current pinned inputs; changes from original base recorded. Main-thread V-profiler wall clock/nesting/self accounting unchanged; only20additional grid/style scopes enabled andworkerentryclocks gated. Productionallow-jit andwarmup10000verifiedbyactualoptions andknownbrowserfunctionBaseline/DFGcompilationbeforePNG. Originalpixels/content/72sourcebytes/mappedimages/normalexit/privatePIDadoption pass.143rows execute; no negative self. Timings include observer/unselectednative/JSC/waits/afterPNGwork; recursiveinclusive overlaps, no CPUshares/instruction saving/acceptancecredit or currentHEADvalidation. Investigation lead: childlayout95.840ms self/55034calls andinlineitemgeneration65.117ms self/235821calls beneath grid. No history/broadcadence change.",
+    "unix": 1793960721.105613
+  },
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-grid-style-v-profile-rejected-initial-20261106.tar.gz",
+      "bytes": 33301556,
+      "sha256": "f833d1d9e52b95101c3dd68416bdae5194b29473b19c018658e7fbe44eadd7c7",
+      "physical_members": 28,
+      "file_paths": 27,
+      "all_file_paths_verified": true
+    },
+    {
+      "path": "docs/performance/raw/bbc-grid-style-v-profile-rejected-refined-20261106.tar.gz",
+      "bytes": 33276675,
+      "sha256": "87ba2c0b25237353d26a54da8c55ea27855c9f6c4118c1bb8f5112b493326e50",
+      "physical_members": 23,
+      "file_paths": 23,
+      "all_file_paths_verified": true
+    },
+    {
+      "path": "docs/performance/raw/bbc-grid-style-v-profile-rejected-stable-20261106.tar.gz",
+      "bytes": 33276905,
+      "sha256": "a80863fffe1914d9c5d0e25e35b5280183e63f42f79678cc7a5eb3fcc5221e7c",
+      "physical_members": 24,
+      "file_paths": 23,
+      "all_file_paths_verified": true
+    },
+    {
+      "path": "docs/performance/raw/bbc-grid-style-v-profile-sealed-20261106.tar.gz",
+      "bytes": 36291187,
+      "sha256": "df657d0665620065a66f28ce4baf731dab790881676829c67c0c16d01ed9c7b7",
+      "physical_members": 48,
+      "file_paths": 53,
+      "all_file_paths_verified": true
+    }
+  ],
+  "base_compiler_evidence": "docs/performance/bbc-tls12-v-profile-20261106.json",
+  "base_archives": [
+    {
+      "path": "docs/performance/raw/bbc-tls12-v-profile-codegen-20261106.tar.gz",
+      "bytes": 57985156,
+      "sha256": "5837864830faff5847c8b758e5b7b6ce446504217d32635a0b945b507411a1f2",
+      "physical_members": 34,
+      "file_paths": 35,
+      "all_file_paths_verified": true
+    },
+    {
+      "path": "docs/performance/raw/bbc-tls12-v-profile-native-20261106.tar.gz",
+      "bytes": 45026945,
+      "sha256": "0e4ad1a4ad083c2f1b9df8979189e9b0c171eb4ddfbd9ef4d0ec199c738d9722",
+      "physical_members": 151,
+      "file_paths": 151,
+      "all_file_paths_verified": true
+    }
+  ],
+  "history": {
+    "last_cohort": 134,
+    "measured_cohorts": 128,
+    "acceptance_browser_attempts": 2755
+  },
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "qualification": "Three canonical-source V-profile attempts reject changing native inputs before C compilation/browser launch. First sealed derivative checker rejects a non-profiled thin wrapper; refined149scope derivative reverses observer-only edits to exact complete sealed base C byteforbyte and reuses exact sealed compiler/object inputs. Native linked libraries are current pinned inputs; changes from original base recorded. Main-thread V-profiler wall clock/nesting/self accounting unchanged; only20additional grid/style scopes enabled andworkerentryclocks gated. Productionallow-jit andwarmup10000verifiedbyactualoptions andknownbrowserfunctionBaseline/DFGcompilationbeforePNG. Originalpixels/content/72sourcebytes/mappedimages/normalexit/privatePIDadoption pass.143rows execute; no negative self. Timings include observer/unselectednative/JSC/waits/afterPNGwork; recursiveinclusive overlaps, no CPUshares/instruction saving/acceptancecredit or currentHEADvalidation. Investigation lead: childlayout95.840ms self/55034calls andinlineitemgeneration65.117ms self/235821calls beneath grid. No history/broadcadence change.",
+  "unix": 1793960753.314475
+}
