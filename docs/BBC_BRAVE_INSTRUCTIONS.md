@@ -1,5 +1,20 @@
 # BBC homepage instruction comparison
 
+
+The verified TLS 1.2 session-cache change (`94f275b6c`; isolated comparison
+control `8d334abb2`) passes **84 explicit C-backend HTTP executions**, 14 cases
+in candidate/control across default, no-GC and bounded preallocation, plus
+three separate native ownership/expiry/eviction cases. All 348 instruction-tool
+and 13 HTTP staging tests pass. Initial backend runs and failed fixture/probe
+attempts remain retained; they are qualified separately. Trust bytes, peer-chain
+validity, origin, proxy and ALPN partition sessions; fixed 60-second entries do
+not refresh on resumption. TLS 1.3-only checks pass with an OpenSSL 3 endpoint.
+BBC native diagnostics now independently confirm server-accepted resumption for
+original author scripts evaluated before PNG, with original pixel/content,
+72-source, native-image, ownership, exit and SVG checks passing in both arms.
+Matched cohort 133 is pending; no instruction saving or catalog credit is claimed.
+[Focused evidence](performance/bbc-tls12-session-focus-20261106.json).
+
 Latest attempt — **cohort 132**, literal V `-prod` / single-C-unit production
 `ec6ef38e95bb`, completes **seven alternating candidate/control/Brave triples**.
 All **21 attempts** remain retained; **20 capture audits pass**, while Brave
