@@ -33,9 +33,12 @@ def main():
                 stderr=subprocess.STDOUT) if compiled == 0 else None
             spare = subprocess.call([str(binary), '--spare'], stdout=log,
                                     stderr=subprocess.STDOUT) if compiled == 0 else None
-        failed = failed or tested != 0 or cleared != 0 or spare != 0
+            readiness = subprocess.call([str(binary), '--readiness'], stdout=log,
+                                        stderr=subprocess.STDOUT) if compiled == 0 else None
+        failed = failed or tested != 0 or cleared != 0 or spare != 0 or readiness != 0
         print(json.dumps(dict(mode=mode, compile_exit=compiled, test_exit=tested,
                              cleared_test_exit=cleared, spare_test_exit=spare,
+                             readiness_test_exit=readiness,
                              log=str(output / (mode + ".log")))), flush=True)
     return 1 if failed else 0
 

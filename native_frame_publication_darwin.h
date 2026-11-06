@@ -3,8 +3,8 @@
 #include "native_document_submission_darwin.h"
 #include "native_scroll_tile_presentation_darwin.h"
 
-// Immutable output of one main-thread paint. Only the scheduling fence is
-// consumed off-main; NSView, layer installation and V callbacks stay on-main.
+// Owned output of one main-thread paint, with immutable pixels and identity.
+// The worker records readiness; NSView, installation and V callbacks stay on-main.
 @interface VoxNativePreparedFrame : NSObject {
 @public
     CGImageRef image;
@@ -13,7 +13,8 @@
     NSRect bounds;
     CGFloat scale;
     uint64_t generation, epoch;
-    double preparation_started;
+    double preparation_started, readiness_wait;
+    BOOL ready;
 }
 @end
 
@@ -25,8 +26,8 @@ VOX_NATIVE_STATE VoxNativeFramePublishedObserver native_frame_published_observer
 // Public runtime capability for observers. A queued frame is not a publication.
 @interface VoxNativeFramePublication : NSObject {
 @public
-    VoxNativePreparedFrame *pending;
-    BOOL working;
+    VoxNativePreparedFrame *pending, *completed;
+    BOOL working, delivery_scheduled, failed;
     uint64_t epoch, latest_generation, latest_token;
     NSRect latest_bounds;
     CGFloat latest_scale;
@@ -57,6 +58,7 @@ VOX_NATIVE_STATE VoxNativeFramePublishedObserver native_frame_published_observer
 - (void)dealloc {
 #if !__has_feature(objc_arc)
     [pending release];
+    [completed release];
     [super dealloc];
 #endif
 }
@@ -75,6 +77,8 @@ static VoxNativeFramePublication *native_frame_publication_state(NSView *view, B
     }
     return state;
 }
+// Every mailbox access uses this short monitor. GPU waits, layer operations,
+// observer/V callbacks and run-loop delivery happen outside it.
 static void native_frame_publication_set_pending(VoxNativeFramePublication *state,
     VoxNativePreparedFrame *frame) {
 #if !__has_feature(objc_arc)
@@ -83,83 +87,140 @@ static void native_frame_publication_set_pending(VoxNativeFramePublication *stat
 #endif
     state->pending = frame;
 }
-// Resize, capture and a synchronous replacement invalidate both queued and
-// in-flight work. Its immutable resources live until the fence consumer exits.
+static void native_frame_publication_set_completed(VoxNativeFramePublication *state,
+    VoxNativePreparedFrame *frame) {
+#if !__has_feature(objc_arc)
+    [frame retain];
+    [state->completed release];
+#endif
+    state->completed = frame;
+}
 static void native_frame_publication_cancel(NSView *view) {
     VoxNativeFramePublication *state = native_frame_publication_state(view, NO);
-    if (state) {
+    if (state) @synchronized(state) {
         ++state->epoch;
+        state->failed = NO;
         state->latest_token = 0;
         native_frame_publication_set_pending(state, nil);
+        native_frame_publication_set_completed(state, nil);
+    }
+}
+static BOOL native_frame_publication_busy(NSView *view) {
+    VoxNativeFramePublication *state = native_frame_publication_state(view, NO);
+    if (!state) return NO;
+    @synchronized(state) {
+        return state->working || state->pending || state->completed || state->delivery_scheduled;
     }
 }
 static BOOL native_frame_publication_covers(NSView *view, uint64_t generation, CGFloat scale) {
     VoxNativeFramePublication *state = native_frame_publication_state(view, NO);
-    return state && state->working && state->latest_token
-        && state->latest_generation == generation && state->latest_scale == scale
-        && NSEqualRects(state->latest_bounds, view.bounds);
+    if (!state) return NO;
+    NSRect bounds = view.bounds;
+    @synchronized(state) {
+        return (state->working || state->completed || state->delivery_scheduled) && state->latest_token
+            && state->latest_generation == generation && state->latest_scale == scale
+            && NSEqualRects(state->latest_bounds, bounds);
+    }
 }
 
 typedef void (*VoxNativeFrameCompletion)(NSView *, VoxNativePreparedFrame *, BOOL);
 typedef BOOL (*VoxNativeFrameCanComplete)(void);
-static void native_frame_publication_drain(NSView *, VoxNativeFramePublication *,
-    VoxNativeFrameCompletion, VoxNativeFrameCanComplete);
-static void native_frame_publication_finish(NSView *view, VoxNativeFramePublication *state,
-    VoxNativePreparedFrame *frame, BOOL ready, double wait,
+static void native_frame_publication_deliver(NSView *view, VoxNativeFramePublication *state,
     VoxNativeFrameCompletion complete, VoxNativeFrameCanComplete can_complete) {
-    if (frame->epoch == state->epoch && !can_complete()) {
-        // Cooperative document work may pump the main run loop during paint.
-        // Do not publish or invoke a V callback from inside that preparation.
+    if (!can_complete()) {
+        @synchronized(state) {
+            if (!state->completed) { state->delivery_scheduled = NO; return; }
+        }
+        // Keep a single notification while cooperative paint pumps the loop.
+        // The worker can replace completed output with a newer ready frame.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-            native_frame_publication_finish(view,state,frame,ready,wait,complete,can_complete);
+            native_frame_publication_deliver(view,state,complete,can_complete);
         });
         return;
     }
-    if (frame->epoch == state->epoch) complete(view, frame, ready);
-    if (getenv("VOX_GPU_FRAME_QUEUE_DIAGNOSTICS")) {
+    VoxNativePreparedFrame *frame = nil;
+    BOOL current = NO;
+    @synchronized(state) {
+        frame = state->completed;
+#if !__has_feature(objc_arc)
+        [frame retain];
+#endif
+        native_frame_publication_set_completed(state, nil);
+        state->delivery_scheduled = NO;
+        current = frame && frame->epoch == state->epoch;
+    }
+    if (current) complete(view,frame,frame->ready);
+    if (frame && getenv("VOX_GPU_FRAME_QUEUE_DIAGNOSTICS")) {
         double (*clock)(void) = (double (*)(void))dlsym(RTLD_DEFAULT,"vox_precise_scroll_diagnostic_time");
         fprintf(stderr,"VOX_GPU_FRAME_QUEUE token=%llu ready=%d current=%d wait_us=%.3f t_us=%.3f\n",
-            (unsigned long long)frame->submission.token, ready,
-            frame->epoch == state->epoch, wait * 1e6, clock ? clock() : -1);
+            (unsigned long long)frame->submission.token, frame->ready, current,
+            frame->readiness_wait * 1e6, clock ? clock() : -1);
     }
-    state->working = NO;
-    native_frame_publication_drain(view, state, complete, can_complete);
-}
-static void native_frame_publication_drain(NSView *view, VoxNativeFramePublication *state,
-    VoxNativeFrameCompletion complete, VoxNativeFrameCanComplete can_complete) {
-    if (state->working || !state->pending) return;
-    VoxNativePreparedFrame *frame = state->pending;
-#if !__has_feature(objc_arc)
-    [frame retain];
-#endif
-    native_frame_publication_set_pending(state, nil);
-    state->working = YES;
-    // Each view has at most one in-flight wait and one replaceable pending
-    // frame. No unbounded dispatch backlog or lock held across a GPU wait.
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0), ^{
-        @autoreleasepool {
-            double started = CACurrentMediaTime();
-            BOOL ready = native_scroll_tiles_ready((__bridge VoxScrollTileFrame *)frame->tiles, "readiness-worker");
-            double wait = CACurrentMediaTime() - started;
-            dispatch_async(dispatch_get_main_queue(), ^{
-                native_frame_publication_finish(view,state,frame,ready,wait,complete,can_complete);
-            });
-        }
-    });
 #if !__has_feature(objc_arc)
     [frame release];
 #endif
+}
+static void native_frame_publication_work(NSView *view, VoxNativeFramePublication *state,
+    VoxNativeFrameCompletion complete, VoxNativeFrameCanComplete can_complete) {
+    // Do not wait for main-queue installation to drain the next GPU fence.
+    // The bounded mailbox holds one pending, one in-flight and one completed
+    // frame; completed output is replaceable until the main queue takes it.
+    for (;;) @autoreleasepool {
+        VoxNativePreparedFrame *frame = nil;
+        @synchronized(state) {
+            frame = state->pending;
+#if !__has_feature(objc_arc)
+            [frame retain];
+#endif
+            native_frame_publication_set_pending(state, nil);
+            if (!frame) { state->working = NO; return; }
+        }
+        double started = CACurrentMediaTime();
+        frame->ready = native_scroll_tiles_ready((__bridge VoxScrollTileFrame *)frame->tiles,"readiness-worker");
+        frame->readiness_wait = CACurrentMediaTime() - started;
+        BOOL notify = NO;
+        BOOL stop = NO;
+        @synchronized(state) {
+            if (frame->epoch == state->epoch) {
+                native_frame_publication_set_completed(state,frame);
+                if (!frame->ready) {
+                    // A later successful wait cannot repair bytes lost by a
+                    // failed producer. Preserve this rejection until main
+                    // delivers CPU recovery; never replace it with newer GPU
+                    // output which may depend on those missing pixels.
+                    state->failed = stop = YES;
+                    state->working = NO;
+                    native_frame_publication_set_pending(state,nil);
+                }
+                if (!state->delivery_scheduled) state->delivery_scheduled = notify = YES;
+            }
+        }
+        if (notify) dispatch_async(dispatch_get_main_queue(), ^{
+            native_frame_publication_deliver(view,state,complete,can_complete);
+        });
+#if !__has_feature(objc_arc)
+        [frame release];
+#endif
+        if (stop) return;
+    }
 }
 static void native_frame_publication_enqueue(NSView *view, VoxNativePreparedFrame *frame,
     VoxNativeFrameCompletion complete, VoxNativeFrameCanComplete can_complete) {
     NSCAssert(NSThread.isMainThread, @"Only frame readiness leaves the main thread");
     VoxNativeFramePublication *state = native_frame_publication_state(view, YES);
-    frame->epoch = state->epoch;
-    state->latest_generation = frame->generation;
-    state->latest_token = frame->submission.token;
-    state->latest_bounds = frame->bounds;
-    state->latest_scale = frame->scale;
-    native_frame_publication_set_pending(state, frame);
-    native_frame_publication_drain(view, state, complete, can_complete);
+    BOOL start = NO;
+    @synchronized(state) {
+        if (state->failed) return;
+        frame->epoch = state->epoch;
+        state->latest_generation = frame->generation;
+        state->latest_token = frame->submission.token;
+        state->latest_bounds = frame->bounds;
+        state->latest_scale = frame->scale;
+        native_frame_publication_set_pending(state, frame);
+        if (!state->working) state->working = start = YES;
+    }
+    if (start) dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE,0), ^{
+        native_frame_publication_work(view,state,complete,can_complete);
+    });
 }
 #endif

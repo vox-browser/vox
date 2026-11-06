@@ -325,7 +325,9 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
     if (disabled || !width || !height || width > SIZE_MAX / 4 / height) return NULL;
     size_t bytes = width * 4 * height;
     VoxLayerFrameBuffer *spare = NULL;
-    int count = shared && getenv("VOX_EXTRA_FRAME_BUFFER")
+    // The readiness mailbox may own pending, in-flight and completed output
+    // alongside the installed frame. Keep those four immutable bases mapped.
+    int count = shared && (getenv("VOX_EXTRA_FRAME_BUFFER") || getenv("VOX_GPU_FRAME_READINESS_QUEUE"))
         ? VOX_LAYER_FRAME_BUFFER_CAPACITY : VOX_LAYER_FRAME_BUFFERS;
     for (int index = 0; index < count; ++index) {
         VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];

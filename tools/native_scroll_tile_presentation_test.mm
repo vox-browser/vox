@@ -115,12 +115,11 @@ static void draw(id self, SEL selector, NSRect bounds) {
 }
 static void present(NSView *view, CGFloat scale) {
     native_layer_present_frame(view,scale,(IMP)draw);
-    VoxNativeFramePublication *state=native_frame_publication_state(view,NO);
     double deadline=CACurrentMediaTime()+5;
-    while(state && state->working && CACurrentMediaTime()<deadline) {
+    while(native_frame_publication_busy(view) && CACurrentMediaTime()<deadline) {
         @autoreleasepool { CFRunLoopRunInMode(kCFRunLoopDefaultMode,.001,true); }
     }
-    assert(!state || !state->working);
+    assert(!native_frame_publication_busy(view));
 }
 static std::vector<uint8_t> packed(CGImageRef image) {
     assert(image);

@@ -103,7 +103,7 @@ static void start_blocked(NSView *view, int value, int gate) {
     assert(!dispatch_semaphore_wait(entered,dispatch_time(DISPATCH_TIME_NOW,5*NSEC_PER_SEC)));
 }
 static void idle(NSView *view) {
-    pump([&]{ return !native_frame_publication_state(view,YES)->working; });
+    pump([&]{ return !native_frame_publication_busy(view); });
 }
 int main() { @autoreleasepool {
     [NSApplication sharedApplication];
@@ -131,11 +131,14 @@ int main() { @autoreleasepool {
     // that preparation to exit before touching layers or calling back into V.
     native_layer_document_work_active=YES;
     dispatch_semaphore_signal(proceed);
-    pump([&]{ return released[0]==1; });
+    pump([&]{
+        VoxNativeFramePublication *state=native_frame_publication_state(view,NO);
+        @synchronized(state) { return released[2]==1 && !state->working; }
+    });
     assert(installed.size()==1);
     native_layer_document_work_active=NO;
     idle(view);
-    assert((installed==std::vector<int>{31,45,150}));
+    assert((installed==std::vector<int>{31,150}));
     assert(acknowledged==std::vector<int>{31} && scheduled[0]==1 && scheduled[2]==1);
     assert(pixel(retained)==31); CGImageRelease(retained);
 
@@ -162,7 +165,16 @@ int main() { @autoreleasepool {
     // Failure preserves the previous image and requests fresh CPU recovery.
     auto generation=native_layer_redraw_generation;
     size_t before=installed.size();
-    paint(view,210,7,false,false); idle(view);
+    native_layer_document_work_active=YES;
+    paint(view,210,7,false,false);
+    pump([&]{
+        VoxNativeFramePublication *state=native_frame_publication_state(view,NO);
+        @synchronized(state) { return state->failed && !state->working; }
+    });
+    paint(view,211,13);
+    assert(released[13]==1 && scheduled[13]==0);
+    native_layer_document_work_active=NO;
+    idle(view);
     assert(installed.size()==before && acknowledged.back()==200);
     assert(pixel(native_layer_frame_image(view))==200);
     assert(native_scroll_gpu_tile_failed && native_layer_redraw_generation>generation+1);

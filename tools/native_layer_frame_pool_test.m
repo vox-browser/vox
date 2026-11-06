@@ -93,8 +93,10 @@ static void assert_transparent(CGImageRef image)
 int main(int argc, char **argv)
 {
     @autoreleasepool {
-        if(argc==2 && !strcmp(argv[1],"--spare")) {
-            setenv("VOX_EXTRA_FRAME_BUFFER","1",1);
+        if(argc==2 && (!strcmp(argv[1],"--spare") || !strcmp(argv[1],"--readiness"))) {
+            const char *option=!strcmp(argv[1],"--spare")
+                ? "VOX_EXTRA_FRAME_BUFFER" : "VOX_GPU_FRAME_READINESS_QUEUE";
+            setenv(option,"1",1);
             MyView2* view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,64,48)];
             CGImageRef held[4];
             for(int index=0;index<4;++index) {
@@ -110,10 +112,10 @@ int main(int argc, char **argv)
             CGImageRelease(held[3]);
             // The same process can disable the spare while the first three
             // remain published. Its idle fourth slot must not bypass control.
-            unsetenv("VOX_EXTRA_FRAME_BUFFER");
+            unsetenv(option);
             CGImageRef control=frame(view,6);
             assert(!native_layer_surface_for_image(control));CGImageRelease(control);
-            setenv("VOX_EXTRA_FRAME_BUFFER","1",1);
+            setenv(option,"1",1);
             CGImageRef reused=frame(view,7);
             assert(native_layer_surface_for_image(reused));
             assert(native_test_frame_buffer_maps==4 && native_test_frame_buffer_reuses==1);
