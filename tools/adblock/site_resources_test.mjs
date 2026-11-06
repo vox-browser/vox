@@ -19,6 +19,10 @@ const reviewed = [
         '382361615a2984ce9fd8caa12f8e581a60ad6e0375e87b4b194143b3a63ed5c5'],
     ['native-performance-bootstrap-_6lrVRz4.js', 'vox-chatgpt-performance-20261106.js',
         '78cb5cb3156d9ce5ce20f7c92c4d18e4c9aede2032415f93696b3c46fb871cc7'],
+    ['analytics-ces-business-context-DAkvOubI.js', 'vox-chatgpt-business.js',
+        '76f9899f30a653548ac46db46059ae8f29b8ad9c9626baf616503204e37a5094'],
+    ['native-performance-bootstrap-vLAyyR-4.js', 'vox-chatgpt-performance-20261106-b.js',
+        '217592f43c0989c0febc23dff11391dfc6deae9358ed80e5930d747a658553ed'],
 ];
 const request = (url, extra = {}) => ({url, source_url: 'https://chatgpt.com/', request_type: 'script', ...extra});
 const dataURL = text => 'data:text/javascript;base64,' + Buffer.from(text).toString('base64');
