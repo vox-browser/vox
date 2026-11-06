@@ -248,6 +248,7 @@ static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, 
     int top, int right, int bottom, int *ink_left, int *ink_top, int *ink_right,
     int *ink_bottom)
 {
+    const int trim_rows = native_opacity_trim_ink_rows();
     int found = 0, min_x = right, min_y = bottom, max_x = left, max_y = top;
     for (int y = top; y < bottom; ++y) {
         const uint32_t *row = (const uint32_t *)(pixels + (size_t)y * pitch);
@@ -293,8 +294,7 @@ static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, 
         // Once both horizontal limits are reached, no interior row can widen
         // them. Only the final nonempty row remains unknown. Search backwards
         // for it, retaining the same any-channel ink definition and crop.
-        if (min_x == left && max_x == right && bottom - y > 2
-            && native_opacity_trim_ink_rows()) {
+        if (trim_rows && min_x == left && max_x == right && bottom - y > 2) {
             int tail = bottom - 1;
             for (; tail > y; --tail) {
                 const uint32_t *tail_row = (const uint32_t *)(pixels + (size_t)tail * pitch);
