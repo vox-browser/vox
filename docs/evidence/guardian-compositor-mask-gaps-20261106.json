@@ -1,0 +1,179 @@
+{
+  "feature_commits": [
+    "02a0b547ab8b690ec1c78e82d27e420752bb6649",
+    "09a4120b680763a767284c3384960c3531fe8524"
+  ],
+  "scope": "Archived Guardian international guest document, 1024x768 scale1, matching repository full MV2 uBlock Origin lists; fresh processes and private profiles",
+  "result": [
+    {
+      "policy": "cold",
+      "source": 0,
+      "replay": 0,
+      "native": 0,
+      "native_source": 0
+    },
+    {
+      "policy": "complete",
+      "source": 0,
+      "replay": 0,
+      "native": 0,
+      "native_source": 0
+    }
+  ],
+  "previous_native_pixels": 70,
+  "structural_first_fix": {
+    "commit": "02a0b547a",
+    "focused_functions": 15,
+    "gc_modes": [
+      "default",
+      "none",
+      "prealloc"
+    ],
+    "production_pixels": 70,
+    "reason_remaining": "The balanced offscreen mask belonged to a composited child; the old mask guard still required a legacy raster."
+  },
+  "final_focused": {
+    "functions": 16,
+    "gc_modes": [
+      "default",
+      "none",
+      "prealloc"
+    ],
+    "composite": "Three new-case functions in all modes; thirteen established controls in default and none plus the fresh preallocation-only repeat.",
+    "failed_attempts": [
+      "Preallocation control compile hit concurrent three-versus-five-argument timer ABI change; no run credit",
+      "First preallocation-only repeat compiled and ran but its pinned timer header changed; no cohort credit"
+    ],
+    "fresh_repeat": "prealloc-resume-v2",
+    "sources_unchanged": true
+  },
+  "production": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "1a6008965c4afe18bc4b1fb4868bd647d9e4c437146d3e10333d40199ce541ca",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "44ce260d76d2b689ea34bf1fbefd7283471c090f0accc24749149f2f5aa9f30a",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7200ca02ea5db26fd6da90819ac8d0d7857b30e8da39385cf2ca77ac19475a28",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "8fb5bd3671fba65e795e8516a557b0bdde3b5317bbdecd16fc906a8af97db748",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+    "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+    "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+    "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+    "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+    "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+    "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+    "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+    "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+    "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+    "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+    "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+    "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+    "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+    "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+    "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+  },
+  "controls": {
+    "started_at": "2026-11-06T08:40:04+0300",
+    "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+    "threshold": "zero differing RGBA pixels",
+    "cache_policy": "cold",
+    "sites": [
+      {
+        "id": "slashdot",
+        "name": "Slashdot",
+        "url": "https://slashdot.org/",
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/guardian-mask-gap-20261106/production-v4/controls/slashdot",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "2e05c1621ac041a40bf799556ef78b5a1c131f183371c7b279aada8c9733a09c"
+      },
+      {
+        "id": "hacker-news",
+        "name": "Hacker News",
+        "url": "https://news.ycombinator.com/",
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/guardian-mask-gap-20261106/production-v4/controls/hacker-news",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+      }
+    ],
+    "passed": 2
+  },
+  "broad": {
+    "tests": 142,
+    "captures": 148,
+    "all_exact": true,
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ec6ef38e95bbf7d19e99b013358881ff04c464b69f8ef7ce79b47c84ee4c1c36",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "4e5a8ec9adbb26c780274c0b84c2b7494f7dbd136ca79aacba83f47fb17dd0f8",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "4089a8ba74cdd09b6e17e77bf0c9f8050a9e341ce629405ce92529f13e9e4294",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "8fb5bd3671fba65e795e8516a557b0bdde3b5317bbdecd16fc906a8af97db748",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "compiler_feature_review": {
+      "file": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-084011-8fdb0443/frozen-compiler-inputs/0-Vox.c.i",
+      "sha256": "2dd7fa027fc46be896249587db86e94973d7867e99461dd70ef2f2d210a83347",
+      "fragment": "chromium_compositor_gap_can_flush_parent(Array commands, layout__ChromiumRasterLayerPlan plan, i64 parent, i64 start, i64 end, layout__LayoutRect viewport) {\n if ((parent <= 0) || (parent >= plan.layers.len) || (plan.command_layers.len != commands.len) || (start < 0) || (end <= start) || (end > commands.len) || (viewport.width <= 0) || (viewport.height <= 0)) {\n  return 0;\n }\n Array __arr_lit_0 = __new_array_noscan(0, 4, sizeof(double));\n double __arr_val_1 = viewport.x;\n { Array* __v3_internal_symbol_scalar_push_base_0 = &__arr_lit_0; double __v3_internal_symbol_scalar_push_value_0 = __arr_val_1; if (__v3_internal_symbol_scalar_push_base_0->len >= 0 && __v3_internal_symbol_scalar_push_base_0->len < __v3_internal_symbol_scalar_push_base_0->cap && !(__v3_internal_symbol_scalar_push_base_0->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_0->data)[__v3_internal_symbol_scalar_push_base_0->len] = __v3_internal_symbol_scalar_push_value_0; __v3_internal_symbol_scalar_push_base_0->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_0, &__v3_internal_symbol_scalar_push_value_0); } }\n double __arr_val_2 = viewport.y;\n { Array* __v3_internal_symbol_scalar_push_base_1 = &__arr_lit_0; double __v3_internal_symbol_scalar_push_value_1 = __arr_val_2; if (__v3_internal_symbol_scalar_push_base_1->len >= 0 && __v3_internal_symbol_scalar_push_base_1->len < __v3_internal_symbol_scalar_push_base_1->cap && !(__v3_internal_symbol_scalar_push_base_1->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_1->data)[__v3_internal_symbol_scalar_push_base_1->len] = __v3_internal_symbol_scalar_push_value_1; __v3_internal_symbol_scalar_push_base_1->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_1, &__v3_internal_symbol_scalar_push_value_1); } }\n double __arr_val_3 = viewport.width;\n { Array* __v3_internal_symbol_scalar_push_base_2 = &__arr_lit_0; double __v3_internal_symbol_scalar_push_value_2 = __arr_val_3; if (__v3_internal_symbol_scalar_push_base_2->len >= 0 && __v3_internal_symbol_scalar_push_base_2->len < __v3_internal_symbol_scalar_push_base_2->cap && !(__v3_internal_symbol_scalar_push_base_2->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_2->data)[__v3_internal_symbol_scalar_push_base_2->len] = __v3_internal_symbol_scalar_push_value_2; __v3_internal_symbol_scalar_push_base_2->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_2, &__v3_internal_symbol_scalar_push_value_2); } }\n double __arr_val_4 = viewport.height;\n { Array* __v3_internal_symbol_scalar_push_base_3 = &__arr_lit_0; double __v3_internal_symbol_scalar_push_value_3 = __arr_val_4; if (__v3_internal_symbol_scalar_push_base_3->len >= 0 && __v3_internal_symbol_scalar_push_base_3->len < __v3_internal_symbol_scalar_push_base_3->cap && !(__v3_internal_symbol_scalar_push_base_3->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_3->data)[__v3_internal_symbol_scalar_push_base_3->len] = __v3_internal_symbol_scalar_push_value_3; __v3_internal_symbol_scalar_push_base_3->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_3, &__v3_internal_symbol_scalar_push_value_3); } }\n {\n  i64 __for_idx_5 = 0;\n  for (; __for_idx_5 < __arr_lit_0.len; __for_idx_5++) {\n   double value = *(double*)(array__get(__arr_lit_0, __for_idx_5));\n   if (math__is_nan(value) || math__is_inf(value, 0)) {\n    return 0;\n   }\n  }\n }\n if (chromium_opaque_compositor_effect_gap(commands, plan, parent, start, end)) {\n  return 1;\n }\n if (!plan.has_paint_metadata) {\n  return 0;\n }\n if (chromium_opaque_compositor_mask_gap(commands, plan, parent, start, end)) {\n  return 1;\n }\n layout__LayoutRect before = (layout__LayoutRect){0};\n layout__LayoutRect after = (layout__LayoutRect){0};\n Array before_ink = __new_array_noscan(0, 0, sizeof(layout__LayoutRect));\n Array after_ink = __new_array_noscan(0, 0, sizeof(layout__LayoutRect));\n _Bool has_before = 0;\n _Bool has_after = 0;\n {\n  i64 __for_idx_6 = 0;\n  for (; __for_idx_6 < ((*(layout__ChromiumRasterLayer*)array__get(plan.layers, parent))).command_indices.len; __for_idx_6++) {\n   i64 v_index = *(i64*)(array__get(((*(layout__ChromiumRasterLayer*)array__get(plan.layers, parent))).command_indices, __for_idx_6));\n   if ((v_index < 0) || (v_index >= commands.len) || ((*(i64*)array__get(plan.command_layers, v_index)) != parent) || ((v_index >= start) && (v_index < end))) {\n    return 0;\n   }\n   layout__PaintCommand* command = &(*((layout__PaintCommand*)((commands).data) + (v_index)));\n   if (chromium_compositor_leaf_is_culled(command, viewport)) {\n    continue;\n   }\n   if (command->fixed_to_viewport || command->visual_layer_data.ok || string__starts_with(command->kind, _str_1453) || string__starts_with(command->kind, _str_1454)) {\n    return 0;\n   }\n   __v_option_layout__LayoutRect __or_opt_7 = chromium_compositor_gap_ink(command);\n   layout__LayoutRect __or_val_8 = {0};\n   if (__or_opt_7.ok) {\n    __or_val_8 = __or_opt_7.value;\n   } else {\n    if (!string__eq(os__getenv(_str_1455), _str_101)) {\n     eprintln(({ string __v3_internal_symbol_join_4[20]; __v3_internal_symbol_join_4[0] = _str_1456; __v3_internal_symbol_join_4[1] = int__str(v_index); __v3_internal_symbol_join_4[2] = _str_1457; __v3_internal_symbol_join_4[3] = f64__str(command->x); __v3_internal_symbol_join_4[4] = _str_481; __v3_internal_symbol_join_4[5] = f64__str(command->y); __v3_internal_symbol_join_4[6] = _str_481; __v3_internal_symbol_join_4[7] = f64__str(command->width); __v3_internal_symbol_join_4[8] = _str_481; __v3_internal_symbol_join_4[9] = f64__str(command->height); __v3_internal_symbol_join_4[10] = _str_1458; __v3_internal_symbol_join_4[11] = bool__str(command->has_clip); __v3_internal_symbol_join_4[12] = _str_64; __v3_internal_symbol_join_4[13] = f64__str(command->clip_x); __v3_internal_symbol_join_4[14] = _str_481; __v3_internal_symbol_join_4[15] = f64__str(command->clip_y); __v3_internal_symbol_join_4[16] = _str_481; __v3_internal_symbol_join_4[17] = f64__str(command->clip_width); __v3_internal_symbol_join_4[18] = _str_481; __v3_internal_symbol_join_4[19] = f64__str(command->clip_height); string_plus_many(20, __v3_internal_symbol_join_4); }));\n    }\n    return chromium_svg_compositor_layer_declined(parent, v_index, _str_1459, command->kind);\n   }\n   layout__LayoutRect ink = __or_val_8;\n   if ((ink.width <= 0) || (ink.height <= 0) || (ink.x > (viewport.width + 3)) || (ink.y > (viewport.height + 3)) || ((ink.x + ink.width) < -3) || ((ink.y + ink.height) < -3)) {\n    continue;\n   }\n   if (v_index < start) {\n    layout__LayoutRect __if_val_9 = {0};\n    if (has_before) {\n     __if_val_9 = chromium_compositor_ink_union(before, ink);\n    } else {\n     __if_val_9 = ink;\n    }\n    before = __if_val_9;\n    has_before = 1;\n    layout__LayoutRect __arr_val_10 = ink;\n    array__push(&before_ink, &__arr_val_10);\n   } else {\n    layout__LayoutRect __if_val_11 = {0};\n    if (has_after) {\n     __if_val_11 = chromium_compositor_ink_union(after, ink);\n    } else {\n     __if_val_11 = ink;\n    }\n    after = __if_val_11;\n    has_after = 1;\n    layout__LayoutRect __arr_val_12 = ink;\n    array__push(&after_ink, &__arr_val_12);\n   }\n  }\n }\n if (!has_after) {\n  return chromium_compositor_gap_has_balanced_scopes(commands, start, end);\n }\n if (has_before && has_after && chromium_compositor_ink_overlaps(before, after)) {\n  {\n   i64 __for_idx_13 = 0;\n   for (; __for_idx_13 < before_ink.len; __for_idx_13++) {\n    layout__LayoutRect prefix = *(layout__LayoutRect*)(array__get(before_ink, __for_idx_13));\n    {\n     i64 __for_idx_14 = 0;\n     for (; __for_idx_14 < after_ink.len; __for_idx_14++) {\n      layout__LayoutRect suffix = *(layout__LayoutRect*)(array__get(after_ink, __for_idx_14));\n      if (chromium_compositor_ink_overlaps(prefix, suffix)) {\n       if (!string__eq(os__getenv(_str_1455), _str_101)) {\n        eprintln(({ string __v3_internal_symbol_join_5[16]; __v3_internal_symbol_join_5[0] = _str_1460; __v3_internal_symbol_join_5[1] = f64__str(prefix.x); __v3_internal_symbol_join_5[2] = _str_481; __v3_internal_symbol_join_5[3] = f64__str(prefix.y); __v3_internal_symbol_join_5[4] = _str_481; __v3_internal_symbol_join_5[5] = f64__str(prefix.width); __v3_internal_symbol_join_5[6] = _str_481; __v3_internal_symbol_join_5[7] = f64__str(prefix.height); __v3_internal_symbol_join_5[8] = _str_1461; __v3_internal_symbol_join_5[9] = f64__str(suffix.x); __v3_internal_symbol_join_5[10] = _str_481; __v3_internal_symbol_join_5[11] = f64__str(suffix.y); __v3_internal_symbol_join_5[12] = _str_481; __v3_internal_symbol_join_5[13] = f64__str(suffix.width); __v3_internal_symbol_join_5[14] = _str_481; __v3_internal_symbol_join_5[15] = f64__str(suffix.height); string_plus_many(16, __v3_internal_symbol_join_5); }));\n       }\n       return chromium_svg_compositor_layer_declined(parent, start, _str_1462, _str_101);\n      }\n     }\n    }\n   }\n  }\n }\n Array scopes = __new_array_noscan(0, 0, sizeof(u64));\n Array scope_kinds = __v3_internal_symbol_array_new((sizeof(string)), (0), (0));\n Array scope_owners = __new_array_noscan(0, 0, sizeof(i64));\n i64 mask_depth = 0;\n {\n  i64 v_index = start;\n  for (; v_index < end; v_index++) {\n   i64 owner = (*(i64*)array__get(plan.command_layers, v_index));\n   if (owner < 0) {\n    continue;\n   }\n   if ((owner == parent) || (owner >= plan.layers.len)) {\n    return 0;\n   }\n   layout__ChromiumRasterLayer child = (*(layout__ChromiumRasterLayer*)array__get(plan.layers, owner));\n   layout__PaintCommand* command = &(*((layout__PaintCommand*)((commands).data) + (v_index)));\n   if (command->fixed_to_viewport) {\n    return 0;\n   }\n   if (string__eq(command->kind, _str_949) || string__eq(command->kind, _str_950) || string__eq(command->kind, _str_941) || string__eq(command->kind, _str_942)) {\n    __v_option_layout__PaintVisualLayerptr __or_opt_15 = command->visual_layer_data;\n    layout__PaintVisualLayer* __or_val_16 = {0};\n    if (__or_opt_15.ok) {\n     __or_val_16 = __or_opt_15.value;\n    } else {\n     return 0;\n    }\n    layout__PaintVisualLayer* layer = __or_val_16;\n    _Bool mask = string__eq(command->kind, _str_949) || string__eq(command->kind, _str_950);\n    if ((mask && (layer->kind != layout__PaintVisualLayerKind__svg_mask)) || (!mask && (layer->kind != layout__PaintVisualLayerKind__css_effect)) || (layer->scope_id == 0) || (layer->opacity != 1) || (layer->blend_mode != painting__CompositingAndBlendingOperator__normal) || layer->filter.ok) {\n     return 0;\n    }\n    string __if_val_17 = {0};\n    if (mask) {\n     __if_val_17 = _str_1463;\n    } else {\n     __if_val_17 = _str_1464;\n    }\n    string kind = __if_val_17;\n    if (string__starts_with(command->kind, _str_1453)) {\n     if ((scope_owners.len > 0) && (*(i64*)array__last(scope_owners) != owner)) {\n      return 0;\n     }\n     u64 __arr_val_18 = (u64)(layer->scope_id);\n     { Array* __v3_internal_symbol_scalar_push_base_6 = &scopes; u64 __v3_internal_symbol_scalar_push_value_6 = __arr_val_18; if (__v3_internal_symbol_scalar_push_base_6->len >= 0 && __v3_internal_symbol_scalar_push_base_6->len < __v3_internal_symbol_scalar_push_base_6->cap && !(__v3_internal_symbol_scalar_push_base_6->flags & ArrayFlags__is_slice)) { ((u64*)__v3_internal_symbol_scalar_push_base_6->data)[__v3_internal_symbol_scalar_push_base_6->len] = __v3_internal_symbol_scalar_push_value_6; __v3_internal_symbol_scalar_push_base_6->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_6, &__v3_internal_symbol_scalar_push_value_6); } }\n     string __arr_val_19 = kind;\n     array__push(&scope_kinds, &__arr_val_19);\n     i64 __arr_val_20 = owner;\n     { Array* __v3_internal_symbol_scalar_push_base_7 = &scope_owners; i64 __v3_internal_symbol_scalar_push_value_7 = __arr_val_20; if (__v3_internal_symbol_scalar_push_base_7->len >= 0 && __v3_internal_symbol_scalar_push_base_7->len < __v3_internal_symbol_scalar_push_base_7->cap && !(__v3_internal_symbol_scalar_push_base_7->flags & ArrayFlags__is_slice)) { ((i64*)__v3_internal_symbol_scalar_push_base_7->data)[__v3_internal_symbol_scalar_push_base_7->len] = __v3_internal_symbol_scalar_push_value_7; __v3_internal_symbol_scalar_push_base_7->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_7, &__v3_internal_symbol_scalar_push_value_7); } }\n     if (mask) {\n      mask_depth++;\n     }\n    } else {\n     if ((scopes.len == 0) || (*(u64*)array__last(scopes) != (u64)(layer->scope_id)) || !string__eq(*(string*)array__last(scope_kinds), kind) || (*(i64*)array__last(scope_owners) != owner)) {\n      return 0;\n     }\n     array__delete_last(&scopes);\n     array__delete_last(&scope_kinds);\n     array__delete_last(&scope_owners);\n     if (mask) {\n      mask_depth--;\n     }\n    }\n    continue;\n   }\n   if ((scope_owners.len > 0) && (*(i64*)array__last(scope_owners) != owner)) {\n    return 0;\n   }\n   _Bool masked = mask_depth > 0;\n   if (chromium_compositor_leaf_is_culled(command, viewport)) {\n    continue;\n   }\n   _Bool scrollbar = !string__eq(command->scrollbar_axis, _str_101) && (string__eq(command->kind, _str_955) || string__eq(command->kind, _str_935));\n   if (((owner != 0) && !child.scroll_contents && !scrollbar && !masked) || (child.legacy_raster && !masked) || command->visual_layer_data.ok || string__starts_with(command->kind, _str_1453) || string__starts_with(command->kind, _str_1454)) {\n    return chromium_svg_compositor_layer_declined(parent, v_index, _str_1465, command->kind);\n   }\n   layout__LayoutRect __if_val_21 = {0};\n   if ((owner == 0) || scrollbar || masked) {\n    __v_option_layout__LayoutRect __or_opt_22 = chromium_compositor_gap_ink(command);\n    layout__LayoutRect __or_val_23 = {0};\n    if (__or_opt_22.ok) {\n     __or_val_23 = __or_opt_22.value;\n    } else {\n     return 0;\n    }\n    __if_val_21 = __or_val_23;\n   } else {\n    __if_val_21 = (layout__LayoutRect){.x = child.bounds.x - viewport.x, .y = child.bounds.y - viewport.y, .width = child.bounds.width, .height = child.bounds.height};\n   }\n   layout__LayoutRect bounds = __if_val_21;\n   Array __arr_lit_24 = __new_array_noscan(0, 4, sizeof(double));\n   double __arr_val_25 = bounds.x;\n   { Array* __v3_internal_symbol_scalar_push_base_8 = &__arr_lit_24; double __v3_internal_symbol_scalar_push_value_8 = __arr_val_25; if (__v3_internal_symbol_scalar_push_base_8->len >= 0 && __v3_internal_symbol_scalar_push_base_8->len < __v3_internal_symbol_scalar_push_base_8->cap && !(__v3_internal_symbol_scalar_push_base_8->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_8->data)[__v3_internal_symbol_scalar_push_base_8->len] = __v3_internal_symbol_scalar_push_value_8; __v3_internal_symbol_scalar_push_base_8->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_8, &__v3_internal_symbol_scalar_push_value_8); } }\n   double __arr_val_26 = bounds.y;\n   { Array* __v3_internal_symbol_scalar_push_base_9 = &__arr_lit_24; double __v3_internal_symbol_scalar_push_value_9 = __arr_val_26; if (__v3_internal_symbol_scalar_push_base_9->len >= 0 && __v3_internal_symbol_scalar_push_base_9->len < __v3_internal_symbol_scalar_push_base_9->cap && !(__v3_internal_symbol_scalar_push_base_9->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_9->data)[__v3_internal_symbol_scalar_push_base_9->len] = __v3_internal_symbol_scalar_push_value_9; __v3_internal_symbol_scalar_push_base_9->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_9, &__v3_internal_symbol_scalar_push_value_9); } }\n   double __arr_val_27 = bounds.width;\n   { Array* __v3_internal_symbol_scalar_push_base_10 = &__arr_lit_24; double __v3_internal_symbol_scalar_push_value_10 = __arr_val_27; if (__v3_internal_symbol_scalar_push_base_10->len >= 0 && __v3_internal_symbol_scalar_push_base_10->len < __v3_internal_symbol_scalar_push_base_10->cap && !(__v3_internal_symbol_scalar_push_base_10->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_10->data)[__v3_internal_symbol_scalar_push_base_10->len] = __v3_internal_symbol_scalar_push_value_10; __v3_internal_symbol_scalar_push_base_10->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_10, &__v3_internal_symbol_scalar_push_value_10); } }\n   double __arr_val_28 = bounds.height;\n   { Array* __v3_internal_symbol_scalar_push_base_11 = &__arr_lit_24; double __v3_internal_symbol_scalar_push_value_11 = __arr_val_28; if (__v3_internal_symbol_scalar_push_base_11->len >= 0 && __v3_internal_symbol_scalar_push_base_11->len < __v3_internal_symbol_scalar_push_base_11->cap && !(__v3_internal_symbol_scalar_push_base_11->flags & ArrayFlags__is_slice)) { ((double*)__v3_internal_symbol_scalar_push_base_11->data)[__v3_internal_symbol_scalar_push_base_11->len] = __v3_internal_symbol_scalar_push_value_11; __v3_internal_symbol_scalar_push_base_11->len++; } else { array__push(__v3_internal_symbol_scalar_push_base_11, &__v3_internal_symbol_scalar_push_value_11); } }\n   {\n    i64 __for_idx_29 = 0;\n    for (; __for_idx_29 < __arr_lit_24.len; __for_idx_29++) {\n     double value = *(double*)(array__get(__arr_lit_24, __for_idx_29));\n     if (math__is_nan(value) || math__is_inf(value, 0)) {\n      return 0;\n     }\n    }\n   }\n   if ((bounds.width <= 0) || (bounds.height <= 0)) {\n    return 0;\n   }\n   if (has_after && chromium_compositor_ink_overlaps(bounds, after)) {\n    return chromium_svg_compositor_layer_declined(parent, v_index, _str_1466, command->kind);\n   }\n  }\n }\n return scopes.len == 0;\n}"
+    }
+  },
+  "limits": [
+    "Archived viewport only; no fresh live-site, interaction, animation or performance claim",
+    "Initial production proof rejected pooled string literals even though the first scope fix was compiled; corrected proof and subsequent runs retained",
+    "Production-v2 retains the failed seventy-pixel result",
+    "Earlier original-catalog access failures, deferred work and other sites reference variation remain open"
+  ],
+  "archive": {
+    "path": "guardian-compositor-mask-gaps-20261106.zip",
+    "members": 1961,
+    "bytes": 23628829,
+    "sha256": "a392183aaa3d51fcfa1c58aca23ac355660a77d56b48ca175251127acd52d7d2"
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/guardian-mask-gap-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 679460864,
+    "elapsed_seconds": 1.9531046250000001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

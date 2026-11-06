@@ -8,14 +8,14 @@ and complete-cache passes. WIRED's earlier strict first-frame passes remain
 recorded; recent cold Brave references vary.** The other additions retain the open gaps documented below.
 
 The original ten remain incomplete. Latest cold controls retain strict zero
-for Hacker News, Lobsters, BBC and Slashdot; Guardian and The Verge retain the
-stable-reference rendering gaps listed below. Slashdot's complete-cache Brave
-references vary by one radio-button pixel. CNN retains source/replay gaps.
+for Hacker News, Lobsters, BBC, Slashdot and Guardian. The Verge retains its
+stable-reference rendering gap. Guardian also passes with complete caches;
+Slashdot's complete-cache Brave references vary by one radio-button pixel. CNN retains source/replay gaps.
 Reddit is blocked, and Stack Overflow/Pikabu remain deferred. See
 [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
 The latest rendering checkpoint passes **142 tests / 148 captures at zero
-pixels** on `3c2d2fc8…`, with unchanged inputs and references. The AVIF sampling
+pixels** on `ec6ef38e…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2936,6 +2936,54 @@ and source versions. The archive is 25,880,604 bytes, SHA-256
 `b524ec8c010cc9b2e1e373147192ee2fff2abce0847238de2d70b0cfed081541`;
 every archived member passed hash readback and ZIP CRC verification. This is
 archived guest-viewport parity; no fresh live-site or animation claim is added.
+
+## Guardian header pictures across offscreen masks (2026-11-06)
+
+The registered Guardian international viewport now passes every strict gate
+at **zero pixels with both cold and complete caches**. Its source PNG,
+resource bytes, references and tolerance are unchanged. The production
+executable is
+`1a6008965c4afe18bc4b1fb4868bd647d9e4c437146d3e10333d40199ce541ca`.
+Fresh-process source/frozen, independent Brave replay, and native/Brave
+comparisons are all **0** under each cache policy. Slashdot and Hacker News
+also pass their cold controls at zero on the same build.
+
+The previous **70 pixels** were 63 carousel-button edge pixels and seven
+edition-arrow pixels. Vox declined the header picture when its two disjoint
+paint spans surrounded an offscreen backdrop filter inside balanced effect
+and mask scopes. Commit `02a0b547a` validates the identity effect wrappers
+with the mask in one owner/kind/ID stack. Its first production run still
+retained all 70 pixels: the intervening mask was in a composited child, and
+an additional guard admitted only legacy masks. Follow-up `09a4120b6` uses
+the same validated content bounds for either kind of mask owner. The child
+keeps its original replay order; overlapping parent spans, visible unbounded
+filters, nonidentity effects, malformed scopes and foreign owners remain
+rejected. A full-uBO Brave layer trace independently matches the saved source.
+
+The first structural change passes 15 focused functions in each GC mode.
+The complete correction passes **16 functions** with default GC, GC disabled
+and preallocation/arena poisoning. The final preallocation control is a
+fresh repeat: an earlier compile hit another session's timer ABI transition,
+and the first successful repeat was invalidated when its pinned timer header
+changed. Both failed attempts remain recorded and receive no whole-cohort
+credit. All three focused browser captures are exact.
+
+The final **142-test / 148-capture** native rendering suite is entirely
+pixel-exact on `ec6ef38e95bbf7d19e99b013358881ff04c464b69f8ef7ce79b47c84ee4c1c36`.
+Its sealed compiler body contains both corrections; runtime inputs, native
+libraries and executable identities remain unchanged throughout. All actual
+capture, test and supervisor exits are zero. This establishes archived guest
+viewport rendering; it adds no fresh live-site, interaction, animation or
+performance claim. The Verge and the earlier access/reference/deferred gaps
+remain open.
+
+[Machine-readable evidence](evidence/guardian-compositor-mask-gaps-20261106.json)
+and its [1,961-member archive](evidence/guardian-compositor-mask-gaps-20261106.zip)
+retain the failed and passing runs, source and replay PNGs, audits, scope
+probes, input identities, focused checks and memory receipts. The archive is
+23,628,829 bytes, SHA-256
+`a392183aaa3d51fcfa1c58aca23ac355660a77d56b48ca175251127acd52d7d2`;
+all members passed hash readback and ZIP CRC verification.
 
 ## Run
 
