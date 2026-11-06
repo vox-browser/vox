@@ -133,7 +133,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 			mut client := owner.client()
 			client.set_event_recording(false)
 			mut tab := &BrowserApp{
-				restrict_to_optimized_sites:     current.restrict_to_optimized_sites
+				seed_optimized_bookmarks:       current.seed_optimized_bookmarks
 				tabs:                           app.tabs
 				zoom_levels:                    current.zoom_levels
 				browsing_history:               current.browsing_history

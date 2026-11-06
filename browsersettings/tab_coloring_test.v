@@ -10,16 +10,16 @@ fn test_tab_coloring_is_opt_in_and_survives_restart_without_changing_other_setti
 	initialize(path)!
 	assert !current().enable_tab_coloring
 	os.mkdir_all(directory)!
-	os.write_file(path, '{"allow_any_site":true,"enabled":true,"host":"localhost","port":"9050"}')!
+	os.write_file(path, '{"enabled":true,"host":"localhost","port":"9050"}')!
 	initialize(path)!
 	assert !current().enable_tab_coloring
 	save(Proxy{ ...current(), enable_tab_coloring: true })!
 	initialize(path)!
 	assert current().enable_tab_coloring
-	assert current().allow_any_site && current().enabled
+	assert current().enabled
 	assert current().host == 'localhost' && current().port == '9050'
 	save(Proxy{ ...current(), enable_tab_coloring: false })!
 	initialize(path)!
 	assert !current().enable_tab_coloring
-	assert current().allow_any_site && current().port == '9050'
+	assert current().port == '9050'
 }

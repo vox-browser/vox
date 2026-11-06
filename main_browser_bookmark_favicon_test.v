@@ -48,10 +48,8 @@ fn test_warm_bookmark_icon_lookups_do_not_retain_per_frame_url_records() {
 	mut app := bookmark_favicon_app()
 	defer { app.document.finalize() }
 	app.bookmarks.seed_optimized_sites()!
-	app.restrict_to_optimized_sites = true
-	assert app.optimized_sites_only()
 	before_icons := app.cached_browser_bookmark_favicons()
-	assert before_icons.len == app.browser_bar_bookmarks().len && before_icons.any(it >= 0)
+	assert before_icons.len == app.bookmarks.items.len && before_icons.any(it >= 0)
 	addresses := ['https://custom.example/path?q=1', 'file:///private/icon.png',
 		'https://user:secret@custom.example/', 'javascript:void(0)']
 	for address in addresses { _ = app.cached_browser_bookmark_favicon_url(address) }

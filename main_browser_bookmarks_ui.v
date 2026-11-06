@@ -10,7 +10,7 @@ import ui2
 fn (app &BrowserApp) browser_bookmark_ui_state(chrome BrowserChromeState) bookmarkui.State {
 	if !chrome.bookmarks_visible { return bookmarkui.State{} }
 	mut items := []bookmarkui.Item{}
-	for index, item in app.browser_bar_bookmarks() {
+	for index, item in app.bookmarks.items {
 		icon := if index < chrome.bookmark_favicons.len {
 			chrome.bookmark_favicons[index]
 		} else {

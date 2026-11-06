@@ -1,6 +1,6 @@
 module optimizedsites
 
-// Navigation and bookmark coverage for the forum/news comparison session.
+// Bookmark coverage for the forum/news comparison session.
 // Membership records a comparison target, not a completed optimization.
 // Keep the addresses aligned with Tests/Browser/Brave/forum-news.json.
 pub const forum_news_sites = [

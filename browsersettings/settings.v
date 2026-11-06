@@ -9,8 +9,6 @@ import url
 
 pub struct Proxy {
 pub:
-	// settings.json also owns the temporary optimized-sites browsing mode.
-	allow_any_site bool
 	enable_tab_coloring bool
 	enable_custom_tab_titles bool
 	// GPU-accelerated scrolling is on unless the user turns it off: a profile

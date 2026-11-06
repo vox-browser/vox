@@ -97,7 +97,7 @@ fn (app &BrowserApp) cached_browser_bookmark_favicons() []int {
 	defer { scratch.finish() }
 	mut cache := app.browser_text_cache()
 	if !app.bookmark_bar_visible() { return cache.bookmark_favicons }
-	items := app.browser_bar_bookmarks()
+	items := app.bookmarks.items
 	mut icons := unsafe { cache.bookmark_favicons }
 	mut changed := icons.len != items.len
 	if changed { icons = []int{len: items.len, init: -1} }

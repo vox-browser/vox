@@ -95,7 +95,6 @@ fn (mut app BrowserApp) blur_address_bar() {
 }
 
 fn (mut app BrowserApp) submit_address_bar() {
-	if !app.address_bar_editable() { return }
 	$if vox_ui2 ? {
 		if app.native_address_bar { app.address = ui2.text('address') }
 	}

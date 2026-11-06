@@ -20,7 +20,6 @@ struct BrowserChromeState {
 	width                  int
 	height                 int
 	address                string
-	address_editable       bool
 	status                 string
 	footer                 string
 	back                   bool
@@ -98,11 +97,10 @@ fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 		app.bookmarks.version
 	} else {
 		u64(0)
-	}}:restricted=${app.optimized_sites_only()}')
+	}}')
 }
 
 fn (app &BrowserApp) chrome_footer() string {
-	if app.navigation_restriction_notice != '' { return app.navigation_restriction_notice }
 	if app.hovered_link != '' { return app.hovered_link }
 	if app.js_messages.len > 0 {
 		// Console stacks must stay on the single-line status surface.
@@ -119,7 +117,6 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		memory:                 app.browser_ui().memory_label
 		ui_version:             app.browser_ui().version
 		devtools:               app.devtools_state_version()
-		address_editable:       app.address_bar_editable()
 		tab_titles:             titles
 		tab_favicons:           app.cached_browser_tab_favicons()
 		tab_loading:            app.browser_tab_loading_states()
@@ -137,11 +134,11 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		reload:                 app.history_index >= 0
 		debug:                  app.chrome_debug
 		bookmarks_visible:      app.bookmark_bar_visible()
-		bookmarks_version:      (if app.bookmarks != unsafe { nil } {
+		bookmarks_version:      if app.bookmarks != unsafe { nil } {
 			app.bookmarks.version
 		} else {
 			u64(0)
-		}) * 2 + if app.optimized_sites_only() { u64(1) } else { u64(0) }
+		}
 		bookmarks_error:        app.bookmarks_error
 		bookmark_overflow_open: app.bookmark_overflow_open
 		bookmark_favicons:      app.cached_browser_bookmark_favicons()
@@ -185,24 +182,17 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 			ui2.Element{ ...chrome_navigation_button('back', '‹', 5, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
 			ui2.Element{ ...chrome_navigation_button('forward', '›', 27, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
 			ui2.Element{ ...chrome_navigation_button('reload', '↻', 49, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
-			ui2.Element{
-				...ui2.text_input(
-					id:          'address'
-					action_id:   'address-change'
-					submit_id:   'address-submit'
-					text:        chrome.address
-					hint_text:   if chrome.address_editable {
-						'Enter a URL'
-					} else {
-						'Choose an optimized bookmark'
-					}
-					multiline:   false
-					autocorrect: false
-					frame:       ui2.rect(98, tab_strip_height + 5, address_width, 20)
-					text_style:  ui2.TextStyle{ size: 12 }
-				) or { panic(err) }
-				readonly: !chrome.address_editable
-			},
+			ui2.text_input(
+				id:          'address'
+				action_id:   'address-change'
+				submit_id:   'address-submit'
+				text:        chrome.address
+				hint_text:   'Enter a URL'
+				multiline:   false
+				autocorrect: false
+				frame:       ui2.rect(98, tab_strip_height + 5, address_width, 20)
+				text_style:  ui2.TextStyle{ size: 12 }
+			) or { panic(err) },
 			ui2.Element{
 				...chrome_navigation_button('history', '◷', width - 32, true)
 				text_style:          chrome_history_text_style()
@@ -254,9 +244,6 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 	defer { load_instruction_stage.finish() }
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
-		if app.browser_chrome.address_editable && !app.address_bar_editable() {
-			app.cancel_address_bar()
-		}
 		chrome := app.browser_chrome_state(width, height)
 		changed := browser_chrome_requires_update(app.browser_chrome, chrome)
 		app.browser_chrome = chrome

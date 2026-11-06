@@ -411,12 +411,11 @@ mut:
 	address                             string
 	address_cursor                      int
 	address_active                      bool
-	// Interactive shells restrict navigation; engine and capture callers keep
-	// their explicitly requested test inputs independent of this UI mode.
-	restrict_to_optimized_sites          bool
+	// Interactive shells seed the optimized-site bookmarks; engine and capture
+	// callers keep their explicitly requested inputs and viewport geometry.
+	seed_optimized_bookmarks             bool
 	// --auto-open-devtools-for-tabs, as in Chrome.
 	auto_open_devtools                   bool
-	navigation_restriction_notice        string
 	address_select                      bool
 	native_address_bar                  bool
 	tabs                                &BrowserTabs = unsafe { nil }
@@ -3812,7 +3811,6 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	load_instruction_stage := processmetrics.begin_instruction_stage('document_install')
 	defer { load_instruction_stage.finish() }
 	app.dismiss_browser_popup()
-	if !app.allow_browser_destination(input_loaded.url) { return }
 	loaded := if is_browser_history_url(input_loaded.url) {
 		LoadedPage{...input_loaded, url: browser_history_url, markup: app.browser_history_markup(), content_type: 'text/html'}
 	} else if is_browser_new_tab_url(input_loaded.url) {
@@ -4061,7 +4059,6 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		''
 	}
 	resolved := resolve_url(address, base)
-	if !app.allow_browser_destination(resolved) { return }
 	if resolved in [browser_history_url, browser_new_tab_url] {
 		app.navigation_generation++
 		app.pending_navigation = none
@@ -4185,7 +4182,6 @@ fn (mut app BrowserApp) history_go(delta int) {
 	if target < 0 || target >= app.history.len {
 		return
 	}
-	if !app.allow_browser_destination(app.history[target].url) { return }
 	app.history_index = target
 	app.navigation_generation++
 	app.cancel_page_preload()
@@ -8181,7 +8177,6 @@ fn (mut app BrowserApp) handle_character(code u32) {
 		return
 	}
 	if app.native_address_bar { return }
-	if !app.address_bar_editable() { return }
 	mut runes := app.address.runes()
 	if app.address_select {
 		runes.clear()
@@ -8243,7 +8238,6 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 	}
 	if app.address_active {
 		if app.native_address_bar { return }
-		if !app.address_bar_editable() && key in [.enter, .backspace, .delete] { return }
 		mut runes := app.address.runes()
 		match key {
 			.enter {
@@ -8408,7 +8402,7 @@ fn main() {
 	}
 	mut app := &BrowserApp{
 		markup: markup
-		restrict_to_optimized_sites: options.screenshot == '' && !options.headless_smoke && !options.headless_layout_tree
+		seed_optimized_bookmarks: options.screenshot == '' && !options.headless_smoke && !options.headless_layout_tree
 		restore_tab_path: options.restore_tab
 		scroll_profile: scroll_profile_from_environment()
 		paint_canvas_culling_disabled: os.getenv('VOX_DISABLE_CANVAS_CULLING') == '1'

@@ -19,7 +19,7 @@ $if !vox_ui2 ? {
 			mut images := map[string]int{}
 			for index, icon in chrome.bookmark_favicons {
 				if icon < 0 { continue }
-				items := app.browser_bar_bookmarks()
+				items := app.bookmarks.items
 				if index < items.len {
 					images[app.browser_bookmark_icon_path(items[index].url, icon)] = icon
 				}

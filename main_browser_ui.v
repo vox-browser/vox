@@ -196,11 +196,7 @@ fn browser_ui_event(event string) {
 		return
 	}
 	if event == 'address-change' {
-		if app.address_bar_editable() {
-			app.address = ui2.text('address')
-		} else {
-			app.sync_address_bar()
-		}
+		app.address = ui2.text('address')
 		return
 	}
 	if event == 'panel-close:settings' {

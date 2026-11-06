@@ -3,22 +3,16 @@ module browsersettings
 import os
 import time
 
-fn test_any_site_access_defaults_off_and_survives_apply_and_restart() {
+fn test_profiles_saved_with_the_retired_any_site_setting_still_load() {
 	directory := os.join_path(os.temp_dir(), 'vox-browsing-${os.getpid()}-${time.sys_mono_now()}')
 	defer { os.rmdir_all(directory) or {} }
 	path := os.join_path(directory, 'settings.json')
-	initialize(path)!
-	assert !current().allow_any_site
 	os.mkdir_all(directory)!
-	os.write_file(path, '{"enabled":true,"host":"localhost","port":"9050"}')!
+	os.write_file(path, '{"allow_any_site":false,"enabled":true,"host":"localhost","port":"9050"}')!
 	initialize(path)!
-	assert !current().allow_any_site
-	save(Proxy{...current(), allow_any_site: true})!
-	initialize(path)!
-	assert current().allow_any_site
 	assert current().enabled && current().host == 'localhost' && current().port == '9050'
-	save(Proxy{...current(), allow_any_site: false})!
+	save(Proxy{ ...current(), enable_tab_coloring: true })!
+	assert !os.read_file(path)!.contains('allow_any_site')
 	initialize(path)!
-	assert !current().allow_any_site
-	assert current().port == '9050'
+	assert current().enable_tab_coloring && current().port == '9050'
 }
