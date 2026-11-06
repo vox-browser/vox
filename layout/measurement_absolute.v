@@ -5,13 +5,17 @@ import os
 
 const retain_absolute_measurement_layout = os.getenv('VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT') != ''
 const absolute_measurement_diagnostics = os.getenv('VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS') != ''
+const retain_absolute_root_measurements = os.getenv('VOX_RETAIN_ABSOLUTE_ROOT_MEASUREMENTS') != ''
+const absolute_root_measurement_diagnostics = os.getenv('VOX_ABSOLUTE_ROOT_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global absolute_measurement_reported bool
+__global absolute_root_measurement_reported bool
 
 // Ordinary absolute descendants do not participate in grid/flex sizing. The
 // within-pass snapshot owns their static-position records; final absolute
-// sizing/positioning still runs. Do not extend persistent caches, admit an
-// absolute root, or include specialized element/anchor behavior here.
+// sizing/positioning still runs. Do not extend persistent caches or include
+// specialized element/anchor behavior here. A measured root's outer sizes and
+// percentage bases belong to the complete measurement key and its caller.
 fn measurement_absolute_descendant_is_reusable(node &Node) bool {
 	if retain_absolute_measurement_layout || node.computed_values().position() != .absolute
 		|| node.is_replaced_box() || node.is_svg_box() { return false }
@@ -64,4 +68,11 @@ fn report_absolute_measurement_reuse(inputs []RetainedInlineInput) {
 			return
 		}
 	}
+}
+
+fn report_absolute_root_measurement_reuse(inputs []RetainedInlineInput) {
+	if !absolute_root_measurement_diagnostics || absolute_root_measurement_reported
+		|| inputs.len == 0 || !inputs[0].node.is_absolutely_positioned() { return }
+	absolute_root_measurement_reported = true
+	eprintln('Vox absolute root measurement: reused inner geometry before outer positioning')
 }

@@ -37,12 +37,38 @@ fn absolute_measurement_positions(state &LayoutState, node &Node, mut result []s
 // the producer arena, and exercise committed consumption as well as probes.
 fn absolute_measurement_compare(mut source LayoutState, root &Node, width int, height int,
 	committed bool) bool {
+	return absolute_measurement_compare_with_parent(mut source, root, width, height, committed, 500, 300)
+}
+
+fn absolute_measurement_seed_static_parent(mut state LayoutState, root &Node, width int, height int) {
+	if !root.is_absolutely_positioned() { return }
+	static_parent := root.static_position_containing_block() or { return }
+	styled := unsafe { &NodeWithStyle(static_parent) }
+	if state.try_get(styled) == none {
+		mut outside := LayoutState.new()
+		mut values := outside.get_mutable(styled)
+		values.set_content_width(CSSPixels.new(width))
+		values.set_content_height(CSSPixels.new(height))
+		values.offset = css.CSSPixelPoint.from_values(33, 41)
+		_ = state.populate_node_from(mut outside, styled)
+	}
+}
+
+fn absolute_measurement_compare_with_parent(mut source LayoutState, root &Node, width int,
+	height int, committed bool, parent_width int, parent_height int) bool {
 	styled := root.as_node_with_style() or { panic('style') }
 	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)),
 		if height > 0 { AvailableSize.make_definite(CSSPixels.new(height)) } else { AvailableSize.make_indefinite() })
 	mut probe := source.new_measurement_for_subtree(styled)
 	if committed { probe.subtree_root = none }
 	mut used := measurement_image_prepare(mut probe, root, width, height)
+	parent := root.containing_block() or { panic('containing') }
+	mut parent_used := probe.get_mutable(unsafe { &NodeWithStyle(parent) })
+	parent_used.set_content_width(CSSPixels.new(parent_width))
+	parent_used.set_content_height(CSSPixels.new(parent_height))
+	resolve_box_model_edges(root.computed_values(), mut used, f64(parent_width))
+	absolute_measurement_seed_static_parent(mut probe, root, parent_width, parent_height)
+	if root.is_absolutely_positioned() { used.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(19, 23, 0, 0)}) }
 	actual := measurement_image_run(mut probe, root, mut used, space, true)
 	mut retained := platform.enter_retained_allocations()
 	before := absolute_measurement_geometry(probe, root)
@@ -80,6 +106,12 @@ fn absolute_measurement_compare(mut source LayoutState, root &Node, width int, h
 	mut oracle := LayoutState.new_for_subtree(styled)
 	if committed { oracle.subtree_root = none }
 	mut expected := measurement_image_prepare(mut oracle, root, width, height)
+	mut oracle_parent := oracle.get_mutable(unsafe { &NodeWithStyle(parent) })
+	oracle_parent.set_content_width(CSSPixels.new(parent_width))
+	oracle_parent.set_content_height(CSSPixels.new(parent_height))
+	resolve_box_model_edges(root.computed_values(), mut expected, f64(parent_width))
+	absolute_measurement_seed_static_parent(mut oracle, root, parent_width, parent_height)
+	if root.is_absolutely_positioned() { expected.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(19, 23, 0, 0)}) }
 	assert actual == measurement_image_run(mut oracle, root, mut expected, space, false)
 	assert before == absolute_measurement_geometry(oracle, root)
 	layout_absolutely_positioned_descendants(mut oracle, root)
@@ -197,7 +229,10 @@ fn test_absolute_measurements_keep_specialized_positions_and_roots_on_full_layou
 	root := measurement_image_node(document, 'absolute')
 	mut inputs := []RetainedInlineInput{}
 	mut rejected := map[u64]bool{}
-	assert !collect_grid_measurement_inputs(root, mut inputs, mut rejected)
+	assert collect_grid_measurement_inputs(root, mut inputs, mut rejected) == (!retain_absolute_root_measurements && !retain_absolute_measurement_layout)
+	inputs = []RetainedInlineInput{}
+	rejected = map[u64]bool{}
+	assert !collect_retained_block_inputs(root, mut inputs, mut rejected)
 }
 
 fn test_absolute_measurement_admission_and_invalidated_entries_retire_with_the_pool() {

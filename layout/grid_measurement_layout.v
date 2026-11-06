@@ -126,8 +126,10 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 	// Dirty layout bits remain set for the entire pass. Validate the actual
 	// inputs, as the closed inline measurement cache does, without clearing them.
 	if !inline_measurement_inputs_are_current(inputs) { return false }
-	for input in inputs {
-		if input.node.is_absolutely_positioned() && input.measurement_image == none
+	for index, input in inputs {
+		// The root's outer algorithm still runs and supplies its exact keyed
+		// dimensions/edges/bases. Descendant dependencies must remain internal.
+		if index > 0 && input.node.is_absolutely_positioned() && input.measurement_image == none
 			&& !measurement_absolute_dependencies_are_internal(inputs[0].node, input.node) { return false }
 		if image := input.measurement_image {
 			if (measurement_image_input(input.node) or { return false }) != image { return false }
@@ -252,6 +254,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		report_extended_image_measurement(cached.inputs)
 		report_opacity_measurement_reuse(cached.inputs)
 		report_absolute_measurement_reuse(cached.inputs)
+		report_absolute_root_measurement_reuse(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
 		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		return cached.result
