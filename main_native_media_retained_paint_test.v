@@ -5,6 +5,18 @@ import html
 import layout
 import painting
 
+fn test_native_video_update_uses_the_default_visual_reuse_policy() {
+	mut document := html.parse_document('<!doctype html><video id="video"></video>')
+	defer { document.finalize() }
+	element := document.get_element_by_id('video')?
+	media := html.html_media_element_for_dom_element(element)?
+	mut player := BrowserMediaPlayback{media: media, element: element}
+	pixels := [u8(255), 0, 0, 255]
+	assert !player.update_frame(pixels.data, 1, 1)
+	assert player.update_frame(pixels.data, 1, 1)
+	assert player.frame?.generation == if skip_equal_native_video_writes { u64(1) } else { u64(2) }
+}
+
 fn test_equal_native_video_pixels_keep_visual_generation_and_source_identity() {
 	mut document := html.parse_document('<!doctype html><video id="video"></video>')
 	defer { document.finalize() }

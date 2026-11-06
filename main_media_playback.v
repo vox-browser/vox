@@ -12,7 +12,9 @@ import os
 
 const retain_native_media_paint = os.getenv('VOX_RETAIN_NATIVE_MEDIA_PAINT') != ''
 const retained_native_media_paint_diagnostics = os.getenv('VOX_RETAINED_NATIVE_MEDIA_PAINT_DIAGNOSTICS') != ''
-const skip_equal_native_video_writes = os.getenv('VOX_SKIP_EQUAL_NATIVE_VIDEO_WRITES') != ''
+// A decoded frame can advance the playback clock while repeating its pixels.
+// Keep the visual identity in that case; preserve all ordinary media callbacks.
+const skip_equal_native_video_writes = os.getenv('VOX_DISABLE_EQUAL_NATIVE_VIDEO_REUSE') == ''
 const equal_native_video_write_diagnostics = os.getenv('VOX_EQUAL_NATIVE_VIDEO_WRITES_DIAGNOSTICS') != ''
 
 $if macos {
