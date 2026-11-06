@@ -1,0 +1,425 @@
+{
+  "status": "Closed intrinsic-grid experiment retired after no BBC reuse hit. No acceptance cohort launched.",
+  "implementation": "dbb3c63ed",
+  "control": "b443fb926",
+  "retirement": "c6f032acb",
+  "control_removal": "64cbc97e9",
+  "focused_ledger": "docs/performance/bbc-intrinsic-grid-measurement-focus-20261106.json",
+  "native_eligibility": {
+    "passed": false,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": false,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "intrinsic_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "intrinsic_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e843423715b8f606d48616c9038b79f335cfb34cb1fa06d61ca105755598495b",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-031342-2e457eb7/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "16e1c958c825143d4c1494199e1fab59b62c42f31bd8abbddc350f0ed75d8829",
+        "dirty": true,
+        "head": "6e1874edca549e0dc9981387454ea7159a389365",
+        "repository_sha256": "13728b0ab86c082875e6cc392bbd189552bab8e2075c72f2fd109d7db5439ba5"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "16e1c958c825143d4c1494199e1fab59b62c42f31bd8abbddc350f0ed75d8829",
+        "dirty": true,
+        "head": "b443fb926a3e4d67c7ba5cdce64cf3ba8e0db4fc",
+        "repository_sha256": "7769f41881b2501c99d217458284a58961ec5ae2167181e9f15d84d6311b3f57"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "6e1874edca549e0dc9981387454ea7159a389365",
+        "id": "b9fc85eae652405a837c773af94475ae",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "16e1c958c825143d4c1494199e1fab59b62c42f31bd8abbddc350f0ed75d8829",
+        "dirty": true,
+        "head": "6e1874edca549e0dc9981387454ea7159a389365",
+        "repository_sha256": "13728b0ab86c082875e6cc392bbd189552bab8e2075c72f2fd109d7db5439ba5"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; intrinsic grid block-probe cache disabled only in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793924300.1204622
+  },
+  "restoration_focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-restored",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-restored",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-restored",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_grid_width_measurement_matches_complete_grid_geometry",
+          "test_grid_width_measurement_keeps_size_containment_and_live_changes",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_grid_width_measurement_matches_complete_grid_geometry",
+          "test_grid_width_measurement_keeps_size_containment_and_live_changes",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_grid_width_measurement_matches_complete_grid_geometry",
+          "test_grid_width_measurement_keeps_size_containment_and_live_changes",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "/Users/alex/code/vox2/layout/grid_intrinsic_width_only_test.v": "e0c692de8922e01c8826ed29cdbedb20be95b6a871649e32dc74087132c502b0",
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "2bf523eb2bf9c62530e654df60edf57564b7ddf88d892d09a84b0e87646ccceb",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/intrinsic_sizing.v": "e40c995478ea2fb95cf9f88f3e67e0a0fe02dee7104d73009e79b5d864ae60bf",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/measurement_cache_recency.v": "b5da8cd80c28e66c1a0800920976aacc111d6e6068abbf88b94d4c159a714414"
+    },
+    "unchanged": true,
+    "cases_per_run": 21,
+    "expected_cases": [
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+      "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_grid_measurement_revalidates_svg_attributes_before_replay",
+      "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+      "test_grid_measurement_preserves_unused_height_proof_rejections",
+      "test_grid_width_measurement_matches_complete_grid_geometry",
+      "test_grid_width_measurement_keeps_size_containment_and_live_changes",
+      "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+      "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+      "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+      "test_image_measurements_promote_nested_absolute_geometry_into_final_layout"
+    ]
+  },
+  "restoration_executions": 63,
+  "tool_tests": 342,
+  "restoration_native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "intrinsic_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "intrinsic_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e36595690fb55afc0feacf1bc0da9cd1876794b7c83f09c4541364e3c9487991",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-032632-1801fbf1/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "5bb41cef0ceec4c45b2ebecc9a858f2aa4d4c06e0c90a840e1194b9659cb5fcf",
+        "dirty": true,
+        "head": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+        "repository_sha256": "baddaca952a69657d34586fd75780263e6fa5a7c64ec87f94040abf17476b94a"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "5bb41cef0ceec4c45b2ebecc9a858f2aa4d4c06e0c90a840e1194b9659cb5fcf",
+        "dirty": true,
+        "head": "628fc199573f028992817fecd8e5b4c593400c66",
+        "repository_sha256": "ae68b246705d39384968aeae3d601bf01ac615d0c7a4d86cbd7b81924328f770"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+        "id": "8ade130917c3418da9bf0671c3fccd51",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "5bb41cef0ceec4c45b2ebecc9a858f2aa4d4c06e0c90a840e1194b9659cb5fcf",
+        "dirty": true,
+        "head": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+        "repository_sha256": "72e5956fff76ac3fca6ada5cd24ab32bf3e2c57c4c0dd169eba64fff609a64b1"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; retired intrinsic grid path absent from this completed baseline app; control flag is inert. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793924972.4405131
+  },
+  "restoration_svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/uncached attribute candidate control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793924983.1292238
+  },
+  "older_baseline": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "intrinsic_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "intrinsic_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "0bb99efcb38d136ed8f46403589dbd80677024d6910c0ffabd83f5500bdb8c9e",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-030646-2d550aaa/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "44224f70724d298a31cf3088b579f38c129f2ddf33faa287b729d8693e97c20b",
+        "dirty": true,
+        "head": "01297736b953f3ca38b997a8ed5ae33318848e32",
+        "repository_sha256": "7c27507a6e1db91dd940f227e74b07024cf7420f3a92beeeaa1e95ea30dd0bc4"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "6740362842faeac1dff43f5084fa5b206d2cce28da07c1b05526c874d49d5f80",
+        "dirty": true,
+        "head": "01297736b953f3ca38b997a8ed5ae33318848e32",
+        "repository_sha256": "d821ccdc334c211bdf3758761c24e9dca2921095b5784cb575d8e2a2e1f99bca"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "01297736b953f3ca38b997a8ed5ae33318848e32",
+        "id": "280fb3b2dcf6416b9731fb4cd4184e8a",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "44224f70724d298a31cf3088b579f38c129f2ddf33faa287b729d8693e97c20b",
+        "dirty": true,
+        "head": "01297736b953f3ca38b997a8ed5ae33318848e32",
+        "repository_sha256": "e762a4525a744df2521aefca5180be4409939930ad9d0673a325841aa1b610ac"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; unavailable new intrinsic grid path absent from this completed baseline app; control flag is inert. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793924165.997418
+  },
+  "qualification": "The failed native eligibility auditor is retained: both arms pass original pixels/content/72 exact external scripts/images/ownership/exits but candidate marker never fires before PNG. The original baseline predates the feature; its stale candidate-only recipe sentence is superseded by the explicit baseline source proof and inert-control auditor. Restored native/SVG uses literal V -prod single-C-unit e36595690fb5, not earlier parallel cohorts; no cross-mode saving claim. Checked source and complete sealed compiler receipts are retained. Both restored arms use the same algorithm and no obsolete control flag.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-intrinsic-grid-no-hit-retirement-20261106.tar.gz",
+    "bytes": 23715355,
+    "sha256": "4bdcb0f8749e6748b30759139fbc5224ccde6ef9951bae929ab4ab0dbf5c9ea7",
+    "members": 242,
+    "all_members_verified": true
+  },
+  "acceptance_browser_attempts": 0,
+  "performance_credit": 0,
+  "unix": 1793925684.2198741,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-continuation-evidence-20261106-0630/archive.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 35225600,
+    "elapsed_seconds": 1.858372542,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive_guard_path": "Build/bbc-continuation-evidence-20261106-0630/archive.guard.json"
+}

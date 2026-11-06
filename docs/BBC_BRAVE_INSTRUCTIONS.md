@@ -171,6 +171,43 @@ trigger, all returning nonzero geometry. The metadata experiment adds private
 JavaScript work within its timer, so it supplies identity/reply evidence without
 cross-run numerical comparison or saving credit.
 
+A separate disposable intrinsic-grid experiment (`dbb3c63ed`, control
+`b443fb926`) passes **156 focused executions** and **343 tooling tests**, but
+its native reuse marker never fires on BBC. Both native arms retain original
+pixels/content, 72 external source witnesses, native images, ownership and normal
+exits. The failed eligibility audit remains recorded; no acceptance cohort starts.
+The experiment and control are retired (`c6f032acb`, `64cbc97e9`). All **63
+restoration executions** and **342 tooling tests** pass. Fresh literal `v -prod`,
+single-C-unit production `e36595690fb5` passes both original native captures and
+exact SVG source-switch checks with the retired path absent. The earlier
+literal-production baseline also passes correctness, without validating the then
+unbuilt experiment. These builds differ from the parallel acceptance cohorts;
+no cross-mode saving is claimed. [Focused checks](performance/bbc-intrinsic-grid-measurement-focus-20261106.json),
+[failed eligibility and verified retirement](performance/bbc-intrinsic-grid-no-hit-retirement-20261106.json).
+
+A calibrated environment-getter observer records **82,003 main-thread calls**
+after the first author evaluation, plus 630 off-thread calls. Name buckets and
+unclassified/collision aggregates reconcile exactly; values are never logged.
+The initial loader-abort observer and two failed calibration setups remain
+recorded. The refined observer passes a real 100-main/50-worker-call calibration
+and original native audits. Call counts and first-caller witnesses do not measure
+CPU shares or justify a production optimization.
+[Getter diagnostic](performance/bbc-getenv-diagnostic-20261106.json).
+
+A separate stage trace on `e36595690fb5` passes the original capture/script/native
+audits and reconciles exactly to **29,077,496,978 process instructions** and
+**29,513,008,761 exclusive-coalition instructions** at encoded PNG. Exclusive
+instrumented intervals include JavaScript/bindings 6,778,382,227, flow layout
+4,972,045,016 and style update 3,488,603,367; PNG encoding is 302,770,558.
+It records 8,574 platform timer deliveries and 4,098 HTML timer tasks. Nested
+boundaries read process-wide counters, including concurrent workers and observer
+overhead; inclusive intervals overlap, and the coalition remainder is
+unattributed. These diagnostic intervals supply no acceptance, production-share
+or saving credit. One HTML timer can require both platform-clock and event-loop
+delivery, so counts alone do not establish duplicate work. The acceptance history
+remains 120 cohorts / 2,587 attempts, and the 10% target remains unmet.
+[Stage trace and exact reconciliation](performance/bbc-load-stage-diagnostic-20261106.json).
+
 The fresh [CPU sample](performance/bbc-current-production-sample-20261106.json)
 validates PID/start identity, executable UUID and Vox address ranges, with no
 instruction credit.

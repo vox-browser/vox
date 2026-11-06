@@ -1,0 +1,545 @@
+{
+  "status": "Separate instrumented process-stage diagnostic; exact endpoint reconciliation.",
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "intrinsic_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e36595690fb55afc0feacf1bc0da9cd1876794b7c83f09c4541364e3c9487991",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-032632-1801fbf1/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "5bb41cef0ceec4c45b2ebecc9a858f2aa4d4c06e0c90a840e1194b9659cb5fcf",
+        "dirty": true,
+        "head": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+        "repository_sha256": "baddaca952a69657d34586fd75780263e6fa5a7c64ec87f94040abf17476b94a"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "5bb41cef0ceec4c45b2ebecc9a858f2aa4d4c06e0c90a840e1194b9659cb5fcf",
+        "dirty": true,
+        "head": "628fc199573f028992817fecd8e5b4c593400c66",
+        "repository_sha256": "ae68b246705d39384968aeae3d601bf01ac615d0c7a4d86cbd7b81924328f770"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+        "id": "8ade130917c3418da9bf0671c3fccd51",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "5bb41cef0ceec4c45b2ebecc9a858f2aa4d4c06e0c90a840e1194b9659cb5fcf",
+        "dirty": true,
+        "head": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+        "repository_sha256": "72e5956fff76ac3fca6ada5cd24ab32bf3e2c57c4c0dd169eba64fff609a64b1"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; retired intrinsic grid path absent from this completed baseline app; control flag is inert. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793925094.646792
+  },
+  "summary": {
+    "pid": 26207,
+    "process_instructions": 29077496978,
+    "coalition_instructions": 29513008761,
+    "coalition": {
+      "label": "capture_document_encoded",
+      "coalition_id": 43193,
+      "instructions": 29513008761,
+      "tasks_started": 3,
+      "tasks_exited": 1
+    },
+    "rows": [
+      {
+        "stage": "javascript_execution_and_bindings",
+        "calls": 6835,
+        "partial_calls": 0,
+        "exclusive": 6778382227,
+        "inclusive": 10018309582,
+        "percent": 22.967438806026788
+      },
+      {
+        "stage": "flow_layout",
+        "calls": 15,
+        "partial_calls": 0,
+        "exclusive": 4972045016,
+        "inclusive": 4972045016,
+        "percent": 16.846960797064902
+      },
+      {
+        "stage": "browser_main",
+        "calls": 1,
+        "partial_calls": 1,
+        "exclusive": 3959489114,
+        "inclusive": 28803223267,
+        "percent": 13.416080841043463
+      },
+      {
+        "stage": "style_update",
+        "calls": 421,
+        "partial_calls": 0,
+        "exclusive": 3488603367,
+        "inclusive": 3832242454,
+        "percent": 11.820561553893546
+      },
+      {
+        "stage": "platform_timer_delivery",
+        "calls": 8574,
+        "partial_calls": 0,
+        "exclusive": 1779086510,
+        "inclusive": 11272583664,
+        "percent": 6.028143468554029
+      },
+      {
+        "stage": "document_layout",
+        "calls": 414,
+        "partial_calls": 0,
+        "exclusive": 1006375225,
+        "inclusive": 8914132749,
+        "percent": 3.4099377435548885
+      },
+      {
+        "stage": "background_resource_completion",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 832499426,
+        "inclusive": 7456685413,
+        "percent": 2.8207880556729523
+      },
+      {
+        "stage": "paint_command_dispatch",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 706696533,
+        "inclusive": 706696533,
+        "percent": 2.3945255420174747
+      },
+      {
+        "stage": "layout_tree_construction",
+        "calls": 6,
+        "partial_calls": 0,
+        "exclusive": 553305888,
+        "inclusive": 553305888,
+        "percent": 1.874786445803407
+      },
+      {
+        "stage": "html_event_loop",
+        "calls": 4410,
+        "partial_calls": 0,
+        "exclusive": 536803987,
+        "inclusive": 9403460818,
+        "percent": 1.8188724550150246
+      },
+      {
+        "stage": "layout_geometry",
+        "calls": 15,
+        "partial_calls": 0,
+        "exclusive": 511726952,
+        "inclusive": 5882121278,
+        "percent": 1.7339030260995354
+      },
+      {
+        "stage": "html_timer_task",
+        "calls": 4098,
+        "partial_calls": 0,
+        "exclusive": 440244579,
+        "inclusive": 842505502,
+        "percent": 1.4916967042064573
+      },
+      {
+        "stage": "coalition_endpoint_remainder",
+        "calls": 0,
+        "partial_calls": 0,
+        "exclusive": 435511783,
+        "inclusive": null,
+        "percent": 1.475660399543904
+      },
+      {
+        "stage": "css_parsing",
+        "calls": 19,
+        "partial_calls": 0,
+        "exclusive": 431335935,
+        "inclusive": 431335935,
+        "percent": 1.4615112220275872
+      },
+      {
+        "stage": "paint_command_recording",
+        "calls": 13,
+        "partial_calls": 0,
+        "exclusive": 413919494,
+        "inclusive": 413919494,
+        "percent": 1.402498462125537
+      },
+      {
+        "stage": "absolute_positioned_layout",
+        "calls": 15,
+        "partial_calls": 0,
+        "exclusive": 391250000,
+        "inclusive": 391250000,
+        "percent": 1.3256865918632388
+      },
+      {
+        "stage": "png_encoding",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 302770558,
+        "inclusive": null,
+        "percent": 1.0258884834544437
+      },
+      {
+        "stage": "navigation_html_parsing",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 277322681,
+        "inclusive": 335306278,
+        "percent": 0.9396625171150573
+      },
+      {
+        "stage": "html_rendering_task",
+        "calls": 166,
+        "partial_calls": 0,
+        "exclusive": 269402433,
+        "inclusive": 398760465,
+        "percent": 0.9128260530183631
+      },
+      {
+        "stage": "unscoped_process",
+        "calls": 0,
+        "partial_calls": 0,
+        "exclusive": 255688141,
+        "inclusive": null,
+        "percent": 0.8663574190981145
+      },
+      {
+        "stage": "script_runtime_setup",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 163615413,
+        "inclusive": 1814273499,
+        "percent": 0.5543840491661758
+      },
+      {
+        "stage": "frame_preparation",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 101706962,
+        "inclusive": 12075856623,
+        "percent": 0.34461739507359473
+      },
+      {
+        "stage": "frame",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 99403230,
+        "inclusive": 13147719225,
+        "percent": 0.33681157622721447
+      },
+      {
+        "stage": "gpu_frame_finalization",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 86785751,
+        "inclusive": 86785751,
+        "percent": 0.29405931364979343
+      },
+      {
+        "stage": "browser_chrome",
+        "calls": 240,
+        "partial_calls": 0,
+        "exclusive": 79140588,
+        "inclusive": 79140588,
+        "percent": 0.26815493005437124
+      },
+      {
+        "stage": "document_install",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 77277271,
+        "inclusive": 4826838221,
+        "percent": 0.2618413853558643
+      },
+      {
+        "stage": "native_window_initialization",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 73467150,
+        "inclusive": 73467150,
+        "percent": 0.24893141392308077
+      },
+      {
+        "stage": "script_state_replay",
+        "calls": 395,
+        "partial_calls": 0,
+        "exclusive": 69018512,
+        "inclusive": 845382576,
+        "percent": 0.23385793213738545
+      },
+      {
+        "stage": "html_other_task",
+        "calls": 131,
+        "partial_calls": 0,
+        "exclusive": 64130089,
+        "inclusive": 1475965224,
+        "percent": 0.2172943108557091
+      },
+      {
+        "stage": "javascript_module_completion",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 51670509,
+        "inclusive": 56603096,
+        "percent": 0.17507706319756886
+      },
+      {
+        "stage": "native_raster_replay",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 38987190,
+        "inclusive": 888626816,
+        "percent": 0.1321017125557177
+      },
+      {
+        "stage": "native_frame_presentation",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 38070959,
+        "inclusive": 13313367161,
+        "percent": 0.12899721376530376
+      },
+      {
+        "stage": "native_document_replay",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 33961286,
+        "inclusive": 932312298,
+        "percent": 0.11507225940609005
+      },
+      {
+        "stage": "native_frame_bitmap",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 32108094,
+        "inclusive": 13275296202,
+        "percent": 0.10879302161299555
+      },
+      {
+        "stage": "browser_tab_frame",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 22001733,
+        "inclusive": 13169720958,
+        "percent": 0.07454927140154621
+      },
+      {
+        "stage": "stationary_raster_finish",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 21024125,
+        "inclusive": 21024125,
+        "percent": 0.07123680669177436
+      },
+      {
+        "stage": "initial_resource_preload",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 19206845,
+        "inclusive": 713044964,
+        "percent": 0.06507925083321531
+      },
+      {
+        "stage": "stationary_raster_probe",
+        "calls": 166,
+        "partial_calls": 0,
+        "exclusive": 17791151,
+        "inclusive": 27169905,
+        "percent": 0.06028240341089905
+      },
+      {
+        "stage": "html_rendering_opportunity",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 13690247,
+        "inclusive": 13690247,
+        "percent": 0.04638716137302474
+      },
+      {
+        "stage": "animation_driver",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 12266855,
+        "inclusive": 12266855,
+        "percent": 0.041564230537586025
+      },
+      {
+        "stage": "native_frame_context",
+        "calls": 206,
+        "partial_calls": 0,
+        "exclusive": 9724196,
+        "inclusive": 9724196,
+        "percent": 0.032948846655208024
+      },
+      {
+        "stage": "stationary_raster_eligibility",
+        "calls": 166,
+        "partial_calls": 0,
+        "exclusive": 9378754,
+        "inclusive": 9378754,
+        "percent": 0.03177837297427149
+      },
+      {
+        "stage": "html_networking_task",
+        "calls": 14,
+        "partial_calls": 0,
+        "exclusive": 7335362,
+        "inclusive": 63938458,
+        "percent": 0.024854673609873767
+      },
+      {
+        "stage": "relative_positioned_layout",
+        "calls": 15,
+        "partial_calls": 0,
+        "exclusive": 7099310,
+        "inclusive": 7099310,
+        "percent": 0.02405485004084501
+      },
+      {
+        "stage": "capture_snapshot",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 6007920,
+        "inclusive": null,
+        "percent": 0.020356853645973137
+      },
+      {
+        "stage": "viewport_relayout",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 5538533,
+        "inclusive": 1885558754,
+        "percent": 0.018766412617743335
+      },
+      {
+        "stage": "stationary_blank_probe",
+        "calls": 40,
+        "partial_calls": 0,
+        "exclusive": 4133614,
+        "inclusive": 4133614,
+        "percent": 0.014006074519458582
+      },
+      {
+        "stage": "raster_frame_commit",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 1638373,
+        "inclusive": 1638373,
+        "percent": 0.005551358769509905
+      },
+      {
+        "stage": "raster_frame_setup",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 1389080,
+        "inclusive": 2191325,
+        "percent": 0.004706670239042525
+      },
+      {
+        "stage": "html_posted_message_task",
+        "calls": 4,
+        "partial_calls": 0,
+        "exclusive": 1277781,
+        "inclusive": 6085722580,
+        "percent": 0.004329551793067351
+      },
+      {
+        "stage": "style_computation",
+        "calls": 5,
+        "partial_calls": 0,
+        "exclusive": 852112,
+        "inclusive": 852112,
+        "percent": 0.0028872420528198548
+      },
+      {
+        "stage": "raster_tile_setup",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 639506,
+        "inclusive": 639506,
+        "percent": 0.002166861417549118
+      },
+      {
+        "stage": "scroll_raster_probe",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 108061,
+        "inclusive": 108061,
+        "percent": 0.00036614701291586823
+      },
+      {
+        "stage": "viewport_raster_plan",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 54678,
+        "inclusive": 54678,
+        "percent": 0.00018526745423616146
+      },
+      {
+        "stage": "capture_conversion",
+        "calls": 1,
+        "partial_calls": 0,
+        "exclusive": 47672,
+        "inclusive": null,
+        "percent": 0.0001615287698589248
+      }
+    ],
+    "complete": true,
+    "qualification": "Exclusive process-interval attribution with measured children subtracted; concurrent threads and tracing overhead remain included. Open scopes are clipped at encoded PNG and marked partial. Inclusive counts overlap and are non-additive. Existing native capture checkpoints split snapshot/conversion/encoding out of parent self work; child scopes entered during capture retain their own attribution. The coalition endpoint remainder includes owned helpers and process/coalition boundary differences; it is not a separately measured helper stage. No scaling to a different run."
+  },
+  "parser": {
+    "path": "tools/summarize_load_stages.py",
+    "sha256": "4fc61b143675153c8f5752a7dff22b20d89d8926d5ee48e89f21315506d281ea",
+    "recomputed_exactly": true
+  },
+  "qualification": "Nested main-thread boundaries read process-wide cumulative counters, including concurrent worker CPU and instrumentation overhead. Exclusive intervals partition this run only; inclusive intervals overlap. Open browser_main is clipped at encoded PNG. Coalition endpoint remainder is unattributed, not measured helper-only cost. Native callback count does not establish excess timer work; one HTML timer can require both a platform clock and event-loop delivery. No acceptance, production cost shares, cross-run scaling, optimization attribution, Brave target, live-site, rendering-only or FPS credit.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-load-stage-diagnostic-20261106.tar.gz",
+    "bytes": 2335700,
+    "sha256": "d79ada200dc8ddd0066e534efb5ced4add041e2cd65332d501d6ec255f50fcba",
+    "members": 40,
+    "all_members_verified": true
+  },
+  "acceptance_browser_attempts": 0,
+  "performance_credit": 0,
+  "unix": 1793925684.576852,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-continuation-evidence-20261106-0630/archive.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 35225600,
+    "elapsed_seconds": 1.858372542,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive_guard_path": "Build/bbc-continuation-evidence-20261106-0630/archive.guard.json"
+}
