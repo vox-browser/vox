@@ -208,6 +208,34 @@ delivery, so counts alone do not establish duplicate work. The acceptance histor
 remains 120 cohorts / 2,587 attempts, and the 10% target remains unmet.
 [Stage trace and exact reconciliation](performance/bbc-load-stage-diagnostic-20261106.json).
 
+The subsequent fresh **101-scope `v -profile`** run executes 96 selected scopes
+and passes original pixels/content, all 72 external source witnesses, native
+image pins, normal exit and memory-guard adoption. Source inputs stay unchanged
+during generation; the compiler seal completes successfully, and all sealed and
+live inputs remain unchanged at launch. Publication leases cover compilation
+and the fresh launch. Instrumented wall times include native timer registration
+21.098 ms, removal 51.267 ms, task-queue runnable scans 0.554 ms and timer
+initialization 13.184 ms inclusive. The larger intervals remain draw self
+1,181.529 ms and object-receiver callback self 1,101.774 ms; these include
+unselected native/JSC work and waits. The diagnostic uses C-O3/ThinLTO in one
+unit, omits literal V `-prod`, and disables inlining for profiling. Its recursive
+inclusive times overlap, and post-PNG work and observer overhead remain included.
+Its inherited coalition checkpoint is not an acceptance counter. No instruction
+share, production speedup or target credit is claimed.
+[Raw wall-time profile and sealed compiler evidence](performance/bbc-timer-v-profile-20261106.json).
+
+A rendered-text bidi-classification cache (`fcf6a9a18`, control `ba13f4445`)
+now passes **144 focused executions**: 24 cases in both arms across default,
+no-GC and preallocation modes. It retains one scalar until rendered-text
+invalidation or recomputation; paragraph and inline direction checks remain live.
+New cases cover Unicode directional controls, live DOM edits without layout,
+source-range changes, direction changes and paint comparisons with a fresh tree.
+All **346 instruction-tool tests** pass with unchanged checked inputs, including
+control isolation and required-control validation. Native BBC eligibility and
+matched instruction measurements remain pending on a production build containing
+the change. No saving or catalog credit is claimed.
+[Focused checks and control evidence](performance/bbc-text-bidi-classification-focus-20261106.json).
+
 The fresh [CPU sample](performance/bbc-current-production-sample-20261106.json)
 validates PID/start identity, executable UUID and Vox address ranges, with no
 instruction credit.

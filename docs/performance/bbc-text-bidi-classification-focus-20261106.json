@@ -1,0 +1,208 @@
+{
+  "passed": true,
+  "implementation": "fcf6a9a18",
+  "tooling": "ba13f4445",
+  "cases_per_arm": 24,
+  "new_cases": 5,
+  "focused_executions": 144,
+  "tool_tests": 346,
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_text_bidi_classification_keeps_ltr_unicode_and_all_directional_controls",
+          "test_text_bidi_classification_refreshes_after_live_dom_changes_without_layout",
+          "test_text_bidi_classification_uses_the_rendered_source_range_and_recomputation",
+          "test_text_bidi_classification_does_not_cache_paragraph_or_inline_direction",
+          "test_text_bidi_classification_preserves_live_layout_against_a_fresh_tree",
+          "test_rendered_length_cache_tracks_expanding_transforms_and_source_range_changes",
+          "test_rendered_length_cache_refreshes_from_live_dom_text_without_a_geometry_pass",
+          "test_chunk_iterators_share_existing_rendered_units_across_wrap_modes_and_collection",
+          "test_rendered_unit_invalidation_keeps_old_iterators_and_rebuilds_for_new_text",
+          "test_rendered_unit_cache_rebuilds_after_first_letter_source_range_changes",
+          "test_line_fragments_read_cached_and_uncached_rendered_units_with_utf16_offsets",
+          "test_cached_fragment_whitespace_reads_allocate_nothing_and_follow_text_invalidation",
+          "test_fragment_text_slices_ascii_unicode_and_invalid_bytes_with_or_without_cached_units",
+          "test_fragment_text_refreshes_ascii_classification_after_live_dom_text_changes",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_text_bidi_classification_keeps_ltr_unicode_and_all_directional_controls",
+          "test_text_bidi_classification_refreshes_after_live_dom_changes_without_layout",
+          "test_text_bidi_classification_uses_the_rendered_source_range_and_recomputation",
+          "test_text_bidi_classification_does_not_cache_paragraph_or_inline_direction",
+          "test_text_bidi_classification_preserves_live_layout_against_a_fresh_tree",
+          "test_rendered_length_cache_tracks_expanding_transforms_and_source_range_changes",
+          "test_rendered_length_cache_refreshes_from_live_dom_text_without_a_geometry_pass",
+          "test_chunk_iterators_share_existing_rendered_units_across_wrap_modes_and_collection",
+          "test_rendered_unit_invalidation_keeps_old_iterators_and_rebuilds_for_new_text",
+          "test_rendered_unit_cache_rebuilds_after_first_letter_source_range_changes",
+          "test_line_fragments_read_cached_and_uncached_rendered_units_with_utf16_offsets",
+          "test_cached_fragment_whitespace_reads_allocate_nothing_and_follow_text_invalidation",
+          "test_fragment_text_slices_ascii_unicode_and_invalid_bytes_with_or_without_cached_units",
+          "test_fragment_text_refreshes_ascii_classification_after_live_dom_text_changes",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_text_bidi_classification_keeps_ltr_unicode_and_all_directional_controls",
+          "test_text_bidi_classification_refreshes_after_live_dom_changes_without_layout",
+          "test_text_bidi_classification_uses_the_rendered_source_range_and_recomputation",
+          "test_text_bidi_classification_does_not_cache_paragraph_or_inline_direction",
+          "test_text_bidi_classification_preserves_live_layout_against_a_fresh_tree",
+          "test_rendered_length_cache_tracks_expanding_transforms_and_source_range_changes",
+          "test_rendered_length_cache_refreshes_from_live_dom_text_without_a_geometry_pass",
+          "test_chunk_iterators_share_existing_rendered_units_across_wrap_modes_and_collection",
+          "test_rendered_unit_invalidation_keeps_old_iterators_and_rebuilds_for_new_text",
+          "test_rendered_unit_cache_rebuilds_after_first_letter_source_range_changes",
+          "test_line_fragments_read_cached_and_uncached_rendered_units_with_utf16_offsets",
+          "test_cached_fragment_whitespace_reads_allocate_nothing_and_follow_text_invalidation",
+          "test_fragment_text_slices_ascii_unicode_and_invalid_bytes_with_or_without_cached_units",
+          "test_fragment_text_refreshes_ascii_classification_after_live_dom_text_changes",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/text_bidi_classification_test.v": "e226239c0bdadce076b754756515b258bc00472b0e4f04b4495aa2f0cfffcdf9",
+      "/Users/alex/code/vox2/layout/rendered_text_length_cache_test.v": "7d649243b1e5cb26caa64040df8e76fd34803546bca80be9af58e48a42683a5a",
+      "/Users/alex/code/vox2/layout/chunk_utf16_reuse_test.v": "a8f1acc3a1a58025a76b106bc74d407f5d2b3766a07696b64874add798fb47ad",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "/Users/alex/code/vox2/layout/node.v": "11604d6da8ddfb2d5df5cc070fcbc5481fdcb116cf8fe83be8311057041af11b",
+      "/Users/alex/code/vox2/layout/inline_level_iterator.v": "399447a5fcf01ccc74c9c8b060ddba859caf76f121ea32a925f7f40e34280fdf",
+      "/Users/alex/code/vox2/layout/text_bidi_classification.v": "51d0acc73187bba72a4687a48917a8d35fb2f356881cc363b994ce50d3f92fe5",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "bb3b23783006b2d176559f2d7883102d95405986bfe990a3c46ccac88b5abd98"
+    },
+    "unchanged": true,
+    "cases_per_run": 24,
+    "expected_cases": [
+      "test_text_bidi_classification_keeps_ltr_unicode_and_all_directional_controls",
+      "test_text_bidi_classification_refreshes_after_live_dom_changes_without_layout",
+      "test_text_bidi_classification_uses_the_rendered_source_range_and_recomputation",
+      "test_text_bidi_classification_does_not_cache_paragraph_or_inline_direction",
+      "test_text_bidi_classification_preserves_live_layout_against_a_fresh_tree",
+      "test_rendered_length_cache_tracks_expanding_transforms_and_source_range_changes",
+      "test_rendered_length_cache_refreshes_from_live_dom_text_without_a_geometry_pass",
+      "test_chunk_iterators_share_existing_rendered_units_across_wrap_modes_and_collection",
+      "test_rendered_unit_invalidation_keeps_old_iterators_and_rebuilds_for_new_text",
+      "test_rendered_unit_cache_rebuilds_after_first_letter_source_range_changes",
+      "test_line_fragments_read_cached_and_uncached_rendered_units_with_utf16_offsets",
+      "test_cached_fragment_whitespace_reads_allocate_nothing_and_follow_text_invalidation",
+      "test_fragment_text_slices_ascii_unicode_and_invalid_bytes_with_or_without_cached_units",
+      "test_fragment_text_refreshes_ascii_classification_after_live_dom_text_changes",
+      "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+      "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+      "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+      "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+      "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+      "test_inline_measurement_does_not_cache_discarded_whitespace",
+      "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+      "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+      "test_committed_inline_misses_never_populate_or_evict_measurements",
+      "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question"
+    ]
+  },
+  "tools": {
+    "exit": 0,
+    "inputs_unchanged": true
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-text-bidi-classification-focus-20261106.tar.gz",
+    "bytes": 13025377,
+    "sha256": "bfc25d3a6421c8dead7e67b71dfd3206847295801d018cbef57453a6c8f7838f",
+    "members": 52,
+    "all_members_verified": true
+  },
+  "qualification": "A node-local scalar caches the old rendered-code-point classification, with no retained external text/geometry pointers. Rendered-text invalidation and recomputation clear it. Paragraph/inline direction styles remain live on every iterator construction. The original scanner is isolated in the matched control. Unicode directional classes, live DOM changes without layout, source ranges, lazy recomputation, direction mutations and fresh-tree paint comparisons pass in default/no-GC/prealloc. Existing text/inline-measurement coverage included. No native workload eligibility, instruction reduction or acceptance established yet.",
+  "performance_credit": 0,
+  "unix": 1793926878.60207,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-text-bidi-cache-20261106-0700/archive-current.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 20201472,
+    "elapsed_seconds": 3.190930792,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
