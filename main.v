@@ -7558,6 +7558,7 @@ fn (mut app BrowserApp) draw() {
 		// Retry painting once after a failed GPU publication; preparation,
 		// document scripts and rendering opportunities have already run.
 		for replay_attempt in 0 .. 2 {
+			setup_instructions := processmetrics.begin_instruction_stage('raster_frame_setup')
 			app.portable_shadow_image_index = 0
 			$if macos {
 				if app.ctx.native_rendering {
@@ -7626,6 +7627,8 @@ fn (mut app BrowserApp) draw() {
 			mut shared_svg_end := 0
 			mut rect_prefetch_end := 0
 			mut leaf_timing := new_leaf_timing()
+			setup_instructions.finish()
+			command_instructions := processmetrics.begin_instruction_stage('paint_command_dispatch')
 			for command_index in 0 .. app.paint_commands.len {
 				leaf_timing.mark(command_index)
 				if command_index < shared_svg_end {
@@ -7773,6 +7776,8 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 			}
+			command_instructions.finish()
+			gpu_instructions := processmetrics.begin_instruction_stage('gpu_frame_finalization')
 			$if macos {
 				if gpu_canvas && !(text_scroll_layer && gpu_text_layer_composites_enabled
 					&& C.native_gpu_canvas_can_defer_layers() != 0) { C.native_gpu_canvas_cpu_access() }
@@ -7782,6 +7787,8 @@ fn (mut app BrowserApp) draw() {
 			$if macos {
 				if gpu_canvas { C.native_gpu_canvas_end() }
 			}
+			gpu_instructions.finish()
+			commit_instructions := processmetrics.begin_instruction_stage('raster_frame_commit')
 			$if macos {
 				// A planned video restore that never ran left pixels beneath it
 				// unpainted; never retain such a frame.
@@ -7817,6 +7824,7 @@ fn (mut app BrowserApp) draw() {
 			$if macos {
 				if app.ctx.native_rendering { replay_completed = C.native_finish_deferred_layer_frame() != 0 }
 			}
+			commit_instructions.finish()
 			if replay_completed { break }
 			$if macos {
 				C.native_discard_scroll_raster()
@@ -7831,7 +7839,9 @@ fn (mut app BrowserApp) draw() {
 	}
 	$if macos {
 		// A no-op unless this frame began a stationary document or blank raster.
+		stationary_end_instructions := processmetrics.begin_instruction_stage('stationary_raster_finish')
 		if app.ctx.native_rendering { C.native_end_stationary_raster() }
+		stationary_end_instructions.finish()
 	}
 
 	if frame_part_diagnostics_enabled {

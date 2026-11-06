@@ -3,6 +3,7 @@ module main
 import layout
 import math
 import os
+import processmetrics
 
 fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64, &f64, int, int, i32) int
 fn C.native_end_scroll_raster()
@@ -68,6 +69,8 @@ mut:
 }
 
 fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
+	stage := processmetrics.begin_instruction_stage('scroll_raster_probe')
+	defer { stage.finish() }
 	mut damage := ScrollRasterDamage{
 		width:       app.viewport_width
 		height:      app.viewport_height

@@ -5,6 +5,46 @@ mut:
 	fired bool
 }
 
+struct NestedTimerRetirementOrder {
+mut:
+	values [3]int
+}
+
+fn test_nested_timer_delivery_finishes_after_callbacks_retire_both_allocation_owners() {
+	mut order := &NestedTimerRetirementOrder{}
+	mut inner_owner := new_retained_arena('nested inner timer')
+	mut inner_scope := inner_owner.enter()
+	inner_payload := 'inner payload'.bytes()
+	mut inner := Timer.create_single_shot(1000, fn [inner_owner, inner_payload, order] () {
+		mut owner := unsafe { &RetainedArena(inner_owner) }
+		owner.release()
+		assert inner_payload.bytestr() == 'inner payload'
+		mut observed := unsafe { &NestedTimerRetirementOrder(order) }
+		observed.values[1] = 2
+	})
+	inner_scope.finish()
+	inner.start()
+	mut outer_owner := new_retained_arena('nested outer timer')
+	mut outer_scope := outer_owner.enter()
+	outer_payload := 'outer payload'.bytes()
+	mut outer := Timer.create_single_shot(1000, fn [outer_owner, outer_payload, inner, order] () {
+		mut owner := unsafe { &RetainedArena(outer_owner) }
+		owner.release()
+		mut observed := unsafe { &NestedTimerRetirementOrder(order) }
+		observed.values[0] = 1
+		mut child := unsafe { &Timer(inner) }
+		child.fire()
+		assert outer_payload.bytestr() == 'outer payload'
+		observed.values[2] = 3
+	})
+	outer_scope.finish()
+	outer.start()
+	outer.fire()
+	assert order.values == [1, 2, 3]!
+	assert inner_owner.arena.usage().used == 0
+	assert outer_owner.arena.usage().used == 0
+}
+
 fn test_active_timer_keeps_its_retired_document_alive_through_callback_cleanup() {
 	mut owner := new_retained_arena('timer document')
 	observation := &ArenaTimerObservation{}

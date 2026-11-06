@@ -60,6 +60,8 @@ fn configure_native_browser_context(mut context gg.Context) {
 }
 
 fn dispatch_native_browser_event(event_pointer &sapp.Event, user_data voidptr) {
+	stage := processmetrics.begin_instruction_stage('native_input_delivery')
+	defer { stage.finish() }
 	// Sokol's C integer fields are 32-bit; GG's V integers can be 64-bit.
 	// Copy fields instead of aliasing incompatible event layouts.
 	event := gg.Event{
@@ -111,6 +113,8 @@ fn native_browser_context_scale(reported_scale f32) f32 {
 }
 
 fn initialize_native_browser_context(user_data voidptr) {
+	stage := processmetrics.begin_instruction_stage('native_window_initialization')
+	defer { stage.finish() }
 	mut context := unsafe { &gg.Context(user_data) }
 	if context.has_started {
 		return

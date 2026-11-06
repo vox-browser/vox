@@ -2,6 +2,7 @@ module main
 
 import layout
 import os
+import processmetrics
 
 const disable_static_media_raster_reuse = os.getenv('VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE') != ''
 const copy_stationary_raster_commands = os.getenv('VOX_COPY_STATIONARY_RASTER_COMMANDS') != ''
@@ -18,6 +19,8 @@ fn C.native_end_stationary_raster()
 fn C.native_discard_stationary_raster()
 
 fn stationary_document_raster_eligible(commands []layout.PaintCommand) bool {
+	stage := processmetrics.begin_instruction_stage('stationary_raster_eligibility')
+	defer { stage.finish() }
 	return stationary_document_raster_commands_eligible(commands, 0)
 }
 
@@ -98,6 +101,8 @@ fn (app &BrowserApp) stationary_document_revision() u64 {
 }
 
 fn (app &BrowserApp) begin_stationary_document_raster() bool {
+	stage := processmetrics.begin_instruction_stage('stationary_raster_probe')
+	defer { stage.finish() }
 	$if macos {
 		// AppKit can request the first frame before navigation creates a document.
 		if app.document == unsafe { nil } { return false }
@@ -137,6 +142,8 @@ fn (app &BrowserApp) frame_canvas_is_blank(paint_document bool) bool {
 }
 
 fn begin_stationary_blank_raster() bool {
+	stage := processmetrics.begin_instruction_stage('stationary_blank_probe')
+	defer { stage.finish() }
 	$if macos {
 		$if vox_ui2 ? {
 			return C.native_begin_stationary_raster_snapshot(stationary_blank_raster_owner,

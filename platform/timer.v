@@ -6,6 +6,8 @@
 // The native host supplies registration and unregistering of the timer event.
 module platform
 
+import processmetrics
+
 __global platform_active_timers_ []&Timer
 
 pub type TimerCallback = fn ()
@@ -150,6 +152,8 @@ pub fn (mut timer Timer) fire() {
 		return
 	}
 	if defer_timer_during_cooperative_work(&timer) { return }
+	stage := processmetrics.begin_instruction_stage('platform_timer_delivery')
+	defer { stage.finish() }
 	// A callback may stop the timer or retire its document. Keep the callback
 	// and receiver alive until all post-callback timer bookkeeping is complete.
 	mut owner := timer.allocation_owner_

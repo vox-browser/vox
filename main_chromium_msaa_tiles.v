@@ -4,6 +4,7 @@ import layout
 import math
 import painting
 import os
+import processmetrics
 
 fn C.native_set_chromium_raster_layer_size(f64, f64)
 fn C.native_set_chromium_save_layer_image_raster(f64, f64, f64, f64, i32)
@@ -473,6 +474,8 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 }
 
 fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
+	stage := processmetrics.begin_instruction_stage('viewport_raster_plan')
+	defer { stage.finish() }
 	$if macos {
 		if app.page_zoom != 1 || app.document == unsafe { nil } { return }
 		scale := C.native_display_device_pixel_ratio()
@@ -489,6 +492,8 @@ fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
 }
 
 fn (mut app BrowserApp) set_chromium_msaa_tiles() {
+	stage := processmetrics.begin_instruction_stage('raster_tile_setup')
+	defer { stage.finish() }
 	$if macos {
 		app.begin_chromium_image_decode_frame()
 		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {

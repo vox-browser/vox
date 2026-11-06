@@ -2,6 +2,11 @@ module processmetrics
 
 import os
 
+#include "load_stage_log.h"
+fn C.vox_load_stage_begin_log(i32, u64, u64, &char, uint)
+fn C.vox_load_stage_end_log(i32, u64, u64)
+fn C.vox_load_stage_unavailable_log(i32, u64, i32)
+
 const load_stage_diagnostics = os.getenv('VOX_DIAGNOSTIC_LOAD_STAGES') != ''
 __global load_stage_next_id u64
 __global load_stage_current_is_javascript bool
@@ -19,14 +24,14 @@ pub fn begin_instruction_stage(label string) InstructionStage {
 	}
 	reading := instruction_snapshot()
 	if !reading.available {
-		eprintln('Vox instruction stage unavailable: ${os.getpid()} begin ${label} error=${reading.error_code}')
+		C.vox_load_stage_unavailable_log(i32(os.getpid()), 0, i32(reading.error_code))
 		return InstructionStage{}
 	}
 	load_stage_next_id++
 	id := load_stage_next_id
 	previous_is_javascript := load_stage_current_is_javascript
 	load_stage_current_is_javascript = false
-	eprintln('Vox instruction stage begin: ${os.getpid()} ${id} ${reading.instructions} ${label}')
+	C.vox_load_stage_begin_log(i32(os.getpid()), id, reading.instructions, label.str, uint(label.len))
 	return InstructionStage{id: id, previous_is_javascript: previous_is_javascript}
 }
 
@@ -35,10 +40,10 @@ pub fn (stage InstructionStage) finish() {
 	load_stage_current_is_javascript = stage.previous_is_javascript
 	reading := instruction_snapshot()
 	if !reading.available {
-		eprintln('Vox instruction stage unavailable: ${os.getpid()} ${stage.id}')
+		C.vox_load_stage_unavailable_log(i32(os.getpid()), stage.id, i32(reading.error_code))
 		return
 	}
-	eprintln('Vox instruction stage end: ${os.getpid()} ${stage.id} ${reading.instructions}')
+	C.vox_load_stage_end_log(i32(os.getpid()), stage.id, reading.instructions)
 }
 
 // Coalesce nested engine calls while already in JS. An explicitly measured

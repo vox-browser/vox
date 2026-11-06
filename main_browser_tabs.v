@@ -7,6 +7,7 @@ import math
 import os
 import page
 import platform
+import processmetrics
 
 const tab_strip_height = 29.0
 const tab_strip_leading_width = 62.0
@@ -323,6 +324,8 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 }
 
 fn (mut app BrowserApp) draw_browser_tabs() {
+	stage := processmetrics.begin_instruction_stage('browser_tab_frame')
+	defer { stage.finish() }
 	app.start_process_tabs()
 	$if macos {
 		if app.ctx != unsafe { nil } && app.ctx.native_rendering
