@@ -1,0 +1,814 @@
+{
+  "feature_commit": "0fb44a4f4",
+  "complete": true,
+  "diagnostic_live_comparison": true,
+  "instruction_acceptance": false,
+  "instruction_credit": 0,
+  "problem": "ChatGPT's DIL sandbox fails to remove Vox's non-configurable document-only __ladybirdSerializeURLText worker global, so no MessagePort initialization acknowledgement is sent. The author watchdog retries after 10000 ms.",
+  "change": "Install the scalar URL helper only for Window fetch clients. Worker URL and URLSearchParams constructors remain installed. A diagnostic retain flag reproduces the old behavior while keeping the document path unchanged.",
+  "scope": "Native Send input begins -> first audited assistant text containing Rome; 250 ms observation timers. A native published-layer screenshot follows one second later. Five-second readiness settle and typing are excluded from this submit-to-answer interval.",
+  "conditions": {
+    "url": "https://chatgpt.com/",
+    "prompt": "capital of italy",
+    "anonymous": true,
+    "proxy": "socks5h://127.0.0.1:1337",
+    "viewport": [
+      1024,
+      768
+    ],
+    "scale": 2,
+    "fresh_processes": true,
+    "private_empty_profiles_and_resource_caches": true,
+    "os_caches_retained": true,
+    "normal_window": true,
+    "window_placement": "Test display away from pointer",
+    "author_script_policy": "Installed Vox basic/collector blocking, default Brave Shields; original live site author code otherwise unchanged",
+    "vox_input": "Native Cocoa mouse/key events into the input view",
+    "brave_input": "CDP mouse/text events",
+    "instrumentation": "Audit observation/native input probe in Vox and CDP observation in Brave; no instruction tracing or sampling in the matched cohort"
+  },
+  "medians_seconds": {
+    "control": 14.058489499999999,
+    "fixed": 4.844788999999999,
+    "brave": 2.575957187000002
+  },
+  "time_reduction_fraction": 0.6553833895170602,
+  "vox_speedup": 2.901775392075899,
+  "fixed_vox_over_brave": 1.8807723297770766,
+  "matched_cohort": {
+    "executable_sha256": "ac12b93d49ae2c79bbb657d9bffed82e880566d33f79fd624a3fe63782cd5da9",
+    "rows": [
+      {
+        "name": "matched-control-1",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-control-1.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-control-1-guard.json",
+          "--",
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py",
+          "vox",
+          "matched-control-1",
+          "--control"
+        ],
+        "exit": 0,
+        "receipt": {
+          "engine": "vox",
+          "control": true,
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width=1024",
+            "--window-height=880",
+            "https://chatgpt.com/"
+          ],
+          "pid": 94948,
+          "exit": 0,
+          "failure": null,
+          "elapsed": 30.906562625,
+          "times": {
+            "ready": 9.361373,
+            "type": 14.792035,
+            "submit_begin": 15.58421,
+            "submit_end": 15.632473,
+            "rome": 29.66752
+          },
+          "submit_to_rome": 14.083309999999999,
+          "answer": "The capital of Italy is Rome (Roma in Italian). \ud83c\uddee\ud83c\uddf9",
+          "identity": {
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ac12b93d49ae2c79bbb657d9bffed82e880566d33f79fd624a3fe63782cd5da9",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+            "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "7bf2bf6f22182505fd39faa85783f47f73d96d1982810c1b358f4de56aac8f92",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.m": "c4872e5d25bd1432cc68cadac040a4153ae719abc2fe1d111e48f5b35984ba45",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.dylib": "dc57326e606150a4278a7bfe34ad77174a396295de76e3c8fa7f69375e6769cd"
+          },
+          "stable": true,
+          "host_before": {
+            "unix": 1793949200.97953,
+            "cpu_count": 18,
+            "load": [
+              23.33837890625,
+              23.91259765625,
+              23.24658203125
+            ]
+          },
+          "host_after": {
+            "unix": 1793949231.991057,
+            "load": [
+              22.89990234375,
+              23.79541015625,
+              23.2294921875
+            ]
+          },
+          "instrumented": false,
+          "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+        }
+      },
+      {
+        "name": "matched-fixed-1",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-fixed-1.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-fixed-1-guard.json",
+          "--",
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py",
+          "vox",
+          "matched-fixed-1"
+        ],
+        "exit": 0,
+        "receipt": {
+          "engine": "vox",
+          "control": false,
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width=1024",
+            "--window-height=880",
+            "https://chatgpt.com/"
+          ],
+          "pid": 95947,
+          "exit": 0,
+          "failure": null,
+          "elapsed": 17.305574125,
+          "times": {
+            "ready": 4.931131,
+            "type": 10.449314,
+            "submit_begin": 11.25794,
+            "submit_end": 11.304855,
+            "rome": 16.099593
+          },
+          "submit_to_rome": 4.841652999999999,
+          "answer": "The capital of Italy is Rome (Italian: Roma). \ud83c\uddee\ud83c\uddf9",
+          "identity": {
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ac12b93d49ae2c79bbb657d9bffed82e880566d33f79fd624a3fe63782cd5da9",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+            "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "7bf2bf6f22182505fd39faa85783f47f73d96d1982810c1b358f4de56aac8f92",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.m": "c4872e5d25bd1432cc68cadac040a4153ae719abc2fe1d111e48f5b35984ba45",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.dylib": "dc57326e606150a4278a7bfe34ad77174a396295de76e3c8fa7f69375e6769cd"
+          },
+          "stable": true,
+          "host_before": {
+            "unix": 1793949232.50559,
+            "cpu_count": 18,
+            "load": [
+              22.89990234375,
+              23.79541015625,
+              23.2294921875
+            ]
+          },
+          "host_after": {
+            "unix": 1793949249.9183621,
+            "load": [
+              23.82958984375,
+              23.9521484375,
+              23.298828125
+            ]
+          },
+          "instrumented": false,
+          "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+        }
+      },
+      {
+        "name": "matched-brave-1",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-brave-1.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-brave-1-guard.json",
+          "--",
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py",
+          "brave",
+          "matched-brave-1"
+        ],
+        "exit": 0,
+        "receipt": {
+          "engine": "brave",
+          "control": false,
+          "command": [
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--remote-debugging-port=0",
+            "--hide-scrollbars",
+            "--force-color-profile=srgb",
+            "--lang=en-US",
+            "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-brave-1/profile",
+            "--proxy-server=socks5://127.0.0.1:1337",
+            "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+            "--no-startup-window",
+            "--disable-backgrounding-occluded-windows"
+          ],
+          "pid": 96496,
+          "exit": 0,
+          "failure": null,
+          "elapsed": 17.77157975,
+          "times": {
+            "ready": 7.860860000000001,
+            "type": 13.121036708,
+            "submit_begin": 13.379553583,
+            "submit_end": 13.3971735,
+            "rome": 15.940095041000001
+          },
+          "submit_to_rome": 2.560541458000001,
+          "answer": "The capital of Italy is Rome (Italian: Roma). \ud83c\uddee\ud83c\uddf9",
+          "identity": {
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+          },
+          "stable": true,
+          "host_before": {
+            "unix": 1793949250.2936902,
+            "cpu_count": 18,
+            "load": [
+              23.82958984375,
+              23.9521484375,
+              23.298828125
+            ]
+          },
+          "host_after": {
+            "unix": 1793949268.182749,
+            "load": [
+              23.81494140625,
+              23.99072265625,
+              23.32666015625
+            ]
+          },
+          "instrumented": false,
+          "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+        }
+      },
+      {
+        "name": "matched-control-2",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-control-2.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-control-2-guard.json",
+          "--",
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py",
+          "vox",
+          "matched-control-2",
+          "--control"
+        ],
+        "exit": 0,
+        "receipt": {
+          "engine": "vox",
+          "control": true,
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width=1024",
+            "--window-height=880",
+            "https://chatgpt.com/"
+          ],
+          "pid": 97130,
+          "exit": 0,
+          "failure": null,
+          "elapsed": 26.885748833,
+          "times": {
+            "ready": 5.364027,
+            "type": 10.795168,
+            "submit_begin": 11.60344,
+            "submit_end": 11.645355,
+            "rome": 25.637109
+          },
+          "submit_to_rome": 14.033668999999998,
+          "answer": "The capital of Italy is Rome Italian:\u2217Roma\u2217Italian: *Roma*. \ud83c\uddee\ud83c\uddf9",
+          "identity": {
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ac12b93d49ae2c79bbb657d9bffed82e880566d33f79fd624a3fe63782cd5da9",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+            "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "7bf2bf6f22182505fd39faa85783f47f73d96d1982810c1b358f4de56aac8f92",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.m": "c4872e5d25bd1432cc68cadac040a4153ae719abc2fe1d111e48f5b35984ba45",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.dylib": "dc57326e606150a4278a7bfe34ad77174a396295de76e3c8fa7f69375e6769cd"
+          },
+          "stable": true,
+          "host_before": {
+            "unix": 1793949268.809218,
+            "cpu_count": 18,
+            "load": [
+              23.81494140625,
+              23.99072265625,
+              23.32666015625
+            ]
+          },
+          "host_after": {
+            "unix": 1793949295.806263,
+            "load": [
+              27.05078125,
+              24.79345703125,
+              23.6416015625
+            ]
+          },
+          "instrumented": false,
+          "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+        }
+      },
+      {
+        "name": "matched-fixed-2",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-fixed-2.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-fixed-2-guard.json",
+          "--",
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py",
+          "vox",
+          "matched-fixed-2"
+        ],
+        "exit": 0,
+        "receipt": {
+          "engine": "vox",
+          "control": false,
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--window-width=1024",
+            "--window-height=880",
+            "https://chatgpt.com/"
+          ],
+          "pid": 98014,
+          "exit": 0,
+          "failure": null,
+          "elapsed": 17.716659375000003,
+          "times": {
+            "ready": 5.425932,
+            "type": 10.86557,
+            "submit_begin": 11.667806,
+            "submit_end": 11.715007,
+            "rome": 16.515731
+          },
+          "submit_to_rome": 4.847924999999998,
+          "answer": "The capital of Italy is Rome (Italian: Roma). \ud83c\uddee\ud83c\uddf9",
+          "identity": {
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ac12b93d49ae2c79bbb657d9bffed82e880566d33f79fd624a3fe63782cd5da9",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+            "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+            "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "7bf2bf6f22182505fd39faa85783f47f73d96d1982810c1b358f4de56aac8f92",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.m": "c4872e5d25bd1432cc68cadac040a4153ae719abc2fe1d111e48f5b35984ba45",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.dylib": "dc57326e606150a4278a7bfe34ad77174a396295de76e3c8fa7f69375e6769cd"
+          },
+          "stable": true,
+          "host_before": {
+            "unix": 1793949296.370139,
+            "cpu_count": 18,
+            "load": [
+              27.05078125,
+              24.79345703125,
+              23.6416015625
+            ]
+          },
+          "host_after": {
+            "unix": 1793949314.193408,
+            "load": [
+              29.26416015625,
+              25.439453125,
+              23.8984375
+            ]
+          },
+          "instrumented": false,
+          "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+        }
+      },
+      {
+        "name": "matched-brave-2",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-brave-2.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-brave-2-guard.json",
+          "--",
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py",
+          "brave",
+          "matched-brave-2"
+        ],
+        "exit": 0,
+        "receipt": {
+          "engine": "brave",
+          "control": false,
+          "command": [
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--remote-debugging-port=0",
+            "--hide-scrollbars",
+            "--force-color-profile=srgb",
+            "--lang=en-US",
+            "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/matched-brave-2/profile",
+            "--proxy-server=socks5://127.0.0.1:1337",
+            "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+            "--no-startup-window",
+            "--disable-backgrounding-occluded-windows"
+          ],
+          "pid": 98545,
+          "exit": 0,
+          "failure": null,
+          "elapsed": 18.142316584,
+          "times": {
+            "ready": 8.905165499999999,
+            "type": 14.173525584,
+            "submit_begin": 14.433649833999999,
+            "submit_end": 14.449729875,
+            "rome": 17.02502275
+          },
+          "submit_to_rome": 2.5913729160000027,
+          "answer": "The capital of Italy is Rome (Roma). \ud83c\uddee\ud83c\uddf9",
+          "identity": {
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+            "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+            "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+          },
+          "stable": true,
+          "host_before": {
+            "unix": 1793949314.516274,
+            "cpu_count": 18,
+            "load": [
+              29.26416015625,
+              25.439453125,
+              23.8984375
+            ]
+          },
+          "host_after": {
+            "unix": 1793949332.776294,
+            "load": [
+              25.1572265625,
+              24.7158203125,
+              23.6669921875
+            ]
+          },
+          "instrumented": false,
+          "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+        }
+      }
+    ]
+  },
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "ac12b93d49ae2c79bbb657d9bffed82e880566d33f79fd624a3fe63782cd5da9",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-100903-07b81988/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "df80632bb8e0f07180b7547014f624fe73172972c8e2752e5cd9f6a8caf117cc",
+      "dirty": true,
+      "head": "90fec5361f3d2223768cafd31768c9e53fc37f0b",
+      "repository_sha256": "b7306508dddb5775d642197d4394f183422e2ba4dea65192ddd1ac5adf1cb3e9"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "df80632bb8e0f07180b7547014f624fe73172972c8e2752e5cd9f6a8caf117cc",
+      "dirty": true,
+      "head": "93d554cf4a40fd5def866d61a41dfdf30cf4ae94",
+      "repository_sha256": "891aed6e2e34aafd3443512a6ed34ec5bfa9288ce1e2956754ef8263c4904936"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "90fec5361f3d2223768cafd31768c9e53fc37f0b",
+      "id": "caac8dfb86ac42b6b7444902cc15dbdf",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "df80632bb8e0f07180b7547014f624fe73172972c8e2752e5cd9f6a8caf117cc",
+      "dirty": true,
+      "head": "90fec5361f3d2223768cafd31768c9e53fc37f0b",
+      "repository_sha256": "b7306508dddb5775d642197d4394f183422e2ba4dea65192ddd1ac5adf1cb3e9"
+    }
+  },
+  "generated_c_sha256": "3fe34bbb712139dbb254447bdd98015ad095bb24aec14226361dad5622a0f417",
+  "installed_final": {
+    "engine": "vox",
+    "control": false,
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--window-width=1024",
+      "--window-height=880",
+      "https://chatgpt.com/"
+    ],
+    "pid": 7239,
+    "exit": 0,
+    "failure": null,
+    "elapsed": 20.412651459000003,
+    "times": {
+      "ready": 7.964116,
+      "type": 13.386057,
+      "submit_begin": 13.928259,
+      "submit_end": 13.970022,
+      "rome": 19.186217
+    },
+    "submit_to_rome": 5.257957999999999,
+    "answer": "The capital of Italy is Rome (Italian: Roma). \ud83c\uddee\ud83c\uddf9",
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "6536f6767eb7a85553a8461bed70e156b02f4d08aa6b0b151c0a0238fe3f8621",
+      "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "e4de504a052e410bf458f4ec67fadbb09e0a3f0d95d9b8aa726a51004bda7a60",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "4b25809efd18daa140d2083f5f2537ee1083f6c8101f020417e06311e3d9a67e",
+      "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.m": "c4872e5d25bd1432cc68cadac040a4153ae719abc2fe1d111e48f5b35984ba45",
+      "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.dylib": "dc57326e606150a4278a7bfe34ad77174a396295de76e3c8fa7f69375e6769cd"
+    },
+    "stable": true,
+    "host_before": {
+      "unix": 1793949682.25213,
+      "cpu_count": 18,
+      "load": [
+        23.330078125,
+        23.52978515625,
+        23.490234375
+      ]
+    },
+    "host_after": {
+      "unix": 1793949702.767055,
+      "load": [
+        24.86962890625,
+        23.8798828125,
+        23.6171875
+      ]
+    },
+    "instrumented": false,
+    "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+  },
+  "root_cause_diagnostic": {
+    "worker_url": "https://chatgpt.com/unauth-mweb/assets/conversation-source-dil.worker-v8586EJk.js",
+    "worker_source_sha256": "47222bafa21320d6e4f8a938f6d1edb340d86a4fce9c6d422027831119915bc3",
+    "old_behavior": "dil-old-behavior.log: Failed to remove sandbox global __ladybirdSerializeURLText; no acknowledgement",
+    "without_helper": "dil-no-helper.log: initialized; {kind:2,messageId:1}",
+    "qualification": "Retained pre-fix focused binary executes the original worker module. VOX_RETAIN_HREF_URL_OBJECTS=1 suppresses the scalar helper in this worker-only diagnostic. Actual production comparison uses the narrower worker-only control flag."
+  },
+  "checks": {
+    "test_cases_per_mode": 14,
+    "modes": [
+      "boehm",
+      "prealloc -gc none"
+    ],
+    "test_runs": [
+      {
+        "name": "worker_sandbox_binding",
+        "mode": "boehm",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/worker_sandbox_binding-boehm",
+          "browserjs/worker_sandbox_binding_test.v"
+        ]
+      },
+      {
+        "name": "url_host",
+        "mode": "boehm",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/url_host-boehm",
+          "browserjs/url_host_test.v"
+        ]
+      },
+      {
+        "name": "worker_port_transfer",
+        "mode": "boehm",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/worker_port_transfer-boehm",
+          "browserjs/worker_port_transfer_test.v"
+        ]
+      },
+      {
+        "name": "worker_sandbox_binding",
+        "mode": "prealloc",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/worker_sandbox_binding-prealloc",
+          "browserjs/worker_sandbox_binding_test.v"
+        ]
+      },
+      {
+        "name": "url_host",
+        "mode": "prealloc",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/url_host-prealloc",
+          "browserjs/url_host_test.v"
+        ]
+      },
+      {
+        "name": "worker_port_transfer",
+        "mode": "prealloc",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/worker_port_transfer-prealloc",
+          "browserjs/worker_port_transfer_test.v"
+        ]
+      }
+    ],
+    "frozen_home": {
+      "content_exact": true,
+      "pixels_exact": true,
+      "total_payload_bytes": 2990874,
+      "identity_stable": true
+    },
+    "headless_smoke": {
+      "command": [
+        "Build/v/Vox.app/Contents/MacOS/Vox",
+        "--headless-smoke"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.171682291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "limitations": [
+    "Two complete control/fix/Brave triplets are observations, not a large statistical cohort or frozen-response engine acceptance. Live responses and server work vary.",
+    "Vox and Brave have different input/observation adapters and their normal filtering policies; the observed ratio is not isolated engine cost.",
+    "Host load was elevated (18 CPUs; one-minute load 22.9\u201329.3 during the matched cohort). Exact load/timestamps are retained.",
+    "The earlier baseline and first fixed pilot use different completed executable identities and are not included in the matched medians. A compile ran alongside the fixed pilot.",
+    "The first native sample raced process startup and sampled PID 0; it is invalid. The second sample adds instrumentation and supplies diagnostic attribution only.",
+    "The first worker diagnostic compile hit its 3 GiB guard. Subsequent compilations use the default 12 GiB guard, with focused runtime execution capped at 3 GiB.",
+    "Early regression-test drafts failed when attempting to remove the classic host global Symbol.toStringTag, including one entry-time version without an exposed error. The retained test verifies helper absence/native URLs in both worker types and complete lockdown/port acknowledgement in module workers, as used by this site.",
+    "No startup JavaScript reduction or CPU instruction credit is claimed. The previously unshipped 2.66 MB prototype remains separate. This change leaves the frozen startup at 2990874 total bytes."
+  ],
+  "evidence": {
+    "path": "docs/performance/chatgpt-query-worker-startup-20261106-evidence.zip",
+    "sha256": "7caea57b8e9fcbb96838c920bed811113a1527ca56726f92ac5d84bcad3f8d6d",
+    "bytes": 4259728,
+    "entries": 206
+  }
+}

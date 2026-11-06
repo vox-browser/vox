@@ -3784,3 +3784,58 @@ matched frozen reply results remain zero pixels. The
 [production receipt](parity/chatgpt-fixed-owner-production-20261104.json) keeps
 these scopes separate. Wider Retina differences and the archived intermittent
 layout re-entry assertion remain open; full live pixel equality is not claimed.
+
+## November 6: reply latency and sandboxed worker startup
+
+Commit `0fb44a4f4` removes an approximately ten-second wait before basic live
+answers. Vox installed the document bridge's non-configurable
+`__ladybirdSerializeURLText` helper in worker realms. ChatGPT's DIL sandbox
+removes host globals before acknowledging initialization over a MessagePort;
+that helper could not be removed, so initialization threw and the site's
+10,000 ms watchdog restarted the worker. The helper now stays with Window
+clients. Workers retain their native URL and URLSearchParams APIs.
+
+Two alternating control/fix pairs, each followed by a fresh Brave query,
+produce these submit-to-first-audited-**Rome** observations:
+
+| Browser/path | Trial 1 | Trial 2 | Median |
+| --- | ---: | ---: | ---: |
+| Vox, old worker behavior | 14.083 s | 14.034 s | **14.058 s** |
+| Vox, fixed worker behavior | 4.842 s | 4.848 s | **4.845 s** |
+| Brave | 2.561 s | 2.591 s | **2.576 s** |
+
+The fixed Vox path takes **65.5% less time** in these observations, a 2.90×
+speedup; it still takes **1.88× Brave's time**. Both Vox paths use the same
+signed production executable, `ac12b93d…cd5da9`, in single-C-unit mode. The
+control sets only `VOX_RETAIN_WORKER_URL_TEXT_BINDING=1`, reproducing the old
+worker global while preserving the document serialization path. Fresh private
+profiles/resource caches, anonymous sessions, 1024×768 at scale two, the same
+SOCKS route and a five-second readiness settle are used throughout. The settle
+and typing time are outside the reported submit interval. Exact commands,
+timestamps, identities, host loads and exits are retained in the
+[query latency receipt](performance/chatgpt-query-worker-startup-20261106.json).
+
+These are live user-flow observations, with variable service responses and
+normal per-browser filtering, rather than frozen-response engine acceptance.
+Vox receives native mouse/key events and uses a native audit/input probe;
+Brave receives CDP mouse/text events. Both observe the assistant at 250 ms
+intervals. Native published-layer/CDP screenshots follow one second after the
+audited answer; this endpoint does not establish physical display timing.
+The 18-CPU host was busy, with one-minute loads between 22.9 and 29.3. No
+CPU instruction credit or page-load speedup is claimed.
+
+The original worker module independently reproduces the undeletable-helper
+exception and acknowledges initialization when the helper is absent. The
+regression covers helper absence and native URLs in both worker types, plus
+module-worker global removal, realm freezing, captured timers and MessagePort
+acknowledgement. All **28 focused test executions** pass across normal GC and
+`-prealloc -gc none`; native URL ownership/metadata and worker port-transfer
+checks are included. The original frozen homepage remains content- and
+pixel-exact at 2,990,874 total startup JavaScript bytes. The headless DOM/input
+smoke check passes. This fix changes worker compatibility, with no additional
+site-code pruning; the earlier 2.66 MB prototype remains separate.
+
+A final fresh process of the subsequently completed installed bundle
+`74fbd0d8…5d09c` also returns **Rome**, with zero native/script errors and stable
+inputs, in 5.258 seconds after Send. This separate installed-bundle check is not
+included in the paired medians above.
