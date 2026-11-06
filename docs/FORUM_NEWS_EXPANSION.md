@@ -3458,6 +3458,67 @@ bytes, SHA-256
 `ba191757ecf19eea1c976a08921e69f99e2274b918471e4b6185d8ec0daba352`.
 No production build or broad rendering-suite rerun was required.
 
+## Positioned photo geometry and ratio border boxes (2026-11-06)
+
+Commit `96112f02a` corrects absolute and fixed CSS ratio boxes with a concrete
+inline size under the Chromium policy. A reduced scene using Engadget's five
+original encoded photos exposed the error: its 464px border-box was 261.875px
+tall instead of 261px; the small photos' percentage-height children were
+118.125px instead of 117.25px. The source and two independent full-uBO Brave
+replays agree exactly for this reduction.
+
+The positioned path now reuses the existing normal-flow ratio helper, which
+transfers the border-box width through the ratio before removing block-axis
+border and padding. Percentage descendants receive the corrected content
+height. Genuine replaced elements and the Ladybird policy retain their
+existing sizing path. The failing focused runtime assertion records 261.875
+versus 261 before the correction. Both new functions and three existing
+normal-flow controls pass with default GC and GC disabled, with unchanged
+focused inputs. They cover absolute/fixed positions, border, padding, inline
+min/max constraints, explicit height, block-axis clamps, content-box sizing
+and the auto-ratio/Ladybird controls.
+
+The new registered `positioned-border-box-aspect-ratio` screenshot contains
+nine boxes. Its saved source and two independent Brave captures match at
+zero; the available older production bundle differs by **7,936 pixels**.
+Production `19df7756…` contains the helper call in its sealed compiler body
+and passes this fixture at **zero pixels**, alongside the normal-flow ratio
+and SVG automatic-ratio controls. All checks launch fresh processes under one
+canonical bundle lease and retain unchanged executable, library, runtime,
+canonical-tool, resource and reference identities.
+
+| Check on `19df7756…` | Result |
+| --- | --- |
+| Three focused screenshot regressions | All 0 pixels |
+| Reduced original photos | 555 native/source pixels, down from 170,344 |
+| Full Engadget candidate | 0 native/Brave; 295 native/source pixels |
+| Hacker News cold control | All strict gates 0 pixels |
+
+The photo reduction's image dimensions now match Brave exactly. Its remaining
+555 pixels are retained as an open rendering case, and the aggregate browser
+command correctly **exits one**. The three screenshot regressions and Hacker
+News control pass independently. Five visible image draw arguments agree
+between the reduced and full page at the logged decimal precision; that log
+does not establish identical low float bits or surrounding raster state.
+Clearing the reduction's root-MSAA hints leaves 555 pixels; forcing them gives
+642. These probes supply no additional renderer fix. The full homepage's
+295-pixel source-fidelity gap remains open.
+
+The first reduction omitted the harness's minimum text and failed readiness;
+offscreen text corrects that construction error. An initial V test compilation
+hit the 3 GiB guard. The subsequent compilers use the standard 12 GiB guard
+and V's 10G limit, with their focused binaries guarded separately at 3 GiB.
+All failures, commands and actual exits remain recorded. The shared build
+request returned 75 while an existing worker ran; its coalesced follow-up
+provided the completed browser used above. No broad rendering-suite or
+performance acceptance is claimed.
+
+[Independent counts and qualifications](evidence/positioned-aspect-border-box-20261106.json)
+and [source bytes, checks, captures, probes, failed attempts and patch](evidence/positioned-aspect-border-box-20261106.zip)
+retain the complete result. All 453 members pass CRC and SHA-256 readback.
+The archive is 13,145,127 bytes, SHA-256
+`4a76a8a0ebfdce4eaa78221ad91224f8731860cf733d673f694ceeb715441b1c`.
+
 ## Run
 
 ```sh

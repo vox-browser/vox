@@ -1,0 +1,278 @@
+{
+  "feature_commit": "96112f02a53060a209f7c52a6e5d9c0351d8beda",
+  "scope": "Positioned CSS aspect-ratio border-box geometry, reduced photo isolation and current Engadget rendering preservation",
+  "unit_before": {
+    "parent_height": 261.875,
+    "expected_parent_height": 261,
+    "exit": 1
+  },
+  "unit_after": {
+    "functions_per_mode": 5,
+    "modes": [
+      "default GC",
+      "GC disabled"
+    ],
+    "all_passed": true,
+    "inputs_unchanged": true,
+    "results": [
+      {
+        "name": "chromium_positioned_aspect_border_box",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "name": "chromium_positioned_aspect_border_box",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "name": "chromium_block_aspect_border_box",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "name": "chromium_block_aspect_border_box",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "name": "chromium_positioned_aspect_border_box",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "name": "chromium_positioned_aspect_border_box",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "name": "chromium_block_aspect_border_box",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "name": "chromium_block_aspect_border_box",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      }
+    ]
+  },
+  "reduced_original_photos": {
+    "status": "pixel-mismatch",
+    "image_animation_policy": "allowed",
+    "cache_policy": "complete",
+    "different_pixels": 170344,
+    "artifacts": "/Users/alex/code/vox2/Build/engadget-corners-20261106/reduced-photo-v2/comparison/corners",
+    "live_to_frozen_different_pixels": 0,
+    "reference_replay_different_pixels": 0,
+    "manifest_sha256": "131dc3918a3f5d4fca9b9022cb380ed821fee48831003128b06209e74f1f354d"
+  },
+  "browser_fixture_baseline": {
+    "status": "pixel-mismatch",
+    "image_animation_policy": "allowed",
+    "cache_policy": "complete",
+    "different_pixels": 7936,
+    "artifacts": "/Users/alex/code/vox2/Build/engadget-corners-20261106/positioned-reference/comparison/corners",
+    "live_to_frozen_different_pixels": 0,
+    "reference_replay_different_pixels": 0,
+    "manifest_sha256": "c01a0ae05332897a3444f882b58ef1321346663d778774afc70fc74228466414"
+  },
+  "msaa_diagnostic": [
+    {
+      "name": "baseline",
+      "native_source": 295,
+      "native_previous": 0,
+      "native_current_brave": 0
+    },
+    {
+      "name": "clear",
+      "native_source": 342,
+      "native_previous": 114,
+      "native_current_brave": 114
+    },
+    {
+      "name": "force",
+      "native_source": 304,
+      "native_previous": 27,
+      "native_current_brave": 27
+    }
+  ],
+  "reduced_msaa_diagnostic": [
+    {
+      "name": "baseline",
+      "native_source": 555,
+      "native_previous": 170286,
+      "native_current_brave": 555
+    },
+    {
+      "name": "clear",
+      "native_source": 555,
+      "native_previous": 170286,
+      "native_current_brave": 555
+    },
+    {
+      "name": "force",
+      "native_source": 642,
+      "native_previous": 170351,
+      "native_current_brave": 642
+    }
+  ],
+  "image_arguments": [
+    {
+      "name": "reduced",
+      "native_source": 555,
+      "native_previous": 170286,
+      "native_current_brave": 555
+    },
+    {
+      "name": "full",
+      "native_source": 295,
+      "native_previous": 0,
+      "native_current_brave": 0
+    }
+  ],
+  "production": {
+    "status": "reduced-photo-rendering-gap",
+    "focused_captures": 3,
+    "focused_exact": true,
+    "results": [
+      {
+        "scope": "focused",
+        "captures": 3,
+        "exact": true
+      },
+      {
+        "scope": "reduced-photo",
+        "native_source": 555,
+        "native_brave": 555
+      },
+      {
+        "scope": "full-engadget",
+        "native_source": 295,
+        "native_brave": 0
+      },
+      {
+        "scope": "hacker-news",
+        "result": {
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/engadget-corners-20261106/production-checks/hn/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        }
+      }
+    ],
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "19df77569135e21e7cea672edef8ed913996776ba381c3d34a8de62865ce8a1d",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "05c549c65782a4b2f7aa437e14fbd2e3dd56f95ee588cf8c2a88b7c2af7deb08",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "0eb6dcd156cad96d89774bd78b6d87608bc07dd2f668efed55c39a955f70533d",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "348dbbeae759abec5baab59ee081b484bd115c262702b802c310ba7002b1d656",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel",
+        "v_prod": false
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "19df77569135e21e7cea672edef8ed913996776ba381c3d34a8de62865ce8a1d",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-125336-3be4c791/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "b9a7e860499f31cdbfcd3d426133c27d9201e667a0e08d9c0bac771c9abc60b3",
+        "dirty": true,
+        "head": "fa96f3caf9a296bbc3ea20c87157907da1e3493c",
+        "repository_sha256": "2980a16b5a58c7c00789619764194e127db88e19ef2a9f9fa6153ad62f2fd4d0"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "8d9cc5e33ba6ffc4638056594a322516f97822f1f15ae9a12e39443201e9d011",
+        "dirty": true,
+        "head": "591aa998d37fa60bc761499169acead74d6a454c",
+        "repository_sha256": "dbc46a0648c12e824da6f3005af9cd342de95ab192882fa5c33f99238b23b51a"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "fa96f3caf9a296bbc3ea20c87157907da1e3493c",
+        "id": "efe4b300187e4c3b8c2198922e867b9e",
+        "v_prod": false
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "b9a7e860499f31cdbfcd3d426133c27d9201e667a0e08d9c0bac771c9abc60b3",
+        "dirty": true,
+        "head": "e7be84e68c94dc694d86ef173970c237cdddca2b",
+        "repository_sha256": "cc237165e607b6bae34db94170e0c93cd0126e28874483711b794fb427b75753"
+      }
+    },
+    "qualification": "The aggregate command exits1 for555 retained photo pixels. The committed geometry fixture and both focused controls pass; the whole Engadget and Hacker News controls preserve zero native/reference pixels."
+  },
+  "production_guard": {
+    "command": [
+      "python3",
+      "Build/engadget-corners-20261106/check_production.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2190196736,
+    "elapsed_seconds": 305.620527541,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "limits": [
+    "This fix applies the existing Chromium concrete-ratio block sizing helper to absolute and fixed CSS ratio boxes. Genuine replaced elements and Ladybird policy retain their existing sizing path.",
+    "The reduced photo scene has stable source and independent Brave references, unlike the full homepage source gate. Its larger native gap exposed a separate geometry bug: the width464 border-box was 261.875px tall rather than261px; each width212 photo content box was118.125px rather than117.25px.",
+    "The committed nine-box screenshot reference is authenticated against an exact fresh source and two independent full-uBO Brave replays. The earlier production bundle differed by7936pixels.",
+    "The original Engadget homepage remains a separate source-fidelity case. No expected PNG, registered site archive or tolerance was changed to qualify it.",
+    "The root-MSAA-hint probes leave295/342/304 source pixels in default/cleared/forced modes; they do not explain all295 ordinary source differences and no hint-policy change was retained.",
+    "The first photo reduction lacked the harness minimum visible-text readiness and failed acquisition. The corrected offscreen filler changes no visible fixture geometry.",
+    "An initial three-GiB guarded v-test compile exceeded its budget. Subsequent V compilations use the standard12GiB supervisor and10G V limit, with focused binaries separately guarded at3GiB; all actual compiler and test exits remain retained.",
+    "The production request returned75 because a shared worker already ran; it recorded a coalesced request. No duplicate production build was launched.",
+    "The committed positioned-geometry fixture now passes at zero pixels. The separate original-photo reduction improves170344 to555 native/source pixels, with matching image dimensions. Its remaining pixels are retained and the aggregate browser check correctly exits1.",
+    "All five visible image draw arguments agree between the reduced and full page at the logged precision; matrices, crop rectangles, clips and radii show no gross geometry divergence. Exact lower float bits or unlogged surrounding draw state are not established by this argument log.",
+    "Clearing root MSAA hints in the reduction leaves555pixels; forcing them gives642. Neither probe supplies an engine fix.",
+    "No broad rendering-suite or performance acceptance is claimed."
+  ],
+  "archive": {
+    "path": "positioned-aspect-border-box-20261106.zip",
+    "members": 453,
+    "bytes": 13145127,
+    "sha256": "4a76a8a0ebfdce4eaa78221ad91224f8731860cf733d673f694ceeb715441b1c"
+  }
+}
