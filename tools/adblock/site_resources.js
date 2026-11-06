@@ -1,12 +1,13 @@
 // Local supplements to the subscription lists. Match reviewed, versioned
 // modules only: a changed export contract must fall back to the site's code.
+import { basicSiteFilters, basicSiteResources } from './chatgpt_basic_resources.js';
 export const siteFilters = String.raw`
 ! ChatGPT anonymous web client: suppress collection before downloading its JS.
 /^https:\/\/chatgpt\.com\/unauth-mweb\/assets\/analytics-ces-business-context-DAjYxggM\.js(?:\?[^#]*)?$/$script,match-case,domain=chatgpt.com,redirect=vox-chatgpt-business.js
 /^https:\/\/chatgpt\.com\/unauth-mweb\/assets\/native-performance-bootstrap-DnIgxW1S\.js(?:\?[^#]*)?$/$script,match-case,domain=chatgpt.com,redirect=vox-chatgpt-performance.js
 /^https:\/\/chatgpt\.com\/unauth-mweb\/assets\/analytics-ces-business-context-Bx7D-YTR\.js(?:\?[^#]*)?$/$script,match-case,domain=chatgpt.com,redirect=vox-chatgpt-business.js
 /^https:\/\/chatgpt\.com\/unauth-mweb\/assets\/native-performance-bootstrap-_6lrVRz4\.js(?:\?[^#]*)?$/$script,match-case,domain=chatgpt.com,redirect=vox-chatgpt-performance-20261106.js
-`;
+` + basicSiteFilters;
 
 // Do not replace native-telemetry: it also installs soft-login handling,
 // service-worker cleanup and the behavior-ready lifecycle. These two leaves
@@ -34,6 +35,7 @@ export function startOctanePerformanceMetrics({canStart, setPerformanceCollectio
 }
 
 export const siteResources = new Map([
+    ...basicSiteResources,
     ['vox-chatgpt-business.js', `export function reportCesBusinessEvent() {}\n`],
     ['vox-chatgpt-performance.js', performanceResource('page-load-performance-CGytc5Xs.js')],
     ['vox-chatgpt-performance-20261106.js', performanceResource('page-load-performance-Bjb58u76.js')],

@@ -2,14 +2,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
+    "build": "node build_chatgpt_basic.mjs && node build.mjs",
     "refresh-lists": "node refresh.mjs",
     "refresh-source": "node refresh-source.mjs",
-    "test": "node --test classic_script_test.mjs snapshot_test.mjs lazy_snapshot_test.mjs lazy_parser_test.mjs lazy_resources_test.mjs lazy_url_test.mjs lazy_base64_test.mjs runtime_test.mjs site_resources_test.mjs"
+    "test": "node --test classic_script_test.mjs snapshot_test.mjs lazy_snapshot_test.mjs lazy_parser_test.mjs lazy_resources_test.mjs lazy_url_test.mjs lazy_base64_test.mjs runtime_test.mjs site_resources_test.mjs chatgpt_basic_test.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.25.10",
+    "acorn": "8.15.0",
     "core-js": "3.45.1",
+    "esbuild": "0.25.10",
     "fast-text-encoding": "1.0.6"
   }
 }

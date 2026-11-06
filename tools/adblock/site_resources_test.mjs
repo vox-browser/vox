@@ -47,7 +47,7 @@ test('compiled default uBO rules replace only reviewed ChatGPT scripts, includin
     }
 });
 
-test('login, submission, streaming, native lifecycle and shared analytics remain available', async () => {
+test('login, submission, streaming and native lifecycle remain available', async () => {
     const {check} = await defaultEngine();
     for (const [path, type, method] of [
         ['auth/login_with', 'main_frame', 'GET'],
@@ -55,7 +55,6 @@ test('login, submission, streaming, native lifecycle and shared analytics remain
         ['backend-api/conversation', 'xmlhttprequest', 'POST'],
         ['backend-api/sentinel/chat-requirements', 'xmlhttprequest', 'POST'],
         ['unauth-mweb/assets/native-telemetry-CLXxBfSg.js', 'script', 'GET'],
-        ['unauth-mweb/assets/analytics-C3m-dpbI.js', 'script', 'GET'],
         ['unauth-mweb/assets/page-load-performance-CGytc5Xs.js', 'script', 'GET'],
     ]) assert.equal(check(request('https://chatgpt.com/' + path, {request_type:type,method})).blocked, false, path);
 });
