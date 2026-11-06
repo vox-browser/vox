@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "native_frame_snapshot_darwin.h"
+#include "native_scroll_tile_presentation_darwin.h"
 
 // A single bounded viewport. Engine preparation still runs on every frame;
 // this cache only replaces replay of the same committed document pixels.
@@ -52,7 +53,8 @@ static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revi
     double scrollbar_opacity, int eligible, int allow_snapshot) {
     VoxStationaryRaster *cache = &native_stationary_raster;
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    if (!eligible || getenv("VOX_DISABLE_STATIONARY_RASTER_REUSE") || !context
+    if (!eligible || native_scroll_tiles_accept(context)
+        || getenv("VOX_DISABLE_STATIONARY_RASTER_REUSE") || !context
         || !owner || !isfinite(scroll) || !isfinite(page_top)
         || !isfinite(zoom) || zoom <= 0 || !isfinite(scrollbar_opacity)) {
         native_discard_stationary_raster();

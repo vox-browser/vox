@@ -18,7 +18,7 @@ for mode in ordinary sanitized; do
     ASAN_OPTIONS=detect_leaks=0 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
         --lock "$output_dir/pixels-$mode.lock" --report "$output_dir/pixels-$mode.json" -- \
         "$output_dir/pixels-$mode"
-    clang -O2 $sanitize_flags -framework Cocoa \
+    clang -O2 $sanitize_flags -framework Cocoa -framework QuartzCore -framework IOSurface \
         "$repo_dir/tools/native_scroll_raster_visible_copy_test.m" -o "$output_dir/visible-copy-$mode"
     ASAN_OPTIONS=detect_leaks=0 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
         --lock "$output_dir/visible-copy-$mode.lock" --report "$output_dir/visible-copy-$mode.json" -- \

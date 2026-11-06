@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include "native_document_submission_darwin.h"
+#include "native_scroll_tile_presentation_darwin.h"
 #include "native_initial_document_clear.h"
 #include "native_frame_snapshot_darwin.h"
 #include "platform/native_state.h"
@@ -436,6 +437,12 @@ static IOSurfaceRef native_layer_surface_for_image(CGImageRef image) {
 // The image keeps the presented bytes immutable for capture and stationary
 // snapshots, while Core Animation can consume their shared storage directly.
 static CGImageRef native_layer_frame_image(NSView *view) {
+    VoxScrollTileFrame *tiles = objc_getAssociatedObject(view, &native_scroll_tile_frame_key);
+    if (tiles) {
+        IOSurfaceRef surface = native_layer_surface_for_image(tiles->base);
+        id contents = surface ? (__bridge id)surface : (__bridge id)tiles->base;
+        return view.layer.contents == contents ? native_scroll_tiles_flatten(tiles) : NULL;
+    }
     id contents = view.layer.contents;
     if (!contents) return NULL;
     CFTypeID type = CFGetTypeID((__bridge CFTypeRef)contents);
@@ -449,7 +456,7 @@ static CGImageRef native_layer_frame_image(NSView *view) {
 // A complete immutable frame becomes one Core Animation image, avoiding Quartz
 // uploading and retaining a separate texture for each Skia primitive.
 static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloat scale, IMP draw,
-    NativeDocumentSubmissionFrame *submission) {
+    NativeDocumentSubmissionFrame *submission, VoxScrollTileFrame **tiles) {
     VoxNativeLoadStage stage = native_begin_load_stage("native_frame_bitmap");
     @try {
     NSRect bounds = view.bounds;
@@ -493,23 +500,41 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         .token = ++native_document_submission_sequence };
     NativeDocumentSubmissionFrame *previous_submission = native_document_submission_current;
     VoxFrameSnapshot previous_snapshot = vox_frame_snapshot_begin(bitmap);
+    CGContextRef previous_tile_destination = native_scroll_tile_destination;
+    BOOL previous_tile_sparse = native_scroll_tile_sparse;
+    VoxScrollTileFrame *previous_tile_pending = native_scroll_tile_pending;
+    native_scroll_tile_pending = nil;
+    native_scroll_tile_destination = tiles && defer_clear && native_layer_is_browser_view(view)
+        && !native_layer_copying_capture ? bitmap : NULL;
+    native_scroll_tile_sparse = NO;
     @try {
         native_document_submission_current = &frame;
         native_layer_document_bitmap = bitmap;
         native_layer_document_bitmap_claimed = NO;
         native_layer_initial_document_clear = (VoxInitialDocumentClear){0};
-        native_layer_opaque_frame_context = pooled && defer_clear ? bitmap : NULL;
+        native_layer_opaque_frame_context = defer_clear && (pooled || native_scroll_tile_destination) ? bitmap : NULL;
         native_layer_opaque_frame_complete = NO;
         NSGraphicsContext.currentContext = [NSGraphicsContext
             graphicsContextWithCGContext:bitmap flipped:view.isFlipped];
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
         if (native_layer_opaque_frame_context && !native_layer_opaque_frame_complete) {
             CGContextFlush(bitmap);
-            memset(pooled->pixels, 0, pooled->bytes);
+            memset(CGBitmapContextGetData(bitmap), 0, CGBitmapContextGetBytesPerRow(bitmap) * height);
         }
         image = pooled ? native_layer_pooled_frame_image(bitmap, pooled, &pooled_owned)
             : vox_frame_snapshot_copy(bitmap);
+        if (image && tiles && native_scroll_tile_pending && native_layer_opaque_frame_complete) {
+            VoxScrollTileFrame *result = native_scroll_tile_pending;
+            result->base = CGImageRetain(image);
+            result->width = width; result->height = height;
+            *tiles = result;
+            native_scroll_tile_pending = nil;
+        }
     } @finally {
+        native_scroll_tiles_drop_pending();
+        native_scroll_tile_pending = previous_tile_pending;
+        native_scroll_tile_destination = previous_tile_destination;
+        native_scroll_tile_sparse = previous_tile_sparse;
         vox_frame_snapshot_restore(previous_snapshot);
         native_document_submission_current = previous_submission;
         native_layer_document_bitmap = previous_bitmap;
@@ -528,7 +553,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
 }
 
 static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP draw) {
-    return native_layer_raster_frame_with_submission(view, scale, draw, NULL);
+    return native_layer_raster_frame_with_submission(view, scale, draw, NULL, NULL);
 }
 
 static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
@@ -545,8 +570,9 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     native_layer_preparation_view = (uintptr_t)(__bridge void *)view;
     CGImageRef image = NULL;
     NativeDocumentSubmissionFrame submission = {0};
+    VoxScrollTileFrame *tiles = nil;
     @try {
-        image = native_layer_raster_frame_with_submission(view, scale, draw, &submission);
+        image = native_layer_raster_frame_with_submission(view, scale, draw, &submission, &tiles);
         if (native_layer_paint_started) generation = native_layer_paint_generation;
     } @finally {
         native_layer_paint_started = previous_started;
@@ -566,6 +592,11 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     objc_setAssociatedObject(view, &native_layer_frame_image_key,
         surface ? (__bridge id)image : nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     view.layer.contents = surface ? (__bridge id)surface : (__bridge id)image;
+    if (tiles) native_scroll_tiles_present(view, tiles);
+    else native_scroll_tiles_unpresent(view);
+#if !__has_feature(objc_arc)
+    [tiles release];
+#endif
     [CATransaction commit];
     if (getenv("VOX_FRAME_SURFACE_DIAGNOSTICS")) {
         int slot=-1;
@@ -594,7 +625,12 @@ static void native_layer_restore_frame_scale(NSView *view) {
 static BOOL native_layer_frame_matches_input(NSView *view, CGFloat scale) {
     NSNumber *generation = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
     NSValue *bounds = objc_getAssociatedObject(view, &native_layer_frame_bounds_key);
-    CGImageRef image = native_layer_frame_image(view);
+    VoxScrollTileFrame *tiles = objc_getAssociatedObject(view, &native_scroll_tile_frame_key);
+    CGImageRef image = tiles ? tiles->base : native_layer_frame_image(view);
+    if (tiles) {
+        IOSurfaceRef surface = native_layer_surface_for_image(image);
+        if (view.layer.contents != (surface ? (__bridge id)surface : (__bridge id)image)) return NO;
+    }
     if (!generation || !bounds || !image
         || generation.unsignedLongLongValue != native_layer_redraw_generation
         || !NSEqualRects(bounds.rectValue, view.bounds) || view.layer.contentsScale != scale) return NO;

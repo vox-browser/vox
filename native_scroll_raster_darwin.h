@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "native_raster_row_ranges.h"
+#include "native_scroll_tile_presentation_darwin.h"
 
 #define VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS 48
 
@@ -23,6 +24,9 @@ typedef struct {
     uint64_t owner, revision;
     int valid, active, reused, independent_content, damage_optimized;
     CGContextRef context;
+    int tiled, tiles_current, damage_rect_count;
+    size_t damage_rects[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1][4];
+    BOOL tile_dirty[VOX_SCROLL_TILE_LIMIT];
 } VoxScrollRaster;
 
 static VoxScrollRaster native_scroll_raster;
@@ -58,6 +62,7 @@ static void native_discard_video_backdrops(void) {
 }
 
 static void native_discard_scroll_raster(void) {
+    native_scroll_tiles_clear();
     free(native_scroll_raster.pixels);
     native_scroll_raster = (VoxScrollRaster){0};
     native_scroll_repainted_count = -1;
@@ -106,6 +111,9 @@ static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
         if (run > count) run = count;
         uint8_t *raster = cache->pixels + ring_row * row_bytes;
         uint8_t *output = canvas + (cache->top + first) * pitch;
+        if (store && cache->tiled)
+            for (size_t row = ring_row; row < ring_row + run; ++row)
+                cache->tile_dirty[row / VOX_SCROLL_TILE_ROWS] = YES;
         if (pitch == row_bytes) {
             if (store) memcpy(raster, output, run * row_bytes);
             else memcpy(output, raster, run * row_bytes);
@@ -118,6 +126,30 @@ static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
         first += run;
         count -= run;
     }
+}
+
+// CPU raster only needs the damaged area and a small sampling fringe. The
+// compositor supplies every other document pixel from immutable ring tiles.
+static void native_scroll_raster_copy_rect(VoxScrollRaster *cache, uint8_t *canvas,
+    size_t pitch, size_t left, size_t top, size_t right, size_t bottom, int store) {
+    if (right > cache->width) right = cache->width;
+    if (bottom > cache->height) bottom = cache->height;
+    if (left >= right || top >= bottom) return;
+    for (size_t y = top; y < bottom; ++y) {
+        size_t row = (cache->row_origin + y) % cache->height;
+        uint8_t *raster = cache->pixels + (row * cache->width + left) * 4;
+        uint8_t *output = canvas + (cache->top + y) * pitch + left * 4;
+        if (store) {
+            memcpy(raster, output, (right - left) * 4);
+            cache->tile_dirty[row / VOX_SCROLL_TILE_ROWS] = YES;
+        } else memcpy(output, raster, (right - left) * 4);
+    }
+}
+static void native_scroll_raster_tile_damage(VoxScrollRaster *cache,
+    size_t left, size_t top, size_t right, size_t bottom) {
+    if (cache->damage_rect_count >= VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1) return;
+    size_t *rect = cache->damage_rects[cache->damage_rect_count++];
+    rect[0] = left; rect[1] = top; rect[2] = right; rect[3] = bottom;
 }
 
 // Copy only the retained pixels that the caller's opaque damage clear will
@@ -340,6 +372,11 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     cache->dirty_first = 0;
     cache->dirty_rows = h;
     cache->damage_row_count = 0;
+    cache->damage_rect_count = 0;
+    cache->tiled = damage_optimized && native_scroll_tiles_accept(context);
+    memset(cache->tile_dirty, 0, sizeof(cache->tile_dirty));
+    if (cache->tiled && (!reuse || !cache->tiles_current)) native_scroll_tiles_clear();
+    native_scroll_tile_sparse = cache->tiled && reuse;
     native_video_backdrops_keep_visible(cache, reuse);
     native_scroll_repainted_count = -1;
     if (!reuse) {
@@ -356,6 +393,7 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
         strip_rect[1] = rows < 0 ? 0 : (long)h - strip_rows;
         strip_rect[2] = (long)w;
         strip_rect[3] = rows < 0 ? strip_rows : (long)h;
+        native_scroll_raster_tile_damage(cache, 0, strip_rect[1], w, strip_rect[3]);
     }
     if (damage_optimized) {
         cache->row_origin = (cache->row_origin + h + rows) % h;
@@ -408,6 +446,8 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
             cache->damage_rows[cache->damage_row_count][1] = end_row - first_row;
             ++cache->damage_row_count;
         }
+        native_scroll_raster_tile_damage(cache, (size_t)floor(left * scale),
+            first_row, (size_t)ceil(right * scale), end_row);
         clips[clip_count++] = CGRectMake(left, bottom + height - bottom_edge,
             right - left, bottom_edge - top_edge);
         // Only whole device pixels inside the clip are freshly painted.
@@ -421,7 +461,16 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     }
     if (damage_optimized) {
         CGContextFlush(context);
-        native_scroll_raster_restore_visible(cache, pixels, pitch,
+        if (cache->tiled) {
+            // GPU tiles widen the damage to their eight-pixel dither grid.
+            // Preserve that fringe and partially covered clip-edge pixels.
+            for (int index = 0; index < cache->damage_rect_count; ++index) {
+                size_t *rect = cache->damage_rects[index];
+                native_scroll_raster_copy_rect(cache, pixels, pitch,
+                    rect[0] > 8 ? rect[0] - 8 : 0, rect[1] > 8 ? rect[1] - 8 : 0,
+                    rect[2] + 8, rect[3] + 8, 0);
+            }
+        } else native_scroll_raster_restore_visible(cache, pixels, pitch,
             rows < 0 ? cache->dirty_rows : 0, h - cache->dirty_rows, opaque_clear);
     }
     CGContextClipToRects(context, clips, clip_count);
@@ -440,7 +489,13 @@ static void native_end_scroll_raster(void) {
     uint8_t *pixels = (uint8_t *)CGBitmapContextGetData(context);
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
     if (pixels) {
-        if (cache->damage_optimized) {
+        if (cache->tiled && cache->reused) {
+            for (int index = 0; index < cache->damage_rect_count; ++index) {
+                size_t *rect = cache->damage_rects[index];
+                native_scroll_raster_copy_rect(cache, pixels, pitch,
+                    rect[0], rect[1], rect[2], rect[3], 1);
+            }
+        } else if (cache->damage_optimized) {
             native_scroll_raster_store_rows(cache, pixels, pitch);
         } else {
             for (size_t y = 0; y < cache->height; ++y)
@@ -448,6 +503,28 @@ static void native_end_scroll_raster(void) {
                     pixels + (cache->top + y) * pitch, cache->width * 4);
         }
         cache->valid = !cache->independent_content;
+        cache->tiles_current = 0;
+        if (cache->tiled) {
+            BOOL committed = cache->valid && native_scroll_tiles_commit(cache->pixels,
+                cache->width, cache->height, cache->row_origin, cache->top, cache->scale, cache->tile_dirty);
+            if (!committed) {
+                // Allocation failure publishes the complete ordinary bitmap.
+                native_scroll_raster_copy_rows(cache, pixels, pitch, 0, cache->height, 0);
+                native_scroll_tile_sparse = NO;
+                native_scroll_tiles_clear();
+            } else {
+                cache->tiles_current = 1;
+                // V paints viewport scrollbars after storing the document.
+                // Preserve their backdrop without copying the viewport.
+                size_t band = (size_t)ceil(32 * cache->scale);
+                size_t right = cache->width > band ? cache->width - band : 0;
+                size_t bottom = cache->height > band ? cache->height - band : 0;
+                native_scroll_raster_copy_rect(cache, pixels, pitch, right, 0,
+                    cache->width, cache->height, 0);
+                native_scroll_raster_copy_rect(cache, pixels, pitch, 0, bottom,
+                    right, cache->height, 0);
+            }
+        }
     }
     cache->active = 0;
     cache->context = NULL;

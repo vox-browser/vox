@@ -1,10 +1,12 @@
 module main
 
+import browsersettings
 import layout
 import math
 import os
 import processmetrics
 
+fn C.native_scroll_tile_compositor_enabled(i32)
 fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64, &f64, int, int, i32) int
 fn C.native_end_scroll_raster()
 fn C.native_discard_scroll_raster()
@@ -77,6 +79,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		unoptimized: os.getenv('VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS') != ''
 	}
 	$if macos {
+		C.native_scroll_tile_compositor_enabled(i32(!browsersettings.current().disable_gpu_canvas))
 		viewport := app.document.viewport_rect()
 		// Shared SVG pictures finish after the font layer; their deferred
 		// pixels must not be captured before that layer has been published.
