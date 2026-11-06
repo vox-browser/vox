@@ -189,12 +189,15 @@ def seal_object(source, destination):
     return before
 
 
-def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', run=subprocess.run):
+def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', run=subprocess.run,
+            source_manifest=None):
     from rebuild_browser import repository_state, same_build_inputs, write_json
     root, stage, receipt = map(lambda value: Path(value).resolve(), (root, stage, receipt))
     source, flags_path, output = map(lambda value: Path(value).resolve(), (source, flags_path, output))
     before = json.loads((receipt / 'inputs-before.json').read_text())
-    if not same_build_inputs(before, repository_state(root)):
+    if source_manifest is not None:
+        check_fingerprints(source_manifest)
+    elif not same_build_inputs(before, repository_state(root)):
         raise RuntimeError('Repository inputs changed before C preprocessing')
     cwd = Path.cwd()
     compiler_path = Path(shutil.which(compiler) or compiler).resolve(strict=True)
@@ -228,7 +231,9 @@ def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', 
     live_inputs = fingerprint(late + [Path(name) for name in libraries.values()])
     sealed_inputs = fingerprint([source, flags_path] + list(frozen.iterdir()))
     after = repository_state(root)
-    if not same_build_inputs(before, after):
+    if source_manifest is not None:
+        check_fingerprints(source_manifest)
+    elif not same_build_inputs(before, after):
         raise RuntimeError('Repository inputs changed while sealing compiler inputs')
     command = [str(compiler_path), '-x', preprocessed[str(source)][1], preprocessed[str(source)][0], '-x', 'none']
     for kind, value in parts:
@@ -242,13 +247,15 @@ def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', 
         else:
             command.extend(compile_options(value))
     command.extend(['-o', str(output)])
-    result = dict(protocol=PROTOCOL, source_inputs=after, cwd=str(cwd),
+    result = dict(protocol=PROTOCOL, source_inputs=before if source_manifest is not None else after, cwd=str(cwd),
                   compiler=str(compiler_path), compiler_command=command,
                   flags_parts=[(kind, str(value) if kind in ('object', 'library') else
                                 [str(value[0]), value[1]] if kind == 'source' else value)
                                for kind, value in parts],
                   resolved_libraries=libraries, live_inputs=live_inputs, sealed_inputs=sealed_inputs,
                   original_objects=original_objects, complete=False)
+    if source_manifest is not None:
+        result['exact_source_manifest'] = source_manifest
     write_json(receipt / 'frozen-compile.json', result)
     return result
 

@@ -125,6 +125,25 @@ class FrozenCompilerExecutionTests(unittest.TestCase):
                     freeze.prepare(root, stage, receipt, receipt / 'main.c', receipt / 'flags.txt', output)
             compiler.assert_not_called()
 
+    def test_exact_source_manifest_allows_unrelated_edits_but_rejects_consumed_edits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stage, receipt, before, data, output = self.fixture(root)
+            shutil.rmtree(receipt / 'frozen-compiler-inputs')
+            manifest = freeze.fingerprint([root / 'header.h', root / 'extra.c'])
+            with patch.object(build, 'repository_state', return_value=dict(build_inputs_sha256='unrelated')):
+                data = freeze.prepare(root, stage, receipt, receipt / 'main.c', receipt / 'flags.txt',
+                                      output, source_manifest=manifest)
+            self.assertEqual(data['source_inputs'], before)
+            self.assertEqual(data['exact_source_manifest'], manifest)
+            self.finish(receipt, before, data)
+            (root / 'header.h').write_text('changed consumed header')
+            with patch.object(freeze.subprocess, 'run') as compiler:
+                with self.assertRaisesRegex(RuntimeError, 'Frozen build input changed'):
+                    freeze.prepare(root, stage, receipt, receipt / 'main.c', receipt / 'flags.txt',
+                                   output, source_manifest=manifest)
+            compiler.assert_not_called()
+
     def test_changed_source_during_preprocessing_rejects_before_optimization(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
