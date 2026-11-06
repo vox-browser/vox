@@ -7633,3 +7633,22 @@ actual sealed producer. The SVG source-switch guard is exact. Two earlier
 receipt/executable identity mismatches reject before launch and remain retained.
 These checks advance no acceptance history, saving, broad cadence or catalog claim.
 [Native retirement and rejected identity preflights](performance/bbc-same-pass-grid-native-retirement-20261106.json).
+
+A **closed clamped-inline allocation workspace** (`4e024c6c1`, control `79ce4efc0`)
+passes **234 focused executions**: 39 cases in both arms across all three memory
+modes, plus **348 instruction-tool tests**. The full clamp/line builder still
+runs for every call and consumes the original running counters and margins;
+geometry-cache exclusions remain. Temporary construction storage retires only
+after exporting owned lines, fragments, glyph runs, static positions and block
+ellipsis data. The narrow proof requires horizontal inline children in their own
+active clamp context, no incoming floats or invisible ancestor, and no shifted,
+atomic, SVG or split descendants. Legacy `-webkit-box` follows the child algorithm
+selected by the caller. Five new cases verify exact uncached geometry and clamp
+state, older payload ownership after live mutation, exclusions and a retained-
+allocation bound with unchanged clamped output. Initial overbroad test assertions
+and the legacy-display exclusion are retained alongside their isolated diagnosis
+and corrected checks. V test assertion transfer can skip defers, so later failures
+in those failed runs receive no all-attempt pass claim. Native preflight rejects
+the available marker-free bundle before launch. Native eligibility, instruction
+savings and cohort 131 remain pending; no acceptance history, broad cadence or
+catalog credit advances. [Focused workspace and allocation evidence](performance/bbc-clamped-inline-workspace-focus-20261106.json).
