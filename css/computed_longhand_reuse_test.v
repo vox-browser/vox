@@ -364,10 +364,10 @@ fn test_longhand_reuse_rejects_in_place_parent_and_cascaded_value_mutations() {
 	longhand_reuse_assert_oracle(updated_width, computer, element, mut cascaded)
 }
 
-fn test_longhand_reuse_excludes_relative_lengths_and_expires_at_outer_batch_end() {
+fn test_longhand_reuse_excludes_face_relative_lengths_and_expires_at_outer_batch_end() {
 	computer, _, element, parent_style := longhand_reuse_fixture()
 	abstract_element := dom.AbstractElement.new(element, none)
-	mut relative := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '2em', .width) or {
+	mut relative := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '2ch', .width) or {
 		panic('relative width')
 	})
 	computer.begin_computed_property_page_batch()

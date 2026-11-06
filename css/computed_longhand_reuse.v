@@ -102,6 +102,10 @@ struct ComputedLonghandReuseKey {
 	parent_font_viewport bool
 	viewport             CSSPixelRect
 	root_font_size       f64
+	root_font_size_unrounded ?f64
+	live_root_font_size  ?f64
+	font_policy         dom.FontRenderingPolicy
+	font_size_units     bool
 	root_line_height     f64
 	root_font_viewport   bool
 	count                int
@@ -113,6 +117,7 @@ struct ComputedLonghandReuseEntry {
 	key           ComputedLonghandReuseKey
 	parent_inputs []ComputedLonghandReuseInput
 	inputs        []ComputedLonghandReuseInput
+	inheritance_ids []PropertyID
 	computed      &ComputedProperties
 }
 
@@ -121,6 +126,9 @@ struct ComputedLonghandReuseCache {
 mut:
 	entries map[u64]&ComputedLonghandReuseEntry
 	parent_hashes map[u64]ComputedLonghandParentHashHint
+	font_size_unit_seen map[u64]bool
+	font_size_unit_environment ?FontSizeLonghandEnvironment
+	font_size_unit_environment_changed bool
 }
 
 // Copy scalar payloads rather than retaining their mutable sum-type boxes.
@@ -310,6 +318,7 @@ fn computed_longhand_reuse_value_is_simple(value &dom.StyleValue) bool {
 // Explicit inheritance keeps a snapshot of each selected parent input,
 // including a separately guarded value for non-inherited properties.
 fn computed_longhand_reuse_property_is_simple(id PropertyID, value &dom.StyleValue) bool {
+	if font_size_unit_longhand_is_reusable(value) { return true }
 	if computed_longhand_extensions_enabled() && value.css_value_handle != unsafe { nil } {
 		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
 		if typed.value is KeywordStyleValue {
@@ -483,15 +492,18 @@ fn computed_longhand_reuse_input_matches(input &ComputedLonghandReuseInput, valu
 struct ComputedLonghandCascadeKey {
 	count int
 	hash u64
+	font_size_units bool
 }
 
 fn computed_longhand_cascade_key(cascaded &CascadedProperties, parent &ComputedProperties) ?ComputedLonghandCascadeKey {
 	mut count := 0
 	mut hash := u64(0)
+	mut font_size_units := false
 	for id, _ in cascaded.entry_heads_ {
 		if !computed_interpolation_is_longhand_property(id) { continue }
 		property := cascaded.style_property(id) or { continue }
 		count++
+		font_size_units = font_size_units || font_size_unit_longhand_is_reusable(property.value)
 		if !computed_longhand_reuse_property_is_simple(id, property.value) {
 			record_diagnostic_longhand_rejection(id, property.value)
 			return none
@@ -504,7 +516,7 @@ fn computed_longhand_cascade_key(cascaded &CascadedProperties, parent &ComputedP
 		value_hash := computed_longhand_reuse_value_hash(property.value) or { return none }
 		hash ^= ((value_hash ^ (u64(id) * u64(0x9e3779b97f4a7c15))) * u64(0x100000001b3))
 	}
-	return ComputedLonghandCascadeKey{count:count, hash:hash}
+	return ComputedLonghandCascadeKey{count:count, hash:hash, font_size_units:font_size_units}
 }
 
 fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
@@ -518,6 +530,13 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 	if parent.property_store_ == unsafe { nil } || parent.has_animated_properties() {
 		return none
 	}
+	if s.longhand_reuse_cache_ != unsafe { nil }
+		&& s.longhand_reuse_cache_.font_size_unit_environment_changed {
+		for id, _ in cascaded.entry_heads_ {
+			property := cascaded.style_property(id) or { continue }
+			if font_size_unit_longhand_is_reusable(property.value) { return none }
+		}
+	}
 	mut cascade_key := ComputedLonghandCascadeKey{}
 	if !disable_longhand_eligibility_first {
 		cascade_key = computed_longhand_cascade_key(cascaded, parent) or {
@@ -525,32 +544,47 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 			return none
 		}
 	}
+	if !disable_longhand_eligibility_first && cascade_key.font_size_units
+		&& (s.longhand_reuse_cache_ == unsafe { nil } || s.longhand_reuse_cache_.entries.len == 0)
+		&& !s.font_size_longhand_question_is_repeated(parent, cascade_key.hash) { return none }
 	mut hash := s.inherited_longhand_hash_hint(parent, element) or { return none }
 	if disable_longhand_eligibility_first {
 		cascade_key = computed_longhand_cascade_key(cascaded, parent) or { return none }
+		if cascade_key.font_size_units
+			&& (s.longhand_reuse_cache_ == unsafe { nil } || s.longhand_reuse_cache_.entries.len == 0)
+			&& !s.font_size_longhand_question_is_repeated(parent, cascade_key.hash) { return none }
 	}
 	// Own contributions are XOR-combined, preserving the original key exactly.
 	hash ^= cascade_key.hash
 	for page in computed_initial_property_store.pages {
 		hash = (hash ^ u64(voidptr(page))) * u64(0x100000001b3)
 	}
-	return ComputedLonghandReuseKey{
+	key := ComputedLonghandReuseKey{
 		parent:               parent
 		initial_pages:        computed_initial_property_store.pages
 		parent_font_viewport: parent.font_metrics_depend_on_viewport_metrics()
 		viewport:             s.viewport_rect_
 		root_font_size:       s.root_element_font_metrics.font_size.to_double()
+		root_font_size_unrounded: s.root_element_font_metrics.font_size_unrounded
+		live_root_font_size:  s.longhand_live_root_font_size()
+		font_policy:         s.document_.font_rendering_policy()
+		font_size_units:     cascade_key.font_size_units
 		root_line_height:     s.root_element_font_metrics.line_height.to_double()
 		root_font_viewport:   s.root_element_font_metrics_depend_on_viewport_metrics
 		count:                cascade_key.count
 		hash:                 hash
 	}
+	if key.font_size_units && !s.font_size_longhand_environment_is_stable(&key) { return none }
+	return key
 }
 
 fn computed_longhand_reuse_keys_equal(first &ComputedLonghandReuseKey,
 	second &ComputedLonghandReuseKey) bool {
 	if first.count != second.count || first.parent_font_viewport != second.parent_font_viewport
 		|| first.viewport != second.viewport || first.root_font_size != second.root_font_size
+		|| first.root_font_size_unrounded != second.root_font_size_unrounded
+		|| first.live_root_font_size != second.live_root_font_size || first.font_policy != second.font_policy
+		|| first.font_size_units != second.font_size_units
 		|| first.root_line_height != second.root_line_height
 		|| first.root_font_viewport != second.root_font_viewport {
 		return false
@@ -587,17 +621,27 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 			return false
 		}
 	}
+	mut inheritance_storage := unsafe { &ComputedPropertyValueMap(nil) }
+	if entry.inheritance_ids.len > 0 {
+		inheritance_storage = &ComputedPropertyValueMap{ values: map[PropertyID]&dom.StyleValue{} }
+		for id in entry.inheritance_ids {
+			property := cascaded.style_property(id) or { return false }
+			inheritance_storage.values[id] = property.value
+		}
+	}
 	cached := entry.computed
 	properties.note_raw_computed_property_graph_mutation()
 	properties.property_store_ = cached.clone_raw_property_store()
 	properties.property_important_ = cached.property_important_
 	properties.property_inherited_ = cached.property_inherited_
-	properties.raw_cascaded_font_size_ = cached.raw_cascaded_font_size_
+	properties.raw_cascaded_font_size_ = if property := cascaded.style_property(.font_size) { property.value } else { none }
+	properties.inheritance_specified_storage_ = inheritance_storage
 	properties.depends_on_viewport_metrics_ = cached.depends_on_viewport_metrics_
 	properties.font_metrics_depend_on_viewport_metrics_ = cached.font_metrics_depend_on_viewport_metrics_
 	properties.font_input_refresh_safe_ = cached.font_input_refresh_safe_
 	properties.font_input_depends_on_font_size_ = cached.font_input_depends_on_font_size_
 	report_longhand_shape_restore(entry.inputs)
+	report_font_size_unit_longhand_reuse(entry.inputs)
 	report_explicit_parent_longhand_inputs(entry.parent_inputs)
 	if computed_longhand_constant_diagnostics && !computed_longhand_constant_reported
 		&& computed_longhand_constants_enabled() {
@@ -639,14 +683,13 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 
 fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 	cascaded &CascadedProperties, computed &ComputedProperties) {
-	// Keep inheritance-dependent specified-value records on their original path.
-	if computed.inheritance_specified_storage_ != unsafe { nil }
-		|| computed.has_animated_properties() {
+	if computed.has_animated_properties() {
 		return
 	}
 	mut index_arena := s.computed_property_page_index_arena()
 	allocation := index_arena.enter()
 	defer { index_arena.leave(allocation) }
+	inheritance_ids := font_size_unit_specified_ids(computed, cascaded) or { return }
 	mut owner := unsafe { &StyleComputer(s) }
 	if owner.longhand_reuse_cache_ == unsafe { nil } {
 		owner.longhand_reuse_cache_ = &ComputedLonghandReuseCache{}
@@ -689,11 +732,13 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 		if !longhand_has_explicit_noninherited_parent(property) { continue }
 		parent_inputs << explicit_parent_longhand_snapshot(key.parent, id) or { return }
 	}
-	snapshot := &ComputedProperties{ ...computed, property_store_: computed.clone_raw_property_store() }
+	snapshot := &ComputedProperties{ ...computed, property_store_: computed.clone_raw_property_store(),
+		inheritance_specified_storage_: unsafe { nil } }
 	owner.longhand_reuse_cache_.entries[key.hash] = &ComputedLonghandReuseEntry{
 		key:           key
 		parent_inputs: parent_inputs
 		inputs:        inputs
+		inheritance_ids: inheritance_ids
 		computed:      snapshot
 	}
 }
