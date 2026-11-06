@@ -559,7 +559,12 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
 }
 
 static BOOL native_layer_can_complete_frame(void) {
-    return !native_layer_presenting && !native_layer_document_work_active;
+    // Only immutable frames without a borrowed V callback enter the mailbox.
+    // A cooperative paint can service the main queue while its private bitmap
+    // is unfinished: installing an older completed scene neither touches that
+    // bitmap nor reenters the document. Waiting for paint to become idle can
+    // starve publication while successive display passes keep doing work.
+    return YES;
 }
 static void native_layer_complete_frame(NSView *view, VoxNativePreparedFrame *frame, BOOL ready) {
     if (!ready) {

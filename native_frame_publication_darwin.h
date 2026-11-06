@@ -229,6 +229,7 @@ static void native_frame_publication_work(NSView *view, VoxNativeFramePublicatio
 static void native_frame_publication_enqueue(NSView *view, VoxNativePreparedFrame *frame,
     VoxNativeFrameCompletion complete, VoxNativeFrameCanComplete can_complete) {
     NSCAssert(NSThread.isMainThread, @"Only frame readiness leaves the main thread");
+    NSCAssert(!frame->submission.callback, @"Borrowed document submissions publish synchronously");
     VoxNativeFramePublication *state = native_frame_publication_state(view, YES);
     BOOL start = NO;
     @synchronized(state) {

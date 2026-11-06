@@ -5,6 +5,7 @@
 #include <cassert>
 #include <map>
 #include <vector>
+#include <unistd.h>
 
 @interface MyView2 : NSView
 @end
@@ -97,6 +98,11 @@ template<class Predicate> static void pump(Predicate done) {
     }
     assert(done());
 }
+template<class Predicate> static void wait_worker(Predicate done) {
+    double deadline=CACurrentMediaTime()+5;
+    while(!done() && CACurrentMediaTime()<deadline) usleep(1000);
+    assert(done());
+}
 static void start_blocked(NSView *view, int value, int gate) {
     entered=dispatch_semaphore_create(0); proceed=dispatch_semaphore_create(0);
     paint(view,value,gate,true);
@@ -127,16 +133,36 @@ int main() { @autoreleasepool {
     dispatch_async(dispatch_get_main_queue(),^{ input_delivered=YES; });
     pump([&]{ return input_delivered; });
     assert(installed.size()==1);
-    // A cooperative render can pump the run loop; completion still waits for
-    // that preparation to exit before touching layers or calling back into V.
+    // The worker drains newer fences while main is busy. A cooperative pump
+    // may install completed immutable output without altering the next paint's
+    // private context or delivering a borrowed document-owner callback.
     native_layer_document_work_active=YES;
+    native_layer_presenting=YES;
     dispatch_semaphore_signal(proceed);
-    pump([&]{
+    wait_worker([&]{
         VoxNativeFramePublication *state=native_frame_publication_state(view,NO);
         @synchronized(state) { return released[2]==1 && !state->working; }
     });
     assert(installed.size()==1);
+    CGColorSpaceRef color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef painting=CGBitmapContextCreate(NULL,4,4,8,16,color,
+        kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color);
+    CGContextSetRGBFillColor(painting,0,0,1,1);
+    CGContextFillRect(painting,CGRectMake(0,0,4,4));
+    NSGraphicsContext *previous_context=NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext=[NSGraphicsContext graphicsContextWithCGContext:painting flipped:NO];
+    pump([&]{ return installed.back()==150; });
+    assert(NSGraphicsContext.currentContext.CGContext==painting);
+    const uint8_t *painting_bytes=(const uint8_t *)CGBitmapContextGetData(painting);
+    for(int n=0;n<16;++n) {
+        assert(painting_bytes[n*4]==0 && painting_bytes[n*4+1]==0);
+        assert(painting_bytes[n*4+2]==255 && painting_bytes[n*4+3]==255);
+    }
+    NSGraphicsContext.currentContext=previous_context;
+    CGContextRelease(painting);
     native_layer_document_work_active=NO;
+    native_layer_presenting=NO;
     idle(view);
     assert((installed==std::vector<int>{31,150}));
     assert(acknowledged==std::vector<int>{31} && scheduled[0]==1 && scheduled[2]==1);
@@ -167,7 +193,7 @@ int main() { @autoreleasepool {
     size_t before=installed.size();
     native_layer_document_work_active=YES;
     paint(view,210,7,false,false);
-    pump([&]{
+    wait_worker([&]{
         VoxNativeFramePublication *state=native_frame_publication_state(view,NO);
         @synchronized(state) { return state->failed && !state->working; }
     });
