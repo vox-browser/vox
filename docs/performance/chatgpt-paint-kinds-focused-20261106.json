@@ -1,0 +1,1255 @@
+{
+  "complete": true,
+  "implementation_commit": "52223dfd4",
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "main.v": "b8f787476e0d5187b0490dd7384c20af5699935af4ec83bbe137b1dd1aec6901",
+      "main_leaf_timing.v": "3960274798f826ee1884c9d282a1ddbd99723ed903076b60d41b94d0338333f1",
+      "main_chromium_rect_prefetch.v": "99c82bc18eaa78219eb2abdb76b9171db9988e337a302195865af3dfa609fd62",
+      "main_chromium_outer_decorations.v": "e964089c491e5a607c9f2a73eaba29bf6becbbaf1540da251770181eac605913",
+      "main_draw_command_storage_test.v": "1adad45d8e818713e548bf3a353c85632d866570a0c088cc18db77b2a1a41b77",
+      "main_chromium_rect_prefetch_test.v": "8373b0b876f2264220672e0d4738cee4a82652d3240c0937d86142359eeb1cda",
+      "main_chromium_outer_decorations_test.v": "f2b4003f50210a3c3c1eaf9e04b5fab66304db447fcc4bcb66217d786338877b",
+      "processmetrics/instructions.v": "d7ab2e6b1bfd9a9fc03a4f7a02a4904c66f1064237183cca4a4a6c4fc9a041cf",
+      "processmetrics/instructions_test.v": "970e51d143c6520d9560474e643173c7c3c9786f9de3ef23425d28c02d6bf1f3",
+      "processmetrics/load_stages_test.v": "667620c1c21f8e463564022e5093feaa892640085a5f2ca6ad04f25d5bb3ef6a"
+    },
+    "source_after": {
+      "main.v": "b8f787476e0d5187b0490dd7384c20af5699935af4ec83bbe137b1dd1aec6901",
+      "main_leaf_timing.v": "3960274798f826ee1884c9d282a1ddbd99723ed903076b60d41b94d0338333f1",
+      "main_chromium_rect_prefetch.v": "99c82bc18eaa78219eb2abdb76b9171db9988e337a302195865af3dfa609fd62",
+      "main_chromium_outer_decorations.v": "e964089c491e5a607c9f2a73eaba29bf6becbbaf1540da251770181eac605913",
+      "main_draw_command_storage_test.v": "1adad45d8e818713e548bf3a353c85632d866570a0c088cc18db77b2a1a41b77",
+      "main_chromium_rect_prefetch_test.v": "8373b0b876f2264220672e0d4738cee4a82652d3240c0937d86142359eeb1cda",
+      "main_chromium_outer_decorations_test.v": "f2b4003f50210a3c3c1eaf9e04b5fab66304db447fcc4bcb66217d786338877b",
+      "processmetrics/instructions.v": "d7ab2e6b1bfd9a9fc03a4f7a02a4904c66f1064237183cca4a4a6c4fc9a041cf",
+      "processmetrics/instructions_test.v": "970e51d143c6520d9560474e643173c7c3c9786f9de3ef23425d28c02d6bf1f3",
+      "processmetrics/load_stages_test.v": "667620c1c21f8e463564022e5093feaa892640085a5f2ca6ad04f25d5bb3ef6a"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-native-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_chromium_rect_prefetch_test.v,/Users/alex/code/vox2/main_chromium_outer_decorations_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-prealloc",
+          "/Users/alex/code/vox2/main_draw_command_storage_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926103.898253,
+          "cpu_count": 18,
+          "load": [
+            10.75537109375,
+            7.76904296875,
+            6.62451171875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926132.605186,
+          "load": [
+            8.97314453125,
+            7.64111328125,
+            6.61865234375
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926132.6546812,
+          "cpu_count": 18,
+          "load": [
+            8.97314453125,
+            7.64111328125,
+            6.61865234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926133.3776991,
+          "load": [
+            8.97314453125,
+            7.64111328125,
+            6.61865234375
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926133.386863,
+          "cpu_count": 18,
+          "load": [
+            8.97314453125,
+            7.64111328125,
+            6.61865234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926133.726934,
+          "load": [
+            8.97314453125,
+            7.64111328125,
+            6.61865234375
+          ]
+        }
+      },
+      {
+        "label": "compile-native-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_chromium_rect_prefetch_test.v,/Users/alex/code/vox2/main_chromium_outer_decorations_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-default",
+          "/Users/alex/code/vox2/main_draw_command_storage_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926133.735557,
+          "cpu_count": 18,
+          "load": [
+            8.97314453125,
+            7.64111328125,
+            6.61865234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926166.107114,
+          "load": [
+            9.001953125,
+            7.79150390625,
+            6.712890625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926166.119282,
+          "cpu_count": 18,
+          "load": [
+            9.001953125,
+            7.79150390625,
+            6.712890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926166.761898,
+          "load": [
+            9.001953125,
+            7.79150390625,
+            6.712890625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926166.774113,
+          "cpu_count": 18,
+          "load": [
+            9.001953125,
+            7.79150390625,
+            6.712890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926167.040787,
+          "load": [
+            9.001953125,
+            7.79150390625,
+            6.712890625
+          ]
+        }
+      },
+      {
+        "label": "compile-native-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_chromium_rect_prefetch_test.v,/Users/alex/code/vox2/main_chromium_outer_decorations_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-none",
+          "/Users/alex/code/vox2/main_draw_command_storage_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926167.052476,
+          "cpu_count": 18,
+          "load": [
+            9.001953125,
+            7.79150390625,
+            6.712890625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926204.263734,
+          "load": [
+            13.68212890625,
+            9.1201171875,
+            7.240234375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926204.280166,
+          "cpu_count": 18,
+          "load": [
+            13.68212890625,
+            9.1201171875,
+            7.240234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926204.9880042,
+          "load": [
+            13.68212890625,
+            9.1201171875,
+            7.240234375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926205.002017,
+          "cpu_count": 18,
+          "load": [
+            13.68212890625,
+            9.1201171875,
+            7.240234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926205.295347,
+          "load": [
+            13.68212890625,
+            9.1201171875,
+            7.240234375
+          ]
+        }
+      },
+      {
+        "label": "compile-native-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-native-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-file-list",
+          "/Users/alex/code/vox2/main_chromium_rect_prefetch_test.v,/Users/alex/code/vox2/main_chromium_outer_decorations_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-sanitized",
+          "/Users/alex/code/vox2/main_draw_command_storage_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926205.3094468,
+          "cpu_count": 18,
+          "load": [
+            13.68212890625,
+            9.1201171875,
+            7.240234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926288.2369092,
+          "load": [
+            12.1318359375,
+            9.822265625,
+            7.69189453125
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926288.298861,
+          "cpu_count": 18,
+          "load": [
+            12.1318359375,
+            9.822265625,
+            7.69189453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926290.106712,
+          "load": [
+            12.1318359375,
+            9.822265625,
+            7.69189453125
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-native-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926290.120657,
+          "cpu_count": 18,
+          "load": [
+            12.1318359375,
+            9.822265625,
+            7.69189453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926290.9563441,
+          "load": [
+            12.1318359375,
+            9.822265625,
+            7.69189453125
+          ]
+        }
+      },
+      {
+        "label": "compile-metrics-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-prealloc",
+          "/Users/alex/code/vox2/processmetrics/instructions_test.v",
+          "-file-list",
+          "/Users/alex/code/vox2/processmetrics/load_stages_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926290.969894,
+          "cpu_count": 18,
+          "load": [
+            12.1318359375,
+            9.822265625,
+            7.69189453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926292.211599,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926292.2276568,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926292.654498,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926292.6689222,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926292.8268821,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "compile-metrics-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-default",
+          "/Users/alex/code/vox2/processmetrics/instructions_test.v",
+          "-file-list",
+          "/Users/alex/code/vox2/processmetrics/load_stages_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926292.840814,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926293.903408,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926293.915873,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926294.323829,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926294.3372018,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926294.4752588,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "compile-metrics-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-none",
+          "/Users/alex/code/vox2/processmetrics/instructions_test.v",
+          "-file-list",
+          "/Users/alex/code/vox2/processmetrics/load_stages_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926294.487832,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926295.539753,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926295.552059,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926295.939112,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926295.951403,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926296.0782878,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        }
+      },
+      {
+        "label": "compile-metrics-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/compile-metrics-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-sanitized",
+          "/Users/alex/code/vox2/processmetrics/instructions_test.v",
+          "-file-list",
+          "/Users/alex/code/vox2/processmetrics/load_stages_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793926296.0912268,
+          "cpu_count": 18,
+          "load": [
+            12.201171875,
+            9.875,
+            7.72265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926297.6256661,
+          "load": [
+            11.86474609375,
+            9.84375,
+            7.72412109375
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926297.6386209,
+          "cpu_count": 18,
+          "load": [
+            11.86474609375,
+            9.84375,
+            7.72412109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926298.012435,
+          "load": [
+            11.86474609375,
+            9.84375,
+            7.72412109375
+          ]
+        }
+      },
+      {
+        "label": "run-metrics-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/run-metrics-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-paint-kinds-20261106-r3/metrics-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1",
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793926298.0241501,
+          "cpu_count": 18,
+          "load": [
+            11.86474609375,
+            9.84375,
+            7.72412109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793926298.148961,
+          "load": [
+            11.86474609375,
+            9.84375,
+            7.72412109375
+          ]
+        }
+      }
+    ]
+  },
+  "prior_attempts": [
+    "r1: 2048 bytes from dynamic V getenv reads across 512 traced leaves; fixed with borrowed native flag lookup",
+    "r2: driver wrongly combined processmetrics tests with main module; rejected compilation; r3 selects each package independently"
+  ],
+  "qualification": "Four storage/GC modes, diagnostics enabled/disabled, nine draw/prefetch/group tests and six metrics tests per mode. Enabled leaf tracing no longer accumulates arena allocations. Both failed attempts retained. Diagnostic changes receive no page instruction credit.",
+  "evidence": {
+    "path": "docs/performance/chatgpt-paint-kinds-focused-20261106-evidence.zip",
+    "sha256": "a92d4fca13e83334740250566398639e980702740487bd7a38d8a165f35522ba",
+    "bytes": 32759089,
+    "entries": 90
+  },
+  "page_instruction_credit": 0
+}

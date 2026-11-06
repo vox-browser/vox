@@ -5087,3 +5087,95 @@ The [focused receipt](performance/chatgpt-raster-stages-focused-20261106.json),
 and [verification receipt](performance/chatgpt-raster-stages-verification-20261106.json)
 retain those artifacts and every failed development attempt. **Optimization credit
 and broad-check carry remain zero; the 5%-below-Brave target remains unmet.**
+
+## 20B target, paint boundaries and transparent picture-cache experiment (2026-11-06)
+
+The requested target is now **20,000,000,000 instructions** for the existing frozen ChatGPT launch-through-encoded-document-PNG workload. It remains unmet. This experiment uses the original SOCKS capture and author scripts, private profiles, 1024×768 viewport at scale 2, five-second unfocused settle, unchanged content audits and per-engine pixel references. No new live download occurred.
+
+The pinned production executable is `86088fc0d93210cfdd8dcf4a60bed2a686d469fc1f68e4fd774a36867072c706` (single C unit, V `-prod`, existing O2/full-LTO configuration). Its native picture-cache prototype is compared with its own uncached path; all other code and libraries stay identical. The final opt-in policy is a later change and is verified separately by native tests.
+
+| Untraced variant | Instructions, all four retained trials | Median |
+| --- | --- | ---: |
+| Uncached control | 28,370,885,450, 28,625,179,310, 28,244,585,034, 28,213,601,111 | 28,307,735,242 |
+| Picture-cache prototype | 28,384,084,156, 28,093,519,327, 28,391,441,464, 28,272,716,090 | 28,328,400,123 |
+
+The candidate median is **0.0730% higher**. The conservative separation is **-177,840,353 instructions**; the ranges overlap. Credit and broad-check carry remain **zero**, so no new broad checkpoint is due. The uncached control median is still **8,307,735,242 instructions above 20B**. All 20 diagnostic/matched browser captures pass bootstrap, complete content identity, exact retained pixels and normal browser exits. Both comparison drivers return 1 for the unmet Brave target; their successful capture wrappers/controller return 0. Four candidate trials do not constitute seven-pair acceptance.
+
+`ee1be20e6` caches only successfully completed transparent picture rasters before current-backdrop composition. Its key owns serialized paint bytes and all raster geometry; exact equality, bounded entries/storage, padded rows, image mutations and release are checked. The production diagnostic records actual reuse. The page count provides no instruction gain, so `dbc3f5400` makes it **opt-in** with `VOX_ENABLE_PICTURE_RASTER_CACHE=1`; it is not an accepted default optimization.
+
+`3a2f05b8c` independently fixes a sanitizer-detected NaN/out-of-range height conversion before raster-grid arithmetic. Its 22 valid/invalid native cases pass in both cache/control modes. Final cache checks pass ASan/UBSan: two vector/scalar snapshot unit modes, 48 exact current-backdrop/grid/phase/image/mutation scenes, 144 existing compositor pictures, 22 extent cases and 44 deferred-layer ownership/failure scenes. The later opt-in/default bypass checks also pass. Two nonblocking publication leases launch no runtime; a subsequent available-bundle check passes with library hashes verified before/after. No app or library copy is used.
+
+`52223dfd4` adds separate paint-leaf, grouped-operation and compositor-transition scopes. Enabled checks caught repeated V environment-string allocations; the flag lookup now borrows the native environment value and preserves dynamic unset/empty/nonempty behavior. All 24 final diagnostic check jobs pass across four GC/storage modes with tracing enabled/disabled, including poisoned preallocation and ASan/UBSan. Failed fixture/driver/link attempts and the sanitizer finding remain archived.
+
+The existing wall-time leaf lead includes a transition before the command; it cannot assign that cost to a rectangle. The existing GPU deferred-layer experiment produces no actual GPU layer composites, while the retained-tile experiment has misses but no cache hits. Both retain exact page pixels and receive no performance credit.
+
+The following **63-row additive table** is the traced prototype candidate, totaling **28,828,843,071 instructions**, rather than the untraced median. JavaScript module completion plus JS execution/bindings totals **8,925,433,977**. Nested native work is subtracted from its JS parent. Tracing and concurrent-thread work remain in these process-counter intervals; inclusive columns overlap and must not be added. The process/coalition endpoint remainder is explicitly unassigned. No counts are scaled to 29B or to the untraced median.
+
+| Stage | Calls | Exclusive instructions | Share | Inclusive instructions |
+| --- | ---: | ---: | ---: | ---: |
+| `javascript_module_completion` | 289 | 5,254,105,972 | 18.2252% | 8,177,646,590 |
+| `style_update` | 286 | 3,724,352,503 | 12.9188% | 3,736,528,036 |
+| `javascript_execution_and_bindings` | 1,757 | 3,671,328,005 | 12.7349% | 5,013,175,085 |
+| `browser_main` | 1 | 2,843,623,225 | 9.8638% | 27,921,765,660 |
+| `paint_layer_transition` | 145 | 2,618,300,810 | 9.0822% | 2,618,300,810 |
+| `absolute_positioned_layout` | 13 | 2,276,223,094 | 7.8956% | 2,276,223,094 |
+| `coalition_endpoint_remainder` | 0 | 728,289,869 | 2.5263% | — |
+| `gpu_frame_finalization` | 13 | 686,586,669 | 2.3816% | 686,586,669 |
+| `paint_leaf_text` | 290 | 644,663,158 | 2.2362% | 644,663,158 |
+| `paint_leaf_shadow` | 35 | 578,060,348 | 2.0051% | 578,060,348 |
+| `platform_timer_delivery` | 1,748 | 577,621,161 | 2.0036% | 11,554,501,259 |
+| `css_parsing` | 11 | 560,997,153 | 1.9460% | 560,997,153 |
+| `paint_leaf_fill` | 204 | 552,110,960 | 1.9151% | 552,110,960 |
+| `paint_leaf_border` | 97 | 494,629,487 | 1.7157% | 494,629,487 |
+| `paint_leaf_svg` | 198 | 391,291,293 | 1.3573% | 391,291,293 |
+| `html_networking_task` | 581 | 284,787,206 | 0.9879% | 8,522,746,089 |
+| `background_resource_completion` | 163 | 284,007,402 | 0.9852% | 4,562,608,316 |
+| `paint_command_dispatch` | 13 | 220,675,465 | 0.7655% | 5,665,598,870 |
+| `viewport_relayout` | 10 | 190,557,172 | 0.6610% | 3,672,786,493 |
+| `navigation_html_parsing` | 1 | 182,963,339 | 0.6347% | 182,963,339 |
+| `document_layout` | 275 | 178,069,563 | 0.6177% | 4,326,969,193 |
+| `flow_layout` | 13 | 168,701,827 | 0.5852% | 168,701,827 |
+| `paint_leaf_effect_end` | 44 | 164,168,500 | 0.5695% | 164,168,500 |
+| `unscoped_process` | 0 | 160,144,121 | 0.5555% | — |
+| `layout_tree_construction` | 11 | 156,007,587 | 0.5412% | 156,007,587 |
+| `html_event_loop` | 880 | 115,225,829 | 0.3997% | 10,971,997,361 |
+| `paint_command_recording` | 15 | 112,100,222 | 0.3888% | 112,100,222 |
+| `stationary_raster_finish` | 163 | 89,805,546 | 0.3115% | 89,805,546 |
+| `html_rendering_task` | 126 | 75,825,989 | 0.2630% | 2,226,941,642 |
+| `native_window_initialization` | 2 | 72,148,594 | 0.2503% | 72,148,594 |
+| `initial_resource_preload` | 1 | 68,754,198 | 0.2385% | 371,376,525 |
+| `frame` | 163 | 68,341,810 | 0.2371% | 13,359,637,917 |
+| `frame_preparation` | 163 | 66,520,678 | 0.2307% | 6,638,887,734 |
+| `script_runtime_setup` | 1 | 61,076,604 | 0.2119% | 1,077,705,314 |
+| `document_install` | 1 | 57,832,469 | 0.2006% | 2,961,716,615 |
+| `script_state_replay` | 322 | 46,910,016 | 0.1627% | 1,588,401,167 |
+| `native_raster_replay` | 163 | 37,195,085 | 0.1290% | 6,589,935,959 |
+| `layout_geometry` | 13 | 33,608,278 | 0.1166% | 2,479,690,449 |
+| `browser_chrome` | 174 | 30,457,227 | 0.1056% | 30,457,227 |
+| `scroll_raster_probe` | 13 | 30,397,496 | 0.1054% | 30,397,496 |
+| `raster_frame_commit` | 13 | 29,936,686 | 0.1038% | 31,290,374 |
+| `native_frame_bitmap` | 163 | 29,129,027 | 0.1010% | 13,478,170,984 |
+| `native_document_replay` | 163 | 27,176,926 | 0.0943% | 6,625,717,494 |
+| `native_frame_presentation` | 163 | 22,342,932 | 0.0775% | 13,500,513,916 |
+| `stationary_raster_probe` | 156 | 19,016,506 | 0.0660% | 27,763,992 |
+| `png_encoding` | 1 | 18,223,809 | 0.0632% | — |
+| `html_other_task` | 149 | 17,973,505 | 0.0623% | 81,590,594 |
+| `browser_tab_frame` | 163 | 17,331,420 | 0.0601% | 13,376,969,337 |
+| `raster_frame_setup` | 13 | 16,747,934 | 0.0581% | 50,947,041 |
+| `html_rendering_opportunity` | 163 | 14,391,229 | 0.0499% | 14,391,229 |
+| `animation_driver` | 163 | 13,609,262 | 0.0472% | 13,609,262 |
+| `stationary_raster_eligibility` | 156 | 8,747,486 | 0.0303% | 8,747,486 |
+| `native_frame_context` | 163 | 8,604,609 | 0.0298% | 8,604,609 |
+| `style_computation` | 29 | 7,547,827 | 0.0262% | 7,547,827 |
+| `capture_snapshot` | 1 | 5,895,587 | 0.0205% | — |
+| `html_posted_message_task` | 18 | 4,239,431 | 0.0147% | 22,954,742 |
+| `raster_tile_setup` | 13 | 3,122,068 | 0.0108% | 3,122,068 |
+| `paint_leaf_effect_begin` | 44 | 3,052,537 | 0.0106% | 3,052,537 |
+| `relative_positioned_layout` | 13 | 1,157,250 | 0.0040% | 1,157,250 |
+| `stationary_blank_probe` | 7 | 748,382 | 0.0026% | 748,382 |
+| `viewport_raster_plan` | 13 | 679,543 | 0.0024% | 679,543 |
+| `html_timer_task` | 7 | 654,906 | 0.0023% | 2,698,020 |
+| `capture_conversion` | 1 | 48,279 | 0.0002% | — |
+| **Total (exclusive)** | | **28,828,843,071** | **100%** | |
+
+The [verification receipt](performance/chatgpt-picture-cache-verification-20261106.json) links every authenticated archive, exact raw instruction count, command, guard, PNG, source witness, host condition and actual exit. The [candidate table](performance/chatgpt-picture-cache-candidate-stages-20261106.csv) and [control table](performance/chatgpt-picture-cache-control-stages-20261106.csv) are machine-readable. **The 20B target and the original 5%-below-Brave target remain open.**
