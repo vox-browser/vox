@@ -65,6 +65,13 @@ fi
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
 "$output_dir/native_gpu_canvas_test" --cached-gpu-blurs
+VOX_GPU_CACHED_BLUR_TEXTURE_DIAGNOSTICS=1 "$output_dir/native_gpu_canvas_test" --cached-gpu-blur-textures > "$output_dir/blur-textures.log" 2>&1
+python3 - "$output_dir/blur-textures.log" <<'BLUR_TEXTURES'
+from pathlib import Path
+import re,sys
+assert re.search(r'VOX_GPU_CACHED_BLUR_TEXTURE .*reused=1',Path(sys.argv[1]).read_text()), 'No cached blur texture reuse through the primary bridge'
+print('Cached blur texture primary/backend bridge: exported API and texture reuse observed')
+BLUR_TEXTURES
 VOX_IMAGE_UPLOAD_DIAGNOSTICS=1 "$output_dir/native_gpu_canvas_test" --immutable-msaa-images > "$output_dir/immutable-uploads.log" 2>&1
 python3 - "$output_dir/immutable-uploads.log" <<'IDENTITY'
 import re,sys

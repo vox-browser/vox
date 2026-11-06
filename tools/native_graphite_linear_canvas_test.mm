@@ -355,6 +355,34 @@ static void test_nested_canvas_layers() {
     printf("Nested GPU layers: %u reference/resident alpha/screen/clip/overlap scenes max error %d; depth/failure/unwind passed\n",cases,error);
 }
 
+static void test_cached_filter_textures() {
+    setenv("VOX_GPU_CANVAS_CACHED_BLUR_TEXTURES","1",1);
+    cached_pixel_uploads.clear();
+    std::vector<uint8_t> source(32*3,0xee);
+    for(int y=0;y<3;++y) for(int x=0;x<5;++x) {
+        auto* p=source.data()+y*32+x*4;p[0]=31+x;p[1]=41+y;p[2]=17;p[3]=128;
+    }
+    auto render=[&](uint64_t key) {
+        int rect[]={0,0,32,24,0,0,32,24};std::vector<uint8_t> pixels(32*24*4,255);
+        assert(vox_graphite_canvas_begin(rect,1));assert(vox_graphite_canvas_upload(0,pixels.data(),32*4));
+        assert(vox_graphite_canvas_draw_cached_pixels(key,source.data(),5,3,32,7,9,nullptr,0));
+        VoxGraphitePixelRegion output{0,0,32,24,32*4,pixels.data()};
+        assert(vox_graphite_canvas_read(&output,1));vox_graphite_canvas_end();return pixels;
+    };
+    auto ordinary=render(0),first=render(1);assert(first==ordinary);
+    assert(render(1)==first);
+    VoxGraphiteImage descriptor{};descriptor.width=5;descriptor.height=3;descriptor.pitch=32;descriptor.pixels=source.data();
+    auto hit=cached_pixel_uploads.prepare(descriptor,5,3,false,1);assert(hit.texture && hit.identity_hit);
+    source[0]++;
+    assert(render(2)==render(0) && render(2)!=first);
+    // Evicted identities may be uploaded again, but never alias replacements.
+    for(uint64_t key=3;key<38;++key) render(key);
+    assert(!cached_pixel_uploads.prepare(descriptor,5,3,false,1).texture);
+    cached_pixel_uploads.clear();assert(!cached_pixel_uploads.prepare(descriptor,5,3,false,2).texture);
+    unsetenv("VOX_GPU_CANVAS_CACHED_BLUR_TEXTURES");
+    std::puts("Cached filter textures: exact premultiplied bytes, padding, reuse, changed output identity, eviction and context-clear invalidation");
+}
+
 int main() { @autoreleasepool {
     test_immutable_image_uploads();
     auto* gpu = context(); assert(gpu);
@@ -633,6 +661,7 @@ int main() { @autoreleasepool {
         canvas_reset(); // Retire cached textures before their recorder/context.
     }
     unsetenv("VOX_GPU_CANVAS_CACHE_BACKDROP");
+    test_cached_filter_textures();
     test_canvas_present();
     test_nested_canvas_layers();
     canvas_reset(); recorder.reset(); gpu_context.reset();

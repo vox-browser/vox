@@ -83,6 +83,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_read_direct) read_direct = nullptr;
     decltype(&vox_graphite_canvas_read_iosurface) read_iosurface = nullptr;
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
+    decltype(&vox_graphite_canvas_draw_cached_pixels) draw_cached_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_layer_pixels) draw_layer_pixels = nullptr;
     decltype(&vox_graphite_canvas_copy_pixels) copy_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
@@ -116,6 +117,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.read_direct = reinterpret_cast<decltype(value.read_direct)>(dlsym(library, "vox_graphite_canvas_read_direct"));
         value.read_iosurface = reinterpret_cast<decltype(value.read_iosurface)>(dlsym(library, "vox_graphite_canvas_read_iosurface"));
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
+        value.draw_cached_pixels = reinterpret_cast<decltype(value.draw_cached_pixels)>(dlsym(library, "vox_graphite_canvas_draw_cached_pixels"));
         value.draw_layer_pixels = reinterpret_cast<decltype(value.draw_layer_pixels)>(dlsym(library, "vox_graphite_canvas_draw_layer_pixels"));
         value.copy_pixels = reinterpret_cast<decltype(value.copy_pixels)>(dlsym(library, "vox_graphite_canvas_copy_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
@@ -988,7 +990,7 @@ static bool gpu_canvas_can_composite_cached_blur(CGContextRef destination)
         && frame->in_gpu_command && !gpu_canvas_shared_recording(destination);
 }
 
-static int gpu_canvas_composite_cached_blur(CGContextRef destination, uint32_t const* pixels,
+static int gpu_canvas_composite_cached_blur(CGContextRef destination, uint64_t key, uint32_t const* pixels,
     int width, int height, int x, int y)
 {
     if (!gpu_canvas_can_composite_cached_blur(destination) || !pixels || width <= 0 || height <= 0)
@@ -999,8 +1001,13 @@ static int gpu_canvas_composite_cached_blur(CGContextRef destination, uint32_t c
     std::vector<VoxGraphiteCanvasClip> clips;
     auto* frame = gpu_canvas_for_leaf(destination, clips);
     if (!frame || !frame->opaque_upload) return 0;
-    if (!gpu_canvas_api()->draw_pixels(reinterpret_cast<uint8_t const*>(pixels), width, height,
-            width * 4, x, y, clips.data(), int(clips.size()))) {
+    auto* api=gpu_canvas_api();
+    bool cached=key && api->draw_cached_pixels && std::getenv("VOX_GPU_CANVAS_CACHED_BLUR_TEXTURES");
+    int drawn=cached ? api->draw_cached_pixels(key,reinterpret_cast<uint8_t const*>(pixels),width,height,
+            width*4,x,y,clips.data(),int(clips.size()))
+        : api->draw_pixels(reinterpret_cast<uint8_t const*>(pixels), width, height,
+            width * 4, x, y, clips.data(), int(clips.size()));
+    if (!drawn) {
         gpu_canvas_flush(); return 0;
     }
     gpu_canvas_name_leaf(*frame, "cached-gradient-blur", SkRect::MakeXYWH(x,y,width,height), 0, clips.size());

@@ -982,10 +982,16 @@ static void test_nested_failure(bool unclosed) {
 static bool s_cached_blur_translucent;
 static bool s_cached_blur_failed;
 static decltype(&vox_graphite_canvas_draw_pixels) s_cached_blur_real_pixels;
+static decltype(&vox_graphite_canvas_draw_cached_pixels) s_cached_blur_real_cached_pixels;
 static int cached_blur_pixels(uint8_t const* pixels,int w,int h,int pitch,int x,int y,
     VoxGraphiteCanvasClip const* clips,int count)
 {
     return !s_cached_blur_failed && s_cached_blur_real_pixels(pixels,w,h,pitch,x,y,clips,count);
+}
+static int cached_blur_texture_pixels(uint64_t key,uint8_t const* pixels,int w,int h,int pitch,int x,int y,
+    VoxGraphiteCanvasClip const* clips,int count)
+{
+    return !s_cached_blur_failed && s_cached_blur_real_cached_pixels(key,pixels,w,h,pitch,x,y,clips,count);
 }
 static float s_cached_blur_sigma;
 static void draw_cached_blur(CGContextRef destination, bool canvas)
@@ -1029,22 +1035,40 @@ int main(int argc, char** argv)
         }
     }
     if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
-    if (argc==2 && !std::strcmp(argv[1],"--cached-gpu-blurs")) {
+    if (argc==2 && (!std::strcmp(argv[1],"--cached-gpu-blurs") || !std::strcmp(argv[1],"--cached-gpu-blur-textures"))) {
         setenv("VOX_GPU_CANVAS_CACHED_BLURS","1",1);
         setenv("VOX_GPU_CANVAS_DIAGNOSTICS","1",1);
         setenv("VOX_GPU_CANVAS_ISOLATED_SHAPES","1",1);
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
         s_backend_read=api->read; api->read=counted_read;
         s_cached_blur_real_pixels=api->draw_pixels; api->draw_pixels=cached_blur_pixels;
+        bool textures=!std::strcmp(argv[1],"--cached-gpu-blur-textures");
+        if (textures) {
+            setenv("VOX_GPU_CANVAS_CACHED_BLUR_TEXTURES","1",1);
+            s_cached_blur_real_cached_pixels=api->draw_cached_pixels;assert(s_cached_blur_real_cached_pixels);
+            api->draw_cached_pixels=cached_blur_texture_pixels;
+        }
         int error=0; unsigned cases=0;
-        for (bool full : {false,true}) for (bool translucent : {false,true})
+        for (bool legacy : {false,true}) for (bool full : {false,true}) for (bool translucent : {false,true})
         for (float sigma : {1.f,15.f,30.f}) for (bool fail : {false,true}) for (int repeat=0;repeat<2;++repeat) {
+            if (textures) api->draw_cached_pixels=legacy ? nullptr : cached_blur_texture_pixels;
             s_cached_blur_translucent=translucent; s_cached_blur_sigma=sigma; s_cached_blur_failed=fail;
             auto reference=render(false,false,draw_cached_blur,full);
             auto candidate=render(true,false,draw_cached_blur,full);
             for (size_t at=0;at<reference.size();++at)
                 error=std::max(error,std::abs(int(reference[at])-int(candidate[at])));
             assert(error<=3); ++cases;
+        }
+        if (textures) {
+            s_anchored_gradient_blurs.clear();s_anchored_gradient_blur_bytes=0;
+            s_anchored_gradient_blur_texture_id=UINT64_MAX;
+            s_cached_blur_translucent=s_cached_blur_failed=false;s_cached_blur_sigma=17;
+            auto reference=render(false,false,draw_cached_blur,true);
+            auto candidate=render(true,false,draw_cached_blur,true);
+            assert(s_anchored_gradient_blurs.front().texture_id==0);
+            for (size_t at=0;at<reference.size();++at)
+                assert(std::abs(int(reference[at])-int(candidate[at]))<=3);
+            ++cases;
         }
         std::cout << "Cached GPU blur: " << cases << " full/strip/opaque/translucent/fresh/reused scenes, max error " << error << '\n';
         return 0;

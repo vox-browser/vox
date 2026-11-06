@@ -3117,13 +3117,15 @@ struct AnchoredGradientBlur {
     // Ink rectangle in device pixels relative to the content anchor.
     int left = 0, top = 0, width = 0, height = 0;
     std::vector<uint32_t> pixels; // premultiplied BGRA filter output
+    uint64_t texture_id = 0;
 };
 static std::list<AnchoredGradientBlur> s_anchored_gradient_blurs;
 static size_t s_anchored_gradient_blur_bytes = 0;
 static constexpr size_t anchored_gradient_blur_byte_limit = 64 * 1024 * 1024;
+static uint64_t s_anchored_gradient_blur_texture_id;
 extern "C" void ladybird_v_skia_gpu_canvas_context_access(CGContextRef);
 static bool gpu_canvas_can_composite_cached_blur(CGContextRef);
-static int gpu_canvas_composite_cached_blur(CGContextRef, uint32_t const*, int, int, int, int);
+static int gpu_canvas_composite_cached_blur(CGContextRef, uint64_t, uint32_t const*, int, int, int, int);
 
 // A blur whose content identity is already cached draws from that cache, not
 // from its leaves' raster. Its leaves still record the input picture, which
@@ -3279,6 +3281,8 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
 #endif
             rendered = direct_draw(&request, 1, ink_width, ink_height);
         if (!rendered) return -1;
+        if (key && s_anchored_gradient_blur_texture_id != UINT64_MAX)
+            fresh.texture_id = ++s_anchored_gradient_blur_texture_id;
 #ifdef VOX_TEST_DIRECT_GRADIENT_BLUR
         ++s_test_direct_gradient_blur_successes;
 #endif
@@ -3300,7 +3304,7 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
         std::fprintf(stderr, "VOX_ANCHORED_GRADIENT_BLUR cached=%d ink=%ld,%ld,%d,%d region=%ld,%ld,%ld,%ld\n",
             int(cache_hit), ink_x, ink_y, ink_width, ink_height, x0, y0, x1 - x0, y1 - y0);
     if (gpu_only) {
-        int result = gpu_canvas_composite_cached_blur(destination, layer->pixels.data(),
+        int result = gpu_canvas_composite_cached_blur(destination, layer->texture_id, layer->pixels.data(),
             ink_width, ink_height, int(ink_x), int(ink_y));
         return result ? result : -1;
     }

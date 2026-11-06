@@ -64,6 +64,9 @@ std::mutex gpu_mutex;
 // Shared sprite sources leave room for many small, distinct draw results.
 VoxGraphiteRasterCache image_cache(32 * 1024 * 1024, 2048);
 VoxGraphiteImageUploadCache<sk_sp<SkImage>> image_upload_cache;
+// Immutable premultiplied filter outputs have a separate key domain and a
+// bounded texture-only budget. They never alias decoded straight-RGBA images.
+VoxGraphiteImageUploadCache<sk_sp<SkImage>> cached_pixel_uploads(32 * 1024 * 1024, 32);
 VoxGraphiteRasterCache path_cache(8 * 1024 * 1024, 512, true);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024, 512, true);
 VoxGraphiteRasterCache shadow_cache(8 * 1024 * 1024, 128, true);
@@ -251,6 +254,7 @@ static int retire_graphics_context_locked()
     if (!gpu_context) return 0;
     // CPU raster results remain reusable after the unused upload/context die.
     image_upload_cache.clear();
+    cached_pixel_uploads.clear();
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
     clear_region_targets();
@@ -285,6 +289,7 @@ void vox_graphite_release_unused_graphics_memory()
     std::lock_guard lock(gpu_mutex);
     image_cache.clear();
     image_upload_cache.clear();
+    cached_pixel_uploads.clear();
     shape_cache.clear();
     shadow_cache.clear();
     path_cache.clear();

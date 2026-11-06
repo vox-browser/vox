@@ -619,6 +619,42 @@ int vox_graphite_canvas_draw_pixels(uint8_t const* bgra, int width, int height, 
 }
 
 extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_cached_pixels(uint64_t key, uint8_t const* bgra,
+    int width, int height, int pitch, int device_x, int device_y,
+    VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    if (!bgra || width<=0 || height<=0 || width>16384 || height>16384 || pitch<width*4
+        || size_t(width)*height>8*1024*1024 || device_x < -16777216 || device_x > 16777216
+        || device_y < -16777216 || device_y > 16777216) return 0;
+    if (!key || !std::getenv("VOX_GPU_CANVAS_CACHED_BLUR_TEXTURES"))
+        return vox_graphite_canvas_draw_pixels(bgra,width,height,pitch,device_x,device_y,clips,clip_count);
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder) return 0;
+    VoxGraphiteImage source {};source.pixels=bgra;source.width=width;source.height=height;source.pitch=pitch;
+    auto request=cached_pixel_uploads.prepare(source,width,height,false,key);
+    bool reused=bool(request.texture);
+    auto image=request.texture;
+    if (!image) {
+        auto raster=SkImages::RasterFromPixmapCopy(SkPixmap(canvas_info(width,height),bgra,size_t(pitch)));
+        image=raster ? vox_shared_image(canvas_recorder.get(),raster,{}) : nullptr;
+    }
+    if (!image) return 0;
+    float bounds[] {float(device_x),float(device_y),float(device_x+width),float(device_y+height)};
+    int result=canvas_draw(bounds,clips,clip_count,[&](SkCanvas* canvas,CanvasTile const& tile) {
+        canvas->setMatrix(SkMatrix::Translate(device_x-tile.x,device_y-tile.y));
+        canvas->drawImage(image,0,0,SkSamplingOptions(SkFilterMode::kNearest));
+    });
+    if (result) cached_pixel_uploads.finish(std::move(request),image);
+    if (std::getenv("VOX_GPU_CACHED_BLUR_TEXTURE_DIAGNOSTICS")) {
+        using Clock=double (*)();
+        static auto clock=reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT,"vox_precise_scroll_diagnostic_time"));
+        std::fprintf(stderr,"VOX_GPU_CACHED_BLUR_TEXTURE key=%llu width=%d height=%d reused=%d t_us=%.3f\n",
+            (unsigned long long)key,width,height,int(reused),clock ? clock() : -1);
+    }
+    return result;
+}
+
+extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_copy_pixels(uint8_t const* bgra, int width, int height, int pitch,
     int device_x, int device_y)
 {

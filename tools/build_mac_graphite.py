@@ -226,6 +226,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_canvas_wait_present",
         "-Wl,-exported_symbol,_vox_graphite_canvas_release_present",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_pixels",
+        "-Wl,-exported_symbol,_vox_graphite_canvas_draw_cached_pixels",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_layer_pixels",
         "-Wl,-exported_symbol,_vox_graphite_canvas_copy_pixels",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_path",

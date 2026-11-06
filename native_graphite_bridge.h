@@ -267,6 +267,11 @@ int vox_graphite_canvas_draw_path(const VoxGraphitePath *path, const float *devi
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_pixels(const uint8_t *bgra, int width, int height, int pitch,
     int device_x, int device_y, const VoxGraphiteCanvasClip *clips, int clip_count);
+// A nonzero key identifies immutable BGRA output for its entire lifetime.
+// Never reuse a key after replacement or eviction in the producing cache.
+int vox_graphite_canvas_draw_cached_pixels(uint64_t key, const uint8_t *bgra,
+    int width, int height, int pitch, int device_x, int device_y,
+    const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_layer_pixels(const uint8_t *bgra, int width, int height, int pitch,
     int device_x, int device_y, const VoxGraphiteCanvasClip *clips, int clip_count, float opacity, int blend_mode);
 int vox_graphite_canvas_copy_pixels(const uint8_t *bgra, int width, int height, int pitch,
