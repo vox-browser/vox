@@ -1,0 +1,1674 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "implementation_commit": "089ebba875ade38f61dbba466cf00f2017933f32",
+  "focused_functions": 50,
+  "focused_test_executions": 400,
+  "focused_guarded_jobs": 12,
+  "component_guarded_jobs": 9,
+  "attempts": [
+    {
+      "complete": false,
+      "passed": false,
+      "source_before": {
+        "css/font_input_refresh_parent.v": "6f768f28c9478e431446d74b0275d79a95d5245fd078a6c59517caeef4cbb0bd",
+        "css/font_input_refresh.v": "aad1758c3cc6d45ff35b18c97ea5ca19d90b7fc572ddf5c852ad00159074e47f",
+        "css/font_input_refresh_parent_test.v": "a56a2ed9df36dad7d594da3ea3a64bab9487b85613bda2e29f62ee22cd59c12b",
+        "css/font_input_refresh_test.v": "d7db56c2a147f54c1978e3f9066279bab69f011cb42ad19a64bed506f349dda1",
+        "css/font_input_refresh_cascade_test.v": "6c49054f55150e39a16da4161141ae2bf75fbfc2e84e99dd3a02d0ecf3a566ac",
+        "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c",
+        "css/font_recompute_snapshot_test.v": "7fd04ac2891818381c9feb9f4528909ed5762b4d2839711e57dbd9acb4407d09",
+        "css/font_completion_snapshot_test.v": "d16119fd8a29d9c709df3a2a4bc1a29a45e74736385bb4a298b2dc5e8440c407",
+        "css/computed_font_list_sharing_test.v": "547078cc9373f01505630e20151617f81e58d3228ea3ee9c5e2707b64446af2b"
+      },
+      "source_after": {
+        "css/font_input_refresh_parent.v": "6f768f28c9478e431446d74b0275d79a95d5245fd078a6c59517caeef4cbb0bd",
+        "css/font_input_refresh.v": "aad1758c3cc6d45ff35b18c97ea5ca19d90b7fc572ddf5c852ad00159074e47f",
+        "css/font_input_refresh_parent_test.v": "a56a2ed9df36dad7d594da3ea3a64bab9487b85613bda2e29f62ee22cd59c12b",
+        "css/font_input_refresh_test.v": "d7db56c2a147f54c1978e3f9066279bab69f011cb42ad19a64bed506f349dda1",
+        "css/font_input_refresh_cascade_test.v": "6c49054f55150e39a16da4161141ae2bf75fbfc2e84e99dd3a02d0ecf3a566ac",
+        "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c",
+        "css/font_recompute_snapshot_test.v": "7fd04ac2891818381c9feb9f4528909ed5762b4d2839711e57dbd9acb4407d09",
+        "css/font_completion_snapshot_test.v": "d16119fd8a29d9c709df3a2a4bc1a29a45e74736385bb4a298b2dc5e8440c407",
+        "css/computed_font_list_sharing_test.v": "547078cc9373f01505630e20151617f81e58d3228ea3ee9c5e2707b64446af2b"
+      },
+      "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+      "rows": [
+        {
+          "label": "compile-css-prealloc",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r1/compile-css-prealloc.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r1/compile-css-prealloc-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-file-list",
+            "/Users/alex/code/vox2/css/font_input_refresh_test.v,/Users/alex/code/vox2/css/font_input_refresh_cascade_test.v,/Users/alex/code/vox2/css/inherited_style_parent_test.v,/Users/alex/code/vox2/css/font_recompute_snapshot_test.v,/Users/alex/code/vox2/css/font_completion_snapshot_test.v,/Users/alex/code/vox2/css/computed_font_list_sharing_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r1/css-prealloc",
+            "/Users/alex/code/vox2/css/font_input_refresh_parent_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793963159.989658,
+            "cpu_count": 18,
+            "load": [
+              6.1650390625,
+              6.1171875,
+              6.77978515625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963167.38371,
+            "load": [
+              6.7919921875,
+              6.248046875,
+              6.82177734375
+            ]
+          }
+        },
+        {
+          "label": "run-css-prealloc-candidate",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r1/run-css-prealloc-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r1/run-css-prealloc-candidate-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r1/css-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963167.40173,
+            "cpu_count": 18,
+            "load": [
+              6.7919921875,
+              6.248046875,
+              6.82177734375
+            ]
+          },
+          "exit": 1,
+          "host_after": {
+            "unix": 1793963168.112776,
+            "load": [
+              6.7919921875,
+              6.248046875,
+              6.82177734375
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "complete": true,
+      "passed": true,
+      "source_before": {
+        "css/font_input_refresh_parent.v": "6f768f28c9478e431446d74b0275d79a95d5245fd078a6c59517caeef4cbb0bd",
+        "css/font_input_refresh.v": "2b9174813d315d691598e46d596ed45263bf3a96fad0f98caa48d4620d8a911b",
+        "css/font_input_refresh_parent_test.v": "97005be073df7ae45091da07e775ce7660467cbbfd02bc7f1e6a1995e61fa544",
+        "css/font_input_refresh_test.v": "d7db56c2a147f54c1978e3f9066279bab69f011cb42ad19a64bed506f349dda1",
+        "css/font_input_refresh_cascade_test.v": "6c49054f55150e39a16da4161141ae2bf75fbfc2e84e99dd3a02d0ecf3a566ac",
+        "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c",
+        "css/font_recompute_snapshot_test.v": "7fd04ac2891818381c9feb9f4528909ed5762b4d2839711e57dbd9acb4407d09",
+        "css/font_completion_snapshot_test.v": "d16119fd8a29d9c709df3a2a4bc1a29a45e74736385bb4a298b2dc5e8440c407",
+        "css/computed_font_list_sharing_test.v": "547078cc9373f01505630e20151617f81e58d3228ea3ee9c5e2707b64446af2b"
+      },
+      "source_after": {
+        "css/font_input_refresh_parent.v": "6f768f28c9478e431446d74b0275d79a95d5245fd078a6c59517caeef4cbb0bd",
+        "css/font_input_refresh.v": "2b9174813d315d691598e46d596ed45263bf3a96fad0f98caa48d4620d8a911b",
+        "css/font_input_refresh_parent_test.v": "97005be073df7ae45091da07e775ce7660467cbbfd02bc7f1e6a1995e61fa544",
+        "css/font_input_refresh_test.v": "d7db56c2a147f54c1978e3f9066279bab69f011cb42ad19a64bed506f349dda1",
+        "css/font_input_refresh_cascade_test.v": "6c49054f55150e39a16da4161141ae2bf75fbfc2e84e99dd3a02d0ecf3a566ac",
+        "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c",
+        "css/font_recompute_snapshot_test.v": "7fd04ac2891818381c9feb9f4528909ed5762b4d2839711e57dbd9acb4407d09",
+        "css/font_completion_snapshot_test.v": "d16119fd8a29d9c709df3a2a4bc1a29a45e74736385bb4a298b2dc5e8440c407",
+        "css/computed_font_list_sharing_test.v": "547078cc9373f01505630e20151617f81e58d3228ea3ee9c5e2707b64446af2b"
+      },
+      "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+      "rows": [
+        {
+          "label": "compile-css-prealloc",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-prealloc.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-prealloc-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-file-list",
+            "/Users/alex/code/vox2/css/font_input_refresh_test.v,/Users/alex/code/vox2/css/font_input_refresh_cascade_test.v,/Users/alex/code/vox2/css/inherited_style_parent_test.v,/Users/alex/code/vox2/css/font_recompute_snapshot_test.v,/Users/alex/code/vox2/css/font_completion_snapshot_test.v,/Users/alex/code/vox2/css/computed_font_list_sharing_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-prealloc",
+            "/Users/alex/code/vox2/css/font_input_refresh_parent_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793963220.0502138,
+            "cpu_count": 18,
+            "load": [
+              6.3828125,
+              6.29296875,
+              6.80517578125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963226.1396291,
+            "load": [
+              6.27197265625,
+              6.271484375,
+              6.79443359375
+            ]
+          }
+        },
+        {
+          "label": "run-css-prealloc-candidate",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-prealloc-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-prealloc-candidate-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963226.156065,
+            "cpu_count": 18,
+            "load": [
+              6.27197265625,
+              6.271484375,
+              6.79443359375
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963226.844814,
+            "load": [
+              6.27197265625,
+              6.271484375,
+              6.79443359375
+            ]
+          }
+        },
+        {
+          "label": "run-css-prealloc-control",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-prealloc-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-prealloc-control-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963226.85186,
+            "cpu_count": 18,
+            "load": [
+              6.27197265625,
+              6.271484375,
+              6.79443359375
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963227.296823,
+            "load": [
+              6.27197265625,
+              6.271484375,
+              6.79443359375
+            ]
+          }
+        },
+        {
+          "label": "compile-css-default",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-default.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-default-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-file-list",
+            "/Users/alex/code/vox2/css/font_input_refresh_test.v,/Users/alex/code/vox2/css/font_input_refresh_cascade_test.v,/Users/alex/code/vox2/css/inherited_style_parent_test.v,/Users/alex/code/vox2/css/font_recompute_snapshot_test.v,/Users/alex/code/vox2/css/font_completion_snapshot_test.v,/Users/alex/code/vox2/css/computed_font_list_sharing_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-default",
+            "/Users/alex/code/vox2/css/font_input_refresh_parent_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793963227.3041,
+            "cpu_count": 18,
+            "load": [
+              6.27197265625,
+              6.271484375,
+              6.79443359375
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963233.024045,
+            "load": [
+              6.009765625,
+              6.216796875,
+              6.77197265625
+            ]
+          }
+        },
+        {
+          "label": "run-css-default-candidate",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-default-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-default-candidate-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-default"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963233.031277,
+            "cpu_count": 18,
+            "load": [
+              6.009765625,
+              6.216796875,
+              6.77197265625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963233.471933,
+            "load": [
+              6.009765625,
+              6.216796875,
+              6.77197265625
+            ]
+          }
+        },
+        {
+          "label": "run-css-default-control",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-default-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-default-control-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-default"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963233.479021,
+            "cpu_count": 18,
+            "load": [
+              6.009765625,
+              6.216796875,
+              6.77197265625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963233.679394,
+            "load": [
+              6.009765625,
+              6.216796875,
+              6.77197265625
+            ]
+          }
+        },
+        {
+          "label": "compile-css-none",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-none-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-gc",
+            "none",
+            "-file-list",
+            "/Users/alex/code/vox2/css/font_input_refresh_test.v,/Users/alex/code/vox2/css/font_input_refresh_cascade_test.v,/Users/alex/code/vox2/css/inherited_style_parent_test.v,/Users/alex/code/vox2/css/font_recompute_snapshot_test.v,/Users/alex/code/vox2/css/font_completion_snapshot_test.v,/Users/alex/code/vox2/css/computed_font_list_sharing_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-none",
+            "/Users/alex/code/vox2/css/font_input_refresh_parent_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793963233.6864572,
+            "cpu_count": 18,
+            "load": [
+              6.009765625,
+              6.216796875,
+              6.77197265625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963239.6669781,
+            "load": [
+              5.85400390625,
+              6.17626953125,
+              6.75048828125
+            ]
+          }
+        },
+        {
+          "label": "run-css-none-candidate",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-none-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-none-candidate-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963239.674639,
+            "cpu_count": 18,
+            "load": [
+              5.85400390625,
+              6.17626953125,
+              6.75048828125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963240.122327,
+            "load": [
+              5.85400390625,
+              6.17626953125,
+              6.75048828125
+            ]
+          }
+        },
+        {
+          "label": "run-css-none-control",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-none-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-none-control-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963240.1301608,
+            "cpu_count": 18,
+            "load": [
+              5.85400390625,
+              6.17626953125,
+              6.75048828125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963240.341125,
+            "load": [
+              5.85400390625,
+              6.17626953125,
+              6.75048828125
+            ]
+          }
+        },
+        {
+          "label": "compile-css-sanitized",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-sanitized.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/compile-css-sanitized-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-cflags",
+            "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+            "-ldflags",
+            "-fsanitize=address,undefined",
+            "-file-list",
+            "/Users/alex/code/vox2/css/font_input_refresh_test.v,/Users/alex/code/vox2/css/font_input_refresh_cascade_test.v,/Users/alex/code/vox2/css/inherited_style_parent_test.v,/Users/alex/code/vox2/css/font_recompute_snapshot_test.v,/Users/alex/code/vox2/css/font_completion_snapshot_test.v,/Users/alex/code/vox2/css/computed_font_list_sharing_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-sanitized",
+            "/Users/alex/code/vox2/css/font_input_refresh_parent_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793963240.3484108,
+            "cpu_count": 18,
+            "load": [
+              5.85400390625,
+              6.17626953125,
+              6.75048828125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963253.6399648,
+            "load": [
+              5.73486328125,
+              6.1376953125,
+              6.7294921875
+            ]
+          }
+        },
+        {
+          "label": "run-css-sanitized-candidate",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-sanitized-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-sanitized-candidate-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-sanitized"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963253.657315,
+            "cpu_count": 18,
+            "load": [
+              5.73486328125,
+              6.1376953125,
+              6.7294921875
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963254.977642,
+            "load": [
+              5.755859375,
+              6.13525390625,
+              6.72509765625
+            ]
+          }
+        },
+        {
+          "label": "run-css-sanitized-control",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-sanitized-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/run-css-sanitized-control-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-checked-20261106-r2/css-sanitized"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1",
+            "VOX_FONT_REFRESH_PARENT_DIAGNOSTICS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793963254.9851048,
+            "cpu_count": 18,
+            "load": [
+              5.755859375,
+              6.13525390625,
+              6.72509765625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793963255.794343,
+            "load": [
+              5.755859375,
+              6.13525390625,
+              6.72509765625
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "component_receipt": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/font_input_refresh_parent.v": "6f768f28c9478e431446d74b0275d79a95d5245fd078a6c59517caeef4cbb0bd",
+      "css/font_input_refresh_parent_test.v": "97005be073df7ae45091da07e775ce7660467cbbfd02bc7f1e6a1995e61fa544",
+      "css/font_input_refresh.v": "2b9174813d315d691598e46d596ed45263bf3a96fad0f98caa48d4620d8a911b",
+      "css/font_input_refresh_test.v": "d7db56c2a147f54c1978e3f9066279bab69f011cb42ad19a64bed506f349dda1",
+      "Build/chatgpt-font-guard-parent-component-20261106-r1/driver_test.v": "c644649dfa2b3e3d807278d786ff3a9341db9d209e965c3c2aaa711b677f5416",
+      "Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc": "7afea5bc19fb9255145334c0cd6fc4761ca134a543758ddd717deb484719543b",
+      "packaging/Vox.entitlements.plist": "958648f799e436860b51eaf55ec8f92d2c62da17001e23d96bc05ffc748f2a2a"
+    },
+    "source_after": {
+      "css/font_input_refresh_parent.v": "6f768f28c9478e431446d74b0275d79a95d5245fd078a6c59517caeef4cbb0bd",
+      "css/font_input_refresh_parent_test.v": "97005be073df7ae45091da07e775ce7660467cbbfd02bc7f1e6a1995e61fa544",
+      "css/font_input_refresh.v": "2b9174813d315d691598e46d596ed45263bf3a96fad0f98caa48d4620d8a911b",
+      "css/font_input_refresh_test.v": "d7db56c2a147f54c1978e3f9066279bab69f011cb42ad19a64bed506f349dda1",
+      "Build/chatgpt-font-guard-parent-component-20261106-r1/driver_test.v": "c644649dfa2b3e3d807278d786ff3a9341db9d209e965c3c2aaa711b677f5416",
+      "Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc": "7afea5bc19fb9255145334c0cd6fc4761ca134a543758ddd717deb484719543b",
+      "packaging/Vox.entitlements.plist": "958648f799e436860b51eaf55ec8f92d2c62da17001e23d96bc05ffc748f2a2a"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-component-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/compile-component-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/compile-component-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prod",
+          "-cflags",
+          "-O2",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/driver_test.v",
+          "-run-only",
+          "test_font_guard_parent_component",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc",
+          "/Users/alex/code/vox2/css/font_input_refresh_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793963263.82505,
+          "cpu_count": 18,
+          "load": [
+            5.53515625,
+            6.0830078125,
+            6.703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963301.579872,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-0-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-0-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963301.6727931,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963302.254623,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-1-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-1-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963302.2887511,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963302.4961789,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-2-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-2-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963302.529862,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963302.733045,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-3-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-3-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963302.766444,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963302.9710689,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-4-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-4-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-4-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963303.004341,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963303.208951,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-5-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-5-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-5-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963303.2430038,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963303.444397,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-6-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-6-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-6-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963303.478518,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963303.684142,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      },
+      {
+        "label": "sample-7-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-7-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/sample-7-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793963303.7179148,
+          "cpu_count": 18,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793963303.919457,
+          "load": [
+            5.8115234375,
+            6.07421875,
+            6.6689453125
+          ]
+        }
+      }
+    ]
+  },
+  "components": {
+    "normal-noop": {
+      "control_median": 68226637.0,
+      "candidate_median": 62026967.0,
+      "reduction_percent": 9.086876141938527,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 68226592
+          },
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 68226650
+          },
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 68226624
+          },
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 68240590
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 62055438
+          },
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 62023237
+          },
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 62030697
+          },
+          {
+            "calls": 3000,
+            "case": "normal-noop",
+            "checksum": 3000,
+            "instructions": 62019634
+          }
+        ]
+      }
+    },
+    "font-relative-noop": {
+      "control_median": 68539947.0,
+      "candidate_median": 62335941.5,
+      "reduction_percent": 9.051663696209156,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 68535646
+          },
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 68546682
+          },
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 68544248
+          },
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 68535596
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 62328599
+          },
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 62343284
+          },
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 62328584
+          },
+          {
+            "calls": 3000,
+            "case": "font-relative-noop",
+            "checksum": 3000,
+            "instructions": 62344360
+          }
+        ]
+      }
+    },
+    "explicit-inherit": {
+      "control_median": 69249123.5,
+      "candidate_median": 62892926.0,
+      "reduction_percent": 9.178740724422308,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 69330944
+          },
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 69240542
+          },
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 69257705
+          },
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 69240542
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 62889542
+          },
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 62926057
+          },
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 62889574
+          },
+          {
+            "calls": 3000,
+            "case": "explicit-inherit",
+            "checksum": 3000,
+            "instructions": 62896278
+          }
+        ]
+      }
+    },
+    "no-inherited-properties": {
+      "control_median": 3660567.0,
+      "candidate_median": 3645554.5,
+      "reduction_percent": 0.41011406156478136,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3660567
+          },
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3660542
+          },
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3660567
+          },
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3660592
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3645542
+          },
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3645542
+          },
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3645592
+          },
+          {
+            "calls": 3000,
+            "case": "no-inherited-properties",
+            "checksum": 3000,
+            "instructions": 3645567
+          }
+        ]
+      }
+    },
+    "changed-parent-size": {
+      "control_median": 486567.0,
+      "candidate_median": 471554.5,
+      "reduction_percent": 3.085392145377719,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 486567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 486542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 486567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 486592
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 471542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 471542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 471567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-parent-size",
+            "checksum": 0,
+            "instructions": 471567
+          }
+        ]
+      }
+    },
+    "changed-inherited-color": {
+      "control_median": 2364579.5,
+      "candidate_median": 2133554.5,
+      "reduction_percent": 9.770236103290241,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2364567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2364542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2364601
+          },
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2364592
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2133542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2133542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2133567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-inherited-color",
+            "checksum": 0,
+            "instructions": 2133567
+          }
+        ]
+      }
+    },
+    "changed-root-size": {
+      "control_median": 174567.0,
+      "candidate_median": 174554.5,
+      "reduction_percent": 0.007160574449927015,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174592
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174542
+          },
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174567
+          },
+          {
+            "calls": 3000,
+            "case": "changed-root-size",
+            "checksum": 0,
+            "instructions": 174567
+          }
+        ]
+      }
+    },
+    "missing-style": {
+      "control_median": 135567.0,
+      "candidate_median": 135542.0,
+      "reduction_percent": 0.018441066041141596,
+      "samples": {
+        "control": [
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135567
+          },
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135542
+          },
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135567
+          },
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135592
+          }
+        ],
+        "candidate": [
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135542
+          },
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135542
+          },
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135542
+          },
+          {
+            "calls": 3000,
+            "case": "missing-style",
+            "checksum": 0,
+            "instructions": 135566
+          }
+        ]
+      }
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-font-guard-parent-checked-20261106-evidence.zip",
+      "sha256": "d8eb2c4427c8d68069f6224685a56c061c2e82093afd822491bb7cead49d42d8",
+      "bytes": 95714,
+      "verified_entries": 83
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_carry": 0,
+  "qualification": "Synchronous font-refresh guard parent reuse only; root-size early rejection stays before parent lookup. Candidate and retained per-property policies pass all 50 functions in ordinary GC, no GC, poisoned preallocation and address/undefined sanitizers. The initial mutation fixture incorrectly assumed canvastext and black had identical typed values; its rejection is retained, and the final test clones the exact child value into a distinct parent box before mutating it. No parent survives the guard call. Component setup and one warm call remain outside 3,000-call counters; four alternating samples per variant preserve boolean checksums and early-rejection cases. No component-to-page extrapolation."
+}

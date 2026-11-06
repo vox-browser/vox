@@ -6130,3 +6130,30 @@ The original one-time SOCKS capture, author scripts and references remain fixed.
 Medians: **24,771,919,461.5 control → 25,794,197,515.5 candidate**, an observed **4.127% increase**. Conservative separation `min(control lower) − max(candidate upper)` is **-2,654,763,006 instructions**. Every candidate exceeds every control in this cohort. The policy earns no saving and remains opt-in. No 5M broad checkpoint is due; carry stays zero. Four pairs do not establish seven-pair acceptance or live-site performance, and differences across earlier probe builds receive no credit.
 
 The [verification receipt](performance/chatgpt-gpu-capture-verification-20261106.json) authenticates the [focused checks](performance/chatgpt-gpu-capture-focused-verification-20261106.json), three retained page probes, refreshed diagnostic, matched cohort and all evidence archives. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Font-refresh guard parent reuse toward 20B (2026-11-06)
+
+Implementation `089ebba87` resolves the inheritance parent once during each synchronous font-refresh guard. Every property still reads the live non-animated parent store, including explicit `inherit` on normally non-inherited properties. Root-size rejection remains before the lookup. Reparenting, inheritance overrides and pseudo-elements are resolved again on the next inspection; no parent or result survives the call. `VOX_RETAIN_FONT_REFRESH_PARENT_LOOKUPS` retains the original per-property lookup control.
+
+All **400 final focused test executions** pass: 50 functions under both policies in ordinary GC, no GC, poisoned preallocation and AddressSanitizer/UndefinedBehaviorSanitizer. Twelve guarded compile/runtime jobs cover all-longhand pointer comparisons, missing parents/styles, live parent replacement, reparenting, overrides, pseudo inheritance, explicit non-inherited inputs, in-place payload changes, actual font completions, pending-face visibility, transition rejection and retained geometry. The first mutation fixture incorrectly treated `canvastext` and `black` as identical typed inputs; its failed run remains retained. The corrected fixture clones the exact child value into a distinct parent box before mutating it.
+
+The component performs 3,000 guards after setup and a warm call, retaining four alternating observations per variant and checking boolean outcomes outside the counters. Source and executable hashes remain pinned. The component harness did not poll native-library identities during its samples, so these remain component diagnostics; they cannot establish production page savings.
+
+| Component | Control median | Candidate median | Observed reduction |
+|---|---:|---:|---:|
+| normal-noop | 68,226,637 | 62,026,967 | +9.087% |
+| font-relative-noop | 68,539,947 | 62,335,941.5 | +9.052% |
+| explicit-inherit | 69,249,123.5 | 62,892,926 | +9.179% |
+| no-inherited-properties | 3,660,567 | 3,645,554.5 | +0.410% |
+| changed-parent-size | 486,567 | 471,554.5 | +3.085% |
+| changed-inherited-color | 2,364,579.5 | 2,133,554.5 | +9.770% |
+| changed-root-size | 174,567 | 174,554.5 | +0.007% |
+| missing-style | 135,567 | 135,542 | +0.018% |
+
+The latest completed canonical executable `54133db57b84c2867269eee27fe3da8e50581c2ffeeca06e009e0957ee912ffd` uses `single` C compilation with V production source conditions. Sealed-source proof confirms one guard parent lookup, the root-size early rejection and both value-read sites. A nonblocking publication lease pins executable/native-library/tool/fixture identities across four fresh Vox/Brave captures. All four pass complete content/bootstrap/button audits, exact unchanged per-engine reference pixels and normal browser/kernel exits; both Vox captures execute the Wasm lexer without fallback.
+
+**Neither Vox capture emits the new parent-reader marker.** The candidate therefore fails eligibility on this workload. The controller and memory guard return 1; each individual browser/kernel audit returns zero. The unprofiled four-pair driver is not launched. Instrumented counts are retained without attributing a page delta, and the prepared matched/broad drivers are explicitly unexecuted. No whole-page saving or broad checkpoint is credited; carry remains zero.
+
+The frozen one-time SOCKS bytes, original scripts/references, original-origin replay, empty private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. The boundary is exclusive coalition creation through encoded document PNG, including startup/window setup and Brave CDP delivery; OS filesystem/shader caches remain retained and GPU/outside-coalition work is excluded. No duplicate manual production build was requested.
+
+The [verification receipt](performance/chatgpt-font-guard-parent-verification-20261106.json) authenticates all focused/component attempts, the ineligible page diagnostic, source proof, guards, commands, counters, PNGs and archives. **The 20B target and original 5%-below-Brave target remain unmet.**

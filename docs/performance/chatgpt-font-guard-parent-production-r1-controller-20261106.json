@@ -1,0 +1,114 @@
+{
+  "started_unix": 1793963462.0508668,
+  "scope": "Latest completed canonical bundle pinned with a nonblocking shared publication lease across diagnostic and matched captures. No copied bundle or build queued. Per-capture input fingerprints also reject changes.",
+  "rows": [
+    {
+      "phase": "diagnostic",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-font-guard-parent-production-20261106-r1/diagnostic/page.py"
+      ],
+      "exit": 1
+    }
+  ],
+  "status": "rejected",
+  "production_before": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "54133db57b84c2867269eee27fe3da8e50581c2ffeeca06e009e0957ee912ffd",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-140749-afaed469/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "8a1ea691b3462b9922a1cb042b4ea4e1b01048a4e1d1aa5246572565bb68f997",
+      "dirty": true,
+      "head": "1d1d42d045079e54bbee0bc5889d936e765bea5d",
+      "repository_sha256": "0b12f1111033f57b8c19a521bc58eea0679f1dd90f7980ebda24fb9b2e8daa11"
+    },
+    "renderer": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "default": "gg",
+      "gg_adapters": true,
+      "skia_free": false,
+      "skia_required_for": [
+        "text preparation and fallback",
+        "canvas",
+        "shadows",
+        "bitmap export",
+        "recording and picture playback"
+      ]
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "8a1ea691b3462b9922a1cb042b4ea4e1b01048a4e1d1aa5246572565bb68f997",
+      "dirty": true,
+      "head": "089ebba875ade38f61dbba466cf00f2017933f32",
+      "repository_sha256": "9b228be531e000cbc95e919e6155bd4eedbb36fd6328205869b1cb7f8e30c980"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "1d1d42d045079e54bbee0bc5889d936e765bea5d",
+      "id": "56b30702d87e46a7ad7985d04c07f6bb",
+      "renderer": "gg",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "8a1ea691b3462b9922a1cb042b4ea4e1b01048a4e1d1aa5246572565bb68f997",
+      "dirty": true,
+      "head": "089ebba875ade38f61dbba466cf00f2017933f32",
+      "repository_sha256": "0b12f1111033f57b8c19a521bc58eea0679f1dd90f7980ebda24fb9b2e8daa11"
+    }
+  },
+  "finished_unix": 1793963503.532259,
+  "production_after": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "54133db57b84c2867269eee27fe3da8e50581c2ffeeca06e009e0957ee912ffd",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-140749-afaed469/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "8a1ea691b3462b9922a1cb042b4ea4e1b01048a4e1d1aa5246572565bb68f997",
+      "dirty": true,
+      "head": "1d1d42d045079e54bbee0bc5889d936e765bea5d",
+      "repository_sha256": "0b12f1111033f57b8c19a521bc58eea0679f1dd90f7980ebda24fb9b2e8daa11"
+    },
+    "renderer": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "default": "gg",
+      "gg_adapters": true,
+      "skia_free": false,
+      "skia_required_for": [
+        "text preparation and fallback",
+        "canvas",
+        "shadows",
+        "bitmap export",
+        "recording and picture playback"
+      ]
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "8a1ea691b3462b9922a1cb042b4ea4e1b01048a4e1d1aa5246572565bb68f997",
+      "dirty": true,
+      "head": "089ebba875ade38f61dbba466cf00f2017933f32",
+      "repository_sha256": "9b228be531e000cbc95e919e6155bd4eedbb36fd6328205869b1cb7f8e30c980"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "1d1d42d045079e54bbee0bc5889d936e765bea5d",
+      "id": "56b30702d87e46a7ad7985d04c07f6bb",
+      "renderer": "gg",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "8a1ea691b3462b9922a1cb042b4ea4e1b01048a4e1d1aa5246572565bb68f997",
+      "dirty": true,
+      "head": "089ebba875ade38f61dbba466cf00f2017933f32",
+      "repository_sha256": "0b12f1111033f57b8c19a521bc58eea0679f1dd90f7980ebda24fb9b2e8daa11"
+    }
+  }
+}

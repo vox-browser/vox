@@ -1,0 +1,64 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "implementation_commit": "089ebba875ade38f61dbba466cf00f2017933f32",
+  "focused_verification": "docs/performance/chatgpt-font-guard-parent-focused-verification-20261106.json",
+  "focused_test_executions": 400,
+  "component_cases": 8,
+  "production_controller": "docs/performance/chatgpt-font-guard-parent-production-r1-controller-20261106.json",
+  "diagnostic": "docs/performance/chatgpt-font-guard-parent-production-r1-diagnostic-20261106.json",
+  "production_executable_sha256": "54133db57b84c2867269eee27fe3da8e50581c2ffeeca06e009e0957ee912ffd",
+  "c_compile": {
+    "mode": "single",
+    "requested": "single",
+    "v_prod": true
+  },
+  "page_path_observed": false,
+  "valid_content_pixel_captures": 4,
+  "matched_captures": 0,
+  "manual_build_requests": 0,
+  "page_instruction_credit": 0,
+  "broad_checks": 0,
+  "broad_carry": 0,
+  "target_instructions": 20000000000,
+  "target_met": false,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-font-guard-parent-checked-20261106-evidence.zip",
+      "sha256": "d8eb2c4427c8d68069f6224685a56c061c2e82093afd822491bb7cead49d42d8",
+      "bytes": 95714,
+      "verified_entries": 83
+    },
+    {
+      "path": "docs/performance/chatgpt-font-guard-parent-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "2d7feba5bf19587dbd692198ce6decd1eb68333c54d5ca4e63e9f898017d45b1",
+      "bytes": 1415939,
+      "verified_entries": 61
+    },
+    {
+      "path": "docs/performance/chatgpt-font-guard-parent-controller-20261106-evidence.zip",
+      "sha256": "1400f8455b6ea4601a10b52ad8cba4966b191ff6f6484b40c3f7cc7a2620a0bb",
+      "bytes": 227947,
+      "verified_entries": 40
+    }
+  ],
+  "qualification": "The synchronous font-refresh guard parent reader is faster in the retained component, but the frozen ChatGPT diagnostic emits no candidate path marker. All four individual content/bootstrap/button/pixel/browser/kernel audits pass and identities stay fixed. The enclosing eligibility controller and memory guard return 1 intentionally; no unprofiled matched trial is launched, no page performance delta is attributed and no broad checkpoint is due. Components are not extrapolated into page savings. Prepared matched/broad drivers remain archived as unexecuted inputs. Native-library identity polling was not part of the component harness; its source/executable pins and raw observations are retained, with full native-library/tool/fixture identity checks in the separate production diagnostic.",
+  "finalizer_guard": {
+    "path": "Build/chatgpt-font-guard-parent-finalize-20261106-r1/finalize-guard.json",
+    "sha256": "f755cfd19ef9517a647f489173e2eb74f14940f5696b97bdf91241d136b8c4f8",
+    "receipt": {
+      "command": [
+        "python3",
+        "Build/chatgpt-font-guard-parent-finalize-20261106-r1/finalize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3424256,
+      "elapsed_seconds": 0.167093417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}
