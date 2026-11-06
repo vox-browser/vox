@@ -1,0 +1,189 @@
+{
+  "commits": [
+    "bd70818463eb043e9c0f5ca9ebcb544d5a80a0f8",
+    "5cf56dc29c65110ff770ff35ea0603fe16c803ae"
+  ],
+  "request": "ChatGPT scrolling after the prompt https://x.com/v_language/status/2118634446978941063 increases memory by about 400 MB",
+  "status": "Two confirmed retention mechanisms fixed; full live symptom acceptance remains pending the production build containing the dispatcher fix.",
+  "raster": {
+    "scope": "Actual BrowserApp.begin_scroll_raster, 128 frames with 1024 paint commands, after warmup; caller arena live allocation growth, not whole-browser physical footprint",
+    "baseline_bytes": 55991836,
+    "fixed_bytes": 0,
+    "retained_workspace_limit_bytes": 2097152,
+    "fix": "Two alternating frame arenas keep previous diff inputs and current replay decisions; command kinds own their strings; discarding paint releases both workspaces."
+  },
+  "wheel_dispatch": {
+    "scope": "64-entry path, 32 iterations of capture and bubble invocation; caller arena live allocation growth, not whole-browser physical footprint",
+    "baseline_bytes": 29687807,
+    "fixed_bytes": 0,
+    "full_dispatch_fixed_bytes": 0,
+    "fix": "Borrow the path for read-only searches. Keep required dispatch/listener snapshots in scratch storage, leave before callbacks, and retire after use; public path snapshots remain independent.",
+    "covered": "Listener addition/removal, once, recursive dispatch and callback allocations survive snapshot retirement; ordinary and legacy/exception behavior checks pass."
+  },
+  "checks": {
+    "baseline-run": {
+      "exit": 1,
+      "report": "Build/chatgpt-scroll-memory-20261106/baseline-run-guard.json",
+      "observed_peak_rss_bytes": 88686592
+    },
+    "fixed-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/fixed-run-guard.json",
+      "observed_peak_rss_bytes": 39174144
+    },
+    "fixed-poison": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/fixed-poison-guard.json",
+      "observed_peak_rss_bytes": 34209792
+    },
+    "storage-boehm-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/storage-boehm-run-guard.json",
+      "observed_peak_rss_bytes": 64028672
+    },
+    "scroll-raster-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/scroll-raster-run-guard.json",
+      "observed_peak_rss_bytes": 29409280
+    },
+    "damage-budget-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/damage-budget-run-guard.json",
+      "observed_peak_rss_bytes": 25378816
+    },
+    "filter-identity-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/filter-identity-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "frame-paint-run": {
+      "exit": 1,
+      "report": "Build/chatgpt-scroll-memory-20261106/frame-paint-run-guard.json",
+      "observed_peak_rss_bytes": 25444352
+    },
+    "frame-paint-scale1": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/frame-paint-scale1-guard.json",
+      "observed_peak_rss_bytes": 704512
+    },
+    "replay-scratch-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/replay-scratch-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-baseline-run": {
+      "exit": 1,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-baseline-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-fixed-full-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-fixed-full-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-fixed-poison-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-fixed-poison-run-guard.json",
+      "observed_peak_rss_bytes": 9404416
+    },
+    "dispatch-boehm-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-boehm-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-legacy-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-legacy-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-callback-identity-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-callback-identity-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-handler-invocation-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-handler-invocation-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-membership-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-membership-run-guard.json",
+      "observed_peak_rss_bytes": 32768
+    },
+    "dispatch-wheel-owner-run": {
+      "exit": 139,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-wheel-owner-run-guard.json",
+      "observed_peak_rss_bytes": 107986944
+    },
+    "dispatch-wheel-owner-control-run": {
+      "exit": 139,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-wheel-owner-control-run-guard.json",
+      "observed_peak_rss_bytes": 35586048
+    },
+    "dispatch-wheel-owner-poison": {
+      "exit": 139,
+      "report": "Build/chatgpt-scroll-memory-20261106/dispatch-wheel-owner-poison-guard.json",
+      "observed_peak_rss_bytes": 589824
+    },
+    "wheel-routing-run": {
+      "exit": 1,
+      "report": "Build/chatgpt-scroll-memory-20261106/wheel-routing-run-guard.json",
+      "observed_peak_rss_bytes": 212418560
+    },
+    "wheel-routing-scale4": {
+      "exit": 1,
+      "report": "Build/chatgpt-scroll-memory-20261106/wheel-routing-scale4-guard.json",
+      "observed_peak_rss_bytes": 203128832
+    },
+    "wheel-event-owner-run": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/wheel-event-owner-run-guard.json",
+      "observed_peak_rss_bytes": 68354048
+    },
+    "production-smoke": {
+      "exit": 0,
+      "report": "Build/chatgpt-scroll-memory-20261106/production-smoke-guard.json",
+      "observed_peak_rss_bytes": 123748352
+    }
+  },
+  "qualifications": [
+    "A pre-existing frame-layout scale assumption fails on Retina and passes using explicit 1x capture scale; both attempts retained.",
+    "The broader ordinary wheel owner case crashes in HTMLVideoElementModel.current_representation in both the original and modified dispatcher, with the same stack. The targeted-poison run also fails there; it is not counted as passing.",
+    "Fractional root-wheel checks expect 3.75 while the current root scroll rounding returns 4.0; both ordinary and explicit 4x-capture attempts are retained as failures.",
+    "Live anonymous replies and concurrent shared source changes differ across builds. No isolated whole-browser RAM saving, FPS gain or complete 400 MB fix is claimed.",
+    "Native mapping capacities are virtual address-space diagnostics, not resident memory or exact live heap allocations. A post-input trace associates about 160 MiB of remaining tracked mapping capacity with EventDispatcher.invoke.",
+    "The two synthetic profiling attempts emitted no per-frame records and earn no profiling or performance credit.",
+    "Fresh-process live probes use a private profile/cache, native precise wheel input and the configured local SOCKS route; identities are stable and browser/guard exits zero. External physical-footprint sampling excludes unsampled/outside services."
+  ],
+  "production": {
+    "latest_executable_sha256": "39aa0371963a7eec147eb5c0453b406afee268867706f8511db7a5bfdd2b6fd9",
+    "latest_frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-123759-9daadcb6/frozen-compile.json",
+    "raster_fix_present": true,
+    "dispatcher_fix_present": false,
+    "request": {
+      "c_mode": "parallel",
+      "head": "3e1be700696850f4d2dcedb8f418bf60ed091814",
+      "id": "020c69fc605a450d84fe005a15d02492",
+      "v_prod": false
+    },
+    "started": {
+      "id": "efe4b300187e4c3b8c2198922e867b9e"
+    },
+    "pending_reason": "An existing process holds the shared publication lease and the build worker holds the build guard; no additional build queued by this investigation beyond normal commit hooks."
+  },
+  "source_sha256": {
+    "main_scroll_raster_storage.v": "9cf4593151a693ebb93835da037a7de9dcb795160b595cec06ca709e2e81c936",
+    "main_scroll_raster_storage_test.v": "e40350fa17990e4c95fe5745bf7b3186bc2f66d9ea9d31dada12d68b13e72b9b",
+    "main_scroll_raster_damage.v": "4f6db566161a58f261d8387755b558861231db48078c38d92f70c17a7363d644",
+    "main_scroll_raster.v": "100d88819e18392d051026f1d8f99c71700c1c93ea97364f2524d61c2dcaf1ef",
+    "main_frame_paint.v": "82041aaf7d826aedf663248e5eb26b5c7d95b4868e296c07d34900bb33a7f606",
+    "dom/events.v": "efb5d8ff1ec006e0b00697256b9fc584baa4dc49842e7a0a6408907ba5bc31b0",
+    "dom/event_dispatch_storage_test.v": "5e0caad4f7d1a87c2f7e69f6814bfca2bd18b0c7c9a3d133e0eeb81ac3321b15"
+  },
+  "evidence": {
+    "path": "chatgpt-scroll-memory-20261106-evidence.zip",
+    "sha256": "6c38570ced3a84ead5b0fa991522f690dd5c412ad9b2029f336cb6510d69383b",
+    "private_raw_directory": "Build/chatgpt-scroll-memory-20261106"
+  }
+}
