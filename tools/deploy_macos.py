@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Build Vox with literal -prod / single C unit and package a stripped macOS DMG."""
+"""Release Vox: bump the version, build with literal -prod / single C unit, package a
+stripped macOS DMG, upload it to a new GitHub release and update vox-browser.org/version."""
 
 import argparse
 import hashlib
@@ -17,6 +18,7 @@ import uuid
 from browser_bundle_lease import publication_lease
 from bundle_macos_libraries import bundle_libraries, macho_files, verify_self_contained
 from rebuild_browser import production_environment
+import release_macos
 
 ROOT = Path(__file__).resolve().parents[1]
 README = 'README HOW TO RUN VOX.txt'
@@ -196,11 +198,26 @@ def main():
     parser.add_argument('--output', type=Path, help='DMG path (default: Build/deploy/Vox-VERSION-ARCH.dmg)')
     parser.add_argument('--package-only', action='store_true',
                         help='reuse the latest completed --prod --no-parallel-cc build')
+    parser.add_argument('--version', help='release this version (for example 0.2.0) instead of '
+                        'the next patch version')
+    parser.add_argument('--no-publish', action='store_true',
+                        help='only build and package; leave the version, GitHub and the website alone')
+    parser.add_argument('--website-only', action='store_true',
+                        help='point vox-browser.org/version at the released version in Info.plist')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('DMG deployment requires macOS')
+    if args.website_only and (args.no_publish or args.package_only or args.output or args.version):
+        parser.error('--website-only takes no other options')
+    if args.no_publish and args.version:
+        parser.error('--version publishes a release; omit --no-publish')
     try:
-        deploy(output=args.output, package_only=args.package_only)
+        if args.website_only:
+            release_macos.publish_website_only(ROOT)
+        elif args.no_publish:
+            deploy(output=args.output, package_only=args.package_only)
+        else:
+            release_macos.release(ROOT, deploy, args.output, args.package_only, args.version)
     except subprocess.CalledProcessError as error:
         if error.returncode == 75:
             print('Deploy: the shared production build is busy; run again after it finishes, '
