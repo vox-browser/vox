@@ -639,7 +639,13 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 			}
 		}
 		mut expected := initial.clone()
+		global_alpha := match rand.intn(4) or { 0 } {
+			0 { f32(1) }
+			1 { f32(0) }
+			else { f32(rand.f64()) }
+		}
 		mut floats := transform[..].clone()
+		floats << global_alpha
 		floats << segments
 		values := [i32(width), height, pitch, alpha_type, int(even_odd), segments.len / 12, i32(color)]
 		if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
@@ -648,7 +654,7 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		mut actual := initial.clone()
 		path := cpuraster.canvas_path(segments, even_odd)
 		if !cpuraster.fill_canvas_path(mut actual, width, height, pitch, alpha_type, path,
-			transform, color) {
+			transform, cpuraster.canvas_fill_color(color, global_alpha)) {
 			return error('canvas ${i}: cpuraster declined')
 		}
 		for j in 0 .. expected.len {
