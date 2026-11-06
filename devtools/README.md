@@ -25,9 +25,17 @@ document of the tab that opens it.
 - The inline editor edits an element as HTML (its `outerHTML`) or the text of
   a text or comment node. Cmd+Enter (Ctrl+Enter) applies and Esc cancels.
   Rejected markup keeps the editor open and shows the error in the toolbar.
-- The sidebar edits attribute values (Return applies), removes attributes and
-  adds new ones. Row context menus also copy a node and expand or collapse
-  subtrees. The breadcrumb bar selects ancestors.
+- The sidebar has three tabs. **Styles** lists `element.style` and the
+  matching rules, highest cascade precedence first, with their sources;
+  declarations that lose the cascade are struck through. Inline and author
+  declarations are edited in place (Return applies, an empty value removes
+  one) and new inline properties can be added; user agent rules are
+  read-only. **Computed** shows the box model and every resolved longhand,
+  with a filter. **Attributes** edits, removes and adds attributes.
+- Cmd+Z and Cmd+Shift+Z (Ctrl elsewhere) undo and redo panel edits while the
+  tree has focus, including deletions, edit-as-HTML and style changes.
+- Row context menus also copy a node and expand or collapse subtrees. The
+  breadcrumb bar selects ancestors.
 - The top edge resizes the panel; the document viewport shrinks to fit it.
   Script mutations refresh the tree while the panel is open.
 
@@ -36,8 +44,11 @@ document of the tab that opens it.
 `devtools/` holds the model, DOM edits and UI2 declarations. Rows refer to
 nodes by unique ID and are rebuilt from the live document, so a navigation
 never leaves the panel holding another document's nodes.
-`main_devtools.v` connects the panel to the tab: viewport height, picker and
-hover input, highlights, keys, actions and relayout after edits.
+`devtools/cssinspect` reads matched rules and resolved values from the CSS
+engine and edits author rules through the CSSOM, keeping the CSS module out
+of the `devtools` package. Resolved values are read only while layout is
+current. `main_devtools.v` connects the panel to the tab: viewport height,
+picker and hover input, highlights, keys, actions and relayout after edits.
 
 ## Tests
 
@@ -55,6 +66,7 @@ shares these declarations but has not been exercised in a Linux window.
 
 ## Not yet implemented
 
-Styles, computed values, the console, network and sources panels, undo,
-inline attribute editing in the tree, `<template>` contents and iframe
-documents.
+The console, network and sources panels, adding declarations to author
+rules, inherited styles, inline attribute editing in the tree, `<template>`
+contents and iframe documents. The Styles tab shows the CSSOM serialization
+of rules rather than their authored text.
