@@ -1,0 +1,171 @@
+{
+  "complete": true,
+  "source_change": false,
+  "default_retained": 10000,
+  "candidate_threshold": 500,
+  "control": [
+    27556826297,
+    27523486496,
+    28078183661,
+    27902188569
+  ],
+  "candidate": [
+    27106339036,
+    27335635957,
+    28188922531,
+    28138988313
+  ],
+  "control_median": 27729507433.0,
+  "candidate_median": 27737312135.0,
+  "observed_median_change_percent": 0.028145837133441987,
+  "conservative_page_instruction_reduction": -665436035,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "valid_captures": 20,
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "ee6ae85297215e158de7326a57b72649c0aaf0706a6cf0dee90c1e7de4ed9563",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-045433-3700b6bc/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "e3bd5ab74190d0e3cee5f1a89b264d787a8af0d121dc0b68ca9ffe6ae85865c2",
+      "dirty": true,
+      "head": "69e4fe315c9a7c970d9fbea05ab3a04cc0120f49",
+      "repository_sha256": "283802a8cbe536afce56c27110b6a8f59d7cee3b5d2ceb30499f84074716c369"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "e3bd5ab74190d0e3cee5f1a89b264d787a8af0d121dc0b68ca9ffe6ae85865c2",
+      "dirty": true,
+      "head": "69e4fe315c9a7c970d9fbea05ab3a04cc0120f49",
+      "repository_sha256": "283802a8cbe536afce56c27110b6a8f59d7cee3b5d2ceb30499f84074716c369"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "69e4fe315c9a7c970d9fbea05ab3a04cc0120f49",
+      "id": "71d3ea3baede4844966425fd6a2b1c0c",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "e3bd5ab74190d0e3cee5f1a89b264d787a8af0d121dc0b68ca9ffe6ae85865c2",
+      "dirty": true,
+      "head": "69e4fe315c9a7c970d9fbea05ab3a04cc0120f49",
+      "repository_sha256": "283802a8cbe536afce56c27110b6a8f59d7cee3b5d2ceb30499f84074716c369"
+    }
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-jit-retune-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "30840": "Fri Nov  6 04:57:59 2026    ",
+      "30842": "Fri Nov  6 04:57:59 2026    ",
+      "31220": "Fri Nov  6 04:58:07 2026    ",
+      "31223": "Fri Nov  6 04:58:07 2026    ",
+      "31236": "Fri Nov  6 04:58:08 2026    ",
+      "31237": "Fri Nov  6 04:58:08 2026    ",
+      "31239": "Fri Nov  6 04:58:08 2026    ",
+      "31505": "Fri Nov  6 04:58:17 2026    ",
+      "31508": "Fri Nov  6 04:58:17 2026    ",
+      "31512": "Fri Nov  6 04:58:17 2026    ",
+      "31513": "Fri Nov  6 04:58:17 2026    ",
+      "31515": "Fri Nov  6 04:58:17 2026    ",
+      "31801": "Fri Nov  6 04:58:26 2026    ",
+      "31805": "Fri Nov  6 04:58:26 2026    ",
+      "32873": "Fri Nov  6 04:58:46 2026    ",
+      "32877": "Fri Nov  6 04:58:46 2026    ",
+      "33196": "Fri Nov  6 04:58:55 2026    ",
+      "33199": "Fri Nov  6 04:58:55 2026    ",
+      "33204": "Fri Nov  6 04:58:55 2026    ",
+      "33205": "Fri Nov  6 04:58:55 2026    ",
+      "33206": "Fri Nov  6 04:58:55 2026    ",
+      "33404": "Fri Nov  6 04:59:04 2026    ",
+      "33407": "Fri Nov  6 04:59:04 2026    ",
+      "33411": "Fri Nov  6 04:59:04 2026    ",
+      "33412": "Fri Nov  6 04:59:04 2026    ",
+      "33413": "Fri Nov  6 04:59:04 2026    ",
+      "33598": "Fri Nov  6 04:59:13 2026    ",
+      "33601": "Fri Nov  6 04:59:13 2026    ",
+      "33893": "Fri Nov  6 04:59:21 2026    ",
+      "33896": "Fri Nov  6 04:59:21 2026    ",
+      "34826": "Fri Nov  6 04:59:30 2026    ",
+      "34829": "Fri Nov  6 04:59:30 2026    ",
+      "34850": "Fri Nov  6 04:59:30 2026    ",
+      "34851": "Fri Nov  6 04:59:30 2026    ",
+      "34854": "Fri Nov  6 04:59:30 2026    ",
+      "35603": "Fri Nov  6 04:59:39 2026    ",
+      "35619": "Fri Nov  6 04:59:39 2026    ",
+      "35628": "Fri Nov  6 04:59:40 2026    ",
+      "35629": "Fri Nov  6 04:59:40 2026    ",
+      "35630": "Fri Nov  6 04:59:40 2026    ",
+      "35667": "Fri Nov  6 04:59:40 2026    ",
+      "35671": "Fri Nov  6 04:59:40 2026    ",
+      "36612": "Fri Nov  6 04:59:49 2026    ",
+      "36618": "Fri Nov  6 04:59:49 2026    ",
+      "37651": "Fri Nov  6 04:59:58 2026    ",
+      "37656": "Fri Nov  6 04:59:58 2026    ",
+      "38456": "Fri Nov  6 05:00:08 2026    ",
+      "38467": "Fri Nov  6 05:00:08 2026    ",
+      "38482": "Fri Nov  6 05:00:08 2026    ",
+      "38483": "Fri Nov  6 05:00:08 2026    ",
+      "38484": "Fri Nov  6 05:00:08 2026    ",
+      "39167": "Fri Nov  6 05:00:18 2026    ",
+      "39171": "Fri Nov  6 05:00:18 2026    ",
+      "39177": "Fri Nov  6 05:00:18 2026    ",
+      "39178": "Fri Nov  6 05:00:18 2026    ",
+      "39186": "Fri Nov  6 05:00:18 2026    ",
+      "39880": "Fri Nov  6 05:00:28 2026    ",
+      "39893": "Fri Nov  6 05:00:28 2026    ",
+      "40742": "Fri Nov  6 05:00:37 2026    ",
+      "40747": "Fri Nov  6 05:00:37 2026    ",
+      "41584": "Fri Nov  6 05:00:47 2026    ",
+      "41586": "Fri Nov  6 05:00:47 2026    ",
+      "41596": "Fri Nov  6 05:00:47 2026    ",
+      "41597": "Fri Nov  6 05:00:47 2026    ",
+      "41607": "Fri Nov  6 05:00:47 2026    ",
+      "42293": "Fri Nov  6 05:00:57 2026    ",
+      "42296": "Fri Nov  6 05:00:57 2026    ",
+      "42303": "Fri Nov  6 05:00:58 2026    ",
+      "42304": "Fri Nov  6 05:00:58 2026    ",
+      "42308": "Fri Nov  6 05:00:58 2026    ",
+      "43077": "Fri Nov  6 05:01:09 2026    ",
+      "43082": "Fri Nov  6 05:01:09 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2178367488,
+    "elapsed_seconds": 213.0130015,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-jit-retune-controller-20261106-evidence.zip",
+      "sha256": "ca4507f9a0ab02a7dca06488e17117427a754c74e8851ab9ff6555b342df4fa1",
+      "bytes": 15789,
+      "verified_entries": 11
+    },
+    {
+      "path": "docs/performance/chatgpt-jit-retune-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "279c83afaf9ad93f74cdbe4b93c229ef458309c3e1b89daea3949ffc1e73db6d",
+      "bytes": 1386296,
+      "verified_entries": 62
+    },
+    {
+      "path": "docs/performance/chatgpt-jit-retune-production-r1-matched-20261106-evidence.zip",
+      "sha256": "04ffd9162eb4d883d130377d9216bfaac84226a5a02fbbbfe4ab1f72699ae84f",
+      "bytes": 7543292,
+      "verified_entries": 164
+    }
+  ],
+  "qualification": "Retained parameter experiment on one canonical executable. Both variants consume the Wasm specifier lexer; separate actual native option dumps confirm 500/10000. All original scripts, SOCKS fixture bytes, content and per-engine pixel references remain unchanged. Four control/candidate pairs, all attempts retained; overlapping ranges, no broad-check trigger, no optimization credit. Capture wrappers and browser exits zero; underlying comparison drivers return 1 for the failed Brave threshold. The current default remains 10000."
+}

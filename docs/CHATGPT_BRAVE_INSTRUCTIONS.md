@@ -5210,3 +5210,16 @@ The page median is **1.2905% lower**, but the conservative separation is **-98,2
 The measured production executable is `03bdf80d7cdd730a593b9a840cd086ddf35771bdf7a6cdd8f82a2f43ec44f41a` with its single-unit V `-prod` build receipt and pinned native libraries. The original SOCKS capture, five-second unfocused settle, viewport 1024×768 at scale 2, fresh profiles and encoded-document-PNG endpoint are unchanged. OS filesystem/shader caches remain warm; GPU work and outside-coalition services remain excluded. Host load and frame/checkpoint counts are retained in the raw logs rather than normalized away.
 
 The candidate median remains **7,636,462,041 instructions above the 20B target**. This later cohort does not retroactively alter the preceding 63-row table, which belongs to its separately pinned instrumented executable. The [verification receipt](performance/chatgpt-wasm-lexer-verification-20261106.json) links every counter, source witness, PNG, guard, failure and authenticated archive. **Both the 20B goal and the original 5%-below-Brave goal remain unmet.**
+
+## JIT warm-up retune with Wasm lexing (2026-11-06)
+
+An unchanged production executable tests baseline JIT warm-up 500 against the current 10,000 default, with the new Wasm lexer active in both variants. Separate native option dumps confirm the actual thresholds; both diagnostic markers confirm Wasm consumption without fallback. This is a parameter experiment, with **no source change**.
+
+| Warm-up | All four retained launch-through-PNG instruction counts | Median |
+| --- | --- | ---: |
+| 10,000 control | 27,556,826,297, 27,523,486,496, 28,078,183,661, 27,902,188,569 | 27,729,507,433 |
+| 500 candidate | 27,106,339,036, 27,335,635,957, 28,188,922,531, 28,138,988,313 | 27,737,312,135 |
+
+The candidate median is **0.0281% higher**. The conservative separation is **-665,436,035 instructions**, so the observed ranges overlap. Keep the 10,000 default; page savings credit and broad cadence stay zero. All 20 diagnostic/matched captures pass the complete content/bootstrap audit, exact unchanged pixel references and normal browser exits. Four control/candidate pairs are diagnostic, below acceptance requirements. The Brave threshold and 20B goal remain unmet.
+
+Executable `ee6ae85297215e158de7326a57b72649c0aaf0706a6cf0dee90c1e7de4ed9563` uses the retained single-unit V `-prod` build. One nonblocking shared publication lease pins the canonical bundle/native libraries throughout. The original one-time SOCKS fixture, author scripts, private profiles/caches, five-second unfocused settle and 1024×768 scale-two document capture remain unchanged. OS filesystem/shader caches are retained; GPU work/outside-coalition services are excluded. Native option dumps occur only in the separate diagnostic. All counters, host loads, scripts, guards, identity proofs, audits and PNGs are preserved by the [verification receipt](performance/chatgpt-jit-retune-verification-20261106.json).
