@@ -609,8 +609,7 @@ static void native_layer_complete_frame(NSView *view, VoxNativePreparedFrame *fr
         @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(view, &native_layer_frame_bounds_key,
         [NSValue valueWithRect:bounds], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    if (native_frame_published_observer)
-        native_frame_published_observer((__bridge void *)view, frame->submission.token);
+    native_frame_publication_notify(view,frame->submission.token,native_layer_presenting);
     native_document_submission_acknowledge(&frame->submission);
 }
 
@@ -742,6 +741,7 @@ static void native_layer_update(id self, SEL command) {
     }
     } @finally {
         native_layer_presenting = NO;
+        native_frame_publication_flush_notifications();
     }
     // AppKit clears needsDisplay after updateLayer returns. Input or timers
     // serviced during replay can dirty this very layer, then lose that dirty

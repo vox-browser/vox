@@ -363,11 +363,12 @@ static void begin(void) {
     Class publication = NSClassFromString(@"VoxNativeFramePublication");
     SEL protocol = @selector(observerProtocol);
     SEL observe = @selector(observePrepared:published:);
-    if ([publication respondsToSelector:protocol] && [publication respondsToSelector:observe]
-        && ((unsigned (*)(id,SEL))objc_msgSend)(publication,protocol)==1) {
+    unsigned version = [publication respondsToSelector:protocol]
+        ? ((unsigned (*)(id,SEL))objc_msgSend)(publication,protocol) : 0;
+    if ([publication respondsToSelector:observe] && (version==1 || version==2)) {
         ((void (*)(id,SEL,void (*)(void*,uint64_t,double),void (*)(void*,uint64_t)))objc_msgSend)(
             publication,observe,prepared_frame,completed_frame);
-        fprintf(stderr,"SCROLL_ENDPOINT completed_frame_v1 source=rendered_input\n");
+        fprintf(stderr,"SCROLL_ENDPOINT completed_frame_v%u source=rendered_input\n",version);
     } else {
         Method method = class_getInstanceMethod(page_view.class, @selector(updateLayer));
         if (!method) { fprintf(stderr, "SCROLL_ERROR no publication hook\n"); exit(2); }

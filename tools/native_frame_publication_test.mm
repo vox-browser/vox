@@ -49,7 +49,7 @@ static void prepared(void *pointer, uint64_t token, double started) {
     prepared_values[token] = paint_value;
 }
 static void published(void *pointer, uint64_t token) {
-    assert(NSThread.isMainThread);
+    assert(NSThread.isMainThread && !native_layer_presenting);
     auto view = (__bridge NSView *)pointer;
     int expected = prepared_values.at(token);
     assert(pixel(native_layer_frame_image(view)) == expected);
@@ -116,7 +116,7 @@ int main() { @autoreleasepool {
     setenv("VOX_GPU_FRAME_READINESS_QUEUE","1",1);
     native_set_opaque_browser_frames(1);
     [VoxNativeFramePublication observePrepared:prepared published:published];
-    assert([VoxNativeFramePublication observerProtocol]==1);
+    assert([VoxNativeFramePublication observerProtocol]==2);
     MyView2 *view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,40,30)];
     view.wantsLayer=YES;
     paint(view,31);
@@ -152,7 +152,11 @@ int main() { @autoreleasepool {
     CGContextFillRect(painting,CGRectMake(0,0,4,4));
     NSGraphicsContext *previous_context=NSGraphicsContext.currentContext;
     NSGraphicsContext.currentContext=[NSGraphicsContext graphicsContextWithCGContext:painting flipped:NO];
-    pump([&]{ return installed.back()==150; });
+    pump([&]{ return pixel(native_layer_frame_image(view))==150; });
+    assert(installed.size()==1);
+    paint(view,155,14);
+    pump([&]{ return pixel(native_layer_frame_image(view))==155; });
+    assert(installed.size()==1);
     assert(NSGraphicsContext.currentContext.CGContext==painting);
     const uint8_t *painting_bytes=(const uint8_t *)CGBitmapContextGetData(painting);
     for(int n=0;n<16;++n) {
@@ -163,8 +167,9 @@ int main() { @autoreleasepool {
     CGContextRelease(painting);
     native_layer_document_work_active=NO;
     native_layer_presenting=NO;
+    native_frame_publication_flush_notifications();
     idle(view);
-    assert((installed==std::vector<int>{31,150}));
+    assert((installed==std::vector<int>{31,155}));
     assert(acknowledged==std::vector<int>{31} && scheduled[0]==1 && scheduled[2]==1);
     assert(pixel(retained)==31); CGImageRelease(retained);
 
@@ -173,7 +178,7 @@ int main() { @autoreleasepool {
     native_layer_original_frame_size=(IMP)class_getMethodImplementation(NSView.class,@selector(setFrameSize:));
     native_layer_frame_size_changed(view,@selector(setFrameSize:),NSMakeSize(50,35));
     dispatch_semaphore_signal(proceed); idle(view);
-    assert(installed.back()==150 && released[3]==1);
+    assert(installed.back()==155 && released[3]==1);
     paint(view,170);
     assert(installed.back()==170 && CGImageGetWidth(native_layer_frame_image(view))==50);
 
@@ -228,6 +233,13 @@ int main() { @autoreleasepool {
     assert(released[12]==1 && scheduled[12]==0);
     dispatch_semaphore_signal(proceed); idle(view);
     assert(installed.back()==250 && released[11]==1);
+    // The actual updateLayer wrapper flushes its final notification only
+    // after the outer paint returns, including ordinary synchronous frames.
+    size_t publications_before_update=installed.size();
+    paint_value=252; gate_index=-1;
+    native_layer_original_draw=(IMP)draw;
+    native_layer_update(view,@selector(updateLayer));
+    assert(installed.size()==publications_before_update+1 && installed.back()==252);
     [VoxNativeFramePublication observePrepared:NULL published:NULL];
 #if !__has_feature(objc_arc)
     [view release];

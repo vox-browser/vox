@@ -22,6 +22,39 @@ typedef void (*VoxNativeFramePreparedObserver)(void *, uint64_t, double);
 typedef void (*VoxNativeFramePublishedObserver)(void *, uint64_t);
 VOX_NATIVE_STATE VoxNativeFramePreparedObserver native_frame_prepared_observer;
 VOX_NATIVE_STATE VoxNativeFramePublishedObserver native_frame_published_observer;
+VOX_NATIVE_STATE char native_frame_publication_notification_key;
+VOX_NATIVE_STATE NSMutableArray *native_frame_publication_notifications;
+
+// Revisions installed during a cooperative pump belong to the surrounding
+// view paint. Report only its final contents, after that paint finishes; several
+// nested layer writes must never manufacture several scrolling publications.
+static void native_frame_publication_notify(NSView *view, uint64_t token, BOOL painting) {
+    if (!native_frame_published_observer) return;
+    if (painting) {
+        if (!native_frame_publication_notifications)
+            native_frame_publication_notifications = [[NSMutableArray alloc] init];
+        if (!objc_getAssociatedObject(view,&native_frame_publication_notification_key))
+            [native_frame_publication_notifications addObject:view];
+        objc_setAssociatedObject(view,&native_frame_publication_notification_key,
+            @(token),OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } else {
+        objc_setAssociatedObject(view,&native_frame_publication_notification_key,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        native_frame_published_observer((__bridge void *)view,token);
+    }
+}
+static void native_frame_publication_flush_notifications(void) {
+    NSArray *views = [native_frame_publication_notifications copy];
+    [native_frame_publication_notifications removeAllObjects];
+    for (NSView *view in views) {
+        uint64_t token = [objc_getAssociatedObject(view,&native_frame_publication_notification_key) unsignedLongLongValue];
+        objc_setAssociatedObject(view,&native_frame_publication_notification_key,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        if (token && native_frame_published_observer)
+            native_frame_published_observer((__bridge void *)view,token);
+    }
+#if !__has_feature(objc_arc)
+    [views release];
+#endif
+}
 
 // Public runtime capability for observers. A queued frame is not a publication.
 @interface VoxNativeFramePublication : NSObject {
@@ -49,10 +82,13 @@ VOX_NATIVE_STATE VoxNativeFramePublishedObserver native_frame_published_observer
 }
 @end
 @implementation VoxNativeFramePublication
-+ (unsigned)observerProtocol { return 1; }
++ (unsigned)observerProtocol { return 2; }
 + (void)observePrepared:(VoxNativeFramePreparedObserver)prepared
               published:(VoxNativeFramePublishedObserver)published {
     NSCAssert(NSThread.isMainThread, @"Frame observers belong to the main thread");
+    for (NSView *view in native_frame_publication_notifications)
+        objc_setAssociatedObject(view,&native_frame_publication_notification_key,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [native_frame_publication_notifications removeAllObjects];
     native_frame_prepared_observer = prepared;
     native_frame_published_observer = published;
 }

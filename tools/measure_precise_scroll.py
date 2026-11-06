@@ -26,6 +26,7 @@ import time
 REPO = Path(__file__).resolve().parents[1]
 ENDPOINT = "changed Cocoa layer contents after updateLayer; not physical scanout"
 COMPLETED_FRAME_ENDPOINT = "completed native frame installation after CA transaction; rendered-input stamp; not physical scanout"
+COALESCED_FRAME_ENDPOINT = "completed native frame installation after outer view paint; nested revisions coalesced; rendered-input stamp; not physical scanout"
 
 
 def native_diagnostic_environment(environment):
@@ -216,9 +217,11 @@ def summarize(log, expected_inputs, target_hz=60, required_title="", expected_vi
                zip(("document_width", "document_height"), expected_viewport)):
             raise ValueError("Observed document viewport differs from requested viewport")
     endpoints = [line for line in log.splitlines() if line.startswith("SCROLL_ENDPOINT ")]
-    if endpoints and endpoints != ["SCROLL_ENDPOINT completed_frame_v1 source=rendered_input"]:
+    if endpoints and endpoints not in (["SCROLL_ENDPOINT completed_frame_v1 source=rendered_input"],
+                                      ["SCROLL_ENDPOINT completed_frame_v2 source=rendered_input"]):
         raise ValueError("Unknown or duplicated publication endpoint")
     completed_frame = bool(endpoints)
+    coalesced_frame = endpoints == ["SCROLL_ENDPOINT completed_frame_v2 source=rendered_input"]
     inputs, frames = records(log, "SCROLL_INPUT"), records(log, "SCROLL_PUBLISH")
     if any(row.get("modifiers", 0) != 0 or row.get("delta_x", 0) != 0 for row in inputs):
         raise ValueError("Modified or horizontal input invalidates a vertical scroll trial")
@@ -254,8 +257,9 @@ def summarize(log, expected_inputs, target_hz=60, required_title="", expected_vi
             scrolled.append(frame)
     scroll_gaps = intervals(scrolled)
     budget = 1_000_000 / target_hz
-    summary = dict(protocol_version=3 if completed_frame else 2,
-                endpoint=COMPLETED_FRAME_ENDPOINT if completed_frame else ENDPOINT, start=starts[0], completion=ends[0],
+    summary = dict(protocol_version=4 if coalesced_frame else 3 if completed_frame else 2,
+                endpoint=COALESCED_FRAME_ENDPOINT if coalesced_frame else COMPLETED_FRAME_ENDPOINT if completed_frame else ENDPOINT,
+                start=starts[0], completion=ends[0],
                 completed_inputs=len(inputs), completed_publications=len(frames),
                 measured_publications=len(selected), moving_intervals=moving,
                 measurement_window_us=window_us,
