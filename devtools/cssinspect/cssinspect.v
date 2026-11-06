@@ -141,3 +141,9 @@ pub fn set_rule_property(handle voidptr, name string, value string) ! {
 	}
 	style.set_property(name, parsed, if important { 'important' } else { '' })!
 }
+
+// query_selector_all lists the elements `selector` matches in `document`;
+// text that does not parse as a selector matches nothing.
+pub fn query_selector_all(document &dom.Document, selector string) []&dom.Node {
+	return css.query_selector_all(unsafe { &dom.Node(document) }, selector).map(it.as_node())
+}

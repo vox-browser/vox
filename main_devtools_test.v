@@ -370,3 +370,46 @@ fn test_console_reports_disabled_javascript() {
 	app.run_devtools_console('1')
 	assert devtools_test_console(tools) == ['input: 1', 'error: JavaScript is disabled for this page.']
 }
+
+fn devtools_test_command_key(code ui2.KeyCode) ui2.KeyEvent {
+	$if macos {
+		return ui2.KeyEvent{
+			code: code
+			cmd:  true
+		}
+	} $else {
+		return ui2.KeyEvent{
+			code: code
+			ctrl: true
+		}
+	}
+}
+
+fn test_elements_search_by_string_and_selector() {
+	mut app := devtools_test_app_with('<!doctype html><body><ul id="list"><li class="item">One</li><li class="item">Two</li><li class="other">needle here</li></ul></body>')
+	defer { app.dispose_browser_tab() }
+	app.show_devtools(false)
+	mut tools := devtools_test_panel(app)
+	// Cmd+F searches the tree once the tree has focus, not the page.
+	app.devtools_action(devtools.action('select', tools.selected, ''))
+	assert app.handle_devtools_key(devtools_test_command_key(.f))
+	assert tools.search_open
+	assert app.browser_ui().find_bar == none
+	app.search_devtools('li.item')
+	assert tools.search_results.len == 2
+	assert tools.search_status() == '1 of 2'
+	first := app.document.get_element_by_id('list') or { panic('list') }.as_node().first_child() or {
+		panic('first item')
+	}
+	assert tools.selected == devtools.node_id(first)
+	assert tools.row_index(tools.selected) >= 0
+	app.devtools_action(devtools.action('search-next', 0, ''))
+	assert tools.search_status() == '2 of 2'
+	// Plain text finds the element showing it.
+	app.search_devtools('NEEDLE')
+	assert tools.search_results.len == 1
+	other := first.parent() or { panic('list') }.last_child() or { panic('last item') }
+	assert tools.selected == devtools.node_id(other)
+	app.devtools_action(devtools.action('search-close', 0, ''))
+	assert !tools.search_open && tools.search_results.len == 0
+}

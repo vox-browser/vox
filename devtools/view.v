@@ -17,6 +17,7 @@ pub const computed_filter_id = 'devtools-computed-filter'
 pub const console_input_id = 'devtools-console-input'
 pub const console_list_id = 'devtools-console'
 pub const sidebar_tab_height = 26.0
+pub const search_bar_height = 30.0
 
 const color_border = u32(0xcacdd1)
 const color_toolbar = u32(0xf1f3f4)
@@ -26,6 +27,7 @@ const color_accent = u32(0x1a73e8)
 const color_muted = u32(0x5f6368)
 const color_property = u32(0xc80000)
 const color_overridden = u32(0x9aa0a6)
+const color_search_match = u32(0xfff3c4)
 
 pub struct PaneLayout {
 pub:
@@ -151,7 +153,7 @@ pub fn (tools &DevTools) elements(frame ui2.Rect) ui2.Element {
 		children << tools.console_panel(l)
 	} else {
 		children << tools.tree(l)
-		children << tools.breadcrumb_bar(l)
+		children << if tools.search_open { tools.search_bar(l) } else { tools.breadcrumb_bar(l) }
 	}
 	if tools.panel == .elements && l.sidebar_width > 0 {
 		children << ui2.view('devtools-divider', ui2.rect(l.tree_width, toolbar_height, 1,
@@ -360,8 +362,13 @@ fn (tools &DevTools) tree(l PaneLayout) ui2.Element {
 		}
 		top += tools.row_extent(row)
 	}
+	tree_height := if tools.search_open {
+		math.max(0.0, l.tree_height + breadcrumb_height - search_bar_height)
+	} else {
+		l.tree_height
+	}
 	return ui2.Element{
-		...ui2.scroll_with_mode(tree_id, ui2.rect(0, toolbar_height, l.tree_width, l.tree_height),
+		...ui2.scroll_with_mode(tree_id, ui2.rect(0, toolbar_height, l.tree_width, tree_height),
 			0xffffff, .both, children)
 		accessibility_role:  'tree'
 		accessibility_label: 'DOM tree'
@@ -393,6 +400,7 @@ fn (tools &DevTools) row_element(row Row, top f64, width f64) ui2.Element {
 	x := tree_padding + f64(row.depth) * indent_width
 	selected := row.node == tools.selected && row.kind != .close_tag
 	hovered := row.node == tools.hovered
+	matched := row.kind != .close_tag && tools.is_search_result(row.node)
 	mut children := []ui2.Element{cap: row.segments.len + 1}
 	if row.expandable {
 		children << expander(row, x)
@@ -410,10 +418,12 @@ fn (tools &DevTools) row_element(row Row, top f64, width f64) ui2.Element {
 		...ui2.button_view(row.key(), ui2.rect(0, top, width, row_height), ui2.BoxStyle{
 			bg:          if selected {
 				color_selected
-			} else {
+			} else if hovered {
 				color_hovered
+			} else {
+				color_search_match
 			}
-			transparent: !selected && !hovered
+			transparent: !selected && !hovered && !matched
 		}, children)
 		key:                 row.key()
 		action_id:           action('select', row.node, '')
@@ -493,6 +503,42 @@ fn (tools &DevTools) editor_row(row Row, top f64, l PaneLayout) ui2.Element {
 		flat_button('devtools-editor-apply', 'Apply', ui2.rect(x + width - 68, text_height + 7, 66,
 			22), action('editor-apply', 0, '')),
 	])
+}
+
+fn (tools &DevTools) search_bar(l PaneLayout) ui2.Element {
+	width := l.tree_width
+	return ui2.Element{
+		...ui2.view('devtools-search', ui2.rect(0, l.height - search_bar_height, width, search_bar_height),
+			ui2.BoxStyle{
+			bg:           color_toolbar
+			border_top:   1
+			border_color: color_border
+		}, [
+			ui2.Element{
+				...ui2.text_input(
+					id:          search_id
+					action_id:   action('search', 0, '')
+					submit_id:   action('search-next', 0, '')
+					text:        tools.search_query
+					hint_text:   'Find by string or selector'
+					multiline:   false
+					autocorrect: false
+					frame:       ui2.rect(6, 4, math.max(60.0, width - 186), 22)
+					text_style:  mono_style(color_text)
+				) or { panic(err) }
+				accessibility_label: 'Find in elements'
+			},
+			ui2.label('devtools-search-status', tools.search_status(), ui2.rect(width - 176, 4, 82,
+				22), ui2.TextStyle{ size: 11, color: color_muted, align: .right }),
+			icon_button('devtools-search-previous', '‹', ui2.rect(width - 88, 4, 24, 22), action('search-previous',
+				0, ''), 'Previous match'),
+			icon_button('devtools-search-next', '›', ui2.rect(width - 62, 4, 24, 22), action('search-next',
+				0, ''), 'Next match'),
+			icon_button('devtools-search-close', '×', ui2.rect(width - 32, 4, 24, 22), action('search-close',
+				0, ''), 'Close search'),
+		])
+		accessibility_role: 'search'
+	}
 }
 
 fn (tools &DevTools) breadcrumb_bar(l PaneLayout) ui2.Element {

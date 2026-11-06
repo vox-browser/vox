@@ -489,3 +489,39 @@ fn test_console_panel_lists_messages_and_prompt() {
 	assert find_element(elements_pane, console_list_id) == none
 	assert (find_element(elements_pane, 'devtools-console-clear') or { panic('clear') }).hidden
 }
+
+fn test_search_finds_markup_text_and_selector_matches() {
+	s := sample()
+	mut tools := opened(s)
+	tools.open_search()
+	tools.search(s.document, 'CARD', []&dom.Node{})
+	assert tools.search_results == [node_id(s.main)]
+	assert tools.search_status() == '1 of 1'
+	assert tools.selected == node_id(s.main)
+	// Short text shown on its element's row finds that element.
+	tools.search(s.document, 'hello', []&dom.Node{})
+	title := s.head.first_child() or { panic('title') }
+	assert tools.search_results == [node_id(title)]
+	tools.rebuild(s.document)
+	assert tools.row_index(node_id(title)) >= 0
+	// Selector matches join text matches, in tree order.
+	tools.search(s.document, 'note', [s.image, s.empty])
+	assert tools.search_results == [node_id(s.image), node_id(s.comment), node_id(s.empty)]
+	assert tools.search_step(true) && tools.selected == node_id(s.comment)
+	assert tools.search_step(true) && tools.selected == node_id(s.empty)
+	assert tools.search_step(true) && tools.selected == node_id(s.image)
+	assert tools.search_step(false) && tools.selected == node_id(s.empty)
+	tools.rebuild(s.document)
+	pane := tools.elements(ui2.rect(0, 500, 1000, 300))
+	assert find_element(pane, 'devtools-breadcrumbs') == none
+	bar := find_element(pane, search_id) or { panic('search field') }
+	assert bar.text == 'note' && bar.submit_id == action('search-next', 0, '')
+	assert (find_element(pane, 'devtools-search-status') or { panic('status') }).text == '3 of 3'
+	image_row := find_element(pane, 'devtools-row-${node_id(s.image)}') or { panic('image row') }
+	assert !image_row.box.transparent
+	tools.search(s.document, 'zzz', []&dom.Node{})
+	assert tools.search_status() == 'No matches' && !tools.search_step(true)
+	tools.close_search()
+	assert !tools.search_open && tools.search_status() == ''
+	assert find_element(tools.elements(ui2.rect(0, 500, 1000, 300)), 'devtools-breadcrumbs') != none
+}

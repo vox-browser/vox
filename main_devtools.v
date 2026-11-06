@@ -236,6 +236,22 @@ fn (mut app BrowserApp) run_devtools_console(source string) {
 	}
 }
 
+// search_devtools finds nodes in the Elements panel by string or selector.
+fn (mut app BrowserApp) search_devtools(query string) {
+	mut tools := app.devtools_panel() or { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	app.sync_devtools()
+	trimmed := query.trim_space()
+	matches := if trimmed == '' || app.document == unsafe { nil } {
+		[]&dom.Node{}
+	} else {
+		cssinspect.query_selector_all(app.document, trimmed)
+	}
+	tools.search(app.document, query.clone(), matches)
+	app.refresh_devtools()
+}
+
 fn (mut app BrowserApp) clear_devtools_console() {
 	mut tools := app.devtools_panel() or { return }
 	persistent := platform.enter_persistent()
@@ -531,6 +547,20 @@ fn (mut app BrowserApp) devtools_action(value string) {
 			app.clear_devtools_console()
 			return
 		}
+		'search' {
+			app.search_devtools(ui2.text(devtools.search_id))
+			return
+		}
+		'search-next', 'search-previous' {
+			tools.search_step(action.verb == 'search-next')
+		}
+		'search-close' {
+			tools.close_search()
+			tools.focused = true
+			if ui2.focused_id() == devtools.search_id {
+				ui2.blur_embedded_textbox()
+			}
+		}
 		'sidebar' {
 			tools.sidebar = match action.arg {
 				'computed' { devtools.SidebarTab.computed }
@@ -765,6 +795,24 @@ fn (mut app BrowserApp) handle_devtools_key(event ui2.KeyEvent) bool {
 			ui2.blur_embedded_textbox()
 			return true
 		}
+	}
+	if focused == devtools.search_id {
+		if event.code in [.enter, .kp_enter] && event.shift {
+			app.devtools_action(devtools.action('search-previous', 0, ''))
+			return true
+		}
+		if event.code == .escape {
+			app.devtools_action(devtools.action('search-close', 0, ''))
+			return true
+		}
+	}
+	// Cmd+F within the Elements panel searches its tree rather than the page.
+	if tools.panel == .elements && command && !event.shift && !event.alt && event.code == .f
+		&& (tools.focused || focused.starts_with('devtools-')) {
+		tools.open_search()
+		app.focus_devtools_control(devtools.search_id)
+		app.refresh_devtools()
+		return true
 	}
 	if tools.panel == .console && command && !event.shift && !event.alt && event.code == .k {
 		app.clear_devtools_console()

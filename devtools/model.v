@@ -113,6 +113,12 @@ pub mut:
 	console_reveal        bool
 	console_history       []string
 	console_history_index int
+	// Find in the Elements panel, by string or selector.
+	search_open    bool
+	search_query   string
+	search_results []i64
+	search_nodes   map[i64]&dom.Node
+	search_index   int = -1
 	// Host input state: the page element under the picker, whether the
 	// pointer is over the panel, and a picker press whose release the page
 	// must not see.
@@ -185,6 +191,9 @@ pub fn (mut tools DevTools) sync(document &dom.Document, generation int) bool {
 	tools.redo_stack = []UndoEntry{}
 	tools.console = []ConsoleEntry{}
 	tools.console_seen = 0
+	tools.search_results = []i64{}
+	tools.search_nodes = map[i64]&dom.Node{}
+	tools.search_index = -1
 	tools.click_node = 0
 	tools.version++
 	if document == unsafe { nil } {
