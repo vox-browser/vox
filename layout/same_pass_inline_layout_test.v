@@ -179,3 +179,71 @@ fn test_same_pass_inline_retained_native_geometry_survives_context_and_pool_reti
 	gc_collect()
 	assert same_pass_inline_compare(mut state, container, space) == !disable_same_pass_inline_reuse
 }
+
+// Keep these checks outside assert: they also run under literal -prod, which
+// removes assertions in implementation helpers and must preserve state changes.
+fn test_retained_inline_margin_commit_survives_literal_production_mode() {
+	for previous_pass in [false, true] {
+		document := dom.Document.create(dom.url_about_blank())
+		container := measurement_inline_fixture(document, '')
+		root := unsafe { &Node(container) }
+		styled := unsafe { &NodeWithStyle(container) }
+		mut state := LayoutState.new()
+		mut used := state.get_mutable(styled)
+		used.set_content_width(CSSPixels.new(180))
+		space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_indefinite())
+		_ = run_inline_formatting_context_internal(mut state, container, mut used, .normal, space, none)
+		key := u64(voidptr(root))
+		cached := state.inline_layouts_[key] or { panic('missing retained inline fixture') }
+		if previous_pass {
+			mut clean := unsafe { &Node(root) }
+			clean.reset_needs_layout_update()
+			for child in root.children() {
+				mut clean_child := unsafe { &Node(child) }
+				clean_child.reset_needs_layout_update()
+			}
+			state.previous_inline_layouts_[key] = cached
+			state.inline_layouts_.clear()
+		}
+		mut bfc := BlockFormattingContext{}
+		bfc.margin_state.add_margin(13)
+		bfc.margin_state.register_block_container_y_position_update(used, 0)
+		_ = run_inline_formatting_context_internal(mut state, container, mut used, .normal, space, &bfc)
+		if bfc.margin_state.has_block_container_waiting_for_final_y_position()
+			|| bfc.margin_state.current_collapsed_margin() != 0
+			|| used.offset.y() != CSSPixels.new(13) {
+			panic('retained inline replay failed to commit its pending collapsed margin')
+		}
+		if (previous_pass || !disable_same_pass_inline_reuse) && !used.line_boxes_are_shared_ {
+			panic('expected retained inline geometry was not reused')
+		}
+	}
+}
+
+fn test_measurement_inline_margin_commit_survives_literal_production_mode() {
+	document := dom.Document.create(dom.url_about_blank())
+	container := measurement_inline_fixture(document, '')
+	styled := unsafe { &NodeWithStyle(container) }
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	defer { source.release_measurement_chunk_pool() }
+	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_indefinite())
+	mut producer := source.new_measurement_for_subtree(styled)
+	mut first := producer.get_mutable(styled)
+	first.set_content_width(CSSPixels.new(180))
+	_ = run_inline_formatting_context_for_width(mut producer, container, mut first, .normal, space, none, false)
+	producer.release_measurement()
+	mut replay := source.new_measurement_for_subtree(styled)
+	defer { replay.release_measurement() }
+	mut used := replay.get_mutable(styled)
+	used.set_content_width(CSSPixels.new(180))
+	mut bfc := BlockFormattingContext{}
+	bfc.margin_state.add_margin(17)
+	bfc.margin_state.register_block_container_y_position_update(used, 0)
+	_ = run_inline_formatting_context_for_width(mut replay, container, mut used, .normal, space, &bfc, false)
+	if bfc.margin_state.has_block_container_waiting_for_final_y_position()
+		|| bfc.margin_state.current_collapsed_margin() != 0
+		|| used.offset.y() != CSSPixels.new(17) || !used.line_boxes_are_shared_ {
+		panic('measurement inline replay failed to commit its pending collapsed margin')
+	}
+}

@@ -45,7 +45,8 @@ fn restore_retained_inline_layout(mut state LayoutState, containing_block &Block
 	if mut bfc := context {
 		// The ordinary line builder consumes this pending margin before
 		// its first content. The eligibility guard makes its local delta zero.
-		assert bfc.commit_pending_margin_before_inline_content().raw_value() == 0
+		delta := bfc.commit_pending_margin_before_inline_content()
+		assert delta.raw_value() == 0
 	}
 	state.inline_layouts_[key] = cached
 	return cached.result

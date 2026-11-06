@@ -132,7 +132,8 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 				if position := cached.inline_end { used.set_inline_end_static_position_rect(position) }
 			}
 			if mut bfc := context {
-				assert bfc.commit_pending_margin_before_inline_content().raw_value() == 0
+				delta := bfc.commit_pending_margin_before_inline_content()
+				assert delta.raw_value() == 0
 			}
 			if inline_measurement_diagnostics && !inline_measurement_reuse_reported {
 				inline_measurement_reuse_reported = true
