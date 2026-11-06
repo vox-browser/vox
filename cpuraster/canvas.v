@@ -2,7 +2,7 @@ module cpuraster
 
 // Canvas2D path fills, as skia/canvas_raster.cpp's vox_skia_canvas_path()
 // draws them with LibWeb Skia for a solid source-over fill without clips,
-// filters, shadows or global alpha: writePixels() premultiplies the bitmap,
+// filters or shadows: writePixels() premultiplies the bitmap,
 // SkCanvas::drawPath() fills the path anti-aliased, and readPixels() returns
 // the premultiplied surface.
 
@@ -63,4 +63,25 @@ fn premultiply_rows(mut pixels []u8, width int, height int, pitch int) {
 			}
 		}
 	}
+}
+
+// canvas_fill_color returns the 8-bit SkColor the legacy blitter receives
+// for color (0xAARRGGBB) after SkPaint::setAlphaf(getAlphaf() * global_alpha):
+// SkColor4f stores byte * (1/255), and SkColor4f::toSkColor() rounds with
+// trunc(pin(v * 255 + 0.5, 0, 255)).
+pub fn canvas_fill_color(color u32, global_alpha f32) u32 {
+	mut result := u32(0)
+	for shift in [u32(0), 8, 16, 24] {
+		mut v := f32((color >> shift) & 0xff) * inv_255
+		if shift == 24 {
+			product := v * global_alpha
+			v = if product < 1 { product } else { f32(1) }
+			v = if f32(0) < v { v } else { f32(0) }
+		}
+		scaled := v * f32(255)
+		biased := scaled + f32(0.5)
+		pinned := fmin(fmax(biased, 0), 255)
+		result |= u32(u8(pinned)) << shift
+	}
+	return result
 }

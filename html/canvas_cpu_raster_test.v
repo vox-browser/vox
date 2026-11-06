@@ -60,6 +60,7 @@ fn test_solid_canvas_fills_match_skia() {
 	for i, fill in fills {
 		context.drawing_state.fill_style = FillOrStrokeStyle.from_color(fill.color)
 		context.drawing_state.transform = fill.transform
+		context.drawing_state.global_alpha = if i == 0 { 1.0 } else { 0.62 }
 		cpu_raster_test_path(mut context, i)
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
@@ -68,7 +69,7 @@ fn test_solid_canvas_fills_match_skia() {
 			path:         canvas_skia_path(context.CanvasPath.path(), fill.fill_rule)
 			style:        canvas_skia_style(context.drawing_state.fill_style.to_gfx_paint_style())
 			transform:    canvas_skia_transform(fill.transform)
-			global_alpha: 1
+			global_alpha: f32(context.drawing_state.global_alpha)
 		}
 		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
 			command)

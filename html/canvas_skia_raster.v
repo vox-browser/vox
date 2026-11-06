@@ -86,13 +86,14 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	native_style := canvas_skia_style(style)
 	native_transform := canvas_skia_transform(transform)
 	filters := context.canvas_skia_filters()
-	// Solid source-over fills without clips, shadows, filters or global alpha
-	// use the Skia-free rasterizer, which reproduces Skia's pixels.
-	if !stroke && native_style.kind == 0 && blur <= 0 && alpha == 1.0 && clips.len == 0
-		&& filters.len == 0 && state.current_compositing_and_blending_operator == .source_over {
+	// Solid source-over fills without clips, shadows or filters use the
+	// Skia-free rasterizer, which reproduces Skia's pixels.
+	if !stroke && native_style.kind == 0 && blur <= 0 && clips.len == 0 && filters.len == 0
+		&& state.current_compositing_and_blending_operator == .source_over {
 		cpu_path := cpuraster.canvas_path(native_path.segments, native_path.even_odd)
 		if cpuraster.fill_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
-			bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color)
+			bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform,
+			cpuraster.canvas_fill_color(native_style.color, f32(alpha)))
 		{
 			mutable_bitmap.alpha_type = 2
 			mutable_bitmap.native_rows_are_top_down = true
