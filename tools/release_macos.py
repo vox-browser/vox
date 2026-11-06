@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
 """Publish a packaged Vox DMG as the next release.
 
-packaging/Info.plist holds the version. A release bumps it, builds the DMG,
-creates the GitHub release tagged with the bare version (for example 0.1.1),
-commits the bump, then points vox-browser.org/version, which the browser's
-update check reads, at the new version.
+packaging/Info.plist holds the version. A release commits the version bump
+alone on master, builds that commit in a dedicated release checkout, creates
+the GitHub release tagged with the bare version (for example 0.1.1), then
+points vox-browser.org/version, which the browser's update check reads, at it.
+
+The release checkout is a clone next to the canonical one that borrows its
+object store and keeps its own Build/ caches. Building there compiles only
+committed sources, while other sessions keep working, building and committing
+in the canonical checkout.
 """
+import contextlib
+import fcntl
 import hashlib
 import json
-import os
+from pathlib import Path
 import platform
 import plistlib
 import posixpath
 import re
 import shlex
 import subprocess
+import time
 import urllib.request
 
-from rebuild_browser import production_input_path, repository_state
+from rebuild_browser import repository_state
 
 REPOSITORY = 'vox-browser/vox'
 WEBSITE_HOST = 'vpm'
@@ -27,6 +35,7 @@ VERSION_URL = 'https://vox-browser.org/version'
 INFO_PLIST = 'packaging/Info.plist'
 VERSION = re.compile(r'\d{1,9}(\.\d{1,9}){0,2}')
 SSH_OPTIONS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15']
+VERSION_KEYS = ('CFBundleShortVersionString', 'CFBundleVersion')
 
 
 def parse_version(text):
@@ -58,62 +67,34 @@ def bundle_version(path):
     return plistlib.loads(path.read_bytes())['CFBundleShortVersionString']
 
 
-def set_bundle_version(path, version):
-    """Write the version and advance the build number once; keep the file's formatting."""
-    text = path.read_text()
+def with_bundle_version(text, version):
+    """Info.plist text at version, with the build number advanced once; formatting kept."""
     info = plistlib.loads(text.encode())
     if info['CFBundleShortVersionString'] == version:
-        return False
+        return text
     values = dict(CFBundleShortVersionString=version,
                   CFBundleVersion=str(int(info.get('CFBundleVersion', '0')) + 1))
     for key, value in values.items():
         match = re.search(r'<key>%s</key>\s*<string>([^<]*)</string>' % key, text)
         if match is None:
-            raise RuntimeError('%s has no %s string' % (path, key))
+            raise RuntimeError('Info.plist has no %s string' % key)
         text = text[:match.start(1)] + value + text[match.end(1):]
     if {key: plistlib.loads(text.encode())[key] for key in values} != values:
-        raise RuntimeError('Could not update the version in ' + str(path))
-    path.write_text(text)
-    return True
+        raise RuntimeError('Could not update the version in Info.plist')
+    return text
 
 
-def uncommitted_build_inputs(root):
-    """Uncommitted files the production build would compile, besides the version bump.
-
-    The release builds the shared checkout, where other sessions keep work in
-    progress. Tracked inputs must match HEAD. An untracked .v file joins its
-    directory's module, so it counts where tracked .v files already live; a new
-    directory is compiled only once a counted file imports it.
-    """
-    def git(*arguments):
-        return subprocess.run(['git', '-C', str(root), *arguments], capture_output=True,
-                              check=True).stdout.split(b'\0')
-    modules = {posixpath.dirname(os.fsdecode(name)) for name in git('ls-files', '-z')
-               if name.endswith(b'.v')}
-    entries = iter(git('status', '--porcelain=v1', '-z', '--untracked-files=all'))
-    changed = []
-    for entry in entries:
-        if not entry:
-            continue
-        status, path = entry[:2].decode(), os.fsdecode(entry[3:])
-        if status[0] in 'RC':
-            next(entries, None)  # The rename's source path follows.
-        if (path == INFO_PLIST or path.endswith('.swp') or '.v3cc.' in path
-                or not production_input_path(path)):
-            continue
-        if status == '??' and not (path.endswith('.v') and posixpath.dirname(path) in modules):
-            continue
-        changed.append(path)
-    return sorted(changed)
+def set_bundle_version(path, version):
+    text = path.read_text()
+    updated = with_bundle_version(text, version)
+    path.write_text(updated)
+    return updated != text
 
 
-def check_committed(root):
-    changed = uncommitted_build_inputs(root)
-    if changed:
-        listed = '\n  '.join(changed[:15]) + ('\n  ... and %d more' % (len(changed) - 15)
-                                              if len(changed) > 15 else '')
-        raise RuntimeError('The release would compile uncommitted changes. Commit or finish them '
-                           'first:\n  ' + listed)
+def without_version(text):
+    for key in VERSION_KEYS:
+        text = re.sub(r'(<key>%s</key>\s*<string>)[^<]*' % key, lambda match: match.group(1), text)
+    return text
 
 
 def command(arguments, **kwargs):
@@ -181,12 +162,63 @@ def publish_release(repository, version, dmg, minimum):
 
 
 def commit_version(root, version):
-    if subprocess.run(['git', '-C', str(root), 'diff', '--quiet', 'HEAD', '--', INFO_PLIST]).returncode == 0:
-        return False
-    # Commit only Info.plist, even when other changes are staged.
-    command(['git', '-C', str(root), 'commit', '--quiet', '-m', 'Release Vox ' + version,
-             '--', INFO_PLIST])
-    return True
+    """Commit the version bump alone on master and return the commit to release.
+
+    Other sessions' uncommitted and staged work stays where it is. An earlier
+    attempt's uncommitted bump is reused; other uncommitted Info.plist edits stop
+    the release instead of being committed with it.
+    """
+    git = ['git', '-C', str(root)]
+    committed = command([*git, 'show', 'HEAD:' + INFO_PLIST])
+    if plistlib.loads(committed.encode())['CFBundleShortVersionString'] != version:
+        path = root / INFO_PLIST
+        if without_version(path.read_text()) != without_version(committed):
+            raise RuntimeError('%s has uncommitted changes besides the version; commit or '
+                               'revert them first' % INFO_PLIST)
+        path.write_text(with_bundle_version(committed, version))
+        for attempt in range(30):
+            # Pathspec commits leave other staged files out of the release commit.
+            result = subprocess.run([*git, 'commit', '--quiet', '-m', 'Release Vox ' + version,
+                                     '--', INFO_PLIST], capture_output=True, text=True)
+            if result.returncode == 0:
+                break
+            if 'index.lock' not in result.stderr or attempt == 29:
+                raise RuntimeError('Could not commit the version bump: ' + result.stderr.strip())
+            time.sleep(1)  # Another session is committing.
+    return command([*git, 'rev-parse', 'HEAD']).strip()
+
+
+def release_checkout(root):
+    # A sibling keeps the checkout-relative ../3rd dependency paths valid.
+    return root.parent / (root.name + '-release')
+
+
+def prepare_checkout(root, checkout, commit):
+    """Check out commit in the release clone; its ignored Build/ caches stay warm."""
+    if not (checkout / '.git').is_dir():
+        if checkout.exists():
+            raise RuntimeError('%s exists but is not a release checkout' % checkout)
+        print('Creating the release checkout %s (the first build fetches and builds its '
+              'native dependencies)' % checkout, flush=True)
+        # Borrow the canonical object store instead of copying its history.
+        command(['git', 'clone', '--quiet', '--shared', '--no-checkout', str(root), str(checkout)])
+    git = ['git', '-C', str(checkout)]
+    command([*git, 'checkout', '--quiet', '--force', '--detach', commit])
+    command([*git, 'clean', '--quiet', '-ffd'])
+    if command([*git, 'status', '--porcelain']).strip():
+        raise RuntimeError('The release checkout %s is not clean' % checkout)
+
+
+@contextlib.contextmanager
+def release_lock(root):
+    path = root / 'Build/release.lock'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('w') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError('Another release is running') from None
+        yield
 
 
 def live_version(url=VERSION_URL):
@@ -211,37 +243,41 @@ def publish_website_version(version, host=WEBSITE_HOST, path=WEBSITE_VERSION_FIL
 
 
 def release(root, deploy, output=None, package_only=False, requested=None,
-            repository=REPOSITORY, host=WEBSITE_HOST):
-    """Bump, build, package and publish; return the DMG path."""
-    info = root / INFO_PLIST
-    check_committed(root)
-    released = released_version(repository)
-    version = next_version(bundle_version(info), released, requested)
-    # Fail before the long build when the release cannot be published.
-    check_unreleased(repository, version)
-    check_website(host)
-    if package_only:
-        built = bundle_version(root / 'Build/v/Vox.app/Contents/Info.plist')
-        if built != version:
-            raise RuntimeError('Build/v/Vox.app is version %s; run deploy.vsh without '
-                               '--package-only to build %s' % (built, version))
-    else:
-        set_bundle_version(info, version)
-    # The build receipt names the inputs the compiler consumed; they must be this tree.
-    expected = repository_state(root)['build_inputs_sha256']
-    print('Releasing Vox %s (previous release: %s)' % (version, released), flush=True)
-    dmg = deploy(root, output, package_only)
-    manifest = json.loads(dmg.with_suffix('.dmg.json').read_text())
-    if manifest['version'] != version:
-        raise RuntimeError('The DMG contains Vox %s, not %s' % (manifest['version'], version))
-    compiled = manifest.get('source_build', {}).get('verified_inputs', {}).get('build_inputs_sha256')
-    if compiled != expected:
-        raise RuntimeError('The build compiled different sources than the committed release '
-                           '(files changed while it ran); run deploy.vsh again')
-    minimum = plistlib.loads(info.read_bytes())['LSMinimumSystemVersion']
-    publish_release(repository, version, dmg, minimum)
-    commit_version(root, version)
-    publish_website_version(version, host)
+            repository=REPOSITORY, host=WEBSITE_HOST, checkout=None):
+    """Bump, build the committed sources, package and publish; return the DMG path."""
+    checkout = checkout or release_checkout(root)
+    with release_lock(root):
+        released = released_version(repository)
+        version = next_version(bundle_version(root / INFO_PLIST), released, requested)
+        # Fail before committing or building when the release cannot be published.
+        check_unreleased(repository, version)
+        check_website(host)
+        if package_only:
+            # Repackage the release checkout's commit; its receipt is checked below.
+            if not (checkout / '.git').is_dir() or bundle_version(checkout / INFO_PLIST) != version:
+                raise RuntimeError('The release checkout holds no build of %s; run deploy.vsh '
+                                   'without --package-only' % version)
+            commit = command(['git', '-C', str(checkout), 'rev-parse', 'HEAD']).strip()
+        else:
+            commit = commit_version(root, version)
+            prepare_checkout(root, checkout, commit)
+        # The build receipt names the inputs the compiler consumed; they must be this commit.
+        expected = repository_state(checkout)['build_inputs_sha256']
+        print('Releasing Vox %s from %s (previous release: %s)' % (version, commit[:12], released),
+              flush=True)
+        if output is None:
+            output = root / 'Build/deploy' / ('Vox-%s-%s.dmg' % (version, platform.machine()))
+        dmg = deploy(checkout, output, package_only)
+        manifest = json.loads(dmg.with_suffix('.dmg.json').read_text())
+        if manifest['version'] != version:
+            raise RuntimeError('The DMG contains Vox %s, not %s' % (manifest['version'], version))
+        compiled = manifest.get('source_build', {}).get('verified_inputs', {})
+        if compiled.get('head') != commit or compiled.get('build_inputs_sha256') != expected:
+            raise RuntimeError('The build did not compile the release commit %s; run deploy.vsh '
+                               'again' % commit)
+        minimum = plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
+        publish_release(repository, version, dmg, minimum)
+        publish_website_version(version, host)
     return dmg
 
 

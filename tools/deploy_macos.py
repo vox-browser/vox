@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Release Vox: bump the version, build with literal -prod / single C unit, package a
-stripped macOS DMG, upload it to a new GitHub release and update vox-browser.org/version."""
+"""Release Vox: commit the version bump, build that commit with literal -prod / single C
+unit in the ../vox2-release checkout, package a stripped macOS DMG, upload it to a new
+GitHub release and update vox-browser.org/version. Uncommitted work is never released."""
 
 import argparse
 import hashlib
@@ -197,7 +198,8 @@ def main():
     parser = argparse.ArgumentParser(prog='deploy.vsh', description=__doc__)
     parser.add_argument('--output', type=Path, help='DMG path (default: Build/deploy/Vox-VERSION-ARCH.dmg)')
     parser.add_argument('--package-only', action='store_true',
-                        help='reuse the latest completed --prod --no-parallel-cc build')
+                        help="reuse the release checkout's completed build (with --no-publish: "
+                        "the canonical Build/v build)")
     parser.add_argument('--version', help='release this version (for example 0.2.0) instead of '
                         'the next patch version')
     parser.add_argument('--no-publish', action='store_true',

@@ -1,8 +1,9 @@
 #!/usr/bin/env -S v -memory-limit 10G run
 
-// Release Vox for macOS: bump packaging/Info.plist to the next patch version,
-// build and package the DMG, upload it to a new vox-browser/vox GitHub release
-// tagged with that version and point vox-browser.org/version at it.
+// Release Vox for macOS: commit packaging/Info.plist at the next patch version,
+// build that commit in ../vox2-release (other sessions' uncommitted work is not
+// compiled or disturbed), package the DMG, upload it to a new vox-browser/vox
+// GitHub release tagged with that version and point vox-browser.org/version at it.
 // Use --help for --version, --package-only, --no-publish and --website-only.
 import os
 
