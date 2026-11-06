@@ -149,7 +149,15 @@ fn browser_window_event(context voidptr, kind i32, values &f64, flags &i32) {
 		frame := owner.state.normal
 		saved := SavedBrowserWindow{ version: 1, normal_frame: '{{${frame.x}, ${frame.y}}, {${frame.width}, ${frame.height}}}', maximized: owner.state.maximized, fullscreen: owner.state.fullscreen }
 		os.mkdir_all(os.dir(owner.path)) or { return }
-		encoded := json2.encode(saved)
+		// Struct encoding caches field metadata on first use. A move can be
+		// that first use, so keep every allocation local to this scratch scope
+		// by encoding JSON values without publishing a struct metadata cache.
+		encoded := json2.encode(map[string]json2.Any{
+			'version':     json2.Any(saved.version)
+			'normalFrame': json2.Any(saved.normal_frame)
+			'maximized':   json2.Any(saved.maximized)
+			'fullscreen':  json2.Any(saved.fullscreen)
+		})
 		C.native_host_write_plist(owner.path.str, encoded.str, i32(encoded.len))
 	}
 }

@@ -3,6 +3,7 @@ module main
 import browserui
 import json2
 import os
+import platform
 import time
 
 $if vox_ui2 ? {
@@ -31,6 +32,38 @@ fn test_window_state_restoration_respects_launch_modes_and_explicit_sizes() {
 	] {
 		options := parse_launch_options(arguments)!
 		assert !browser_window_state_enabled(options, arguments)
+	}
+}
+
+fn test_window_movement_saves_survive_first_use_and_scratch_reuse() {
+	$if vox_ui2 ? {
+		// Keep this before any SavedBrowserWindow struct encoding: warming its
+		// process-wide JSON metadata would hide the production first-move bug.
+		path := os.join_path(os.temp_dir(), 'vox-ui2-moves-${os.getpid()}-${time.sys_mono_now()}', 'window-state.plist')
+		mut owner := BrowserWindowOwner{ path: path }
+		defer { os.rmdir_all(os.dir(path)) or {} }
+		mut values := [f64(100), 100, 760, 540, 0, 0]!
+		mut flags := [3]i32{}
+		for i in 0 .. 24 {
+			values[0] = 100 + f64(i)
+			values[1] = 100 + f64(i % 3)
+			// Deliver normal-window geometry through the notification callback,
+			// then reuse the retired workspace before the next move.
+			browser_window_event(&owner, 0, &values[0], &flags[0])
+			reuse := platform.begin_thread_scratch('reuse window state serialization')
+			_ = []u8{len: 128 * 1024, init: 0xa5}
+			reuse.finish()
+			raw := C.native_host_read_plist(path.str)
+			assert raw != unsafe { nil }
+			saved := decode_browser_window_state(unsafe { cstring_to_vstring(raw) })?
+			C.free(raw)
+			frame := saved_browser_window_frame(saved.normal_frame)?
+			assert frame.x == values[0] && frame.y == values[1], 'move ${i}: saved=${saved.normal_frame}, native=(${values[0]}, ${values[1]})'
+			assert frame.width == values[2] && frame.height == values[3]
+			assert !saved.maximized && !saved.fullscreen
+		}
+		browser_window_event(&owner, 5, &values[0], &flags[0])
+		assert os.is_file(path)
 	}
 }
 
