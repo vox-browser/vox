@@ -131,7 +131,11 @@ def main():
                             raise RuntimeError('Invalid trial retained: ' + name)
                         if cohort == 'diagnostic':
                             log = (output / name / 'browser.log').read_text()
-                            window = log.split('SCROLL_INPUT 0 ', 1)[1].split('SCROLL_INPUT 599 ', 1)[0]
+                            # Inputs/publications are buffered and printed only
+                            # at finish. SCROLL_START is the live first-dispatch
+                            # marker; everything before the deferred input log
+                            # belongs to the input/publication pipeline.
+                            window = log.split('SCROLL_START ', 1)[1].split('SCROLL_INPUT 0 ', 1)[0]
                             gpu = re.findall(r'^VOX_GPU_CANVAS .*?draws=(\d+).*?compared=(\d+).*?max_error=(\d+)',
                                              window, re.MULTILINE)
                             if not gpu or not sum(int(row[0]) for row in gpu) or not sum(int(row[1]) for row in gpu):
