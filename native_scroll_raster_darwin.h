@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <dlfcn.h>
 #include "native_raster_row_ranges.h"
 #include "native_scroll_tile_presentation_darwin.h"
 
@@ -48,6 +49,15 @@ typedef struct {
 
 static VoxVideoBackdrop native_video_backdrops[VOX_VIDEO_BACKDROPS];
 static uint64_t native_video_backdrop_clock;
+VOX_NATIVE_STATE double (*native_scroll_raster_diagnostic_clock)(void);
+VOX_NATIVE_STATE int native_scroll_raster_diagnostic_clock_ready;
+static double native_scroll_raster_diagnostic_time(void) {
+    if (!native_scroll_raster_diagnostic_clock_ready) {
+        native_scroll_raster_diagnostic_clock = (double (*)(void))dlsym(RTLD_DEFAULT,"vox_precise_scroll_diagnostic_time");
+        native_scroll_raster_diagnostic_clock_ready = 1;
+    }
+    return native_scroll_raster_diagnostic_clock ? native_scroll_raster_diagnostic_clock() : -1;
+}
 // Viewport device rectangles (left, top, right, bottom) repainted by the
 // active reused frame; a negative count means the whole viewport.
 static long native_scroll_repainted[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1][4];
@@ -140,7 +150,8 @@ static void native_scroll_raster_clear_gpu_input(VoxScrollRaster const *cache,
         }
     }
     if (getenv("VOX_GPU_TILE_CLEAR_DIAGNOSTICS"))
-        fprintf(stderr,"VOX_GPU_TILE_CLEAR sparse=%d cleared_bytes=%zu canvas_bytes=%zu\n",sparse,cleared,w*h*4);
+        fprintf(stderr,"VOX_GPU_TILE_CLEAR sparse=%d cleared_bytes=%zu canvas_bytes=%zu t_us=%.3f\n",
+            sparse,cleared,w*h*4,native_scroll_raster_diagnostic_time());
 }
 
 // Rows form a ring: advancing the origin keeps the overlapping document pixels

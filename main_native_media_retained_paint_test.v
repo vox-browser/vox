@@ -5,6 +5,40 @@ import html
 import layout
 import painting
 
+fn test_equal_native_video_pixels_keep_visual_generation_and_source_identity() {
+	mut document := html.parse_document('<!doctype html><video id="video"></video>')
+	defer { document.finalize() }
+	element := document.get_element_by_id('video')?
+	media := html.html_media_element_for_dom_element(element)?
+	mut player := BrowserMediaPlayback{media: media, element: element}
+	mut pixels := [u8(255),0,0,255,0,255,0,255]
+	assert !player.update_frame_with_pixel_reuse(pixels.data,2,1,true)
+	mut source := painting.VideoFrameSource.create()
+	source.update(player.frame)
+	identity := source.resource_identity()
+	command := layout.PaintCommand{kind: 'draw_video', width: 2, height: 1, video_frame_source: source}
+	before := scroll_raster_command_hash(&command,0)
+	assert player.update_frame_with_pixel_reuse(pixels.data,2,1,true)
+	source.update(player.frame)
+	assert source.resource_identity() == identity
+	assert scroll_raster_command_hash(&command,0) == before
+	// Alpha and the last byte participate, along with ordinary RGB changes.
+	pixels[7]--
+	assert player.update_frame_with_pixel_reuse(pixels.data,2,1,true)
+	assert player.frame?.generation == identity.generation+1
+	assert scroll_raster_command_hash(&command,0) != before
+	pixels[0]--
+	assert player.update_frame_with_pixel_reuse(pixels.data,2,1,true)
+	assert player.frame?.generation == identity.generation+2
+	// The same-binary control retains the original write/generation behavior.
+	assert player.update_frame_with_pixel_reuse(pixels.data,2,1,false)
+	assert player.frame?.generation == identity.generation+3
+	mut larger := []u8{len: 16, init: 77}
+	assert !player.update_frame_with_pixel_reuse(larger.data,2,2,true)
+	assert player.frame?.generation == identity.generation+4
+	assert player.frame?.to_bitmap()!.data == larger
+}
+
 fn test_native_media_frame_storage_preserves_identity_and_advances_pixels() {
 	mut document := html.parse_document('<!doctype html><video id="video"></video>')
 	defer { document.finalize() }

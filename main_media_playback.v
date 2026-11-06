@@ -12,6 +12,12 @@ import os
 
 const retain_native_media_paint = os.getenv('VOX_RETAIN_NATIVE_MEDIA_PAINT') != ''
 const retained_native_media_paint_diagnostics = os.getenv('VOX_RETAINED_NATIVE_MEDIA_PAINT_DIAGNOSTICS') != ''
+const skip_equal_native_video_writes = os.getenv('VOX_SKIP_EQUAL_NATIVE_VIDEO_WRITES') != ''
+const equal_native_video_write_diagnostics = os.getenv('VOX_EQUAL_NATIVE_VIDEO_WRITES_DIAGNOSTICS') != ''
+
+$if macos {
+	fn C.native_scroll_raster_diagnostic_time() f64
+}
 
 #flag darwin -framework CoreVideo
 #flag darwin -framework CoreMedia
@@ -79,6 +85,11 @@ fn (player &BrowserMediaPlayback) ranges() []html.MediaBufferedRange {
 }
 
 fn (mut player BrowserMediaPlayback) update_frame(pixels &u8, width int, height int) bool {
+	return player.update_frame_with_pixel_reuse(pixels, width, height, skip_equal_native_video_writes)
+}
+
+fn (mut player BrowserMediaPlayback) update_frame_with_pixel_reuse(pixels &u8, width int,
+	height int, reuse_equal_pixels bool) bool {
 	// Reuse the pixel storage between frames, including in the prealloc build.
 	// The document is invalidated below before retained painting reads it again.
 	mut previous_generation := u64(0)
@@ -86,6 +97,15 @@ fn (mut player BrowserMediaPlayback) update_frame(pixels &u8, width int, height 
 		previous_generation = frame.generation
 		if mut bitmap := frame.rgba_bitmap {
 			if bitmap.width == width && bitmap.height == height {
+				if reuse_equal_pixels && bitmap.data.len > 0
+					&& unsafe { vmemcmp(bitmap.data.data, pixels, bitmap.data.len) == 0 } {
+					$if macos {
+						if equal_native_video_write_diagnostics {
+							eprintln('VOX_EQUAL_NATIVE_VIDEO_WRITE reused=1 bytes=${bitmap.data.len} generation=${frame.generation} t_us=${C.native_scroll_raster_diagnostic_time():.3f}')
+						}
+					}
+					return true
+				}
 				unsafe { vmemcpy(bitmap.data.data, pixels, bitmap.data.len) }
 				// New pixels behind the same frame object: retained-paint
 				// consumers identify them by this counter.
