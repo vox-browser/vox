@@ -5,7 +5,9 @@ The [forum/news catalog](../Tests/Browser/Brave/forum-news.json) contains
 WIRED have sealed guest DOM archives, original response bodies, full-uBlock
 Origin reports and source PNGs. **TechCrunch and The Register have strict cold
 and complete-cache passes. WIRED's earlier strict first-frame passes remain
-recorded; recent cold Brave references vary.** The other additions retain the open gaps documented below.
+recorded; recent cold Brave references vary.** Discord's fresh complete-cache
+candidate also passes every strict gate; its cold reference still fails and its registered archive remains unchanged. The
+other additions retain the open gaps documented below.
 
 The original ten remain incomplete. Latest cold controls retain strict zero
 for Hacker News, Lobsters, BBC, Slashdot, Guardian and The Verge. Guardian and
@@ -3196,6 +3198,88 @@ actual test/browser/memory-guard exits.
 The archive contains 791 members and 25,476,467 bytes, SHA-256
 `67c812c9577fdeb738a6ff1c4fc3fd73f94b36a52ea49f8a9354a734d63e36d4`;
 every member passes CRC and SHA-256 readback.
+
+## Discord fresh source and complete-cache candidate (2026-11-06)
+
+A fresh full-uBO Discord candidate passes **every strict gate at 0 pixels with
+complete caches** on executable
+`cf225957fe7fd9c29884d0e6cdf16a8412ba64f69bf878d991c06c03961f8e3b`.
+The source comes from a prepared, closed encoded cache; each accepted browser
+capture uses a fresh process. Source versus both independent frozen Brave
+replays and Vox versus both references are exact, with matching request/header,
+cosmetic, readiness, document and focus audits. Independent RGBA readback
+confirms the zero counts. This is a qualified candidate for that cache condition,
+not a replacement for the registered archive.
+
+The **same candidate fails cold replay** on that same production identity.
+Its two agreeing Brave references differ from its saved source at 597 pixels;
+Vox matches the saved source exactly. A separate cold-source candidate reproduces
+the earlier 598-pixel gap. The retained counts are:
+
+| Candidate and replay policy | Source / Brave | Brave 1 / 2 | Vox / source | Vox / Brave |
+| --- | ---: | ---: | ---: | ---: |
+| Fresh cold source, cold replay | 598 | 0 | 0 | 598 |
+| Prepared source, complete replay | 0 | 0 | 0 | 0 |
+| Same prepared source, cold replay | 597 | 0 | 0 | 597 |
+
+The first row uses `8fe71882…`; the prepared candidate's two rows use the
+unchanged `cf225957…` bundle. Their live acquisitions have different DOM bytes
+and are not a matched experiment assigning a cache effect to source pixels.
+A later fresh native pair on `f4f6b04b…` independently matches **each candidate's
+own source at 0**, with both inputs checked under one bundle lease. This is a
+native diagnostic and supplies no additional full-uBO acceptance cohort.
+The two source DOMs differ by a hidden one-pixel iframe; their resource bodies
+and capture histories remain independently pinned. No rendering consequence is
+assigned to that DOM difference without a controlled experiment.
+
+Direct acquisition first timed out with `ERR_TIMED_OUT`; that failed attempt
+is retained without an error-page fixture. Successful acquisitions use the
+configured explicit local HTTP proxy. All comparisons use sealed original-origin
+replays with no network forwarding. The registered Discord archive, encoded
+bodies, source PNG and zero tolerance remain unchanged.
+
+A separate instrumented candidate has matching sampled hero/ancestor geometry
+and styles between source and replay, and neither reports an active Web
+Animation. LayerTree again supplies no snapshots or paint commands. Its own
+source/replay gap is 2,361 pixels, native/replay is 598, and native/source is
+1,871. Its inputs and executable differ from the ordinary cold acquisition,
+so that extra source gap is not attributed to instrumentation or cache policy.
+The sampled agreement narrows the final-style lead without establishing an
+internal image decode identity.
+
+Two fresh, instrumented prior-paint trials temporarily enlarge the background,
+force a capture, restore its original inline-style attribute, background size
+and bounds, then capture the ordinary viewport. Both differ from the saved
+cold source and ordinary frozen reference at **61,883 pixels**. This demonstrates
+history sensitivity under the diagnostic but does not explain the small gap
+or measure a decoder's dimensions or RGB/YUV identity. The first probe failed
+exact restoration because an empty inline-style attribute remained; its failed
+guard and exact controller version are retained. No diagnostic supplies a site
+pass, production renderer fix or optimization credit.
+
+[Machine-readable results](evidence/discord-source-history-20261106.json) and
+the [sealed captures, original bodies and probes](evidence/discord-source-history-20261106.zip)
+retain all attempts and actual exits. The ZIP contains 697 members and
+56,237,834 bytes, SHA-256
+`f643ae34bf0bd47eaf29693824aa7923bd8235a24ab8985bcd66f74b3cd917dc`;
+every member passes CRC and SHA-256 readback. To reproduce the candidate's
+complete-cache check without replacing the registered archive:
+
+```sh
+python3 -m zipfile -e docs/evidence/discord-source-history-20261106.zip \
+  Build/discord-source-evidence-UNIQUE
+python3 tools/forum_news_pixels.py --sites discord --cache-policy complete \
+  --fixtures Build/discord-source-evidence-UNIQUE/raw/discord-proxy-complete/fixtures \
+  --extension Build/wired-parity-20261104-inputs/extension/uBlock0.chromium \
+  --checker Build/wired-parity-20261104-inputs/adblock-check \
+  --diff-tool Build/pixel-tools/pixel_diff \
+  --output Build/discord-complete-candidate-UNIQUE
+```
+
+Use the repository's memory guard for the command. Cold source qualification,
+Slate source qualification, the earlier reference/access failures and the
+explicitly deferred Stack Overflow/Pikabu site work remain open. No broad
+rendering rerun is credited for these acquisition/diagnostic checks.
 
 ## Run
 

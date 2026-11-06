@@ -1,0 +1,356 @@
+{
+  "native_diagnostic_pair": {
+    "results": [
+      {
+        "name": "discord-proxy-cold",
+        "native_source": 0,
+        "native_previous": 0
+      },
+      {
+        "name": "discord-proxy-complete",
+        "native_source": 0,
+        "native_previous": 0
+      }
+    ],
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "f4f6b04b6d492741b08633f3362ab9d1a3fbd6f190bfd12e3df64e3eedae85be",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "87ee2102cccf1b948f9e3c6c6308196036a2756f6a97a168e35ec81dae75d73f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "1691db01b0da5e59af74a920a20b648bd95d71dc921f5e44a74a6b47accc7cda",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    }
+  },
+  "candidate_document_diff": [
+    {
+      "kind": "delete",
+      "before": "<iframe height=\"1\" width=\"1\" style=\"position: absolute; top: 0px; left: 0px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; visibility: hidden;\"></iframe>",
+      "after": ""
+    }
+  ],
+  "scope": "Fresh Discord source qualification, sampled paint state and instrumented prior-paint controls; no renderer change or registered archive replacement; a fresh complete-cache candidate passes its recorded condition",
+  "direct_attempt": {
+    "result": {
+      "status": "failure",
+      "error": "Command exited 1; see /Users/alex/code/vox2/Build/forum-source-refresh-20261106/discord-cold/acquisition/capture.log"
+    },
+    "navigation": {
+      "requested_url": "https://discord.com/",
+      "url": "chrome-error://chromewebdata/",
+      "title": "discord.com",
+      "status": null,
+      "ready_state": "complete",
+      "body_text_length": 161,
+      "body_text_sample": "This site can\u2019t be reached\n\ndiscord.com took too long to respond.\n\nTry:\n\nChecking the connection\nChecking the proxy and the firewall\nERR_TIMED_OUT\nReload\nDetails",
+      "element_count": 52,
+      "challenge_detected": false,
+      "challenge_evidence": [],
+      "load_error": "net::ERR_TIMED_OUT",
+      "coverage": "error"
+    },
+    "exit": 1
+  },
+  "cases": [
+    {
+      "name": "discord-proxy-cold",
+      "result": {
+        "status": "live-to-frozen-mismatch",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 598,
+        "artifacts": "/Users/alex/code/vox2/Build/forum-source-refresh-20261106/discord-proxy-cold/comparison/discord",
+        "live_to_frozen_different_pixels": 598,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "069f0f6fb9ad5d208755285a8efb8eb563248bdc8f213a63fb08f0d17f91200f"
+      },
+      "rgba_readback": {
+        "source_first": 598,
+        "source_second": 598,
+        "reference": 0,
+        "native_source": 0,
+        "native_first": 598,
+        "native_second": 598
+      },
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "8fe7188244335c797d346b295b77fb6781eb5368b7f9e00118d2331d393abca9",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9b80c85a232e55bc76b42cb26523165fb0b87f750f53bf9ab2435cf6350f6702",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "manifest_sha256": "069f0f6fb9ad5d208755285a8efb8eb563248bdc8f213a63fb08f0d17f91200f"
+    },
+    {
+      "name": "discord-state",
+      "result": {
+        "status": "live-to-frozen-mismatch",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 598,
+        "artifacts": "/Users/alex/code/vox2/Build/forum-source-refresh-20261106/discord-state/comparison/discord",
+        "live_to_frozen_different_pixels": 2361,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "d066a8c04c8c30b5d9b738dc295d5d77240e8473f193dc0496e7239ca2772794"
+      },
+      "rgba_readback": {
+        "source_first": 2361,
+        "source_second": 2361,
+        "reference": 0,
+        "native_source": 1871,
+        "native_first": 598,
+        "native_second": 598
+      },
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "b55f547faf7bb1263211cb195241b558ec38fe4fbce9844817b31f20d1361784",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "53bf74a4962808caadb19021969223d06a05f054597c395fbf611967ce7c781a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "manifest_sha256": "d066a8c04c8c30b5d9b738dc295d5d77240e8473f193dc0496e7239ca2772794"
+    },
+    {
+      "name": "discord-proxy-complete",
+      "result": {
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "complete",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/forum-source-refresh-20261106/discord-proxy-complete/comparison/discord",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "f327022aa0894550b4514f1709b360a51bbd92b86a962f18e1df090da36a6334"
+      },
+      "rgba_readback": {
+        "source_first": 0,
+        "source_second": 0,
+        "reference": 0,
+        "native_source": 0,
+        "native_first": 0,
+        "native_second": 0
+      },
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "cf225957fe7fd9c29884d0e6cdf16a8412ba64f69bf878d991c06c03961f8e3b",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "906d1ace67db2b847395ec23763eaf32be51ae0280ae112d7bcf3f0dde0090fa",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "manifest_sha256": "f327022aa0894550b4514f1709b360a51bbd92b86a962f18e1df090da36a6334"
+    },
+    {
+      "name": "discord-complete-candidate-cold",
+      "result": {
+        "status": "live-to-frozen-mismatch",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 597,
+        "artifacts": "/Users/alex/code/vox2/Build/forum-source-refresh-20261106/discord-complete-candidate-cold/comparison/discord",
+        "live_to_frozen_different_pixels": 597,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "f327022aa0894550b4514f1709b360a51bbd92b86a962f18e1df090da36a6334"
+      },
+      "rgba_readback": {
+        "source_first": 597,
+        "source_second": 597,
+        "reference": 0,
+        "native_source": 0,
+        "native_first": 597,
+        "native_second": 597
+      },
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "cf225957fe7fd9c29884d0e6cdf16a8412ba64f69bf878d991c06c03961f8e3b",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "906d1ace67db2b847395ec23763eaf32be51ae0280ae112d7bcf3f0dde0090fa",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c26c5daa6d712704317d484aef8e0bd93c0e681705601b7f5b608fb82046bc94",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "manifest_sha256": "f327022aa0894550b4514f1709b360a51bbd92b86a962f18e1df090da36a6334"
+    }
+  ],
+  "sampled_state": {
+    "background_chains_equal": true,
+    "source_animations": 0,
+    "replay_animations": [
+      0,
+      0
+    ],
+    "missing_layer_commands": true
+  },
+  "prior_paint_diagnostic": {
+    "results": [
+      {
+        "index": 0,
+        "source_pixels": 61883,
+        "normal_replay_pixels": 61883
+      },
+      {
+        "index": 1,
+        "source_pixels": 61883,
+        "normal_replay_pixels": 61883
+      }
+    ],
+    "final_sampled_style_and_rect_restored": true,
+    "initial_failed_restoration": {
+      "before": {
+        "style": null,
+        "background": "67px auto, contain",
+        "rect": {
+          "x": 404,
+          "y": 134,
+          "width": 600,
+          "height": 401
+        }
+      },
+      "after": {
+        "style": "",
+        "background": "67px auto, contain",
+        "rect": {
+          "x": 404,
+          "y": 134,
+          "width": 600,
+          "height": 401
+        }
+      },
+      "restored": false
+    },
+    "limits": "Larger transient background changes prior paint history; no internal decode dimensions or RGB/YUV identity are measured. Equal sampled final state does not supply an unmodified comparison workflow."
+  },
+  "limits": [
+    "Every fresh candidate remains unregistered; old registered references, original response bodies and tolerances are unchanged.",
+    "The direct navigation timeout is retained as a failed acquisition; no error page becomes a fixture. Subsequent live acquisitions use the configured explicit local HTTP proxy, while replays remain sealed and never forward to the network.",
+    "Cold, instrumented and complete-cache acquisitions have separate DOM/resources and production executable identities; differences across these runs cannot be assigned to cache policy or instrumentation alone.",
+    "The instrumented sampled-state candidate has a separate source gap. Its matched source/replay chains exclude a sampled final-style or active-Web-Animation difference; they do not supply a layer tree or paint-command identity.",
+    "The first history probe failed its exact inline-style restoration check and receives no valid restored-state claim. The corrected probe is diagnostic only.",
+    "No production build was queued and no new native rendering fix or broad-suite pass is credited."
+  ],
+  "archive": {
+    "path": "discord-source-history-20261106.zip",
+    "members": 697,
+    "bytes": 56237834,
+    "sha256": "f643ae34bf0bd47eaf29693824aa7923bd8235a24ab8985bcd66f74b3cd917dc"
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/forum-source-refresh-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 73891840,
+    "elapsed_seconds": 3.4929645000000002,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
