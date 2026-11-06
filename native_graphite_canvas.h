@@ -14,6 +14,7 @@ struct CanvasTile {
 };
 std::unique_ptr<skgpu::graphite::Recorder> canvas_recorder;
 std::vector<CanvasTile> canvas_tiles;
+std::vector<std::vector<CanvasTile>> canvas_layer_stack;
 std::vector<sk_sp<SkSurface>> canvas_surface_pool;
 id<MTLComputePipelineState> canvas_readback_pipeline;
 VoxGraphiteImageUploadCache<sk_sp<SkImage>> canvas_backdrop_uploads {16 * 1024 * 1024, 4};
@@ -43,6 +44,7 @@ void canvas_reset()
 {
     canvas_finish_submission(true);
     canvas_tiles.clear();
+    canvas_layer_stack.clear();
     canvas_surface_pool.clear();
     canvas_backdrop_uploads.clear();
     canvas_recorder.reset();
@@ -60,11 +62,11 @@ size_t canvas_surface_bytes(SkSurface const& surface)
     return size_t(surface.width()) * size_t(surface.height()) * 4;
 }
 
-void canvas_release_tiles()
+void canvas_pool_tiles(std::vector<CanvasTile>& tiles)
 {
     size_t pooled = 0;
     for (auto const& surface : canvas_surface_pool) pooled += canvas_surface_bytes(*surface);
-    for (auto& tile : canvas_tiles) {
+    for (auto& tile : tiles) {
         size_t bytes = canvas_surface_bytes(*tile.surface);
         size_t slots=std::getenv("VOX_GPU_CANVAS_NATIVE_GRID")?64:8;
         if (canvas_surface_pool.size() < slots && pooled + bytes <= canvas_pool_byte_limit) {
@@ -72,8 +74,9 @@ void canvas_release_tiles()
             canvas_surface_pool.push_back(std::move(tile.surface));
         }
     }
-    canvas_tiles.clear();
+    tiles.clear();
 }
+void canvas_release_tiles() { canvas_pool_tiles(canvas_tiles); }
 
 int canvas_rounded_size(int value, int step)
 {
@@ -217,6 +220,63 @@ int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_upload_queued(int index, uint8_t const* bgra, int pitch)
 { return canvas_upload_impl(index,bgra,pitch,true); }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_push_layer()
+{
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder || canvas_tiles.empty() || canvas_layer_stack.size() >= 8) return 0;
+    size_t bytes=0, current=0;
+    for (auto const& tile:canvas_tiles) current += canvas_surface_bytes(*tile.surface);
+    for (auto const& layer:canvas_layer_stack) for (auto const& tile:layer)
+        bytes += canvas_surface_bytes(*tile.surface);
+    // The child inherits these damage rectangles. Leave enough bounded space
+    // for that source before moving any parent state.
+    if (bytes + current * 2 > 128 * 1024 * 1024) return 0;
+    canvas_layer_stack.push_back(std::move(canvas_tiles));
+    canvas_tiles.clear();
+    return 1;
+}
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_pop_layer(VoxGraphiteCanvasClip const* clips, int clip_count,
+    float opacity, int blend_mode, int composite)
+{
+    std::lock_guard lock(gpu_mutex);
+    if (canvas_layer_stack.empty()) return 0;
+    auto source=std::move(canvas_tiles);
+    canvas_tiles=std::move(canvas_layer_stack.back()); canvas_layer_stack.pop_back();
+    bool valid=!composite || (canvas_recorder && !source.empty() && std::isfinite(opacity)
+        && opacity>=0 && opacity<=1 && (blend_mode==0 || blend_mode==3)
+        && clip_count>=0 && clip_count<=64 && (!clip_count || clips));
+    if (valid && composite && opacity>0) {
+        SkPaint paint; paint.setAlphaf(opacity);
+        paint.setBlendMode(blend_mode==3 ? SkBlendMode::kScreen : SkBlendMode::kSrcOver);
+        for (size_t index=0; valid && index<source.size(); ++index) {
+            auto const& tile=source[index];
+            auto image=tile.surface->makeImageSnapshot();
+            if (!image) { valid=false; break; }
+            auto bounds=tile.clip.makeOffset(tile.x,tile.y);
+            for (auto& target:canvas_tiles) {
+                auto part=bounds;
+                if (!part.intersect(target.clip.makeOffset(target.x,target.y))) continue;
+                auto* canvas=target.surface->getCanvas();
+                canvas->save(); canvas->resetMatrix();
+                canvas->clipRect(SkRect::Make(part.makeOffset(-target.x,-target.y)),SkClipOp::kIntersect,false);
+                // Overlapping damage sources use their last writer, just as
+                // canvas readback and retained tile export do.
+                for (size_t later=index+1; later<source.size(); ++later)
+                    canvas->clipRect(SkRect::Make(source[later].clip.makeOffset(
+                        source[later].x-target.x,source[later].y-target.y)),SkClipOp::kDifference,false);
+                apply_canvas_clips(canvas,target,clips,clip_count);
+                canvas->resetMatrix();
+                canvas->drawImage(image,tile.x-target.x,tile.y-target.y,SkSamplingOptions(),&paint);
+                canvas->restore();
+            }
+        }
+    }
+    canvas_pool_tiles(source);
+    return valid ? 1 : -1;
+}
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_draw_shadow(VoxGraphiteShadow const* shadow, float const* bounds,
@@ -1093,4 +1153,8 @@ void vox_graphite_canvas_end()
 {
     std::lock_guard lock(gpu_mutex);
     canvas_release_tiles();
+    while (!canvas_layer_stack.empty()) {
+        canvas_tiles=std::move(canvas_layer_stack.back()); canvas_layer_stack.pop_back();
+        canvas_release_tiles();
+    }
 }

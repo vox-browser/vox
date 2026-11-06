@@ -192,6 +192,104 @@ static void test_canvas_present() {
     std::puts("GPU compositor transport: exact ring/alpha/padding, queued writers, atomic declines, prefix lifetime and capture fences passed");
 }
 
+static std::vector<uint8_t> nested_canvas_pixels(bool resident, int depth, float opacity,
+    int blend, bool clipped) {
+    canvas_reset();
+    constexpr int width=79,height=53;
+    int root[]={0,0,width,height,0,0,width,height};
+    assert(vox_graphite_canvas_begin(root,1));
+    std::vector<uint8_t> backdrop(size_t(width)*height*4);
+    for (int y=0; y<height; ++y) for (int x=0; x<width; ++x) {
+        auto at=(size_t(y)*width+x)*4;
+        backdrop[at]=uint8_t(x+10);backdrop[at+1]=uint8_t(y+20);backdrop[at+2]=93;backdrop[at+3]=255;
+    }
+    assert(vox_graphite_canvas_upload_queued(0,backdrop.data(),width*4));
+    VoxGraphiteCanvasClip clip {};
+    clip.matrix[0]=clip.matrix[4]=clip.matrix[8]=1;
+    float rounded[]={5.5f,7.25f,61.5f,37.5f,7,7,7,7,7,7,7,7};
+    std::copy_n(rounded,12,clip.rect);clip.antialias=1;
+    auto render=[&](auto&& self,int level)->void {
+        assert(vox_graphite_canvas_push_layer());
+        // Deliberately overlapping patches exercise last-writer ownership.
+        int rects[]={3,5,43,37,3,5,43,37,30,15,41,31,30,15,41,31};
+        assert(vox_graphite_canvas_begin(rects,2));
+        for (size_t i=0; i<canvas_tiles.size(); ++i) {
+            auto const& tile=canvas_tiles[i];
+            std::vector<uint8_t> pixels(size_t(tile.width)*tile.height*4);
+            for (int y=0; y<tile.height; ++y) for (int x=0; x<tile.width; ++x) {
+                auto at=(size_t(y)*tile.width+x)*4;
+                pixels[at]=uint8_t((x+tile.x+level*17)%100);
+                pixels[at+1]=uint8_t((y+tile.y+level*13)%100);
+                pixels[at+2]=uint8_t(level*29);pixels[at+3]=uint8_t(130+level*17);
+            }
+            assert(vox_graphite_canvas_upload_queued(int(i),pixels.data(),tile.width*4));
+        }
+        float bounds[]={7,9,63,43};
+        assert(canvas_draw(bounds,nullptr,0,[&](SkCanvas* canvas,CanvasTile const& tile) {
+            canvas->setMatrix(SkMatrix::Translate(-tile.x,-tile.y));
+            SkPaint marker;marker.setColor(0x734ac391);marker.setAntiAlias(true);
+            canvas->drawCircle(33.25f,22.75f,11.5f,marker);
+        }));
+        if (level<depth) self(self,level+1);
+        if (resident) {
+            assert(vox_graphite_canvas_pop_layer(clipped?&clip:nullptr,clipped?1:0,opacity,blend,1)==1);
+        } else {
+            std::vector<std::vector<uint8_t>> rows(canvas_tiles.size());
+            std::vector<VoxGraphitePixelRegion> views;
+            std::vector<SkIRect> areas;
+            for (size_t i=0; i<canvas_tiles.size(); ++i) {
+                auto const& tile=canvas_tiles[i];auto r=tile.clip;
+                rows[i].resize(size_t(r.width())*r.height()*4);
+                views.push_back({r.x(),r.y(),r.width(),r.height(),r.width()*4,rows[i].data()});
+                areas.push_back(r.makeOffset(tile.x,tile.y));
+            }
+            assert(vox_graphite_canvas_read(views.data(),int(views.size())));
+            std::vector<uint8_t> flat(size_t(width)*height*4,0);
+            for (size_t i=0; i<views.size(); ++i) {
+                auto r=areas[i];
+                for (int y=0; y<r.height(); ++y)
+                    memcpy(flat.data()+(size_t(y+r.y())*width+r.x())*4,
+                        rows[i].data()+size_t(y)*r.width()*4,r.width()*4);
+            }
+            assert(vox_graphite_canvas_pop_layer(nullptr,0,0,0,0)==1);
+            assert(vox_graphite_canvas_draw_layer_pixels(flat.data(),width,height,width*4,
+                0,0,clipped?&clip:nullptr,clipped?1:0,opacity,blend));
+        }
+    };
+    render(render,1);
+    std::vector<uint8_t> output(backdrop.size());
+    VoxGraphitePixelRegion view {0,0,width,height,width*4,output.data()};
+    assert(vox_graphite_canvas_read(&view,1));vox_graphite_canvas_end();
+    assert(canvas_layer_stack.empty());
+    return output;
+}
+static void test_nested_canvas_layers() {
+    int error=0; unsigned cases=0;
+    for (int depth : {1,2,3}) for (float alpha : {0.f,.57f,1.f})
+    for (int blend : {0,3}) for (bool clip : {false,true}) {
+        auto reference=nested_canvas_pixels(false,depth,alpha,blend,clip);
+        auto candidate=nested_canvas_pixels(true,depth,alpha,blend,clip);
+        for (size_t n=0; n<reference.size(); ++n)
+            error=std::max(error,std::abs(int(reference[n])-int(candidate[n])));
+        assert(error<=1);++cases;
+    }
+    assert(!vox_graphite_canvas_push_layer());
+    assert(!vox_graphite_canvas_pop_layer(nullptr,0,1,0,1));
+    int rect[]={0,0,8,8,0,0,8,8};
+    std::vector<uint8_t> pixels(8*8*4,51);
+    assert(vox_graphite_canvas_begin(rect,1));assert(vox_graphite_canvas_upload_queued(0,pixels.data(),32));
+    for (int i=0; i<8; ++i) {
+        assert(vox_graphite_canvas_push_layer());assert(vox_graphite_canvas_begin(rect,1));
+        assert(vox_graphite_canvas_upload_queued(0,pixels.data(),32));
+    }
+    assert(!vox_graphite_canvas_push_layer());
+    assert(vox_graphite_canvas_pop_layer(nullptr,0,2,0,1)==-1 && canvas_layer_stack.size()==7);
+    for (int i=0; i<7; ++i) assert(vox_graphite_canvas_pop_layer(nullptr,0,1,0,0)==1);
+    assert(vox_graphite_canvas_push_layer());
+    vox_graphite_canvas_end();assert(canvas_layer_stack.empty() && canvas_tiles.empty());
+    printf("Nested GPU layers: %u reference/resident alpha/screen/clip/overlap scenes max error %d; depth/failure/unwind passed\n",cases,error);
+}
+
 int main() { @autoreleasepool {
     auto* gpu = context(); assert(gpu);
     auto recorder = gpu->makeRecorder(); assert(recorder);
@@ -470,6 +568,7 @@ int main() { @autoreleasepool {
     }
     unsetenv("VOX_GPU_CANVAS_CACHE_BACKDROP");
     test_canvas_present();
+    test_nested_canvas_layers();
     canvas_reset(); recorder.reset(); gpu_context.reset();
     std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }

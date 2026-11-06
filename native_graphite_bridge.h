@@ -238,6 +238,11 @@ int vox_graphite_canvas_begin(const int *rects, int count);
 int vox_graphite_canvas_begin_native_grid(const int *rects, int count);
 int vox_graphite_canvas_upload(int index, const uint8_t *bgra, int pitch);
 int vox_graphite_canvas_upload_queued(int index, const uint8_t *bgra, int pitch);
+// Suspend a parent's tiles while an isolated source records on the same GPU
+// recorder. Pop always restores the parent; composite=0 discards the source.
+int vox_graphite_canvas_push_layer(void);
+int vox_graphite_canvas_pop_layer(const VoxGraphiteCanvasClip *clips, int clip_count,
+    float opacity, int blend_mode, int composite);
 int vox_graphite_canvas_draw_shadow(const VoxGraphiteShadow *shadow, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_shape(const VoxGraphiteShape *shape, const float *device_bounds,
