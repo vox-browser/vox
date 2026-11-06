@@ -1,5 +1,7 @@
 # ChatGPT instruction comparison
 
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest matched native-copy diagnostic observes a **27.33B** candidate median versus **27.36B** for its control. Ranges overlap, so it earns no confirmed page saving. All 20 captures pass content and exact pixels; 432 focused test executions pass. The [latest verification](performance/chatgpt-lexer-copy-verification-20261106.json) preserves the full result. The seven-pair cohort below retains its earlier pinned build.
+
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
 `8a1e86fa09d39144053b74e3df2b6703701d67d85c2b6dfdae02656fd12a2dcb`.
@@ -5223,3 +5225,30 @@ An unchanged production executable tests baseline JIT warm-up 500 against the cu
 The candidate median is **0.0281% higher**. The conservative separation is **-665,436,035 instructions**, so the observed ranges overlap. Keep the 10,000 default; page savings credit and broad cadence stay zero. All 20 diagnostic/matched captures pass the complete content/bootstrap audit, exact unchanged pixel references and normal browser exits. Four control/candidate pairs are diagnostic, below acceptance requirements. The Brave threshold and 20B goal remain unmet.
 
 Executable `ee6ae85297215e158de7326a57b72649c0aaf0706a6cf0dee90c1e7de4ed9563` uses the retained single-unit V `-prod` build. One nonblocking shared publication lease pins the canonical bundle/native libraries throughout. The original one-time SOCKS fixture, author scripts, private profiles/caches, five-second unfocused settle and 1024×768 scale-two document capture remain unchanged. OS filesystem/shader caches are retained; GPU work/outside-coalition services are excluded. Native option dumps occur only in the separate diagnostic. All counters, host loads, scripts, guards, identity proofs, audits and PNGs are preserved by the [verification receipt](performance/chatgpt-jit-retune-verification-20261106.json).
+
+## Native UTF-16 module-source copy toward 20B (2026-11-06)
+
+`c8ae81d78` replaces the Wasm lexer embedding's per-character JavaScript copy with a private JavaScriptCore UTF-16 array and a captured native typed-array setter. The temporary array owns its bytes and does not escape to author code. NULs and lone surrogates remain exact; the setter is captured before author replacement and fresh views follow Wasm memory growth. The original JavaScript loop remains the fallback and the `VOX_RETAIN_JS_MODULE_LEXER_COPY=1` control. The pinned vendor distributions and author scripts are unchanged.
+
+The first direct-pointer prototype failed: JSC withholds the movable backing store of Wasm memory. Both failed runs, their source witnesses and the diagnostic refinement are retained. The final implementation never borrows that pointer. Thread-local diagnostic state uses `VOX_NATIVE_STATE` for native-header splitting.
+
+All **293 archived JavaScript bodies (3,610,641 bytes)** rewrite identically against the retained JavaScript-copy oracle in the actual native Runtime. Four alternating observations per variant use the browser's warm-up 10,000, production preallocation, V `-prod` and C O2. Runtime creation and corpus reads are outside the measured factory/cold/warm intervals; conversion, lexical prefiltering, rewriting and concurrent process-thread work remain inside. The corpus includes resources outside a given page execution path and uses a mock resolver; its totals are not a page attribution.
+
+| Rewrite component | JavaScript-copy median instructions | Native-copy median instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| Factory construction | 7,789,049 | 7,785,712 | 0.0428% |
+| First corpus rewrite, including lazy initialization | 5,843,913,989 | 3,514,091,132 | 39.8675% |
+| Five warm corpus rewrites | 28,886,858,176 | 17,218,819,290 | 40.3922% |
+
+Final focused validation passes **40 guarded jobs / 432 test-function executions** across normal GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers. Each mode exercises native copy, retained JavaScript copy, retained asm lexer and disabled Wasm. Checks include code-unit preservation, independent arrays, author-hook rejection, memory growth, replaced intrinsics, full module linking/import maps/live bindings/top-level await, concurrent transport and actual module/classic worker lifetimes.
+
+| Untraced frozen-page variant | All four retained launch-through-PNG instruction counts | Median |
+| --- | --- | ---: |
+| JavaScript-copy control | 27,583,250,124, 27,501,381,217, 27,223,317,847, 26,782,297,176 | 27,362,349,532 |
+| Native-copy candidate | 27,537,747,469, 27,130,764,990, 27,521,736,122, 27,104,388,411 | 27,326,250,556 |
+
+The observed median falls **0.1319%**, but conservative separation is **-755,450,293 instructions**: the ranges overlap. Page credit and broad carry remain zero, with no new 5M broad checkpoint. Every one of the **20** diagnostic/matched captures passes JavaScriptCore bootstrap, complete content/button identity, exact unchanged per-engine pixel references and normal browser exits. Separate diagnostics prove both variants consume Wasm and only the candidate executes native copies. Four candidate/control pairs remain below seven-pair acceptance.
+
+Executable `46a1582b0e9154230c9da4467b441322cb5d2aeae8185676441e8922a296256a` and native libraries stay pinned under one nonblocking shared publication lease, using the completed single-unit V `-prod` receipt. One shared build fails source sealing because repository inputs changed and is not used; the completed successor contains the final native helper. The original one-time SOCKS capture and author scripts, fresh private profiles/caches, 1024×768 scale-two viewport and five-second unfocused settle remain unchanged. Counts run from exclusive coalition creation through encoded document PNG; OS filesystem/shader caches remain retained, and GPU work/outside-coalition services remain excluded. Host load, raw counters and all actual exits are retained. Capture/controller guards exit zero; the underlying comparison drivers return 1 for the unmet Brave threshold.
+
+The candidate median remains **7,326,250,556 instructions above 20B**. This cohort does not revise earlier instrumented stage tables or credit the component saving to the page. The [verification receipt](performance/chatgpt-lexer-copy-verification-20261106.json) links all source, command, counter, PNG, guard, failure and authenticated archive evidence. **The 20B target and original 5%-below-Brave target remain unmet.**
