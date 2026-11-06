@@ -16,7 +16,7 @@ static std::vector<uint8_t> read(std::string const& name) {
 int main(int argc, char** argv) {
     assert(argc == 2 && vox_avif_available());
     std::string directory = argv[1];
-    int cases = 0;
+    int cases = 0, exact_photo_decodes = 0;
     for (auto name : {"slate-hero.jpeg", "slate-card.jpeg", "red.avif", "alpha.avif"}) {
         auto bytes = read(directory + "/" + name);
         assert(vox_avif_is_avif(bytes.data(), bytes.size()));
@@ -26,6 +26,16 @@ int main(int argc, char** argv) {
             int32_t width = -1, height = -1, pitch = -1;
             auto* pixels = vox_avif_decode_rgba(bytes.data(), bytes.size(), premultiply, &width, &height, &pitch);
             assert(pixels && width == w && height == h && pitch == w * 4);
+            if (std::string(name) == "slate-hero.jpeg" || std::string(name) == "slate-card.jpeg") {
+                auto stem = std::string(name).substr(0, std::string(name).find('.'));
+                // Independent Brave RGBA conversion, obtained through an opaque
+                // ImageBitmap and a canvas with willReadFrequently. These are
+                // pixel bytes before the separate planar-YUV GPU paint path.
+                auto expected = read(directory + "/" + stem + "-rgba.rgba");
+                assert(expected.size() == size_t(pitch) * height);
+                assert(std::equal(expected.begin(), expected.end(), pixels));
+                ++exact_photo_decodes;
+            }
             for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
                 auto* p = pixels + y * pitch + x * 4;
                 if (std::string(name) == "alpha.avif") {
@@ -83,5 +93,7 @@ int main(int argc, char** argv) {
     assert(!vox_avif_decode_rgba(nullptr, bytes.size(), 0, &width, &height, &pitch));
     assert(!vox_avif_decode_rgba(bytes.data(), UINT64_MAX, 0, &width, &height, &pitch));
     vox_avif_release(nullptr);
-    std::printf("AVIF: %d decoding/alpha/format/limit controls passed\n", cases + 3);
+    assert(exact_photo_decodes == 4);
+    std::printf("AVIF: %d decoding/alpha/format/limit controls and %d exact Brave RGBA photo decodes passed\n",
+        cases + 3, exact_photo_decodes);
 }

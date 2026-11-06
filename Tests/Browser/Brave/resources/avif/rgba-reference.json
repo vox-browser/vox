@@ -1,0 +1,25 @@
+{
+  "protocol": "Two independent fresh Brave processes with full repository MV2 uBlock Origin; complete encoded AVIF Blob -> createImageBitmap -> opaque 2D canvas with willReadFrequently -> RGBA pixel bytes, before GPU planar-YUV paint sampling",
+  "pixel_format": "top-down straight RGBA8, opaque alpha",
+  "independent_processes": 2,
+  "all_pixels_equal": true,
+  "references": [
+    {
+      "encoded": "slate-hero.jpeg",
+      "encoded_sha256": "74b6cd0e9f818fe149dca18389f09fbef9c7e72f7b555f9c2e9af91dd40b158d",
+      "rgba": "slate-hero-rgba.rgba",
+      "rgba_sha256": "f24288205a5da5654634a2bd376adf98872a963145bf195e04a3d6a5e2871f2b",
+      "width": 585,
+      "height": 390
+    },
+    {
+      "encoded": "slate-card.jpeg",
+      "encoded_sha256": "846e82ad4bc98ca6fb99fe33aa6d32a6c92b7a179064f4ff738b2df437c19bbc",
+      "rgba": "slate-card-rgba.rgba",
+      "rgba_sha256": "a145cf4590f362b2da5a4ab48f16342dbe6a7123bc51cd1e5696786a3d64feb7",
+      "width": 390,
+      "height": 260
+    }
+  ],
+  "brave_executable_sha256": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5"
+}
