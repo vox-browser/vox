@@ -1897,7 +1897,27 @@
       "sha256": "5bb78f3dec9aa2907e14d1dec517b8812d4852ab2c49439294afb63437ed7a84",
       "bytes": 5410,
       "verified_entries": 3
+    },
+    {
+      "path": "docs/performance/chatgpt-measurement-rejections-finalizer-20261106-evidence.zip",
+      "sha256": "ede468ee4d8e1a70860ec548583398f10f4b122b7898e5237ba72946a68c3e9b",
+      "bytes": 4702,
+      "verified_entries": 2
     }
   ],
-  "qualification": "Default-off bounded logs at actual grid/flex collector failures. Scalar flags may coexist, node addresses are recyclable and event counts are not time or instruction shares. Separate original SOCKS replay captures pass bootstrap/full content/button audit and exact pixels with stable executable/library/tool/fixture inputs. No behavior change, no optimization credit and no build request. Latest complete matched cohort remains the leaf-query 24.226B candidate versus 24.144B control with overlapping ranges. 20B and original Brave goals remain unmet."
+  "qualification": "Default-off bounded logs at actual grid/flex collector failures. Scalar flags may coexist, node addresses are recyclable and event counts are not time or instruction shares. Separate original SOCKS replay captures pass bootstrap/full content/button audit and exact pixels with stable executable/library/tool/fixture inputs. No behavior change, no optimization credit and no build request. Latest complete matched cohort remains the leaf-query 24.226B candidate versus 24.144B control with overlapping ranges. 20B and original Brave goals remain unmet.",
+  "finalizer_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-measurement-rejections-finalize-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 28475392,
+    "elapsed_seconds": 3.136816583,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
 }
