@@ -130,9 +130,9 @@ the raw logs, counters, memory samples, screenshots and replay requests.
 
 ### Attempt to reach 3 MB
 
-The subsequent **3,000,000-byte target remains unmet**. The working policy still
-downloads **3,401,349 decoded JavaScript bytes** in the frozen homepage workload.
-No experimental rule from this attempt is retained.
+This earlier attempt did not meet the **3,000,000-byte target**. The working
+policy at that point downloaded **3,401,349 decoded JavaScript bytes** in the
+frozen homepage workload. No experimental rule from that attempt was retained.
 
 Suppressing JavaScript dependency preload hints, while retaining the loader's
 stylesheet and import/error contracts, passes 51 experimental tests and the
@@ -155,6 +155,64 @@ at 3,401,349 bytes. The [attempt receipt](performance/chatgpt-3mb-attempt-202611
 preserves the failed candidates, source, tests, screenshots, asset identities and
 restoration checks. These experiments do not establish that further reduction is
 impossible, and they earn no performance credit or broad-check cadence reset.
+
+### Basic-site startup below 3 MB
+
+The follow-up policy reaches the startup target while keeping the native text
+composer and conversation runtime. Its 23 exact module URLs cover the archived
+and November 6 anonymous mobile-web deployments. Unknown versions load normally.
+It suppresses optional install banners, trending suggestions, product popovers,
+recurring login banners, one-tap login, bottom-sheet dialogs, follow-up CTA
+enhancements and additional event collectors. Those optional surfaces are
+unavailable under this basic-site policy; ordinary login navigation, text entry,
+Send, Sentinel and streamed replies remain available.
+
+The English startup loader retains every original startup message and digest,
+without eagerly importing the entire locale catalog. Other locales and explicit
+recovery URLs use the original loader. Separating the site's locale cache by
+scope allows deferred conversation packs to load later. The first live query
+exposed this shared-cache dependency; that failed attempt is retained in the
+evidence, alongside the fix and regression test.
+
+Seven alternating control/candidate pairs use the same production executable,
+single-C-unit mode, 1024×768 viewport, 2× backing scale, fresh private profiles and
+caches, original-origin disk replay and five-second settle. All fourteen pass
+the original content, behavior-ready and pixel-exact reference checks.
+
+| Startup metric | Previous policy | Basic-site policy |
+| --- | ---: | ---: |
+| Decoded HTTP JavaScript response bytes | 3,401,349 | **2,959,483** |
+| HTTP JavaScript requests | 279 | **250** |
+| Local replacement payload bytes | 805 | 31,391 |
+| HTTP plus local replacement payloads | 3,402,154 | **2,990,874** |
+| Median coalition instructions through encoded PNG | 26,798,575,155 | 24,775,952,414 |
+
+HTTP JavaScript decreases 13.0%; counting local replacement payloads still stays
+below 3,000,000 bytes. These are decoded payload bytes, not compressed wire
+bytes. The CPU median falls 7.5%; the conservative maximum-candidate/minimum-
+control ratio is 0.93284, which does not meet a 10% conservative CPU gate.
+Counters include startup and exited owned helpers through PNG encoding, with
+ownership audits; GPU execution and outside services are excluded. Host load
+spans 13.55–15.56 on 18 CPUs. The measured author-script policy changes, so this
+earns no engine optimization credit or broad-check cadence reset.
+
+A separate cold live homepage observation records 2,983,642 bytes across 255
+distinct original script responses. This is a unique-response payload estimate
+from the observed URLs and independently hashed immutable sources, not a wire
+transfer counter. Its local replacements add about 32 KB. A fresh process using
+the installed, signed bundle submits **“capital of italy”** through native input
+and receives an assistant answer containing **Rome**, shown in the
+[document capture](parity/chatgpt-basic-3mb-installed-query-20261106.png). Headless startup and all
+55 filter tests pass. The 3 MB budget covers homepage startup: submitting a
+query loads additional conversation and rich-content code. Longer conversation
+memory use and general rich-answer rendering remain outside this result.
+
+The [result receipt](performance/chatgpt-basic-3mb-20261106.json) links the durable
+raw evidence and installed-query screenshot. Reproduce the reviewed resources
+with `npm --prefix tools/adblock run build`; source hashes, export contracts,
+locale messages, fallback behavior and scope-cache behavior are tested. Isolated
+experiments can use `node tools/adblock/build.mjs --output Build/NAME
+--site-policy POLICY.json` without rewriting the shared production assets.
 
 ## Startup snapshots
 
