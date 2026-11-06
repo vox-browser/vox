@@ -28,7 +28,7 @@ fn (mut iterator RuleBucketIterator) next() ?[]&MatchingRule {
 				for iterator.index < element.classes.len {
 					name := cache.selector_name_bucket_key(element.classes[iterator.index])
 					iterator.index++
-					if name in cache.rules_by_class { return unsafe { cache.rules_by_class[name] } }
+					if bucket := borrowed_string_rule_bucket(cache.rules_by_class, name) { return bucket }
 				}
 				iterator.stage++
 				iterator.index = 0
@@ -37,21 +37,19 @@ fn (mut iterator RuleBucketIterator) next() ?[]&MatchingRule {
 				iterator.stage++
 				if original := element.id() {
 					name := cache.selector_name_bucket_key(original)
-					if name in cache.rules_by_id { return unsafe { cache.rules_by_id[name] } }
+					if bucket := borrowed_string_rule_bucket(cache.rules_by_id, name) { return bucket }
 				}
 			}
 			2 {
 				iterator.stage++
 				name := element.lowercased_local_name()
-				if name in cache.rules_by_tag_name {
-					return unsafe { cache.rules_by_tag_name[name] }
-				}
+				if bucket := borrowed_string_rule_bucket(cache.rules_by_tag_name, name) { return bucket }
 			}
 			3 {
 				iterator.stage++
 				if pseudo := style_scope_pseudo_element_from_abstract_element(iterator.element) {
-					if is_known_pseudo_element_type(pseudo) && pseudo in cache.rules_by_pseudo_element {
-						return unsafe { cache.rules_by_pseudo_element[pseudo] }
+					if is_known_pseudo_element_type(pseudo) {
+						if bucket := borrowed_pseudo_rule_bucket(cache.rules_by_pseudo_element, pseudo) { return bucket }
 					}
 				}
 			}
@@ -64,9 +62,7 @@ fn (mut iterator RuleBucketIterator) next() ?[]&MatchingRule {
 					for iterator.index < attrs.attrs.len {
 						name := rule_cache_attribute_bucket_name(attrs.attrs[iterator.index].name())
 						iterator.index++
-						if name in cache.rules_by_attribute_name {
-							return unsafe { cache.rules_by_attribute_name[name] }
-						}
+						if bucket := borrowed_string_rule_bucket(cache.rules_by_attribute_name, name) { return bucket }
 					}
 				}
 				iterator.stage++

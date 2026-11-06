@@ -2302,30 +2302,30 @@ fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_e
 	if cache.rules_by_class.len > 0 {
 		for original_class_name in element.classes {
 			class_name := cache.selector_name_bucket_key(original_class_name)
-			if class_name in cache.rules_by_class {
-				style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_class[class_name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			if bucket := borrowed_string_rule_bucket(cache.rules_by_class, class_name) {
+				style_scope_add_rules_to_run(style_computer, abstract_element, bucket, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 			}
 		}
 	}
 	if cache.rules_by_id.len > 0 {
 		if original_id := element.id() {
 			id := cache.selector_name_bucket_key(original_id)
-			if id in cache.rules_by_id {
-				style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_id[id] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			if bucket := borrowed_string_rule_bucket(cache.rules_by_id, id) {
+				style_scope_add_rules_to_run(style_computer, abstract_element, bucket, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 			}
 		}
 	}
 	if cache.rules_by_tag_name.len > 0 {
 		tag_name := element.lowercased_local_name()
-		if tag_name in cache.rules_by_tag_name {
-			style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_tag_name[tag_name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+		if bucket := borrowed_string_rule_bucket(cache.rules_by_tag_name, tag_name) {
+			style_scope_add_rules_to_run(style_computer, abstract_element, bucket, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 		}
 	}
 	if cache.rules_by_pseudo_element.len > 0 {
 		if pseudo := style_scope_pseudo_element_from_abstract_element(abstract_element) {
 			if is_known_pseudo_element_type(pseudo) {
-				if pseudo in cache.rules_by_pseudo_element {
-					style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_pseudo_element[pseudo] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+				if bucket := borrowed_pseudo_rule_bucket(cache.rules_by_pseudo_element, pseudo) {
+					style_scope_add_rules_to_run(style_computer, abstract_element, bucket, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 				}
 			} else {
 				// NOTE: We don't cache rules for unknown pseudo-elements. They can't
@@ -2342,8 +2342,8 @@ fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_e
 		if attrs := element.attributes_ {
 			for attribute in attrs.attrs {
 				name := rule_cache_attribute_bucket_name(attribute.name())
-				if name in cache.rules_by_attribute_name {
-					style_scope_add_attribute_bucket_rules_to_run(style_computer, abstract_element, name, unsafe { cache.rules_by_attribute_name[name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+				if bucket := borrowed_string_rule_bucket(cache.rules_by_attribute_name, name) {
+					style_scope_add_attribute_bucket_rules_to_run(style_computer, abstract_element, name, bucket, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 				}
 			}
 		}
