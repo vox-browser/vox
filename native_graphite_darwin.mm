@@ -665,7 +665,7 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
             image->flags & VOX_GRAPHITE_IMAGE_REPEAT_Y ? SkTileMode::kRepeat : SkTileMode::kClamp,
             sampling, &local_matrix));
         canvas->drawRect(rect(image->destination), paint);
-    } else if (whole_source) {
+    } else if (whole_source && !(image->flags & VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE)) {
         auto natural = rect(image->source);
         canvas->concat(SkMatrix::RectToRect(natural, rect(image->destination)));
         if (needs_mips && source_rect.contains(SkRect::MakeWH(texture->width(), texture->height()))) {

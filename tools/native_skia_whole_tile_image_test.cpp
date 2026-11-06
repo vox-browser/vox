@@ -47,12 +47,19 @@ static std::vector<uint8_t> draw_case(int scale, bool unclamped)
     auto bg=SkImages::RasterFromPixmapCopy(SkPixmap(bg_info,background.data(),size_t(width)*scale*4));
     canvas->save();canvas->scale(1.f/scale,1.f/scale);canvas->drawImage(bg,0,0);canvas->restore();
     canvas->clipRect(SkRect::MakeXYWH(404,134,600,401),true);
-    canvas->concat(SkMatrix::RectToRect(natural,target));SkPaint paint;paint.setAntiAlias(true);
+    SkPaint paint;paint.setAntiAlias(true);
     auto sampling=SkSamplingOptions(SkFilterMode::kLinear,SkMipmapMode::kLinear);
-    if(src.contains(SkRect::MakeWH(uw,uh))){
+    // Blink's whole background tile stays a direct source/destination draw.
+    // Replaced images and strict subsets retain their natural-size transform.
+    if(unclamped){
+        canvas->drawImageRect(bitmap,src,target,sampling,&paint,SkCanvas::kFast_SrcRectConstraint);
+    }else if(src.contains(SkRect::MakeWH(uw,uh))){
+        canvas->concat(SkMatrix::RectToRect(natural,target));
         canvas->concat(SkMatrix::RectToRect(src,natural));canvas->drawImage(bitmap,0,0,sampling,&paint);
-    }else canvas->drawImageRect(bitmap,src,natural,sampling,&paint,
-        unclamped?SkCanvas::kFast_SrcRectConstraint:SkCanvas::kStrict_SrcRectConstraint);
+    }else{
+        canvas->concat(SkMatrix::RectToRect(natural,target));
+        canvas->drawImageRect(bitmap,src,natural,sampling,&paint,SkCanvas::kStrict_SrcRectConstraint);
+    }
     SkSerialProcs procs;procs.fImageProc=serialize_shared_picture_image;
     auto bytes=recorder.finishRecordingAsPicture()->serialize(&procs);assert(bytes);
     std::vector<uint32_t> cropped(size_t(width)*height*scale*scale);

@@ -595,7 +595,7 @@ bool shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         canvas->clipRect(clip, true);
     auto sampling = SkSamplingOptions(image.nearest ? SkFilterMode::kNearest : SkFilterMode::kLinear,
         mips ? SkMipmapMode::kLinear : SkMipmapMode::kNone);
-    if (complete_source) {
+    if (complete_source && !(image.flags & VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE)) {
         // Blink keeps full images in natural coordinates and scales the
         // canvas. Folding that scale into the destination changes fractional
         // sampling even when the outer bounds and upload are identical.

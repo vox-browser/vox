@@ -16,6 +16,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_whole_background_tiles_preserve_unclamped_source_filtering(self):
         self.compare_fixture('whole-tile-image-filtering', width=1024, height=768)
 
+    def test_overlapping_background_tiles_keep_the_direct_image_rectangle(self):
+        self.compare_fixture('overlapping-background-tile', width=1024, height=768)
+
     def test_svg_pattern_images_retain_larger_decodes_before_css_blur(self):
         self.compare_fixture('svg-pattern-image-blur', width=1024, height=768)
 
