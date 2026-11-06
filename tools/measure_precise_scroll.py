@@ -25,6 +25,7 @@ import time
 
 REPO = Path(__file__).resolve().parents[1]
 ENDPOINT = "changed Cocoa layer contents after updateLayer; not physical scanout"
+COMPLETED_FRAME_ENDPOINT = "completed native frame installation after CA transaction; rendered-input stamp; not physical scanout"
 
 
 def native_diagnostic_environment(environment):
@@ -214,6 +215,10 @@ def summarize(log, expected_inputs, target_hz=60, required_title="", expected_vi
         if any(float(dimensions.get(key, "nan")) != expected for key, expected in
                zip(("document_width", "document_height"), expected_viewport)):
             raise ValueError("Observed document viewport differs from requested viewport")
+    endpoints = [line for line in log.splitlines() if line.startswith("SCROLL_ENDPOINT ")]
+    if endpoints and endpoints != ["SCROLL_ENDPOINT completed_frame_v1 source=rendered_input"]:
+        raise ValueError("Unknown or duplicated publication endpoint")
+    completed_frame = bool(endpoints)
     inputs, frames = records(log, "SCROLL_INPUT"), records(log, "SCROLL_PUBLISH")
     if any(row.get("modifiers", 0) != 0 or row.get("delta_x", 0) != 0 for row in inputs):
         raise ValueError("Modified or horizontal input invalidates a vertical scroll trial")
@@ -249,7 +254,8 @@ def summarize(log, expected_inputs, target_hz=60, required_title="", expected_vi
             scrolled.append(frame)
     scroll_gaps = intervals(scrolled)
     budget = 1_000_000 / target_hz
-    summary = dict(protocol_version=2, endpoint=ENDPOINT, start=starts[0], completion=ends[0],
+    summary = dict(protocol_version=3 if completed_frame else 2,
+                endpoint=COMPLETED_FRAME_ENDPOINT if completed_frame else ENDPOINT, start=starts[0], completion=ends[0],
                 completed_inputs=len(inputs), completed_publications=len(frames),
                 measured_publications=len(selected), moving_intervals=moving,
                 measurement_window_us=window_us,
@@ -265,11 +271,12 @@ def summarize(log, expected_inputs, target_hz=60, required_title="", expected_vi
                 input_interval_us=distribution(input_gaps),
                 publication_interval_us=distribution(gaps),
                 scroll_interval_us=distribution(scroll_gaps),
-                update_layer_us=distribution([f["frame_us"] for f in selected]),
                 target_hz=target_hz, frame_budget_us=budget,
                 intervals_over_budget=sum(gap > budget for gap in scroll_gaps),
                 fraction_over_budget=sum(gap > budget for gap in scroll_gaps) / len(scroll_gaps),
                 inputs=inputs, publications=frames)
+    summary['preparation_to_publication_us' if completed_frame else 'update_layer_us'] = distribution(
+        [f["frame_us"] for f in selected])
     counters = instruction_counters(log, len(inputs))
     if counters is not None:
         summary['instruction_measurement'] = counters

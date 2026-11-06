@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check retained scroll tiles, CPU fallback and actual Core Animation pixels."""
 import argparse
+import os
 from pathlib import Path
 import subprocess
 
@@ -22,6 +23,8 @@ def main():
         with (args.output / (name + '.log')).open('w') as log:
             subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)
             subprocess.run([str(binary)], check=True, stdout=log, stderr=subprocess.STDOUT)
+            subprocess.run([str(binary)], env={**os.environ, 'VOX_GPU_FRAME_READINESS_QUEUE': '1'},
+                           check=True, stdout=log, stderr=subprocess.STDOUT)
         print(name + ': passed', flush=True)
 
 

@@ -3,6 +3,7 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
 #import <objc/runtime.h>
+#import <objc/message.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -49,12 +50,18 @@ static void record_native_image(const struct mach_header *header, intptr_t slide
 @end
 
 static double rendered_scroll;
+static unsigned rendered_inputs;
+static double rendered_last_input;
+static unsigned inputs;
+static double last_input;
 // The signed adblock helper inherits DYLD_INSERT_LIBRARIES but does not link
 // the renderer. Loading this observer must not break its startup handshake.
 extern void ladybird_v_skia_set_root_raster_scroll_y(double) __attribute__((weak_import));
 extern void vreset_profile_stats(void) __attribute__((weak_import));
 static void track_scroll(double y) {
     rendered_scroll = y;
+    rendered_inputs = inputs;
+    rendered_last_input = last_input;
     ladybird_v_skia_set_root_raster_scroll_y(y);
 }
 __attribute__((used)) static struct { const void *replacement, *original; } scroll_interpose
@@ -68,9 +75,13 @@ static Frame *frame_samples;
 static NSView *input_view, *page_view;
 static IMP update;
 static dispatch_source_t timer;
-static double started, last_input, input_hz, delta;
-static unsigned inputs, publications, input_limit, reverse_every, frame_capacity;
-static BOOL active;
+static double started, input_hz, delta;
+static unsigned publications, input_limit, reverse_every, frame_capacity;
+// Readiness-worker diagnostics may query this epoch off-main. Publishing the
+// active flag also publishes the initialized, immutable `started` timestamp.
+static _Atomic(BOOL) active;
+typedef struct { uint64_t token; double started, last_input, scroll; unsigned inputs; } PreparedFrame;
+static PreparedFrame *prepared_samples;
 static const char *required_title;
 static double settle_seconds, ready_since = -1;
 typedef struct {
@@ -137,6 +148,33 @@ static NSView *find(NSView *root, NSString *name) {
         if (result) return result;
     }
     return nil;
+}
+
+// Both observer callbacks execute on the main queue, including the async
+// readiness path. Stamp the input represented by the root raster's scroll,
+// rather than crediting input delivered after that frame was painted.
+static void prepared_frame(void *view, uint64_t token, double preparation_started) {
+    if (!active || (__bridge NSView *)view != page_view) return;
+    PreparedFrame *slot = &prepared_samples[token % frame_capacity];
+    *slot = (PreparedFrame){token, preparation_started, rendered_last_input, rendered_scroll, rendered_inputs};
+}
+static void completed_frame(void *view, uint64_t token) {
+    if (!active || (__bridge NSView *)view != page_view) return;
+    PreparedFrame slot = prepared_samples[token % frame_capacity];
+    // An in-flight settle frame may finish after the first input. It represents
+    // none of that input and cannot supply a scrolling publication sample.
+    if (slot.token != token || !slot.inputs) return;
+    if (publications >= frame_capacity) {
+        fprintf(stderr, "SCROLL_ERROR publication capacity exceeded\n"); exit(2);
+    }
+    double now = CACurrentMediaTime();
+    frame_samples[publications++] = (Frame){
+        now-started, now-slot.started, now-slot.last_input, slot.scroll, slot.inputs };
+    prepared_samples[token % frame_capacity].token = 0;
+    if (count_instructions && slot.inputs==input_limit && !counter_publication_end.present) {
+        read_counter(&counter_publication_end);
+        if (counter_input_end.present) counter_complete=counter_publication_end;
+    }
 }
 
 static void published(id self, SEL selector) {
@@ -322,9 +360,19 @@ static void begin(void) {
             return;
         }
     }
-    Method method = class_getInstanceMethod(page_view.class, @selector(updateLayer));
-    if (!method) { fprintf(stderr, "SCROLL_ERROR no publication hook\n"); exit(2); }
-    update = method_setImplementation(method, (IMP)published);
+    Class publication = NSClassFromString(@"VoxNativeFramePublication");
+    SEL protocol = @selector(observerProtocol);
+    SEL observe = @selector(observePrepared:published:);
+    if ([publication respondsToSelector:protocol] && [publication respondsToSelector:observe]
+        && ((unsigned (*)(id,SEL))objc_msgSend)(publication,protocol)==1) {
+        ((void (*)(id,SEL,void (*)(void*,uint64_t,double),void (*)(void*,uint64_t)))objc_msgSend)(
+            publication,observe,prepared_frame,completed_frame);
+        fprintf(stderr,"SCROLL_ENDPOINT completed_frame_v1 source=rendered_input\n");
+    } else {
+        Method method = class_getInstanceMethod(page_view.class, @selector(updateLayer));
+        if (!method) { fprintf(stderr, "SCROLL_ERROR no publication hook\n"); exit(2); }
+        update = method_setImplementation(method, (IMP)published);
+    }
     timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
     dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 0), NSEC_PER_SEC/input_hz, 0);
     dispatch_source_set_event_handler(timer, ^{ tick(); });
@@ -365,7 +413,8 @@ __attribute__((constructor)) static void boot(void) {
     frame_capacity = input_limit*8+1024;
     input_samples = calloc(input_limit, sizeof(Input));
     frame_samples = calloc(frame_capacity, sizeof(Frame));
-    if (!input_samples || !frame_samples) {
+    prepared_samples = calloc(frame_capacity, sizeof(PreparedFrame));
+    if (!input_samples || !frame_samples || !prepared_samples) {
         fprintf(stderr, "SCROLL_ERROR sample allocation failed\n"); exit(2);
     }
     settle_seconds = values[4];

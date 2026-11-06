@@ -3155,7 +3155,8 @@ void native_gpu_canvas_end(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     VoxScrollRaster *cache = &native_scroll_raster;
     if (cache->active && cache->gpu_tiled && !native_scroll_gpu_tile_frame_failed) {
-        if (getenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT") && ladybird_v_skia_gpu_canvas_can_defer_present
+        if ((getenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT") || getenv("VOX_GPU_FRAME_READINESS_QUEUE"))
+            && ladybird_v_skia_gpu_canvas_can_defer_present
             && ladybird_v_skia_gpu_canvas_present_deferred && ladybird_v_skia_gpu_canvas_schedule_present
             && ladybird_v_skia_gpu_canvas_can_defer_present(cache->context))
             native_scroll_raster_export_with_schedule(ladybird_v_skia_gpu_canvas_present_deferred,

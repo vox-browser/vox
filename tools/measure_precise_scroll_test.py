@@ -29,6 +29,24 @@ def log_for(times=None, positions=None):
 
 
 class PreciseScrollTests(unittest.TestCase):
+    def test_completed_frame_endpoint_has_its_own_protocol_and_duration_scope(self):
+        log = 'SCROLL_ENDPOINT completed_frame_v1 source=rendered_input\n' + log_for()
+        result = summarize(log, 12)
+        self.assertEqual(result['protocol_version'], 3)
+        self.assertEqual(result['endpoint'], measure_precise_scroll.COMPLETED_FRAME_ENDPOINT)
+        self.assertIn('preparation_to_publication_us', result)
+        self.assertNotIn('update_layer_us', result)
+        legacy = summarize(log_for(), 12)
+        self.assertEqual(legacy['protocol_version'], 2)
+        self.assertIn('update_layer_us', legacy)
+
+    def test_unknown_or_duplicated_completion_protocol_is_rejected(self):
+        for prefix in ['SCROLL_ENDPOINT unknown\n',
+                       'SCROLL_ENDPOINT completed_frame_v1 source=current_input\n',
+                       'SCROLL_ENDPOINT completed_frame_v1 source=rendered_input\n' * 2]:
+            with self.subTest(prefix=prefix), self.assertRaisesRegex(ValueError, 'endpoint'):
+                summarize(prefix + log_for(), 12)
+
     def test_rejects_wrong_or_missing_document_viewport(self):
         summarize(log_for(), 12, expected_viewport=(1024, 764))
         for log in [log_for().replace("document_height=764", "document_height=880"),

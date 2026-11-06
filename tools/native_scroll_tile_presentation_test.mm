@@ -113,6 +113,15 @@ static void draw(id self, SEL selector, NSRect bounds) {
     CGContextFillRect(context, CGRectMake(0, 0, bounds.size.width, 5));
     vox_browser_frame_completed();
 }
+static void present(NSView *view, CGFloat scale) {
+    native_layer_present_frame(view,scale,(IMP)draw);
+    VoxNativeFramePublication *state=native_frame_publication_state(view,NO);
+    double deadline=CACurrentMediaTime()+5;
+    while(state && state->working && CACurrentMediaTime()<deadline) {
+        @autoreleasepool { CFRunLoopRunInMode(kCFRunLoopDefaultMode,.001,true); }
+    }
+    assert(!state || !state->working);
+}
 static std::vector<uint8_t> packed(CGImageRef image) {
     assert(image);
     auto data = CGDataProviderCopyData(CGImageGetDataProvider(image)); assert(data);
@@ -184,7 +193,7 @@ int main() { @autoreleasepool {
             caches[0] = native_scroll_raster;
             native_scroll_raster = caches[1];
             native_scroll_tile_test_allocation_failure = trial == 5;
-            native_layer_present_frame(view, scale, (IMP)draw);
+            present(view,scale);
             native_scroll_tile_test_allocation_failure = NO;
             caches[1] = native_scroll_raster;
             auto frame = (VoxScrollTileFrame *)objc_getAssociatedObject(view, &native_scroll_tile_frame_key);
@@ -275,12 +284,12 @@ int main() { @autoreleasepool {
         view.layer.contents = contents;
         gpu_enabled = 0;
         tiled_frame = true;
-        native_layer_present_frame(view, scale, (IMP)draw);
+        present(view,scale);
         assert(!objc_getAssociatedObject(view, &native_scroll_tile_frame_key));
         gpu_enabled = 1;
         // An explicit kill switch must also preserve ordinary composition.
         setenv("VOX_DISABLE_SCROLL_TILE_COMPOSITOR", "1", 1);
-        native_layer_present_frame(view, scale, (IMP)draw);
+        present(view,scale);
         assert(!objc_getAssociatedObject(view, &native_scroll_tile_frame_key));
         unsetenv("VOX_DISABLE_SCROLL_TILE_COMPOSITOR");
         native_discard_scroll_raster();
@@ -306,7 +315,7 @@ int main() { @autoreleasepool {
             auto reference=native_layer_raster_frame(view,scale,(IMP)draw);
             auto expected=packed(reference); CGImageRelease(reference);
             tiled_frame=true;
-            native_layer_present_frame(view,scale,(IMP)draw);
+            present(view,scale);
             auto frame=(VoxScrollTileFrame*)objc_getAssociatedObject(view,&native_scroll_tile_frame_key);
             if (!frame || frame->overlay || frame->flattened)
                 fprintf(stderr,"resident scale=%d scroll=%g frame=%d mode=%d reused=%d valid=%d current=%d failed=%d/%d exports=%u pending=%d\n",
@@ -320,12 +329,12 @@ int main() { @autoreleasepool {
         } }
         fail_export=true;
         test_scroll=42;
-        native_layer_present_frame(view,scale,(IMP)draw);
+        present(view,scale);
         assert(native_scroll_gpu_tile_failed && native_scroll_gpu_tile_frame_failed);
         assert(!native_scroll_raster.valid && !native_scroll_raster.tiles_current);
         fail_export=false; native_scroll_gpu_tile_frame_failed=NO;
         // Failure retries in ordinary mode and rebuilds the stale CPU ring.
-        native_layer_present_frame(view,scale,(IMP)draw);
+        present(view,scale);
         assert(!native_scroll_raster.gpu_tiled && !native_scroll_raster.reused);
         tiled_frame=false;
         auto reference=native_layer_raster_frame(view,scale,(IMP)draw);
@@ -335,18 +344,18 @@ int main() { @autoreleasepool {
         // coherent installed frame and request a fresh ordinary replay.
         native_scroll_gpu_tile_failed=NO;native_discard_scroll_raster();
         tiled_frame=true;test_scroll=0;schedule_ok=true;
-        native_layer_present_frame(view,scale,(IMP)draw);
+        present(view,scale);
         auto stable=packed(native_layer_frame_image(view));
         CFTypeRef contents=CFRetain((__bridge CFTypeRef)view.layer.contents);
         schedule_ok=false;test_scroll=17;content_revision++;
         auto redraw_before=native_layer_redraw_generation;
-        native_layer_present_frame(view,scale,(IMP)draw);
+        present(view,scale);
         assert((__bridge CFTypeRef)view.layer.contents==contents);
         assert(packed(native_layer_frame_image(view))==stable);
         assert(native_scroll_gpu_tile_failed && native_scroll_gpu_tile_frame_failed
             && native_layer_redraw_generation==redraw_before+1);
         schedule_ok=true;
-        native_layer_present_frame(view,scale,(IMP)draw);
+        present(view,scale);
         assert(!native_scroll_raster.gpu_tiled && !native_scroll_raster.reused);
         tiled_frame=false;reference=native_layer_raster_frame(view,scale,(IMP)draw);
         assert(packed(reference)==packed(native_layer_frame_image(view)));

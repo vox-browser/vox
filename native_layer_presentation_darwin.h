@@ -10,7 +10,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include "native_document_submission_darwin.h"
-#include "native_scroll_tile_presentation_darwin.h"
+#include "native_frame_publication_darwin.h"
 #include "native_initial_document_clear.h"
 #include "native_frame_snapshot_darwin.h"
 #include "platform/native_state.h"
@@ -556,6 +556,57 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
     return native_layer_raster_frame_with_submission(view, scale, draw, NULL, NULL);
 }
 
+static BOOL native_layer_can_complete_frame(void) {
+    return !native_layer_presenting && !native_layer_document_work_active;
+}
+static void native_layer_complete_frame(NSView *view, VoxNativePreparedFrame *frame, BOOL ready) {
+    if (!ready) {
+        // Preserve the old coherent frame. CPU recovery supersedes other GPU
+        // output, including a pending frame prepared before this failure.
+        native_frame_publication_cancel(view);
+        native_scroll_gpu_tile_failed = YES;
+        native_scroll_gpu_tile_frame_failed = YES;
+        ++native_layer_redraw_generation;
+        view.needsDisplay = YES;
+        return;
+    }
+    if (!NSEqualRects(frame->bounds, view.bounds)) return;
+    CGImageRef image = frame->image;
+    VoxScrollTileFrame *tiles = (__bridge VoxScrollTileFrame *)frame->tiles;
+    CGFloat scale = frame->scale;
+    NSRect bounds = frame->bounds;
+    uint64_t generation = frame->generation;
+    // Disable implicit content/scale animations: an old frame must not be
+    // retained for a cross-fade when navigation, selection or scrolling paints.
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    view.layer.opaque = YES;
+    view.layer.contentsGravity = kCAGravityResize;
+    view.layer.contentsScale = scale;
+    IOSurfaceRef surface = native_layer_surface_for_image(image);
+    objc_setAssociatedObject(view, &native_layer_frame_image_key,
+        surface ? (__bridge id)image : nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    view.layer.contents = surface ? (__bridge id)surface : (__bridge id)image;
+    if (tiles) native_scroll_tiles_present(view, tiles);
+    else native_scroll_tiles_unpresent(view);
+    [CATransaction commit];
+    if (getenv("VOX_FRAME_SURFACE_DIAGNOSTICS")) {
+        int slot=-1;
+        for(int index=0;surface && index<VOX_LAYER_FRAME_BUFFER_CAPACITY;++index)
+            if(native_layer_frame_buffers[index].surface==surface) { slot=index;break; }
+        fprintf(stderr, "Vox frame storage: %s %zux%zu pitch=%zu slot=%d\n",
+            surface ? "IOSurface" : "CGImage", CGImageGetWidth(image),
+            CGImageGetHeight(image), CGImageGetBytesPerRow(image),slot);
+    }
+    objc_setAssociatedObject(view, &native_layer_frame_generation_key,
+        @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(view, &native_layer_frame_bounds_key,
+        [NSValue valueWithRect:bounds], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    if (native_frame_published_observer)
+        native_frame_published_observer((__bridge void *)view, frame->submission.token);
+    native_document_submission_acknowledge(&frame->submission);
+}
+
 static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     VoxNativeLoadStage stage = native_begin_load_stage("native_frame_presentation");
     @try {
@@ -566,7 +617,7 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     double previous_preparation_started = native_layer_preparation_started;
     uintptr_t previous_preparation_view = native_layer_preparation_view;
     native_layer_paint_started = NO;
-    native_layer_preparation_started = CACurrentMediaTime();
+    double started = native_layer_preparation_started = CACurrentMediaTime();
     native_layer_preparation_view = (uintptr_t)(__bridge void *)view;
     CGImageRef image = NULL;
     NativeDocumentSubmissionFrame submission = {0};
@@ -581,49 +632,34 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
         native_layer_preparation_view = previous_preparation_view;
     }
     if (!image) return;
-    if (tiles && !native_scroll_tiles_ready(tiles,"publication")) {
-        // A failed GPU export never replaces a coherent published frame.
-        native_scroll_gpu_tile_failed = YES;
-        native_scroll_gpu_tile_frame_failed = YES;
-        ++native_layer_redraw_generation;
-        [view setNeedsDisplay:YES];
-        CGImageRelease(image);
+    VoxNativePreparedFrame *frame = [[VoxNativePreparedFrame alloc] init];
+    frame->image = image;
+    frame->tiles = tiles ? CFRetain((__bridge CFTypeRef)tiles) : NULL;
+    frame->submission = submission;
+    frame->bounds = bounds;
+    frame->scale = scale;
+    frame->generation = generation;
+    frame->preparation_started = started;
+    if (native_frame_prepared_observer)
+        native_frame_prepared_observer((__bridge void *)view, submission.token, started);
+    @try {
+        // First-document submission callbacks carry a borrowed V target. Keep
+        // those synchronous; later immutable frames have no application owner
+        // pointer and can safely outlive window/navigation work.
+        if (tiles && tiles->fence && !submission.callback && !native_layer_capture_scale
+            && getenv("VOX_GPU_FRAME_READINESS_QUEUE")) {
+            native_frame_publication_enqueue(view,frame,native_layer_complete_frame,
+                native_layer_can_complete_frame);
+        } else {
+            native_frame_publication_cancel(view);
+            native_layer_complete_frame(view,frame,!tiles || native_scroll_tiles_ready(tiles,"publication"));
+        }
+    } @finally {
 #if !__has_feature(objc_arc)
+        [frame release];
         [tiles release];
 #endif
-        return;
     }
-    // Disable implicit content/scale animations: an old frame must not be
-    // retained for a cross-fade when navigation, selection or scrolling paints.
-    [CATransaction begin];
-    [CATransaction setDisableActions:YES];
-    view.layer.opaque = YES;
-    view.layer.contentsGravity = kCAGravityResize;
-    view.layer.contentsScale = scale;
-    IOSurfaceRef surface = native_layer_surface_for_image(image);
-    objc_setAssociatedObject(view, &native_layer_frame_image_key,
-        surface ? (__bridge id)image : nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    view.layer.contents = surface ? (__bridge id)surface : (__bridge id)image;
-    if (tiles) native_scroll_tiles_present(view, tiles);
-    else native_scroll_tiles_unpresent(view);
-#if !__has_feature(objc_arc)
-    [tiles release];
-#endif
-    [CATransaction commit];
-    if (getenv("VOX_FRAME_SURFACE_DIAGNOSTICS")) {
-        int slot=-1;
-        for(int index=0;surface && index<VOX_LAYER_FRAME_BUFFER_CAPACITY;++index)
-            if(native_layer_frame_buffers[index].surface==surface) { slot=index;break; }
-        fprintf(stderr, "Vox frame storage: %s %zux%zu pitch=%zu slot=%d\n",
-            surface ? "IOSurface" : "CGImage", CGImageGetWidth(image),
-            CGImageGetHeight(image), CGImageGetBytesPerRow(image),slot);
-    }
-    native_document_submission_acknowledge(&submission);
-    objc_setAssociatedObject(view, &native_layer_frame_generation_key,
-        @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    objc_setAssociatedObject(view, &native_layer_frame_bounds_key,
-        [NSValue valueWithRect:bounds], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    CGImageRelease(image);
     } @finally { native_finish_load_stage(stage); }
 }
 
@@ -706,7 +742,9 @@ static void native_layer_update(id self, SEL command) {
     // once the pass has finished rather than waiting for an unrelated timer.
     NSView *view = self;
     NSNumber *painted = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
-    if (painted && painted.unsignedLongLongValue != native_layer_redraw_generation) {
+    if (painted && painted.unsignedLongLongValue != native_layer_redraw_generation
+        && !native_frame_publication_covers(view, native_layer_redraw_generation,
+            native_layer_effective_scale(view))) {
         dispatch_async(dispatch_get_main_queue(), ^{
             // Another display pass can finish before this delivery runs. Its
             // completed preparation already covers the retained request; do
@@ -727,6 +765,7 @@ static void native_layer_update(id self, SEL command) {
 }
 
 static void native_layer_moved_to_window(id self, SEL command) {
+    native_frame_publication_cancel(self);
     if (native_layer_original_move)
         ((void (*)(id, SEL))native_layer_original_move)(self, command);
     NSView *view = self;
@@ -742,6 +781,7 @@ static void native_layer_moved_to_window(id self, SEL command) {
 }
 
 static void native_layer_backing_changed(id self, SEL command) {
+    native_frame_publication_cancel(self);
     if (native_layer_original_backing)
         ((void (*)(id, SEL))native_layer_original_backing)(self, command);
     ++native_layer_redraw_generation;
@@ -753,6 +793,7 @@ static void native_layer_frame_size_changed(id self, SEL command, NSSize size) {
     if (native_layer_original_frame_size)
         ((void (*)(id, SEL, NSSize))native_layer_original_frame_size)(self, command, size);
     if (!NSEqualSizes(previous, size)) {
+        native_frame_publication_cancel(self);
         ++native_layer_redraw_generation;
         [(NSView *)self setNeedsDisplay:YES];
     }
