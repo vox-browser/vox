@@ -3905,3 +3905,57 @@ no native/script errors; its timing is a functional check, not an optimization
 cohort. The headless startup/input smoke check also passes. Exact inputs,
 guards, results, failed attempts and native captures are retained in the
 [compiled-module receipt](performance/chatgpt-module-cache-20261106.json).
+
+## November 6: warm module evaluation below 1.6 ms
+
+Commit `08c38f15c` retains the immutable source provider used by JavaScriptCore's
+module parser across fresh realms in the same agent VM. Retaining `JSScript`
+alone left the previous roughly 1.94 ms endpoint unchanged: its
+[`jsSourceCode` method](https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/API/JSScript.mm)
+constructs a fresh provider each time. The new wrapper reuses that provider and
+its function-body parser cache. This changes warm module compilation, rather
+than precompiling the first visit or persisting native JIT code.
+
+The unchanged synthetic 4,000-function workload measures native source supply,
+parse/link/evaluate and microtask drain across twelve fresh realms per process.
+Each cohort has seven alternating pairs of fresh control/candidate processes,
+using one executable with the cache disabled/enabled. The warm statistic retains
+all 77 samples from realms 1–11; every cold realm-0 sample is also retained.
+
+| Warm module endpoint | Cache disabled | Cache enabled |
+| --- | ---: | ---: |
+| Initial cohort | 2.038 ms | 0.828 ms |
+| Final committed-source cohort | 2.375 ms | **0.903 ms** |
+
+The final warm median is 62.0% shorter than its matched control and below the
+1.6 ms target. All seven final candidate process medians range from 0.797 to
+0.994 ms. Individual warm samples still reach 2.497 ms; this is not a worst-case
+latency guarantee. Cold candidate samples range from 4.195 to 4.825 ms and do
+not establish a first-load improvement. Other shared sessions/builds were active
+on the 18-logical-CPU host, with load averages around 11.5–13.3; both cohorts,
+control variation, outliers and diagnostic attempts remain in the
+[source-provider receipt](performance/chatgpt-module-source-20261106.json).
+
+Reuse requires the same URL and complete source bytes/code units after the
+current realm's fetch and rewrite checks. Global objects, linked namespaces and
+dynamic-import resolvers stay per realm. A private context roots only VM-owned
+source metadata, and eviction, VM changes and thread exit release those roots.
+The LRU admits sources of at least 4,096 UTF-16 units, up to 128 entries and
+16 MiB of charged source storage; additional JSC parser/code metadata lies
+outside that charge. Incompatible source-code SPI signatures bypass reuse.
+`VOX_DISABLE_MODULE_SCRIPT_CACHE=1` provides the matched control, while
+`VOX_MODULE_SCRIPT_CACHE_DIAGNOSTICS=1` reports the first hit separately from
+timing runs.
+
+All 28 focused module/worker executions pass across normal GC and
+`-prealloc -gc none`. Native checks pass with ARC, manual ownership and both
+AddressSanitizer/UndefinedBehaviorSanitizer modes, covering source changes,
+fresh-realm isolation, static live bindings, dynamic imports, Unicode, errors,
+LRU eviction and VM/thread cleanup. The installed production bundle contains
+the same preprocessed native implementation, renders the frozen homepage
+pixel-exact at the unchanged 2,990,874-byte total, and passes headless smoke.
+A fresh live native query returns **Rome** with zero reported native/script
+errors in **4.790 seconds after Send**. That is a functional check, not a
+whole-page optimization cohort. The earlier warm-page readiness failures remain
+unresolved; the sub-millisecond module result supplies no live response-time,
+Brave-ratio or CPU-instruction claim.

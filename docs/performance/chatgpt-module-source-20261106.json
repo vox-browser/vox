@@ -1,0 +1,3461 @@
+{
+  "feature_commit": "08c38f15c",
+  "complete": true,
+  "scope": "Warm module compile/link/evaluate microbenchmark; not a live Rome response, first-load or isolated JIT timing. No CPU instruction credit or whole-page speedup claimed.",
+  "change": "Reuse an immutable VM-owned JSSourceCode/source provider after URL and full-source comparison, preserving the parser function-body cache across fresh realms. Thread-local per-VM LRU retains at most 128 entries and charges at most 16 MiB of source storage (additional JSC parser/code metadata is outside that accounting). Sources below 4096 UTF-16 units bypass retention. No page global, linked module namespace, author values or fetch results are cached; each realm must still fetch and rewrite the source through its own loader/security checks.",
+  "lifetime": "A private context in the same group roots source cells without retaining retired page globals. Keep JSVirtualMachine wrapper alive because JSScript references it weakly. Eviction clears source roots even if temporary ObjC argument wrappers survive; VM replacement/thread destruction release remaining roots. Missing or incompatible jsSourceCode SPI signature bypasses the cache.",
+  "controls": {
+    "VOX_DISABLE_MODULE_SCRIPT_CACHE": "presence disables source-provider reuse in the same executable",
+    "VOX_MODULE_SCRIPT_CACHE_DIAGNOSTICS": "separate first-hit diagnostic; absent from acceptance cohorts"
+  },
+  "historical_warm_seconds": 0.001935,
+  "target_warm_seconds": 0.0016,
+  "selected": "final committed-source cohort",
+  "cohorts": {
+    "initial": {
+      "endpoint": "Same unchanged historical 4000-function module, canonical native loader and thread-local agent VM; timed native evaluate call including module source supply, parse/link/evaluate and microtask drain. Twelve fresh realms per fresh process. No function calls, network, UI or Rome response in endpoint.",
+      "selection": "Median of all realm 1-11 samples; realm 0 retained as cold. Target <= 0.0016 seconds; seven alternating control/candidate pairs, every attempt retained. No sampling/profiling/diagnostic environment.",
+      "control": "Same executable, VOX_DISABLE_MODULE_SCRIPT_CACHE=1; stable helper in both",
+      "pins": {
+        "/Users/alex/code/vox2/Build/chatgpt-script-warmup-20261106/cache_probe.m": {
+          "sha256": "c104855755930ecdd868dda02d2144e00a0cca0bead436692d3da1540975275f",
+          "bytes": 2063
+        },
+        "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort.py": {
+          "sha256": "b4ed3693e635c6bae29f2590876728f6f065479afc8d35a8469bf35385dc332b",
+          "bytes": 3700
+        },
+        "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe": {
+          "sha256": "8813b85c3152b0e2203a74f063df6bff720a55a2ee83303df2b25fd44c76e6c3",
+          "bytes": 78848
+        },
+        "/Users/alex/code/vox2/browserjs/module_loader_darwin.h": {
+          "sha256": "b9711a34ea4aa5f040db3dc5225627c989c29748b33dd084c676ec927f37aed3",
+          "bytes": 695
+        },
+        "/Users/alex/code/vox2/browserjs/module_loader_darwin.m": {
+          "sha256": "b916e610f6066422b638beb376b549d82df3d1ac64034a8ef9d00749a8293477",
+          "bytes": 16436
+        },
+        "/Users/alex/code/vox2/browserjs/runtime_agent_context.h": {
+          "sha256": "6db1debe50927968831e0077061a9f94fae63ccffbfe4a746c3c54601fa50597",
+          "bytes": 2563
+        },
+        "/Users/alex/code/vox2/platform/native_state.h": {
+          "sha256": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+          "bytes": 1118
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+          "bytes": 8493
+        }
+      },
+      "host": {
+        "cpu_count": 18,
+        "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t27.2\nBuildVersion:\t\t26B123\n",
+        "clang": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n"
+      },
+      "attempts": [
+        {
+          "pair": 1,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-1-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-1-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957244.386517,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.003757,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002386,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.001958,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.001876,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.001887,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001859,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.001842,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.002937,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001936,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.001875,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.001844,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.001783,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957244.709978,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.001876
+        },
+        {
+          "pair": 1,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-1-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-1-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957244.710442,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.003887,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001366,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000956,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.001061,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000849,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000753,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000697,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001434,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001836,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000662,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000609,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000612,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957244.9150379,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.000849
+        },
+        {
+          "pair": 2,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-2-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-2-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957244.9156039,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004371,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001256,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000804,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000728,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000721,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000678,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000702,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001302,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002006,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000675,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000696,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000704,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957245.1123421,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.000721
+        },
+        {
+          "pair": 2,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-2-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-2-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957245.1129339,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.003788,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002348,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002372,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.001996,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.001938,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001851,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.001822,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.002755,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001899,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.001727,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.001809,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002055,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957245.3141491,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.001938
+        },
+        {
+          "pair": 3,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-3-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-3-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957245.314788,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.00385,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002471,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.00203,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002603,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.0019,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001855,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002115,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003042,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001887,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.001894,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002009,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002487,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957245.51396,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.00203
+        },
+        {
+          "pair": 3,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-3-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-3-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957245.5147111,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004065,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.00109,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000766,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000677,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000698,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000806,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000757,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001345,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001815,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000648,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000628,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000603,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957245.715633,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.000757
+        },
+        {
+          "pair": 4,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-4-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-4-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957245.716458,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004545,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001409,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000827,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000828,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000977,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001073,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.001019,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001672,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002398,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.001018,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000894,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000848,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957245.936705,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.001018
+        },
+        {
+          "pair": 4,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-4-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-4-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957245.937751,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.005654,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.003157,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002747,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002692,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002791,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002674,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002468,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003781,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.00272,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002574,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002743,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002377,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957246.1592362,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.00272
+        },
+        {
+          "pair": 5,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-5-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-5-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957246.160058,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004135,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002442,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002176,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002068,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002192,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001967,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.001932,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003004,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001925,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.001873,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.001851,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002013,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957246.377364,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.002013
+        },
+        {
+          "pair": 5,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-5-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-5-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957246.3782542,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004353,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001181,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.0008,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000757,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000729,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000707,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.00069,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001419,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001951,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000731,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000648,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000623,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957246.5844622,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.000731
+        },
+        {
+          "pair": 6,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-6-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-6-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957246.5854578,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004858,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001332,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.001022,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000822,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000832,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000723,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000693,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001462,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001874,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000876,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000618,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000856,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957246.798721,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.000856
+        },
+        {
+          "pair": 6,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-6-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-6-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957246.79966,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004191,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002492,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.00225,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002067,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.001981,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002056,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002108,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.002927,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001994,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002164,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.00213,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.001939,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957247.0101912,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "warm_median_seconds": 0.002108
+        },
+        {
+          "pair": 7,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-7-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-7-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957247.0112529,
+            "load": [
+              11.45751953125,
+              12.91064453125,
+              16.84521484375
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004191,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002575,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002103,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.001984,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.001984,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001924,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002038,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.002908,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001841,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.001801,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.001773,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.001775,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957247.221171,
+            "load": [
+              11.90087890625,
+              12.978515625,
+              16.845703125
+            ]
+          },
+          "warm_median_seconds": 0.001984
+        },
+        {
+          "pair": 7,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-7-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/pair-7-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/final_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957247.222455,
+            "load": [
+              11.90087890625,
+              12.978515625,
+              16.845703125
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.00411,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001215,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000805,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000867,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000865,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000862,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000835,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001583,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002087,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000656,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000625,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.00064,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957247.431296,
+            "load": [
+              11.90087890625,
+              12.978515625,
+              16.845703125
+            ]
+          },
+          "warm_median_seconds": 0.000862
+        }
+      ],
+      "summary": {
+        "control": {
+          "warm_samples": 77,
+          "warm_median_seconds": 0.002038,
+          "per_process_medians": [
+            0.001876,
+            0.001938,
+            0.00203,
+            0.00272,
+            0.002013,
+            0.002108,
+            0.001984
+          ],
+          "warm_min": 0.001727,
+          "warm_max": 0.003781,
+          "cold_seconds": [
+            0.003757,
+            0.003788,
+            0.00385,
+            0.005654,
+            0.004135,
+            0.004191,
+            0.004191
+          ]
+        },
+        "candidate": {
+          "warm_samples": 77,
+          "warm_median_seconds": 0.000828,
+          "per_process_medians": [
+            0.000849,
+            0.000721,
+            0.000757,
+            0.001018,
+            0.000731,
+            0.000856,
+            0.000862
+          ],
+          "warm_min": 0.000603,
+          "warm_max": 0.002398,
+          "cold_seconds": [
+            0.003887,
+            0.004371,
+            0.004065,
+            0.004545,
+            0.004353,
+            0.004858,
+            0.00411
+          ]
+        },
+        "reduction_fraction": 0.5937193326790972,
+        "target_met": true
+      },
+      "complete": true
+    },
+    "final": {
+      "endpoint": "Same unchanged historical 4000-function module, canonical native loader and thread-local agent VM; timed native evaluate call including module source supply, parse/link/evaluate and microtask drain. Twelve fresh realms per fresh process. No function calls, network, UI or Rome response in endpoint.",
+      "selection": "Median of all realm 1-11 samples; realm 0 retained as cold. Target <= 0.0016 seconds; seven alternating control/candidate pairs, every attempt retained. No sampling/profiling/diagnostic environment.",
+      "control": "Same executable, VOX_DISABLE_MODULE_SCRIPT_CACHE=1; stable helper in both",
+      "pins": {
+        "/Users/alex/code/vox2/Build/chatgpt-script-warmup-20261106/cache_probe.m": {
+          "sha256": "c104855755930ecdd868dda02d2144e00a0cca0bead436692d3da1540975275f",
+          "bytes": 2063
+        },
+        "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort_final.py": {
+          "sha256": "75234e5017126a9ac4c8ec3a961164a05a76035b5de2acf25226fcf16d299609",
+          "bytes": 3746
+        },
+        "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe": {
+          "sha256": "9f679ab6ad966d0b471dd2c4413ad323db3ae6ea7c5516cfdd8028625133b9c7",
+          "bytes": 78848
+        },
+        "/Users/alex/code/vox2/browserjs/module_loader_darwin.h": {
+          "sha256": "b9711a34ea4aa5f040db3dc5225627c989c29748b33dd084c676ec927f37aed3",
+          "bytes": 695
+        },
+        "/Users/alex/code/vox2/browserjs/module_loader_darwin.m": {
+          "sha256": "0cf5506d3f67b5ded50d06c66de467b41ef30c02f8dd3baa966aa79bb74a59f1",
+          "bytes": 16593
+        },
+        "/Users/alex/code/vox2/browserjs/runtime_agent_context.h": {
+          "sha256": "6db1debe50927968831e0077061a9f94fae63ccffbfe4a746c3c54601fa50597",
+          "bytes": 2563
+        },
+        "/Users/alex/code/vox2/platform/native_state.h": {
+          "sha256": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+          "bytes": 1118
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+          "bytes": 8493
+        }
+      },
+      "host": {
+        "cpu_count": 18,
+        "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t27.2\nBuildVersion:\t\t26B123\n",
+        "clang": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n"
+      },
+      "attempts": [
+        {
+          "pair": 1,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-1-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-1-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957465.997787,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004826,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.003226,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002443,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002348,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002415,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002363,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.0023,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003493,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002299,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002362,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002377,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002047,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957466.468309,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "warm_median_seconds": 0.002363
+        },
+        {
+          "pair": 1,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-1-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-1-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957466.46892,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004612,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001307,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000835,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000767,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000818,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001148,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000864,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.00159,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002175,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000803,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000757,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000713,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957466.681237,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "warm_median_seconds": 0.000835
+        },
+        {
+          "pair": 2,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-2-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-2-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957466.681914,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004825,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001262,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.001001,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000903,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000899,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000842,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000773,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001928,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002212,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000943,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000784,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000718,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957466.898342,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "warm_median_seconds": 0.000903
+        },
+        {
+          "pair": 2,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-2-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-2-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957466.899012,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004749,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002644,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002287,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002165,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002181,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002137,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002124,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.00339,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002279,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002247,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002129,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002064,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957467.115406,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "warm_median_seconds": 0.002181
+        },
+        {
+          "pair": 3,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-3-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-3-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957467.116147,
+            "load": [
+              13.15185546875,
+              13.00390625,
+              15.9619140625
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.00427,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002547,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002216,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002122,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002144,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002324,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002046,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003193,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002039,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002021,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.00199,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.00199,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957467.327592,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.002122
+        },
+        {
+          "pair": 3,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-3-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-3-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957467.328398,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004733,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001397,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000944,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000842,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000843,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000742,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000774,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001718,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002457,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000783,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000719,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000704,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957467.535419,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.000842
+        },
+        {
+          "pair": 4,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-4-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-4-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957467.536174,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004195,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001279,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000881,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000754,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000748,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000738,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000727,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001447,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.00202,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000766,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000797,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000914,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957467.7438421,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.000797
+        },
+        {
+          "pair": 4,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-4-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-4-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957467.7448618,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.005344,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.003332,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002544,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002607,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002663,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002446,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002507,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003417,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002357,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002365,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002588,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002321,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957467.9663308,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.002544
+        },
+        {
+          "pair": 5,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-5-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-5-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957467.967575,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004277,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002751,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002552,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002555,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.00254,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002484,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.00258,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003543,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002246,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002386,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002458,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002325,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957468.190188,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.00254
+        },
+        {
+          "pair": 5,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-5-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-5-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957468.191162,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004446,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001296,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000994,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000929,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.001015,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.001041,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000909,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001485,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.001976,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.00079,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000746,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000746,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957468.418472,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.000994
+        },
+        {
+          "pair": 6,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-6-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-6-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957468.419786,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004775,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001317,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.001003,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.000872,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.001122,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000988,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.000893,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001581,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002497,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000922,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000802,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000759,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957468.638305,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.000988
+        },
+        {
+          "pair": 6,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-6-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-6-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957468.639446,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004369,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002801,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002463,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002344,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002582,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002375,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002235,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003206,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002274,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002233,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002131,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.001984,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957468.862911,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.002344
+        },
+        {
+          "pair": 7,
+          "case": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-7-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-7-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957468.864,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.004624,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.002831,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.002966,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.002507,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.002587,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.002277,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.002413,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.003453,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002291,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.002412,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.002437,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.002309,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957469.09379,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.002437
+        },
+        {
+          "pair": 7,
+          "case": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-7-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/cohort-final/pair-7-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/module-16ms-20261106/current_probe",
+            "stable"
+          ],
+          "host_before": {
+            "unix": 1793957469.095039,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "exit": 0,
+          "samples": [
+            {
+              "realm": 0,
+              "seconds": 0.0047,
+              "answer": 42
+            },
+            {
+              "realm": 1,
+              "seconds": 0.001351,
+              "answer": 42
+            },
+            {
+              "realm": 2,
+              "seconds": 0.000974,
+              "answer": 42
+            },
+            {
+              "realm": 3,
+              "seconds": 0.001053,
+              "answer": 42
+            },
+            {
+              "realm": 4,
+              "seconds": 0.000895,
+              "answer": 42
+            },
+            {
+              "realm": 5,
+              "seconds": 0.000844,
+              "answer": 42
+            },
+            {
+              "realm": 6,
+              "seconds": 0.001076,
+              "answer": 42
+            },
+            {
+              "realm": 7,
+              "seconds": 0.001902,
+              "answer": 42
+            },
+            {
+              "realm": 8,
+              "seconds": 0.002199,
+              "answer": 42
+            },
+            {
+              "realm": 9,
+              "seconds": 0.000853,
+              "answer": 42
+            },
+            {
+              "realm": 10,
+              "seconds": 0.000772,
+              "answer": 42
+            },
+            {
+              "realm": 11,
+              "seconds": 0.000736,
+              "answer": 42
+            }
+          ],
+          "identity_stable": true,
+          "host_after": {
+            "unix": 1793957469.3185651,
+            "load": [
+              13.2998046875,
+              13.03662109375,
+              15.9560546875
+            ]
+          },
+          "warm_median_seconds": 0.000974
+        }
+      ],
+      "summary": {
+        "control": {
+          "warm_samples": 77,
+          "warm_median_seconds": 0.002375,
+          "per_process_medians": [
+            0.002363,
+            0.002181,
+            0.002122,
+            0.002544,
+            0.00254,
+            0.002344,
+            0.002437
+          ],
+          "warm_min": 0.001984,
+          "warm_max": 0.003543,
+          "cold_seconds": [
+            0.004826,
+            0.004749,
+            0.00427,
+            0.005344,
+            0.004277,
+            0.004369,
+            0.004624
+          ]
+        },
+        "candidate": {
+          "warm_samples": 77,
+          "warm_median_seconds": 0.000903,
+          "per_process_medians": [
+            0.000835,
+            0.000903,
+            0.000842,
+            0.000797,
+            0.000994,
+            0.000988,
+            0.000974
+          ],
+          "warm_min": 0.000704,
+          "warm_max": 0.002497,
+          "cold_seconds": [
+            0.004612,
+            0.004825,
+            0.004733,
+            0.004195,
+            0.004446,
+            0.004775,
+            0.0047
+          ]
+        },
+        "reduction_fraction": 0.6197894736842104,
+        "target_met": true
+      },
+      "complete": true
+    }
+  },
+  "host_limitations": "18 logical CPUs with other shared sessions/builds active. Initial load roughly 11.5-11.9, final 13.2-13.3. The higher contemporary control and per-sample outliers are retained. Seven alternating fresh pairs per cohort support only this workload on these inputs; no user-page or cross-browser extrapolation. Every realm-0 cold sample remains visible. Some warm individual samples exceed 1.6 ms; all seven candidate process medians in each cohort are below it.",
+  "diagnostics": {
+    "prepared_script_only": "pilot.log and control-pilot.log: caching JSScript alone stayed around 1.9 ms; target unmet. Separate concurrent diagnostics excluded from cohort.",
+    "early_jit": "early-jit.log: lowered JIT warm-up thresholds did not meet target; no tuning retained.",
+    "profile": "sample.txt: separate 6000-realm derived driver, 2183/2962 main-thread samples in module parsing; identified repeated function-body parsing. Diagnostic only, no timing credit.",
+    "source_provider_pilot": "source-pilot.log: parser-provider reuse reduced later realms to roughly 0.7-0.9 ms, before first-miss rooting was corrected.",
+    "source_identity": "Final compile is byte-for-byte canonical source. Initial cohort precedes a source-only explanatory comment; both retained. Acceptance probe source is unchanged from previous 1.935 ms diagnostic; compiled with identical flags and stable helper in both control/candidate.",
+    "path": "final-path.log reports prepared source reuse; native tests also check hits and fresh-realm output. No diagnostic env in acceptance."
+  },
+  "focused_v_checks": {
+    "executions": 28,
+    "modes": [
+      "boehm",
+      "prealloc -gc none"
+    ],
+    "runs": [
+      {
+        "name": "module_host",
+        "mode": "boehm",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/module_host-boehm",
+          "browserjs/module_host_test.v"
+        ]
+      },
+      {
+        "name": "worker_module_agent",
+        "mode": "boehm",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/worker_module_agent-boehm",
+          "browserjs/worker_module_agent_test.v"
+        ]
+      },
+      {
+        "name": "runtime_agent_context",
+        "mode": "boehm",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/runtime_agent_context-boehm",
+          "browserjs/runtime_agent_context_test.v"
+        ]
+      },
+      {
+        "name": "worker_sandbox_binding",
+        "mode": "boehm",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/worker_sandbox_binding-boehm",
+          "browserjs/worker_sandbox_binding_test.v"
+        ]
+      },
+      {
+        "name": "module_host",
+        "mode": "prealloc",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/module_host-prealloc",
+          "browserjs/module_host_test.v"
+        ]
+      },
+      {
+        "name": "worker_module_agent",
+        "mode": "prealloc",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/worker_module_agent-prealloc",
+          "browserjs/worker_module_agent_test.v"
+        ]
+      },
+      {
+        "name": "runtime_agent_context",
+        "mode": "prealloc",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/runtime_agent_context-prealloc",
+          "browserjs/runtime_agent_context_test.v"
+        ]
+      },
+      {
+        "name": "worker_sandbox_binding",
+        "mode": "prealloc",
+        "exit": 0,
+        "compile_command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/module-16ms-20261106/worker_sandbox_binding-prealloc",
+          "browserjs/worker_sandbox_binding_test.v"
+        ]
+      }
+    ]
+  },
+  "native_checks": [
+    {
+      "mode": "arc",
+      "compile": {
+        "command": [
+          "clang",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-O2",
+          "-fobjc-arc",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "JavaScriptCore",
+          "tools/native_module_script_cache_test.m",
+          "-o",
+          "Build/module-16ms-20261106/native-final-static/arc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 77824000,
+        "elapsed_seconds": 0.44153,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "run": {
+        "command": [
+          "Build/module-16ms-20261106/native-final-static/arc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.314260625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "mode": "mrc",
+      "compile": {
+        "command": [
+          "clang",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-O2",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "JavaScriptCore",
+          "tools/native_module_script_cache_test.m",
+          "-o",
+          "Build/module-16ms-20261106/native-final-static/mrc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 82444288,
+        "elapsed_seconds": 0.432626542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "run": {
+        "command": [
+          "Build/module-16ms-20261106/native-final-static/mrc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.306054125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "mode": "sanitized-arc",
+      "compile": {
+        "command": [
+          "clang",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-O1",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fobjc-arc",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "JavaScriptCore",
+          "tools/native_module_script_cache_test.m",
+          "-o",
+          "Build/module-16ms-20261106/native-final-static/sanitized-arc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 118849536,
+        "elapsed_seconds": 0.432262792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "run": {
+        "command": [
+          "Build/module-16ms-20261106/native-final-static/sanitized-arc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.426613041,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "mode": "sanitized-mrc",
+      "compile": {
+        "command": [
+          "clang",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-O1",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "JavaScriptCore",
+          "tools/native_module_script_cache_test.m",
+          "-o",
+          "Build/module-16ms-20261106/native-final-static/sanitized-mrc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 118751232,
+        "elapsed_seconds": 0.423405667,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "run": {
+        "command": [
+          "Build/module-16ms-20261106/native-final-static/sanitized-mrc"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 61521920,
+        "elapsed_seconds": 0.41828529200000003,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "production_native_path": {
+    "frozen_source": "Build/production-build/receipts/20261106-122546-90410f64/frozen-compiler-inputs/1-module_loader_darwin.m.i",
+    "same_preprocessed_implementation": true,
+    "current_sha256": "c373a1af2a621eb534c007c10e23ae0df6e039c7dcf6167984b84dd72506a0ce",
+    "frozen_sha256": "c373a1af2a621eb534c007c10e23ae0df6e039c7dcf6167984b84dd72506a0ce",
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "2ef16e5b27d69c7f304be3526a7b139f1c6d8672d248ba47e48191641af29e0b",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-122546-90410f64/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "ece0f32861fd6efec60101160090b762cd3cb0102792ece5017da4a46b87aca2",
+        "dirty": true,
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "repository_sha256": "d82eb60c46d553b1b47425eb3640fec80cb9839d2bc0ebcc32e0e4836496df29"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "90176cbe7d4817486a1eee58ef7c88fa7c9cf4a4748123110d40e7a7e506d0c1",
+        "dirty": true,
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "repository_sha256": "a498ee4ba473b378d614b1390764b9b7635acc0201c500c9bbb64824cb056a58"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "id": "4159a110b94c4b10b3fc407cc6b0a32b",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "ece0f32861fd6efec60101160090b762cd3cb0102792ece5017da4a46b87aca2",
+        "dirty": true,
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "repository_sha256": "9c7d3eeee343fe15218cd3349110dbdfdaacbdf56885269a691fc50b1ee087aa"
+      }
+    }
+  },
+  "frozen_home": {
+    "complete": true,
+    "identity_stable": true,
+    "content_exact": true,
+    "pixels_exact": true,
+    "total_javascript_bytes": 2990874,
+    "script_requests": 250,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "2ef16e5b27d69c7f304be3526a7b139f1c6d8672d248ba47e48191641af29e0b",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-122546-90410f64/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "ece0f32861fd6efec60101160090b762cd3cb0102792ece5017da4a46b87aca2",
+        "dirty": true,
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "repository_sha256": "d82eb60c46d553b1b47425eb3640fec80cb9839d2bc0ebcc32e0e4836496df29"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "90176cbe7d4817486a1eee58ef7c88fa7c9cf4a4748123110d40e7a7e506d0c1",
+        "dirty": true,
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "repository_sha256": "a498ee4ba473b378d614b1390764b9b7635acc0201c500c9bbb64824cb056a58"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "id": "4159a110b94c4b10b3fc407cc6b0a32b",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "ece0f32861fd6efec60101160090b762cd3cb0102792ece5017da4a46b87aca2",
+        "dirty": true,
+        "head": "09b471a045d39a7ece72d1a52791b2722946b913",
+        "repository_sha256": "9c7d3eeee343fe15218cd3349110dbdfdaacbdf56885269a691fc50b1ee087aa"
+      }
+    }
+  },
+  "live_query": {
+    "engine": "vox",
+    "control": false,
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--window-width=1024",
+      "--window-height=880",
+      "https://chatgpt.com/"
+    ],
+    "pid": 73798,
+    "exit": 0,
+    "failure": null,
+    "elapsed": 19.877623709,
+    "times": {
+      "ready": 7.601427,
+      "type": 13.042912,
+      "submit_begin": 13.859925,
+      "submit_end": 13.90995,
+      "rome": 18.649608
+    },
+    "submit_to_rome": 4.789683,
+    "answer": "The capital of Italy is Rome (Italian: Roma). \ud83c\uddee\ud83c\uddf9",
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "2ef16e5b27d69c7f304be3526a7b139f1c6d8672d248ba47e48191641af29e0b",
+      "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/run.py": "58af2c67e6ab6bd1d0e55bffa51fda1c7e03373df618f28b5691d9f018d63f54",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "05c549c65782a4b2f7aa437e14fbd2e3dd56f95ee588cf8c2a88b7c2af7deb08",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "e8f3452c8ecbdec1aef4299683a146e6615b25f384c8693367a02a70a89cb100",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "0eb6dcd156cad96d89774bd78b6d87608bc07dd2f668efed55c39a955f70533d",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "16d214e7d8aab0a4af35994047bc567933da03583760bb783403f1cca7e2b12a",
+      "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.m": "c4872e5d25bd1432cc68cadac040a4153ae719abc2fe1d111e48f5b35984ba45",
+      "/Users/alex/code/vox2/Build/chatgpt-answer-latency-20261106/query_probe.dylib": "dc57326e606150a4278a7bfe34ad77174a396295de76e3c8fa7f69375e6769cd"
+    },
+    "stable": true,
+    "host_before": {
+      "unix": 1793957390.9593852,
+      "cpu_count": 18,
+      "load": [
+        13.5390625,
+        12.94482421875,
+        16.21533203125
+      ]
+    },
+    "host_after": {
+      "unix": 1793957410.956937,
+      "load": [
+        12.71630859375,
+        12.80029296875,
+        16.0869140625
+      ]
+    },
+    "instrumented": false,
+    "scope": "Diagnostic: live anonymous page, native click/text input in Vox, CDP click/text input in Brave, 250 ms audited answer observation; identical SOCKS route, cold private profiles/cache, 5 s ready settle; no instruction or frozen-response acceptance claim."
+  },
+  "live_native_error_count": 0,
+  "headless_smoke": {
+    "command": [
+      "Build/v/Vox.app/Contents/MacOS/Vox",
+      "--headless-smoke"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 425984,
+    "elapsed_seconds": 0.188123875,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "primary_references": [
+    "https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/API/JSScript.mm",
+    "https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/API/JSAPIGlobalObject.mm",
+    "https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/API/JSScriptSourceProvider.h",
+    "https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/runtime/JSSourceCode.h"
+  ],
+  "limitations": [
+    "The change affects reuse within an already running agent VM. It does not precompile the first visit, persist native JIT code or reduce downloaded JS.",
+    "The previous warm ChatGPT reload bootstrap-gate failures remain unresolved; this result does not turn them into a successful warm-page measurement.",
+    "Private JSScript module integration remains OS dependent. Current native ARC/MRC/sanitizer and signed production checks pass on the pinned macOS/JSC.",
+    "Short native runs can finish between RSS samples. The sampled guard is not a peak-memory bound; source charge is not total JSC heap usage.",
+    "Microbenchmark controls/candidates share toolchain and native libraries. Production bundle is used only for functional checks; no timing comparison across unrelated C build modes.",
+    "No Brave speed ratio or instruction-counter claim is made. Native audit observation adds latency, and the single live response is functional evidence only."
+  ],
+  "evidence": {
+    "path": "docs/performance/chatgpt-module-source-20261106-evidence.zip",
+    "sha256": "959d2d5ac1945e416841d6c70e259756176f72ba64f62e639a4f778f0aadf56d",
+    "bytes": 795341,
+    "entries": 189
+  }
+}
