@@ -48,6 +48,7 @@ struct RetainedInlineLayout {
 	lines             []LineBox
 	inline_end        StaticPositionRect
 	result            InlineFormattingResult
+	same_pass_key     InlineMeasurementKey
 mut:
 	paint_lines_  []TextLine
 	paint_origin_ css.CSSPixelPoint
@@ -241,6 +242,20 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	font_generation :=
 		css.css_style_computer_for(root.document()).font_computer().environment_generation()
 	key := u64(voidptr(root))
+	same_pass_key := exact_inline_layout_key(used, mode, space)
+	if !disable_same_pass_inline_reuse {
+		if cached := state.inline_layouts_[key] {
+			if cached.same_pass_key == same_pass_key
+				&& cached.font_generation == font_generation
+				&& cached.font_policy == root.document().font_rendering_policy()
+				&& cached.style_environment == root.document().style_environment_version()
+				&& same_pass_inline_inputs_are_current(cached.inputs) {
+				report_same_pass_inline_reuse()
+				return restore_retained_inline_layout(mut state, containing_block, mut used,
+					context, key, cached)
+			}
+		}
+	}
 	if cached := state.previous_inline_layouts_[key] {
 		if cached.space == space
 			&& cached.font_policy == root.document().font_rendering_policy()
@@ -253,20 +268,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			if cached.font_generation != font_generation && retained_font_generation_diagnostics {
 				eprintln('Vox retained inline font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
 			}
-			used.borrow_retained_line_boxes(cached.lines)
-			used.set_inline_end_static_position_rect(cached.inline_end)
-			containing_values := state.get(unsafe { &NodeWithStyle(containing_block) })
-			for index in 0 .. cached.values.len {
-				entry := unsafe { &cached.values[index] }
-				_ = state.restore_retained_values(entry.node, &entry.values, containing_values)
-			}
-			if mut bfc := context {
-				// The ordinary line builder consumes this pending margin before
-				// its first content. The eligibility guard makes its local delta zero.
-				assert bfc.commit_pending_margin_before_inline_content().raw_value() == 0
-			}
-			state.inline_layouts_[key] = cached
-			return cached.result
+			return restore_retained_inline_layout(mut state, containing_block, mut used,
+				context, key, cached)
 		}
 	}
 	mut inputs := []RetainedInlineInput{}
@@ -300,6 +303,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		lines:             copy_retained_inline_lines(used.line_boxes)
 		inline_end:        used.inline_end_static_position_rect() or { StaticPositionRect{} }
 		result:            result
+		same_pass_key:     same_pass_key
 	}
 	return result
 }
