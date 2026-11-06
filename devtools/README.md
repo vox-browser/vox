@@ -1,8 +1,8 @@
 # Developer tools
 
-Vox has Chrome-style Elements and Console panels docked below the document. They are
-declared in V/UI2 like the rest of the browser chrome and works on the
-document of the tab that opens it.
+Vox has Chrome-style Elements and Console panels docked below the
+document. They are declared in V/UI2 like the rest of the browser chrome and
+work on the document of the tab that opens them.
 
 | Action | macOS | Linux |
 | --- | --- | --- |
