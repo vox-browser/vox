@@ -186,3 +186,24 @@ ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
     command.global_alpha = f[6];
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
+
+// arguments: width, height, pitch, alpha type, segment count, SkColor, cap,
+// join. floats: the transform, global alpha, line width, miter limit, then
+// 12 floats per segment.
+ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
+{
+    VoxCanvasCommand command {};
+    command.operation = 0;
+    command.path = { f + 9, a[4], 0 };
+    command.style.kind = 0;
+    command.style.color = uint32_t(a[5]);
+    for (int i = 0; i < 6; ++i)
+        command.transform[i] = f[i];
+    command.global_alpha = f[6];
+    command.stroke = 1;
+    command.width = f[7];
+    command.miter = f[8];
+    command.cap = a[6];
+    command.join = a[7];
+    return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
+}

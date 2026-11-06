@@ -21,12 +21,15 @@ type OracleFillPath = fn (pixels &u8, values &i32, floats &f32)
 
 type OracleCanvasFill = fn (pixels &u8, values &i32, floats &f32) i32
 
+type OracleCanvasStroke = fn (pixels &u8, values &i32, floats &f32) i32
+
 struct Oracle {
 	read_pixels            OracleReadPixels          = unsafe { nil }
 	font_typeface_is_valid OracleFontTypefaceIsValid = unsafe { nil }
 	bitmap_export          OracleBitmapExport        = unsafe { nil }
 	fill_path              OracleFillPath            = unsafe { nil }
 	canvas_fill            OracleCanvasFill          = unsafe { nil }
+	canvas_stroke          OracleCanvasStroke        = unsafe { nil }
 }
 
 fn load_oracle(path string) Oracle {
@@ -45,6 +48,9 @@ fn load_oracle(path string) Oracle {
 		}
 		fill_path:              unsafe { OracleFillPath(oracle_symbol(library, 'oracle_fill_path')) }
 		canvas_fill:            unsafe { OracleCanvasFill(oracle_symbol(library, 'oracle_canvas_fill')) }
+		canvas_stroke:          unsafe {
+			OracleCanvasStroke(oracle_symbol(library, 'oracle_canvas_stroke'))
+		}
 	}
 }
 
@@ -591,6 +597,144 @@ fn check_fill_paths(oracle Oracle, count int) !(int, int) {
 	return count, declined
 }
 
+// Canvas2D path segments in skia.Path's encoding, with SVG arcs.
+fn random_canvas_segments(width int, height int) []f32 {
+	mut segments := []f32{}
+	for op in random_path_ops(width, height) {
+		if op.kind != 0 && op.kind != 5 && rand.intn(3) or { 0 } == 0 {
+			// An SVG arc: radii (sometimes zero or too small), rotation in
+			// radians, and large-arc and sweep flags.
+			rx := if rand.intn(8) or { 0 } == 0 { f32(0) } else { f32(rand.f64() * f64(width)) }
+			ry := f32(rand.f64() * f64(height))
+			rotation := f32(rand.f64() * 12.566 - 6.283)
+			segments << [f32(4), op.v[0], op.v[1], 0, 0, 0, 0, rx, ry, rotation,
+				f32(rand.intn(2) or { 0 }), f32(rand.intn(2) or { 0 })]
+			continue
+		}
+		match op.kind {
+			0 { segments << [f32(0), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+			1 { segments << [f32(1), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+			2, 3 {
+				segments << [f32(2), op.v[2], op.v[3], op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0]
+			}
+			4 {
+				segments << [f32(3), op.v[4], op.v[5], op.v[0], op.v[1], op.v[2], op.v[3], 0, 0,
+					0, 0, 0]
+			}
+			else { segments << [f32(5), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+		}
+	}
+	return segments
+}
+
+// Random bytes, premultiplied when alpha_type is 2, with padded rows.
+fn random_canvas_bitmap(width int, height int, pitch int, alpha_type int) []u8 {
+	mut bitmap := random_bytes(pitch * height)
+	if alpha_type == 2 {
+		premultiplied := random_premultiplied(width * height)
+		for y in 0 .. height {
+			for x in 0 .. width * 4 {
+				bitmap[y * pitch + x] = premultiplied[y * width * 4 + x]
+			}
+		}
+	}
+	return bitmap
+}
+
+fn random_global_alpha() f32 {
+	return match rand.intn(4) or { 0 } {
+		0 { f32(1) }
+		1 { f32(0) }
+		else { f32(rand.f64()) }
+	}
+}
+
+// Lines along an axis or of zero length, so hairlines take their horizontal
+// and vertical walkers and draw degenerate caps.
+fn align_canvas_lines(mut segments []f32) {
+	mut last := [f32(0), 0]!
+	for i := 0; i + 11 < segments.len; i += 12 {
+		kind := int(segments[i])
+		if kind == 1 {
+			match rand.intn(6) or { 0 } {
+				0 { segments[i + 1] = last[0] }
+				1 { segments[i + 2] = last[1] }
+				2 {
+					segments[i + 1] = last[0]
+					segments[i + 2] = last[1]
+				}
+				else {}
+			}
+		}
+		if kind != 5 {
+			last = [segments[i + 1], segments[i + 2]]!
+		}
+	}
+}
+
+// Canvas2D strokes through the production vox_skia_canvas_path(), which
+// SkDraw turns into hairlines when the line width is at most a device pixel.
+fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
+	mut declined := 0
+	for i in 0 .. count {
+		width := rand.intn(120) or { 0 } + 1
+		height := rand.intn(120) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		mut segments := random_canvas_segments(width, height)
+		align_canvas_lines(mut segments)
+		if rand.intn(8) or { 0 } == 0 {
+			// Lines thousands of pixels long, some past the 26.6 fixed-point
+			// range hairlines chop to.
+			factor := f32(if rand.intn(2) or { 0 } == 0 { 40 } else { 900 })
+			for k := 0; k + 11 < segments.len; k += 12 {
+				for c in 1 .. 9 {
+					segments[k + c] *= factor
+				}
+			}
+		}
+		m := random_matrix()
+		transform := [m.a, m.b, m.c, m.d, m.e, m.f]!
+		color := random_color()
+		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
+		global_alpha := random_global_alpha()
+		line_width := match rand.intn(5) or { 0 } {
+			0, 1 { f32(1) }
+			2 { f32(rand.f64()) }
+			3 { f32(rand.f64() * 0.2) }
+			else { f32(rand.f64() * 2) }
+		}
+		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
+		cap := rand.intn(3) or { 0 }
+		join := rand.intn(3) or { 0 }
+		mut expected := initial.clone()
+		mut floats := transform[..].clone()
+		floats << [global_alpha, line_width, miter]
+		floats << segments
+		values := [i32(width), height, pitch, alpha_type, segments.len / 12, i32(color), cap, join]
+		if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
+			return error('stroke ${i}: the Skia canvas path failed')
+		}
+		mut actual := initial.clone()
+		path := cpuraster.canvas_path(segments, false)
+		if !cpuraster.stroke_canvas_path(mut actual, width, height, pitch, alpha_type, path,
+			transform, color, global_alpha, line_width, unsafe { cpuraster.StrokeCap(cap) }, unsafe { cpuraster.StrokeJoin(join) },
+			miter) {
+			if actual != initial {
+				return error('stroke ${i}: cpuraster declined after changing pixels')
+			}
+			declined++
+			continue
+		}
+		for j in 0 .. expected.len {
+			if expected[j] != actual[j] {
+				return error('stroke ${i}: pixel (${j % pitch / 4}, ${j / pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (${width}x${height} pitch ${pitch} alpha ${alpha_type} width ${line_width} cap ${cap} join ${join} miter ${miter} color ${color:08x} global alpha ${global_alpha} transform ${transform} segments ${segments})')
+			}
+		}
+	}
+	return count, declined
+}
+
 // Canvas2D solid fills through the production vox_skia_canvas_path(),
 // premultiplied or unpremultiplied bitmaps with padded rows.
 fn check_canvas_fills(oracle Oracle, count int) !int {
@@ -599,51 +743,14 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		height := rand.intn(120) or { 0 } + 1
 		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
 		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
-		mut segments := []f32{}
-		for op in random_path_ops(width, height) {
-			if op.kind != 0 && op.kind != 5 && rand.intn(3) or { 0 } == 0 {
-				// An SVG arc: radii (sometimes zero or too small), rotation in
-				// radians, and large-arc and sweep flags.
-				rx := if rand.intn(8) or { 0 } == 0 { f32(0) } else { f32(rand.f64() * f64(width)) }
-				ry := f32(rand.f64() * f64(height))
-				rotation := f32(rand.f64() * 12.566 - 6.283)
-				segments << [f32(4), op.v[0], op.v[1], 0, 0, 0, 0, rx, ry, rotation,
-					f32(rand.intn(2) or { 0 }), f32(rand.intn(2) or { 0 })]
-				continue
-			}
-			match op.kind {
-				0 { segments << [f32(0), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
-				1 { segments << [f32(1), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
-				2, 3 {
-					segments << [f32(2), op.v[2], op.v[3], op.v[0], op.v[1], 0, 0, 0, 0, 0, 0,
-						0]
-				}
-				4 {
-					segments << [f32(3), op.v[4], op.v[5], op.v[0], op.v[1], op.v[2], op.v[3],
-						0, 0, 0, 0, 0]
-				}
-				else { segments << [f32(5), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
-			}
-		}
+		segments := random_canvas_segments(width, height)
 		even_odd := rand.intn(2) or { 0 } == 0
 		m := random_matrix()
 		transform := [m.a, m.b, m.c, m.d, m.e, m.f]!
 		color := random_color()
-		mut initial := random_bytes(pitch * height)
-		if alpha_type == 2 {
-			premultiplied := random_premultiplied(width * height)
-			for y in 0 .. height {
-				for x in 0 .. width * 4 {
-					initial[y * pitch + x] = premultiplied[y * width * 4 + x]
-				}
-			}
-		}
+		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
 		mut expected := initial.clone()
-		global_alpha := match rand.intn(4) or { 0 } {
-			0 { f32(1) }
-			1 { f32(0) }
-			else { f32(rand.f64()) }
-		}
+		global_alpha := random_global_alpha()
 		mut floats := transform[..].clone()
 		floats << global_alpha
 		floats << segments
@@ -709,4 +816,9 @@ fn main() {
 		exit(1)
 	}
 	println('canvas fills: ${canvas} exact')
+	strokes, thick := check_canvas_strokes(oracle, count / 4) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('canvas strokes: ${strokes - thick} hairlines exact, ${thick} wider strokes declined')
 }
