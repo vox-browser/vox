@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest matched native-copy diagnostic observes a **27.33B** candidate median versus **27.36B** for its control. Ranges overlap, so it earns no confirmed page saving. All 20 captures pass content and exact pixels; 432 focused test executions pass. The [latest verification](performance/chatgpt-lexer-copy-verification-20261106.json) preserves the full result. The seven-pair cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest unprofiled href-cache diagnostic observes a **26.46B** candidate median versus **27.73B** for its uncached control. The observed four-pair reduction is separated across the retained ranges. All 20 captures pass content and exact pixels; 232 focused test executions pass. The [latest verification](performance/chatgpt-href-cache-verification-20261106.json) preserves the full result. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5271,3 +5271,37 @@ One production diagnostic passes bootstrap, complete content/button identity, no
 **These instruction samples are not an additive breakdown of the page.** Nested callbacks overlap, process threads run concurrently, systematic sampling can alias phases, and counter reads have an observed floor around 15,000 instructions. Multiplying sample means by call counts would therefore overstate costs. Exact call frequencies identify leads; no sample receives optimization credit or changes the retained stage table.
 
 The rejected generic JSON encoder prototype, poisoned-memory failure and corrected manual report encoding remain archived. The first production preflight used the wrong Mach-O header symbol and launched no browser; the corrected diagnostic uses `__mh_execute_header`. All archives are rehashed and decompressed entry by entry. The [verification receipt](performance/chatgpt-host-callbacks-verification-20261106.json) links focused checks, source witnesses, failures and the pinned production report. The **20B target remains unmet**.
+
+## Bounded href serialization cache toward 20B (2026-11-06)
+
+Commit `74e3ff826` keeps successful native href serialization in a realm-private JavaScript Map keyed by the exact primitive input string and raw base. Each hit still performs String conversion, live document ownership, current URL-constructor identity and original href-getter authentication. Foreign ownership, invalid results, author overrides and oversized values retain the ordinary path. Captured Map intrinsics resist author replacement.
+
+The cache admits at most 256 entries and 262,144 logical UTF-16 code units across keys, bases and results. Input/base limits are 2,048 units and result limit 4,096. These limits bound retained logical text, not the physical JavaScript heap. When full, the cache preserves admitted entries; changing a key's base only replaces its entry if the same budget still fits. Runtime close releases the realm. `VOX_RETAIN_UNCACHED_HREF_TEXT=1` retains the uncached control.
+
+The initial FIFO prototype improves captured-link repetition but regresses the 320-link overflow component by about 39%. It is retained and receives no credit. The admission policy removes that cyclic eviction behavior. Four alternating component observations per variant use an actual native Runtime and the 108 hrefs extracted from the original archived HTML; setup is outside the cold/warm retired-instruction intervals.
+
+| Component | Uncached median instructions | Cached median instructions | Reduction |
+| --- | ---: | ---: | ---: |
+| 108 captured hrefs, first read | 6,276,320 | 6,383,137 | -1.7019% |
+| 108 captured hrefs, repeated reads | 1,179,693,856 | 672,084,173 | 43.0289% |
+| 320 distinct hrefs, first read | 15,368,597 | 17,113,100 | -11.3511% |
+| 320 distinct hrefs, repeated reads | 667,698,810 | 402,928,198 | 39.6542% |
+| One bypassed 2,049-unit href, first read | 2,182,715 | 2,069,990 | 5.1644% |
+| One bypassed 2,049-unit href, repeated reads | 3,158,712,344 | 3,163,301,878 | -0.1453% |
+
+All **24 focused guarded jobs / 232 test-function executions** pass across normal GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers, with cache and diagnostics controls exercised. Coverage includes live adoption/reentrant ownership, pending edits, raw-base changes, constructor/getter replacement, String conversion hooks, native URL semantics, saturation, logical bounds, oversized bypasses, independent runtimes and close. The bootstrap-order dependency `9fd90822a` initializes shared intrinsics before this bootstrap; its regression test is included. The initial mock-coercion error, old-order bootstrap failures, debug-only logger, component pointer typo and native-test filename typo are preserved. The temporary logger was removed after identifying the bootstrap dependency.
+
+Separate production diagnostics reduce native URL serializations from **46,629** to **1,852** and show a cache-hit marker only in the enabled variant. The first preflight misses the generated string declaration prefix and launches no browsers; the corrected preflight verifies the exact final JavaScript bytes against the sealed compiled string table. No reference or tolerance changes occur.
+
+| Unprofiled frozen-page variant | All four retained launch-through-PNG instructions | Median |
+| --- | --- | ---: |
+| Uncached control | 27,097,178,160, 27,805,314,565, 27,810,399,045, 27,662,399,690 | 27,733,857,128 |
+| Bounded-cache candidate | 26,347,498,738, 26,671,218,189, 26,177,107,040, 26,571,222,056 | 26,459,360,397 |
+
+The observed median falls **4.5955%**; conservative observed separation is **425,959,971 instructions**. The observed four-pair reduction is separated across the retained ranges. This crosses the 5M checkpoint: all **47 broad jobs pass**, including screenshot/selection/live image and SVG mutations, native paint checks and exact 100-fixture AST comparisons in both GC modes. Broad carry resets to zero.
+
+All **20** diagnostic/matched captures pass JavaScriptCore bootstrap, complete content/button identity, unchanged exact per-engine reference pixels and normal browser/kernel exits. Executable `f65412afd9dddae25023cc25814192b75379842d59c9f7727c26dd3e32ef6cbe` and libraries stay pinned under a shared publication lease using the latest completed single-C-unit V `-prod` bundle; no separate build is queued. The original one-time SOCKS fixture/scripts, fresh private profiles/caches, 1024×768 scale two and five-second unfocused settle remain unchanged. The scope runs from exclusive coalition creation through encoded document PNG, including startup and window setup. OS filesystem/shader caches remain retained; GPU execution/outside-coalition services remain excluded. Host load, all raw counts and actual exits are retained. The underlying comparison drivers still return 1 for the unmet Brave threshold while browser/capture/controller exits are zero.
+
+The candidate median remains **6,459,360,397 instructions above 20B**. Four control/candidate pairs cannot establish formal seven-pair acceptance or live-site performance. Component results and sampled callback costs are not scaled into the page budget. The [verification receipt](performance/chatgpt-href-cache-verification-20261106.json) links all focused, component, source, counter, PNG, memory-guard, rejected-attempt and archive evidence. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+Frame-complete checkpoints are 433, 333, 333, 394 for controls and 323, 377, 372, 399 for candidates. Vox launch load averages span 12.58–14.69 on 18 CPUs. The fixed settle window permits frame-count variation; the retained observed reduction is not an isolated per-frame or scrolling measurement.
