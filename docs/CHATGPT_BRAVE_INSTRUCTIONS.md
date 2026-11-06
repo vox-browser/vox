@@ -5960,3 +5960,44 @@ The independent main-thread budget identifies style updates as a substantial cos
 Each capture reports **1,909 explicit dirty events** across **342 label strings**. The same URL/tag/ID/class label can describe multiple elements and repeated updates. Link elements with empty ID/class account for 553 events, paths 239, groups 79 and use elements 61. These are not instruction shares or evidence that any particular update can be skipped. The bounded source trace observes stylesheet replacement/addition, DOM insertion/removal, shadow-root installation and attribute changes, including link `rel` and document data attributes. A full document style pass can legitimately be required after stylesheet changes; source examples are capped at eight events per source/reason key and cannot establish exact causal totals.
 
 The [verification receipt](performance/chatgpt-style-causes-verification-20261106.json) preserves both raw logs, commands, source proofs, PNGs, audits and memory guards. The next style investigation must distinguish required cascade updates from avoidable recomputation while preserving selector, inherited/custom-property, font, shadow and live stylesheet behavior. No optimization cohort or new 5M broad checkpoint follows from these logs. **The 20B target remains unmet.**
+
+## Direct em/rem computed-longhand reuse toward 20B (2026-11-06)
+
+Implementation `4c0b1dff7` extends the synchronous computed-longhand cache to direct typed `em`/`rem` lengths. The current-page eligibility diagnostic recorded these declarations among the rejected inputs, including margins, padding, borders, gaps, widths and font sizes. Its content, bootstrap and exact pixels pass. Its eight main style timing calls round to zero milliseconds, so those timings provide no useful instruction attribution. The earlier additive hardware-counter table remains the stage budget.
+
+Font-relative hits validate the complete inherited/cascaded snapshots plus viewport, cached and live root sizes, optional unrounded sizes and font policy. Glyph-relative units, line-height units, calculations and composite relative values remain on full computation. Restores rebuild a fresh specified-value map from the current declarations and retain the current raw font-size source, preserving later inherited refresh after cache retirement. Admission hints are bounded at 512; a changed root/policy environment sends relative declarations to full computation for the remaining batch.
+
+All **440 final focused test executions** pass: 55 functions under both runtime policies in ordinary GC, no GC, poisoned preallocation and AddressSanitizer/UndefinedBehaviorSanitizer. They compare every longhand and dependency flag with an independent computation and cover raw typed mutations, fractional live root changes, both font policies, original/current ownership, inherited refresh, bounded admission and batch retirement. The initial specified-map rejection and the later test that incorrectly expected immediate admission after reset remain retained as failures.
+
+The component measures 100 computations after setup and one warm call, with four observations per variant on the same optimized executable. Each case independently checks full computed values outside the interval. Every attempt is retained; positive values below mean fewer observed instructions.
+
+| Component | Initial prototype | Delayed admission | Final bounded admission |
+|---|---:|---:|---:|
+| absolute | -0.218% | -0.362% | -0.816% |
+| em | +68.098% | +65.806% | +65.493% |
+| rem | +69.002% | +66.875% | +66.589% |
+| mixed | +72.039% | +69.767% | +69.489% |
+| unsupported | -0.027% | -0.068% | +0.367% |
+| changing-own | +67.737% | +64.494% | +64.839% |
+| changing-parent | +55.586% | +52.436% | +53.016% |
+| changing-root | -67.679% | +0.397% | +0.543% |
+| fresh-batch | -57.230% | -15.539% | -1.667% |
+
+The first version regresses substantially for changing roots and fresh batches. The final version retains a 1.667% fresh-batch regression and a 0.816% absolute-case regression. These component gains and regressions are not scaled into page savings.
+
+The latest completed canonical production executable `c05715c149c8a3f7b70644bb425bfdcd740e3cc0f37c59254bae74374b4dd6a5` uses `single` C compilation with production source conditions. A nonblocking shared publication lease pins it across the diagnostic and matched cohort. No bundle or source tree is copied and no separate manual build is requested. The final source proof and candidate-only restore marker pass. Both diagnostic Vox captures and both Brave captures pass all required audits.
+
+An earlier cohort completed four valid diagnostic captures and fifteen matched captures, then rejected the entire partial comparison after the shared `tools/hacker_news_browser_instructions.py` changed (SHA-256 `01f2b2f0bc3536770a3d6426d6a9157eda5190008ff69de0b5cf069f6f522a43` → `83cd6c2ba6a6c86b14c2acff0eb7152ac72277c49dc26c470c1055bc6ab351c3`). Every raw observation remains archived, including the 24.78B candidate outlier. It earns no performance credit. A fresh complete cohort follows with current inputs pinned.
+
+The unprofiled comparison retains the original SOCKS bytes/scripts, original-origin replay, empty private profiles/caches, 1024×768 viewport at scale 2, five-second unfocused settle and existing references. The scope is exclusive coalition creation through encoded document PNG, including startup/window setup and Brave CDP delivery; GPU/outside-coalition work is excluded. OS filesystem/shader caches remain retained. All sixteen matched captures pass content, bootstrap, button, exact per-engine reference pixels and browser/kernel exits. Host timestamps/load, helper identities and memory adoption are retained in the raw reports.
+
+| Pair | Vox control instructions | Vox candidate instructions |
+|---|---:|---:|
+| 1 | 24,275,859,089 | 24,193,996,190 |
+| 2 | 24,204,036,664 | 24,076,447,555 |
+| 3 | 24,437,385,647 | 24,411,277,561 |
+| 4 | 24,490,842,410 | 23,710,406,024 |
+
+Medians: **24,356,622,368 control → 24,135,221,872.5 candidate**, an observed **+0.909% reduction**. Conservative separation `min(control lower) − max(candidate upper)` is **-207,240,897** instructions. The ranges overlap; no whole-page saving is credited and no new 5M broad checkpoint is due. Carry remains zero.
+
+The candidate median remains **4,135,221,872.5 instructions above 20B**. Four pairs cannot establish seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-font-size-longhands-verification-20261106.json) retains focused checks, every component/prototype result, failed tests, source witnesses, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**

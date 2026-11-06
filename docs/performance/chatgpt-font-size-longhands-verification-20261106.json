@@ -1,0 +1,271 @@
+{
+  "complete": true,
+  "implementation_commit": "4c0b1dff7",
+  "acceptance": false,
+  "focused_verification": "docs/performance/chatgpt-font-size-longhands-focused-verification-20261106.json",
+  "rejected_partial_cohort": "docs/performance/chatgpt-font-size-longhands-production-r1-matched-20261106.json",
+  "rejected_changed_inputs": [
+    "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py"
+  ],
+  "production_controller": "docs/performance/chatgpt-font-size-longhands-production-r2-controller-20261106.json",
+  "diagnostic": "docs/performance/chatgpt-font-size-longhands-production-r2-diagnostic-20261106.json",
+  "matched": "docs/performance/chatgpt-font-size-longhands-production-r2-matched-20261106.json",
+  "component_instruction_reductions": {
+    "absolute": {
+      "raw": {
+        "control": [
+          2391847,
+          2391581,
+          2391467,
+          2391607
+        ],
+        "candidate": [
+          2421945,
+          2399675,
+          2400295,
+          2435413
+        ]
+      },
+      "control_median": 2391594.0,
+      "candidate_median": 2411120.0,
+      "reduction_percent": -0.8164429246770188
+    },
+    "em": {
+      "raw": {
+        "control": [
+          7555625,
+          7545125,
+          7510601,
+          7548094
+        ],
+        "candidate": [
+          2604202,
+          2603233,
+          2604097,
+          2604184
+        ]
+      },
+      "control_median": 7546609.5,
+      "candidate_median": 2604140.5,
+      "reduction_percent": 65.49257650074513
+    },
+    "rem": {
+      "raw": {
+        "control": [
+          7842726,
+          7782604,
+          7822916,
+          7782649
+        ],
+        "candidate": [
+          2651609,
+          2606089,
+          2606898,
+          2607089
+        ]
+      },
+      "control_median": 7802782.5,
+      "candidate_median": 2606993.5,
+      "reduction_percent": 66.58892516868181
+    },
+    "mixed": {
+      "raw": {
+        "control": [
+          8686578,
+          8884576,
+          8689562,
+          8724686
+        ],
+        "candidate": [
+          2655692,
+          2656524,
+          2656739,
+          2656936
+        ]
+      },
+      "control_median": 8707124.0,
+      "candidate_median": 2656631.5,
+      "reduction_percent": 69.4889897054412
+    },
+    "unsupported": {
+      "raw": {
+        "control": [
+          8025233,
+          8040888,
+          8024981,
+          7982854
+        ],
+        "candidate": [
+          7983660,
+          7984297,
+          8006934,
+          8021073
+        ]
+      },
+      "control_median": 8025107.0,
+      "candidate_median": 7995615.5,
+      "reduction_percent": 0.36749042723044356
+    },
+    "changing-own": {
+      "raw": {
+        "control": [
+          7795087,
+          7833478,
+          7797162,
+          7804909
+        ],
+        "candidate": [
+          2769218,
+          2737185,
+          2738027,
+          2747788
+        ]
+      },
+      "control_median": 7801035.5,
+      "candidate_median": 2742907.5,
+      "reduction_percent": 64.83918705407763
+    },
+    "changing-parent": {
+      "raw": {
+        "control": [
+          7823982,
+          7824185,
+          7984260,
+          7823963
+        ],
+        "candidate": [
+          3675680,
+          3675666,
+          3676475,
+          3676808
+        ]
+      },
+      "control_median": 7824083.5,
+      "candidate_median": 3676077.5,
+      "reduction_percent": 53.01587080454855
+    },
+    "changing-root": {
+      "raw": {
+        "control": [
+          7814708,
+          7822622,
+          7822103,
+          7783295
+        ],
+        "candidate": [
+          7756508,
+          7755929,
+          7973247,
+          7795465
+        ]
+      },
+      "control_median": 7818405.5,
+      "candidate_median": 7775986.5,
+      "reduction_percent": 0.5425530819551327
+    },
+    "fresh-batch": {
+      "raw": {
+        "control": [
+          7803712,
+          7966700,
+          7804542,
+          7840044
+        ],
+        "candidate": [
+          7967439,
+          7934635,
+          7969773,
+          7937982
+        ]
+      },
+      "control_median": 7822293.0,
+      "candidate_median": 7952710.5,
+      "reduction_percent": -1.6672540903287514
+    }
+  },
+  "production_executable_sha256": "c05715c149c8a3f7b70644bb425bfdcd740e3cc0f37c59254bae74374b4dd6a5",
+  "c_compile": {
+    "mode": "single",
+    "requested": "single",
+    "v_prod": true
+  },
+  "control_median": 24356622368.0,
+  "candidate_median": 24135221872.5,
+  "observed_reduction_percent": 0.9089950657151791,
+  "conservative_page_reduction": -207240897,
+  "page_instruction_credit": 0,
+  "broad_checks": 0,
+  "broad_carry": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-font-size-longhands-checked-20261106-evidence.zip",
+      "sha256": "2daf5a9103032a8d6564f22eee638a34fead802881271454729dc43f4f862e45",
+      "bytes": 24371358,
+      "verified_entries": 183
+    },
+    {
+      "path": "docs/performance/chatgpt-font-size-longhands-component-20261106-evidence.zip",
+      "sha256": "c628ae46161a0c386e0c7d51088a9b83e28898924017dbfeb427131c13bb944c",
+      "bytes": 59688259,
+      "verified_entries": 111
+    },
+    {
+      "path": "docs/performance/chatgpt-style-profile-20261106-r1-evidence.zip",
+      "sha256": "5c74d1e9683a3c18a1808d43cda8683b44b6e3d3bc0ffcaec4291b431e4492a9",
+      "bytes": 558136,
+      "verified_entries": 24
+    },
+    {
+      "path": "docs/performance/chatgpt-font-size-longhands-production-r2-diagnostic-20261106-evidence.zip",
+      "sha256": "71e48aa8eaabd3942263bac3cbbd825674f57b047c9428b8eb446a36e8ad3e98",
+      "bytes": 1535987,
+      "verified_entries": 65
+    },
+    {
+      "path": "docs/performance/chatgpt-font-size-longhands-production-r2-matched-20261106-evidence.zip",
+      "sha256": "a85cc8a71c30179ebb095139a30b4db5710261136d4b110ab9def3ce22b18c16",
+      "bytes": 8227813,
+      "verified_entries": 167
+    },
+    {
+      "path": "docs/performance/chatgpt-font-size-longhands-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "f8fea6e835e5b4f64305cc241dd5bf3af342d9ef6772f018afd086bbe4d9fc2d",
+      "bytes": 1568188,
+      "verified_entries": 65
+    },
+    {
+      "path": "docs/performance/chatgpt-font-size-longhands-production-r1-matched-20261106-evidence.zip",
+      "sha256": "3f12af5873e1477a474270f0b010befecc29f26b512393317a534a6a8b4e58b4",
+      "bytes": 7314066,
+      "verified_entries": 159
+    },
+    {
+      "path": "docs/performance/chatgpt-font-size-longhands-controller-20261106-evidence.zip",
+      "sha256": "1812ea9bb79aa6165d23d802587d1af6769cbfdee7ae0a8852c41b290a5acc8f",
+      "bytes": 26178,
+      "verified_entries": 13
+    }
+  ],
+  "target_instructions": 20000000000,
+  "target_met": false,
+  "qualification": "Four matched control/candidate pairs are diagnostic. No seven-pair acceptance, live-site claim or component-to-page extrapolation. The existing original-origin SOCKS archive, scripts, references and 5s unfocused settle stay fixed. All twenty captures pass content/bootstrap/button/pixel/normal-exit audits on one pinned canonical executable; path diagnostics prove hits only in candidate. All prototype regressions and failed checks remain preserved.",
+  "finalization_guard": {
+    "path": "Build/chatgpt-font-size-longhands-finalize-20261106-r1/finalize-guard.json",
+    "sha256": "3cf7e155a503536534c895f4f43c57d9c2efe1e63cb9710711cf0c530a5d4a9e",
+    "receipt": {
+      "command": [
+        "python3",
+        "Build/chatgpt-font-size-longhands-finalize-20261106-r1/finalize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 63438848,
+      "elapsed_seconds": 1.1322779170000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "rejected_cohort_guard_exit": 1
+}
