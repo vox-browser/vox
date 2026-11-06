@@ -7784,7 +7784,10 @@ void schedule_native_document_screenshot(string output_path, double top, double 
 }
 
 // Cocoa imports tgmath macros; V emits the C math declarations after this file.
-// Leave the ordinary function name available for those declarations.
+// Leave the ordinary function names available for those declarations.
 #ifdef remainder
 #undef remainder
+#endif
+#ifdef fma
+#undef fma
 #endif
