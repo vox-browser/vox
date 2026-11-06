@@ -8,9 +8,8 @@ module cpuraster
 
 // Segments use skia.Path's encoding: 12 floats per segment, kind (0 move,
 // 1 line, 2 quad, 3 cubic, 4 SVG arc, 5 close), point, two control points,
-// radii, x-axis rotation, large-arc and sweep flags. Returns none for arcs,
-// which are not ported yet.
-pub fn canvas_path(segments []f32, even_odd bool) ?Path {
+// radii, x-axis rotation in radians, large-arc and sweep flags.
+pub fn canvas_path(segments []f32, even_odd bool) Path {
 	mut b := PathBuilder{}
 	for i := 0; i + 11 < segments.len; i += 12 {
 		s := segments[i..i + 12]
@@ -19,7 +18,10 @@ pub fn canvas_path(segments []f32, even_odd bool) ?Path {
 			1 { b.line_to(s[1], s[2]) }
 			2 { b.quad_to(s[3], s[4], s[1], s[2]) }
 			3 { b.cubic_to(s[3], s[4], s[5], s[6], s[1], s[2]) }
-			4 { return none }
+			4 {
+				b.arc_to(s[7], s[8], s[9] * f32(180) / f32(3.141592653589793), s[10] != 0,
+					s[11] != 0, s[1], s[2])
+			}
 			5 { b.close() }
 			else {}
 		}

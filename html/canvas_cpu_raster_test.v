@@ -32,6 +32,8 @@ fn cpu_raster_test_path(mut context CanvasRenderingContext2D, index int) {
 		context.line_to(150, 140)
 		context.line_to(200, 10)
 		context.line_to(260, 160)
+		context.arc(230, 90, 35.5, 0.3, 4.2, false) or { panic(err) }
+		context.ellipse(90, 110, 50, 22.5, 0.6, 0, 5.5, true) or { panic(err) }
 	}
 }
 

@@ -636,3 +636,154 @@ fn (p Path) is_rect() ?Rect {
 	}
 	return sorted_rect(first_corner, third_corner)
 }
+
+#include "@DIR/path_math.h"
+
+fn C.cpuraster_sincosf(x f32, s &f32, c &f32)
+fn C.cosf(x f32) f32
+fn C.tanf(x f32) f32
+fn C.atan2f(y f32, x f32) f32
+fn C.sqrtf(x f32) f32
+
+// SK_ScalarPI.
+const scalar_pi = f32(3.14159265)
+
+@[inline]
+fn abs_f32(v f32) f32 {
+	return if v < 0 { -v } else { v }
+}
+
+// SkScalarSinSnapToZero() and SkScalarCosSnapToZero() of one angle.
+fn sin_cos_snap_to_zero(radians f32) (f32, f32) {
+	mut s := f32(0)
+	mut c := f32(0)
+	C.cpuraster_sincosf(radians, &s, &c)
+	tolerance := f32(1) / f32(1 << 16)
+	return if abs_f32(s) <= tolerance { f32(0) } else { s }, if abs_f32(c) <= tolerance {
+		f32(0)
+	} else {
+		c
+	}
+}
+
+// The 2x2 of an affine SkMatrix: (x * sx + y * kx, x * ky + y * sy).
+struct Linear2 {
+	sx f32
+	kx f32
+	ky f32
+	sy f32
+}
+
+fn (m Linear2) map(p Point) Point {
+	a := p.x * m.sx
+	b := p.y * m.kx
+	c := p.x * m.ky
+	d := p.y * m.sy
+	return Point{a + b, c + d}
+}
+
+// arc_to mirrors SkPathBuilder::arcTo(SkPoint rad, angle, arcLarge,
+// arcSweep, endPt): an SVG elliptical arc from the last point, as conics.
+// angle is in degrees; sweep_cw selects SkPathDirection::kCW.
+pub fn (mut b PathBuilder) arc_to(rad_x f32, rad_y f32, angle f32, large bool, sweep_cw bool, x f32, y f32) {
+	b.ensure_move()
+	src0 := b.points.last()
+	src1 := Point{x, y}
+	if rad_x == 0 || rad_y == 0 {
+		b.line_to(x, y)
+		return
+	}
+	if src0 == src1 {
+		b.line_to(x, y)
+		return
+	}
+	mut rx := abs_f32(rad_x)
+	mut ry := abs_f32(rad_y)
+	mid_dx := src0.x - src1.x
+	mid_dy := src0.y - src1.y
+	mid := Point{mid_dx * f32(0.5), mid_dy * f32(0.5)}
+	deg_to_rad := scalar_pi / f32(180)
+	neg_rad := -angle * deg_to_rad
+	s0, c0 := sin_cos_snap_to_zero(neg_rad)
+	tm := Linear2{c0, -s0, s0, c0}.map(mid)
+	square_rx := rx * rx
+	square_ry := ry * ry
+	square_x := tm.x * tm.x
+	square_y := tm.y * tm.y
+	qx := square_x / square_rx
+	qy := square_y / square_ry
+	mut radii_scale := qx + qy
+	if radii_scale > 1 {
+		radii_scale = C.sqrtf(radii_scale)
+		rx *= radii_scale
+		ry *= radii_scale
+	}
+	isx := f32(1) / rx
+	isy := f32(1) / ry
+	unit := Linear2{isx * c0, isx * -s0, isy * s0, isy * c0}
+	mut u0 := unit.map(src0)
+	mut u1 := unit.map(src1)
+	mut delta := Point{u1.x - u0.x, u1.y - u0.y}
+	dxx := delta.x * delta.x
+	dyy := delta.y * delta.y
+	d := dxx + dyy
+	inv_d := f32(1) / d
+	reduced := inv_d - f32(0.25)
+	scale_factor_squared := if reduced > 0 { reduced } else { f32(0) }
+	mut scale_factor := C.sqrtf(scale_factor_squared)
+	if !sweep_cw != large {
+		scale_factor = -scale_factor
+	}
+	delta = Point{delta.x * scale_factor, delta.y * scale_factor}
+	sum := Point{u0.x + u1.x, u0.y + u1.y}
+	mut center := Point{sum.x * f32(0.5), sum.y * f32(0.5)}
+	center = Point{center.x + -delta.y, center.y + delta.x}
+	u0 = Point{u0.x - center.x, u0.y - center.y}
+	u1 = Point{u1.x - center.x, u1.y - center.y}
+	theta1 := C.atan2f(u0.y, u0.x)
+	theta2 := C.atan2f(u1.y, u1.x)
+	mut theta_arc := theta2 - theta1
+	two_pi := scalar_pi * f32(2)
+	if theta_arc < 0 && sweep_cw {
+		theta_arc += two_pi
+	} else if theta_arc > 0 && !sweep_cw {
+		theta_arc -= two_pi
+	}
+	if abs_f32(theta_arc) < scalar_pi / f32(1000 * 1000) {
+		b.line_to(x, y)
+		return
+	}
+	rad := angle * deg_to_rad
+	s1, c1 := sin_cos_snap_to_zero(rad)
+	xform := Linear2{c1 * rx, -s1 * ry, s1 * rx, c1 * ry}
+	third := (f32(2) * scalar_pi) / f32(3)
+	segments := int(saturate_to_i32(ceil_f32(abs_f32(theta_arc / third))))
+	theta_width := theta_arc / f32(segments)
+	t := C.tanf(f32(0.5) * theta_width)
+	if !is_finite_f32(t) {
+		return
+	}
+	mut start_theta := theta1
+	half_cos := C.cosf(theta_width) * f32(0.5)
+	w := C.sqrtf(f32(0.5) + half_cos)
+	half_pi := scalar_pi / f32(2)
+	expect_integers := abs_f32(half_pi - abs_f32(theta_width)) <= scalar_nearly_zero
+		&& rx == floor_f32(rx) && ry == floor_f32(ry) && x == floor_f32(x) && y == floor_f32(y)
+	for _ in 0 .. segments {
+		end_theta := start_theta + theta_width
+		sin_end, cos_end := sin_cos_snap_to_zero(end_theta)
+		p1 := Point{cos_end + center.x, sin_end + center.y}
+		ts := t * sin_end
+		tc := -t * cos_end
+		p0 := Point{p1.x + ts, p1.y + tc}
+		mut m0 := xform.map(p0)
+		mut m1 := xform.map(p1)
+		if expect_integers {
+			m0 = Point{floor_f32(m0.x + f32(0.5)), floor_f32(m0.y + f32(0.5))}
+			m1 = Point{floor_f32(m1.x + f32(0.5)), floor_f32(m1.y + f32(0.5))}
+		}
+		b.conic_to(m0.x, m0.y, m1.x, m1.y, w)
+		start_theta = end_theta
+	}
+	b.points[b.points.len - 1] = Point{x, y}
+}
