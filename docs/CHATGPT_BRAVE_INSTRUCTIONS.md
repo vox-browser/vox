@@ -5941,3 +5941,22 @@ The [process table](performance/chatgpt-thread-load-stages-production-r1-traced-
 The traced and untraced runs complete **504** and **506** frame checkpoints. Neither result is normalized by frame count. The same original SOCKS fixture/scripts/references, 1024×768 scale two, five-second unfocused settle, fresh private profiles/caches and retained OS filesystem/shader caches apply. One current completed single-C-unit V -prod executable/libraries/tools/fixture stays fixed under a nonblocking shared publication lease. No app is copied or build manually requested. GPU/outside-coalition work remains excluded.
 
 The [verification receipt](performance/chatgpt-thread-load-stages-verification-20261106.json), [main-thread JSON](performance/chatgpt-thread-load-stages-production-r1-main-thread-20261106.json) and [CSV](performance/chatgpt-thread-load-stages-production-r1-main-thread-20261106.csv) retain every exact count, old/new table, command, source witness, counter, PNG, memory guard and failed attempt. Both additive 63-row tables sum exactly to the same captured total. No page savings or broad carry are credited. The latest complete unprofiled matched comparison remains 24.237B candidate versus 24.223B control with overlapping ranges. **The 20B target remains unmet.**
+
+## Style recomputation causes on the frozen page (2026-11-06)
+
+The independent main-thread budget identifies style updates as a substantial cost. Two fresh captures enable existing runtime style-cause/element diagnostics; the second also enables bounded invalidation-source examples. Both pass complete content/button/bootstrap identity, exact unchanged reference pixels, normal browser exits and stable input identities under their publication leases. No source change, copied app or manual build is required.
+
+| Recompute cause | First capture events | Second capture events |
+| --- | ---: | ---: |
+| Full document style update | 2,681 | 2,681 |
+| Explicit dirty flag | 1,909 | 1,909 |
+| Parent display changed | 1 | 1 |
+| Ancestor requested descendant recomputation | 433 | 459 |
+| Custom-property dependent | 298 | 370 |
+| if() media dependency | 0 | 0 |
+| Font-only refresh succeeded | 0 | 0 |
+| Font-only fallback | 0 | 0 |
+
+Each capture reports **1,909 explicit dirty events** across **342 label strings**. The same URL/tag/ID/class label can describe multiple elements and repeated updates. Link elements with empty ID/class account for 553 events, paths 239, groups 79 and use elements 61. These are not instruction shares or evidence that any particular update can be skipped. The bounded source trace observes stylesheet replacement/addition, DOM insertion/removal, shadow-root installation and attribute changes, including link `rel` and document data attributes. A full document style pass can legitimately be required after stylesheet changes; source examples are capped at eight events per source/reason key and cannot establish exact causal totals.
+
+The [verification receipt](performance/chatgpt-style-causes-verification-20261106.json) preserves both raw logs, commands, source proofs, PNGs, audits and memory guards. The next style investigation must distinguish required cascade updates from avoidable recomputation while preserving selector, inherited/custom-property, font, shadow and live stylesheet behavior. No optimization cohort or new 5M broad checkpoint follows from these logs. **The 20B target remains unmet.**
