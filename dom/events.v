@@ -23,6 +23,7 @@ module dom
 import time
 import webidl
 import libjs
+import platform
 
 // DOM event algorithms use the translated callback and JS-value boundary types
 // below. Execution realms and arbitrary JavaScript objects remain runtime
@@ -1812,7 +1813,10 @@ pub fn EventDispatcher.invoke(struct_ EventPathEntry, event &Event, phase EventP
 	// 3. Set event's touch target list to struct's touch target list.
 	mut mutable_event := unsafe { &Event(event) }
 	mut last_valid_shadow_adjusted_target := ?&EventTarget(none)
-	for entry in event.path() {
+	// The path cannot change during this read-only search. Its public accessor
+	// returns an owned snapshot; cloning it for every invocation made dispatch
+	// retain quadratic path storage on deep wheel-event ancestor chains.
+	for entry in event.path_ {
 		if entry.index <= struct_.index {
 			if shadow_adjusted_target := entry.shadow_adjusted_target {
 				last_valid_shadow_adjusted_target = unsafe { &EventTarget(shadow_adjusted_target) }
@@ -1832,7 +1836,13 @@ pub fn EventDispatcher.invoke(struct_ EventPathEntry, event &Event, phase EventP
 	// 5. Initialize event's currentTarget attribute to struct's invocation target.
 	mutable_event.set_current_target(struct_.invocation_target)
 	// 6. Let listeners be a clone of event's currentTarget attribute value's event listener list.
+	listener_work := platform.begin_thread_scratch('event listener snapshot')
 	listeners := struct_.invocation_target.event_listener_list()
+	// Callbacks can install listeners, mutate DOM, or dispatch recursively.
+	// Their allocations keep the caller's ordinary lifetime; only the copied
+	// vector retires after both ordinary and legacy listener invocation.
+	listener_work.leave()
+	defer { listener_work.finish() }
 
 	// 7. Let invocationTargetInShadowTree be struct's invocation-target-in-shadow-tree.
 	invocation_target_in_shadow_tree := struct_.invocation_target_in_shadow_tree
@@ -2022,7 +2032,7 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 		// 11. If clearTargetsStruct's shadow-adjusted target, relatedTarget, or touch target list is in a shadow root, set clearTargets to true.
 		mut clear_targets_struct := EventPathEntry{}
 		mut has_clear_targets_struct := false
-		for entry in event.path() {
+		for entry in event.path_ {
 			if entry.shadow_adjusted_target != none {
 				clear_targets_struct = entry
 				has_clear_targets_struct = true
@@ -2053,7 +2063,10 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 			activation.legacy_pre_activation_behavior()
 		}
 		// 13. For each struct of event's path, in reverse order:
+		path_work := platform.begin_thread_scratch('event dispatch path snapshot')
 		path := event.path()
+		path_work.leave()
+		defer { path_work.finish() }
 		for index := path.len - 1; index >= 0; index-- {
 			// 1. If struct's shadow-adjusted target is non-null, then set event's eventPhase attribute to AT_TARGET.
 			if path[index].shadow_adjusted_target != none {
