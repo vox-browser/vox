@@ -73,7 +73,10 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 	} else { none }
 	simple_svg := retained_simple_svg_input(node)
 	inside_svg := in_simple_svg || simple_svg != none
-	if inside_svg && !retained_simple_svg_style_is_closed(node) { return false }
+	if inside_svg && !retained_simple_svg_style_is_closed(node) {
+		if measurement_only { report_measurement_rejection(node, computed, 'svg-style') }
+		return false
+	}
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| node.is_in_ua_internal_shadow_tree() || (node.is_svg_box() && !inside_svg)
 		|| (node.is_replaced_box() && image == none && simple_svg == none && measurement_image == none)
@@ -91,17 +94,25 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 		|| (!node.is_text_node() && !node.display().is_flow_inside()
 			&& !node.display().is_flow_root_inside() && !retained_context_allows_flex(node)
 			&& !retained_context_allows_grid(node)) {
+		if measurement_only { report_measurement_rejection(node, computed, 'closed-input') }
 		return false
 	}
 	container_type := computed.container_type()
-	if container_type.is_size_container || container_type.is_inline_size_container { return false }
+	if container_type.is_size_container || container_type.is_inline_size_container {
+		if measurement_only { report_measurement_rejection(node, computed, 'size-container') }
+		return false
+	}
 	if metrics := node.as_node_with_style_and_box_model_metrics() {
-		if metrics.continuation_of_node() != none { return false }
+		if metrics.continuation_of_node() != none {
+			if measurement_only { report_measurement_rejection(node, computed, 'continuation') }
+			return false
+		}
 	}
 	mut text := ''
 	if value := node.as_text_node() {
 		if value.first_letter_ != none || value.source_range_length_ != none
 			|| value.is_empty_editable_ || value.produces_line_box_fragment_when_empty_ {
+			if measurement_only { report_measurement_rejection(node, computed, 'text-state') }
 			return false
 		}
 		text = value.text_for_rendering()

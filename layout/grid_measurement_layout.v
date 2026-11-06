@@ -160,12 +160,21 @@ fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 		// and child identities retained under the caller's document owner.
 		if (disable_svg_measurement_reuse && (input.node.is_svg_box() || input.simple_svg != none))
 			|| (disable_relative_measurement_reuse && input.node.is_positioned())
-			|| line_clamp_is_active(input.style) { return false }
+			|| line_clamp_is_active(input.style) {
+			report_measurement_rejection(input.node, input.style, 'measurement-policy')
+			return false
+		}
 		if index > 0 {
 			containing := input.node.containing_block() or { return false }
 			if voidptr(containing) != voidptr(root)
-				&& !root.is_inclusive_ancestor_of(unsafe { &Node(containing) }) { return false }
-			if !unsafe { &Node(containing) }.is_inclusive_ancestor_of(input.node) { return false }
+				&& !root.is_inclusive_ancestor_of(unsafe { &Node(containing) }) {
+				report_measurement_rejection(input.node, input.style, 'external-containing-block')
+				return false
+			}
+			if !unsafe { &Node(containing) }.is_inclusive_ancestor_of(input.node) {
+				report_measurement_rejection(input.node, input.style, 'non-ancestor-containing-block')
+				return false
+			}
 		}
 	}
 	return inputs.len > 1
