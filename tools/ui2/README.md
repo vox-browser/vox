@@ -8,7 +8,9 @@ owners to their replacements and explains the retained native boundaries.
 actions, accessibility labels, popup state and shortcut decisions. Enter submits
 the address. Cmd+L focuses/selects it. Cmd+Shift+D toggles diagnostics;
 Cmd+Shift+B toggles bookmarks; Cmd+D saves the committed page. Windows/Linux use
-Ctrl for those commands. Browser settings use Cmd+, on macOS and Ctrl+, elsewhere.
+Ctrl for those commands. Cmd+Option+I or F12 (Ctrl+Shift+I) toggles the docked
+[developer tools](../../devtools/README.md) and Cmd+Shift+C (Ctrl+Shift+C) picks
+an element in the page. Browser settings use Cmd+, on macOS and Ctrl+, elsewhere.
 Native field editing, selection, clipboard and IME stay with UI2's backend.
 
 Tabs retain the classic sloped shoulders, overlapping edges, thin outline and
