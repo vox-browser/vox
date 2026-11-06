@@ -9,6 +9,7 @@ document of the tab that opens it.
 | Toggle the panel | Cmd+Option+I, F12, Browser > Developer Tools | Ctrl+Shift+I, F12 |
 | Pick an element in the page | Cmd+Shift+C or Cmd+Option+C, the toolbar arrow | Ctrl+Shift+C |
 | Inspect the element under the pointer | Right-click > Inspect | Right-click > Inspect |
+| Open with every tab | `--auto-open-devtools-for-tabs` | `--auto-open-devtools-for-tabs` |
 
 ## Elements panel
 
