@@ -4906,3 +4906,184 @@ and [verification receipt](performance/chatgpt-load-stages-refined-verification-
 link raw commands, logs, counters, original PNGs, guards, actual exits, compiled
 runners and failures. **Optimization credit and broad-check carry remain zero;
 the Brave target remains unmet.**
+
+
+## Raster-phase budget and bounded tracing (2026-11-06)
+
+Implementation `cbb5b5cff` partitions raster replay into stationary-cache
+eligibility/lookup, viewport planning, tile setup, scroll-damage lookup, command
+dispatch, final GPU/CPU canvas handling and storage/publication. It also measures
+timer delivery, tab-frame coordination and native window initialization outside
+the old document-frame scope. Boundaries are opt-in and retain the original
+rendering/resource/script policy.
+
+The **55-stage diagnostic totals 30,551,514,602 instructions**. The largest single
+row is **paint-command dispatch: 5,652,377,055 (18.5011%) over 19 passes**. It
+includes native drawing/grouping/culling and any unseparated native work called
+there. Final canvas synchronization/closing layers adds **718,200,266 (2.3508%)**.
+Together these two rows account for **6,370,577,321 instructions**. The trace has
+478 frame callbacks; 19 command passes can include retry attempts and do not
+mean 19 unique changed/presented frames. No displayed-FPS inference is made.
+
+Viewport planning (1,004,650), tile setup (4,115,307), stationary eligibility
+(25,241,181) and stationary lookup self work (52,706,927) are much smaller than
+command dispatch on this workload. The additive raster sub-buckets, including
+the remaining wrapper and blank/scroll/storage paths, sum to **6,861,063,859**.
+These are subdivisions within the new capture, not a scaling of the preceding
+6.84B lead. **JavaScript-related scopes total 8,755,929,487 (28.6596%)**. The
+broader main residual is still **3,013,123,881 (9.8624%)** and remains explicitly
+unattributed. It includes activity outside measured scopes, concurrent threads
+and tracer overhead; it is not a pure native-platform or JS total.
+
+| Stage (measured children subtracted) | Instructions | Share | Calls |
+| --- | ---: | ---: | ---: |
+| Paint-command dispatch and native drawing | 5,652,377,055 | 18.5011% | 19 |
+| Async JavaScript module compilation, execution and bindings | 5,057,918,889 | 16.5554% | 288 |
+| Document style updates | 4,407,764,122 | 14.4273% | 951 |
+| Other JavaScript evaluation, callbacks and bindings | 3,698,010,598 | 12.1042% | 1,846 |
+| Other browser startup / native event-loop work (residual) | 3,013,123,881 | 9.8624% | 1 |
+| Absolutely positioned descendants | 2,253,985,838 | 7.3777% | 13 |
+| GPU/CPU canvas synchronization and finalization | 718,200,266 | 2.3508% | 19 |
+| Owned helpers + process/coalition endpoint remainder | 689,644,695 | 2.2573% | — |
+| Platform timer delivery, excluding measured children | 649,471,499 | 2.1258% | 2,591 |
+| CSS parsing / stylesheet conversion | 557,350,895 | 1.8243% | 11 |
+| Background resource completion, excluding measured children | 315,923,271 | 1.0341% | 478 |
+| HTML networking task, excluding measured children | 295,790,154 | 0.9682% | 581 |
+| Document layout coordination | 235,812,623 | 0.7719% | 941 |
+| Frame setup / completion, excluding measured children | 212,850,585 | 0.6967% | 478 |
+| HTML response decoding and navigation parsing | 182,339,750 | 0.5968% | 1 |
+| Frame preparation, excluding measured children | 178,526,636 | 0.5843% | 478 |
+| Viewport relayout coordination | 177,980,238 | 0.5826% | 10 |
+| Normal flow layout | 164,951,212 | 0.5399% | 13 |
+| Stationary raster finalization | 164,835,158 | 0.5395% | 478 |
+| Process startup before/between instrumented roots | 159,288,514 | 0.5214% | — |
+| HTML rendering task, excluding measured children | 158,736,741 | 0.5196% | 459 |
+| HTML event-loop coordination, excluding tasks | 153,008,187 | 0.5008% | 1,298 |
+| Layout tree construction | 149,997,415 | 0.4910% | 11 |
+| Document raster replay, caches, filters and compositing | 123,184,129 | 0.4032% | 478 |
+| Paint command recording | 120,830,592 | 0.3955% | 21 |
+| Native replay wrapper/checkpoints, remaining work | 110,329,746 | 0.3611% | 478 |
+| Apply JavaScript document state | 78,556,300 | 0.2571% | 952 |
+| Native window/context initialization | 72,334,986 | 0.2368% | 1 |
+| Initial resource preload planning/installation | 66,934,910 | 0.2191% | 1 |
+| Native bitmap setup/finalization outside V frame | 63,285,879 | 0.2071% | 478 |
+| Scroll-raster lookup and damage setup | 61,917,536 | 0.2027% | 19 |
+| JavaScript runtime setup, excluding measured children | 61,146,877 | 0.2001% | 1 |
+| Document installation, including HTML/navigation work | 56,834,269 | 0.1860% | 1 |
+| Browser chrome | 54,590,565 | 0.1787% | 486 |
+| Native layer publication and transactions | 53,012,119 | 0.1735% | 478 |
+| Stationary raster lookup, excluding eligibility | 52,706,927 | 0.1725% | 471 |
+| Tab-frame coordination, excluding document frame | 48,979,058 | 0.1603% | 478 |
+| Raster storage/retirement and deferred publication | 38,552,703 | 0.1262% | 19 |
+| HTML rendering opportunity scheduling | 38,320,845 | 0.1254% | 478 |
+| Other layout geometry | 33,016,198 | 0.1081% | 13 |
+| Animation driver | 30,927,385 | 0.1012% | 478 |
+| Other HTML tasks | 27,443,885 | 0.0898% | 236 |
+| Stationary raster command eligibility | 25,241,181 | 0.0826% | 471 |
+| Native frame graphics-context setup | 24,119,003 | 0.0789% | 478 |
+| Raster-frame setup, excluding measured children | 18,550,597 | 0.0607% | 19 |
+| PNG encoding | 18,202,177 | 0.0596% | 1 |
+| Separately traced style computation / interpolation | 7,412,163 | 0.0243% | 29 |
+| Document snapshot | 5,836,687 | 0.0191% | 1 |
+| HTML posted-message tasks | 4,145,418 | 0.0136% | 18 |
+| Raster tile/image-decode setup | 4,115,307 | 0.0135% | 19 |
+| Relative-position offsets | 1,118,892 | 0.0037% | 13 |
+| Viewport raster plan check/update | 1,004,650 | 0.0033% | 19 |
+| HTML timer tasks | 550,118 | 0.0018% | 5 |
+| Blank stationary-raster lookup | 378,350 | 0.0012% | 7 |
+| Snapshot pixel conversion | 46,928 | 0.0002% | 1 |
+| **Total** | **30,551,514,602** | **100%** | |
+
+Every row reconciles: **29,861,869,907 process instructions plus 689,644,695
+coalition/endpoint remainder equals 30,551,514,602**. Inclusive values overlap
+and must not be added. See the [55-stage CSV](performance/chatgpt-raster-stages-traced-20261106.csv)
+and [JSON](performance/chatgpt-raster-stages-traced-20261106.json). The GPU-labelled
+row measures CPU instructions around canvas synchronization/finalization; actual
+GPU execution remains excluded. Input-delivery instrumentation is present, but
+this capture observes no entries in that path and assigns it no separate cost.
+
+### Tracer ownership correction and focused verification
+
+Adding the timer scope exposes a diagnostic allocation problem: V interpolation
+for each record accumulates **77,826 arena bytes**, failing the existing unchanged
+**<8,192-byte** cooperative-timer bound. The logger now sends PID, IDs, counter,
+and explicit-length label bytes directly to C stdio. It makes no V-arena string
+for a record, and the original bound passes with tracing on and off. This is a
+tracer correction, not an engine instruction optimization. `uint` replaces an
+initial deprecated `usize` spelling rejected by production preflight.
+
+A new ownership case retires both allocation owners from nested timer callbacks
+and checks callback ordering, payload readability and complete arena retirement.
+The final selected checks compose **36 passing jobs from r4** with **47 isolation
+jobs from r9**: **83 jobs, thirteen compilations and seventy fresh executions**.
+Generated-C runner/dispatch authentication proves **108 original test functions
+run once in each of four GC/storage modes and both tracing settings: 864 original
+test-function executions**. Dispatcher helpers earn no extra test credit. Modes
+are ordinary GC, no GC, poisoned preallocation and address/undefined-behavior
+sanitizers. Every final trace has monotonic counters, balanced nesting and one
+PID. The existing timer allocation threshold and all runtime caps stay unchanged.
+
+The original combined native sanitizer process exceeds 3 GiB. A tab-only process,
+then half of its cases in one process, also exceed that cap. The final sanitizer
+route runs all **23 tab cases individually**, in both trace settings, using one
+compiled dispatcher that calls the unchanged canonical test bodies. Generated
+main calls only that dispatcher, its body contains exactly all 23 original calls,
+and each process logs its selected case's start/end. Every isolated execution
+passes, with maximum sampled RSS **1,067,466,752 bytes**, below 3 GiB. This proves
+per-case sanitizer coverage; it does not claim the earlier combined batches fit
+within the cap or establish aggregate leak freedom across those batches.
+
+All partial attempts remain retained: initial fixture mutability compilation
+errors; the original arena-bound failure; the combined/tab/half-tab guard kills;
+a wrong case-count preflight; and dispatcher preparation that explicitly included
+disabled GG or Linux files. The final route makes the canonical tab test the
+primary source and supplies only the dispatch fixture as an additional input,
+letting V apply its normal platform/feature selection. No test body is copied,
+modified, skipped or replaced with a stub. The final source hashes are identical
+across the composed r4/r9 selections. The original failed controller exits remain
+visible and are not presented as whole-run passes.
+
+### Raster capture identity and limits
+
+The latest completed matching canonical bundle has executable SHA-256
+`e843423715b8f606d48616c9038b79f335cfb34cb1fa06d61ca105755598495b`, using a
+single C unit and explicit V `-prod`; the sealed compiler command records O2,
+full LTO and inline threshold 75. Before/verified heads are
+`6e1874edca549e0dc9981387454ea7159a389365`; after-build head is
+`b443fb926a3e4d67c7ba5cdce64cf3ba8e0db4fc`. Aggregate build-input hashes match.
+The raster/logger source is captured before its final Git commit while the last
+sanitizer cases finish. All nine captured implementation source files match the
+final tested/committed bytes exactly. SHA-verified sealed preprocessed compiler
+input contains the C logger and raster/timer/tab boundaries, and actual events
+prove their execution. Receipt-head timing alone is not claimed as source proof.
+
+All four captures (traced Vox, two Brave references, untraced Vox) pass bootstrap,
+complete content/button identity, unchanged per-engine pixels and normal exits.
+App/native-library/tool/fixture identities stay fixed under a nonblocking shared
+publication lease, released afterward. No app/source-tree copy or extra build
+request is made. The untraced reference counts **28,631,574,024 instructions**;
+traced/untraced frame checkpoints are **478/479**. Differences do not calibrate
+tracer overhead or establish engine savings. Instrumentation, scheduling and
+other shared source/build changes prevent causal comparison with older captures.
+
+The original frozen SOCKS archive, original author scripts, fresh private profiles
+and caches, 1024×768 viewport, scale two, unfocused five-second settle and PNG
+endpoint remain unchanged. No new live download is made. Scope includes startup,
+window setup, audit/capture work and settling through encoded PNG, with existing
+per-engine delivery/teardown qualifications. OS filesystem/shader caches remain
+retained. Process intervals include concurrent threads and logging; external
+services and GPU execution remain excluded. Counter totals describe CPU work,
+not elapsed network waiting time, isolated VM cost, rendering time or scrolling.
+
+The production controller and memory guard exit zero over **40.14 seconds**,
+peaking at **2,052,489,216 sampled RSS bytes** under 12 GiB and adopting 14 process
+identities without an error. Host one-minute load is **4.22–4.42 on 18 CPUs**.
+The generic comparison driver mixes instrumented/uninstrumented variants and
+returns one for the unmet Brave threshold; its raw result gets no acceptance
+interpretation. The independent finalizer authenticates all source/runner groups,
+raw logs, counters, PNGs, guards, actual exits and exact additive endpoints.
+The [focused receipt](performance/chatgpt-raster-stages-focused-20261106.json),
+[production diagnostic](performance/chatgpt-raster-stages-production-r1-diagnostic-20261106.json)
+and [verification receipt](performance/chatgpt-raster-stages-verification-20261106.json)
+retain those artifacts and every failed development attempt. **Optimization credit
+and broad-check carry remain zero; the 5%-below-Brave target remains unmet.**

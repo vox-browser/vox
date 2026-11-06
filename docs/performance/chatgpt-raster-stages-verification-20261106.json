@@ -1,0 +1,163 @@
+{
+  "complete": true,
+  "implementation_commit": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+  "focused_jobs": 83,
+  "focused_test_calls": 864,
+  "captures": 4,
+  "all_content_pixels_bootstrap_and_exits_valid": true,
+  "identity_stable": true,
+  "exact_coalition_total": 30551514602,
+  "exact_process_total": 29861869907,
+  "native_stages_verified": [
+    "paint_command_dispatch",
+    "gpu_frame_finalization",
+    "raster_frame_commit",
+    "stationary_raster_probe",
+    "platform_timer_delivery"
+  ],
+  "rows": 55,
+  "indexed_payloads_verified": 481,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-raster-stages-focused-20261106-evidence.zip",
+      "bytes": 83190584,
+      "sha256": "c4ffb91cebb936bfc66e628181b497695da71b05369a159b151a88790713366c"
+    },
+    {
+      "path": "docs/performance/chatgpt-raster-stages-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "e1fb43f68d89d50410e40c3315daba2c787a93bddd61719696af0ae0b3606627",
+      "bytes": 2130984,
+      "entries": 86,
+      "checkpoints": 6
+    },
+    {
+      "path": "docs/performance/chatgpt-raster-stages-finalization-20261106-evidence.zip",
+      "bytes": 188335,
+      "sha256": "f8bdcf49d0fb2a4abf50dfba03dd1df8f9a6fa602be3e83609bf19bbe2cd8fbf"
+    }
+  ],
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-raster-stages-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "99165": "Fri Nov  6 03:18:41 2026    ",
+      "99167": "Fri Nov  6 03:18:41 2026    ",
+      "99382": "Fri Nov  6 03:18:49 2026    ",
+      "99385": "Fri Nov  6 03:18:50 2026    ",
+      "99390": "Fri Nov  6 03:18:50 2026    ",
+      "99391": "Fri Nov  6 03:18:50 2026    ",
+      "99392": "Fri Nov  6 03:18:50 2026    ",
+      "99483": "Fri Nov  6 03:18:59 2026    ",
+      "99485": "Fri Nov  6 03:18:59 2026    ",
+      "99488": "Fri Nov  6 03:18:59 2026    ",
+      "99489": "Fri Nov  6 03:18:59 2026    ",
+      "99490": "Fri Nov  6 03:18:59 2026    ",
+      "99587": "Fri Nov  6 03:19:08 2026    ",
+      "99594": "Fri Nov  6 03:19:08 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2052489216,
+    "elapsed_seconds": 40.138937083,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "e843423715b8f606d48616c9038b79f335cfb34cb1fa06d61ca105755598495b",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-031342-2e457eb7/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "16e1c958c825143d4c1494199e1fab59b62c42f31bd8abbddc350f0ed75d8829",
+      "dirty": true,
+      "head": "6e1874edca549e0dc9981387454ea7159a389365",
+      "repository_sha256": "13728b0ab86c082875e6cc392bbd189552bab8e2075c72f2fd109d7db5439ba5"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "16e1c958c825143d4c1494199e1fab59b62c42f31bd8abbddc350f0ed75d8829",
+      "dirty": true,
+      "head": "b443fb926a3e4d67c7ba5cdce64cf3ba8e0db4fc",
+      "repository_sha256": "7769f41881b2501c99d217458284a58961ec5ae2167181e9f15d84d6311b3f57"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "6e1874edca549e0dc9981387454ea7159a389365",
+      "id": "b9fc85eae652405a837c773af94475ae",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "16e1c958c825143d4c1494199e1fab59b62c42f31bd8abbddc350f0ed75d8829",
+      "dirty": true,
+      "head": "6e1874edca549e0dc9981387454ea7159a389365",
+      "repository_sha256": "13728b0ab86c082875e6cc392bbd189552bab8e2075c72f2fd109d7db5439ba5"
+    }
+  },
+  "instruction_credit": 0,
+  "broad_cadence": 0,
+  "compiled_stage_proof": {
+    "preprocessed_source": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-031342-2e457eb7/frozen-compiler-inputs/0-Vox.c.i",
+    "sha256": "cbee53b52c3ae42a0a9236272cb558568b67dc0c3b87a90c6e3a3f99a6717ffe",
+    "excerpts": {
+      "path": "Build/chatgpt-raster-stages-production-20261106-r1/compiled-refined-stage-proof.txt",
+      "bytes": 29624,
+      "sha256": "debb0927a0ad9adb6a008bba01f059a3147487b71efdf13e162dee58fa11a5fb"
+    },
+    "qualification": "SHA-verified sealed compiler input contains C log formatting, raster phases and timer/tab boundaries. Capture events independently prove execution. Full compiler command/mode retained in frozen receipt."
+  },
+  "qualification": "Fresh diagnostic with refined native/HTML boundaries. Exclusive rows reconcile to this capture only; no scaling to the older 29.915B run. Process counters include concurrent threads and logging overhead. Compiler mode/source conditions differ from the previous parallel capture if recorded as single/prod; no optimization comparison or Brave acceptance claim. Published CSV line endings use LF; raw archived exports remain unchanged.",
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-raster-stages-production-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1226047488,
+    "elapsed_seconds": 7.804722041,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "captured_feature_source_at_commit": {
+    "commit": "cbb5b5cff6e3c47ea4bfc1f04a378e408a433081",
+    "hashes": {
+      "main.v": "399a0bc3d817e0e2fc28b5f3089e4cc6380f10a336c37bd46eb602f80682fa61",
+      "main_browser_tabs.v": "a71418f23403a16a19698622cada85b934a8f70e381c32759e6ae9cea7d2de19",
+      "main_chromium_msaa_tiles.v": "66493302c9ff99a5f84b45e35bba8f49d2c92f2ef32008133071bd396a58329c",
+      "main_native_window.v": "80962d0872af95f93c6c6d97e0ce30ce8c089e121de145b63da9d3d5b13c4aa0",
+      "main_scroll_raster.v": "7bfeb170474bb424c88b7cb60b81dbcd99de9a35ec4ea6efd9f817801065f61c",
+      "main_stationary_raster.v": "a50bc9b3340b7633c1d22453c9fdd16683f69c06dfeb7643c28367970a90fb28",
+      "platform/timer.v": "e68b5e738da36e99349e0757a85d6da209e0491190311f1f4cc01c30b182a984",
+      "processmetrics/load_stages.v": "694e8bd6216f444106c0c67d1ee504c8b20497a8283ea3921814b11b829e217d",
+      "processmetrics/load_stage_log.h": "ce9e020869cd596312efb34c03540de7afdb2a70df4f6d72665305c1b5d1317c"
+    },
+    "qualification": "All nine implementation source files captured before commit match the final tested/committed bytes. The sealed compiler input and runtime events independently prove the new paths; source-commit timing alone does not authenticate older receipt heads."
+  },
+  "independent_verification": true,
+  "verified_payloads": 487,
+  "documented_rows_verified": 55,
+  "verification_source_sha256": "94b56e15a94e105f6c7603215b86638a3a30fa2440600f9ae198bbe2ac861cae",
+  "independent_verification_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-raster-stages-production-20261106-r1/verify.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 671350784,
+    "elapsed_seconds": 0.7682621660000001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
