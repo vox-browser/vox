@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest unprofiled href-cache diagnostic observes a **26.46B** candidate median versus **27.73B** for its uncached control. The observed four-pair reduction is separated across the retained ranges. All 20 captures pass content and exact pixels; 232 focused test executions pass. The [latest verification](performance/chatgpt-href-cache-verification-20261106.json) preserves the full result. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest adopted optimization, measured in the unprofiled href-cache diagnostic, observes a **26.46B** candidate median versus **27.73B** for its uncached control. The observed four-pair reduction is separated across the retained ranges. All 20 captures pass content and exact pixels; 232 focused test executions pass. The [latest verification](performance/chatgpt-href-cache-verification-20261106.json) preserves the full result. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5305,3 +5305,37 @@ All **20** diagnostic/matched captures pass JavaScriptCore bootstrap, complete c
 The candidate median remains **6,459,360,397 instructions above 20B**. Four control/candidate pairs cannot establish formal seven-pair acceptance or live-site performance. Component results and sampled callback costs are not scaled into the page budget. The [verification receipt](performance/chatgpt-href-cache-verification-20261106.json) links all focused, component, source, counter, PNG, memory-guard, rejected-attempt and archive evidence. **The 20B target and original 5%-below-Brave target remain unmet.**
 
 Frame-complete checkpoints are 433, 333, 333, 394 for controls and 323, 377, 372, 399 for candidates. Vox launch load averages span 12.58–14.69 on 18 CPUs. The fixed settle window permits frame-count variation; the retained observed reduction is not an isolated per-frame or scrolling measurement.
+
+## Optimizing-tier experiments and current native sample (2026-11-06)
+
+A fresh statistical stack sample of completed production executable `e81e1c454f7c699026166b48f917397dbec4a456e40cd96dd0d41d861ba5932d` passes original author bootstrap, complete content/button identity, exact unchanged reference pixels and normal exit. It observes active grid/flex/absolute-positioned layout, style, native opacity scans and actual JavaScriptCore DFG compilation. Its 1ms requested samples include waits, recursion, concurrent threads and startup/attachment gaps; the process exits before the requested 12-second ceiling with `-mayDie`. Frequencies are investigation leads and do not update the additive instruction table. No browser app, repository checkout or tool is copied, and no build is requested.
+
+Two four-pair parameter experiments retain baseline JIT, baseline warm-up 10,000 and the Wasm lexer. Separate native option dumps verify the selected options. The first disables DFG and FTL; the second keeps all tiers enabled and raises `thresholdForOptimizeAfterWarmUp`, `thresholdForOptimizeAfterLongWarmUp` and `thresholdForOptimizeSoon` from 1,000 to 10,000. Original author scripts, SOCKS fixture, private profiles/caches, five-second unfocused settle, 1024×768 scale two and launch-through-encoded-PNG scope stay fixed. Each experiment pins one completed canonical single-unit V `-prod` executable under its own shared publication lease.
+
+| Experiment | Control median instructions | Candidate median instructions | Median reduction | Conservative observed separation |
+| --- | ---: | ---: | ---: | ---: |
+| DFG/FTL disabled | 26,630,637,794.5 | 26,089,475,464.5 | 2.0321% | 346,319,842 |
+| Longer DFG warm-up, all tiers enabled | 26,406,853,665.5 | 26,461,970,498.5 | -0.2087% | -1,555,989,186 |
+
+| Experiment / variant | Every retained Vox instruction count |
+| --- | --- |
+| DFG/FTL disabled / control | 26,697,555,414; 26,592,928,364; 26,513,160,369; 26,668,347,225 |
+| DFG/FTL disabled / candidate | 25,971,342,138; 26,166,840,527; 26,162,221,260; 26,016,729,669 |
+| Longer DFG warm-up / control | 25,226,868,438; 26,455,776,408; 26,357,930,923; 26,457,276,187 |
+| Longer DFG warm-up / candidate | 26,782,857,624; 26,473,521,892; 26,450,419,105; 25,637,293,959 |
+
+The tier-disabled policy crosses the 5M checkpoint and passes all **47 broad checks**, including exact screenshots, selection, live image/SVG mutations, native paint tests and 200 exact AST comparisons. Correctness alone does not justify adopting it: the sustained probes below expose a large execution regression. Broad carry resets to zero. The longer-warm-up experiment regresses its page median and/or overlaps the control range, so it earns no instruction credit and triggers no additional broad checkpoint.
+
+The first standalone probe is rejected despite zero runtime exits and matching checksums: it lacks the production `allow-jit` entitlement and reports no DFG compilation. Its source, commands, counters and rejection remain archived. A separately identified signed copy of that generated component binary uses the canonical entitlement; no browser bundle or repository tool is copied. Four observations per policy and three workloads retain **36 measured component rows**, plus six separate diagnostic rows. An independent periodic-integer oracle verifies all **42 checksums**, and compile-time reports prove DFG compilation of every workload in both enabled-tier policies. Runtime creation and setup are outside the synchronous API instruction intervals; concurrent process-thread work inside those intervals is included, while pending work after the final sample is outside. These components do not supply page savings.
+
+| Sustained five-million-iteration component | Current policy median instructions | DFG/FTL disabled median | Disabled change | Longer warm-up median | Warm-up change |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Numeric | 149,000,106.5 | 616,877,614.0 | +314.0115% | 113,927,879.0 | -23.5384% |
+| Array | 83,916,154.5 | 540,417,667.0 | +543.9972% | 85,464,959.0 | +1.8457% |
+| Objects | 135,983,161.0 | 620,396,834.0 | +356.2306% | 138,294,431.0 | +1.6997% |
+
+The longer-warm-up cold 100,000-iteration components also regress **9.23% numeric, 2.86% array and 6.25% object**. Disabling optimizing tiers makes sustained work use about **4.1–6.4×** the instructions. Both parameter proposals are rejected; **the browser keeps all JIT tiers and its existing warm-up defaults**. Standalone component claims without a JIT entitlement/path receipt cannot establish production-tier costs, even when their checksums and exit codes pass. Independently verified same-executable browser comparisons remain separate.
+
+All **40** diagnostic/matched browser captures pass full content, JavaScriptCore bootstrap, unchanged per-engine pixels and normal browser/kernel exits. Capture/controller guards exit zero; comparison drivers return one for the unmet Brave threshold. Host contention and frame checkpoints remain in the raw evidence. The two experiments use different completed executable identities (`065088847096502fc917a23c0d8231e9344e1edb7baa2bfbb2a38185fa99d97d` and `af59afe1347543bc6ba3db97a9c19e17fda817c629f7fa416597c3d4b6762a9a`); their absolute counts are never pooled or attributed across builds. OS filesystem/shader caches remain retained, and GPU work/outside-coalition services remain excluded.
+
+The [verification receipt](performance/chatgpt-jit-policy-verification-20261106.json) links the sample, option probes, all raw counts, complete reports, source/identity proofs, guard exits, rejected probe and authenticated evidence archives. Neither experiment changes engine defaults or earns page instruction credit. The last adopted href-cache comparison remains 26.46B on its own pinned build. **The 20B target and original 5%-below-Brave target remain unmet.**

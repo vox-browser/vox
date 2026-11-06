@@ -1,0 +1,103 @@
+{
+  "started_unix": 1793936659.3713028,
+  "scope": "Latest completed canonical bundle pinned with a nonblocking shared publication lease across diagnostic and matched captures. No copied bundle or build queued. Per-capture input fingerprints also reject changes.",
+  "rows": [
+    {
+      "phase": "diagnostic",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-jit-tiers-production-20261106-r1/diagnostic/page.py"
+      ],
+      "exit": 0
+    },
+    {
+      "phase": "matched",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-jit-tiers-production-20261106-r1/matched/page.py"
+      ],
+      "exit": 0
+    },
+    {
+      "phase": "broad",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-jit-tiers-production-20261106-r1/broad.py"
+      ],
+      "exit": 0
+    }
+  ],
+  "status": "complete",
+  "production_before": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "065088847096502fc917a23c0d8231e9344e1edb7baa2bfbb2a38185fa99d97d",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-064023-04b2c7e1/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "f7aeb07974105e8e0bc2ef81ce0469446f452602c8128cd1952f60b03daff139",
+      "dirty": true,
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "repository_sha256": "017acb909793c3ac2a095ad1b40010e9572eb5027eb3d74cdf7e4d99efba3bed"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "2ef3259d583f5cf7cea81b2156994e73504fc2e4111f20bcf828819ba3c837d1",
+      "dirty": true,
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "repository_sha256": "b07a19b858b153da141a3bd688bd2435299fe80864678d914606751222e3517b"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "id": "7881e36c31fb48f2b7c8cb373eb0c38b",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f7aeb07974105e8e0bc2ef81ce0469446f452602c8128cd1952f60b03daff139",
+      "dirty": true,
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "repository_sha256": "017acb909793c3ac2a095ad1b40010e9572eb5027eb3d74cdf7e4d99efba3bed"
+    }
+  },
+  "observed_conservative_page_reduction": 346319842,
+  "finished_unix": 1793937130.154241,
+  "production_after": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "065088847096502fc917a23c0d8231e9344e1edb7baa2bfbb2a38185fa99d97d",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-064023-04b2c7e1/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "f7aeb07974105e8e0bc2ef81ce0469446f452602c8128cd1952f60b03daff139",
+      "dirty": true,
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "repository_sha256": "017acb909793c3ac2a095ad1b40010e9572eb5027eb3d74cdf7e4d99efba3bed"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "2ef3259d583f5cf7cea81b2156994e73504fc2e4111f20bcf828819ba3c837d1",
+      "dirty": true,
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "repository_sha256": "b07a19b858b153da141a3bd688bd2435299fe80864678d914606751222e3517b"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "id": "7881e36c31fb48f2b7c8cb373eb0c38b",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f7aeb07974105e8e0bc2ef81ce0469446f452602c8128cd1952f60b03daff139",
+      "dirty": true,
+      "head": "f8e61ca6fad67bec1ade5157b0869e67931b305a",
+      "repository_sha256": "017acb909793c3ac2a095ad1b40010e9572eb5027eb3d74cdf7e4d99efba3bed"
+    }
+  }
+}
