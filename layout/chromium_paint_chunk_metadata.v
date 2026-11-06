@@ -409,7 +409,8 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	mut scratch ChromiumRasterPlanScratch, mut plan ChromiumRasterLayerPlan) {
 	scratch.paint_visible_effects.clear()
 	for chunk in scratch.chunks {
-		if chunk.state.effect_scope == 0 || !chromium_paint_chunk_is_interested(chunk, cull) {
+		if chunk.state.effect_scope == 0 || (!chromium_paint_chunk_is_interested(chunk, cull)
+			&& !chromium_paint_chunk_has_pending_image(chunk, commands)) {
 			continue
 		}
 		mut scope := chunk.state.effect_scope
