@@ -1422,7 +1422,80 @@
       "sha256": "c912690c4a2d1a9b1144cb85dd08c607fcda223364d31ae6c0ef1810750744f5",
       "bytes": 44527,
       "verified_entries": 34
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-ink-rows-publication-pending-20261106-evidence.zip",
+      "sha256": "ee17ac6a688d060b4f2c609734bcc1cc0e96cf6058047db4a5d95d29026bdfff",
+      "bytes": 36456,
+      "verified_entries": 14
     }
   ],
-  "qualification": "Exact read-only ink bounds with one policy read per scan. Horizontal limits seal first, then a reverse row search determines the last painted row. No persistence/cache or pixel change. Final 20 focused jobs pass optimized/scalar/ASan+UBSan/protected memory/sparse ownership/parallel state; component setup/oracle excluded, calls/assertions included. Prototype controls polled policy per row; final controls read once. Both components and failures retained, no page attribution. Shared IOSurface link failure fixed and verified by actual bridge link. Latest completed production contains initial prototype, not final hoist; a newer canonical shared build is running. No duplicate manual build or app copy. Frozen SOCKS fixture/scripts/references remain unchanged and no browser validation or performance credit assigned to this slice yet."
+  "qualification": "Exact read-only ink bounds with one policy read per scan. Horizontal limits seal first, then a reverse row search determines the last painted row. No persistence/cache or pixel change. Final 20 focused jobs pass optimized/scalar/ASan+UBSan/protected memory/sparse ownership/parallel state; component setup/oracle excluded, calls/assertions included. Prototype controls polled policy per row; final controls read once. Both components and failures retained, no page attribution. Shared IOSurface link failure fixed and verified by actual bridge link. Latest completed production contains initial prototype, not final hoist; a newer canonical shared build is running. No duplicate manual build or app copy. Frozen SOCKS fixture/scripts/references remain unchanged and no browser validation or performance credit assigned to this slice yet.",
+  "production_build_completed": true,
+  "production_publication_pending": true,
+  "publication_observation": {
+    "unix": 1793941453.325005,
+    "publication_lock_busy": true,
+    "current_executable": "fe2d2e8e8f79669f9f63b519e849069936558d9d10777205211fc77c78c54396",
+    "latest_completed": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "fe2d2e8e8f79669f9f63b519e849069936558d9d10777205211fc77c78c54396",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-075531-0c7c1bb5/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "3105d663f2a83593dfbd2f2c1b6caf2e6b120d8b8d54acc6153dbc64438adb73",
+        "dirty": true,
+        "head": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+        "repository_sha256": "f8693dac02f8a7e9def9e5246a8572f2571f21dc2bba0e93ee2b455cfad3dc48"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "da0067a91e32505832dd188e39e4263c5c8273c13172447dc2275060cb96b914",
+        "dirty": true,
+        "head": "dcd2d0b539394da18773be37ae7c07cb5319b12e",
+        "repository_sha256": "73bea07ec11d02ba8f11207ccdeef4be27750c2e8e33815ac789572b85d11dfd"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+        "id": "0bbc59347db742fbad47b83d9f75ac23",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "3105d663f2a83593dfbd2f2c1b6caf2e6b120d8b8d54acc6153dbc64438adb73",
+        "dirty": true,
+        "head": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+        "repository_sha256": "5fc6160781ec70db4f68d795c3bb50c0ed18cdabcd1f3a261af88c24eea05f49"
+      }
+    },
+    "build_receipt": "Build/production-build/receipts/20261106-075935-783004f9",
+    "guard": {
+      "command": [
+        "sh",
+        "-c",
+        "exec sh -c \"$(cat)\" \"$0\"",
+        "/Users/alex/code/vox2/build-prod-browser.sh"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6112247808,
+      "elapsed_seconds": 196.14806074999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "has_final_sealed_policy": true,
+    "published": false,
+    "lock_observation": "COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF      NODE NAME\nPython  35244 alex    5w   REG   1,14        0 474456599 Build/production-build/bundle.lock\nPython  55516 alex    3w   REG   1,14        0 474456599 Build/production-build/bundle.lock\n"
+  },
+  "compiled_source_witness": {
+    "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-075935-783004f9/frozen-compiler-inputs/0-Vox.c.i",
+    "sha256": "8b9eda7426fe0d04b25f90d940c8075e2fd8da25a8148c7dda5171afb03a52c4",
+    "excerpt_sha256": "434a25515679e62f94e72a78d843d3701d44ce1bb58b3c8965caeaa27ac4de79"
+  }
 }
