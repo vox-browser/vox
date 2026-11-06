@@ -2499,3 +2499,80 @@ describes the exact defaults, CPU-clock unit correction, common renderer,
 failed attempts and measurement limits. The [full data](performance/vlang-literal-prod-compare-20261106.json)
 and [raw archive](performance/raw/vlang-literal-prod-compare-20261106.tar.gz)
 retain every trial and its input/publication timestamps.
+
+
+### Retained compositor tiles and GPU publication transport, November 6
+
+Smooth 60 fps remains open. Brave customizes Chromium; Chromium's compositor
+keeps active and pending layer trees, moves retained tiles for scrolling, and
+schedules raster work separately from composition. Its macOS layer tree updates
+existing CA layers and its IOSurface bridge waits for GPU work to be scheduled
+before another consumer accesses the surface. Sources: [Brave Core](https://raw.githubusercontent.com/brave/brave-core/master/README.md),
+[how cc works](https://chromium.googlesource.com/chromium/src/+/main/docs/how_cc_works.md),
+[CA layer tree](https://raw.githubusercontent.com/chromium/chromium/main/ui/accelerated_widget_mac/ca_renderer_layer_tree.mm),
+and [IOSurface synchronization](https://raw.githubusercontent.com/chromium/chromium/main/gpu/command_buffer/service/shared_image/iosurface_image_backing.mm).
+
+Vox's existing GPU canvas still returns CPU pixels before CPU fallback and at
+the end of document replay. Its bounded CPU viewport ring then supplies each
+fresh frame. `5fb29c0d6` adds experimental immutable 256-row IOSurface tiles:
+scrolling changes their placement, damage replaces affected tiles, existing
+CA layers are reused, and captures materialize a flat image lazily. The V GPU
+setting gates it; `VOX_SCROLL_TILE_COMPOSITOR=1` is also required. It stays off
+following the regressions below. This step still uses CPU raster results.
+
+Optimized, ASan/UBSan and non-ARC tests are exact through both host coordinate
+directions at 1×/2×, wrapping, reversal, fractional damage, source lifetime,
+allocation failure, capture and setting disablement. Existing frame-pool,
+capture, row-union and GPU-canvas checks pass. Expanded tests caught and fixed
+crop/host-coordinate mistakes before committing the feature. Live GPU leaf
+checks retain the unchanged maximum channel error three.
+
+All timing cohorts below alternate two unprofiled control/candidate pairs on
+one pinned literal `-prod`, single-C-unit executable per cohort. They retain
+600 precise native delta-8 inputs at nominal 120 Hz, 150-input reversals,
+1708×953 document pixels at 2×, 112px chrome, title readiness, ten seconds of
+settling, direct live HTTPS and fresh empty profiles/caches. Other sessions,
+OS caches and shader caches remain active; every host-load sample and input
+cadence is retained. Different cohorts have different build identities and
+cannot establish a matched cross-cohort gain. The clock cohort loads the same
+canonical-header bridge in both arms and changes only its candidate switch.
+
+| Candidate | Pair 1 publications/s | Pair 2 publications/s | Candidate p95 intervals, ms |
+|---|---:|---:|---:|
+| Draw directly into the frame IOSurface | 89.52→71.02 | 76.69→75.86 | 35.910 / 34.564 |
+| Same target, keeping its CPU map locked | 75.05→66.01 | 73.69→70.35 | 37.338 / 35.992 |
+| Submit at the existing readback boundary | 82.02→81.98 | 83.24→82.78 | 27.674 / 28.658 |
+| Pool CPU readback buffers | 92.06→76.07 | 74.38→85.68 | 29.940 / 25.505 |
+| Retained tiles, new CA tree each frame | 73.92→53.10 | 66.58→51.43 | 46.578 / 49.915 |
+| Retained tiles, reused CA tree | 69.34→61.49 | 67.91→64.00 | 41.717 / 36.187 |
+| Display clock with early invalidation | 65.44→51.61 | 68.53→44.42 | 52.135 / 63.321 |
+
+No option receives optimization credit. Direct frame targets, prepared-read,
+pooled-readback and display-clock prototypes were removed, with patches and
+failed attempts preserved. The display clock targeted the actual test screen's
+120 Hz rate. Its initial late-admission diagnostic waited an extra tick;
+early invalidation fixed that error but both unprofiled pairs still regressed.
+A separate QoS probe found an active browser already at interactive priority.
+
+`46cfeaa22` adds the next graphics boundary: GPU canvas damage can be copied
+into retained RGBA IOSurface tiles, cloning each prior tile on the GPU and
+keeping source/target leases until completion. Scheduling registers IOSurface
+kernel fences; capture can wait explicitly. The built dylib exports all three
+new entry points. Exact optimized/sanitized tests cover alpha, row padding,
+ring splits, queued writers, invalid/aliased regions, allocation decline and
+source references released before submission. The full existing GPU-canvas
+suite passes against that dylib. Browser integration is pending, so this API
+has no scrolling result. The first two lifetime fixtures blocked a shared event
+before `waitUntilScheduled` and hit the GPU watchdog; the corrected fixture
+checks leases before submission without blocking the GPU. Both failures remain.
+
+The [report](performance/vlang-compositor-foundation-20261106.json) and
+[verified raw archive](performance/raw/vlang-compositor-foundation-20261106.tar.gz)
+retain seven cohorts, all diagnostic/native checks, source patches, actual
+exits, native library artifacts, public cached responses, pinned build receipts
+and full input/publication timestamps. The archive has 6,291 logical files with
+content-identical payloads linked once. A receipt-name normalization error in
+the first collection attempt was corrected; its failure is retained. The
+[completed collection receipt](performance/vlang-compositor-foundation-20261106-collection.json)
+is separate from the archive. These are changed native publications after
+`updateLayer`, not physical display scanout.
