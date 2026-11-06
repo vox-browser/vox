@@ -4,6 +4,13 @@ import benchmark_hacker_news as benchmark
 
 
 class HackerNewsGGMeasurementTests(unittest.TestCase):
+    def test_renderer_variants_remain_distinct_when_gg_is_default(self):
+        self.assertEqual(benchmark.renderer_environment('skia'),{'VOX_USE_SKIA':'1'})
+        gg=benchmark.renderer_environment('gg')
+        self.assertEqual(gg['VOX_USE_SKIA'],'0')
+        self.assertTrue(all(gg[name]=='1' for name in ('VOX_GG_TEXT','VOX_GG_SHAPES','VOX_GG_PATHS')))
+        with self.assertRaises(ValueError):
+            benchmark.renderer_environment('unknown')
     def test_coverage_separates_startup_from_scrolling_and_declines(self):
         result = benchmark.coverage('''VOX_GG enabled text=true shapes=true paths=true
 VOX_GG text device_clip=1 drawn=1

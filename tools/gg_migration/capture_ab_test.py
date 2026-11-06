@@ -55,6 +55,31 @@ class CaptureValidationTest(unittest.TestCase):
         self.assertTrue(all(r['outcome'] == 'failed' for r in rows))
         self.assertIn('not registered', rows[0]['error'])
 
+    def test_control_and_candidate_explicitly_select_opposite_backends(self):
+        environments=[]
+        def capture(*args):
+            environments.append(dict(args[4]))
+            return self.capture(*args)
+        rows,summary=self.run_captures(capture)
+        self.assertTrue(all(row['outcome']=='equal' for row in rows))
+        self.assertEqual(environments[0],{'VOX_USE_SKIA':'1'})
+        self.assertEqual(environments[1]['VOX_USE_SKIA'],'0')
+        self.assertEqual(environments[1]['VOX_GG_TEXT'],'0')
+        self.assertEqual(environments[1]['VOX_GG_SHAPES'],'1')
+        self.assertEqual(environments[1]['VOX_GG_PATHS'],'0')
+        self.assertEqual(summary['control_env'],environments[0])
+
+    def test_no_adapter_switches_compare_the_full_gg_default(self):
+        self.args.candidate_env=[]
+        def capture(*args):
+            result=self.capture(*args)
+            if args[4].get('VOX_USE_SKIA')=='0':
+                args[3].write_text('VOX_GG enabled text=true shapes=true paths=true\n')
+            return result
+        rows,summary=self.run_captures(capture)
+        self.assertTrue(all(row['outcome']=='equal' for row in rows))
+        self.assertEqual(capture_ab.enabled_renderers(summary['candidate_env']),['text','shapes','paths'])
+
     def test_changed_native_library_invalidates_and_stops_cohort(self):
         def mutate(*args):
             result = self.capture(*args)

@@ -49,6 +49,8 @@ def input_identity(bundle, inputs, resources=()):
 
 
 def enabled_renderers(environment):
+    if environment.get('VOX_USE_SKIA') == '1':
+        return []
     return [name for name in ('text', 'shapes', 'paths')
             if environment.get('VOX_GG_' + name.upper()) == '1']
 
@@ -61,6 +63,7 @@ def registration_present(log, renderers):
 
 def capture(browser, html, png, log, extra_env, width, height, delay, timeout):
     env = {k: v for k, v in os.environ.items() if not k.startswith(('VOX_GG_', 'VOX_DISABLE_'))}
+    env.pop('VOX_USE_SKIA', None)
     env.update(extra_env)
     env['VOX_TEST_WINDOW'] = '1'
     env['LADYBIRD_SCREENSHOT_DELAY_SECONDS'] = str(delay)
@@ -194,6 +197,13 @@ def run_captures(args, ignore):
 def run_leased_captures(args, ignore):
     browser = args.bundle / 'Contents/MacOS/Vox'
     candidate = dict(item.split('=', 1) for item in args.candidate_env)
+    switches = ['VOX_GG_TEXT','VOX_GG_SHAPES','VOX_GG_PATHS']
+    # Preserve selective historical cohorts; with no selection, compare the
+    # complete GG default with explicit legacy Skia.
+    default = '0' if any(key in candidate for key in switches) else '1'
+    candidate = {**{key:default for key in switches}, **candidate}
+    candidate.setdefault('VOX_USE_SKIA', '0')
+    control = {'VOX_USE_SKIA':'1'}
     # Diagnostics prove the requested adapters were registered in this binary.
     renderers = enabled_renderers(candidate)
     if renderers:
@@ -227,7 +237,7 @@ def run_leased_captures(args, ignore):
         directory = args.output / html.stem
         directory.mkdir(exist_ok=True)
         row = {'fixture': html.stem}
-        for mode, env in (('control', {}), ('candidate', candidate)):
+        for mode, env in (('control', control), ('candidate', candidate)):
             if current_identity() != inputs_before:
                 inputs_unchanged = False
                 break
@@ -244,7 +254,7 @@ def run_leased_captures(args, ignore):
         if first is not None and not first['equal']:
             png = directory / 'control-repeat.png'
             row['control_repeat_exit'] = capture(browser, html, png, directory / 'control-repeat.log',
-                                                 {}, args.width, args.height, args.delay, args.timeout)
+                                                 control, args.width, args.height, args.delay, args.timeout)
             row['control_repeat_sha256'] = sha256(png)
         classify(row, directory, ignore)
         if renderers and not registration_present(directory / 'candidate.log', renderers):
@@ -252,7 +262,7 @@ def run_leased_captures(args, ignore):
         rows.append(row)
         # Preserve actual exits and partial progress if the guard stops the run.
         (args.output / 'summary.json').write_text(json.dumps({
-            'interim': True, 'results': rows, 'candidate_env': candidate,
+            'interim': True, 'results': rows, 'candidate_env': candidate, 'control_env': control,
             'bundle': str(args.bundle), 'input_identity': inputs_before,
             'executable_sha256_before': identity_before,
             'requested_fixtures': len(fixtures),
@@ -261,7 +271,7 @@ def run_leased_captures(args, ignore):
     summary = {
         'bundle': str(args.bundle), 'executable_sha256_before': identity_before,
         'executable_sha256_after': sha256(browser), 'candidate_env': candidate,
-        'input_identity': inputs_before,
+        'input_identity': inputs_before, 'control_env': control,
         'inputs_unchanged': inputs_unchanged and current_identity() == inputs_before,
         'requested_fixtures': len(fixtures),
     }

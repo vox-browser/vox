@@ -14,6 +14,7 @@ set -eu
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
+#   VOX_USE_SKIA=1             build the explicit legacy renderer (default: GG adapters)
 #   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
 #   LADYBIRD_V_GC            default: prealloc on macOS, boehm on Linux
 #                            Linux accepts boehm, boehm_full, or none
@@ -68,7 +69,7 @@ esac
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v3 ]; then
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v4 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
@@ -106,6 +107,14 @@ if [ ! -x "$v_compiler" ]; then
     echo "V compiler not found. Set V_BIN to an executable V compiler." >&2
     exit 1
 fi
+
+# GG is the production default. Keep the shared parallel compiler intact while
+# older installations can use the existing GG-capable compiler. An explicit
+# V_BIN is authoritative: fail if it cannot compile the requested renderer.
+explicit_v_flag=
+if [ -n "${V_BIN:-}" ]; then explicit_v_flag=--explicit; fi
+v_compiler=$(python3 "$repo_dir/tools/renderer_build.py" "$v_compiler" \
+    --skia "${VOX_USE_SKIA:-0}" $explicit_v_flag --fallback "$HOME/code/v-gg/v")
 
 # The browser owns temporary and retained allocations through scoped arenas.
 # Keep the default on that ownership path; collector modes are explicit
@@ -278,10 +287,11 @@ fi
 # module initializers. Validate the resulting executable in a fresh process.
 set -- -b c -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
-# gg.canvas is being developed upstream. Keep ordinary V builds independent
-# of that optional module; a compiler containing it enables the opt-in adapters.
-has_gg_canvas=$(python3 "$repo_dir/tools/gg_canvas_build.py" "$v_compiler")
-if [ "$has_gg_canvas" = 1 ]; then
+# Verify the staged compiler's actual library too. Legacy builds are explicit;
+# unsupported default compilers must not silently produce a Skia-default app.
+python3 "$repo_dir/tools/renderer_build.py" "$v_compiler" --explicit \
+    --skia "${VOX_USE_SKIA:-0}" --receipt "$VOX_BUILD_RECEIPT_DIR/renderer.json" >/dev/null
+if [ "${VOX_USE_SKIA:-0}" != 1 ]; then
     set -- "$@" -d vox_gg_canvas
 fi
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then

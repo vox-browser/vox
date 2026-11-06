@@ -31,6 +31,15 @@ from process_instruction_counts import MacCounters
 
 ROOT = TOOLS.parent
 GG = dict(VOX_GG_TEXT='1', VOX_GG_SHAPES='1', VOX_GG_PATHS='1')
+
+
+def renderer_environment(variant):
+    if variant == 'skia':
+        return {'VOX_USE_SKIA':'1'}
+    if variant == 'gg':
+        return dict(GG, VOX_USE_SKIA='0')
+    raise ValueError('Unknown renderer variant: ' + variant)
+
 LOAD_SCOPE = ('Main browser process, all threads, process creation through the native encoded '
               'document PNG checkpoint; startup/window setup, page scripting/layout/paint and PNG '
               'encoding included. Filter helpers, GPU work and external services excluded. '
@@ -140,7 +149,7 @@ def main():
             profile.mkdir(); cache.mkdir()
             png, audit = directory/'document.png', directory/'audit.json'
             environment = clean_environment()
-            environment.update(GG if label == 'gg' else {})
+            environment.update(renderer_environment(label))
             environment.update(VOX_MEASURE_NATIVE_SUBMISSION='1', VOX_PROFILE_INSTRUCTIONS='1',
                 VOX_TEST_WINDOW='1', VOX_PROFILE_DIR=str(profile), LADYBIRD_CACHE_DIR=str(cache),
                 MallocSpaceEfficient='1', VOX_COOKIE_FILE='', LADYBIRD_SCREENSHOT_SCALE='2',
@@ -213,7 +222,7 @@ def main():
                 '--inputs', str(args.inputs), '--delta', '3', '--reverse-every', str(args.reverse_every),
                 '--input-hz', '60', '--settle-seconds', '4', '--require-title', 'Hacker News',
                 '--script-policy', 'enabled']
-            env = dict(GG) if label == 'gg' else {}
+            env = renderer_environment(label)
             env['VOX_PRECISE_FINAL_CAPTURE'] = str(output/folder/'final.png')
             if diagnostic:
                 env['VOX_GG_DIAGNOSTICS'] = '1'

@@ -20,8 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
 # Keep the memory guard's default aggregate RSS budget.
 PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
-BUILD_PROTOCOL = 'bundle-lease-v3'
-WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v3.lock'
+BUILD_PROTOCOL = 'bundle-lease-v4'
+WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v4.lock'
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
@@ -90,15 +90,20 @@ def pending_c_mode(state):
     return 'parallel'
 
 
-def enqueue(root, background=True, c_mode=None, v_prod=None):
+def enqueue(root, background=True, c_mode=None, v_prod=None, renderer=None):
     validate_repository(root)
     state = root / 'Build/production-build'
     with lock(state / 'queue.lock'):
         prior = read_json(state / 'request.json') or {}
         prod = bool(prior.get('v_prod')) if v_prod is None else v_prod
+        started = read_json(state / 'started.json') or {}
+        if renderer is None:
+            renderer = prior.get('renderer', 'gg') if prior.get('id') != started.get('id') else 'gg'
+        if renderer not in {'gg','skia'}:
+            raise ValueError('Unknown renderer: ' + str(renderer))
         write_json(state / 'request.json', dict(id=uuid.uuid4().hex,
                    head=git(root, 'rev-parse', 'HEAD').decode().strip(),
-                   c_mode=c_mode or pending_c_mode(state), v_prod=prod))
+                   c_mode=c_mode or pending_c_mode(state), v_prod=prod, renderer=renderer))
         if background:
             with (state / 'worker.log').open('ab') as log:
                 subprocess.Popen([sys.executable, str(root / 'tools/rebuild_browser.py'), '--worker'],
@@ -246,11 +251,15 @@ def build_pending(root, runner=run_build, foreground=False):
                 environment = os.environ.copy()
                 environment['VOX_BUILD_C_MODE'] = request.get('c_mode') or 'parallel'
                 environment['VOX_BUILD_V_PROD'] = '1' if request.get('v_prod') else '0'
+                environment['VOX_USE_SKIA'] = '1' if request.get('renderer') == 'skia' else '0'
                 code = runner(root, stage, receipt, environment)
                 record = dict(request=request, inputs=before, exit=code)
                 c_compile = read_json(receipt / 'c-compile.json')
                 if c_compile is not None:
                     record['c_compile'] = c_compile
+                renderer = read_json(receipt / 'renderer.json')
+                if renderer is not None:
+                    record['renderer'] = renderer
                 if code:
                     write_json(receipt / 'result.json', record)
                     print('Production build failed; previous bundle retained. See ' + str(receipt), flush=True)
@@ -295,7 +304,8 @@ def build_pending(root, runner=run_build, foreground=False):
             # the final request check and unlock cannot lose its wake-up.
             with lock(state / 'queue.lock'):
                 latest = json.loads((state / 'request.json').read_text())
-                if latest['id'] == request['id'] or same_build_inputs(repository_state(root), record['verified_inputs']):
+                same_renderer = latest.get('renderer','gg') == request.get('renderer','gg')
+                if latest['id'] == request['id'] or (same_renderer and same_build_inputs(repository_state(root), record['verified_inputs'])):
                     fcntl.flock(build_lock, fcntl.LOCK_UN)
                     print('Published canonical production browser: ' + before['head'], flush=True)
                     return 0
@@ -377,9 +387,12 @@ def main():
     if args.worker_after_current:
         return worker_after_current(ROOT)
     if args.build:
+        legacy = os.environ.get('VOX_USE_SKIA','0')
+        if legacy not in {'0','1'}:
+            parser.error('VOX_USE_SKIA must be 0 or 1')
         enqueue(ROOT, background=False, c_mode='parallel' if args.parallel_cc else
                 'single' if args.no_parallel_cc or args.prod else 'parallel',
-                v_prod=args.prod)
+                v_prod=args.prod, renderer='skia' if legacy == '1' else 'gg')
     return build_pending(ROOT, foreground=args.build)
 
 

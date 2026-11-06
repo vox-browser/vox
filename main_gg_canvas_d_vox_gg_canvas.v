@@ -7,28 +7,29 @@ $if !macos {
 import ggshape
 import ggtext
 import os
+import renderbackend
 
 fn C.native_set_gg_glyph_run(run voidptr)
 fn C.native_set_gg_shape_draw(draw voidptr)
 fn C.native_set_gg_path_draw(draw voidptr)
 fn C.native_set_gg_svg_image_draw(draw voidptr)
 
-// install_gg_canvas_renderers lets gg.canvas draw the bridge's CPU glyph runs
-// (VOX_GG_TEXT=1), its Graphite shape descriptors (VOX_GG_SHAPES=1) and its
-// Graphite path and SVG image descriptors (VOX_GG_PATHS=1).
-// Anything gg.canvas cannot reproduce exactly falls back to Skia.
+// GG draws supported text, shapes and paths by default. VOX_USE_SKIA=1 selects
+// the legacy renderer. Skia still prepares these descriptors and handles the
+// unsupported and unmigrated draws; this is not a Skia-free renderer yet.
 fn install_gg_canvas_renderers() {
-	if os.getenv('VOX_GG_TEXT') == '1' {
+	selected := renderbackend.from_environment()
+	if selected.text {
 		C.native_set_gg_glyph_run(voidptr(ggtext.glyph_run))
 	}
-	if os.getenv('VOX_GG_SHAPES') == '1' {
+	if selected.shapes {
 		C.native_set_gg_shape_draw(voidptr(ggshape.draw))
 	}
-	if os.getenv('VOX_GG_PATHS') == '1' {
+	if selected.paths {
 		C.native_set_gg_path_draw(voidptr(ggshape.draw_path))
 		C.native_set_gg_svg_image_draw(voidptr(ggshape.draw_svg_image))
 	}
 	if os.getenv('VOX_GG_DIAGNOSTICS') == '1' {
-		eprintln('VOX_GG enabled text=${os.getenv('VOX_GG_TEXT') == '1'} shapes=${os.getenv('VOX_GG_SHAPES') == '1'} paths=${os.getenv('VOX_GG_PATHS') == '1'}')
+		eprintln('VOX_GG enabled text=${selected.text} shapes=${selected.shapes} paths=${selected.paths}')
 	}
 }

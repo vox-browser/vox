@@ -13,6 +13,39 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    def test_explicit_pending_legacy_request_survives_automatic_requests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);state=root/'Build/production-build'
+            with patch.object(build,'validate_repository'), patch.object(build,'git',return_value=b'head'):
+                build.enqueue(root,background=False,renderer='skia')
+                build.enqueue(root,background=False)
+                pending=json.loads((state/'request.json').read_text())
+                self.assertEqual(pending['renderer'],'skia')
+                build.write_json(state/'started.json',dict(id=pending['id']))
+                build.enqueue(root,background=False)
+                self.assertEqual(json.loads((state/'request.json').read_text())['renderer'],'gg')
+
+    @unittest.skipUnless(sys.platform=='darwin','macOS application-directory publication')
+    def test_renderer_change_is_not_lost_when_source_inputs_are_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);self.app(root/'Build/v',b'old')
+            state=root/'Build/production-build'
+            build.write_json(state/'request.json',dict(id='one',renderer='gg'))
+            modes=[]
+            def compile(repo,stage,receipt,environment):
+                mode=environment['VOX_USE_SKIA'];modes.append(mode)
+                self.app(stage,mode.encode())
+                build.write_json(receipt/'renderer.json',dict(default='skia' if mode=='1' else 'gg',skia_free=False))
+                if len(modes)==1:
+                    build.write_json(state/'request.json',dict(id='two',renderer='skia'))
+                return 0
+            with patch.object(build,'validate_repository'), patch.object(build,'repository_state',return_value=dict(head='same')):
+                self.assertEqual(build.build_pending(root,compile),0)
+            self.assertEqual(modes,['0','1'])
+            result=json.loads((state/'latest.json').read_text())
+            self.assertEqual(result['renderer']['default'],'skia')
+            self.assertFalse(result['renderer']['skia_free'])
+
     def test_literal_prod_request_survives_automatic_requests_and_can_be_reset(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); state=root/'Build/production-build'
