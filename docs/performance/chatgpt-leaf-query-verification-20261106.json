@@ -1,0 +1,2121 @@
+{
+  "complete": true,
+  "implementation_commit": "d5e07fd873b22faf42e40bc12910bb919a32c0c4",
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/independent_dom_query.v": "e62d133078da7758a62edee3c067f222297e583435858bc7c88680d6dc6ac6ad",
+      "css/dom_query.v": "58299552cbf5266fdf7185d6bad29d436225368820f5296715c72600f9b6baf6",
+      "css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "dom/node.v": "b40e70a76f65228664856591a079dc029b233f6dbb821433955804a071fdeeef",
+      "dom/document.v": "48345b3bef275aa92119984da1d5d1b44adb2414edd323907e9b45b567df0292",
+      "dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+      "dom/shadow_mutation_misc.v": "45e23b57c215f3f5606fedcb5e809f30935b9cc39a5823f9052315dc588e17d2",
+      "css/leaf_query_walk_test.v": "6021411bce65430cf19f4595d8b44f4f10612f40e85126875820824f796810fa",
+      "css/independent_dom_query_test.v": "ba4bd38036d694907424590d777193ed588d64b868e9bfc040fd23de426205cb",
+      "css/independent_dom_query_storage_test.v": "d27ef8aeb3ce1a3f9dfc8a6486b92ead9ec526a1790a9d725bdde1e5a458e94f",
+      "css/independent_dom_entrypoint_test.v": "199c2ea4134ef5bd1b1b4a16e42b8949b3be1fa57c17499fc2fb4b8ffe248406",
+      "css/document_tag_absence_query_test.v": "8a47d1c29deaf275624750c9ce67752c6eb6c0d2b95c79bae5853101a0cb25b9",
+      "css/document_class_absence_query_test.v": "546c9cb0be0d7926cd8ba1756ec3b02f1a97dbc74df288430847aaa5cb3cef8d",
+      "css/document_tag_attribute_absence_query_test.v": "030eca8ed8d10a3594e33d05d1ce6023eb9c2743233f52098478c90da28e068d",
+      "css/document_query_parse_cache_test.v": "477912d8ebb96dd80dee3eda75c3b780215ac0a2fe002afc99f139f3564cf66a",
+      "css/dom_query_installation_test.v": "e932f69ffe9e0fe3a4e62d7f0c4bea277ed5ea4b543916c3bc83d00e756890a3",
+      "css/dom_query_test.v": "3d8664f93c83ba4e9703274802094d7c890c45b4978d7d3c113baa8cf2253346"
+    },
+    "source_after": {
+      "css/independent_dom_query.v": "e62d133078da7758a62edee3c067f222297e583435858bc7c88680d6dc6ac6ad",
+      "css/dom_query.v": "58299552cbf5266fdf7185d6bad29d436225368820f5296715c72600f9b6baf6",
+      "css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "dom/node.v": "b40e70a76f65228664856591a079dc029b233f6dbb821433955804a071fdeeef",
+      "dom/document.v": "48345b3bef275aa92119984da1d5d1b44adb2414edd323907e9b45b567df0292",
+      "dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+      "dom/shadow_mutation_misc.v": "45e23b57c215f3f5606fedcb5e809f30935b9cc39a5823f9052315dc588e17d2",
+      "css/leaf_query_walk_test.v": "6021411bce65430cf19f4595d8b44f4f10612f40e85126875820824f796810fa",
+      "css/independent_dom_query_test.v": "ba4bd38036d694907424590d777193ed588d64b868e9bfc040fd23de426205cb",
+      "css/independent_dom_query_storage_test.v": "d27ef8aeb3ce1a3f9dfc8a6486b92ead9ec526a1790a9d725bdde1e5a458e94f",
+      "css/independent_dom_entrypoint_test.v": "199c2ea4134ef5bd1b1b4a16e42b8949b3be1fa57c17499fc2fb4b8ffe248406",
+      "css/document_tag_absence_query_test.v": "8a47d1c29deaf275624750c9ce67752c6eb6c0d2b95c79bae5853101a0cb25b9",
+      "css/document_class_absence_query_test.v": "546c9cb0be0d7926cd8ba1756ec3b02f1a97dbc74df288430847aaa5cb3cef8d",
+      "css/document_tag_attribute_absence_query_test.v": "030eca8ed8d10a3594e33d05d1ce6023eb9c2743233f52098478c90da28e068d",
+      "css/document_query_parse_cache_test.v": "477912d8ebb96dd80dee3eda75c3b780215ac0a2fe002afc99f139f3564cf66a",
+      "css/dom_query_installation_test.v": "e932f69ffe9e0fe3a4e62d7f0c4bea277ed5ea4b543916c3bc83d00e756890a3",
+      "css/dom_query_test.v": "3d8664f93c83ba4e9703274802094d7c890c45b4978d7d3c113baa8cf2253346"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-native-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/independent_dom_query_test.v,/Users/alex/code/vox2/css/independent_dom_query_storage_test.v,/Users/alex/code/vox2/css/independent_dom_entrypoint_test.v,/Users/alex/code/vox2/css/document_tag_absence_query_test.v,/Users/alex/code/vox2/css/document_class_absence_query_test.v,/Users/alex/code/vox2/css/document_tag_attribute_absence_query_test.v,/Users/alex/code/vox2/css/document_query_parse_cache_test.v,/Users/alex/code/vox2/css/dom_query_installation_test.v,/Users/alex/code/vox2/css/dom_query_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-prealloc",
+          "/Users/alex/code/vox2/css/leaf_query_walk_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793948163.313925,
+          "cpu_count": 18,
+          "load": [
+            18.806640625,
+            26.22119140625,
+            26.65234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948175.1281788,
+          "load": [
+            16.13427734375,
+            25.26318359375,
+            26.30224609375
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948175.1575098,
+          "cpu_count": 18,
+          "load": [
+            16.13427734375,
+            25.26318359375,
+            26.30224609375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948176.339628,
+          "load": [
+            16.13427734375,
+            25.26318359375,
+            26.30224609375
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948176.354371,
+          "cpu_count": 18,
+          "load": [
+            16.13427734375,
+            25.26318359375,
+            26.30224609375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948177.0795279,
+          "load": [
+            16.13427734375,
+            25.26318359375,
+            26.30224609375
+          ]
+        }
+      },
+      {
+        "label": "compile-native-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/css/independent_dom_query_test.v,/Users/alex/code/vox2/css/independent_dom_query_storage_test.v,/Users/alex/code/vox2/css/independent_dom_entrypoint_test.v,/Users/alex/code/vox2/css/document_tag_absence_query_test.v,/Users/alex/code/vox2/css/document_class_absence_query_test.v,/Users/alex/code/vox2/css/document_tag_attribute_absence_query_test.v,/Users/alex/code/vox2/css/document_query_parse_cache_test.v,/Users/alex/code/vox2/css/dom_query_installation_test.v,/Users/alex/code/vox2/css/dom_query_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-default",
+          "/Users/alex/code/vox2/css/leaf_query_walk_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793948177.096073,
+          "cpu_count": 18,
+          "load": [
+            16.13427734375,
+            25.26318359375,
+            26.30224609375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948188.2475252,
+          "load": [
+            14.662109375,
+            24.6455078125,
+            26.0703125
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948188.259431,
+          "cpu_count": 18,
+          "load": [
+            14.662109375,
+            24.6455078125,
+            26.0703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948188.745954,
+          "load": [
+            14.28857421875,
+            24.40234375,
+            25.97607421875
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948188.75559,
+          "cpu_count": 18,
+          "load": [
+            14.28857421875,
+            24.40234375,
+            25.97607421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948188.982003,
+          "load": [
+            14.28857421875,
+            24.40234375,
+            25.97607421875
+          ]
+        }
+      },
+      {
+        "label": "compile-native-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/independent_dom_query_test.v,/Users/alex/code/vox2/css/independent_dom_query_storage_test.v,/Users/alex/code/vox2/css/independent_dom_entrypoint_test.v,/Users/alex/code/vox2/css/document_tag_absence_query_test.v,/Users/alex/code/vox2/css/document_class_absence_query_test.v,/Users/alex/code/vox2/css/document_tag_attribute_absence_query_test.v,/Users/alex/code/vox2/css/document_query_parse_cache_test.v,/Users/alex/code/vox2/css/dom_query_installation_test.v,/Users/alex/code/vox2/css/dom_query_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-none",
+          "/Users/alex/code/vox2/css/leaf_query_walk_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793948188.992091,
+          "cpu_count": 18,
+          "load": [
+            14.28857421875,
+            24.40234375,
+            25.97607421875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948197.233835,
+          "load": [
+            14.34521484375,
+            24.24609375,
+            25.91162109375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948197.245769,
+          "cpu_count": 18,
+          "load": [
+            14.34521484375,
+            24.24609375,
+            25.91162109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948197.737016,
+          "load": [
+            14.34521484375,
+            24.24609375,
+            25.91162109375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948197.747176,
+          "cpu_count": 18,
+          "load": [
+            14.34521484375,
+            24.24609375,
+            25.91162109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948197.975701,
+          "load": [
+            14.34521484375,
+            24.24609375,
+            25.91162109375
+          ]
+        }
+      },
+      {
+        "label": "compile-native-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/compile-native-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/independent_dom_query_test.v,/Users/alex/code/vox2/css/independent_dom_query_storage_test.v,/Users/alex/code/vox2/css/independent_dom_entrypoint_test.v,/Users/alex/code/vox2/css/document_tag_absence_query_test.v,/Users/alex/code/vox2/css/document_class_absence_query_test.v,/Users/alex/code/vox2/css/document_tag_attribute_absence_query_test.v,/Users/alex/code/vox2/css/document_query_parse_cache_test.v,/Users/alex/code/vox2/css/dom_query_installation_test.v,/Users/alex/code/vox2/css/dom_query_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-sanitized",
+          "/Users/alex/code/vox2/css/leaf_query_walk_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793948197.9860852,
+          "cpu_count": 18,
+          "load": [
+            14.34521484375,
+            24.24609375,
+            25.91162109375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948214.95766,
+          "load": [
+            12.86474609375,
+            23.28515625,
+            25.52880859375
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948214.9865558,
+          "cpu_count": 18,
+          "load": [
+            12.86474609375,
+            23.28515625,
+            25.52880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948216.2786539,
+          "load": [
+            12.86474609375,
+            23.28515625,
+            25.52880859375
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/run-native-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-20261106-r2/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1",
+          "VOX_LEAF_QUERY_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948216.2890592,
+          "cpu_count": 18,
+          "load": [
+            12.86474609375,
+            23.28515625,
+            25.52880859375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948217.059181,
+          "load": [
+            12.86474609375,
+            23.28515625,
+            25.52880859375
+          ]
+        }
+      }
+    ]
+  },
+  "focused_jobs": 12,
+  "focused_test_functions": 33,
+  "focused_function_executions": 264,
+  "component_checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/independent_dom_query.v": "e62d133078da7758a62edee3c067f222297e583435858bc7c88680d6dc6ac6ad",
+      "css/dom_query.v": "58299552cbf5266fdf7185d6bad29d436225368820f5296715c72600f9b6baf6",
+      "css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "dom/node.v": "b40e70a76f65228664856591a079dc029b233f6dbb821433955804a071fdeeef",
+      "dom/document.v": "48345b3bef275aa92119984da1d5d1b44adb2414edd323907e9b45b567df0292",
+      "dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+      "dom/shadow_mutation_misc.v": "45e23b57c215f3f5606fedcb5e809f30935b9cc39a5823f9052315dc588e17d2",
+      "css/leaf_query_walk_test.v": "6021411bce65430cf19f4595d8b44f4f10612f40e85126875820824f796810fa",
+      "css/independent_dom_query_test.v": "ba4bd38036d694907424590d777193ed588d64b868e9bfc040fd23de426205cb",
+      "css/independent_dom_query_storage_test.v": "d27ef8aeb3ce1a3f9dfc8a6486b92ead9ec526a1790a9d725bdde1e5a458e94f",
+      "css/independent_dom_entrypoint_test.v": "199c2ea4134ef5bd1b1b4a16e42b8949b3be1fa57c17499fc2fb4b8ffe248406",
+      "css/document_tag_absence_query_test.v": "8a47d1c29deaf275624750c9ce67752c6eb6c0d2b95c79bae5853101a0cb25b9",
+      "css/document_class_absence_query_test.v": "546c9cb0be0d7926cd8ba1756ec3b02f1a97dbc74df288430847aaa5cb3cef8d",
+      "css/document_tag_attribute_absence_query_test.v": "030eca8ed8d10a3594e33d05d1ce6023eb9c2743233f52098478c90da28e068d",
+      "css/document_query_parse_cache_test.v": "477912d8ebb96dd80dee3eda75c3b780215ac0a2fe002afc99f139f3564cf66a",
+      "css/dom_query_installation_test.v": "e932f69ffe9e0fe3a4e62d7f0c4bea277ed5ea4b543916c3bc83d00e756890a3",
+      "css/dom_query_test.v": "3d8664f93c83ba4e9703274802094d7c890c45b4978d7d3c113baa8cf2253346",
+      "Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc": "5ef9cdee47f40e748598bb89cb1eca370e2e251a314c667d6803c9d3d191275d",
+      "Build/chatgpt-leaf-query-component-20261106-r1/driver_test.v": "5421b4e8699404936257a105681a4c04e3824d58f2b7db87f2cb732ed8e30691",
+      "Build/chatgpt-leaf-query-component-20261106-r1/checks.py": "eaba04992f83e61ce8e4e0e990b3dc97d94b18af8859fdcdf27072eabbebe69a",
+      "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/manifest.json": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808": "446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808"
+    },
+    "source_after": {
+      "css/independent_dom_query.v": "e62d133078da7758a62edee3c067f222297e583435858bc7c88680d6dc6ac6ad",
+      "css/dom_query.v": "58299552cbf5266fdf7185d6bad29d436225368820f5296715c72600f9b6baf6",
+      "css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "dom/node.v": "b40e70a76f65228664856591a079dc029b233f6dbb821433955804a071fdeeef",
+      "dom/document.v": "48345b3bef275aa92119984da1d5d1b44adb2414edd323907e9b45b567df0292",
+      "dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+      "dom/shadow_mutation_misc.v": "45e23b57c215f3f5606fedcb5e809f30935b9cc39a5823f9052315dc588e17d2",
+      "css/leaf_query_walk_test.v": "6021411bce65430cf19f4595d8b44f4f10612f40e85126875820824f796810fa",
+      "css/independent_dom_query_test.v": "ba4bd38036d694907424590d777193ed588d64b868e9bfc040fd23de426205cb",
+      "css/independent_dom_query_storage_test.v": "d27ef8aeb3ce1a3f9dfc8a6486b92ead9ec526a1790a9d725bdde1e5a458e94f",
+      "css/independent_dom_entrypoint_test.v": "199c2ea4134ef5bd1b1b4a16e42b8949b3be1fa57c17499fc2fb4b8ffe248406",
+      "css/document_tag_absence_query_test.v": "8a47d1c29deaf275624750c9ce67752c6eb6c0d2b95c79bae5853101a0cb25b9",
+      "css/document_class_absence_query_test.v": "546c9cb0be0d7926cd8ba1756ec3b02f1a97dbc74df288430847aaa5cb3cef8d",
+      "css/document_tag_attribute_absence_query_test.v": "030eca8ed8d10a3594e33d05d1ce6023eb9c2743233f52098478c90da28e068d",
+      "css/document_query_parse_cache_test.v": "477912d8ebb96dd80dee3eda75c3b780215ac0a2fe002afc99f139f3564cf66a",
+      "css/dom_query_installation_test.v": "e932f69ffe9e0fe3a4e62d7f0c4bea277ed5ea4b543916c3bc83d00e756890a3",
+      "css/dom_query_test.v": "3d8664f93c83ba4e9703274802094d7c890c45b4978d7d3c113baa8cf2253346",
+      "Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc": "5ef9cdee47f40e748598bb89cb1eca370e2e251a314c667d6803c9d3d191275d",
+      "Build/chatgpt-leaf-query-component-20261106-r1/driver_test.v": "5421b4e8699404936257a105681a4c04e3824d58f2b7db87f2cb732ed8e30691",
+      "Build/chatgpt-leaf-query-component-20261106-r1/checks.py": "eaba04992f83e61ce8e4e0e990b3dc97d94b18af8859fdcdf27072eabbebe69a",
+      "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/manifest.json": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+      "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808": "446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-component-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/compile-component-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/compile-component-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prod",
+          "-cflags",
+          "-O2",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/driver_test.v",
+          "-run-only",
+          "test_leaf_query_component",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc",
+          "/Users/alex/code/vox2/css/independent_dom_query_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793948232.426653,
+          "cpu_count": 18,
+          "load": [
+            11.55224609375,
+            22.486328125,
+            25.2041015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948298.866196,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-0-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-0-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948298.970769,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948299.662035,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-1-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-1-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948299.700597,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948299.9085069,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-2-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-2-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948299.947753,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948300.158069,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-3-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-3-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948300.19769,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948300.400624,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-4-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-4-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-4-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948300.439859,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948300.6418471,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-5-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-5-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-5-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948300.6813319,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948300.903578,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-6-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-6-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-6-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948300.947119,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948301.194172,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      },
+      {
+        "label": "sample-7-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-7-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/sample-7-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-leaf-query-component-20261106-r1/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_LEAF_QUERY_RECURSION": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793948301.236266,
+          "cpu_count": 18,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793948301.4657652,
+          "load": [
+            10.642578125,
+            19.95654296875,
+            24.03173828125
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "captured-buttons/button/first": {
+      "case": "captured-buttons",
+      "selector": "button",
+      "first": true,
+      "control": [
+        19642227,
+        19642252,
+        19518227,
+        19664332
+      ],
+      "candidate": [
+        15932652,
+        15932684,
+        16056635,
+        16056601
+      ],
+      "checksums": [
+        400
+      ],
+      "calls": 400,
+      "matches": 48,
+      "control_median": 19642239.5,
+      "candidate_median": 15994642.5,
+      "reduction_percent": 18.570168640902686,
+      "conservative_separation": 3461592
+    },
+    "captured-buttons/button/all": {
+      "case": "captured-buttons",
+      "selector": "button",
+      "first": false,
+      "control": [
+        95292182,
+        95276078,
+        95336325,
+        95746889
+      ],
+      "candidate": [
+        74974932,
+        75185431,
+        75757670,
+        75801760
+      ],
+      "checksums": [
+        19200
+      ],
+      "calls": 400,
+      "matches": 48,
+      "control_median": 95314253.5,
+      "candidate_median": 75471550.5,
+      "reduction_percent": 20.818190639241585,
+      "conservative_separation": 19474318
+    },
+    "captured-attributes/[aria-label]/first": {
+      "case": "captured-attributes",
+      "selector": "[aria-label]",
+      "first": true,
+      "control": [
+        43131686,
+        43120976,
+        42996976,
+        43160779
+      ],
+      "candidate": [
+        39549595,
+        39411375,
+        39535401,
+        39535426
+      ],
+      "checksums": [
+        400
+      ],
+      "calls": 400,
+      "matches": 51,
+      "control_median": 43126331.0,
+      "candidate_median": 39535413.5,
+      "reduction_percent": 8.326508229972074,
+      "conservative_separation": 3447381
+    },
+    "captured-attributes/[aria-label]/all": {
+      "case": "captured-attributes",
+      "selector": "[aria-label]",
+      "first": false,
+      "control": [
+        190246345,
+        190239913,
+        190176194,
+        191229888
+      ],
+      "candidate": [
+        169951624,
+        170004909,
+        170104190,
+        170104404
+      ],
+      "checksums": [
+        20400
+      ],
+      "calls": 400,
+      "matches": 51,
+      "control_median": 190243129.0,
+      "candidate_median": 170054549.5,
+      "reduction_percent": 10.611988777791815,
+      "conservative_separation": 20071790
+    },
+    "captured-missing-attribute/[data-leaf-probe-absent]/first": {
+      "case": "captured-missing-attribute",
+      "selector": "[data-leaf-probe-absent]",
+      "first": true,
+      "control": [
+        208355323,
+        208551754,
+        208236172,
+        208487014
+      ],
+      "candidate": [
+        184284551,
+        184269776,
+        184653983,
+        184447621
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 208421168.5,
+      "candidate_median": 184366086.0,
+      "reduction_percent": 11.541573571016617,
+      "conservative_separation": 23582189
+    },
+    "captured-missing-attribute/[data-leaf-probe-absent]/all": {
+      "case": "captured-missing-attribute",
+      "selector": "[data-leaf-probe-absent]",
+      "first": false,
+      "control": [
+        205230904,
+        205216206,
+        205104798,
+        206076827
+      ],
+      "candidate": [
+        184975157,
+        185000044,
+        185068610,
+        185099938
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 205223555.0,
+      "candidate_median": 185034327.0,
+      "reduction_percent": 9.837675797010725,
+      "conservative_separation": 20004860
+    },
+    "captured-last-editor/#mobile-composer-prompt/first": {
+      "case": "captured-last-editor",
+      "selector": "#mobile-composer-prompt",
+      "first": true,
+      "control": [
+        51122427,
+        51118976,
+        51119026,
+        51176764
+      ],
+      "candidate": [
+        36991870,
+        36934525,
+        36930486,
+        36958554
+      ],
+      "checksums": [
+        400
+      ],
+      "calls": 400,
+      "matches": 1,
+      "control_median": 51120726.5,
+      "candidate_median": 36946539.5,
+      "reduction_percent": 27.726888818765126,
+      "conservative_separation": 14127106
+    },
+    "captured-last-editor/#mobile-composer-prompt/all": {
+      "case": "captured-last-editor",
+      "selector": "#mobile-composer-prompt",
+      "first": false,
+      "control": [
+        84190497,
+        84187048,
+        84207496,
+        84199736
+      ],
+      "candidate": [
+        64019853,
+        64013535,
+        64029219,
+        64054793
+      ],
+      "checksums": [
+        400
+      ],
+      "calls": 400,
+      "matches": 1,
+      "control_median": 84195116.5,
+      "candidate_median": 64024536.0,
+      "reduction_percent": 23.956948263145406,
+      "conservative_separation": 20132255
+    },
+    "captured-group/span, button/first": {
+      "case": "captured-group",
+      "selector": "span, button",
+      "first": true,
+      "control": [
+        29134576,
+        29149928,
+        29134601,
+        29808151
+      ],
+      "candidate": [
+        25580176,
+        25580176,
+        25580226,
+        25580176
+      ],
+      "checksums": [
+        400
+      ],
+      "calls": 400,
+      "matches": 190,
+      "control_median": 29142264.5,
+      "candidate_median": 25580176.0,
+      "reduction_percent": 12.223101262429347,
+      "conservative_separation": 3554350
+    },
+    "captured-group/span, button/all": {
+      "case": "captured-group",
+      "selector": "span, button",
+      "first": false,
+      "control": [
+        129336647,
+        129667701,
+        129359643,
+        129345317
+      ],
+      "candidate": [
+        109361219,
+        109321096,
+        109214069,
+        109237634
+      ],
+      "checksums": [
+        76000
+      ],
+      "calls": 400,
+      "matches": 190,
+      "control_median": 129352480.0,
+      "candidate_median": 109279365.0,
+      "reduction_percent": 15.518152415786691,
+      "conservative_separation": 19975428
+    },
+    "captured-absent-class/.vox-leaf-probe-absent/first": {
+      "case": "captured-absent-class",
+      "selector": ".vox-leaf-probe-absent",
+      "first": true,
+      "control": [
+        121035868,
+        121029352,
+        121048636,
+        121432133
+      ],
+      "candidate": [
+        97266498,
+        97306450,
+        97117852,
+        97118705
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 121042252.0,
+      "candidate_median": 97192601.5,
+      "reduction_percent": 19.70357466581174,
+      "conservative_separation": 23722902
+    },
+    "captured-absent-class/.vox-leaf-probe-absent/all": {
+      "case": "captured-absent-class",
+      "selector": ".vox-leaf-probe-absent",
+      "first": false,
+      "control": [
+        117992875,
+        117956397,
+        117961880,
+        117969864
+      ],
+      "candidate": [
+        97770176,
+        97770176,
+        97804472,
+        97834136
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 117965872.0,
+      "candidate_median": 97787324.0,
+      "reduction_percent": 17.105411639732548,
+      "conservative_separation": 20122261
+    },
+    "flat/span/first": {
+      "case": "flat",
+      "selector": "span",
+      "first": true,
+      "control": [
+        975876,
+        975776,
+        975776,
+        975776
+      ],
+      "candidate": [
+        966551,
+        966576,
+        966576,
+        966576
+      ],
+      "checksums": [
+        400
+      ],
+      "calls": 400,
+      "matches": 512,
+      "control_median": 975776.0,
+      "candidate_median": 966576.0,
+      "reduction_percent": 0.9428393401764379,
+      "conservative_separation": 9200
+    },
+    "flat/span/all": {
+      "case": "flat",
+      "selector": "span",
+      "first": false,
+      "control": [
+        64451732,
+        64410089,
+        64576226,
+        65223462
+      ],
+      "candidate": [
+        55827249,
+        55417748,
+        55543969,
+        55424132
+      ],
+      "checksums": [
+        204800
+      ],
+      "calls": 400,
+      "matches": 512,
+      "control_median": 64513979.0,
+      "candidate_median": 55484050.5,
+      "reduction_percent": 13.996855627212202,
+      "conservative_separation": 8582840
+    },
+    "flat/[data-leaf-probe-absent]/first": {
+      "case": "flat",
+      "selector": "[data-leaf-probe-absent]",
+      "first": true,
+      "control": [
+        123792329,
+        123786754,
+        123795979,
+        123861541
+      ],
+      "candidate": [
+        113155336,
+        113129376,
+        113138910,
+        113139144
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 123794154.0,
+      "candidate_median": 113139027.0,
+      "reduction_percent": 8.607132611447877,
+      "conservative_separation": 10631418
+    },
+    "flat/[data-leaf-probe-absent]/all": {
+      "case": "flat",
+      "selector": "[data-leaf-probe-absent]",
+      "first": false,
+      "control": [
+        122780552,
+        122798541,
+        122795178,
+        123626938
+      ],
+      "candidate": [
+        113770502,
+        113770527,
+        113771414,
+        113805317
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 122796859.5,
+      "candidate_median": 113770970.5,
+      "reduction_percent": 7.350260451896984,
+      "conservative_separation": 8975235
+    },
+    "deep/span/first": {
+      "case": "deep",
+      "selector": "span",
+      "first": true,
+      "control": [
+        975776,
+        975744,
+        975826,
+        975776
+      ],
+      "candidate": [
+        966576,
+        966576,
+        966601,
+        966576
+      ],
+      "checksums": [
+        400
+      ],
+      "calls": 400,
+      "matches": 128,
+      "control_median": 975776.0,
+      "candidate_median": 966576.0,
+      "reduction_percent": 0.9428393401764379,
+      "conservative_separation": 9143
+    },
+    "deep/span/all": {
+      "case": "deep",
+      "selector": "span",
+      "first": false,
+      "control": [
+        18128007,
+        18128238,
+        18127089,
+        18127955
+      ],
+      "candidate": [
+        17190498,
+        17143124,
+        17143518,
+        17186917
+      ],
+      "checksums": [
+        51200
+      ],
+      "calls": 400,
+      "matches": 128,
+      "control_median": 18127981.0,
+      "candidate_median": 17165217.5,
+      "reduction_percent": 5.310925138326217,
+      "conservative_separation": 936591
+    },
+    "deep/[data-leaf-probe-absent]/first": {
+      "case": "deep",
+      "selector": "[data-leaf-probe-absent]",
+      "first": true,
+      "control": [
+        32691074,
+        32688150,
+        32684552,
+        32684527
+      ],
+      "candidate": [
+        31496527,
+        31502979,
+        31496527,
+        31501087
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 32686351.0,
+      "candidate_median": 31498807.0,
+      "reduction_percent": 3.6331495063489982,
+      "conservative_separation": 1181548
+    },
+    "deep/[data-leaf-probe-absent]/all": {
+      "case": "deep",
+      "selector": "[data-leaf-probe-absent]",
+      "first": false,
+      "control": [
+        32455376,
+        32475677,
+        32455376,
+        32461863
+      ],
+      "candidate": [
+        31473776,
+        31473776,
+        31473801,
+        31482332
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 32458619.5,
+      "candidate_median": 31473788.5,
+      "reduction_percent": 3.034112402716327,
+      "conservative_separation": 973044
+    },
+    "empty/span/first": {
+      "case": "empty",
+      "selector": "span",
+      "first": true,
+      "control": [
+        758601,
+        758576,
+        758601,
+        758576
+      ],
+      "candidate": [
+        758576,
+        758576,
+        758600,
+        758576
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 758588.5,
+      "candidate_median": 758576.0,
+      "reduction_percent": 0.0016477971917616685,
+      "conservative_separation": -24
+    },
+    "empty/span/all": {
+      "case": "empty",
+      "selector": "span",
+      "first": false,
+      "control": [
+        759802,
+        759727,
+        759752,
+        759727
+      ],
+      "candidate": [
+        759727,
+        759727,
+        759752,
+        759727
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 759739.5,
+      "candidate_median": 759727.0,
+      "reduction_percent": 0.0016453007905981032,
+      "conservative_separation": -25
+    },
+    "empty/[data-leaf-probe-absent]/first": {
+      "case": "empty",
+      "selector": "[data-leaf-probe-absent]",
+      "first": true,
+      "control": [
+        889352,
+        889327,
+        889352,
+        889327
+      ],
+      "candidate": [
+        878927,
+        878927,
+        878952,
+        888498
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 889339.5,
+      "candidate_median": 878939.5,
+      "reduction_percent": 1.169407183645843,
+      "conservative_separation": 829
+    },
+    "empty/[data-leaf-probe-absent]/all": {
+      "case": "empty",
+      "selector": "[data-leaf-probe-absent]",
+      "first": false,
+      "control": [
+        916201,
+        916176,
+        916201,
+        916176
+      ],
+      "candidate": [
+        907376,
+        907376,
+        907376,
+        907376
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 400,
+      "matches": 0,
+      "control_median": 916188.5,
+      "candidate_median": 907376.0,
+      "reduction_percent": 0.9618653803229349,
+      "conservative_separation": 8800
+    }
+  },
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "c51e685ab95e31e2505dcf18a267c81b37774f5c29002bb4b89ed9814ddd40c3",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-095454-096abed9/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "c7ef831fa701d933948964732edab0052ae1cdcb3da001848285c841ce96a736",
+      "dirty": true,
+      "head": "eb83b215396a08a7401e39b62564fc12d266f24d",
+      "repository_sha256": "7f08e9f02c72f6a1e7a63c7456363858a7d3e7467b166cca6b867e1bb73a7ae6"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "4dd0dbb8c68c0e61d3741a39c3590c8fbc80e5510eb9ec228d87745d579731d5",
+      "dirty": true,
+      "head": "eb83b215396a08a7401e39b62564fc12d266f24d",
+      "repository_sha256": "425b7ab39d43d930ae54da94973262df5025d103c9f17ed0865926b5c7edb5c4"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "eb83b215396a08a7401e39b62564fc12d266f24d",
+      "id": "9baa968be76644daa1b0b547142ea875",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "c7ef831fa701d933948964732edab0052ae1cdcb3da001848285c841ce96a736",
+      "dirty": true,
+      "head": "eb83b215396a08a7401e39b62564fc12d266f24d",
+      "repository_sha256": "7f08e9f02c72f6a1e7a63c7456363858a7d3e7467b166cca6b867e1bb73a7ae6"
+    }
+  },
+  "control": [
+    24620990558,
+    24013145054,
+    24070546522,
+    24217680532
+  ],
+  "candidate": [
+    24335019182,
+    24714061567,
+    24117183992,
+    24097806606
+  ],
+  "control_median": 24144113527.0,
+  "candidate_median": 24226101587.0,
+  "observed_median_reduction_percent": -0.33957784330460594,
+  "observed_conservative_page_separation": -700916513,
+  "page_instruction_credit": 0,
+  "broad_required": false,
+  "broad": null,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "remaining_from_candidate_median": 4226101587.0,
+  "valid_production_captures": 20,
+  "frame_checkpoint_and_host_load_observations": [
+    {
+      "variant": "control",
+      "checkpoints": 426,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          9.81396484375,
+          15.28125,
+          21.3125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          9.90869140625,
+          15.2099609375,
+          21.251953125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 437,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          9.86083984375,
+          14.77392578125,
+          20.9189453125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          9.90087890625,
+          14.6171875,
+          20.79052734375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 465,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          9.90087890625,
+          14.6171875,
+          20.79052734375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          47.61962890625,
+          22.28369140625,
+          23.423828125
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 466,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          45.39697265625,
+          24.130859375,
+          24.0771484375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          42.16162109375,
+          23.81298828125,
+          23.96533203125
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 470,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          42.16162109375,
+          23.81298828125,
+          23.96533203125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          36.99560546875,
+          23.30859375,
+          23.7841796875
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 481,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          28.041015625,
+          22.3408203125,
+          23.4228515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          27.07666015625,
+          22.2353515625,
+          23.37890625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 464,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          25.388671875,
+          21.96533203125,
+          23.27685546875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          24.95703125,
+          21.9326171875,
+          23.25732421875
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 460,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          19.7099609375,
+          20.97509765625,
+          22.86474609375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          18.85205078125,
+          20.77587890625,
+          22.783203125
+        ]
+      }
+    }
+  ],
+  "controller_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-leaf-query-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "71989": "Fri Nov  6 10:00:15 2026    ",
+      "71996": "Fri Nov  6 10:00:15 2026    ",
+      "72655": "Fri Nov  6 10:00:25 2026    ",
+      "72662": "Fri Nov  6 10:00:25 2026    ",
+      "72676": "Fri Nov  6 10:00:25 2026    ",
+      "72677": "Fri Nov  6 10:00:25 2026    ",
+      "72685": "Fri Nov  6 10:00:25 2026    ",
+      "73160": "Fri Nov  6 10:00:36 2026    ",
+      "73162": "Fri Nov  6 10:00:36 2026    ",
+      "73174": "Fri Nov  6 10:00:36 2026    ",
+      "73175": "Fri Nov  6 10:00:36 2026    ",
+      "73176": "Fri Nov  6 10:00:37 2026    ",
+      "73204": "Fri Nov  6 10:00:37 2026    ",
+      "73211": "Fri Nov  6 10:00:37 2026    ",
+      "73692": "Fri Nov  6 10:00:48 2026    ",
+      "73698": "Fri Nov  6 10:00:48 2026    ",
+      "74606": "Fri Nov  6 10:01:11 2026    ",
+      "74608": "Fri Nov  6 10:01:11 2026    ",
+      "74994": "Fri Nov  6 10:01:21 2026    ",
+      "74996": "Fri Nov  6 10:01:21 2026    ",
+      "75009": "Fri Nov  6 10:01:21 2026    ",
+      "75010": "Fri Nov  6 10:01:21 2026    ",
+      "75011": "Fri Nov  6 10:01:21 2026    ",
+      "75188": "Fri Nov  6 10:01:32 2026    ",
+      "75191": "Fri Nov  6 10:01:32 2026    ",
+      "75198": "Fri Nov  6 10:01:32 2026    ",
+      "75199": "Fri Nov  6 10:01:32 2026    ",
+      "75201": "Fri Nov  6 10:01:32 2026    ",
+      "75615": "Fri Nov  6 10:01:42 2026    ",
+      "75618": "Fri Nov  6 10:01:42 2026    ",
+      "75913": "Fri Nov  6 10:01:51 2026    ",
+      "75917": "Fri Nov  6 10:01:51 2026    ",
+      "76596": "Fri Nov  6 10:02:02 2026    ",
+      "76598": "Fri Nov  6 10:02:02 2026    ",
+      "76609": "Fri Nov  6 10:02:02 2026    ",
+      "76610": "Fri Nov  6 10:02:02 2026    ",
+      "76615": "Fri Nov  6 10:02:02 2026    ",
+      "77041": "Fri Nov  6 10:02:13 2026    ",
+      "77046": "Fri Nov  6 10:02:13 2026    ",
+      "77051": "Fri Nov  6 10:02:14 2026    ",
+      "77052": "Fri Nov  6 10:02:14 2026    ",
+      "77053": "Fri Nov  6 10:02:14 2026    ",
+      "77079": "Fri Nov  6 10:02:14 2026    ",
+      "77084": "Fri Nov  6 10:02:14 2026    ",
+      "77340": "Fri Nov  6 10:02:23 2026    ",
+      "77342": "Fri Nov  6 10:02:24 2026    ",
+      "77624": "Fri Nov  6 10:02:32 2026    ",
+      "77626": "Fri Nov  6 10:02:32 2026    ",
+      "77965": "Fri Nov  6 10:02:42 2026    ",
+      "77969": "Fri Nov  6 10:02:42 2026    ",
+      "77975": "Fri Nov  6 10:02:42 2026    ",
+      "77976": "Fri Nov  6 10:02:42 2026    ",
+      "77977": "Fri Nov  6 10:02:42 2026    ",
+      "78005": "Fri Nov  6 10:02:43 2026    ",
+      "78008": "Fri Nov  6 10:02:43 2026    ",
+      "78490": "Fri Nov  6 10:02:53 2026    ",
+      "78492": "Fri Nov  6 10:02:53 2026    ",
+      "78503": "Fri Nov  6 10:02:53 2026    ",
+      "78504": "Fri Nov  6 10:02:53 2026    ",
+      "78505": "Fri Nov  6 10:02:53 2026    ",
+      "78967": "Fri Nov  6 10:03:04 2026    ",
+      "78972": "Fri Nov  6 10:03:04 2026    ",
+      "79390": "Fri Nov  6 10:03:13 2026    ",
+      "79392": "Fri Nov  6 10:03:13 2026    ",
+      "79874": "Fri Nov  6 10:03:24 2026    ",
+      "79877": "Fri Nov  6 10:03:24 2026    ",
+      "79887": "Fri Nov  6 10:03:24 2026    ",
+      "79888": "Fri Nov  6 10:03:24 2026    ",
+      "79889": "Fri Nov  6 10:03:24 2026    ",
+      "80326": "Fri Nov  6 10:03:36 2026    ",
+      "80330": "Fri Nov  6 10:03:36 2026    ",
+      "80341": "Fri Nov  6 10:03:36 2026    ",
+      "80342": "Fri Nov  6 10:03:36 2026    ",
+      "80343": "Fri Nov  6 10:03:36 2026    ",
+      "80801": "Fri Nov  6 10:03:49 2026    ",
+      "80803": "Fri Nov  6 10:03:49 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1982808064,
+    "elapsed_seconds": 237.51222187500002,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "native_profile": {
+    "path": "docs/performance/chatgpt-current-native-sample-20261106-r3.json",
+    "executable_sha256": "75cdec82c8c0e788a003087f62ab029bddc3576b492aaa57626260189fe943ca",
+    "guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-current-native-sample-20261106-r3/run.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "60799": "Fri Nov  6 09:48:33 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1402044416,
+      "elapsed_seconds": 8.190606709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "qualification": "Separate statistical diagnostic only; recursive samples, unknown JIT symbols, waits and concurrent threads are not an additive instruction budget."
+  },
+  "phase_qualification_correction": "The phase reports retain an inherited phrase saying both native images pin this path. Source-function/control/marker proof applies to the V executable only. Native libraries are identity-pinned; no library marker assertion is made.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-leaf-query-focused-20261106-evidence.zip",
+      "sha256": "ec32daef379c6b71830a9c5f4b2e5097909d631334c8b54cc9d4bd1e033258c5",
+      "bytes": 8702649,
+      "verified_entries": 45
+    },
+    {
+      "path": "docs/performance/chatgpt-leaf-query-component-20261106-evidence.zip",
+      "sha256": "61a6f33af99f4cd66c49a1e6a4d28666e3183af4c2decece467ab567eb50cede",
+      "bytes": 20623434,
+      "verified_entries": 24
+    },
+    {
+      "path": "docs/performance/chatgpt-leaf-query-controller-20261106-evidence.zip",
+      "sha256": "2707cbfb26d7dc727eca2a4cfe1af7f83186b91da60ffc0cb36e17999dae2180",
+      "bytes": 28153,
+      "verified_entries": 11
+    },
+    {
+      "path": "docs/performance/chatgpt-leaf-query-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "61c3df328996e1737e8cd966cd05329e4e5da394fd259694bb0ba78e69e46fbb",
+      "bytes": 1393217,
+      "verified_entries": 60
+    },
+    {
+      "path": "docs/performance/chatgpt-leaf-query-production-r1-matched-20261106-evidence.zip",
+      "sha256": "cf67cb750b9e4ecff721df9a269509d3ecd39fc71e3e3fc70d2efd862a3de8f8",
+      "bytes": 8277360,
+      "verified_entries": 162
+    },
+    {
+      "path": "docs/performance/chatgpt-current-native-sample-20261106-r3-evidence.zip",
+      "sha256": "6b2dd956be811ef5bd688f8c81551567231004921868ac8e17c9990156b17454",
+      "bytes": 674161,
+      "verified_entries": 17
+    }
+  ],
+  "qualification": "Each child is matched before deciding whether to recurse into descendants. Only an empty children vector avoids a recursive frame. No persistent cache/index, ID-map shortcut, selector or author-script change. Four storage/GC modes and both recursion policies pass 33 focused cases each, 264 executions. First shadow-root fixture omitted HTML document mode and fails before correction; retained without whole-selection credit. Component server DOM is parsed from captured HTML without author bootstrap; all construction/parsing/reference setup is outside process-counter intervals, public first/all APIs/assertions/checksum accumulation inside. Four alternating observations per variant, executable/source/controller/guard pins and every result retained. Components do not establish page savings. Original single SOCKS fixture/scripts/references, private profiles/caches, 1024x768 scale2, five-second unfocused settle. Coalition creation through encoded document PNG includes startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches retained; GPU/outside coalition excluded. One completed canonical executable/native libraries pinned under shared publication lease; no copied bundle or manually queued build. Four control/candidate pairs are below seven-pair acceptance. Both 20B and 5%-below-Brave targets remain unmet.",
+  "evidence_finalizer_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-leaf-query-finalize-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 62717952,
+    "elapsed_seconds": 6.49688775,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

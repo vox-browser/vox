@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest cropped-opacity-query diagnostic observes a **24.347B** candidate median versus **24.362B** for its whole-canvas metadata control. Observed ranges overlap; no whole-page savings credit is assigned. All 20 captures pass content and exact pixels; 24 focused check jobs pass. The [latest verification](performance/chatgpt-opacity-crop-pages-verification-20261106.json) retains every attempt. Only this same-build comparison measures the change; differences against earlier builds receive no credit. Four pairs remain below seven-pair acceptance; the historical cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest independent-query diagnostic observes a **24.226B** candidate median versus **24.144B** for its retained-recursion control. Observed ranges overlap; no whole-page savings credit is assigned. All 20 captures pass content and exact pixels; 264 focused test executions pass. The [latest verification](performance/chatgpt-leaf-query-verification-20261106.json) retains every attempt. Only this same-build comparison measures the change; differences against earlier builds receive no credit. Four pairs remain below seven-pair acceptance; the historical cohort below retains its earlier pinned build.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5679,3 +5679,55 @@ All **20** diagnostic/matched captures pass full content/button identity, bootst
 Frame-complete checkpoints are 502, 505, 513, 509 for controls and 506, 501, 515, 516 for candidates. Raw counters and host load remain preserved without normalization.
 
 The candidate median remains **4,347,008,499.0 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-opacity-crop-pages-verification-20261106.json) links source witnesses, focused/component checks, every regression, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Empty descendant-call elision in independent queries (2026-11-06)
+
+Commit `d5e07fd87` avoids descending into children with no descendants in the independent `querySelector` and `querySelectorAll` walkers. Each child still passes through the existing element matcher first. Nonempty branches retain the same recursive walk and early first-match return; grouped results retain tree order and deduplication. The query parse cache, matcher, namespace/quirks rules, scope boundary and result ownership stay in place. No persistent result/index cache is introduced. `VOX_RETAIN_LEAF_QUERY_RECURSION=1` retains the empty calls for the comparison.
+
+A fresh completed-bundle native sample passes bootstrap, full content, unchanged pixels and normal exits. It still observes selector traversal alongside style, grid/flex/absolute layout and native opacity work. Recursive counts, unknown JIT symbols, waits and concurrent threads cannot become instruction shares or performance credit. The document ID index was also inspected: form callbacks precede ID-map updates, so it cannot safely reject reentrant selector queries as it stands. This change uses only the live child vector.
+
+**12 guarded jobs / 264 focused test executions pass**: 33 cases in ordinary GC, no GC, poisoned preallocation and ASan/UBSan, with both recursion policies. Coverage includes element-first matching, HTML/XML/quirks case rules and namespaces, duplicate IDs, comma order, text/element leaves, mixed-depth branches, fragments, shadow/detached roots, root exclusion, live append/remove/reparenting, parsed-selector reuse and results surviving scratch retirement. The initial shadow-root fixture omitted HTML document mode and fails with NotSupportedError; the corrected fixture and original failed selection remain retained.
+
+The component uses the original captured HTML parsed into a server DOM, plus synthetic flat, deep and empty trees. It does not run the page bootstrap. Four alternating observations per variant and 400 public API calls per row retain all samples. Construction, parsing and independent full-walk reference setup are outside the process-instruction interval; API calls, assertions and checksum accumulation are inside. Full output order is checked after timing. Executable, source, controller and guard identities stay fixed, and all checksums match.
+
+| Query component | API | Selector | Retained-recursion median instructions | Leaf-skip median | Reduction |
+| --- | --- | --- | ---: | ---: | ---: |
+| captured-buttons | first | `button` | 19,642,239.5 | 15,994,642.5 | 18.5702% |
+| captured-buttons | all | `button` | 95,314,253.5 | 75,471,550.5 | 20.8182% |
+| captured-attributes | first | `[aria-label]` | 43,126,331.0 | 39,535,413.5 | 8.3265% |
+| captured-attributes | all | `[aria-label]` | 190,243,129.0 | 170,054,549.5 | 10.6120% |
+| captured-missing-attribute | first | `[data-leaf-probe-absent]` | 208,421,168.5 | 184,366,086.0 | 11.5416% |
+| captured-missing-attribute | all | `[data-leaf-probe-absent]` | 205,223,555.0 | 185,034,327.0 | 9.8377% |
+| captured-last-editor | first | `#mobile-composer-prompt` | 51,120,726.5 | 36,946,539.5 | 27.7269% |
+| captured-last-editor | all | `#mobile-composer-prompt` | 84,195,116.5 | 64,024,536.0 | 23.9569% |
+| captured-group | first | `span, button` | 29,142,264.5 | 25,580,176.0 | 12.2231% |
+| captured-group | all | `span, button` | 129,352,480.0 | 109,279,365.0 | 15.5182% |
+| captured-absent-class | first | `.vox-leaf-probe-absent` | 121,042,252.0 | 97,192,601.5 | 19.7036% |
+| captured-absent-class | all | `.vox-leaf-probe-absent` | 117,965,872.0 | 97,787,324.0 | 17.1054% |
+| flat | first | `span` | 975,776.0 | 966,576.0 | 0.9428% |
+| flat | all | `span` | 64,513,979.0 | 55,484,050.5 | 13.9969% |
+| flat | first | `[data-leaf-probe-absent]` | 123,794,154.0 | 113,139,027.0 | 8.6071% |
+| flat | all | `[data-leaf-probe-absent]` | 122,796,859.5 | 113,770,970.5 | 7.3503% |
+| deep | first | `span` | 975,776.0 | 966,576.0 | 0.9428% |
+| deep | all | `span` | 18,127,981.0 | 17,165,217.5 | 5.3109% |
+| deep | first | `[data-leaf-probe-absent]` | 32,686,351.0 | 31,498,807.0 | 3.6331% |
+| deep | all | `[data-leaf-probe-absent]` | 32,458,619.5 | 31,473,788.5 | 3.0341% |
+| empty | first | `span` | 758,588.5 | 758,576.0 | 0.0016% |
+| empty | all | `span` | 759,739.5 | 759,727.0 | 0.0016% |
+| empty | first | `[data-leaf-probe-absent]` | 889,339.5 | 878,939.5 | 1.1694% |
+| empty | all | `[data-leaf-probe-absent]` | 916,188.5 | 907,376.0 | 0.9619% |
+
+Component reductions are not extrapolated to the page. Tiny differences remain subject to raw ranges and host contention. Separate production diagnostics confirm both first/all leaf-skip markers only in the candidate, Wasm module lexer execution in both variants, full bootstrap/content identity and exact unchanged pixels. Sealed source proves both walker guards, recursive branches and element matching. The V executable contains the control and marker; libraries are pinned for identity. The phase reports retain an inherited phrase saying “both native images”; the function/control/marker proof applies to the V executable only.
+
+| Unprofiled frozen-page variant | Every retained launch-through-PNG instruction count | Median |
+| --- | --- | ---: |
+| Retained-recursion control | 24,620,990,558; 24,013,145,054; 24,070,546,522; 24,217,680,532 | 24,144,113,527.0 |
+| Leaf-skip candidate | 24,335,019,182; 24,714,061,567; 24,117,183,992; 24,097,806,606 | 24,226,101,587.0 |
+
+The observed candidate median is **0.3396% higher**; conservative observed separation is **-700,916,513 instructions**. Observed ranges overlap; no whole-page savings credit is assigned. No new 5M broad checkpoint is due; whole-page credit and carry remain zero.
+
+All **20** diagnostic/matched captures pass full content/button identity, bootstrap, exact unchanged per-engine references and normal browser/kernel exits. Executable `c51e685ab95e31e2505dcf18a267c81b37774f5c29002bb4b89ed9814ddd40c3` and native libraries stay pinned under a nonblocking shared publication lease. The latest completed single-C-unit V `-prod` bundle already supplies the final path; no app is copied or separate manual build requested. Concurrent work in that build receives no credit for this slice. Original author scripts, single SOCKS fixture/references, private profiles/caches, 1024×768 scale two and five-second unfocused settle stay fixed. Coalition creation through encoded document PNG includes startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded. Controller/guard exit zero with successful PID adoption; comparison drivers exit one for the unmet Brave gate.
+
+Frame-complete checkpoints are 426, 466, 470, 460 for controls and 437, 465, 481, 464 for candidates. Raw counters and host load remain preserved without normalization.
+
+The candidate median remains **4,226,101,587.0 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-leaf-query-verification-20261106.json) links the fresh profile, source witnesses, focused/component checks, every failure, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
