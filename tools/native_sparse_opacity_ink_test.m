@@ -1,8 +1,15 @@
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 static int query_mode;
+static mach_vm_offset_t last_query_address;
+static mach_vm_size_t last_query_size, last_query_capacity;
+static unsigned query_calls;
 static kern_return_t query_pages(vm_map_read_t task, mach_vm_offset_t address,
     mach_vm_size_t size, mach_vm_address_t output, mach_vm_size_t *count) {
+    last_query_address = address;
+    last_query_size = size;
+    last_query_capacity = *count;
+    ++query_calls;
     if (query_mode == 1) return KERN_FAILURE;
     kern_return_t status = mach_vm_page_range_query(task, address, size, output, count);
     if (status == KERN_SUCCESS && query_mode == 2)
@@ -17,6 +24,24 @@ static kern_return_t query_pages(vm_map_read_t task, mach_vm_offset_t address,
 #undef mach_vm_page_range_query
 #include <assert.h>
 #include <stdio.h>
+
+static void check_query_range(VoxOpacityCanvas canvas, size_t pitch,
+    int left, int top, int right, int bottom) {
+    size_t page = (size_t)sysconf(_SC_PAGESIZE), bytes = pitch * CGBitmapContextGetHeight(canvas.context);
+    uintptr_t base = (uintptr_t)canvas.pixels;
+    const char *retain = getenv("VOX_RETAIN_FULL_OPACITY_PAGE_QUERY");
+    uintptr_t first = base, end = base + bytes;
+    if (!retain || !*retain) {
+        uintptr_t first_pixel = base + pitch * (size_t)top + (size_t)left * 4;
+        uintptr_t final_pixel = base + pitch * (size_t)(bottom - 1) + (size_t)(right - 1) * 4;
+        first = first_pixel / page * page;
+        uintptr_t rounded_end = (final_pixel / page + 1) * page;
+        if (rounded_end < end) end = rounded_end;
+    }
+    assert(query_calls == 1 && last_query_address == first && last_query_size == end - first);
+    assert(last_query_capacity == (end - first + page - 1) / page);
+    assert(first >= base && end <= base + bytes);
+}
 
 static uint64_t footprint(void) {
     task_vm_info_data_t info = {0};
@@ -40,8 +65,10 @@ static void check_reference(VoxOpacityCanvas canvas, size_t pitch,
             if (y + 1 > expected[3]) expected[3] = y + 1;
         }
     }
+    query_calls = 0;
     assert(native_opacity_canvas_ink_bounds(canvas, pitch, left, top, right, bottom,
         &actual[0], &actual[1], &actual[2], &actual[3]) == found);
+    check_query_range(canvas, pitch, left, top, right, bottom);
     if (found) assert(!memcmp(actual, expected, sizeof(actual)));
     else assert(actual[0] == -1 && actual[1] == -2 && actual[2] == -3 && actual[3] == -4);
 }
@@ -67,8 +94,14 @@ static void check_row_backing_classification(void) {
                     if (dispositions[((size_t)y * pitch + (size_t)x * 4) / page]) backed = 1;
                     else zero = 1;
                 }
-                assert(native_opacity_row_backing_kind(dispositions, page, pitch, left, right, y)
+                assert(native_opacity_row_backing_kind(dispositions, page, 0, pitch, left, right, y)
                     == (backed && zero ? 2 : backed));
+                // A cropped metadata array begins at a real page inside the
+                // canvas. Index relative to that page, with no pointer before
+                // the array even when the crop begins well after row zero.
+                size_t first_page = ((size_t)y * pitch + (size_t)left * 4) / page;
+                assert(native_opacity_row_backing_kind(dispositions + first_page,
+                    page, first_page, pitch, left, right, y) == (backed && zero ? 2 : backed));
                 ++cases;
             }
         }
@@ -112,12 +145,40 @@ int main(void) {
             canvas.pixels[i] = (uint8_t)(i % 255 + 1);
         for (query_mode = 0; query_mode <= 4; ++query_mode)
         for (int y = 0; y < 709; y += 71) for (int x = 0; x < (int)width; x += 53) {
+            query_calls = 0;
             int found = native_opacity_canvas_ink_bounds(canvas, pitch, x, y, (int)width, 709,
                 &left, &top, &right, &bottom);
+            check_query_range(canvas, pitch, x, y, (int)width, 709);
             int expected = native_opacity_layer_ink_bounds(canvas.pixels, pitch, x, y, (int)width, 709,
                 &l0, &t0, &r0, &b0);
             assert(found == expected);
             if (found) assert(left == l0 && top == t0 && right == r0 && bottom == b0);
+            ++cases;
+        }
+        native_release_opacity_canvas(canvas, 0, 0, width, height);
+        native_discard_opacity_canvas_pool();
+    }
+    query_mode = 0;
+
+    // Nonzero origins and last partial pages exercise both endpoint rounding
+    // and crop-relative metadata indices. Fully backed, sparse and empty data
+    // agree with a separate scalar pixel oracle under every query outcome.
+    for (int pattern = 0; pattern < 3; ++pattern) {
+        const int width = 1021, height = 311;
+        size_t pitch = (size_t)width * 4;
+        canvas = native_acquire_opacity_canvas(width, height, space);
+        assert(canvas.context);
+        if (pattern == 0) memset(canvas.pixels, 0, pitch * height);
+        if (pattern != 2) {
+            ((uint32_t *)(canvas.pixels + 93 * pitch))[207] = 0x100;
+            ((uint32_t *)(canvas.pixels + 217 * pitch))[813] = 0x200;
+            ((uint32_t *)(canvas.pixels + 310 * pitch))[1020] = 0x400;
+        }
+        for (query_mode = 0; query_mode <= 4; ++query_mode)
+        for (int t = 91; t <= 310; t += 73)
+        for (int crop = 0; crop < 4; ++crop) {
+            check_reference(canvas, pitch, crop == 0 ? 0 : 203, t,
+                crop == 2 ? 817 : width, crop == 3 ? t + 1 : height);
             ++cases;
         }
         native_release_opacity_canvas(canvas, 0, 0, width, height);
