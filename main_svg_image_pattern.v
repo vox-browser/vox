@@ -42,6 +42,8 @@ fn (mut app BrowserApp) draw_svg_image_pattern(path []f32, even_odd bool, matrix
 		destination := [f32(d.x), f32(d.y), f32(d.width), f32(d.height)]!
 		c := replay.clip
 		clip := [f32(c.x), f32(c.y), f32(c.width), f32(c.height)]!
+		app.set_chromium_image_resource_identity(operation.image_url)
+		defer { clear_chromium_image_resource_identity() }
 		return C.native_draw_svg_image_pattern(image, path.data, path.len / layout.compatibility_clip_path_segment_stride, int(even_odd),
 			&outer[0], &inner[0], &tile[0], &destination[0], &clip[0], page_x, page_y,
 			scroll_y, f32(app.ctx.width), canvas_height, f32(opacity), int(replay.scaling == .nearest_neighbor)) != 0

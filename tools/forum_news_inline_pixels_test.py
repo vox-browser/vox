@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_svg_pattern_images_retain_larger_decodes_before_css_blur(self):
+        self.compare_fixture('svg-pattern-image-blur', width=1024, height=768)
+
     def test_flat_perspective_keeps_z_zero_images_on_their_compositor_picture(self):
         self.compare_fixture('flat-perspective-image-picture', width=1024, height=768)
 

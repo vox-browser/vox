@@ -33,8 +33,23 @@ extern "C" int ladybird_v_skia_draw_svg_image_pattern(CGContextRef destination,
     float sy = std::hypot(effective.getSkewX(), effective.getScaleY()) * scale
         * target[3] / image_height;
     if (!(sx > 0 && sy > 0) || !std::isfinite(sx) || !std::isfinite(sy)) return 0;
+    // A pattern's embedded bitmap is an ordinary decoded resource. Reuse a
+    // compatible larger upload just as direct image draws do; independently
+    // downsizing every pattern instance changes its filtered texels.
+    VoxGraphiteImage decode {};
+    decode.width = image_width; decode.height = image_height; decode.pitch = pitch;
+    decode.flags = flags; decode.pixels = source_pixels; decode.nearest = nearest != 0;
+    decode.source[2] = image_width; decode.source[3] = image_height;
+    std::copy_n(target, 4, decode.destination);
+    decode.has_color_profile = s_has_image_color_profile;
+    std::copy_n(s_image_color_profile, VOX_IMAGE_COLOR_PROFILE_VALUES, decode.color_profile);
+    retain_compatible_image_decode(decode, effective, scale);
     int upload_width = image_width, upload_height = image_height;
-    if (!nearest) for (int level = 1; level < 31; ++level) {
+    int selected_level = vox_image_decode_level(decode.flags);
+    if (selected_level >= 0) {
+        upload_width = vox_image_decode_axis(image_width, selected_level);
+        upload_height = vox_image_decode_axis(image_height, selected_level);
+    } else if (!nearest) for (int level = 1; level < 31; ++level) {
         int w = vox_image_decode_axis(image_width, level), h = vox_image_decode_axis(image_height, level);
         if (w < std::ceil(image_width * sx) || h < std::ceil(image_height * sy)) break;
         upload_width = w; upload_height = h;
