@@ -261,6 +261,12 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # browser from a different frontend; fail instead.
 V_MACOS_V3_NO_FALLBACK=1
 export V_MACOS_V3_NO_FALLBACK
+# Target macOS 14 so a build on a newer SDK still launches on macOS 26 and
+# earlier; otherwise clang stamps the host OS as the minimum version.
+if [ "$(uname -s)" = Darwin ]; then
+    MACOSX_DEPLOYMENT_TARGET=14.0
+    export MACOSX_DEPLOYMENT_TARGET
+fi
 # The compatibility compiler's -prod mode snapshotted every pointer in live
 # aggregates around calls, turning CSS token parsing quadratic. Optimize the
 # generated C directly instead. Pointer-aware Boehm traces the live object
