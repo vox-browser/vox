@@ -179,11 +179,17 @@ int main() { @autoreleasepool {
     dispatch_semaphore_signal(proceed); idle(view);
     assert(installed.back()==220 && released[9]==1);
     // A first-document claim borrows a V owner. It stays synchronous even with
-    // the option on, and is acknowledged only after its image is installed.
+    // the option on, cancels the old document's pending output, and is
+    // acknowledged only after its image is installed.
+    start_blocked(view,245,11);
+    paint(view,246,12);
     claim_submission=true;
     paint(view,250,10);
     claim_submission=false;
     assert(installed.back()==250 && acknowledged.back()==250 && released[10]==1);
+    assert(released[12]==1 && scheduled[12]==0);
+    dispatch_semaphore_signal(proceed); idle(view);
+    assert(installed.back()==250 && released[11]==1);
     [VoxNativeFramePublication observePrepared:NULL published:NULL];
 #if !__has_feature(objc_arc)
     [view release];
