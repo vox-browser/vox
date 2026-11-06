@@ -20,6 +20,44 @@ pub struct InstructionStage {
 	previous_is_javascript bool
 }
 
+pub struct ThreadInstructionSubstage {
+	id u64
+	previous_is_javascript bool
+}
+
+// Fine-grained native stages need only the calling-thread stream. Polling
+// proc_pid_rusage at every boundary is expensive enough to dominate small
+// stages. Share identities with ordinary stages so the thread stream still
+// nests exactly, while leaving the coarser process/coalition endpoints intact.
+pub fn begin_thread_instruction_substage(label string) ThreadInstructionSubstage {
+	if !load_stage_diagnostics || !thread_load_stage_diagnostics
+		|| !instruction_stage_main_thread() || !instructions_enabled() {
+		return ThreadInstructionSubstage{}
+	}
+	reading := thread_instruction_snapshot()
+	if !reading.available {
+		C.vox_thread_stage_unavailable_log(i32(os.getpid()), 0, i32(reading.error_code))
+		return ThreadInstructionSubstage{}
+	}
+	load_stage_next_id++
+	id := load_stage_next_id
+	previous_is_javascript := load_stage_current_is_javascript
+	load_stage_current_is_javascript = false
+	C.vox_thread_stage_begin_log(i32(os.getpid()), id, reading.instructions, label.str, uint(label.len))
+	return ThreadInstructionSubstage{id: id, previous_is_javascript: previous_is_javascript}
+}
+
+pub fn (stage ThreadInstructionSubstage) finish() {
+	if stage.id == 0 { return }
+	load_stage_current_is_javascript = stage.previous_is_javascript
+	reading := thread_instruction_snapshot()
+	if !reading.available {
+		C.vox_thread_stage_unavailable_log(i32(os.getpid()), stage.id, i32(reading.error_code))
+		return
+	}
+	C.vox_thread_stage_end_log(i32(os.getpid()), stage.id, reading.instructions)
+}
+
 // Main-thread nesting partitions process-counter intervals. Other threads'
 // concurrent work remains in the process reading; this is not a thread counter.
 pub fn begin_instruction_stage(label string) InstructionStage {

@@ -986,7 +986,7 @@ fn counter_style_options_equal(left ?CounterStyle, right ?CounterStyle) bool {
 }
 
 pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &ComputedProperties, font_computer &FontComputer, old_layout_node ?&dom.LayoutNodeWithStyle_, abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
-	load_instruction_stage := processmetrics.begin_instruction_stage('style_invalidation')
+	load_instruction_stage := processmetrics.begin_thread_instruction_substage('style_invalidation')
 	defer { load_instruction_stage.finish() }
  diagnostic_scope_start := begin_diagnostic_instruction_scope()
  defer { record_diagnostic_instruction_scope(11, diagnostic_scope_start) }
@@ -1176,7 +1176,7 @@ struct InheritedStyleOldValue {
 // place, preserving the cascaded-property and computed-style objects exactly as
 // upstream does.
 fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
-	load_instruction_stage := processmetrics.begin_instruction_stage('style_inherited_refresh')
+	load_instruction_stage := processmetrics.begin_thread_instruction_substage('style_inherited_refresh')
 	defer { load_instruction_stage.finish() }
 	s.begin_computed_property_page_batch()
 	defer { s.end_computed_property_page_batch() }
