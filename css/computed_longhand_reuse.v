@@ -114,6 +114,7 @@ struct ComputedLonghandReuseEntry {
 	parent_inputs []ComputedLonghandReuseInput
 	inputs        []ComputedLonghandReuseInput
 	computed      &ComputedProperties
+	extended_admission bool
 }
 
 @[heap]
@@ -598,6 +599,7 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 	properties.font_input_refresh_safe_ = cached.font_input_refresh_safe_
 	properties.font_input_depends_on_font_size_ = cached.font_input_depends_on_font_size_
 	report_longhand_shape_restore(entry.inputs)
+	report_longhand_capacity_reuse(entry.extended_admission)
 	report_explicit_parent_longhand_inputs(entry.parent_inputs)
 	if computed_longhand_constant_diagnostics && !computed_longhand_constant_reported
 		&& computed_longhand_constants_enabled() {
@@ -651,7 +653,7 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 	if owner.longhand_reuse_cache_ == unsafe { nil } {
 		owner.longhand_reuse_cache_ = &ComputedLonghandReuseCache{}
 	}
-	if owner.longhand_reuse_cache_.entries.len >= 256 { return }
+	if owner.longhand_reuse_cache_.entries.len >= computed_longhand_cache_limit { return }
 	mut inputs := []ComputedLonghandReuseInput{cap: key.count}
 	for id, _ in cascaded.entry_heads_ {
 		if !computed_interpolation_is_longhand_property(id) { continue }
@@ -695,5 +697,6 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 		parent_inputs: parent_inputs
 		inputs:        inputs
 		computed:      snapshot
+		extended_admission: owner.longhand_reuse_cache_.entries.len >= 256
 	}
 }
