@@ -1,0 +1,253 @@
+{
+  "test_feature_commit": "42e65a36afd3f09250db99e2f5273794dc2dfe5a",
+  "scope": "Exact opaque AVIF RGBA conversion checks, fresh Brave software-canvas references and diagnostic reductions; full Slate source parity remains open",
+  "rgba_reference": [
+    {
+      "name": "current-0",
+      "encoded_sha256": "15844973d4485536a17247b997792de128c9d1bfbdcf51dd19a62cbb06ca9a40",
+      "reference_pixels": 0
+    },
+    {
+      "name": "current-1",
+      "encoded_sha256": "ba0686ad55ef4392379863b84c84d652f2c5244c8236965fe88a11b1c9534003",
+      "reference_pixels": 0
+    },
+    {
+      "name": "slate-hero",
+      "encoded_sha256": "74b6cd0e9f818fe149dca18389f09fbef9c7e72f7b555f9c2e9af91dd40b158d",
+      "reference_pixels": 0
+    },
+    {
+      "name": "slate-card",
+      "encoded_sha256": "846e82ad4bc98ca6fb99fe33aa6d32a6c92b7a179064f4ff738b2df437c19bbc",
+      "reference_pixels": 0
+    }
+  ],
+  "native_rgba_comparison": [
+    {
+      "name": "current-0",
+      "width": 585,
+      "height": 390,
+      "pixels": 0,
+      "maximum": 0
+    },
+    {
+      "name": "current-1",
+      "width": 390,
+      "height": 260,
+      "pixels": 0,
+      "maximum": 0
+    },
+    {
+      "name": "slate-hero",
+      "width": 585,
+      "height": 390,
+      "pixels": 0,
+      "maximum": 0
+    },
+    {
+      "name": "slate-card",
+      "width": 390,
+      "height": 260,
+      "pixels": 0,
+      "maximum": 0
+    }
+  ],
+  "native_checks": [
+    {
+      "name": "native-optimized",
+      "status": "pass",
+      "sanitized": false,
+      "unchanged_inputs": true,
+      "results": [
+        {
+          "phase": "helper",
+          "exit": 0
+        },
+        {
+          "phase": "compile",
+          "exit": 0
+        },
+        {
+          "phase": "runtime",
+          "exit": 0
+        }
+      ],
+      "helper_sha256": "e553d2b37156a1a5d1a95e44de6eb1342f2dd8e820d0a803196885f0e4f6fd91"
+    },
+    {
+      "name": "native-sanitized",
+      "status": "pass",
+      "sanitized": true,
+      "unchanged_inputs": true,
+      "results": [
+        {
+          "phase": "helper",
+          "exit": 0
+        },
+        {
+          "phase": "compile",
+          "exit": 0
+        },
+        {
+          "phase": "runtime",
+          "exit": 0
+        }
+      ],
+      "helper_sha256": "13b306f175c92cff136b3b45e008dbe741bea2ae85af488c3958eeffa839e3ba"
+    }
+  ],
+  "registered_exact_photo_decodes": {
+    "cases_per_mode": 4,
+    "modes": [
+      "optimized",
+      "AddressSanitizer+UBSan"
+    ],
+    "existing_decode_controls_per_mode": 27,
+    "fixtures": [
+      "slate-hero-rgba.rgba",
+      "slate-card-rgba.rgba"
+    ],
+    "provenance": "Tests/Browser/Brave/resources/avif/rgba-reference.json"
+  },
+  "reduced_browser_controls": [
+    {
+      "name": "photo-control",
+      "status": "pass",
+      "image_animation_policy": "allowed",
+      "cache_policy": "cold",
+      "different_pixels": 0,
+      "artifacts": "/Users/alex/code/vox2/Build/slate-rgba-20261106/photo-control/comparison/photos",
+      "live_to_frozen_different_pixels": 0,
+      "reference_replay_different_pixels": 0,
+      "manifest_sha256": "289e597b40da9f95d4bbc87a65848411f3c913ab4a01c526ffa357007602362d"
+    },
+    {
+      "name": "mixed-control",
+      "status": "pass",
+      "image_animation_policy": "allowed",
+      "cache_policy": "cold",
+      "different_pixels": 0,
+      "artifacts": "/Users/alex/code/vox2/Build/slate-rgba-20261106/mixed-control/comparison/photos",
+      "live_to_frozen_different_pixels": 0,
+      "reference_replay_different_pixels": 0,
+      "manifest_sha256": "6fec8bed1df329d801b02cde4f299d62ca59cea122302cd205ad110c9216cf2d"
+    }
+  ],
+  "selective_native_diagnostic": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c51e685ab95e31e2505dcf18a267c81b37774f5c29002bb4b89ed9814ddd40c3",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "793c1398d3bb573c76abe8357ab814aca6285aebd6ccf68fa3edbcc942bebdf8",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "79d8aeb0e0117dd053b044122cf2744bdb4d4713135315459e7abc0d2bc7792c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "results": [
+      {
+        "mode": 0,
+        "source_pixels": 116088
+      },
+      {
+        "mode": 1,
+        "source_pixels": 17724
+      },
+      {
+        "mode": 2,
+        "source_pixels": 107058
+      },
+      {
+        "mode": 3,
+        "source_pixels": 8694
+      }
+    ]
+  },
+  "all_rgba_diagnostic": {
+    "source_pixels": 8694,
+    "same_as_selective_both": 0,
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c51e685ab95e31e2505dcf18a267c81b37774f5c29002bb4b89ed9814ddd40c3",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "793c1398d3bb573c76abe8357ab814aca6285aebd6ccf68fa3edbcc942bebdf8",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "79d8aeb0e0117dd053b044122cf2744bdb4d4713135315459e7abc0d2bc7792c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    }
+  },
+  "upstream_reference": {
+    "url": "https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/platform/graphics/deferred_image_decoder.cc",
+    "section": "CreateGenerator, first_decoding_generator_created_ and incremental_decode_needed_",
+    "observation": "The first generator records whether all data were received, and an incremental generator remains ineligible for YUV decode."
+  },
+  "limits": [
+    "No production rendering or decoder policy was changed; the new commit adds exact native tests and independently captured pixel fixtures",
+    "The two reduced controls intentionally use decoded PNG data to isolate RGBA painting; they do not qualify the original full-page AVIF workload",
+    "Full-page representation probes use DYLD interposition and byte-length selection for two pinned assets, solely for diagnosis; they do not establish site acceptance",
+    "The first all-RGBA native diagnostic failed its focus audit and receives no valid full-page claim. The corrected fresh run retains its separate identity and passes that audit",
+    "Different production identities in the early and corrected diagnostic runs prevent attributing their pixel difference to the probe or focus setting",
+    "No passing registered reference, tolerance, encoded site resource or filtering policy was replaced",
+    "The first staging check classified opaque raw pixel fixtures as text; a scoped binary attribute fixes that metadata before the successful commit"
+  ],
+  "archive": {
+    "path": "slate-rgba-decoder-controls-20261106.zip",
+    "members": 340,
+    "bytes": 13674592,
+    "sha256": "5c0f21bafaf9c85996c1fd0611bd89862bff7c641b24921d78be499b31224df6"
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/slate-rgba-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 34045952,
+    "elapsed_seconds": 1.012520417,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

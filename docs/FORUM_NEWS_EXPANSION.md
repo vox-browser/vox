@@ -3078,6 +3078,71 @@ and actual memory-guard exits. The ZIP is 17,597,912 bytes, SHA-256
 The completed Verge correction and its 142-test / 148-capture exact checkpoint
 remain `fc14cc2e2` and `29e460bae`.
 
+## Slate RGBA decoder and mixed-photo controls (2026-11-06)
+
+Commit `42e65a36a` adds **four exact native RGBA photo comparisons** to the
+AVIF test program: the two original encoded Slate photographs, each with
+straight and premultiplied output. The independent golden bytes come from
+two fresh full-uBO Brave processes, decoding each encoded AVIF Blob through
+`createImageBitmap` and an opaque software canvas with `willReadFrequently`.
+Both reference processes agree at every pixel. The raw top-down RGBA fixtures
+have their encoded/decoded hashes and dimensions in
+`resources/avif/rgba-reference.json` and are declared binary in a scoped
+attributes file. The original AVIF bodies and registered site are unchanged.
+
+All **27 existing native decoder/error controls plus four exact photo
+comparisons pass optimized and with AddressSanitizer/UBSan**, with unchanged
+inputs. An additional readback of the installed decoder matches Brave at
+**zero pixels** for both original files and both fresh candidate photographs.
+The RGBA conversion therefore supplies an exact control beneath the separate
+image-paint representation question; this commit changes no production decoder
+or painting policy.
+
+Two synthetic browser reductions also pass source, independent Brave replay
+and native at **0 pixels**. One draws both photos as decoded PNGs at Slate's
+fractional image coordinates; the other combines an RGBA PNG hero with the
+original encoded AVIF card. These decoded PNG controls intentionally isolate
+RGBA drawing. They remain diagnostic reductions and do not qualify the
+original full-page AVIF workload.
+
+Chromium's [first-generator policy](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/platform/graphics/deferred_image_decoder.cc)
+records whether all data were received and retains the RGB requirement after
+an incremental first generator. That upstream source is consistent with the
+previous delivery observations; it is not direct measurement of the installed
+Brave decoder's internal identity. Full-page native representation probes
+retain the following pixels versus the unchanged first candidate's live PNG:
+
+| Diagnostic selection | Source pixels |
+| --- | ---: |
+| Ordinary YUV eligibility | 116,088 |
+| Hero RGBA, card YUV eligible | 17,724 |
+| Hero YUV eligible, card RGBA | 107,058 |
+| Both RGBA | 8,694 |
+
+All four fresh processes use one pinned production identity and retain the
+required document/focus audit. The selections are injected diagnostic code
+for two pinned resources; no row supplies site acceptance or optimization
+credit. An earlier all-RGBA diagnostic failed its focus audit. Its PNG happened
+to match the split-delivery Brave PNG, but that failed run is not a qualified
+full-page comparison. Its executable also differs from the corrected run,
+so their pixel difference cannot be assigned to focus or instrumentation.
+The corrected all-RGBA run matches the table's last row exactly.
+
+**Slate's full-page source/replay gate remains open.** These checks close the
+RGBA-conversion lead and add precise regression coverage without replacing a
+reference, resource or tolerance. The first staging check treated opaque raw
+pixel data as text; the binary attributes resolve that metadata failure before
+the successful test commit. No broad rendering rerun is credited for this
+test-only change; the preceding 142-test / 148-capture checkpoint remains linked
+in the Verge section.
+
+[Machine-readable evidence](evidence/slate-rgba-decoder-controls-20261106.json)
+and its [340-member archive](evidence/slate-rgba-decoder-controls-20261106.zip)
+retain the source/reference PNGs, exact decoded bytes, original encodings,
+passing native checks, reduced browser cases, injected probes, failed audit,
+identities and memory receipts. The ZIP is 13,674,592 bytes, SHA-256
+`5c0f21bafaf9c85996c1fd0611bd89862bff7c641b24921d78be499b31224df6`; all member hashes and CRCs pass readback.
+
 ## Run
 
 ```sh
