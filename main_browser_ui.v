@@ -2,6 +2,7 @@ module main
 
 import browserui
 import browsertabs
+import devtools
 import dom
 import platform
 import ui2
@@ -33,6 +34,13 @@ mut:
 	tab_title_focus_pending bool
 	find_bar        ?browserui.FindBar
 	find_focus_pending bool
+	devtools_panel  &devtools.DevTools = unsafe { nil }
+	// UI2 control to focus once the panel has rendered.
+	devtools_focus  string
+	// The page element a context menu's Inspect row reveals.
+	inspect_node    &dom.Node = unsafe { nil }
+	inspect_document voidptr
+	inspect_generation int
 }
 
 fn (app &BrowserApp) browser_ui() &BrowserUIState {
@@ -68,6 +76,7 @@ fn (mut app BrowserApp) dismiss_browser_popup() {
 		app.close_browser_select_picker(state.select_node)
 	}
 	state.select_node = unsafe { nil }
+	state.inspect_node = unsafe { nil }
 	state.link = ''
 	state.tab_color_target = ''
 	state.tab_title_target = ''
@@ -87,6 +96,9 @@ fn (mut app BrowserApp) browser_popup_action(action string) {
 		return
 	}
 	link := state.link
+	inspect_node := state.inspect_node
+	inspect_document := state.inspect_document
+	inspect_generation := state.inspect_generation
 	if id.starts_with('tab-color-') {
 		app.complete_tab_color_menu(id.all_after('tab-color-'))
 		app.dismiss_browser_popup()
@@ -101,6 +113,7 @@ fn (mut app BrowserApp) browser_popup_action(action string) {
 	}
 	app.dismiss_browser_popup()
 	app.refresh_browser_ui()
+	if id == 'inspect' { app.inspect_remembered_devtools_target(inspect_node, inspect_document, inspect_generation) }
 	if id == 'link-open' { app.activate_tab_chrome('tab-open-background:${link}') }
 	if id == 'link-copy' {
 		$if vox_ui2 ? {
@@ -158,6 +171,10 @@ fn browser_ui_event(event string) {
 			mut ui_state := app.browser_ui()
 			ui_state.version++
 			app.refresh_browser_ui()
+		}
+		if parts[2] == 'devtools-resize' && parts[1] in ['down', 'drag'] {
+			app.resize_devtools(parts[4].f64())
+			return
 		}
 		$if vox_ui2 ?|| linux {
 			if parts[2] == 'window-drag' && parts[1] == 'down' {
@@ -257,12 +274,16 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		return
 	}
 	if settings_keys { return }
+	if app.handle_devtools_key(event) {
+		ui2.consume_key()
+		return
+	}
 	editing := app.address_active || ui2.focused_id() == 'address'
 	action := browserui.shortcut(event, editing, $if macos { true } $else { false })
 	if action == '' { return }
 	$if vox_ui2 ? {
 		if ui2.embedded_key_repeat() && action in ['bookmarks-toggle', 'bookmark-add', 'debug-toggle',
-			'tab-new', 'tab-close'] {
+			'tab-new', 'tab-close', 'devtools-toggle', 'devtools-inspect'] {
 			ui2.consume_key()
 			return
 		}
@@ -274,6 +295,8 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		'debug-toggle' { app.toggle_browser_debug() }
 		'settings-open' { show_browser_settings() }
 		'find-open' { app.show_browser_find_bar() }
+		'devtools-toggle' { app.toggle_devtools() }
+		'devtools-inspect' { app.start_devtools_picker() }
 		'find-next', 'find-previous' { app.find_browser_step(action == 'find-next') }
 		else {
 			if action.starts_with('zoom-') {

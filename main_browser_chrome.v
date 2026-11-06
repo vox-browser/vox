@@ -41,6 +41,7 @@ struct BrowserChromeState {
 	bookmark_overflow_open bool
 	memory                 string
 	ui_version             u64
+	devtools               u64
 }
 
 fn browser_chrome_requires_update(previous BrowserChromeState, next BrowserChromeState) bool {
@@ -117,6 +118,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 	return BrowserChromeState{
 		memory:                 app.browser_ui().memory_label
 		ui_version:             app.browser_ui().version
+		devtools:               app.devtools_state_version()
 		address_editable:       app.address_bar_editable()
 		tab_titles:             titles
 		tab_favicons:           app.cached_browser_tab_favicons()
@@ -237,6 +239,8 @@ $if vox_ui2 ? {
 			items: [
 				ui2.menu_item_with_shortcut('settings-open', 'Settings…', 'cmd+,'),
 				ui2.menu_item_with_shortcut('history', 'History', 'cmd+y'),
+				ui2.menu_item_with_shortcut('devtools-toggle', 'Developer Tools', 'cmd+alt+i'),
+				ui2.menu_item_with_shortcut('devtools-inspect', 'Inspect Element', 'cmd+shift+c'),
 			]
 		}])
 		app.start_browser_memory_chrome()
@@ -286,6 +290,10 @@ fn (mut app BrowserApp) activate_browser_chrome(action string) {
 		app.browser_popup_action(action)
 		return
 	}
+	if action.starts_with('devtools:') {
+		app.devtools_action(action)
+		return
+	}
 	if action.starts_with('bookmark-') || action.starts_with('bookmarks-') {
 		app.activate_browser_bookmarks(action)
 		return
@@ -296,6 +304,8 @@ fn (mut app BrowserApp) activate_browser_chrome(action string) {
 	}
 	match action {
 		'history' { app.open_browser_history() }
+		'devtools-toggle' { app.toggle_devtools() }
+		'devtools-inspect' { app.start_devtools_picker() }
 		'back' {
 			app.blur_address_bar()
 			app.history_go(-1)

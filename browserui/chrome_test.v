@@ -31,6 +31,19 @@ fn test_shortcuts_share_platform_policy_and_preserve_editing_commands() {
 	assert shortcut(ui2.KeyEvent{ code: .d, cmd: true, alt: true }, false, true) == ''
 }
 
+fn test_devtools_shortcuts_follow_chrome() {
+	assert shortcut(ui2.KeyEvent{ code: .i, cmd: true, alt: true }, false, true) == 'devtools-toggle'
+	assert shortcut(ui2.KeyEvent{ code: .i, cmd: true, alt: true }, true, true) == 'devtools-toggle'
+	assert shortcut(ui2.KeyEvent{ code: .c, cmd: true, shift: true }, false, true) == 'devtools-inspect'
+	assert shortcut(ui2.KeyEvent{ code: .c, cmd: true, alt: true }, false, true) == 'devtools-inspect'
+	assert shortcut(ui2.KeyEvent{ code: .f12 }, false, true) == 'devtools-toggle'
+	assert shortcut(ui2.KeyEvent{ code: .i, ctrl: true, shift: true }, false, false) == 'devtools-toggle'
+	assert shortcut(ui2.KeyEvent{ code: .c, ctrl: true, shift: true }, false, false) == 'devtools-inspect'
+	assert shortcut(ui2.KeyEvent{ code: .i, ctrl: true, shift: true }, false, true) == ''
+	assert shortcut(ui2.KeyEvent{ code: .c, cmd: true }, true, true) == ''
+	assert shortcut(ui2.KeyEvent{ code: .f12, shift: true }, false, true) == ''
+}
+
 fn vector_area(points []ui2.VectorPoint) f64 {
 	mut area := 0.0
 	for i, p in points {

@@ -35,6 +35,7 @@ fn link_context_menu_test_click(mut app BrowserApp, x f32, y f32, button gg.Mous
 		state.count++
 		state.x = popup.x
 		state.y = popup.y
+		state.rows = popup.rows.map(it.id)
 		index := if state.choose == 2 { 0 } else { 1 }
 		app.browser_popup_action(if state.choose == 0 {
 			'browser-menu:${popup.token}:dismiss'
@@ -92,23 +93,28 @@ fn test_right_click_copies_link_url_without_navigation_and_cancel_preserves_clip
 	}
 }
 
-fn test_right_click_ignores_nonlinks_and_chrome_and_hit_tests_zoomed_links() {
+fn test_right_click_offers_only_inspect_off_links_ignores_chrome_and_hit_tests_zoomed_links() {
 	$if macos {
 		window := link_popup_test_begin()
 		defer { C.vox_link_test_end(window) }
 		mut app := link_context_menu_test_app()
 		defer { app.dispose_browser_tab() }
+		link_popup_test_choose(0)
 		for id in ['missing', 'plain'] {
 			x, y := link_context_menu_test_point(app, id)
 			link_context_menu_test_click(mut app, x, y, .right)
+			assert link_popup_test_state.rows == ['inspect']
 		}
+		assert link_popup_test_state.count == 2
 		link_context_menu_test_click(mut app, 10, 10, .right)
-		assert link_popup_test_state.count == 0
+		assert link_popup_test_state.count == 2
+		link_popup_test_choose(1)
 		app.page_zoom = 2
 		app.relayout(800, 600)
 		x, y := link_context_menu_test_point(app, 'label')
 		link_context_menu_test_click(mut app, x, y, .right)
-		assert link_popup_test_state.count == 1
+		assert link_popup_test_state.count == 3
+		assert link_popup_test_state.rows == ['link-open', 'link-copy', '', 'inspect']
 		expected := 'https://cdn.example/download?q=one&lang=ru#part'
 		assert C.vox_link_test_clipboard_matches(expected.str, expected.len) == 1
 	}
@@ -170,6 +176,7 @@ mut:
 	choose int = 1
 	x      f64
 	y      f64
+	rows   []string
 }
 
 const link_popup_test_state = &LinkPopupTestState{}

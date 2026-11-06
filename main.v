@@ -3480,15 +3480,17 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 }
 
 fn (app &BrowserApp) chrome_height() int {
-	return int(app.page_top()) + int(status_bar_height)
+	return int(app.page_top()) + app.status_height()
 }
 
 fn (app &BrowserApp) page_top() f32 {
 	return f32(app.bookmark_bar_top() + if app.bookmark_bar_visible() { bookmark_bar_height } else { 0.0 })
 }
 
+// status_height is the chrome below the document: the status bar and, when
+// open, the docked developer tools.
 fn (app &BrowserApp) status_height() int {
-	return int(status_bar_height)
+	return int(status_bar_height) + app.devtools_height()
 }
 
 fn browser_chrome_widget_pointer_event_callback(target voidptr, id string, event_type string,
@@ -8073,6 +8075,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		}
 		return
 	}
+	if app.handle_devtools_page_event(event) { return }
 	// Modified links belong to a new tab and must bypass the current page's
 	// ordinary link default action (including compact script replay).
 	if event.typ == .mouse_down && event.mouse_y >= app.page_top()

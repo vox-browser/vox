@@ -70,6 +70,7 @@ fn (app &BrowserApp) browser_chrome_ui_elements(chrome BrowserChromeState) []ui2
 		elements[0] = ui2.Element{ ...bar_toolbar, children: children }
 		if bookmarks.len > 1 { elements << bookmarks[1..] }
 	}
+	elements << app.devtools_elements(chrome.width, chrome.height)
 	elements << app.browser_settings_overlay(chrome.width, chrome.height)
 	elements << app.browser_popup_elements(chrome.width, chrome.height)
 	elements << app.browser_update_overlay(chrome.width, chrome.height)

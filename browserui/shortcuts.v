@@ -4,6 +4,8 @@ import ui2
 
 // UI2 normalizes physical keys and modifiers before application policy runs.
 pub fn shortcut(event ui2.KeyEvent, editing bool, macos bool) string {
+	devtools := devtools_shortcut(event, macos)
+	if devtools != '' { return devtools }
 	if event.alt { return '' }
 	command := if macos { event.cmd && !event.ctrl } else { event.ctrl && !event.cmd }
 	if event.ctrl && event.code == .tab {
@@ -38,5 +40,27 @@ pub fn shortcut(event ui2.KeyEvent, editing bool, macos bool) string {
 		}
 	}
 	if editing && event.code == .escape { return 'address-cancel' }
+	return ''
+}
+
+// devtools_shortcut follows Chrome: Cmd+Option+I (Ctrl+Shift+I elsewhere) or
+// F12 toggles the panel, and Cmd+Shift+C or Cmd+Option+C (Ctrl+Shift+C)
+// starts picking an element in the page.
+pub fn devtools_shortcut(event ui2.KeyEvent, macos bool) string {
+	if event.code == .f12 && !event.cmd && !event.ctrl && !event.alt && !event.shift {
+		return 'devtools-toggle'
+	}
+	if macos {
+		if !event.cmd || event.ctrl { return '' }
+		if event.alt && !event.shift {
+			if event.code == .i { return 'devtools-toggle' }
+			if event.code == .c { return 'devtools-inspect' }
+		}
+		if event.shift && !event.alt && event.code == .c { return 'devtools-inspect' }
+		return ''
+	}
+	if !event.ctrl || !event.shift || event.cmd || event.alt { return '' }
+	if event.code == .i { return 'devtools-toggle' }
+	if event.code == .c { return 'devtools-inspect' }
 	return ''
 }
