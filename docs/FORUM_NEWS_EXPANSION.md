@@ -3412,6 +3412,52 @@ retain both successful controls and the failed source-height lead. All 98
 members pass CRC and SHA-256 readback. The archive is 5,681,689 bytes, SHA-256
 `1257561f563f7ca3d0c017876648253838ca325f2cb39cb32d1aed734f2ad5ec`.
 
+## Engadget paint inspection and CNN motion recheck (2026-11-06)
+
+A fresh Engadget complete-cache acquisition, candidate manifest `eea56a8a…`,
+retains **295 source/frozen pixels**, confined to photo corners. Vox and both
+independent ordinary Brave replays agree at **zero pixels** on executable
+`918f4c30…`. The full-uBO filtering checks pass and browser/runtime identities
+remain unchanged, but the source-fidelity gate correctly exits one. The
+registered Engadget archive and reference PNGs remain unchanged.
+
+A separate new source/replay pair saves its ordinary PNGs and full-uBO reports
+before requesting paint inspection on a second CDP connection. The original
+page connection retains the 1024×768 viewport override. Enabling LayerTree,
+requesting its picture snapshots and reading the command logs changes the
+frozen page by **exactly 295 pixels**, after which it matches the saved live
+source at zero. The live source changes zero pixels under the same inspection.
+These diagnostic images never replace the ordinary references.
+
+All three inspected command logs are identical after removing only image
+`uniqueID` fields: 2,021 root commands, 100 header commands and 45 hidden-menu
+commands. The earlier native PNG also matches the new ordinary frozen PNG
+at zero. This narrows the discrepancy to Brave's raster/inspection state;
+it does not prove a specific internal GPU cause or justify a general Vox
+renderer change. The instrumented pair pins its canonical tools, checker,
+extension, lists, sealed bodies and Brave libraries before and after; all
+pins and viewport dimensions remain unchanged.
+
+The first post-capture pair retains a diagnostic failure: the frozen trace
+completed without a matching layer snapshot. Its already saved ordinary PNG
+and filtering report remain intact. The later explicit LayerTree diagnostic
+is separately labeled and retains all original references, commands and exits.
+
+CNN's new complete-cache acquisition still fails its warmup stability check.
+Its two consecutive frames differ at **39,853 pixels**, bounding box
+`(32,72)–(968,223)`, around the changing video/loading preview. Fonts are loaded
+and the document title identifies CNN. No new CNN archive was sealed, and its
+existing static comparisons remain historical results. No animated preview
+was removed or replaced to obtain a pass.
+
+[Independent counts, identities and qualifications](evidence/engadget-cnn-reference-state-20261106.json)
+and [all fresh captures, candidate bytes, inspection logs and failed attempts](evidence/engadget-cnn-reference-state-20261106.zip)
+retain the source-fidelity failures without new site-acceptance credit. All
+417 archive members pass CRC and SHA-256 readback. The archive is 18,843,706
+bytes, SHA-256
+`ba191757ecf19eea1c976a08921e69f99e2274b918471e4b6185d8ec0daba352`.
+No production build or broad rendering-suite rerun was required.
+
 ## Run
 
 ```sh

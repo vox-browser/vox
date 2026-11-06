@@ -1,0 +1,252 @@
+{
+  "scope": "Fresh failed source qualifications and post-reference paint inspection; no renderer fix or registered reference change",
+  "engadget": {
+    "primary": {
+      "id": "engadget",
+      "name": "Engadget",
+      "url": "https://www.engadget.com/",
+      "status": "live-to-frozen-mismatch",
+      "image_animation_policy": "allowed",
+      "cache_policy": "complete",
+      "different_pixels": 0,
+      "artifacts": "/Users/alex/code/vox2/Build/engadget-source-refresh-20261106/comparison/engadget",
+      "live_to_frozen_different_pixels": 295,
+      "reference_replay_different_pixels": 0,
+      "manifest_sha256": "eea56a8a398e2732b403b7991af3782a6ffeedd62a4e311fdf71eeba2f848433"
+    },
+    "independent_primary_difference": {
+      "pixels": 295,
+      "bbox": [
+        24,
+        88,
+        1000,
+        520
+      ]
+    },
+    "identity": {
+      "vox": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "7d17d982fda94a6ed2cbfc5a59c615a9fc15111e9a848a77a952c0bf63bd4ac7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "87ee2102cccf1b948f9e3c6c6308196036a2756f6a97a168e35ec81dae75d73f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7fee204250020a097bfd9459c7dcb7d07a58405494d50db7120c09af0de78b93",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "e8f3452c8ecbdec1aef4299683a146e6615b25f384c8693367a02a70a89cb100",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "brave": {
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+      }
+    },
+    "post_inspection": {
+      "source_to_frozen": 295,
+      "source_post_change": 0,
+      "frozen_post_change": 295,
+      "post_to_post": 0,
+      "source_inspection_change": 0,
+      "frozen_inspection_change": 295,
+      "inspection_to_inspection": 0
+    },
+    "independent_comparisons": {
+      "ordinary_source_to_frozen": {
+        "pixels": 295,
+        "bbox": [
+          24,
+          88,
+          1000,
+          520
+        ]
+      },
+      "source_inspection_change": {
+        "pixels": 0,
+        "bbox": null
+      },
+      "frozen_inspection_change": {
+        "pixels": 295,
+        "bbox": [
+          24,
+          88,
+          1000,
+          520
+        ]
+      },
+      "inspected_source_to_frozen": {
+        "pixels": 0,
+        "bbox": null
+      },
+      "earlier_native_to_new_ordinary_frozen": {
+        "pixels": 0,
+        "bbox": null
+      }
+    },
+    "normalized_command_logs": {
+      "equal": true,
+      "removed_fields": [
+        "drawImageRect params.image.uniqueID"
+      ],
+      "layers": [
+        {
+          "shape": "(1024, 65)",
+          "commands": 100,
+          "normalized_sha256": "daefc094a3cba24e5b5b0db0ef77deb9885736213181bbea124310d2bc6ddd32"
+        },
+        {
+          "shape": "(1024, 6855)",
+          "commands": 2021,
+          "normalized_sha256": "cc74b52cf72eecb9c9992f65f66e7fdd24594f46731a7fdb967d3ba5302f9896"
+        },
+        {
+          "shape": "(293, 40320)",
+          "commands": 45,
+          "normalized_sha256": "2d885a3c18f4937e98c5111c90697d183251daef09a3e2f63fc82c76b80fac5d"
+        }
+      ]
+    },
+    "first_trace_failure": [
+      "No layer snapshots at the reference viewport"
+    ]
+  },
+  "cnn": {
+    "result": {
+      "id": "cnn",
+      "name": "CNN",
+      "url": "https://edition.cnn.com/",
+      "status": "failure",
+      "error": "Command exited 1; see /Users/alex/code/vox2/Build/cnn-source-refresh-20261106/comparison/cnn/capture-warmup/brave-warm.log"
+    },
+    "unstable_frames": {
+      "pixels": 39853,
+      "bbox": [
+        32,
+        72,
+        968,
+        223
+      ]
+    },
+    "identity": {
+      "vox": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "7d17d982fda94a6ed2cbfc5a59c615a9fc15111e9a848a77a952c0bf63bd4ac7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "87ee2102cccf1b948f9e3c6c6308196036a2756f6a97a168e35ec81dae75d73f",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7fee204250020a097bfd9459c7dcb7d07a58405494d50db7120c09af0de78b93",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "e8f3452c8ecbdec1aef4299683a146e6615b25f384c8693367a02a70a89cb100",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "brave": {
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+        "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+      }
+    }
+  },
+  "limits": [
+    "The complete-cache Engadget acquisition and native comparison fail strict source qualification despite native and both independent Brave replays matching at zero pixels.",
+    "Paint inspection starts only after ordinary references and full-uBO reports are saved, using a second page connection while the original viewport remains active. Its PNGs never replace measured references.",
+    "The source inspection changes zero pixels; frozen inspection changes exactly 295 and then matches the source. All three inspected command logs match after removing process-specific image IDs. This implicates raster/inspection state, without proving an exact internal GPU cause or justifying a general Vox change.",
+    "The first optional frozen trace failed for lack of a matching layer snapshot; its ordinary reference and filtering report were already saved. That failure remains retained.",
+    "The later diagnostic explicitly enables LayerTree and requests snapshots/command logs after the reference boundary. It is instrumented and does not supply strict site acceptance.",
+    "The CNN complete-cache warmup fails consecutive-frame stability at 39,853 pixels; no candidate archive is sealed. A video/loading-preview region remains active.",
+    "All original archives, expected PNGs, tolerances and default oracle policies remain unchanged; candidate captures are separate and retained.",
+    "No production build, broad rendering suite or performance acceptance is claimed. Canonical tool and library pins are prospective for the instrumented pair; the ordinary command retains its browser/runtime/list/body identities and actual failing exit."
+  ],
+  "archive": {
+    "path": "engadget-cnn-reference-state-20261106.zip",
+    "members": 417,
+    "bytes": 18843706,
+    "sha256": "ba191757ecf19eea1c976a08921e69f99e2274b918471e4b6185d8ec0daba352"
+  }
+}
