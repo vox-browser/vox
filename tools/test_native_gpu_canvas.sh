@@ -64,6 +64,7 @@ if [ "$wrong_backend_status" -ne 1 ]; then
 fi
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
+"$output_dir/native_gpu_canvas_test" --cached-gpu-blurs
 VOX_IMAGE_UPLOAD_DIAGNOSTICS=1 "$output_dir/native_gpu_canvas_test" --immutable-msaa-images > "$output_dir/immutable-uploads.log" 2>&1
 python3 - "$output_dir/immutable-uploads.log" <<'IDENTITY'
 import re,sys

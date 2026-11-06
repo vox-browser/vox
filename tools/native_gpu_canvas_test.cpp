@@ -979,6 +979,45 @@ static void test_nested_failure(bool unclosed) {
     printf("Nested GPU rejection: %s, capability decline, failed begin and pending ancestor inspection passed\n",unclosed?"unclosed source":"failed composition");
 }
 
+static bool s_cached_blur_translucent;
+static bool s_cached_blur_failed;
+static decltype(&vox_graphite_canvas_draw_pixels) s_cached_blur_real_pixels;
+static int cached_blur_pixels(uint8_t const* pixels,int w,int h,int pitch,int x,int y,
+    VoxGraphiteCanvasClip const* clips,int count)
+{
+    return !s_cached_blur_failed && s_cached_blur_real_pixels(pixels,w,h,pitch,x,y,clips,count);
+}
+static float s_cached_blur_sigma;
+static void draw_cached_blur(CGContextRef destination, bool canvas)
+{
+    if (s_cached_blur_translucent) {
+        auto* data = static_cast<uint8_t*>(CGBitmapContextGetData(destination));
+        auto* p = data + size_t(strip_top + 3) * width * 4 + 3 * 4;
+        p[0] = p[1] = p[2] = 0; p[3] = 128;
+    }
+    draw_outline_content(destination, canvas);
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    std::vector<uint8_t> pixels(size_t(width) * height * 4);
+    auto layer = CGBitmapContextCreate(pixels.data(), width, height, 8, width * 4,
+        color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color); assert(layer);
+    CGContextScaleCTM(layer, scale, scale);
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("begin_css_filter_layer",22,0));
+    assert(ladybird_v_skia_begin_isolated_input(layer,css_width,css_height));
+    ladybird_v_skia_set_isolated_input_key(layer, UINT64_C(0xb1a00000) + int(s_cached_blur_sigma));
+    ladybird_v_skia_defer_cached_gradient_blur_input(layer);
+    draw_pattern_leaves(layer,false);
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("end_css_filter_layer",20,0));
+    assert(ladybird_v_skia_end_css_gradient_blur(layer,destination,css_width,css_height,scale,s_cached_blur_sigma));
+    if (canvas) assert(s_gpu_canvas->leaf_kinds["cached-gradient-blur"]
+        == unsigned(!s_cached_blur_translucent && !s_cached_blur_failed));
+    CGContextRelease(layer);
+    // A following CPU leaf must see the GPU result before painting.
+    if (canvas) ladybird_v_skia_gpu_canvas_command("unsupported-cpu",15,0);
+    CGContextSetRGBFillColor(destination,.2,.7,.4,.5);
+    CGContextFillRect(destination,CGRectMake(50,120,30,30));
+}
+
 int main(int argc, char** argv)
 {
     if (auto expected=std::getenv("VOX_TEST_GRAPHITE_LIBRARY")) {
@@ -990,6 +1029,26 @@ int main(int argc, char** argv)
         }
     }
     if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
+    if (argc==2 && !std::strcmp(argv[1],"--cached-gpu-blurs")) {
+        setenv("VOX_GPU_CANVAS_CACHED_BLURS","1",1);
+        setenv("VOX_GPU_CANVAS_DIAGNOSTICS","1",1);
+        setenv("VOX_GPU_CANVAS_ISOLATED_SHAPES","1",1);
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        s_backend_read=api->read; api->read=counted_read;
+        s_cached_blur_real_pixels=api->draw_pixels; api->draw_pixels=cached_blur_pixels;
+        int error=0; unsigned cases=0;
+        for (bool full : {false,true}) for (bool translucent : {false,true})
+        for (float sigma : {1.f,15.f,30.f}) for (bool fail : {false,true}) for (int repeat=0;repeat<2;++repeat) {
+            s_cached_blur_translucent=translucent; s_cached_blur_sigma=sigma; s_cached_blur_failed=fail;
+            auto reference=render(false,false,draw_cached_blur,full);
+            auto candidate=render(true,false,draw_cached_blur,full);
+            for (size_t at=0;at<reference.size();++at)
+                error=std::max(error,std::abs(int(reference[at])-int(candidate[at])));
+            assert(error<=3); ++cases;
+        }
+        std::cout << "Cached GPU blur: " << cases << " full/strip/opaque/translucent/fresh/reused scenes, max error " << error << '\n';
+        return 0;
+    }
     test_bitmap_inspection_pending_inputs();
     if (argc==2 && (!std::strcmp(argv[1],"--nested-pop-failure") || !std::strcmp(argv[1],"--nested-unclosed"))) {
         test_nested_failure(!std::strcmp(argv[1],"--nested-unclosed"));return 0;

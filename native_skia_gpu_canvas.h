@@ -25,6 +25,9 @@ struct GpuCanvasFrame {
     std::vector<int> device;
     bool begun = false;
     bool gpu_valid = false;
+    // Source-over commands preserve an opaque upload. Replacement copies
+    // conservatively revoke this proof until the next CPU upload.
+    bool opaque_upload = false;
     bool cpu_stale = false;
     bool compositor = false, presented = false, queued_upload = false;
     bool has_initial_clip = false;
@@ -404,6 +407,7 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
     }
     CGContextFlush(frame.destination);
     size_t pitch = CGBitmapContextGetBytesPerRow(frame.destination);
+    frame.opaque_upload = std::getenv("VOX_GPU_CANVAS_CACHED_BLURS") != nullptr;
     for (size_t index = 0; index < frame.tiles.size(); ++index) {
         auto const& rect = frame.tiles[index];
         std::vector<uint32_t> pixels(size_t(rect.width()) * rect.height());
@@ -414,6 +418,13 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
                 swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data()
                         + size_t(row - rect.top()) * rect.width() + visible.left() - rect.left()),
                     data + size_t(row) * pitch + size_t(visible.left()) * 4, size_t(visible.width()));
+            if (frame.opaque_upload) {
+                for (int row = visible.top(); row < visible.bottom() && frame.opaque_upload; ++row)
+                    for (int x = visible.left(); x < visible.right(); ++x)
+                        if (data[size_t(row) * pitch + size_t(x) * 4 + 3] != 255) {
+                            frame.opaque_upload = false; break;
+                        }
+            }
         }
         auto upload = frame.queued_upload ? api->upload_queued : api->upload;
         if (!upload || !upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), rect.width() * 4))
@@ -553,7 +564,8 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
             || (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") && gpu_canvas_api()->copy_pixels));
     if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
     if (kind == "begin_css_filter_layer" || kind == "end_css_filter_layer")
-        return std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS");
+        return std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")
+            || std::getenv("VOX_GPU_CANVAS_CACHED_BLURS");
     if (kind == "begin_css_effect_layer" || kind == "end_css_effect_layer")
         return (std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS") || gpu_canvas_nested_layers_enabled())
             && gpu_canvas_api()->draw_layer_pixels;
@@ -957,7 +969,50 @@ extern "C" int ladybird_v_skia_bitmap_pixels_are_current(CGContextRef context)
 extern "C" int ladybird_v_skia_gpu_canvas_defer_filters()
 {
     return s_gpu_canvas && !s_gpu_canvas_read_failed
-        && (std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS"));
+        && (std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")
+            || std::getenv("VOX_GPU_CANVAS_CACHED_BLURS"));
+}
+
+// Older helpers do not export this capability. A new host must keep its
+// original synchronization when loaded with one of those helpers.
+extern "C" int ladybird_v_skia_gpu_canvas_defer_cached_blurs()
+{
+    return std::getenv("VOX_GPU_CANVAS_CACHED_BLURS") && s_gpu_canvas && !s_gpu_canvas_read_failed;
+}
+
+static bool gpu_canvas_can_composite_cached_blur(CGContextRef destination)
+{
+    auto* frame = s_gpu_canvas.get();
+    return std::getenv("VOX_GPU_CANVAS_CACHED_BLURS") && frame && frame->destination == destination
+        && frame->gpu_valid && frame->opaque_upload && !s_gpu_canvas_read_failed
+        && frame->in_gpu_command && !gpu_canvas_shared_recording(destination);
+}
+
+static int gpu_canvas_composite_cached_blur(CGContextRef destination, uint32_t const* pixels,
+    int width, int height, int x, int y)
+{
+    if (!gpu_canvas_can_composite_cached_blur(destination) || !pixels || width <= 0 || height <= 0)
+        return 0;
+    auto ctm = CGContextGetCTM(destination);
+    auto scale = s_gpu_canvas->scale;
+    if (ctm.a != scale || ctm.d != scale || ctm.b || ctm.c || ctm.tx || ctm.ty) return 0;
+    std::vector<VoxGraphiteCanvasClip> clips;
+    auto* frame = gpu_canvas_for_leaf(destination, clips);
+    if (!frame || !frame->opaque_upload) return 0;
+    if (!gpu_canvas_api()->draw_pixels(reinterpret_cast<uint8_t const*>(pixels), width, height,
+            width * 4, x, y, clips.data(), int(clips.size()))) {
+        gpu_canvas_flush(); return 0;
+    }
+    gpu_canvas_name_leaf(*frame, "cached-gradient-blur", SkRect::MakeXYWH(x,y,width,height), 0, clips.size());
+    frame->cpu_stale = true;
+    ++frame->draws;
+    if (std::getenv("VOX_GPU_CACHED_BLUR_DIAGNOSTICS")) {
+        using Clock = double (*)();
+        static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT,"vox_precise_scroll_diagnostic_time"));
+        std::fprintf(stderr,"VOX_GPU_CACHED_BLUR width=%d height=%d x=%d y=%d t_us=%.3f\n",
+            width,height,x,y,clock ? clock() : -1);
+    }
+    return gpu_canvas_verify() ? 2 : 1;
 }
 
 extern "C" void ladybird_v_skia_gpu_canvas_context_access(CGContextRef destination)
@@ -1108,6 +1163,7 @@ extern "C" int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef de
             rgba + size_t(row) * pitch, size_t(width));
     if (!gpu_canvas_api()->copy_pixels(reinterpret_cast<uint8_t const*>(pixels.data()),
             width, height, width * 4, x, y)) return 0;
+    frame->opaque_upload = false;
     gpu_canvas_name_leaf(*frame, "video-backdrop", SkRect::MakeXYWH(x, y, width, height), 0, 0);
     frame->cpu_stale = true;
     frame->in_gpu_command = true;

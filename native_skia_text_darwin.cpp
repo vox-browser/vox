@@ -3106,7 +3106,8 @@ static unsigned s_test_direct_gradient_blur_successes;
 // scroll would not match a fresh replay. Rasterize the filter output once over
 // its complete ink on a transparent surface anchored to the content, keep it
 // while the content identity is unchanged, and blend it over the opaque
-// backdrop on the CPU inside the current clip only. Source-over of the same
+// backdrop inside the current clip. The optional resident-canvas path keeps
+// this composite on the GPU; other destinations use the CPU. Source-over of the same
 // 8-bit premultiplied filter output has no rounding ties, so it reproduces the
 // GPU composite.
 struct AnchoredGradientBlur {
@@ -3120,6 +3121,9 @@ struct AnchoredGradientBlur {
 static std::list<AnchoredGradientBlur> s_anchored_gradient_blurs;
 static size_t s_anchored_gradient_blur_bytes = 0;
 static constexpr size_t anchored_gradient_blur_byte_limit = 64 * 1024 * 1024;
+extern "C" void ladybird_v_skia_gpu_canvas_context_access(CGContextRef);
+static bool gpu_canvas_can_composite_cached_blur(CGContextRef);
+static int gpu_canvas_composite_cached_blur(CGContextRef, uint32_t const*, int, int, int, int);
 
 // A blur whose content identity is already cached draws from that cache, not
 // from its leaves' raster. Its leaves still record the input picture, which
@@ -3145,7 +3149,9 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
     int width, int height)
 {
     auto direct_draw = picture_regions_backdrop_draw();
-    if (!direct_draw || !original.pixels || std::getenv("VOX_DISABLE_ANCHORED_GRADIENT_BLUR"))
+    bool gpu_only = !original.pixels;
+    if (!direct_draw || (gpu_only && !gpu_canvas_can_composite_cached_blur(destination))
+        || std::getenv("VOX_DISABLE_ANCHORED_GRADIENT_BLUR"))
         return -1;
     auto const& bounds = recording.bounds;
     auto ink = filter->computeFastBounds(bounds).makeOutset(2, 2);
@@ -3215,8 +3221,10 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
     } else {
         parts.push_back({x0, y0, x1, y1});
     }
-    // Translucent backdrops keep the existing full-target replay.
+    // The GPU route proves opacity from its uploaded tiles. CPU destinations
+    // inspect the actual backdrop; translucent ones keep full-target replay.
     for (auto const& part : parts) {
+        if (gpu_only) break;
         for (long y = part[1]; y < part[3]; ++y) {
             auto const* row = original.pixels + size_t(y) * original.pitch;
             for (long x = part[0]; x < part[2]; ++x)
@@ -3291,6 +3299,11 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
     if (std::getenv("VOX_DIRECT_GRADIENT_BLUR_DIAGNOSTICS"))
         std::fprintf(stderr, "VOX_ANCHORED_GRADIENT_BLUR cached=%d ink=%ld,%ld,%d,%d region=%ld,%ld,%ld,%ld\n",
             int(cache_hit), ink_x, ink_y, ink_width, ink_height, x0, y0, x1 - x0, y1 - y0);
+    if (gpu_only) {
+        int result = gpu_canvas_composite_cached_blur(destination, layer->pixels.data(),
+            ink_width, ink_height, int(ink_x), int(ink_y));
+        return result ? result : -1;
+    }
     // Blend every part from the unmodified backdrop before writing any.
     std::vector<std::vector<uint32_t>> blended;
     blended.reserve(parts.size());
@@ -3382,6 +3395,19 @@ static int end_css_gradient_blur(CGContextRef context, CGContextRef destination,
     if (!filter) return 0;
     int left = 0, top = 0, output_width = width, output_height = height;
     auto draw_region = picture_region_draw();
+    // The cached transparent output can be blended over an opaque GPU prefix
+    // without downloading that prefix. Verification also executes the ordinary
+    // CPU composite, so the next leaf compares independent results.
+    bool verify_gpu_blur = false;
+    if (gpu_canvas_can_composite_cached_blur(destination)
+        && canvas_width * scale == width && canvas_height * scale == height) {
+        int result = draw_anchored_gradient_blur(destination, {}, *recording, input,
+            filter, canvas_height, scale, sigma, width, height);
+        if (result == 1) return 1;
+        verify_gpu_blur = result == 2;
+    }
+    if (std::getenv("VOX_GPU_CANVAS_CACHED_BLURS") && !verify_gpu_blur)
+        ladybird_v_skia_gpu_canvas_context_access(destination);
     auto original = read_backdrop(destination, {}, scale, width, height);
     if (!original.pixels) return 0;
     // Opaque backdrops use the content-anchored layer in every replay mode;

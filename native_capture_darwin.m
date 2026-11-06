@@ -39,6 +39,7 @@ extern void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int) __attribute
 extern void ladybird_v_skia_gpu_canvas_frame_surface(void *) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_document_top(int) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_filters(void) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_defer_cached_blurs(void) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_layers(void) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_push_layer(CGContextRef) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_pop_layer(CGContextRef, CGContextRef, float, int) __attribute__((weak_import));
@@ -5094,7 +5095,10 @@ void native_end_css_filter_layer(void) {
     BOOL deferred_color_filter = native_css_filter_has_pointwise_device_mapping(&layer,
         CGRectMake(0, 0, layer.canvas_width * layer.scale, layer.canvas_height * layer.scale));
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-    if (!deferred_color_filter) {
+    BOOL deferred_cached_blur = layer.gradient_blur_recording
+        && ladybird_v_skia_gpu_canvas_defer_cached_blurs
+        && ladybird_v_skia_gpu_canvas_defer_cached_blurs();
+    if (!deferred_color_filter && !deferred_cached_blur) {
         if (ladybird_v_skia_gpu_canvas_context_access) ladybird_v_skia_gpu_canvas_context_access(layer.destination);
         else ladybird_v_skia_gpu_canvas_cpu_access();
     }
