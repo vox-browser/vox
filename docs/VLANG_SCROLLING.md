@@ -2576,3 +2576,129 @@ the first collection attempt was corrected; its failure is retained. The
 [completed collection receipt](performance/vlang-compositor-foundation-20261106-collection.json)
 is separate from the archive. These are changed native publications after
 `updateLayer`, not physical display scanout.
+
+### Retained GPU tile integration and live comparison, November 6
+
+Smooth 60 fps remains open. The completed implementation now connects the GPU
+transport above to document publication: queued CPU uploads own their source
+bytes, GPU damage updates immutable IOSurface ring tiles, existing CA quads move
+the retained pixels, and captures wait on the recorded completion handle before
+materializing them. `eea801bc9`, `022b370e5` and `227779a39` implement and verify
+this route. `VOX_GPU_TILE_COMPOSITOR=1` also requires the advanced
+**GPU-accelerated scrolling** setting. It remains opt-in.
+
+Brave's relevant advantage is Chromium's separation of composition from main
+thread work, retained raster tiles, and accelerated video layers. The actual
+installed Brave layer audit on live vlang.io finds accelerated root and overflow
+scrolling and two accelerated video layers. Its root paint count increases
+1→124→246 at scroll positions 0/400/800, so this is not evidence of eliminating
+all repaint. The two attempted Brave presentation-trace FPS runs fail the
+complete-pipeline check and supply no valid FPS result or browser FPS ratio.
+The [Chromium compositor design](https://chromium.googlesource.com/chromium/src/+/main/docs/how_cc_works.md)
+describes the thread and tile ownership; the
+[macOS CA tree](https://raw.githubusercontent.com/chromium/chromium/main/ui/accelerated_widget_mac/ca_renderer_layer_tree.mm)
+and [IOSurface backing](https://raw.githubusercontent.com/chromium/chromium/main/gpu/command_buffer/service/shared_image/iosurface_image_backing.mm)
+describe retained layers and GPU scheduling. Vox's input, paint planning and
+replay still run on the main thread. Independent compositor-thread scrolling
+remains unfinished.
+
+`1640e6e9b`, `4c27c619f` and `414df6c74` add bounded nested GPU source canvases
+using one recorder. Opacity and screen composition can preserve the parent's
+pending GPU prefix. Legacy hosts, unsupported sources, failed composition and
+unclosed groups retain rejection/fallback behavior. The live page's nested
+sources are CPU text uploads: the fast diagnostic observes 126 parent GPU
+composites, with zero source GPU draws. Root video command barriers are also
+deferred through the capable host. This is not a claim that all offscreen
+content rasterizes on the GPU.
+
+`dd35f3c13` supports rounded image-mask stages behind
+`VOX_GPU_CANVAS_MASKED_IMAGES=1`; 192 native scenes stay within one channel
+level, but this live workload uses no masked-image leaves. An explicit-clip
+experiment passes its 128 native comparisons within two levels but fails the
+live header image at five, above the unchanged limit three. Its code was removed
+and its patch retained. Ordinary filtered images can use the existing
+`VOX_GPU_CANVAS_MSAA_IMAGES=1` path. A separate fast diagnostic sees 21 such
+leaves during input. Earlier verified runs' zero counts did **not** establish
+ineligibility: per-leaf verification delayed input enough to skip those image
+positions. Verified timings never supply performance credit.
+
+`e8a6a8ca3` gives immutable cached ICC conversions monotonically allocated
+resource-generation keys for texture lookup. Retagging, reconversion, dimensions,
+color profiles, cleared scope and counter exhaustion preserve invalidation;
+mutable images still compare bytes or their digest. The upload cache retains
+its texture budget without retaining another 37 MB mascot source. The first
+live diagnostic found the backend setter missing from its explicit export list,
+so keys did not reach it. `4f9fc4129` fixes the export and makes the integration
+test require actual keyed texture reuse. The corrected live run observes 46
+keyed uploads and 39 reuses during input. `VOX_IMMUTABLE_IMAGE_UPLOADS=1` remains
+opt-in.
+
+`c113bb684` adds `VOX_GPU_TILE_SPARSE_CLEAR=1`: reused GPU tile frames initialize
+the current CPU damage and chrome, with a sampling fringe, while retained GPU
+tiles cover the rest of the document. Fresh frames and mode changes keep the
+complete clear. The live eligibility run uses it for 587 of 593 input-window
+clears and writes 15.04% of the full-clear byte volume. That byte reduction is a
+diagnostic, not an FPS result.
+
+The following cohorts each alternate two complete unprofiled control/candidate
+pairs on one pinned literal `-prod`, single-C-unit executable and native-library
+set. Both arms keep the advanced GPU setting on. The workload remains the live
+1708×953 document at 2×, 112px chrome, 600 precise delta-8 native inputs at
+nominal 120 Hz, reversals every 150 inputs, ten seconds of title-based settling,
+direct HTTPS and empty private profiles/caches. All 32 trials complete their
+600 inputs, exit normally and pass identity checks. Different cohorts have
+different pinned builds and do not establish matched cross-cohort gains.
+Script policy is recorded per trial: the first three cohorts use automatic
+navigation policy, and later cohorts request author scripts explicitly.
+
+| Candidate / common options | Pair 1 publications/s | Pair 2 publications/s | Candidate p95 intervals, ms |
+|---|---:|---:|---:|
+| GPU tiles / ordinary defaults | 74.95→66.03 | 74.60→80.59 | 34.955 / 27.782 |
+| GPU tiles plus earlier CPU offscreen composition / defaults | 87.11→71.62 | 69.24→61.69 | 34.670 / 44.244 |
+| GPU tiles plus MSAA images / defaults, earlier cohort | 76.52→70.72 | 69.95→74.88 | 36.607 / 33.208 |
+| MSAA images / GPU tiles | 88.25→89.49 | 80.44→87.13 | 24.417 / 24.810 |
+| Nested GPU canvases / GPU tiles and MSAA images | 92.07→93.71 | 89.56→91.95 | 21.052 / 20.033 |
+| Immutable image keys / tiles, images and nested canvases | 79.04→80.62 | 90.11→91.99 | 24.578 / 21.174 |
+| Sparse clear / tiles, images, nested canvases and keys | 90.63→90.61 | 84.81→93.33 | 22.447 / 20.458 |
+| All five options / ordinary GPU-enabled defaults | 82.01→87.32 | 81.48→89.97 | 24.445 / 24.872 |
+
+The final combination has median scroll intervals 8.503/8.456 ms, but
+12.68%/13.00% exceed 16.67 ms. Its maximum intervals worsen from the controls'
+96.471/94.053 ms to 137.964/126.113 ms. It publishes 583/555 moving frames;
+leading moving-publication gaps are 30.323/37.365 ms and trailing gaps
+89.667/75.265 ms. Full-window throughput includes those boundaries. On this
+18-CPU host, the final cohort's one-minute load averages range approximately
+25.4–29.1; other sessions remain active. Higher candidate throughput comes with
+remaining stalls and substantial contention; these runs do not isolate the
+reason for every timing difference. The earlier
+regressions and deadline-miss increases remain in the report. All new switches
+stay off by default; the results do not establish smooth 60 fps.
+
+Optimized and ASan/UBSan checks pass the new boundaries: 36 nested backend
+scenes are exact, 192 primary nested-source scenes stay within one level,
+520 queued frames cross recorder/queue retirement, and actual GPU ring tests
+cover wrapping, reversal, fixed alpha content, CPU fallback and lazy capture.
+The live leaf limit remains three and GPU-to-IOSurface transport is exact.
+The final screenshot smoke passes the repository's unchanged Darwin tolerances;
+inline-node, text-decorations and canvas-text are not pixel-exact. The other
+eight smoke cases and `svg-image-source-switch-same-size` are exact.
+
+`366be6e8d` marks native verification/logging receipts as diagnostic, labels
+external sampling, pins cohort tools and explicit renderer/runtime inputs, and
+rejects instrumented timing arms; its 47 focused tests pass. Older diagnostic
+receipts retain their original metadata and are classified by their recorded
+configuration in the report. A missing requested backend in an earlier test
+silently selected the installed library; those checks are invalid. The runner
+now validates the requested path with the loaded API's module identity. Failed
+compiles, input-churn failures, that fallback, the missing export and rejected
+pixels all remain retained.
+
+The [continuation report](performance/vlang-retained-gpu-20261106.json),
+[verified raw archive](performance/raw/vlang-retained-gpu-20261106.tar.gz) and
+[collection receipt](performance/vlang-retained-gpu-20261106-collection.json)
+retain every cohort, complete input/publication timestamps, boundary statistics,
+host loads, executable/native hashes, build receipts, native artifacts, public
+cached responses, source patches, checks and failures. They extend the earlier
+foundation collection. `022b370e5` also accidentally included concurrently staged
+unrelated changes; shared linear history is preserved and those changes receive
+no optimization attribution.
