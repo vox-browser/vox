@@ -178,6 +178,7 @@ static void draw_pattern_leaves(CGContextRef context, bool canvas)
 }
 
 static bool s_video_rounded;
+static uint64_t s_video_upload_key;
 static std::vector<uint8_t> s_video_frame = [] {
     std::vector<uint8_t> pixels(size_t(1426) * 1080 * 4);
     for (int y = 0; y < 1080; ++y) for (int x = 0; x < 1426; ++x) {
@@ -195,10 +196,12 @@ static void draw_video_leaves(CGContextRef context, bool canvas)
             || ((std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS") || gpu_canvas_nested_layers_enabled())
                 && s_gpu_canvas->video_cpu_fallback_synchronized))));
     float radii[] {13, 13, 13, 13, 0, 0, 0, 0};
+    ladybird_v_skia_set_image_immutable_source(s_video_upload_key,s_video_frame.data());
     assert(ladybird_v_skia_draw_rgba_image(context, s_video_frame.data(), 1426, 1080, 1426 * 4,
         52.5f, 81.25f, 238, 180, 0, 0, 1426, 1080, 52.5f, 81.25f, 238, 180,
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 1, 0,
         2 | VOX_GRAPHITE_IMAGE_VIDEO_FRAME, s_video_rounded ? radii : nullptr));
+    ladybird_v_skia_set_image_immutable_source(0,nullptr);
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
     assert(ladybird_v_skia_draw_rounded_rect(context, 70, 120, 200, 60, 8, 8, 8, 8, 8, 8, 8, 8,
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 140, 1, 0, 1, 1));
@@ -1144,6 +1147,42 @@ int main(int argc, char** argv)
         }
         std::cout << "Deferred video barriers: " << cases << " ordinary/canvas frames, max error "
             << error << "; pending prefix, capture, CPU/GPU restore, failed copy and legacy host\n";
+        return 0;
+    }
+    if (argc == 2 && !std::strcmp(argv[1], "--video-upload-keys")) {
+        setenv("VOX_GPU_VIDEO_UPLOAD_KEYS","1",1);
+        setenv("VOX_GPU_CANVAS_VIDEO_BACKDROP","1",1);
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        s_backend_read=api->read;api->read=counted_read;
+        int tiles[]={0,1,2,3,4,5,6,7};int error=0;unsigned cases=0;
+        uint64_t key=UINT64_C(1)<<63;
+        for(bool full:{false,true}) for(int coverage:{0,1,2})
+        for(bool rounded:{false,true}) for(int alpha:{128,255}) {
+            s_video_rounded=rounded;s_video_upload_key=++key;
+            for(size_t at=3;at<s_video_frame.size();at+=4)s_video_frame[at]=alpha;
+            s_raster_layer_height=css_height;
+            ladybird_v_skia_set_msaa_grid(coverage?tiles:nullptr,coverage==1?8:coverage==2?1:0,512,256,2);
+            for(int repeat=0;repeat<2;++repeat) {
+                auto reference=render(false,false,draw_video_leaves,full);
+                auto candidate=render(true,false,draw_video_leaves,full);
+                int frame_error=0;
+                for(size_t at=0;at<reference.size();++at)
+                    frame_error=std::max(frame_error,std::abs(int(reference[at])-int(candidate[at])));
+                if(frame_error>3) {
+                    unsetenv("VOX_GPU_VIDEO_UPLOAD_KEYS");
+                    auto ordinary=render(false,false,draw_video_leaves,full);
+                    auto baseline=render(true,false,draw_video_leaves,full);
+                    int baseline_error=0;
+                    for(size_t at=0;at<ordinary.size();++at)
+                        baseline_error=std::max(baseline_error,std::abs(int(ordinary[at])-int(baseline[at])));
+                    std::cerr<<"Video key full="<<full<<" coverage="<<coverage<<" rounded="<<rounded
+                        <<" alpha="<<alpha<<" repeat="<<repeat<<" error="<<frame_error
+                        <<" no-key error="<<baseline_error<<'\n';return 1;
+                }
+                error=std::max(error,frame_error);++cases;
+            }
+        }
+        std::cout<<"Video generation uploads: "<<cases<<" full/strip/MSAA/alpha/rounded/reused frames max error "<<error<<'\n';
         return 0;
     }
     if (argc == 2 && (!std::strcmp(argv[1], "--static-msaa-images")

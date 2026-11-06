@@ -5,10 +5,12 @@ import browsersettings
 import os
 
 const gpu_scrollbar_batch_enabled = os.getenv('VOX_DISABLE_GPU_SCROLLBAR_BATCH') == ''
+const gpu_video_upload_keys_enabled = os.getenv('VOX_GPU_VIDEO_UPLOAD_KEYS') != ''
 const gpu_text_layer_composites_enabled = os.getenv('VOX_GPU_TEXT_LAYER_COMPOSITES') != ''
 	|| os.getenv('VOX_GPU_CANVAS_NESTED_LAYERS') != ''
 
 $if macos {
+	fn C.native_set_video_frame_resource(source u64, revision u64, generation u64)
 	fn C.native_gpu_canvas_begin() int
 	fn C.native_gpu_canvas_begin_rects(rects &f32, count i32) int
 	fn C.native_gpu_canvas_cpu_access()

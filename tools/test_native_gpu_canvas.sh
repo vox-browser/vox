@@ -20,7 +20,7 @@ import hashlib,json,sys
 from pathlib import Path
 root=Path(sys.argv[1]);backend=Path(sys.argv[2]).resolve()
 if not backend.is_file(): raise SystemExit('Requested GPU backend is missing: '+str(backend))
-files=[backend,root/'native_skia_text_darwin.cpp',root/'native_capture_darwin.m',root/'tools/native_gpu_canvas_test.cpp',root/'tools/test_native_gpu_canvas.sh',*root.glob('native*.h')]
+files=[backend,root/'native_skia_text_darwin.cpp',root/'native_capture_darwin.m',root/'tools/native_gpu_canvas_test.cpp',root/'tools/native_video_image_resource_test.c',root/'tools/test_native_gpu_canvas.sh',*root.glob('native*.h')]
 Path(sys.argv[3]).write_text(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files},indent=2)+'\n')
 PIN
 python3 - "$repo_dir/native_capture_darwin.m" "$output_dir/native_video_backdrop_entry_points.inc" <<'PY'
@@ -73,6 +73,20 @@ assert re.search(r'VOX_IMAGE_UPLOAD width=1426 height=1080 .*reused=1 .*immutabl
 print('Immutable primary/backend bridge: exported API and keyed texture reuse observed')
 IDENTITY
 "$output_dir/native_gpu_canvas_test" --masked-images
+VOX_IMAGE_UPLOAD_DIAGNOSTICS=1 "$output_dir/native_gpu_canvas_test" --video-upload-keys > "$output_dir/video-uploads.log" 2>&1
+python3 - "$output_dir/video-uploads.log" <<'VIDEO_IDENTITY'
+import re,sys
+from pathlib import Path
+log=Path(sys.argv[1]).read_text()
+assert re.search(r'VOX_IMAGE_UPLOAD width=1426 height=1080 .*reused=1 .*immutable=1',log), 'No video generation reuse through the primary bridge'
+print('Video primary/backend bridge: generation-keyed texture reuse observed')
+VIDEO_IDENTITY
+for resource_mode in optimized sanitized; do
+    resource_flags=-O2
+    if [ "$resource_mode" = sanitized ]; then resource_flags='-O1 -g -fsanitize=address,undefined'; fi
+    clang -std=c11 $resource_flags "$repo_dir/tools/native_video_image_resource_test.c" -o "$output_dir/video-resources-$resource_mode"
+    "$output_dir/video-resources-$resource_mode"
+done
 "$output_dir/native_gpu_canvas_test" --deferred-video-barriers
 "$output_dir/native_gpu_canvas_test" --failed-readback
 "$output_dir/native_gpu_canvas_test" --failed-readonly

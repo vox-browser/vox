@@ -1,6 +1,7 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
+@[has_globals]
 module painting
 
 import dom
@@ -165,17 +166,52 @@ pub fn (frame &MediaVideoFrame) to_bitmap() !&dom.Bitmap_ {
 	}
 }
 
+struct VideoFrameSourceIdentityAllocator {
+mut:
+	last u64
+}
+
+fn (mut allocator VideoFrameSourceIdentityAllocator) take() u64 {
+	if allocator.last == u64(0xffffffffffffffff) { return 0 }
+	allocator.last++
+	return allocator.last
+}
+
+// Sources belong to the document's painting thread, like paint generations.
+// A lifetime ID keeps recycled source/frame addresses out of texture identity.
+__global video_frame_source_identities VideoFrameSourceIdentityAllocator
+
+pub struct VideoFrameResourceIdentity {
+pub:
+	source     u64
+	revision   u64
+	generation u64
+}
+
 @[heap]
 pub struct VideoFrameSource {
 mut:
 	frame_ ?&MediaVideoFrame
+	resource_identity_ u64
+	resource_revision_ u64
 }
 
 pub fn VideoFrameSource.create() &VideoFrameSource {
-	return &VideoFrameSource{}
+	return &VideoFrameSource{ resource_identity_: video_frame_source_identities.take() }
 }
 
 pub fn (mut source VideoFrameSource) update(frame ?&MediaVideoFrame) {
+	mut replaced := true
+	if previous := source.frame_ {
+		if next := frame { replaced = voidptr(previous) != voidptr(next) }
+	}
+	if replaced {
+		if source.resource_revision_ == u64(0xffffffffffffffff) {
+			source.resource_identity_ = 0
+		} else {
+			source.resource_revision_++
+		}
+	}
 	source.frame_ = frame
 }
 
@@ -185,4 +221,16 @@ pub fn (mut source VideoFrameSource) clear() {
 
 pub fn (source &VideoFrameSource) current_frame() ?&MediaVideoFrame {
 	return source.frame_
+}
+
+pub fn (source &VideoFrameSource) resource_identity() VideoFrameResourceIdentity {
+	frame := source.frame_ or { return VideoFrameResourceIdentity{} }
+	if source.resource_identity_ == 0 || source.resource_revision_ == 0 {
+		return VideoFrameResourceIdentity{}
+	}
+	return VideoFrameResourceIdentity{
+		source:     source.resource_identity_
+		revision:   source.resource_revision_
+		generation: frame.generation
+	}
 }

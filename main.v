@@ -6770,7 +6770,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		'draw_video' {
 			paintable := command.video_paintable or { return }
 			mut video_bitmap := command.video_bitmap
+			mut video_resource := painting.VideoFrameResourceIdentity{}
 			if source := command.video_frame_source {
+				if gpu_video_upload_keys_enabled { video_resource = source.resource_identity() }
 				if frame := source.current_frame() {
 					if bitmap := frame.to_bitmap() {
 						video_bitmap = bitmap
@@ -6833,6 +6835,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					}
 					// Live frames, not posters, bypass the image decode-cache resize.
 					C.native_set_video_frame_image(i32(command.video_frame_source != none))
+					if gpu_video_upload_keys_enabled {
+						C.native_set_video_frame_resource(video_resource.source, video_resource.revision, video_resource.generation)
+					}
 					C.native_draw_image_part_transformed(video_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling == .nearest_neighbor {
 						1
 					} else {

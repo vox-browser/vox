@@ -535,9 +535,12 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
     auto content_image = *image;
     content_image.flags &= ~VOX_GRAPHITE_IMAGE_FORCE_MSAA;
     auto const& identity=immutable_image_source;
-    uint64_t key=std::getenv("VOX_IMMUTABLE_IMAGE_UPLOADS") && identity.pixels==image->pixels
+    bool trusted_kind=image->flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME
+        ? std::getenv("VOX_GPU_VIDEO_UPLOAD_KEYS") : std::getenv("VOX_IMMUTABLE_IMAGE_UPLOADS");
+    trusted_kind = trusted_kind && bool(identity.key >> 63) == bool(image->flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME);
+    uint64_t key=trusted_kind && identity.pixels==image->pixels
         && identity.width==image->width && identity.height==image->height && identity.pitch==image->pitch
-        && !(image->flags & (4 | VOX_GRAPHITE_IMAGE_VIDEO_FRAME)) ? identity.key : 0;
+        && !(image->flags & 4) ? identity.key : 0;
     auto upload = image_upload_cache.prepare(content_image, upload_width, upload_height, prepared.needs_mips,key);
     if (std::getenv("VOX_IMAGE_UPLOAD_DIAGNOSTICS")) {
         using Clock = double (*)();

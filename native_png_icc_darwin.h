@@ -184,7 +184,10 @@ static NSData *native_image_icc_source(const void *pixels, int width, int height
             tag.source_identity = 0;
             if (!native_png_icc_source_clock_exhausted) {
                 tag.source_identity = ++native_png_icc_source_clock;
-                if (!tag.source_identity) native_png_icc_source_clock_exhausted = YES;
+                if (!tag.source_identity || (tag.source_identity & (UINT64_C(1) << 63))) {
+                    tag.source_identity = 0;
+                    native_png_icc_source_clock_exhausted = YES;
+                }
             }
             tag.color_profile = prepared_profile;
             native_png_icc_cached_bytes += size;

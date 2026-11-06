@@ -2098,7 +2098,8 @@ class GraphiteImmutableImageScope {
     Setter setter=nullptr;
 public:
     GraphiteImmutableImageScope(uint8_t const* pixels,int width,int height,int pitch) {
-        if (!s_image_immutable_key || s_image_immutable_pixels!=pixels || !std::getenv("VOX_IMMUTABLE_IMAGE_UPLOADS")) return;
+        if (!s_image_immutable_key || s_image_immutable_pixels!=pixels
+            || (!std::getenv("VOX_IMMUTABLE_IMAGE_UPLOADS") && !std::getenv("VOX_GPU_VIDEO_UPLOAD_KEYS"))) return;
         static auto set=[] {
             auto library=dlopen("@rpath/libVoxGraphite.dylib",RTLD_LAZY|RTLD_LOCAL);
             return library ? reinterpret_cast<Setter>(dlsym(library,"vox_graphite_set_image_immutable_source")) : nullptr;

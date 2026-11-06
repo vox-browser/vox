@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
         assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
         puts("ICC metadata routing and retagging passed");
         // Exhaustion fails closed instead of recycling a prior resource key.
-        native_png_icc_source_clock=UINT64_MAX;
+        native_png_icc_source_clock=UINT64_MAX>>1;
         native_tag_image_color_profile(pixels,2,2,png.bytes,png.length,1);
         converted=native_image_icc_pixels(pixels,2,2);
         assert(converted && !native_image_icc_source_identity(pixels,2,2,converted));

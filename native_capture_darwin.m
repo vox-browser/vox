@@ -2996,8 +2996,15 @@ void native_invalidate_video_backdrop(double x, double y, double width, double h
 // The next image draws are frames of a playing video.
 static int native_video_frame_image;
 
+#include "native_video_image_resource.h"
 void native_set_video_frame_image(int active) {
     native_video_frame_image = active != 0;
+    native_video_image_resource_key = 0;
+}
+
+void native_set_video_frame_resource(uint64_t source, uint64_t revision, uint64_t generation) {
+    native_video_image_resource_key = native_video_frame_image && getenv("VOX_GPU_VIDEO_UPLOAD_KEYS")
+        ? native_video_image_resource_identity(source,revision,generation) : 0;
 }
 
 
@@ -6818,8 +6825,8 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 	    native_image_color_profile(image->data, image->width, image->height,
 	        &color_profile) ? color_profile.values : NULL);
 	if (ladybird_v_skia_set_image_immutable_source)
-		ladybird_v_skia_set_image_immutable_source(icc_pixels
-		    ? native_image_icc_source_identity(image->data,image->width,image->height,icc_pixels) : 0,
+		ladybird_v_skia_set_image_immutable_source(native_video_frame_image ? native_video_image_resource_key
+		    : icc_pixels ? native_image_icc_source_identity(image->data,image->width,image->height,icc_pixels) : 0,
 		    source_pixels);
 	*source = (NativeSkiaImageSource){
 		.pixels = source_pixels,

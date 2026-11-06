@@ -70,6 +70,22 @@ static void test_immutable_image_uploads() {
     vox_graphite_set_image_immutable_source(0,nullptr,0,0,0);
     PreparedImageDraw cleared;plan_image_draw(&source,cleared);
     assert(prepare_image_texture(recorder.get(),&source,cleared) && !cleared.upload.verified_by_identity);
+    // Video uses a separate key domain and an explicit capability switch.
+    source.flags|=VOX_GRAPHITE_IMAGE_VIDEO_FRAME;
+    vox_graphite_set_image_immutable_source((UINT64_C(1)<<63)|73,bytes.data(),2,2,8);
+    PreparedImageDraw video_disabled;plan_image_draw(&source,video_disabled);
+    assert(prepare_image_texture(recorder.get(),&source,video_disabled) && !video_disabled.upload.verified_by_identity);
+    setenv("VOX_GPU_VIDEO_UPLOAD_KEYS","1",1);
+    PreparedImageDraw video;plan_image_draw(&source,video);
+    assert(prepare_image_texture(recorder.get(),&source,video) && video.upload.verified_by_identity);
+    image_upload_cache.finish(std::move(video.upload),video.texture);
+    PreparedImageDraw video_reused;plan_image_draw(&source,video_reused);
+    assert(prepare_image_texture(recorder.get(),&source,video_reused)
+        && video_reused.upload.verified_by_identity && !video_reused.upload.pending && video_reused.texture==video.texture);
+    vox_graphite_set_image_immutable_source(73,bytes.data(),2,2,8);
+    PreparedImageDraw wrong_domain;plan_image_draw(&source,wrong_domain);
+    assert(prepare_image_texture(recorder.get(),&source,wrong_domain) && !wrong_domain.upload.verified_by_identity);
+    vox_graphite_set_image_immutable_source(0,nullptr,0,0,0);unsetenv("VOX_GPU_VIDEO_UPLOAD_KEYS");
     image_upload_cache.clear();unsetenv("VOX_IMMUTABLE_IMAGE_UPLOADS");
     std::puts("Immutable GPU uploads: texture reuse, changed generation, source/geometry mismatch and cleared scope passed");
 }
