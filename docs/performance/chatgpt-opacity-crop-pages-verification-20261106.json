@@ -1,0 +1,3942 @@
+{
+  "complete": true,
+  "implementation_commit": "e332a5dfa1d06085e3e773ec528f3defdeff8c2b",
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "native_opacity_group_darwin.h": "7214f5812fa21686672436f427ad759cb1ff6181cd3a868330709a53faedb227",
+      "tools/native_opacity_ink_bounds_test.c": "51cd8e3d203b443de5e761d8d29b589a27901b9e59f8f28ee2cb4a84152dc336",
+      "native_sparse_opacity_ink_darwin.h": "9f57b1550ce970aa70e64c401af422fbc2c83a4fd833bf4203504e0692d1d909",
+      "tools/native_sparse_opacity_ink_test.m": "a6453c8a97363e8b7ae5e11659292e27686280aa17a8e2a7a2849bde7b1093cb",
+      "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+      "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+    },
+    "source_after": {
+      "native_opacity_group_darwin.h": "7214f5812fa21686672436f427ad759cb1ff6181cd3a868330709a53faedb227",
+      "tools/native_opacity_ink_bounds_test.c": "51cd8e3d203b443de5e761d8d29b589a27901b9e59f8f28ee2cb4a84152dc336",
+      "native_sparse_opacity_ink_darwin.h": "9f57b1550ce970aa70e64c401af422fbc2c83a4fd833bf4203504e0692d1d909",
+      "tools/native_sparse_opacity_ink_test.m": "a6453c8a97363e8b7ae5e11659292e27686280aa17a8e2a7a2849bde7b1093cb",
+      "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+      "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+    },
+    "rows": [
+      {
+        "label": "compile-backed-optimized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-backed-optimized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-backed-optimized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang",
+          "-std=c11",
+          "-O2",
+          "/Users/alex/code/vox2/tools/native_sparse_opacity_ink_test.m",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreFoundation",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-optimized"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793946731.497371,
+          "cpu_count": 18,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946731.834517,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        }
+      },
+      {
+        "label": "run-backed-optimized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-optimized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946731.835399,
+          "cpu_count": 18,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946732.292737,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        }
+      },
+      {
+        "label": "run-backed-optimized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-optimized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946732.29358,
+          "cpu_count": 18,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946732.503018,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        }
+      },
+      {
+        "label": "run-backed-optimized-retained-rows",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-retained-rows.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-retained-rows-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-optimized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "1",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946732.50383,
+          "cpu_count": 18,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946732.7128818,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        }
+      },
+      {
+        "label": "run-backed-optimized-legacy-full",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-legacy-full.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-optimized-legacy-full-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-optimized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946732.7136269,
+          "cpu_count": 18,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946732.927903,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        }
+      },
+      {
+        "label": "compile-backed-scalar",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-backed-scalar.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-backed-scalar-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang",
+          "-std=c11",
+          "-O2",
+          "-DVOX_OPACITY_DISABLE_NEON",
+          "/Users/alex/code/vox2/tools/native_sparse_opacity_ink_test.m",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreFoundation",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-scalar"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793946732.9286778,
+          "cpu_count": 18,
+          "load": [
+            13.806640625,
+            23.15380859375,
+            22.77197265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946733.265728,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-scalar-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-scalar"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946733.266504,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946733.9714508,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-scalar-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-scalar"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946733.97224,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946734.190881,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-scalar-retained-rows",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-retained-rows.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-retained-rows-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-scalar"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "1",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946734.192031,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946734.522469,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-scalar-legacy-full",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-legacy-full.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-scalar-legacy-full-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-scalar"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946734.5234098,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946734.8546162,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "compile-backed-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-backed-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-backed-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang",
+          "-std=c11",
+          "-O2",
+          "-O1",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "/Users/alex/code/vox2/tools/native_sparse_opacity_ink_test.m",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreFoundation",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-sanitized"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793946734.855406,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946735.313693,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-sanitized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946735.314751,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946735.772537,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-sanitized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946735.7734091,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946736.1061811,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-sanitized-retained-rows",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-retained-rows.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-retained-rows-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-sanitized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "1",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946736.1072881,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946736.437823,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-backed-sanitized-legacy-full",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-legacy-full.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-backed-sanitized-legacy-full-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/backed-sanitized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+          "VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS": "1",
+          "VOX_OPACITY_CROP_QUERY_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946736.438814,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946736.772963,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "compile-sparse-optimized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-sparse-optimized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-sparse-optimized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-fno-rtti",
+          "-O2",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreFoundation",
+          "/Users/alex/code/vox2/tools/native_sparse_bitmap_context_test.cpp",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/sparse-optimized"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793946736.773899,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946737.479691,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-sparse-optimized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-optimized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-optimized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/sparse-optimized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946737.480586,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946737.80648,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "run-sparse-optimized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-optimized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-optimized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/sparse-optimized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946737.807391,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946737.898711,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        }
+      },
+      {
+        "label": "compile-sparse-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-sparse-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-sparse-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang++",
+          "-std=c++20",
+          "-fno-rtti",
+          "-O2",
+          "-O1",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreFoundation",
+          "/Users/alex/code/vox2/tools/native_sparse_bitmap_context_test.cpp",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/sparse-sanitized"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793946737.899981,
+          "cpu_count": 18,
+          "load": [
+            13.50146484375,
+            22.93505859375,
+            22.69677734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946738.593952,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        }
+      },
+      {
+        "label": "run-sparse-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/sparse-sanitized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946738.594948,
+          "cpu_count": 18,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946738.9247448,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        }
+      },
+      {
+        "label": "run-sparse-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-sparse-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/sparse-sanitized"
+        ],
+        "environment": {
+          "VOX_RETAIN_OPACITY_ROW_SCANS": "",
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793946738.925863,
+          "cpu_count": 18,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946739.134073,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        }
+      },
+      {
+        "label": "compile-parallel-state",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-parallel-state.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/compile-parallel-state-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang",
+          "-std=c11",
+          "-O2",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/parallel-primary.c",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/parallel-secondary.c",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreFoundation",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/parallel-state"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793946739.135357,
+          "cpu_count": 18,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946739.5865972,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        }
+      },
+      {
+        "label": "run-parallel-state-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-parallel-state-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-parallel-state-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/parallel-state"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": ""
+        },
+        "host_before": {
+          "unix": 1793946739.5876548,
+          "cpu_count": 18,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946740.040896,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        }
+      },
+      {
+        "label": "run-parallel-state-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-parallel-state-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/run-parallel-state-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-20261106-r2/parallel-state"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1"
+        },
+        "host_before": {
+          "unix": 1793946740.042062,
+          "cpu_count": 18,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946740.258715,
+          "load": [
+            13.30078125,
+            22.73681640625,
+            22.6279296875
+          ]
+        }
+      }
+    ]
+  },
+  "focused_jobs": 24,
+  "row_backing_cases_per_run": 888960,
+  "metadata_origin_variants_per_case": 2,
+  "clipped_scans_per_run": 1876,
+  "independent_pixel_oracle_scans_per_run": 376,
+  "component_checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "native_opacity_group_darwin.h": "7214f5812fa21686672436f427ad759cb1ff6181cd3a868330709a53faedb227",
+      "tools/native_opacity_ink_bounds_test.c": "51cd8e3d203b443de5e761d8d29b589a27901b9e59f8f28ee2cb4a84152dc336",
+      "native_sparse_opacity_ink_darwin.h": "9f57b1550ce970aa70e64c401af422fbc2c83a4fd833bf4203504e0692d1d909",
+      "tools/native_sparse_opacity_ink_test.m": "a6453c8a97363e8b7ae5e11659292e27686280aa17a8e2a7a2849bde7b1093cb",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/driver.m": "4f176b44de3e1149f1c7da9319905c1f6f889859ba070018bd188a1b86fe1764",
+      "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/component": "6460a3f5a5768aaefa4f9a76f5fcbee0e22e215d80d532e7835bcf3fbe1a38b1",
+      "/usr/bin/clang": "ed6f5284033aa2aae6a58427c25ba3ab119947b40365627b24e5d51a4b70a1cd",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/compiler-version.txt": "7656124e47978db7276c4783b040238fd3951ab2f3b824834660fcfb5b37eac1",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/system-version.txt": "e5da02eb465e88c7c63b21a4b6156f58f079a4995f790b3b61c5d4ad6ac5258b",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/linked-libraries.txt": "b758922180b8e92db9785a7dddfd8473fde70dc3df3c9b634ff40ac2748e8a98",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/checks.py": "c549ad457efab63f666d09f070dfa25a9608d809e3b95802270db924e06b1595",
+      "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+    },
+    "source_after": {
+      "native_opacity_group_darwin.h": "7214f5812fa21686672436f427ad759cb1ff6181cd3a868330709a53faedb227",
+      "tools/native_opacity_ink_bounds_test.c": "51cd8e3d203b443de5e761d8d29b589a27901b9e59f8f28ee2cb4a84152dc336",
+      "native_sparse_opacity_ink_darwin.h": "9f57b1550ce970aa70e64c401af422fbc2c83a4fd833bf4203504e0692d1d909",
+      "tools/native_sparse_opacity_ink_test.m": "a6453c8a97363e8b7ae5e11659292e27686280aa17a8e2a7a2849bde7b1093cb",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/driver.m": "4f176b44de3e1149f1c7da9319905c1f6f889859ba070018bd188a1b86fe1764",
+      "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/component": "6460a3f5a5768aaefa4f9a76f5fcbee0e22e215d80d532e7835bcf3fbe1a38b1",
+      "/usr/bin/clang": "ed6f5284033aa2aae6a58427c25ba3ab119947b40365627b24e5d51a4b70a1cd",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/compiler-version.txt": "7656124e47978db7276c4783b040238fd3951ab2f3b824834660fcfb5b37eac1",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/system-version.txt": "e5da02eb465e88c7c63b21a4b6156f58f079a4995f790b3b61c5d4ad6ac5258b",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/linked-libraries.txt": "b758922180b8e92db9785a7dddfd8473fde70dc3df3c9b634ff40ac2748e8a98",
+      "Build/chatgpt-opacity-crop-pages-component-20261106-r1/checks.py": "c549ad457efab63f666d09f070dfa25a9608d809e3b95802270db924e06b1595",
+      "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+    },
+    "rows": [
+      {
+        "label": "compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/compile-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang",
+          "-std=c11",
+          "-O2",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/driver.m",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreFoundation",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793946756.781749,
+          "cpu_count": 18,
+          "load": [
+            12.791015625,
+            22.14794921875,
+            22.41845703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946757.113347,
+          "load": [
+            12.791015625,
+            22.14794921875,
+            22.41845703125
+          ]
+        }
+      },
+      {
+        "label": "sample-0-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-0-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1"
+        },
+        "host_before": {
+          "unix": 1793946757.1430578,
+          "cpu_count": 18,
+          "load": [
+            12.791015625,
+            22.14794921875,
+            22.41845703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946757.712221,
+          "load": [
+            12.791015625,
+            22.14794921875,
+            22.41845703125
+          ]
+        }
+      },
+      {
+        "label": "sample-1-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-1-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": ""
+        },
+        "host_before": {
+          "unix": 1793946757.7134678,
+          "cpu_count": 18,
+          "load": [
+            12.791015625,
+            22.14794921875,
+            22.41845703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946758.050199,
+          "load": [
+            12.791015625,
+            22.14794921875,
+            22.41845703125
+          ]
+        }
+      },
+      {
+        "label": "sample-2-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-2-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": ""
+        },
+        "host_before": {
+          "unix": 1793946758.051533,
+          "cpu_count": 18,
+          "load": [
+            12.791015625,
+            22.14794921875,
+            22.41845703125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946758.382765,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        }
+      },
+      {
+        "label": "sample-3-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-3-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1"
+        },
+        "host_before": {
+          "unix": 1793946758.384414,
+          "cpu_count": 18,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946758.8377411,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        }
+      },
+      {
+        "label": "sample-4-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-4-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-4-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1"
+        },
+        "host_before": {
+          "unix": 1793946758.839183,
+          "cpu_count": 18,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946759.289804,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        }
+      },
+      {
+        "label": "sample-5-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-5-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-5-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": ""
+        },
+        "host_before": {
+          "unix": 1793946759.291192,
+          "cpu_count": 18,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946759.6270962,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        }
+      },
+      {
+        "label": "sample-6-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-6-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-6-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": ""
+        },
+        "host_before": {
+          "unix": 1793946759.62846,
+          "cpu_count": 18,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946759.952802,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        }
+      },
+      {
+        "label": "sample-7-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-7-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/sample-7-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-crop-pages-component-20261106-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_PAGE_QUERY": "1"
+        },
+        "host_before": {
+          "unix": 1793946759.9541628,
+          "cpu_count": 18,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793946760.404895,
+          "load": [
+            12.4873046875,
+            21.92919921875,
+            22.33935546875
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "backed-dense": {
+      "control": [
+        84334080,
+        84483903,
+        84382862,
+        84408657
+      ],
+      "candidate": [
+        84489481,
+        84312244,
+        84458435,
+        84370824
+      ],
+      "checksums": [
+        307300
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 84395759.5,
+      "candidate_median": 84414629.5,
+      "reduction_percent": -0.022358943283173893,
+      "conservative_separation": -155401
+    },
+    "backed-hollow-wide": {
+      "control": [
+        89175434,
+        89514476,
+        90008318,
+        89301119
+      ],
+      "candidate": [
+        89418858,
+        89186164,
+        89301659,
+        89438884
+      ],
+      "checksums": [
+        307300
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 89407797.5,
+      "candidate_median": 89360258.5,
+      "reduction_percent": 0.05317097762083112,
+      "conservative_separation": -263450
+    },
+    "backed-hollow-half": {
+      "control": [
+        165758109,
+        165943073,
+        165516358,
+        165512378
+      ],
+      "candidate": [
+        165504441,
+        166391452,
+        165162736,
+        165139525
+      ],
+      "checksums": [
+        307300
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 165637233.5,
+      "candidate_median": 165333588.5,
+      "reduction_percent": 0.1833192897417013,
+      "conservative_separation": -879074
+    },
+    "backed-central-stripe": {
+      "control": [
+        238683949,
+        238357277,
+        238815872,
+        238555992
+      ],
+      "candidate": [
+        239149698,
+        238515722,
+        239015748,
+        238580247
+      ],
+      "checksums": [
+        307400
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 238619970.5,
+      "candidate_median": 238797997.5,
+      "reduction_percent": -0.07460691560181587,
+      "conservative_separation": -792421
+    },
+    "untouched-empty": {
+      "control": [
+        4416308,
+        4423302,
+        4422043,
+        4422047
+      ],
+      "candidate": [
+        4429996,
+        4415401,
+        4427421,
+        4421994
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 4422045.0,
+      "candidate_median": 4424707.5,
+      "reduction_percent": -0.06020969935855991,
+      "conservative_separation": -13688
+    },
+    "sparse-two-points": {
+      "control": [
+        80715419,
+        80963567,
+        80849684,
+        81067841
+      ],
+      "candidate": [
+        81471771,
+        80818355,
+        82068252,
+        80898758
+      ],
+      "checksums": [
+        317400
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 80906625.5,
+      "candidate_median": 81185264.5,
+      "reduction_percent": -0.34439577510250174,
+      "conservative_separation": -1352833
+    },
+    "sparse-text-bands": {
+      "control": [
+        91823289,
+        93056350,
+        91668510,
+        91781981
+      ],
+      "candidate": [
+        91825838,
+        92060866,
+        91598903,
+        91851096
+      ],
+      "checksums": [
+        304900
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 91802635.0,
+      "candidate_median": 91838467.0,
+      "reduction_percent": -0.03903155938824732,
+      "conservative_separation": -392356
+    },
+    "mixed-page-rows": {
+      "control": [
+        196109885,
+        196317040,
+        196848958,
+        197082162
+      ],
+      "candidate": [
+        197585718,
+        196934244,
+        196407183,
+        197145991
+      ],
+      "checksums": [
+        845300
+      ],
+      "calls": 100,
+      "width": 12288,
+      "height": 256,
+      "left": 0,
+      "top": 0,
+      "right": 12288,
+      "bottom": 256,
+      "control_median": 196582999.0,
+      "candidate_median": 197040117.5,
+      "reduction_percent": -0.23253206143223348,
+      "conservative_separation": -1475833
+    },
+    "clipped-backed-column": {
+      "control": [
+        125141991,
+        125324013,
+        126833033,
+        126473577
+      ],
+      "candidate": [
+        123431624,
+        127315943,
+        123296696,
+        126713694
+      ],
+      "checksums": [
+        1254400
+      ],
+      "calls": 100,
+      "width": 12288,
+      "height": 256,
+      "left": 4105,
+      "top": 0,
+      "right": 8181,
+      "bottom": 256,
+      "control_median": 125898795.0,
+      "candidate_median": 125072659.0,
+      "reduction_percent": 0.6561905536903723,
+      "conservative_separation": -2173952
+    },
+    "first-row-only": {
+      "control": [
+        232918208,
+        232766748,
+        233184355,
+        232873586
+      ],
+      "candidate": [
+        233188117,
+        233657994,
+        233134114,
+        232909047
+      ],
+      "checksums": [
+        205000
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 0,
+      "right": 2048,
+      "bottom": 1024,
+      "control_median": 232895897.0,
+      "candidate_median": 233161115.5,
+      "reduction_percent": -0.11387856266098506,
+      "conservative_separation": -891246
+    },
+    "cropped-backed-rows": {
+      "control": [
+        83299096,
+        83366576,
+        83340783,
+        83362860
+      ],
+      "candidate": [
+        7027978,
+        7027338,
+        7000765,
+        6972727
+      ],
+      "checksums": [
+        275300
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 320,
+      "right": 2048,
+      "bottom": 384,
+      "control_median": 83351821.5,
+      "candidate_median": 7014051.5,
+      "reduction_percent": 91.58500513393099,
+      "conservative_separation": 76271118
+    },
+    "cropped-sparse-rows": {
+      "control": [
+        81841158,
+        81255575,
+        80423659,
+        80053249
+      ],
+      "candidate": [
+        3383942,
+        3391433,
+        3443836,
+        3442642
+      ],
+      "checksums": [
+        286500
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 400,
+      "right": 2048,
+      "bottom": 416,
+      "control_median": 80839617.0,
+      "candidate_median": 3417037.5,
+      "reduction_percent": 95.77306569871553,
+      "conservative_separation": 76609413
+    },
+    "cropped-empty-rows": {
+      "control": [
+        2015645,
+        2023136,
+        2024132,
+        2024533
+      ],
+      "candidate": [
+        1355876,
+        1355433,
+        1361564,
+        1362071
+      ],
+      "checksums": [
+        0
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 640,
+      "right": 2048,
+      "bottom": 704,
+      "control_median": 2023634.0,
+      "candidate_median": 1358720.0,
+      "reduction_percent": 32.8574238226873,
+      "conservative_separation": 653574
+    },
+    "cropped-tiny-rect": {
+      "control": [
+        79658563,
+        81049113,
+        79264354,
+        82079783
+      ],
+      "candidate": [
+        1559732,
+        1560663,
+        1589296,
+        1581837
+      ],
+      "checksums": [
+        282300
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 1001,
+      "top": 401,
+      "right": 1017,
+      "bottom": 403,
+      "control_median": 80353838.0,
+      "candidate_median": 1571250.0,
+      "reduction_percent": 98.04458624614794,
+      "conservative_separation": 77675058
+    },
+    "cropped-tail-partial": {
+      "control": [
+        13834673,
+        13860579,
+        13853523,
+        13876161
+      ],
+      "candidate": [
+        2032448,
+        2024274,
+        2018223,
+        2017827
+      ],
+      "checksums": [
+        183600
+      ],
+      "calls": 100,
+      "width": 1021,
+      "height": 311,
+      "left": 203,
+      "top": 300,
+      "right": 1021,
+      "bottom": 311,
+      "control_median": 13857051.0,
+      "candidate_median": 2021248.5,
+      "reduction_percent": 85.41357392709314,
+      "conservative_separation": 11802225
+    },
+    "cropped-single-row": {
+      "control": [
+        79165531,
+        78938235,
+        79265753,
+        79010096
+      ],
+      "candidate": [
+        1355485,
+        1353975,
+        1347335,
+        1347188
+      ],
+      "checksums": [
+        307200
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 511,
+      "right": 2048,
+      "bottom": 512,
+      "control_median": 79087813.5,
+      "candidate_median": 1350655.0,
+      "reduction_percent": 98.29220844498376,
+      "conservative_separation": 77582750
+    },
+    "cropped-near-full": {
+      "control": [
+        89045987,
+        89823718,
+        89966968,
+        89185126
+      ],
+      "candidate": [
+        89893543,
+        89166773,
+        89191837,
+        88962845
+      ],
+      "checksums": [
+        307300
+      ],
+      "calls": 100,
+      "width": 2048,
+      "height": 1024,
+      "left": 0,
+      "top": 1,
+      "right": 2048,
+      "bottom": 1023,
+      "control_median": 89504422.0,
+      "candidate_median": 89179305.0,
+      "reduction_percent": 0.36324127091731384,
+      "conservative_separation": -847556
+    },
+    "cropped-middle-page": {
+      "control": [
+        117661020,
+        120070551,
+        117828673,
+        118507470
+      ],
+      "candidate": [
+        5472126,
+        5434762,
+        5430224,
+        5437638
+      ],
+      "checksums": [
+        1251700
+      ],
+      "calls": 100,
+      "width": 12288,
+      "height": 256,
+      "left": 4105,
+      "top": 111,
+      "right": 8181,
+      "bottom": 119,
+      "control_median": 118168071.5,
+      "candidate_median": 5436200.0,
+      "reduction_percent": 95.39960335224731,
+      "conservative_separation": 112188894
+    }
+  },
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "b9e783c0673acd78e7c623047e7aa7b6add10e9acec5e03a9f54563850dd235e",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-093428-851f929a/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "fcb62ace478e43043af7917f6930e4d66751a0475c68ee10fe0bef3559068056",
+      "dirty": true,
+      "head": "e332a5dfa1d06085e3e773ec528f3defdeff8c2b",
+      "repository_sha256": "4cf09ee038392e3f0ba417a8820653864e46a22d36ffe4efa147570e6f53a7db"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "30f7df0dd16525fa75c68c1dfa2dc3b6ab4674028b7e293f8ace0d4fdcd5df8a",
+      "dirty": true,
+      "head": "29e460baefa66da8839d00f2eeb4628556f5b0d7",
+      "repository_sha256": "8fb42c72593fbf6fcae5696d6bbbd6d16555479b722df07696e44f19e2c255da"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "e332a5dfa1d06085e3e773ec528f3defdeff8c2b",
+      "id": "62609722e7574cd7862688c188762b8c",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "fcb62ace478e43043af7917f6930e4d66751a0475c68ee10fe0bef3559068056",
+      "dirty": true,
+      "head": "e332a5dfa1d06085e3e773ec528f3defdeff8c2b",
+      "repository_sha256": "73c023b345b4372b1dab8ab89d974bd006864a896cab6627e494682b3c13c48c"
+    }
+  },
+  "control": [
+    24549735140,
+    24116668639,
+    24452033578,
+    24272000529
+  ],
+  "candidate": [
+    24204225256,
+    24493357212,
+    24329229392,
+    24364787606
+  ],
+  "control_median": 24362017053.5,
+  "candidate_median": 24347008499.0,
+  "observed_median_reduction_percent": 0.061606370552325096,
+  "observed_conservative_page_separation": -376688573,
+  "page_instruction_credit": 0,
+  "broad_required": false,
+  "broad": null,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "remaining_from_candidate_median": 4347008499.0,
+  "valid_production_captures": 20,
+  "geometry_diagnostic": {
+    "candidate": {
+      "calls": 76,
+      "reduced_vm_query_calls": 42,
+      "queried_address_bytes": 769032192,
+      "whole_canvas_address_bytes": 1060896768,
+      "rows": [
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          12959744,
+          999424,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          7503872,
+          6455296,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          884736,
+          848,
+          44096,
+          13959168,
+          1917,
+          827,
+          2023,
+          933,
+          8192
+        ],
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          1310720,
+          12648448,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          12648448,
+          16704,
+          3207168,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          1376256,
+          12582912,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          884736,
+          848,
+          44096,
+          13959168,
+          1917,
+          827,
+          2023,
+          933,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          12648448,
+          16704,
+          3207168,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          3152880,
+          13959168,
+          0,
+          146,
+          522,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          12648448,
+          16704,
+          3207168,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          12648448,
+          0,
+          3223872,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          884736,
+          848,
+          44096,
+          13959168,
+          411,
+          119,
+          517,
+          225,
+          8192
+        ],
+        [
+          12648448,
+          0,
+          3223872,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          409600,
+          10608,
+          31824,
+          13959168,
+          11,
+          149,
+          232,
+          197,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          360448,
+          9064,
+          26368,
+          13959168,
+          61,
+          255,
+          267,
+          298,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          360448,
+          3480,
+          26448,
+          13959168,
+          61,
+          327,
+          235,
+          370,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          360448,
+          3480,
+          26448,
+          13959168,
+          61,
+          399,
+          235,
+          442,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          360448,
+          7020,
+          53352,
+          13959168,
+          61,
+          471,
+          412,
+          514,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          360448,
+          3892,
+          20016,
+          13959168,
+          61,
+          543,
+          200,
+          586,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          360448,
+          7532,
+          38736,
+          13959168,
+          61,
+          615,
+          330,
+          658,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          360448,
+          3740,
+          28424,
+          13959168,
+          61,
+          687,
+          248,
+          730,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          3152880,
+          13959168,
+          0,
+          146,
+          522,
+          1656,
+          8192
+        ],
+        [
+          409600,
+          10608,
+          31824,
+          13959168,
+          11,
+          149,
+          232,
+          197,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          360448,
+          9064,
+          26368,
+          13959168,
+          61,
+          255,
+          267,
+          298,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          360448,
+          3480,
+          26448,
+          13959168,
+          61,
+          327,
+          235,
+          370,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          360448,
+          3480,
+          26448,
+          13959168,
+          61,
+          399,
+          235,
+          442,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          360448,
+          7020,
+          53352,
+          13959168,
+          61,
+          471,
+          412,
+          514,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          360448,
+          3892,
+          20016,
+          13959168,
+          61,
+          543,
+          200,
+          586,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          360448,
+          7532,
+          38736,
+          13959168,
+          61,
+          615,
+          330,
+          658,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          360448,
+          3740,
+          28424,
+          13959168,
+          61,
+          687,
+          248,
+          730,
+          8192
+        ],
+        [
+          12369920,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ]
+      ],
+      "qualification": "VM address span metadata only, not pixel loads, time or instruction attribution. Diagnostic captures may have different frame/work counts."
+    },
+    "control": {
+      "calls": 76,
+      "reduced_vm_query_calls": 0,
+      "queried_address_bytes": 1060896768,
+      "whole_canvas_address_bytes": 1060896768,
+      "rows": [
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          12959744,
+          999424,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          7503872,
+          6455296,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          848,
+          44096,
+          13959168,
+          1917,
+          827,
+          2023,
+          933,
+          8192
+        ],
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          1310720,
+          12648448,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          16704,
+          3207168,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          13959168,
+          0,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          1376256,
+          12582912,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          848,
+          44096,
+          13959168,
+          1917,
+          827,
+          2023,
+          933,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          16704,
+          3207168,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          3152880,
+          13959168,
+          0,
+          146,
+          522,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          16704,
+          3207168,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          3223872,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          848,
+          44096,
+          13959168,
+          411,
+          119,
+          517,
+          225,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          3223872,
+          13959168,
+          0,
+          116,
+          522,
+          1660,
+          8192
+        ],
+        [
+          13959168,
+          10608,
+          31824,
+          13959168,
+          11,
+          149,
+          232,
+          197,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          9064,
+          26368,
+          13959168,
+          61,
+          255,
+          267,
+          298,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          3480,
+          26448,
+          13959168,
+          61,
+          327,
+          235,
+          370,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          3480,
+          26448,
+          13959168,
+          61,
+          399,
+          235,
+          442,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          7020,
+          53352,
+          13959168,
+          61,
+          471,
+          412,
+          514,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          3892,
+          20016,
+          13959168,
+          61,
+          543,
+          200,
+          586,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          7532,
+          38736,
+          13959168,
+          61,
+          615,
+          330,
+          658,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          3740,
+          28424,
+          13959168,
+          61,
+          687,
+          248,
+          730,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          13959168,
+          13959168,
+          0,
+          0,
+          2048,
+          1704,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          3152880,
+          13959168,
+          0,
+          146,
+          522,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          10608,
+          31824,
+          13959168,
+          11,
+          149,
+          232,
+          197,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          9064,
+          26368,
+          13959168,
+          61,
+          255,
+          267,
+          298,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          3480,
+          26448,
+          13959168,
+          61,
+          327,
+          235,
+          370,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          3480,
+          26448,
+          13959168,
+          61,
+          399,
+          235,
+          442,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          7020,
+          53352,
+          13959168,
+          61,
+          471,
+          412,
+          514,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          3892,
+          20016,
+          13959168,
+          61,
+          543,
+          200,
+          586,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          7532,
+          38736,
+          13959168,
+          61,
+          615,
+          330,
+          658,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ],
+        [
+          13959168,
+          3740,
+          28424,
+          13959168,
+          61,
+          687,
+          248,
+          730,
+          8192
+        ],
+        [
+          13959168,
+          0,
+          12369920,
+          13959168,
+          0,
+          146,
+          2048,
+          1656,
+          8192
+        ]
+      ],
+      "qualification": "VM address span metadata only, not pixel loads, time or instruction attribution. Diagnostic captures may have different frame/work counts."
+    }
+  },
+  "frame_checkpoint_and_host_load_observations": [
+    {
+      "variant": "control",
+      "checkpoints": 502,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          37.78564453125,
+          27.5419921875,
+          24.19580078125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          40.005859375,
+          28.361328125,
+          24.52587890625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 506,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          35.83203125,
+          28.14599609375,
+          24.53662109375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          34.32373046875,
+          27.9609375,
+          24.4921875
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 501,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          34.32373046875,
+          27.9609375,
+          24.4921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          34.30224609375,
+          28.173828125,
+          24.6083984375
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 505,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          30.5908203125,
+          27.6982421875,
+          24.51806640625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          29.18212890625,
+          27.4541015625,
+          24.4501953125
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 513,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          30.28857421875,
+          27.7119140625,
+          24.55859375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          34.66943359375,
+          28.66259765625,
+          24.91259765625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 515,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          38.8798828125,
+          29.97216796875,
+          25.466796875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          35.63720703125,
+          29.57568359375,
+          25.37890625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 516,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          35.63720703125,
+          29.57568359375,
+          25.37890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          36.306640625,
+          29.81494140625,
+          25.48779296875
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 509,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          28.19140625,
+          28.46875,
+          25.1298828125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          26.4140625,
+          28.095703125,
+          25.017578125
+        ]
+      }
+    }
+  ],
+  "controller_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-opacity-crop-pages-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "46328": "Fri Nov  6 09:38:16 2026    ",
+      "46330": "Fri Nov  6 09:38:16 2026    ",
+      "46731": "Fri Nov  6 09:38:25 2026    ",
+      "46735": "Fri Nov  6 09:38:25 2026    ",
+      "46741": "Fri Nov  6 09:38:25 2026    ",
+      "46742": "Fri Nov  6 09:38:25 2026    ",
+      "46744": "Fri Nov  6 09:38:25 2026    ",
+      "47018": "Fri Nov  6 09:38:34 2026    ",
+      "47022": "Fri Nov  6 09:38:34 2026    ",
+      "47027": "Fri Nov  6 09:38:34 2026    ",
+      "47028": "Fri Nov  6 09:38:34 2026    ",
+      "47029": "Fri Nov  6 09:38:34 2026    ",
+      "47242": "Fri Nov  6 09:38:44 2026    ",
+      "47244": "Fri Nov  6 09:38:44 2026    ",
+      "47820": "Fri Nov  6 09:38:57 2026    ",
+      "47822": "Fri Nov  6 09:38:57 2026    ",
+      "48087": "Fri Nov  6 09:39:05 2026    ",
+      "48091": "Fri Nov  6 09:39:05 2026    ",
+      "48096": "Fri Nov  6 09:39:06 2026    ",
+      "48097": "Fri Nov  6 09:39:06 2026    ",
+      "48098": "Fri Nov  6 09:39:06 2026    ",
+      "48113": "Fri Nov  6 09:39:06 2026    ",
+      "48115": "Fri Nov  6 09:39:06 2026    ",
+      "48279": "Fri Nov  6 09:39:15 2026    ",
+      "48283": "Fri Nov  6 09:39:15 2026    ",
+      "48287": "Fri Nov  6 09:39:15 2026    ",
+      "48288": "Fri Nov  6 09:39:15 2026    ",
+      "48289": "Fri Nov  6 09:39:15 2026    ",
+      "48475": "Fri Nov  6 09:39:24 2026    ",
+      "48479": "Fri Nov  6 09:39:24 2026    ",
+      "48752": "Fri Nov  6 09:39:32 2026    ",
+      "48756": "Fri Nov  6 09:39:32 2026    ",
+      "49032": "Fri Nov  6 09:39:41 2026    ",
+      "49034": "Fri Nov  6 09:39:41 2026    ",
+      "49042": "Fri Nov  6 09:39:41 2026    ",
+      "49043": "Fri Nov  6 09:39:41 2026    ",
+      "49044": "Fri Nov  6 09:39:41 2026    ",
+      "49229": "Fri Nov  6 09:39:50 2026    ",
+      "49231": "Fri Nov  6 09:39:50 2026    ",
+      "49235": "Fri Nov  6 09:39:50 2026    ",
+      "49236": "Fri Nov  6 09:39:50 2026    ",
+      "49237": "Fri Nov  6 09:39:50 2026    ",
+      "49252": "Fri Nov  6 09:39:51 2026    ",
+      "49256": "Fri Nov  6 09:39:51 2026    ",
+      "49417": "Fri Nov  6 09:40:00 2026    ",
+      "49421": "Fri Nov  6 09:40:00 2026    ",
+      "49698": "Fri Nov  6 09:40:08 2026    ",
+      "49700": "Fri Nov  6 09:40:08 2026    ",
+      "50015": "Fri Nov  6 09:40:17 2026    ",
+      "50020": "Fri Nov  6 09:40:17 2026    ",
+      "50026": "Fri Nov  6 09:40:17 2026    ",
+      "50027": "Fri Nov  6 09:40:17 2026    ",
+      "50028": "Fri Nov  6 09:40:17 2026    ",
+      "50048": "Fri Nov  6 09:40:17 2026    ",
+      "50050": "Fri Nov  6 09:40:18 2026    ",
+      "50269": "Fri Nov  6 09:40:27 2026    ",
+      "50271": "Fri Nov  6 09:40:27 2026    ",
+      "50274": "Fri Nov  6 09:40:27 2026    ",
+      "50275": "Fri Nov  6 09:40:27 2026    ",
+      "50277": "Fri Nov  6 09:40:27 2026    ",
+      "50382": "Fri Nov  6 09:40:37 2026    ",
+      "50385": "Fri Nov  6 09:40:37 2026    ",
+      "50608": "Fri Nov  6 09:40:45 2026    ",
+      "50611": "Fri Nov  6 09:40:45 2026    ",
+      "50845": "Fri Nov  6 09:40:54 2026    ",
+      "50849": "Fri Nov  6 09:40:54 2026    ",
+      "50853": "Fri Nov  6 09:40:54 2026    ",
+      "50854": "Fri Nov  6 09:40:54 2026    ",
+      "50855": "Fri Nov  6 09:40:54 2026    ",
+      "50955": "Fri Nov  6 09:41:04 2026    ",
+      "50958": "Fri Nov  6 09:41:04 2026    ",
+      "50961": "Fri Nov  6 09:41:04 2026    ",
+      "50962": "Fri Nov  6 09:41:04 2026    ",
+      "50964": "Fri Nov  6 09:41:04 2026    ",
+      "51064": "Fri Nov  6 09:41:14 2026    ",
+      "51066": "Fri Nov  6 09:41:14 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2072903680,
+    "elapsed_seconds": 192.673857958,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-opacity-crop-pages-focused-20261106-evidence.zip",
+      "sha256": "adb5a84258f9d768fdbd21479e149a6571f090b6ab0792735f7fd0f9f729860d",
+      "bytes": 48427,
+      "verified_entries": 59
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-crop-pages-component-20261106-evidence.zip",
+      "sha256": "b77df3234f67ee1c61d9d7fe326f236de5368097b81335bb8fd5daa0087c978f",
+      "bytes": 20630,
+      "verified_entries": 24
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-crop-pages-controller-20261106-evidence.zip",
+      "sha256": "0ef63e0da09fea3edca25e411828415e4ff6fc6ab93e1dbd3ab9ec74330f2145",
+      "bytes": 24682,
+      "verified_entries": 9
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-crop-pages-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "85c28298110ec84a96fd548b900518382f87cff632847d571ca032413e5eeb24",
+      "bytes": 1450549,
+      "verified_entries": 61
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-crop-pages-production-r1-matched-20261106-evidence.zip",
+      "sha256": "1cf20319266182eb202d09ed031108139d910914cc473b9f053e612b5a1d6b82",
+      "bytes": 8056709,
+      "verified_entries": 163
+    }
+  ],
+  "qualification": "One contiguous VM metadata query spans only the crop first/last pages; explicit local metadata indices, bounded final partial page, no metadata/pixel cache or pixel writes. Full-query control keeps the same margin and backed-band scans. Real VM query components use four alternating observations per variant; source/setup excluded, queries/scans/assertions/checksums inside process-instruction interval, independent pixel oracle after timing. Components and diagnostic metadata sizes do not establish whole-page savings. Initial test compile failed because its query_pages macro wrapper collides with the local variable; final queried_pages name fixes that without changing runtime logic. Every observation/regression retained. Original one-time SOCKS fixture/scripts/references, private profiles/caches, 1024x768 scale2, five-second unfocused settle. Coalition creation through encoded document PNG includes startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches retained; GPU/outside coalition excluded. One completed canonical executable/native libraries pinned under shared publication lease. Four pairs remain below seven-pair acceptance. Both 20B and 5%-below-Brave targets remain open."
+}

@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest opacity-margin diagnostic observes a **24.692B** candidate median versus **24.730B** for its row-scan control. Observed ranges overlap; no whole-page savings credit is assigned. All 20 captures pass content and exact pixels; 45 focused check jobs pass. The [latest verification](performance/chatgpt-opacity-margins-verification-20261106.json) retains every attempt. Only this same-build comparison measures the change; differences against earlier builds receive no credit. Four pairs remain below seven-pair acceptance; the historical cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest cropped-opacity-query diagnostic observes a **24.347B** candidate median versus **24.362B** for its whole-canvas metadata control. Observed ranges overlap; no whole-page savings credit is assigned. All 20 captures pass content and exact pixels; 24 focused check jobs pass. The [latest verification](performance/chatgpt-opacity-crop-pages-verification-20261106.json) retains every attempt. Only this same-build comparison measures the change; differences against earlier builds receive no credit. Four pairs remain below seven-pair acceptance; the historical cohort below retains its earlier pinned build.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5630,3 +5630,52 @@ Frame-complete checkpoints are 497, 508, 505, 510 for controls and 501, 508, 500
 A separate later-build geometry diagnostic passes content/pixels and records 76 VM queries; 42 request partial canvas rectangles. Whole-canvas VM address spans sum to 1,060,896,768 bytes, while requested rectangle coverage sums to 695,691,248 bytes. These are neither actual pixel reads nor instruction costs. Crop coordinates are not logged; a narrow horizontal crop can still span most contiguous VM pages. This remains a lead, with no performance credit.
 
 The candidate median remains **4,691,983,209.0 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-opacity-margins-verification-20261106.json) links every focused/component attempt, regression, rejected preflight, source witness, command, counter, memory guard, PNG and authenticated evidence archive. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Crop-bounded opacity VM metadata queries (2026-11-06)
+
+Commit `e332a5dfa` restricts each mapped opacity canvas metadata query to the contiguous VM pages spanning its requested rectangle. Previously even a one-row crop queried every page in the viewport-sized mapping. The first page is aligned down, the final page is capped at the owned allocation, and all disposition accesses subtract the explicit first-page index. No pointer precedes the allocated metadata array. Full-width/full-height queries keep their complete span. The scan, any-channel ink definition, read eligibility, fallback and output bounds remain the same; no pixel or page cache is added.
+
+`VOX_RETAIN_FULL_OPACITY_PAGE_QUERY=1` supplies the whole-canvas query control while keeping the preceding margin scans and backed-row bands enabled. Separate diagnostics log crop coordinates and actual queried address spans. These byte spans describe metadata requests, not pixel loads or instruction savings.
+
+**24 guarded jobs pass**, including optimized NEON/scalar, ASan/UBSan, both query policies, retained row/full-row controls, bitmap-context ownership and split-unit state. Each bounds runtime covers 888,960 backing-classification cases with both zero and nonzero metadata origins, plus 1,876 clipped scans. Of those scans, 376 use an independent scalar pixel oracle and the original 1,500 retain their earlier helper comparison. New cases exercise nonzero vertical origins, single rows, sparse/empty data, partial final allocation pages, real/failed/short queries and compressed/unknown dispositions. Tests verify the exact VM query address, byte count and metadata capacity independently. Existing footprint guards pass. The first compile fails because the test wrapper macro `query_pages` collides with a new local count; the corrected `queried_pages` name and original failure/patch are retained.
+
+The real-VM component takes four alternating observations per variant and 100 calls per scene. Construction and expected-bounds setup are outside each process-counter interval; metadata queries/allocation, context calls, scans, assertions and checksum accumulation are inside. The independent pixel oracle runs after timing, preserving untouched pages during measurement. Executable, compiler, sources, controller and guard identities remain pinned. All output checksums match. Every full-canvas and cropped scene is retained, including regressions.
+
+| VM-backed component | Whole-canvas query median instructions | Cropped query median | Reduction |
+| --- | ---: | ---: | ---: |
+| backed-dense | 84,395,759.5 | 84,414,629.5 | -0.0224% |
+| backed-hollow-wide | 89,407,797.5 | 89,360,258.5 | 0.0532% |
+| backed-hollow-half | 165,637,233.5 | 165,333,588.5 | 0.1833% |
+| backed-central-stripe | 238,619,970.5 | 238,797,997.5 | -0.0746% |
+| untouched-empty | 4,422,045.0 | 4,424,707.5 | -0.0602% |
+| sparse-two-points | 80,906,625.5 | 81,185,264.5 | -0.3444% |
+| sparse-text-bands | 91,802,635.0 | 91,838,467.0 | -0.0390% |
+| mixed-page-rows | 196,582,999.0 | 197,040,117.5 | -0.2325% |
+| clipped-backed-column | 125,898,795.0 | 125,072,659.0 | 0.6562% |
+| first-row-only | 232,895,897.0 | 233,161,115.5 | -0.1139% |
+| cropped-backed-rows | 83,351,821.5 | 7,014,051.5 | 91.5850% |
+| cropped-sparse-rows | 80,839,617.0 | 3,417,037.5 | 95.7731% |
+| cropped-empty-rows | 2,023,634.0 | 1,358,720.0 | 32.8574% |
+| cropped-tiny-rect | 80,353,838.0 | 1,571,250.0 | 98.0446% |
+| cropped-tail-partial | 13,857,051.0 | 2,021,248.5 | 85.4136% |
+| cropped-single-row | 79,087,813.5 | 1,350,655.0 | 98.2922% |
+| cropped-near-full | 89,504,422.0 | 89,179,305.0 | 0.3632% |
+| cropped-middle-page | 118,168,071.5 | 5,436,200.0 | 95.3996% |
+
+These component gains are not extrapolated to the page. Separate production diagnostics verify the cropped-query marker only in the candidate, Wasm module lexer execution in both variants, full bootstrap/content identity and exact unchanged pixels. The sealed production source proves the cropped range, final partial page, local indices, query count validation and full-query control; executable and native bridge contain the marker/flag.
+
+The candidate geometry diagnostic logs 76 queries, 42 with a reduced page span: 769,032,192 queried address bytes out of 1,060,896,768 whole-canvas address bytes. This is instrumented metadata evidence only; captures may perform different amounts of work.
+The control geometry diagnostic logs 76 queries, 0 with a reduced page span: 1,060,896,768 queried address bytes out of 1,060,896,768 whole-canvas address bytes. This is instrumented metadata evidence only; captures may perform different amounts of work.
+
+| Unprofiled frozen-page variant | Every retained launch-through-PNG instruction count | Median |
+| --- | --- | ---: |
+| Whole-canvas metadata control | 24,549,735,140; 24,116,668,639; 24,452,033,578; 24,272,000,529 | 24,362,017,053.5 |
+| Cropped metadata candidate | 24,204,225,256; 24,493,357,212; 24,329,229,392; 24,364,787,606 | 24,347,008,499.0 |
+
+The observed median change is **0.0616% fewer instructions**; conservative observed separation is **-376,688,573 instructions**. Observed ranges overlap; no whole-page savings credit is assigned. No new 5M broad checkpoint is due; whole-page credit and carry remain zero.
+
+All **20** diagnostic/matched captures pass full content/button identity, bootstrap, exact unchanged per-engine references and normal browser/kernel exits. Executable `b9e783c0673acd78e7c623047e7aa7b6add10e9acec5e03a9f54563850dd235e` and native libraries stay pinned under a nonblocking shared publication lease. The latest completed single-C-unit V `-prod` bundle supplies the code; no app is copied or separate manual build requested. Concurrent work in that build receives no credit for this slice. Original author scripts, single SOCKS fixture/references, private profiles/caches, 1024×768 scale two and five-second unfocused settle stay fixed. Coalition creation through encoded document PNG includes startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded. Controller/guard exit zero with successful PID adoption; comparison drivers exit one for the unmet Brave gate.
+
+Frame-complete checkpoints are 502, 505, 513, 509 for controls and 506, 501, 515, 516 for candidates. Raw counters and host load remain preserved without normalization.
+
+The candidate median remains **4,347,008,499.0 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-opacity-crop-pages-verification-20261106.json) links source witnesses, focused/component checks, every regression, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
