@@ -1,0 +1,1333 @@
+{
+  "complete": true,
+  "implementation_commits": [
+    "56f5eb9d0",
+    "4e6d0b77f"
+  ],
+  "final_focused_jobs": 24,
+  "final_test_function_executions": 148,
+  "earlier_test_function_executions": 88,
+  "checks": [
+    {
+      "complete": true,
+      "passed": true,
+      "source_before": {
+        "browserjs/host_callback_diagnostics.h": "0c33dc895864d055fa761eb5fb082c6ba2eeca11c17bfd77b65786c239fbdd40",
+        "browserjs/host_callback_diagnostics.v": "949b554c342670ded19a104bb8adfd472c08b07e786f79b70b2c019b7f92c627",
+        "browserjs/host_callback_diagnostics_test.v": "34f74048827a2217358835dbe8563125b810536667b3d266f9626f7500c7ad2a",
+        "browserjs/host_function.v": "c8292e68d4cf1014dfe4d25238c631edac66e9173a0b3290add7320cb5b535f4",
+        "browserjs/host_value_function.v": "d6f3ea5db41462d3ccee832c462d24f16ce6d6ec5c97db2ab6fa7e86df8634b3",
+        "browserjs/host_function_jsc.c.v": "f0df244a2559fd16fa965d3f81035466cd72517dc2f5bb26be3d7bfef187defd",
+        "browserjs/host_value_function_jsc.c.v": "b3a8fb4118724a0a57ef4999201ea95402f08682286a31c040e7ca2af7350090",
+        "browserjs/runtime.v": "bed2ee75d3da92be0830188f93bcb4e562d61b1a974f41bf2a78f13dafa1fd9d",
+        "main_capture_audit.v": "528732748bb052a74557fc8ddbc93c58e7c870311fcf0e52c39f8fdf350640f4"
+      },
+      "source_after": {
+        "browserjs/host_callback_diagnostics.h": "0c33dc895864d055fa761eb5fb082c6ba2eeca11c17bfd77b65786c239fbdd40",
+        "browserjs/host_callback_diagnostics.v": "949b554c342670ded19a104bb8adfd472c08b07e786f79b70b2c019b7f92c627",
+        "browserjs/host_callback_diagnostics_test.v": "34f74048827a2217358835dbe8563125b810536667b3d266f9626f7500c7ad2a",
+        "browserjs/host_function.v": "c8292e68d4cf1014dfe4d25238c631edac66e9173a0b3290add7320cb5b535f4",
+        "browserjs/host_value_function.v": "d6f3ea5db41462d3ccee832c462d24f16ce6d6ec5c97db2ab6fa7e86df8634b3",
+        "browserjs/host_function_jsc.c.v": "f0df244a2559fd16fa965d3f81035466cd72517dc2f5bb26be3d7bfef187defd",
+        "browserjs/host_value_function_jsc.c.v": "b3a8fb4118724a0a57ef4999201ea95402f08682286a31c040e7ca2af7350090",
+        "browserjs/runtime.v": "bed2ee75d3da92be0830188f93bcb4e562d61b1a974f41bf2a78f13dafa1fd9d",
+        "main_capture_audit.v": "528732748bb052a74557fc8ddbc93c58e7c870311fcf0e52c39f8fdf350640f4"
+      },
+      "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+      "rows": [
+        {
+          "label": "compile-native-prealloc",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-prealloc.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-prealloc-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-file-list",
+            "/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-prealloc",
+            "/Users/alex/code/vox2/browserjs/host_callback_diagnostics_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793932989.9050229,
+            "cpu_count": 18,
+            "load": [
+              6.29296875,
+              5.94482421875,
+              6.0400390625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933000.28899,
+            "load": [
+              6.474609375,
+              5.9951171875,
+              6.056640625
+            ]
+          }
+        },
+        {
+          "label": "run-native-prealloc-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-prealloc-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-prealloc-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933000.313678,
+            "cpu_count": 18,
+            "load": [
+              6.474609375,
+              5.9951171875,
+              6.056640625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933000.7572422,
+            "load": [
+              6.474609375,
+              5.9951171875,
+              6.056640625
+            ]
+          }
+        },
+        {
+          "label": "run-native-prealloc-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-prealloc-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-prealloc-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933000.7648158,
+            "cpu_count": 18,
+            "load": [
+              6.474609375,
+              5.9951171875,
+              6.056640625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933000.9635851,
+            "load": [
+              6.474609375,
+              5.9951171875,
+              6.056640625
+            ]
+          }
+        },
+        {
+          "label": "compile-native-default",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-default.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-default-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-file-list",
+            "/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-default",
+            "/Users/alex/code/vox2/browserjs/host_callback_diagnostics_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793933000.971684,
+            "cpu_count": 18,
+            "load": [
+              6.474609375,
+              5.9951171875,
+              6.056640625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933011.846755,
+            "load": [
+              6.7568359375,
+              6.076171875,
+              6.08447265625
+            ]
+          }
+        },
+        {
+          "label": "run-native-default-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-default-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-default-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-default"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933011.8546162,
+            "cpu_count": 18,
+            "load": [
+              6.7568359375,
+              6.076171875,
+              6.08447265625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933012.31382,
+            "load": [
+              6.7568359375,
+              6.076171875,
+              6.08447265625
+            ]
+          }
+        },
+        {
+          "label": "run-native-default-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-default-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-default-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-default"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933012.32178,
+            "cpu_count": 18,
+            "load": [
+              6.7568359375,
+              6.076171875,
+              6.08447265625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933012.535115,
+            "load": [
+              6.7568359375,
+              6.076171875,
+              6.08447265625
+            ]
+          }
+        },
+        {
+          "label": "compile-native-none",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-none-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-gc",
+            "none",
+            "-file-list",
+            "/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-none",
+            "/Users/alex/code/vox2/browserjs/host_callback_diagnostics_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793933012.5430698,
+            "cpu_count": 18,
+            "load": [
+              6.7568359375,
+              6.076171875,
+              6.08447265625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933023.0423949,
+            "load": [
+              6.947265625,
+              6.13916015625,
+              6.10595703125
+            ]
+          }
+        },
+        {
+          "label": "run-native-none-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-none-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-none-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933023.050791,
+            "cpu_count": 18,
+            "load": [
+              6.947265625,
+              6.13916015625,
+              6.10595703125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933023.509005,
+            "load": [
+              6.947265625,
+              6.13916015625,
+              6.10595703125
+            ]
+          }
+        },
+        {
+          "label": "run-native-none-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-none-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-none-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933023.516961,
+            "cpu_count": 18,
+            "load": [
+              6.947265625,
+              6.13916015625,
+              6.10595703125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933023.7214599,
+            "load": [
+              6.947265625,
+              6.13916015625,
+              6.10595703125
+            ]
+          }
+        },
+        {
+          "label": "compile-native-sanitized",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-sanitized.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/compile-native-sanitized-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-cflags",
+            "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+            "-ldflags",
+            "-fsanitize=address,undefined",
+            "-file-list",
+            "/Users/alex/code/vox2/browserjs/host_function_test.v,/Users/alex/code/vox2/browserjs/host_value_function_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-sanitized",
+            "/Users/alex/code/vox2/browserjs/host_callback_diagnostics_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793933023.729287,
+            "cpu_count": 18,
+            "load": [
+              6.947265625,
+              6.13916015625,
+              6.10595703125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933045.786418,
+            "load": [
+              6.7607421875,
+              6.15869140625,
+              6.11279296875
+            ]
+          }
+        },
+        {
+          "label": "run-native-sanitized-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-sanitized-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-sanitized-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-sanitized"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933045.8191612,
+            "cpu_count": 18,
+            "load": [
+              6.7607421875,
+              6.15869140625,
+              6.11279296875
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933046.552454,
+            "load": [
+              6.7607421875,
+              6.15869140625,
+              6.11279296875
+            ]
+          }
+        },
+        {
+          "label": "run-native-sanitized-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-sanitized-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/run-native-sanitized-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-20261106-r3/native-sanitized"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1",
+            "ASAN_OPTIONS": "detect_leaks=0",
+            "UBSAN_OPTIONS": "halt_on_error=1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933046.560931,
+            "cpu_count": 18,
+            "load": [
+              6.7607421875,
+              6.15869140625,
+              6.11279296875
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933046.789015,
+            "load": [
+              6.7607421875,
+              6.15869140625,
+              6.11279296875
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "complete": true,
+      "passed": true,
+      "source_before": {
+        "browserjs/host_callback_diagnostics.h": "0c33dc895864d055fa761eb5fb082c6ba2eeca11c17bfd77b65786c239fbdd40",
+        "browserjs/host_callback_diagnostics.v": "949b554c342670ded19a104bb8adfd472c08b07e786f79b70b2c019b7f92c627",
+        "browserjs/host_callback_diagnostics_test.v": "34f74048827a2217358835dbe8563125b810536667b3d266f9626f7500c7ad2a",
+        "browserjs/host_function.v": "c8292e68d4cf1014dfe4d25238c631edac66e9173a0b3290add7320cb5b535f4",
+        "browserjs/host_value_function.v": "d6f3ea5db41462d3ccee832c462d24f16ce6d6ec5c97db2ab6fa7e86df8634b3",
+        "browserjs/host_function_jsc.c.v": "f0df244a2559fd16fa965d3f81035466cd72517dc2f5bb26be3d7bfef187defd",
+        "browserjs/host_value_function_jsc.c.v": "b3a8fb4118724a0a57ef4999201ea95402f08682286a31c040e7ca2af7350090",
+        "browserjs/runtime.v": "bed2ee75d3da92be0830188f93bcb4e562d61b1a974f41bf2a78f13dafa1fd9d",
+        "main_capture_audit.v": "528732748bb052a74557fc8ddbc93c58e7c870311fcf0e52c39f8fdf350640f4"
+      },
+      "source_after": {
+        "browserjs/host_callback_diagnostics.h": "0c33dc895864d055fa761eb5fb082c6ba2eeca11c17bfd77b65786c239fbdd40",
+        "browserjs/host_callback_diagnostics.v": "949b554c342670ded19a104bb8adfd472c08b07e786f79b70b2c019b7f92c627",
+        "browserjs/host_callback_diagnostics_test.v": "34f74048827a2217358835dbe8563125b810536667b3d266f9626f7500c7ad2a",
+        "browserjs/host_function.v": "c8292e68d4cf1014dfe4d25238c631edac66e9173a0b3290add7320cb5b535f4",
+        "browserjs/host_value_function.v": "d6f3ea5db41462d3ccee832c462d24f16ce6d6ec5c97db2ab6fa7e86df8634b3",
+        "browserjs/host_function_jsc.c.v": "f0df244a2559fd16fa965d3f81035466cd72517dc2f5bb26be3d7bfef187defd",
+        "browserjs/host_value_function_jsc.c.v": "b3a8fb4118724a0a57ef4999201ea95402f08682286a31c040e7ca2af7350090",
+        "browserjs/runtime.v": "bed2ee75d3da92be0830188f93bcb4e562d61b1a974f41bf2a78f13dafa1fd9d",
+        "main_capture_audit.v": "528732748bb052a74557fc8ddbc93c58e7c870311fcf0e52c39f8fdf350640f4"
+      },
+      "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+      "rows": [
+        {
+          "label": "compile-capture-prealloc",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/compile-capture-prealloc.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/compile-capture-prealloc-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-d",
+            "vox_ui2",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-file-list",
+            "/Users/alex/code/vox2/main_capture_error_information_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/capture-prealloc",
+            "/Users/alex/code/vox2/main_capture_audit_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793933036.3763258,
+            "cpu_count": 18,
+            "load": [
+              6.8046875,
+              6.1474609375,
+              6.10888671875
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933057.1085372,
+            "load": [
+              6.95068359375,
+              6.21875,
+              6.13427734375
+            ]
+          }
+        },
+        {
+          "label": "run-capture-prealloc-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-prealloc-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-prealloc-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/capture-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": ""
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933057.143281,
+            "cpu_count": 18,
+            "load": [
+              6.95068359375,
+              6.21875,
+              6.13427734375
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933057.96223,
+            "load": [
+              6.95068359375,
+              6.21875,
+              6.13427734375
+            ]
+          }
+        },
+        {
+          "label": "run-capture-prealloc-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-prealloc-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-prealloc-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/capture-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933057.9703748,
+            "cpu_count": 18,
+            "load": [
+              6.95068359375,
+              6.21875,
+              6.13427734375
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933058.3011851,
+            "load": [
+              6.95068359375,
+              6.21875,
+              6.13427734375
+            ]
+          }
+        },
+        {
+          "label": "compile-capture-none",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/compile-capture-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/compile-capture-none-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-gc",
+            "none",
+            "-d",
+            "vox_ui2",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-file-list",
+            "/Users/alex/code/vox2/main_capture_error_information_test.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/capture-none",
+            "/Users/alex/code/vox2/main_capture_audit_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793933058.308939,
+            "cpu_count": 18,
+            "load": [
+              6.95068359375,
+              6.21875,
+              6.13427734375
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933078.3952901,
+            "load": [
+              7.74609375,
+              6.4462890625,
+              6.21728515625
+            ]
+          }
+        },
+        {
+          "label": "run-capture-none-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-none-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-none-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/capture-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": ""
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933078.40353,
+            "cpu_count": 18,
+            "load": [
+              7.74609375,
+              6.4462890625,
+              6.21728515625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933078.985604,
+            "load": [
+              7.74609375,
+              6.4462890625,
+              6.21728515625
+            ]
+          }
+        },
+        {
+          "label": "run-capture-none-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-none-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/run-capture-none-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r1/capture-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933078.9940438,
+            "cpu_count": 18,
+            "load": [
+              7.74609375,
+              6.4462890625,
+              6.21728515625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933079.205088,
+            "load": [
+              7.74609375,
+              6.4462890625,
+              6.21728515625
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "complete": true,
+      "passed": true,
+      "source_before": {
+        "browserjs/host_callback_diagnostics.h": "0c33dc895864d055fa761eb5fb082c6ba2eeca11c17bfd77b65786c239fbdd40",
+        "browserjs/host_callback_diagnostics.v": "949b554c342670ded19a104bb8adfd472c08b07e786f79b70b2c019b7f92c627",
+        "browserjs/host_callback_diagnostics_test.v": "34f74048827a2217358835dbe8563125b810536667b3d266f9626f7500c7ad2a",
+        "browserjs/host_function.v": "c8292e68d4cf1014dfe4d25238c631edac66e9173a0b3290add7320cb5b535f4",
+        "browserjs/host_value_function.v": "d6f3ea5db41462d3ccee832c462d24f16ce6d6ec5c97db2ab6fa7e86df8634b3",
+        "browserjs/host_function_jsc.c.v": "f0df244a2559fd16fa965d3f81035466cd72517dc2f5bb26be3d7bfef187defd",
+        "browserjs/host_value_function_jsc.c.v": "b3a8fb4118724a0a57ef4999201ea95402f08682286a31c040e7ca2af7350090",
+        "browserjs/runtime.v": "bed2ee75d3da92be0830188f93bcb4e562d61b1a974f41bf2a78f13dafa1fd9d",
+        "main_capture_audit.v": "528732748bb052a74557fc8ddbc93c58e7c870311fcf0e52c39f8fdf350640f4",
+        "main_capture_host_diagnostics_test.v": "5ad5c2bdc031089d4187892f043bbbdcd4d8d5f2ccb893ccf29e15544e334ce0"
+      },
+      "source_after": {
+        "browserjs/host_callback_diagnostics.h": "0c33dc895864d055fa761eb5fb082c6ba2eeca11c17bfd77b65786c239fbdd40",
+        "browserjs/host_callback_diagnostics.v": "949b554c342670ded19a104bb8adfd472c08b07e786f79b70b2c019b7f92c627",
+        "browserjs/host_callback_diagnostics_test.v": "34f74048827a2217358835dbe8563125b810536667b3d266f9626f7500c7ad2a",
+        "browserjs/host_function.v": "c8292e68d4cf1014dfe4d25238c631edac66e9173a0b3290add7320cb5b535f4",
+        "browserjs/host_value_function.v": "d6f3ea5db41462d3ccee832c462d24f16ce6d6ec5c97db2ab6fa7e86df8634b3",
+        "browserjs/host_function_jsc.c.v": "f0df244a2559fd16fa965d3f81035466cd72517dc2f5bb26be3d7bfef187defd",
+        "browserjs/host_value_function_jsc.c.v": "b3a8fb4118724a0a57ef4999201ea95402f08682286a31c040e7ca2af7350090",
+        "browserjs/runtime.v": "bed2ee75d3da92be0830188f93bcb4e562d61b1a974f41bf2a78f13dafa1fd9d",
+        "main_capture_audit.v": "528732748bb052a74557fc8ddbc93c58e7c870311fcf0e52c39f8fdf350640f4",
+        "main_capture_host_diagnostics_test.v": "5ad5c2bdc031089d4187892f043bbbdcd4d8d5f2ccb893ccf29e15544e334ce0"
+      },
+      "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+      "rows": [
+        {
+          "label": "compile-capture-prealloc",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/compile-capture-prealloc.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/compile-capture-prealloc-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-d",
+            "vox_ui2",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/capture-prealloc",
+            "/Users/alex/code/vox2/main_capture_host_diagnostics_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793933146.0758138,
+            "cpu_count": 18,
+            "load": [
+              9.31591796875,
+              7.22119140625,
+              6.52880859375
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933168.583773,
+            "load": [
+              9.05419921875,
+              7.3017578125,
+              6.57373046875
+            ]
+          }
+        },
+        {
+          "label": "run-capture-prealloc-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-prealloc-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-prealloc-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/capture-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": ""
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933168.6154969,
+            "cpu_count": 18,
+            "load": [
+              9.05419921875,
+              7.3017578125,
+              6.57373046875
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933169.1938891,
+            "load": [
+              9.05419921875,
+              7.3017578125,
+              6.57373046875
+            ]
+          }
+        },
+        {
+          "label": "run-capture-prealloc-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-prealloc-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-prealloc-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/capture-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933169.201951,
+            "cpu_count": 18,
+            "load": [
+              9.05419921875,
+              7.3017578125,
+              6.57373046875
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933169.410023,
+            "load": [
+              8.8095703125,
+              7.27978515625,
+              6.5703125
+            ]
+          }
+        },
+        {
+          "label": "compile-capture-none",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/compile-capture-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/compile-capture-none-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-nocache",
+            "-w",
+            "-keepc",
+            "-cflags",
+            "-O0",
+            "-skip-running",
+            "-gc",
+            "none",
+            "-d",
+            "vox_ui2",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/capture-none",
+            "/Users/alex/code/vox2/main_capture_host_diagnostics_test.v"
+          ],
+          "environment": {},
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+          "host_before": {
+            "unix": 1793933169.417537,
+            "cpu_count": 18,
+            "load": [
+              8.8095703125,
+              7.27978515625,
+              6.5703125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933189.285356,
+            "load": [
+              9.189453125,
+              7.44384765625,
+              6.64111328125
+            ]
+          }
+        },
+        {
+          "label": "run-capture-none-off",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-none-off.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-none-off-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/capture-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": ""
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933189.2930748,
+            "cpu_count": 18,
+            "load": [
+              9.189453125,
+              7.44384765625,
+              6.64111328125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933189.750394,
+            "load": [
+              9.654296875,
+              7.56884765625,
+              6.68994140625
+            ]
+          }
+        },
+        {
+          "label": "run-capture-none-on",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-none-on.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/run-capture-none-on-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-host-callbacks-root-20261106-r2/capture-none"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DIAGNOSTIC_HOST_CALLBACKS": "1"
+          },
+          "compiler_environment": {
+            "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "host_before": {
+            "unix": 1793933189.7578502,
+            "cpu_count": 18,
+            "load": [
+              9.654296875,
+              7.56884765625,
+              6.68994140625
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793933189.96898,
+            "load": [
+              9.654296875,
+              7.56884765625,
+              6.68994140625
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "production_report": "docs/performance/chatgpt-host-callbacks-production-20261106-r2.json",
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-054551-334f3244/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "c868db9382625f073d0522996ca7e36d2cc2efd228926083e2dce6031d3d312f",
+      "dirty": true,
+      "head": "658ba29b4b3838814daac049d97b998c4e496d38",
+      "repository_sha256": "e3c0cf11257a530357a1564256c6a0330f6bf703d898d39d871b4ed342903298"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "c868db9382625f073d0522996ca7e36d2cc2efd228926083e2dce6031d3d312f",
+      "dirty": true,
+      "head": "4e6d0b77f6574f713fbe885dd3cb82e37810b5ae",
+      "repository_sha256": "7a143963ceb2955b8060abc634cc4d1a8bf2c8ab25fb0ddeafa5d5b79439a7ab"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "658ba29b4b3838814daac049d97b998c4e496d38",
+      "id": "50fad570554e40568b2db4c1b8dac519",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "c868db9382625f073d0522996ca7e36d2cc2efd228926083e2dce6031d3d312f",
+      "dirty": true,
+      "head": "658ba29b4b3838814daac049d97b998c4e496d38",
+      "repository_sha256": "9843aa82dc48b705d3d614c1b0bf3c94d31026b222a6439cf49d04636031e3e3"
+    }
+  },
+  "callback_calls": 185737,
+  "callback_samples": 2950,
+  "instruction_credit": 0,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-host-callbacks-focused-20261106-evidence.zip",
+      "sha256": "884d1b0f6ed652017cc588a53829fd3b969d800a2e3bac70223fbc1fef601a36",
+      "bytes": 50726128,
+      "verified_entries": 141
+    },
+    {
+      "path": "docs/performance/chatgpt-host-callbacks-r1-rejected-20261106-evidence.zip",
+      "sha256": "90a15cb94e6c9d413fd1b000b1bb5e80fd869bef9afa1d7f9056755347e6c239",
+      "bytes": 3620300,
+      "verified_entries": 21
+    },
+    {
+      "path": "docs/performance/chatgpt-host-callbacks-production-20261106-r2-evidence.zip",
+      "sha256": "c89a8b6acbf8eadc495c57b7964ae944ee3e293611640138773cdf262fba15c1",
+      "bytes": 678455,
+      "verified_entries": 28
+    }
+  ],
+  "qualification": "Diagnostic only: systematic per-binding inclusive current-process instruction samples, first call and each 64th. Concurrent threads and observer overhead are included. Nested samples overlap and sampling is phase-sensitive; totals cannot be summed or scaled into an additive page budget or optimization credit. Exact call counts and registration stacks identify native host bindings without reading author values. The capture_audit report follows encoded PNG availability and the content audit. Original SOCKS bytes/scripts, private profiles/caches, unfocused 1024x768 scale2 and unchanged references. Fresh canonical process; no injected library, copied bundle, or build request."
+}

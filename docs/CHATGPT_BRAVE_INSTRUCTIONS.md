@@ -5252,3 +5252,22 @@ The observed median falls **0.1319%**, but conservative separation is **-755,450
 Executable `46a1582b0e9154230c9da4467b441322cb5d2aeae8185676441e8922a296256a` and native libraries stay pinned under one nonblocking shared publication lease, using the completed single-unit V `-prod` receipt. One shared build fails source sealing because repository inputs changed and is not used; the completed successor contains the final native helper. The original one-time SOCKS capture and author scripts, fresh private profiles/caches, 1024×768 scale-two viewport and five-second unfocused settle remain unchanged. Counts run from exclusive coalition creation through encoded document PNG; OS filesystem/shader caches remain retained, and GPU work/outside-coalition services remain excluded. Host load, raw counters and all actual exits are retained. Capture/controller guards exit zero; the underlying comparison drivers return 1 for the unmet Brave threshold.
 
 The candidate median remains **7,326,250,556 instructions above 20B**. This cohort does not revise earlier instrumented stage tables or credit the component saving to the page. The [verification receipt](performance/chatgpt-lexer-copy-verification-20261106.json) links all source, command, counter, PNG, guard, failure and authenticated archive evidence. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Sampled native JavaScript callbacks toward 20B (2026-11-06)
+
+Commits `56f5eb9d0` and `4e6d0b77f` add opt-in per-binding callback diagnostics and a non-destructive report at the capture-audit boundary. Ordinary runs create no diagnostic records. Registration stacks identify anonymous bindings without reading author values; native symbol offsets are validated against the executable image. The final code passes **24 guarded jobs / 148 test-function executions** across ordinary GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers, with diagnostics both disabled and enabled. Earlier 88 passing executions remain retained.
+
+One production diagnostic passes bootstrap, complete content/button identity, normal exit and exact unchanged pixels against the original one-time SOCKS capture. It records **185,737 callbacks and 2,950 inclusive instruction samples**. Samples cover the first call and each 64th call, and reporting follows encoded PNG and the content audit.
+
+| Binding | Exact calls at diagnostic capture | Sampled calls | Inclusive instructions in those samples |
+| --- | ---: | ---: | ---: |
+| __ladybirdSerializeURLText | 46,629 | 729 | 36,929,659 |
+| __ladybirdElementQuery | 25,058 | 392 | 31,277,900 |
+| __ladybirdRootDocumentOwner | 51,133 | 799 | 27,942,649 |
+| __ladybirdDOMTreeVersion | 49,860 | 780 | 23,348,269 |
+| querySelectorAll | 799 | 13 | 3,194,580 |
+| querySelector | 205 | 4 | 1,788,713 |
+
+**These instruction samples are not an additive breakdown of the page.** Nested callbacks overlap, process threads run concurrently, systematic sampling can alias phases, and counter reads have an observed floor around 15,000 instructions. Multiplying sample means by call counts would therefore overstate costs. Exact call frequencies identify leads; no sample receives optimization credit or changes the retained stage table.
+
+The rejected generic JSON encoder prototype, poisoned-memory failure and corrected manual report encoding remain archived. The first production preflight used the wrong Mach-O header symbol and launched no browser; the corrected diagnostic uses `__mh_execute_header`. All archives are rehashed and decompressed entry by entry. The [verification receipt](performance/chatgpt-host-callbacks-verification-20261106.json) links focused checks, source witnesses, failures and the pinned production report. The **20B target remains unmet**.
