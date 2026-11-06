@@ -58,6 +58,25 @@ normal exit and private-PID memory adoption pass. This diagnostic supplies
 investigation leads without additional instruction saving or CPU-share credit.
 [Fresh profile and complete compiler evidence](performance/bbc-tls12-v-profile-20261106.json).
 
+A separate current-production CPU sample also passes actual PID/start, executable
+UUID/range, original pixel/content/72-source, mapped-image, ownership, exit and
+private-PID adoption checks. It shows JSC JIT activity and repeated layout/font
+loading paths; its requested three-second / 1 ms cadence is not established as
+actual cadence. Idle waits, recursive stacks and possible work outside PNG are
+included. No CPU share or saving is inferred.
+[Validated sample](performance/bbc-tls12-cpu-sample-20261106.json).
+
+Repeated CSSOM handle lookup is now indexed (`f95af40c0`; isolated control
+`d922a5091`). Cache hits verify the retained forward owner and read current
+rule type; first exports retain their original lookup. All **96 focused
+executions** (16 cases, two arms, three memory modes) and **349 tooling tests**
+pass. Initial runs retain a common legacy canvas-test failure: CSSRule edits
+were incorrectly expected to rewrite style text. Test-only correction
+`d3b2df0a2` checks the live rule value and unchanged source, keeping the canvas
+identity/pixel assertions. Native BBC eligibility and matched measurement remain
+pending; no instruction credit is claimed for the index.
+[Focused CSSOM checks](performance/bbc-cssom-handle-index-focus-20261106.json).
+
 Retained attempt — **cohort 132**, literal V `-prod` / single-C-unit production
 `ec6ef38e95bb`, completes **seven alternating candidate/control/Brave triples**.
 All **21 attempts** remain retained; **20 capture audits pass**, while Brave

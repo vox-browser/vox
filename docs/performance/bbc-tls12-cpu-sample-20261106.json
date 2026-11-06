@@ -1,0 +1,213 @@
+{
+  "status": "Validated current production CPU sample following fresh V profile; no instruction credit.",
+  "sample": {
+    "passed": true,
+    "sample": {
+      "pid": 72747,
+      "start_ticks": 5169899378500,
+      "command": [
+        "/usr/bin/sample",
+        "72747",
+        "3",
+        "1",
+        "-file",
+        "/Users/alex/code/vox2/Build/bbc-tls12-sample-20261106-2230/page/pair-1-vox/cpu.sample.txt"
+      ],
+      "started_unix": 1793952271.697939,
+      "exit": 0,
+      "finished_unix": 1793952276.047227
+    },
+    "actual_executable_uuid": "57E55A94-4492-38A8-AF78-A24E67B460C6",
+    "load_start": 4303060992,
+    "load_end": 4346972831,
+    "vox_frames_checked": 5050,
+    "original_pixels_content_and72_external_sources": true,
+    "native_images_pinned": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "ef8e74bbedd96aa8828432a72ace6380c310aa669f7476d27f7d36252304888a",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-105946-284e4277/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "e8b64079e7a9cb36db1c70f419c864a0da4110cb9e567175b2a2ef50da14463e",
+        "dirty": true,
+        "head": "271586bfaebb8bf07a58731f71d4d9492f6424ec",
+        "repository_sha256": "2b2c861595a110ec78648107c4c2c91be6adf4fd1b01ce3a5b750878dfa61ee5"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "e8b64079e7a9cb36db1c70f419c864a0da4110cb9e567175b2a2ef50da14463e",
+        "dirty": true,
+        "head": "f29aeab4531fc3d10df3a94e6bf34403dba948c6",
+        "repository_sha256": "bee784de0f72764749636752e03767b34e329ac51e750e36f3302baeaea63915"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "271586bfaebb8bf07a58731f71d4d9492f6424ec",
+        "id": "f495a5111dea4215b4d1de4a4306037e",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "e8b64079e7a9cb36db1c70f419c864a0da4110cb9e567175b2a2ef50da14463e",
+        "dirty": true,
+        "head": "271586bfaebb8bf07a58731f71d4d9492f6424ec",
+        "repository_sha256": "2b2c861595a110ec78648107c4c2c91be6adf4fd1b01ce3a5b750878dfa61ee5"
+      }
+    },
+    "qualification": "Requested3seconds/1ms,actual cadence not established. Per-thread observations include idle waits and possible PNG/audit/teardown work;recursive stacks overlap. Main/worker labels and running JSC Heap Helper/GC/JIT frames are investigative leads,not CPU-instruction shares. Absence of TLS frames does not prove absence of TLS cost outside the sample. No performance or acceptance credit.",
+    "unix": 1793952277.5111191
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-tls12-sample-20261106-2230/native-sample.py",
+      "--capture-reference",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-tls12-sample-20261106-2230/page",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-tls12-sample-20261106-2230/pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg",
+      "--retain-degenerate-border-msaa"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "72747": "Fri Nov  6 11:04:31 2026    ",
+      "72750": "Fri Nov  6 11:04:31 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1511702528,
+    "elapsed_seconds": 7.657981167,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "capture_ownership": {
+    "endpoint": {
+      "coalition_id": 61521,
+      "instructions": 23893109287,
+      "label": "capture_document_encoded",
+      "tasks_exited": 1,
+      "tasks_started": 3
+    },
+    "exited_task_identity_limit": "Aggregate exited work is included; individual exited identities are not recovered",
+    "method": "Stable live ownership with native endpoint task totals",
+    "passed": true,
+    "scan": {
+      "after_ownership_snapshot": {
+        "coalition_id": 61521,
+        "cycles": 8523240833,
+        "instructions": 24057133630,
+        "sample_completed": 6.540906083,
+        "sample_started": 6.540883,
+        "tasks_exited": 1,
+        "tasks_started": 3
+      },
+      "after_snapshot": {
+        "coalition_id": 61521,
+        "cycles": 8516752574,
+        "instructions": 24051314839,
+        "sample_completed": 6.512670833,
+        "sample_started": 6.512661875,
+        "tasks_exited": 1,
+        "tasks_started": 3
+      },
+      "all_owned": true,
+      "before_snapshot": {
+        "coalition_id": 61521,
+        "cycles": 8432244895,
+        "instructions": 23817312064,
+        "sample_completed": 6.486023541,
+        "sample_started": 6.486007041,
+        "tasks_exited": 1,
+        "tasks_started": 3
+      },
+      "concurrent_capture_roots": [],
+      "concurrent_capture_tasks": [],
+      "exact_live_count": true,
+      "members": [
+        {
+          "accepted": true,
+          "code_sign_clone_identity": null,
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-tls12-sample-20261106-2230/page/pair-1-vox/document.png https://www.bbc.com/",
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "parent": 1,
+          "pid": 72747,
+          "uid": 501
+        },
+        {
+          "accepted": true,
+          "code_sign_clone_identity": null,
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker --vox-adblock-worker-v1",
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+          "parent": 72747,
+          "pid": 72750,
+          "uid": 501
+        }
+      ],
+      "observed_app_processes": [
+        {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-tls12-sample-20261106-2230/page/pair-1-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 72747,
+          "uid": 501
+        },
+        {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker --vox-adblock-worker-v1",
+          "parent": 72747,
+          "pid": 72750,
+          "uid": 501
+        }
+      ],
+      "ownership_stable": true,
+      "preexisting_app_pids": [],
+      "preexisting_descendants": [],
+      "private_app_pids": [
+        72747,
+        72750
+      ],
+      "root_present": true,
+      "stable": true,
+      "vanished_during_scan": [
+        13746,
+        35602,
+        40213,
+        40363,
+        80313,
+        94931
+      ]
+    }
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-tls12-cpu-sample-20261106.tar.gz",
+    "bytes": 32741859,
+    "sha256": "6a8a09c13218d919fbdfbd27674af80aad61818d29548fae0afd65a6a9932a64",
+    "physical_members": 39,
+    "file_paths": 38,
+    "all_file_paths_verified": true
+  },
+  "history": {
+    "last_cohort": 133,
+    "measured_cohorts": 127,
+    "acceptance_browser_attempts": 2734
+  },
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "qualification": "Actual PID/start identity and executable UUID match injected dyld images; all5050Voxframe addresses lie in the pinned actual executable range. Originalpixel/content/72authorbytes/images/ownership/normalexit/privatePIDadoption pass. Requested3seconds/1ms,actualcadence notestablished. Includesstartup/nativeidle,recursive stacks overlap,andoutsidecaptureboundaryworkmayappear. JSCJITactivityandgrid/inline/font-loading stacks are investigation leads; no CPU shares, instructioncosts or saving attributed.",
+  "unix": 1793952862.8500092
+}
