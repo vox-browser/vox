@@ -7579,3 +7579,17 @@ or acceptance launches. No cohort ID or acceptance attempt is consumed. All
 confirmation on a subsequent completed bundle remains pending. History stays
 123 measured cohorts / 2,650 attempts through cohort 129; target unmet.
 [No-hit launches and rollback evidence](performance/bbc-longhand-capacity-no-hit-retirement-20261106.json).
+
+A separate **committed same-pass grid cache** (`dcacc48e9`, control `4640982a6`)
+passes **162 focused executions**: 27 cases in both arms across default, no-GC
+and preallocation, plus **348 instruction-tool tests**. Seven new cases cover
+exact incoming keys and ancestor bases, dirty unchanged trees, text/membership/
+style/font changes, owned descendant geometry and copy-on-write, root offsets,
+clamp/position exclusions, native/pool retirement and shared nested snapshot
+limits. The separate map holds one entry per grid, bounded to 4,096 descendant
+snapshots, without changing disposable-probe eviction or rejection. Initial
+compile and fixture failures remain recorded. The available production wrapper
+predates the final nested-budget recheck and is rejected before native launch.
+Native eligibility and unprofiled savings remain pending; no acceptance ID,
+broad cadence or catalog credit advances.
+[Grid focused checks](performance/bbc-same-pass-grid-focus-20261106.json).
