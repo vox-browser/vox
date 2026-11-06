@@ -7,8 +7,11 @@ import platform
 
 const disable_inline_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_MEASUREMENT_REUSE') != ''
 const inline_measurement_diagnostics = os.getenv('VOX_INLINE_MEASUREMENT_DIAGNOSTICS') != ''
+const retain_positioned_inline_measurements = os.getenv('VOX_RETAIN_POSITIONED_INLINE_MEASUREMENTS') != ''
+const positioned_inline_measurement_diagnostics = os.getenv('VOX_POSITIONED_INLINE_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global inline_measurement_reuse_reported bool
+__global positioned_inline_measurement_reuse_reported bool
 
 struct InlineMeasurementKey {
 	mode LayoutMode
@@ -56,7 +59,8 @@ fn inline_measurement_key(used &UsedValues, mode LayoutMode, space AvailableSpac
 }
 
 fn inline_measurement_root_is_closed(root &Node, context ?&BlockFormattingContext) bool {
-	if root.child_count() == 0 || !inline_layout_workspace_is_closed(root, true) {
+	if root.child_count() == 0 || !inline_layout_workspace_is_closed_with_root_position(root,
+		true, !retain_positioned_inline_measurements) {
 		return false
 	}
 	for child in root.children() {
@@ -137,6 +141,11 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			if inline_measurement_diagnostics && !inline_measurement_reuse_reported {
 				inline_measurement_reuse_reported = true
 				eprintln('Vox inline measurement: reused closed text layout within pass')
+			}
+			if positioned_inline_measurement_diagnostics && root.is_positioned()
+				&& !positioned_inline_measurement_reuse_reported {
+				positioned_inline_measurement_reuse_reported = true
+				eprintln('Vox positioned inline measurement: reused unshifted root text lines')
 			}
 			if committed { report_committed_inline_measurement_reuse() }
 			if !committed { retain_recent_measurement(mut previous, cache_index, root) }

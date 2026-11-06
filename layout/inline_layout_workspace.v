@@ -6,8 +6,18 @@ import platform
 // shadow content and ordinary breaks can use a closed workspace even when
 // their inputs cannot be retained as a reusable layout-cache entry.
 fn inline_layout_workspace_is_closed(node &Node, root bool) bool {
+	return inline_layout_workspace_is_closed_with_root_position(node, root, false)
+}
+
+// A measurement can retain an unshifted relative root's local text lines.
+// Its caller still owns that root's offset; descendants keep the stricter
+// workspace rules and must publish no separate positioned geometry.
+fn inline_layout_workspace_is_closed_with_root_position(node &Node, root bool,
+	allow_unshifted_root bool) bool {
 	if node.is_svg_box() || node.is_replaced_box() || node.is_atomic_inline()
-		|| node.is_floating() || node.is_positioned() || node.is_list_item_box()
+		|| node.is_floating() || (node.is_positioned()
+			&& !(root && allow_unshifted_root && retained_layout_position_is_unshifted(node)))
+		|| node.is_list_item_box()
 		|| node.is_list_item_marker_box() {
 		return false
 	}
