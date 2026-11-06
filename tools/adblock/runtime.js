@@ -12,6 +12,7 @@ import defaultData from './generated-defaults.js';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { checkResponseHeaders } from './response_headers.js';
 import { snapshotResources } from './resources.js';
+import { siteFilters } from './site_resources.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
 globalThis.voxAdblockLoadBase64 = () => {
@@ -78,6 +79,9 @@ globalThis.voxAdblockInitialize = customFilters => {
     publicSuffixList.parse(defaultData.publicSuffixText(), punycode.toASCII);
     const lists = customFilters === undefined ? defaultData.lists : [{ name: 'user-filters', raw: customFilters }];
     const prepared = lists.map(list => ({ ...list, raw: sfp.utils.preparser.prune(list.raw, environment) }));
+    // Subscription identities/count stay unchanged. Local rules are compiled
+    // by the same uBO engine, and independent user-filter engines stay isolated.
+    if (customFilters === undefined) prepared.push({ name: 'vox-site-filters', raw: siteFilters });
     snfe.reset();
     const networkCompiled = prepared.map(list => compileNetwork(list.raw, list.name));
     for (const compiled of networkCompiled) snfe.fromCompiled(new CompiledListReader(compiled));

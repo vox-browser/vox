@@ -1,6 +1,7 @@
 import redirectableResources from '../../adblock/vendor/ublock/js/redirect-resources.js';
 import { builtinScriptlets } from '../../adblock/vendor/ublock/js/resources/scriptlets.js';
 import resourceData from '../../adblock/extended/redirect-resources.json';
+import { siteResources } from './site_resources.js';
 
 export function createResources() {
     const resources = new Map(), aliases = new Map();
@@ -29,6 +30,11 @@ export function createResources() {
         for (const alias of (Array.isArray(details.alias) ? details.alias : details.alias ? [details.alias] : [])) {
             aliases.set(alias, name);
         }
+    }
+    for (const [name, text] of siteResources) {
+        const data = `data:text/javascript,${encodeURIComponent(text)}`;
+        resources.set(name, { mime: 'text/javascript', data, dependencies: [],
+            toContent: () => text, toURL: () => data });
     }
     return { resources, aliases };
 }
