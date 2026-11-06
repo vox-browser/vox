@@ -347,32 +347,6 @@ fn new_inline_iterator_with_item_storage(mut state LayoutState, containing_block
 	return iterator
 }
 
-fn text_may_require_bidi_processing(text_node &TextNode) bool {
-	text := text_node.text_for_rendering()
-	if text.is_ascii() {
-		return false
-	}
-	for code_point in text.runes() {
-		bidi_class := dom.unicode_bidirectional_class(u32(code_point))
-		if bidi_class in [
-			.right_to_left,
-			.right_to_left_arabic,
-			.right_to_left_embedding,
-			.right_to_left_isolate,
-			.right_to_left_override,
-			.left_to_right_embedding,
-			.left_to_right_isolate,
-			.left_to_right_override,
-			.first_strong_isolate,
-			.pop_directional_format,
-			.pop_directional_isolate,
-		] {
-			return true
-		}
-	}
-	return false
-}
-
 // Writing Modes' bidi paragraph classification. Keeping a provably LTR
 // paragraph unidirectional prevents neutral punctuation from splitting shaping
 // runs while retaining per-code-point direction for mixed and RTL content.

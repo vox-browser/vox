@@ -2117,6 +2117,7 @@ pub struct TextNode {
 	Node
 mut:
 	cached_grapheme_boundaries_ []int
+	cached_inline_bidi_processing_ ?bool
 pub mut:
 	source_text_                  string
 	text_for_rendering_           string
@@ -2239,6 +2240,7 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.text_for_rendering_ = ''
 	n.rendered_text_is_ascii_ = false
 	n.rendered_utf16_length_ = 0
+	n.cached_inline_bidi_processing_ = none
 	n.rendered_text_edits_.clear()
 	n.cached_inline_chunks_ = none
 	n.cached_font_environment_generation_ = 0
@@ -2253,6 +2255,7 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 }
 
 fn (mut n TextNode) compute_text_for_rendering() {
+	n.cached_inline_bidi_processing_ = none
 	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	defer { platform.leave_persistent(persistent) }
 	mut text := n.source_text_
