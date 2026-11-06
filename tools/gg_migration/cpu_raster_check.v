@@ -4,6 +4,7 @@ module main
 
 import cpuraster
 import gfxfont
+import math
 import os
 import rand
 
@@ -16,10 +17,13 @@ type OracleFontTypefaceIsValid = fn (data &u8, size uint, index i32) i32
 
 type OracleBitmapExport = fn (pixels &u8, output &u8, values &i32) i32
 
+type OracleFillPath = fn (pixels &u8, values &i32, floats &f32)
+
 struct Oracle {
 	read_pixels            OracleReadPixels          = unsafe { nil }
 	font_typeface_is_valid OracleFontTypefaceIsValid = unsafe { nil }
 	bitmap_export          OracleBitmapExport        = unsafe { nil }
+	fill_path              OracleFillPath            = unsafe { nil }
 }
 
 fn load_oracle(path string) Oracle {
@@ -36,6 +40,7 @@ fn load_oracle(path string) Oracle {
 		bitmap_export:          unsafe {
 			OracleBitmapExport(oracle_symbol(library, 'oracle_bitmap_export'))
 		}
+		fill_path:              unsafe { OracleFillPath(oracle_symbol(library, 'oracle_fill_path')) }
 	}
 }
 
@@ -428,14 +433,169 @@ fn check_export_random(oracle Oracle, count int) !int {
 	return count + tiled
 }
 
+// One path op: kind (0 move, 1 line, 2 quad, 3 conic, 4 cubic, 5 close) and
+// up to six coordinates, the conic weight last.
+struct PathOp {
+	kind int
+	v    [6]f32
+}
+
+fn random_coordinate(extent int) f32 {
+	return match rand.intn(10) or { 0 } {
+		0 { f32(rand.f64() * f64(extent) * 3 - f64(extent)) }
+		1 { f32(rand.intn(extent + 1) or { 0 }) }
+		2 { f32(rand.intn(extent + 1) or { 0 }) + f32(0.5) }
+		else { f32(rand.f64() * f64(extent) * 1.2 - f64(extent) * 0.1) }
+	}
+}
+
+fn random_path_ops(width int, height int) []PathOp {
+	mut ops := []PathOp{}
+	contours := rand.intn(3) or { 0 } + 1
+	for _ in 0 .. contours {
+		ops << PathOp{0, [random_coordinate(width), random_coordinate(height), 0, 0, 0, 0]!}
+		segments := rand.intn(7) or { 0 } + 1
+		for _ in 0 .. segments {
+			kind := match rand.intn(10) or { 0 } {
+				0, 1, 2, 3 { 1 }
+				4, 5 { 2 }
+				6 { 3 }
+				7, 8 { 4 }
+				else {
+					if rand.intn(2) or { 0 } == 0 { 5 } else { 0 }
+				}
+			}
+			mut v := [6]f32{}
+			for i in 0 .. 6 {
+				v[i] = if i % 2 == 0 { random_coordinate(width) } else { random_coordinate(height) }
+			}
+			if kind == 3 {
+				v[4] = f32(rand.f64() * 3)
+			}
+			ops << PathOp{kind, v}
+		}
+		if rand.intn(2) or { 0 } == 0 {
+			ops << PathOp{5, [6]f32{}}
+		}
+	}
+	return ops
+}
+
+fn build_path(ops []PathOp, even_odd bool) cpuraster.Path {
+	mut b := cpuraster.PathBuilder{}
+	for op in ops {
+		match op.kind {
+			0 { b.move_to(op.v[0], op.v[1]) }
+			1 { b.line_to(op.v[0], op.v[1]) }
+			2 { b.quad_to(op.v[0], op.v[1], op.v[2], op.v[3]) }
+			3 { b.conic_to(op.v[0], op.v[1], op.v[2], op.v[3], op.v[4]) }
+			4 { b.cubic_to(op.v[0], op.v[1], op.v[2], op.v[3], op.v[4], op.v[5]) }
+			else { b.close() }
+		}
+	}
+	b.fill_type = if even_odd { .even_odd } else { .winding }
+	return b.detach()
+}
+
+fn random_matrix() cpuraster.Matrix {
+	return match rand.intn(10) or { 0 } {
+		0, 1, 2, 3 {
+			cpuraster.Matrix{}
+		}
+		4, 5, 6 {
+			cpuraster.Matrix{
+				a: f32(rand.f64() * 2 + 0.25)
+				d: f32(rand.f64() * 2 + 0.25)
+				e: f32(rand.f64() * 20 - 10)
+				f: f32(rand.f64() * 20 - 10)
+			}
+		}
+		else {
+			angle := rand.f64() * 6.283185307
+			scale := rand.f64() * 1.5 + 0.5
+			cpuraster.Matrix{
+				a: f32(math.cos(angle) * scale)
+				b: f32(math.sin(angle) * scale)
+				c: f32(-math.sin(angle) * scale + rand.f64() * 0.3)
+				d: f32(math.cos(angle) * scale)
+				e: f32(rand.f64() * 30)
+				f: f32(rand.f64() * 30)
+			}
+		}
+	}
+}
+
+fn random_color() u32 {
+	return match rand.intn(6) or { 0 } {
+		0 { u32(0xff000000) }
+		1, 2 { u32(0xff000000) | (rand.u32() & 0xffffff) }
+		3 { u32(0) | (rand.u32() & 0xffffff) }
+		else { rand.u32() }
+	}
+}
+
+fn random_premultiplied(count int) []u8 {
+	mut pixels := []u8{len: count * 4}
+	for i in 0 .. count {
+		a := u8(rand.u32() & 255)
+		pixels[i * 4 + 3] = a
+		for c in 0 .. 3 {
+			pixels[i * 4 + c] = if a == 0 { 0 } else { u8(rand.u32() % (u32(a) + 1)) }
+		}
+	}
+	return pixels
+}
+
+// Anti-aliased solid path fills, through Skia's mask and run-length additive
+// blitters, its convex and general edge walkers and every solid blitter.
+fn check_fill_paths(oracle Oracle, count int) !(int, int) {
+	mut declined := 0
+	for i in 0 .. count {
+		small := rand.intn(2) or { 0 } == 0
+		width := if small { rand.intn(30) or { 0 } + 2 } else { rand.intn(150) or { 0 } + 20 }
+		height := if small { rand.intn(30) or { 0 } + 2 } else { rand.intn(150) or { 0 } + 20 }
+		ops := random_path_ops(width, height)
+		even_odd := rand.intn(2) or { 0 } == 0
+		matrix := random_matrix()
+		color := random_color()
+		initial := random_premultiplied(width * height)
+		mut expected := initial.clone()
+		mut floats := [matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f]
+		for op in ops {
+			floats << f32(op.kind)
+			for v in op.v {
+				floats << v
+			}
+		}
+		values := [i32(width), height, int(even_odd), ops.len, i32(color)]
+		oracle.fill_path(expected.data, values.data, floats.data)
+		mut actual := initial.clone()
+		path := build_path(ops, even_odd)
+		mut blitter := cpuraster.new_solid_blitter(mut actual, width * 4, color)
+		if !cpuraster.anti_fill_path(path.transform(matrix), cpuraster.IRect{0, 0, width, height}, mut
+			blitter)
+		{
+			declined++
+			continue
+		}
+		for j in 0 .. expected.len {
+			if expected[j] != actual[j] {
+				return error('fill ${i}: pixel (${j / 4 % width}, ${j / 4 / width}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (size ${width}x${height}, even-odd ${even_odd}, color ${color:08x}, matrix ${matrix}, ops ${ops})')
+			}
+		}
+	}
+	return count, declined
+}
+
 fn main() {
 	if os.args.len < 2 {
-		eprintln('usage: cpu_raster_check SKIA_CPU_ORACLE [COUNT]')
+		eprintln('usage: cpu_raster_check SKIA_CPU_ORACLE [COUNT] [SEED]')
 		exit(2)
 	}
 	oracle := load_oracle(os.args[1])
 	count := if os.args.len > 2 { os.args[2].int() } else { 20000 }
-	rand.seed([u32(20261106), 7])
+	seed := if os.args.len > 3 { u32(os.args[3].int()) } else { u32(20261106) }
+	rand.seed([seed, 7])
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -460,4 +620,9 @@ fn main() {
 		exit(1)
 	}
 	println('bitmap export: ${table} exhaustive and ${exports} random exports exact')
+	fills, declined := check_fill_paths(oracle, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('path fills: ${fills - declined} exact, ${declined} declined')
 }

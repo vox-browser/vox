@@ -134,3 +134,37 @@ ORACLE int oracle_bitmap_export(uint8_t const* pixels, uint8_t* output, int cons
 {
     return bitmap_export(pixels, a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], output);
 }
+
+// Canvas2D solid path fills (skia/canvas_raster.cpp draw_canvas_command() with
+// a solid style): SkCanvas::drawPath() with an anti-aliased solid paint into
+// premultiplied RGBA_8888 sRGB pixels.
+#include "include/core/SkPaint.h"
+#include "include/core/SkPathBuilder.h"
+
+// arguments: width, height, even-odd, op count, SkColor. floats: the affine
+// matrix (a b c d e f), then 7 floats per op: kind (0 move, 1 line, 2 quad,
+// 3 conic, 4 cubic, 5 close) and its coordinates (conic weight last).
+ORACLE void oracle_fill_path(uint8_t* pixels, int const* a, float const* f)
+{
+    SkPathBuilder builder;
+    float const* op = f + 6;
+    for (int i = 0; i < a[3]; ++i, op += 7) {
+        switch (int(op[0])) {
+        case 0: builder.moveTo(op[1], op[2]); break;
+        case 1: builder.lineTo(op[1], op[2]); break;
+        case 2: builder.quadTo(op[1], op[2], op[3], op[4]); break;
+        case 3: builder.conicTo(op[1], op[2], op[3], op[4], op[5]); break;
+        case 4: builder.cubicTo(op[1], op[2], op[3], op[4], op[5], op[6]); break;
+        case 5: builder.close(); break;
+        }
+    }
+    builder.setFillType(a[2] ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+    auto info = SkImageInfo::Make(a[0], a[1], kRGBA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(info, pixels, size_t(a[0]) * 4);
+    auto* canvas = surface->getCanvas();
+    canvas->setMatrix(SkMatrix::MakeAll(f[0], f[2], f[4], f[1], f[3], f[5], 0, 0, 1));
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(SkColor(uint32_t(a[4])));
+    canvas->drawPath(builder.detach(), paint);
+}
