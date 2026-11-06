@@ -39,7 +39,42 @@ primitive and phase. BBC qualification and cohort 134 now exercise the path;
 the focused checks alone supply no instruction saving or acceptance credit.
 [Focused evidence](performance/bbc-zero-native-timer-focus-20261106.json).
 
-Latest attempt — **cohort 134**, literal V `-prod` / single-C production
+Latest attempt — **cohort 135**, literal V `-prod` / single-C production
+`f1760353dab2`, completes seven alternating candidate/control/Brave triples.
+All **21 capture audits pass**. Launch-to-PNG medians are **23,654,038,252 Vox**,
+**23,605,994,759 control** and **17,438,458,779 Brave lower bound** instructions.
+The provisional context-slice cache shows a **48,043,493-instruction median
+regression (0.203522%)**, with five paired improvements and two regressions.
+The conservative control ratio **1.087833** fails. The strict Brave gate also
+fails `246912156700 > 155146863861` (ratio **1.432326**). Every attempt, including
+the large regressions, remains retained; no saving is credited.
+
+The cache (`f6ef9754e`; control `7a46a7a8c`) does run before PNG only in the
+candidate. Six changed producer functions and complete cache/iterator/TextNode
+layouts match focused C; both native captures retain original pixels/content,
+all 72 external source evaluations, native-image/ownership/exit/private-PID
+checks and exact SVG. Its final 156 focused executions pass (26 cases, both
+arms, three GC modes), including exact uncached glyph comparisons, copy-on-write,
+live text/font changes, scratch lifetime and foreign-owner checks. Earlier helper
+compilation, cleanup-wait and tooling-fixture failures remain recorded; the
+corrected 350 tooling checks pass.
+
+The cache and its control are removed (`b4f0ac85b`, `c3fb0387e`) after this
+negative measurement. All 57 restoration executions and 349 remaining tooling
+tests pass; the three modified implementation files restore the feature-parent
+bytes exactly, after verifying no intervening edits. Completed production
+`5736e101fcbb` matches all four restored functions and the complete iterator and
+TextNode layouts, with cache fields/symbols absent. Two fresh default-policy
+captures pass the original pixel/content/72-source/image/ownership/exit/PID
+checks; SVG remains exact. The negative final median triggers no new broad run; the prepared
+833-case set is not an executed result. The last actual broad remains 814 unique
+cases per mode, 809 passes and five known failures. History through 135 is
+**129 measured cohorts / 2,776 acceptance attempts**. The homepage stays outside
+the instruction catalog.
+[Focused attempts](performance/bbc-inline-context-slices-focus-20261106.json),
+[cohort and retirement evidence](performance/bbc-inline-context-slices-cohort135-20261106.json).
+
+Retained attempt — **cohort 134**, literal V `-prod` / single-C production
 `dd40e76bc0f0`, completes seven alternating candidate/control/Brave triples.
 All **21 capture audits pass**. Launch-to-PNG medians are **23,139,919,605 Vox**,
 **23,832,500,504 control** and **17,499,131,643 Brave lower bound** instructions.
