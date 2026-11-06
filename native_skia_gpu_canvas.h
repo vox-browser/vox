@@ -75,6 +75,8 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_push_layer) push_layer = nullptr;
     decltype(&vox_graphite_canvas_pop_layer) pop_layer = nullptr;
     decltype(&vox_graphite_canvas_present) present = nullptr;
+    decltype(&vox_graphite_canvas_present_deferred) present_deferred = nullptr;
+    decltype(&vox_graphite_canvas_schedule_present) schedule_present = nullptr;
     decltype(&vox_graphite_canvas_wait_present) wait_present = nullptr;
     decltype(&vox_graphite_canvas_release_present) release_present = nullptr;
     decltype(&vox_graphite_canvas_draw_shadow) draw_shadow = nullptr;
@@ -109,6 +111,8 @@ GpuCanvasApi const* gpu_canvas_api()
         value.push_layer = reinterpret_cast<decltype(value.push_layer)>(dlsym(library, "vox_graphite_canvas_push_layer"));
         value.pop_layer = reinterpret_cast<decltype(value.pop_layer)>(dlsym(library, "vox_graphite_canvas_pop_layer"));
         value.present = reinterpret_cast<decltype(value.present)>(dlsym(library, "vox_graphite_canvas_present"));
+        value.present_deferred = reinterpret_cast<decltype(value.present_deferred)>(dlsym(library, "vox_graphite_canvas_present_deferred"));
+        value.schedule_present = reinterpret_cast<decltype(value.schedule_present)>(dlsym(library, "vox_graphite_canvas_schedule_present"));
         value.wait_present = reinterpret_cast<decltype(value.wait_present)>(dlsym(library, "vox_graphite_canvas_wait_present"));
         value.release_present = reinterpret_cast<decltype(value.release_present)>(dlsym(library, "vox_graphite_canvas_release_present"));
         value.draw_shadow = reinterpret_cast<decltype(value.draw_shadow)>(dlsym(library, "vox_graphite_canvas_draw_shadow"));
@@ -1291,14 +1295,25 @@ static bool gpu_canvas_verify_present(GpuCanvasFrame const& frame,
     std::fprintf(stderr,"VOX_GPU_PRESENT_VERIFY read=%d pixels=%zu max_error=%d\n",int(read),compared,error);
     return read && compared && !error;
 }
-extern "C" int ladybird_v_skia_gpu_canvas_present(CGContextRef destination,
-    VoxGraphiteCanvasSurfaceRegion const* regions, int count, void** completion)
+extern "C" int ladybird_v_skia_gpu_canvas_can_defer_present(CGContextRef destination)
+{
+    auto* api=gpu_canvas_api();
+    return ladybird_v_skia_gpu_canvas_can_present(destination) && api
+        && api->present_deferred && api->schedule_present;
+}
+
+static int gpu_canvas_present_impl(CGContextRef destination,
+    VoxGraphiteCanvasSurfaceRegion const* regions, int count, void** completion, bool deferred)
 {
     if (completion) *completion=nullptr;
     if (!completion || !ladybird_v_skia_gpu_canvas_can_present(destination)) return 0;
+    if (deferred && !ladybird_v_skia_gpu_canvas_can_defer_present(destination)) return 0;
     auto* frame=s_gpu_canvas.get();
+    auto present=deferred ? gpu_canvas_api()->present_deferred : gpu_canvas_api()->present;
     int result=gpu_canvas_upload(*frame)
-        ? gpu_canvas_api()->present(regions,count,completion) : -1;
+        ? present(regions,count,completion) : -1;
+    if (result>0 && deferred && std::getenv("VOX_GPU_CANVAS_PRESENT_VERIFY")
+        && !gpu_canvas_api()->schedule_present(*completion)) result=-1;
     if (result>0 && std::getenv("VOX_GPU_CANVAS_PRESENT_VERIFY")
         && !gpu_canvas_verify_present(*frame,regions,count)) result=-1;
     if (result>0) {
@@ -1310,6 +1325,20 @@ extern "C" int ladybird_v_skia_gpu_canvas_present(CGContextRef destination,
         s_deferred_layer_frame_failed=true;
     }
     return result;
+}
+
+extern "C" int ladybird_v_skia_gpu_canvas_present(CGContextRef destination,
+    VoxGraphiteCanvasSurfaceRegion const* regions, int count, void** completion)
+{ return gpu_canvas_present_impl(destination,regions,count,completion,false); }
+
+extern "C" int ladybird_v_skia_gpu_canvas_present_deferred(CGContextRef destination,
+    VoxGraphiteCanvasSurfaceRegion const* regions, int count, void** completion)
+{ return gpu_canvas_present_impl(destination,regions,count,completion,true); }
+
+extern "C" int ladybird_v_skia_gpu_canvas_schedule_present(void* completion)
+{
+    auto* api=gpu_canvas_api();
+    return api && api->schedule_present ? api->schedule_present(completion) : 0;
 }
 
 extern "C" void ladybird_v_skia_gpu_canvas_release_present(void* completion)

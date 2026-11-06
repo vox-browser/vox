@@ -1101,7 +1101,8 @@ int main(int argc, char** argv)
     } }
 
     if (argc==2 && (!std::strcmp(argv[1],"--resident-ring")
-            || !std::strcmp(argv[1],"--resident-ring-sparse"))) { @autoreleasepool {
+            || !std::strcmp(argv[1],"--resident-ring-sparse")
+            || !std::strcmp(argv[1],"--resident-ring-legacy-schedule"))) { @autoreleasepool {
         if (!std::strcmp(argv[1],"--resident-ring-sparse")) {
             setenv("VOX_GPU_TILE_SPARSE_CLEAR","1",1);s_resident_cpu_barrier=true;
         }
@@ -1109,6 +1110,11 @@ int main(int argc, char** argv)
         assert(ladybird_v_skia_gpu_canvas_compositor_available());
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
         s_backend_read=api->read; api->read=counted_read;
+        if (!std::strcmp(argv[1],"--resident-ring-legacy-schedule")) {
+            setenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT","1",1);api->schedule_present=nullptr;
+        }
+        bool expected_fence=getenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT")
+            && api->present_deferred && api->schedule_present;
         native_set_opaque_browser_frames(1);
         setenv("VOX_GPU_TILE_COMPOSITOR","1",1); native_scroll_gpu_tile_capability=YES;
         auto view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,css_width,css_height)];
@@ -1119,6 +1125,12 @@ int main(int argc, char** argv)
             auto reference=render(true,false,draw_resident_scene,true);
             native_layer_present_frame(view,scale,(IMP)resident_ring_draw);
             reused += native_scroll_raster.reused;
+            auto published=(VoxScrollTileFrame*)objc_getAssociatedObject(view,&native_scroll_tile_frame_key);
+            assert(published && bool(published->fence)==expected_fence);
+            if (published->fence) {
+                auto fence=(__bridge VoxScrollGpuFence*)published->fence;
+                assert(fence->resolved && fence->ready && !fence->completion);
+            }
             auto image=native_layer_frame_image(view); assert(image);
             auto data=CGDataProviderCopyData(CGImageGetDataProvider(image)); assert(data);
             for (int y=0; y<height; ++y) for (int x=0; x<width*4; ++x)

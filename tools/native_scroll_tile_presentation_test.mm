@@ -16,6 +16,8 @@ static int content_revision, test_damage;
 static bool tiled_frame, resident_frame;
 static bool fail_export;
 static unsigned exports;
+static bool deferred_export, schedule_ok=true;
+static int schedule_export(void*) { return schedule_ok; }
 
 static int cpu_present(CGContextRef context, const VoxGraphiteCanvasSurfaceRegion *regions, int count, void **completion) {
     if (fail_export) return 0;
@@ -97,7 +99,7 @@ static void draw(id self, SEL selector, NSRect bounds) {
     }
     if (tiled_frame) {
         if (resident_frame && native_scroll_raster.gpu_tiled)
-            native_scroll_raster_export(cpu_present, free);
+            native_scroll_raster_export_with_schedule(cpu_present,free,deferred_export ? schedule_export : nullptr);
         native_end_scroll_raster();
     }
     // V-owned viewport scrollbar and native-host chrome paint after the ring.
@@ -291,7 +293,7 @@ int main() { @autoreleasepool {
     setenv("VOX_GPU_TILE_COMPOSITOR","1",1);
     native_scroll_gpu_tile_capability=YES;
     native_discard_scroll_raster();
-    resident_frame=true; test_damage=1;
+    resident_frame=true; test_damage=1; deferred_export=true;
     for (int scale : {1,2}) {
         MyView2 *view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,97,629)];
         view.wantsLayer=YES;
@@ -329,6 +331,26 @@ int main() { @autoreleasepool {
         auto reference=native_layer_raster_frame(view,scale,(IMP)draw);
         assert(packed(reference)==packed(native_layer_frame_image(view)));
         CGImageRelease(reference); CGImageRelease(held);
+        // A scheduling failure occurs after raster has returned. Preserve the
+        // coherent installed frame and request a fresh ordinary replay.
+        native_scroll_gpu_tile_failed=NO;native_discard_scroll_raster();
+        tiled_frame=true;test_scroll=0;schedule_ok=true;
+        native_layer_present_frame(view,scale,(IMP)draw);
+        auto stable=packed(native_layer_frame_image(view));
+        CFTypeRef contents=CFRetain((__bridge CFTypeRef)view.layer.contents);
+        schedule_ok=false;test_scroll=17;content_revision++;
+        auto redraw_before=native_layer_redraw_generation;
+        native_layer_present_frame(view,scale,(IMP)draw);
+        assert((__bridge CFTypeRef)view.layer.contents==contents);
+        assert(packed(native_layer_frame_image(view))==stable);
+        assert(native_scroll_gpu_tile_failed && native_scroll_gpu_tile_frame_failed
+            && native_layer_redraw_generation==redraw_before+1);
+        schedule_ok=true;
+        native_layer_present_frame(view,scale,(IMP)draw);
+        assert(!native_scroll_raster.gpu_tiled && !native_scroll_raster.reused);
+        tiled_frame=false;reference=native_layer_raster_frame(view,scale,(IMP)draw);
+        assert(packed(reference)==packed(native_layer_frame_image(view)));
+        CGImageRelease(reference);CFRelease(contents);
         native_scroll_gpu_tile_failed=NO;
         native_discard_scroll_raster();
     }

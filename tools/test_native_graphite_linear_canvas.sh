@@ -17,4 +17,6 @@ for mode in optimized sanitized; do
     # Exercise the same pixel/ownership/failure references with the completed
     # render submitted before the following IOSurface-copy encoder work.
     VOX_GPU_TILE_EARLY_RENDER_SUBMIT=1 "$output_dir/$mode"
+    VOX_GPU_TILE_DEFER_SCHEDULE_WAIT=1 "$output_dir/$mode"
+    VOX_GPU_TILE_EARLY_RENDER_SUBMIT=1 VOX_GPU_TILE_DEFER_SCHEDULE_WAIT=1 "$output_dir/$mode"
 done

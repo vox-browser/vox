@@ -35,6 +35,20 @@ static std::vector<uint8_t> read_surface(skgpu::graphite::Context* gpu,
     return output;
 }
 
+// Both publication contracts share the existing transport references. Deferred
+// returns own a ticket; scheduling it twice must not consume that ticket.
+static int test_present_submission(VoxGraphiteCanvasSurfaceRegion const* regions, int count, void** ticket) {
+    bool deferred=getenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT") != nullptr;
+    auto present=deferred ? vox_graphite_canvas_present_deferred : vox_graphite_canvas_present;
+    int result=present(regions,count,ticket);
+    if (result>0 && deferred) {
+        assert(ticket && *ticket);
+        assert(vox_graphite_canvas_schedule_present(*ticket));
+        assert(vox_graphite_canvas_schedule_present(*ticket));
+    }
+    return result;
+}
+
 static void test_immutable_image_uploads() {
     setenv("VOX_IMMUTABLE_IMAGE_UPLOADS","1",1);
     auto* gpu=context();assert(gpu);
@@ -157,22 +171,22 @@ static void test_canvas_present() {
         }
     }
     void* ticket=nullptr;
-    assert(!vox_graphite_canvas_present(regions,0,&ticket) && !ticket);
-    assert(!vox_graphite_canvas_present(regions,3,nullptr));
+    assert(!test_present_submission(regions,0,&ticket) && !ticket);
+    assert(!test_present_submission(regions,3,nullptr));
     auto saved=regions[2];
     auto alias=IOSurfaceLookup(IOSurfaceGetID(outputs[0])); assert(alias);
     auto saved_prefix=regions[0].previous; regions[0].previous=alias;
-    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket);
+    assert(!test_present_submission(regions,3,&ticket) && !ticket);
     regions[0].previous=saved_prefix; CFRelease(alias);
     regions[2].surface_y=29;
-    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket);
+    assert(!test_present_submission(regions,3,&ticket) && !ticket);
     regions[2]=saved;
-    assert(!vox_graphite_canvas_present(regions,2,&ticket) && !ticket); // Uncovered source damage.
+    assert(!test_present_submission(regions,2,&ticket) && !ticket); // Uncovered source damage.
     regions[2].canvas_y=20;
-    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket); // Source overlap.
+    assert(!test_present_submission(regions,3,&ticket) && !ticket); // Source overlap.
     regions[2]=saved;
     canvas_present_test_fail_target=1;
-    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket);
+    assert(!test_present_submission(regions,3,&ticket) && !ticket);
     canvas_present_test_fail_target=-1;
     for(auto surface:outputs) {
         assert(IOSurfaceLock(surface,kIOSurfaceLockReadOnly,nullptr)==kIOReturnSuccess);
@@ -192,7 +206,7 @@ static void test_canvas_present() {
         }
         probe.called=true;
     };
-    assert(vox_graphite_canvas_present(regions,3,&ticket)==1 && ticket && lease.called);
+    assert(test_present_submission(regions,3,&ticket)==1 && ticket && lease.called);
     canvas_present_test_before_commit=nullptr; canvas_present_test_context=nullptr;
     assert(vox_graphite_canvas_wait_present(ticket));
     for(auto output:outputs) assert(!IOSurfaceIsInUse(output));
@@ -204,7 +218,7 @@ static void test_canvas_present() {
     }
     // Clearing a new target initializes every pixel without a CPU prefix.
     for(auto& region:regions) region.previous=nullptr;
-    assert(vox_graphite_canvas_present(regions,3,&ticket)==1);
+    assert(test_present_submission(regions,3,&ticket)==1);
     vox_graphite_canvas_release_present(ticket);
     // Capture's CPU lock waits on the scheduled IOSurface writer.
     for(int index=0;index<2;++index) {
@@ -222,6 +236,7 @@ static void test_canvas_present() {
         IOSurfaceUnlock(surface,kIOSurfaceLockReadOnly,nullptr); CFRelease(surface);
     }
     vox_graphite_canvas_release_present(nullptr); assert(!vox_graphite_canvas_wait_present(nullptr));
+    assert(!vox_graphite_canvas_schedule_present(nullptr));
     vox_graphite_canvas_end();
     // More than two real-queue windows: each next frame samples its immutable
     // predecessor before any CPU wait, and finish only drains on retirement.
@@ -241,7 +256,7 @@ static void test_canvas_present() {
         assert(vox_graphite_canvas_upload_queued(0,source.data(),tile.width*4));
         assert(vox_graphite_canvas_pop_layer(nullptr,0,1,0,1)==1);
         VoxGraphiteCanvasSurfaceRegion region {next,previous,0,0,0,0,width,height};
-        assert(vox_graphite_canvas_present(&region,1,&ticket)==1);
+        assert(test_present_submission(&region,1,&ticket)==1);
         vox_graphite_canvas_release_present(ticket); vox_graphite_canvas_end();
         vox_graphite_finish_frame();
         drains += canvas_last_present == nil;

@@ -581,6 +581,18 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
         native_layer_preparation_view = previous_preparation_view;
     }
     if (!image) return;
+    if (tiles && !native_scroll_tiles_ready(tiles,"publication")) {
+        // A failed GPU export never replaces a coherent published frame.
+        native_scroll_gpu_tile_failed = YES;
+        native_scroll_gpu_tile_frame_failed = YES;
+        ++native_layer_redraw_generation;
+        [view setNeedsDisplay:YES];
+        CGImageRelease(image);
+#if !__has_feature(objc_arc)
+        [tiles release];
+#endif
+        return;
+    }
     // Disable implicit content/scale animations: an old frame must not be
     // retained for a cross-fade when navigation, selection or scrolling paints.
     [CATransaction begin];

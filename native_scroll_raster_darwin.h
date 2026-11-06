@@ -546,7 +546,8 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     return 1;
 }
 
-static BOOL native_scroll_raster_export(VoxScrollGpuPresent present, VoxScrollGpuRelease release) {
+static BOOL native_scroll_raster_export_with_schedule(VoxScrollGpuPresent present,
+    VoxScrollGpuRelease release, VoxScrollGpuSchedule schedule) {
     VoxScrollRaster *cache = &native_scroll_raster;
     if (!cache->active || !cache->gpu_tiled || native_scroll_gpu_tile_frame_failed) return NO;
     if (cache->reused) {
@@ -556,10 +557,14 @@ static BOOL native_scroll_raster_export(VoxScrollGpuPresent present, VoxScrollGp
                 cache->tile_dirty[((cache->row_origin+y)%cache->height)/VOX_SCROLL_TILE_ROWS]=YES;
         }
     } else memset(cache->tile_dirty,1,sizeof(cache->tile_dirty));
-    BOOL exported = native_scroll_tiles_export(cache->context,cache->width,cache->height,
-        cache->row_origin,cache->top,cache->scale,cache->tile_dirty,present,release);
+    BOOL exported = native_scroll_tiles_export_with_schedule(cache->context,cache->width,cache->height,
+        cache->row_origin,cache->top,cache->scale,cache->tile_dirty,present,release,schedule);
     if (!exported) native_scroll_gpu_tile_failed = native_scroll_gpu_tile_frame_failed = YES;
     return exported;
+}
+
+static BOOL native_scroll_raster_export(VoxScrollGpuPresent present, VoxScrollGpuRelease release) {
+    return native_scroll_raster_export_with_schedule(present,release,NULL);
 }
 
 // Finish before the document layer is published or chrome is painted. A new

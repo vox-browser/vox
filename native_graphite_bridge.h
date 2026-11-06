@@ -304,6 +304,11 @@ int vox_graphite_canvas_present(const VoxGraphiteCanvasSurfaceRegion *regions,
 // Consume a completion exactly once. Waiting is for capture/tests; ordinary
 // publication releases it after scheduling and relies on IOSurface fences.
 int vox_graphite_canvas_wait_present(void *completion);
+// Deferred publication owns the returned completion and must register its
+// IOSurface scheduling fences before CA or a CPU reader consumes the output.
+int vox_graphite_canvas_present_deferred(const VoxGraphiteCanvasSurfaceRegion *regions,
+    int count, void **completion);
+int vox_graphite_canvas_schedule_present(void *completion);
 void vox_graphite_canvas_release_present(void *completion);
 void vox_graphite_canvas_end(void);
 #ifdef __cplusplus

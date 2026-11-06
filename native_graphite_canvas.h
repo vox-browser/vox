@@ -773,9 +773,8 @@ static int canvas_present_test_fail_target = -1;
 // The kernel tracks cross-process IOSurface hazards once Metal work has been
 // scheduled. Chromium uses the same boundary before Core Animation access;
 // CPU capture still waits for completion. Targets stay private until success.
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
-    int count, void** completion)
+static int canvas_present_impl(VoxGraphiteCanvasSurfaceRegion const* regions,
+    int count, void** completion, bool defer_schedule)
 { @autoreleasepool {
     if (completion) *completion = nullptr;
     if (!completion || !regions || count <= 0 || count > 66) return 0;
@@ -948,7 +947,7 @@ int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
     if (canvas_present_test_before_commit) canvas_present_test_before_commit(canvas_present_test_context);
 #endif
     [commands commit];
-    [commands waitUntilScheduled];
+    if (!defer_schedule) [commands waitUntilScheduled];
     if (commands.status==MTLCommandBufferStatusError) {
 #ifdef VOX_TEST_CANVAS_PRESENT
         std::fprintf(stderr,"GPU present error: %s\n",commands.error.description.UTF8String);
@@ -960,6 +959,28 @@ int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
     *completion=(__bridge void*)[commands retain];
     return 1;
 } }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
+    int count, void** completion)
+{ return canvas_present_impl(regions,count,completion,false); }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_present_deferred(VoxGraphiteCanvasSurfaceRegion const* regions,
+    int count, void** completion)
+{ return canvas_present_impl(regions,count,completion,true); }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_schedule_present(void* completion)
+{
+    if (!completion) return 0;
+    auto commands=(__bridge id<MTLCommandBuffer>)completion;
+    [commands waitUntilScheduled];
+    bool ok=commands.status==MTLCommandBufferStatusScheduled
+        || commands.status==MTLCommandBufferStatusCompleted;
+    if (!ok) canvas_present_failed.store(true);
+    return ok;
+}
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_wait_present(void* completion)
