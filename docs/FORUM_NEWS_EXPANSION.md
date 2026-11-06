@@ -12,8 +12,8 @@ fidelity and native equality; CNN matches frozen Brave but retains its separate
 source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
-The latest rendering checkpoint passes **136 tests / 142 captures at zero
-pixels** on `304c4496…`, with unchanged inputs and references. The AVIF sampling
+The latest rendering checkpoint passes **138 tests / 144 captures at zero
+pixels** on `2108b479…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2434,6 +2434,101 @@ Remaining gaps:
 
 [Evidence](evidence/discord-parity-20261105.json). Raw captures are in
 `Build/discord-20261105/`.
+
+## Image-only pictures and paint fragments (2026-11-06)
+
+Two new authored browser regressions exercise transparent bitmap pictures,
+static rotated images and a flat `perspective:999px` subtree. Their reference
+PNGs come from the full-uBO source capture and agree with two fresh Brave
+replays. Existing references and registered site archives remain unchanged.
+
+| Commit | Correction |
+| --- | --- |
+| `c82ce8a13` | Allow supported image-only compositor pictures. |
+| `bac44a681` | Register bitmap ink and page/grid metadata when publishing those pictures. |
+| `08cc6ed36` | Paint static rotated/skewed replaced images in local coordinates. |
+| `3c78ef093` | Keep independent pictures beneath flat perspective, retaining depth and nested-perspective fallbacks. |
+| `bfff98fca` | Resolve ancestor transform/scale/rotate hint rounding before the image's local paint offset. |
+| `87e06d9d6` | Keep ordinary bitmap ink within its geometric quad, preserving the picture raster origin. Speculative-cache margins stay conservative. |
+
+`48036d1e1` adds the authored layout-to-renderer integration check;
+`967815e15` registers the flat-perspective screenshot regression. Both new
+fixtures are in the regular inline rendering suite.
+
+The image fixture first differs by **3,928 pixels**. Local sizing alone worsens
+it to **4,559**, and the ancestor-fragment correction reduces it to **one**.
+Chromium's layer snapshot positions the rotated child at `(119.085510,
+40.229843)` inside the picture translated to `(13,17)`. Its transform hint
+resets the parent's fractional paint offset before the child's offset is
+rounded. The added assertions reject the previous one-pixel position error.
+
+The last pixel is reproduced independently by moving the GPU picture two
+pixels within its target. Ordinary image ink had an unnecessary two-pixel
+outset; that extended the complete picture to a different raster origin and
+changed one blue byte. Changing only the layer width does not fix it. Removing
+that outset restores the original reference without altering image bytes,
+sampling or tolerance. Complex ancestor transforms, SVG images, active
+transform animations and nonzero containment adjustments retain their existing
+image path.
+
+The rounding policy follows Chromium's
+[paint-offset builder](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc)
+and [subpixel-reset reasons](https://chromium.googlesource.com/chromium/src/+/master/third_party/blink/renderer/platform/graphics/compositing_reasons.h).
+The retained LayerTree and GPU probes are diagnostics, separate from the
+unmodified production comparisons below.
+
+On production `2108b479…`, both fixtures pass **source / independent replay / native
+0**, and their unchanged checked PNGs agree by independent RGBA byte comparison.
+The two regular file-input screenshot tests also pass. This bundle uses literal
+V `-prod` and single-unit C compilation; the earlier comparison bundles used
+parallel C. These are pixel checks, with no instruction, timing or performance
+acceptance across modes.
+
+The focused V checks pass with default GC, GC disabled and preallocation with
+arena poisoning: 13 image-selector/SVG checks, eight final local-image and
+integration checks, and 17 flat-perspective/fallback/surface checks. The native
+suite passes **38 exact GPU scenes**, optimized and ASan/UBSan, including two
+picture-origin regressions. Its negative and positive input maps differ only
+in the two renderer files. Another **204 image and 144 compositor controls**
+pass with unchanged pins. The first image-control repeat was invalidated by a
+concurrent unrelated header edit; its second run passes.
+
+The complete rendering suite passes **138 tests / 144 captures**, all at zero
+pixels on this same pinned browser, with unchanged canonical tools, inputs and
+runtime identities. The two additional focused captures are recorded separately
+from those 144. Hacker News, TechCrunch and WIRED also retain strict cold-cache
+source/replay/native zero; WIRED retains its recorded first-frame image policy.
+
+Discord's new cold-cache comparison reports **1216 native / 598 source / 0
+independent replay pixels**. Native and saved-source gaps remain open. Its
+selected Brave image is RGBA-identical to the earlier 6,261-pixel baseline,
+so that pixel-count reduction uses the same reference. The earlier baseline,
+and the intermediate 1,181 native / 612 source / 303 reference result, remain
+recorded; a different reference variant is not an acceptance result.
+
+Engadget remains an open source-fidelity case. Its older candidate again gives
+0 native / 0 reference / 295 source pixels. A newly acquired cold candidate
+has 0 / 0 / 112,524, and a newly acquired complete-cache candidate has 0 / 0 /
+295. All original candidate response bodies and live PNGs are sealed in the
+evidence; none is registered. The registered archive's new references disagree
+by 63,368 pixels; Vox equals the second reference exactly, so comparison against
+only the first would misclassify reference variation as a native regression.
+
+Stack Overflow and Pikabu remain deferred. A read-only Stack Overflow baseline
+collected before rediscovering that prior instruction records 39 native pixels
+with exact source and references; no fix or acceptance is claimed.
+
+Every failed attempt remains in the archive, including the 3,928/4,559/one-pixel
+fixture failures, the deliberately interrupted broad run, failed probe setups,
+the disabled-PNG-decoder link failure and superseded shared builds. A recursive
+interposer was stopped and its repetitive 790,553,688-byte log was reduced to
+the first 8,192 bytes with an explicit truncation receipt. The working paint
+trace reproduces the checked PNG but is instrumented and has no uBO; strict
+production results use the normal full-uBO workflow. No old reference, resource
+identity or tolerance was changed to pass.
+
+[Evidence and independent byte checks](evidence/forum-news-image-pictures-20261106.json),
+[sealed captures, original candidate bodies, commands, guards and patches](evidence/forum-news-image-pictures-20261106.zip).
 
 ## Run
 
