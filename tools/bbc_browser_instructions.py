@@ -436,6 +436,8 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_RETAIN_EMPTY_PSEUDO_CANDIDATE_LOOKUPS'] = '1'
             if getattr(args, 'control_retain_attribute_bucket_candidates', False):
                 args.vox_environment['VOX_RETAIN_ATTRIBUTE_BUCKET_CANDIDATES'] = '1'
+            if getattr(args, 'control_disable_intrinsic_grid_measurement_reuse', False):
+                args.vox_environment['VOX_DISABLE_INTRINSIC_GRID_MEASUREMENT_REUSE'] = '1'
             if getattr(args, 'control_disable_inactive_conditional_sheet_skip', False):
                 args.vox_environment['VOX_DISABLE_INACTIVE_CONDITIONAL_SHEET_SKIP'] = '1'
             if getattr(args, 'control_disable_conditional_sheet_invalidation', False):
@@ -641,6 +643,8 @@ def parse_args(argv=None):
                         help='Retain metadata reads for empty pseudo-element candidate indexes in the matched Vox control')
     parser.add_argument('--control-retain-attribute-bucket-candidates', action='store_true',
                         help='Keep all attribute-name bucket candidates in the control arm')
+    parser.add_argument('--control-disable-intrinsic-grid-measurement-reuse', action='store_true',
+                        help='Disable owned intrinsic grid block-probe reuse only in the control arm')
     parser.add_argument('--control-disable-classic-import-named-method-scan', action='store_true',
                         help='Retain import member lexer candidates in the matched Vox control')
     parser.add_argument('--control-disable-classic-import-call-scan', action='store_true',
@@ -701,7 +705,7 @@ def parse_args(argv=None):
             args.control_disable_live_pending_text_reuse,
             args.control_disable_live_pending_font_refresh,
             args.control_disable_positioned_image_ratio_reuse,
-            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_classic_import_call_scan or args.control_disable_classic_import_named_method_scan or args.control_disable_keyword_free_module_lexer or args.control_retain_empty_pseudo_candidate_lookups or args.control_retain_attribute_bucket_candidates or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes or args.control_disable_static_user_style_filter or args.control_disable_document_filter_memo or args.control_disable_retained_grid_layout or args.control_disable_intrinsic_seed_visits)) and not args.control_vox_app:
+            args.control_disable_conditional_sheet_invalidation or args.control_disable_inactive_conditional_sheet_skip or args.control_disable_classic_import_word_scan or args.control_disable_classic_import_call_scan or args.control_disable_classic_import_named_method_scan or args.control_disable_keyword_free_module_lexer or args.control_retain_empty_pseudo_candidate_lookups or args.control_retain_attribute_bucket_candidates or args.control_disable_intrinsic_grid_measurement_reuse or args.control_disable_longhand_shape_reuse or args.control_disable_longhand_eligibility_first or args.control_disable_protected_value_index or args.control_disable_shared_element_geometry or args.control_disable_shared_node_properties or args.control_disable_attribute_tag_buckets or args.control_disable_deleted_style_rule_invalidation or args.control_disable_targeted_user_style_changes or args.control_disable_static_user_style_filter or args.control_disable_document_filter_memo or args.control_disable_retained_grid_layout or args.control_disable_intrinsic_seed_visits)) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if not args.capture_reference and (args.repeat < 7 or not args.expected_vox or not args.expected_brave):
         parser.error('Acceptance needs seven pairs and both existing pixel references')
@@ -997,6 +1001,7 @@ def main():
         control_disable_keyword_free_module_lexer=args.control_disable_keyword_free_module_lexer,
         control_retain_empty_pseudo_candidate_lookups=args.control_retain_empty_pseudo_candidate_lookups,
         control_retain_attribute_bucket_candidates=args.control_retain_attribute_bucket_candidates,
+        control_disable_intrinsic_grid_measurement_reuse=args.control_disable_intrinsic_grid_measurement_reuse,
         control_disable_longhand_shape_reuse=args.control_disable_longhand_shape_reuse,
         control_disable_longhand_eligibility_first=args.control_disable_longhand_eligibility_first,
         control_disable_protected_value_index=args.control_disable_protected_value_index,
