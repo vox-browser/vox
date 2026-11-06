@@ -53,6 +53,7 @@ mut:
 	transform          voidptr
 	lexer_status       voidptr
 	lexer_reported     bool
+	source_value_reported bool
 	helper_name        string
 	sources            map[string]BrowserModuleSource
 	operations         []&BrowserModuleOperation

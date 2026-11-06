@@ -2,6 +2,7 @@
 #import <Foundation/Foundation.h>
 #import <JavaScriptCore/JavaScriptCore.h>
 #include "module_loader_darwin.h"
+#include <stdio.h>
 
 // These SPI declarations match WebKit's API/JSScript.h and JSContextPrivate.h.
 // Availability is checked at installation; unsupported systems keep the
@@ -115,18 +116,50 @@ JSValueRef vox_module_loader_evaluate(JSGlobalContextRef raw, const char *url, s
     }
 }
 
+static JSValueRef vox_module_loader_supply_string(JSGlobalContextRef raw, JSObjectRef resolve,
+    NSString *source, const char *url, size_t urlLength, JSValueRef *exception)
+{
+    JSContext *context = [JSContext contextWithJSGlobalContextRef:raw];
+    NSError *error = nil;
+    JSScript *script = [JSScript scriptOfType:1 withSource:source
+        andSourceURL:[NSURL URLWithString:vox_module_string(url, urlLength)]
+        andBytecodeCache:nil inVirtualMachine:context.virtualMachine error:&error];
+    if (!script) return NULL;
+    JSValue *result = [[JSValue valueWithJSValueRef:resolve inContext:context] callWithArguments:@[script]];
+    if (context.exception) { *exception = context.exception.JSValueRef; context.exception = nil; }
+    return result.JSValueRef;
+}
+
 JSValueRef vox_module_loader_supply(JSGlobalContextRef raw, JSObjectRef resolve,
     const char *source, size_t sourceLength, const char *url, size_t urlLength, JSValueRef *exception)
 {
     @autoreleasepool {
-        JSContext *context = [JSContext contextWithJSGlobalContextRef:raw];
-        NSError *error = nil;
-        JSScript *script = [JSScript scriptOfType:1 withSource:vox_module_string(source, sourceLength)
-            andSourceURL:[NSURL URLWithString:vox_module_string(url, urlLength)]
-            andBytecodeCache:nil inVirtualMachine:context.virtualMachine error:&error];
-        if (!script) return NULL;
-        JSValue *result = [[JSValue valueWithJSValueRef:resolve inContext:context] callWithArguments:@[script]];
-        if (context.exception) { *exception = context.exception.JSValueRef; context.exception = nil; }
-        return result.JSValueRef;
+        return vox_module_loader_supply_string(raw, resolve, vox_module_string(source, sourceLength),
+            url, urlLength, exception);
+    }
+}
+
+JSValueRef vox_module_loader_supply_value(JSGlobalContextRef raw, JSObjectRef resolve,
+    JSValueRef source, const char *url, size_t urlLength, bool diagnostics, JSValueRef *exception)
+{
+    @autoreleasepool {
+        // No author conversion hooks run here. The V caller roots the primitive
+        // through construction and any reentrant module evaluation at resolve.
+        if (!JSValueIsString(raw, source)) return NULL;
+        JSStringRef text = JSValueToStringCopy(raw, source, exception);
+        if (!text) return NULL;
+        size_t length = JSStringGetLength(text);
+        const JSChar *characters = JSStringGetCharactersPtr(text);
+        if (length && !characters) { JSStringRelease(text); return NULL; }
+        NSString *owned = [[NSString alloc] initWithCharacters:characters length:length];
+        JSStringRelease(text);
+#if !__has_feature(objc_arc)
+        [owned autorelease];
+#endif
+        if (!owned) return NULL;
+        JSValueRef result = vox_module_loader_supply_string(raw, resolve, owned, url, urlLength, exception);
+        if (result && diagnostics)
+            fprintf(stderr, "Vox module source: supplied rooted UTF-16 string units=%zu\n", length);
+        return result;
     }
 }

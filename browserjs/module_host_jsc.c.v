@@ -5,6 +5,7 @@ import dom
 import fetch
 import html
 import json2
+import os
 import platform
 import processmetrics
 
@@ -18,7 +19,11 @@ fn C.vox_module_loader_install(voidptr, voidptr, voidptr, fn (voidptr, &char, u3
 fn C.vox_module_loader_close(voidptr, voidptr)
 fn C.vox_module_loader_evaluate(voidptr, &char, uint, &voidptr) voidptr
 fn C.vox_module_loader_supply(voidptr, voidptr, &char, uint, &char, uint, &voidptr) voidptr
+fn C.vox_module_loader_supply_value(voidptr, voidptr, voidptr, &char, uint, bool, &voidptr) voidptr
 fn C.JSObjectDeleteProperty(voidptr, voidptr, voidptr, &voidptr) bool
+
+const retain_utf8_module_source = os.getenv('VOX_RETAIN_UTF8_MODULE_SOURCE') != ''
+const module_source_value_diagnostics = os.getenv('VOX_MODULE_SOURCE_VALUE_DIAGNOSTICS') != ''
 
 pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 	$if !darwin {
@@ -152,6 +157,16 @@ fn (mut host ModuleHost) resolve(specifier string, base string, parent string) !
 }
 
 fn (mut host ModuleHost) rewrite(code string, base string, key string, is_module bool) !string {
+	value := host.rewrite_value(code, base, key, is_module)!
+	defer { host.runtime.release_javascript_value(value) }
+	return host.runtime.binding_dom_string(value)
+}
+
+// The caller owns this root until native script construction finishes. Keep the
+// transformed engine string intact instead of encoding it back to V UTF-8.
+fn (mut host ModuleHost) rewrite_value(code string, base string, key string, is_module bool) !voidptr {
+	if host.runtime == unsafe { nil } { return error('Module loader is not installed') }
+	host.runtime.require_javascript_value_context()!
 	skip_specifier_lexer := host.can_skip_keyword_free_module_lexer(code, is_module)
 	value := host.runtime.call_javascript_function(host.transform,
 		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [
@@ -161,16 +176,25 @@ fn (mut host ModuleHost) rewrite(code string, base string, key string, is_module
 			C.vox_jsc_JSValueMakeBoolean(host.runtime.context, is_module),
 			C.vox_jsc_JSValueMakeBoolean(host.runtime.context, skip_specifier_lexer),
 		])!
-	result := host.runtime.binding_dom_string(value)!
+	if !C.JSValueIsString(host.runtime.context, value) {
+		return error('Module transform returned a non-string source')
+	}
+	host.runtime.retain_javascript_value(value)!
 	if !skip_specifier_lexer && !host.lexer_reported && module_lexer_diagnostics {
 		status := host.runtime.call_javascript_function(host.lexer_status,
-			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!
-		backend := host.runtime.binding_dom_string(status)!
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), []) or {
+			host.runtime.release_javascript_value(value)
+			return err
+		}
+		backend := host.runtime.binding_dom_string(status) or {
+			host.runtime.release_javascript_value(value)
+			return err
+		}
 		host.lexer_reported = true
 		eprintln('Vox module lexer: backend=${backend} specifier parse executed')
 	}
 	if skip_specifier_lexer { report_keyword_free_module_lexer_skip() }
-	return result
+	return value
 }
 
 fn (mut host ModuleHost) transform_classic(source ScriptSource) !ScriptSource {
@@ -363,18 +387,30 @@ fn (mut host ModuleHost) supply(mut operation BrowserModuleOperation, code strin
 		return
 	}
 	mut runtime := unsafe { &Runtime(host.runtime) }
-	transformed := host.rewrite(code, base, operation.key, true) or {
+	transformed := host.rewrite_value(code, base, operation.key, true) or {
 		host.reject(mut operation, js_exception_or_message(runtime.context, err))
 		return
 	}
+	defer { runtime.release_javascript_value(transformed) }
 	$if darwin {
 		mut exception := unsafe { nil }
-		result := C.vox_module_loader_supply(runtime.context, operation.resolve, transformed.str, uint(transformed.len),
-			operation.key.str, uint(operation.key.len), &exception)
+		result := if retain_utf8_module_source {
+			text := runtime.binding_dom_string(transformed) or {
+				host.reject(mut operation, js_exception_or_message(runtime.context, err))
+				return
+			}
+			C.vox_module_loader_supply(runtime.context, operation.resolve, text.str, uint(text.len),
+				operation.key.str, uint(operation.key.len), &exception)
+		} else {
+			C.vox_module_loader_supply_value(runtime.context, operation.resolve, transformed,
+				operation.key.str, uint(operation.key.len),
+				module_source_value_diagnostics && !host.source_value_reported, &exception)
+		}
 		if exception != unsafe { nil } || result == unsafe { nil } {
 			host.reject(mut operation, 'Unable to supply native module ${operation.key}')
 			return
 		}
+		if !retain_utf8_module_source { host.source_value_reported = true }
 	}
 	operation.finished = true
 	runtime.release_javascript_value(operation.resolve)
