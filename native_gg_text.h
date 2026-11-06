@@ -13,6 +13,10 @@
 #include "include/ports/SkTypeface_mac.h"
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <limits>
 #include <vector>
 
 // Flags passed with a run, mirroring the SkFont flags.
@@ -42,9 +46,12 @@ extern "C" void ladybird_v_skia_set_gg_glyph_run(VoxGGGlyphRun run)
 // reproduce the draw.
 static bool gg_draw_text_blob(uint32_t* pixels, int width, int height, size_t row_bytes,
     SkMatrix const& matrix, SkTextBlob const* blob, float x, float y, SkPaint const& paint,
-    SkSurfaceProps const* properties)
+    SkSurfaceProps const* properties, SkIRect const* device_clip = nullptr)
 {
-    if (!s_gg_glyph_run || !blob || !pixels || row_bytes % 4 || matrix.hasPerspective())
+    if (!s_gg_glyph_run || !blob || !pixels || width <= 0 || height <= 0
+        || row_bytes % 4 || row_bytes < size_t(width) * 4
+        || row_bytes / 4 > size_t(std::numeric_limits<int>::max())
+        || row_bytes > SIZE_MAX / size_t(height) || matrix.hasPerspective())
         return false;
     if (paint.getShader() || paint.getMaskFilter() || paint.getColorFilter()
         || paint.getPathEffect() || paint.getImageFilter() || !paint.isSrcOver()
@@ -76,10 +83,41 @@ static bool gg_draw_text_blob(uint32_t* pixels, int width, int height, size_t ro
     auto const& props = properties ? *properties : defaults;
     if (props.pixelGeometry() != kUnknown_SkPixelGeometry)
         return false;
-    return s_gg_glyph_run(pixels, width, height, int(row_bytes / 4),
+
+    auto visible = SkIRect::MakeWH(width, height);
+    if (device_clip && !visible.intersect(*device_clip))
+        return true;
+    bool const bounded = visible != SkIRect::MakeWH(width, height);
+    // Retain the original raster dimensions and device matrix. Cropping the
+    // surface and translating its matrix changes fractional glyph rounding.
+    // Shade the same pixels on a private backdrop, then publish only the clip.
+    std::vector<uint32_t> staged;
+    auto* target = pixels;
+    int stride = int(row_bytes / 4);
+    if (bounded) {
+        if (size_t(width) * size_t(height) > 64u * 1024 * 1024)
+            return false;
+        staged.resize(size_t(width) * height);
+        for (int row = 0; row < height; ++row)
+            std::memcpy(staged.data() + size_t(row) * width,
+                reinterpret_cast<uint8_t const*>(pixels) + size_t(row) * row_bytes,
+                size_t(width) * 4);
+        target = staged.data();
+        stride = width;
+    }
+    bool const drawn = s_gg_glyph_run(target, width, height, stride,
                SkTypeface_GetCTFontRef(typeface), font.getSize(), font.getScaleX(),
                font.getSkewX(), int(font.getEdging()), int(font.getHinting()), flags,
                run.glyphs, positions.data(), run.count, x, y, values, paint.getColor(),
                props.textContrast(), props.textGamma())
         != 0;
+    if (drawn && bounded)
+        for (int row = visible.top(); row < visible.bottom(); ++row)
+            std::memcpy(reinterpret_cast<uint8_t*>(pixels) + size_t(row) * row_bytes
+                    + size_t(visible.left()) * 4,
+                staged.data() + size_t(row) * width + visible.left(), size_t(visible.width()) * 4);
+    auto* diagnostics = std::getenv("VOX_GG_DIAGNOSTICS");
+    if (diagnostics && std::strcmp(diagnostics, "1") == 0)
+        std::fprintf(stderr, "VOX_GG text device_clip=%d drawn=%d\n", device_clip != nullptr, drawn);
+    return drawn;
 }
