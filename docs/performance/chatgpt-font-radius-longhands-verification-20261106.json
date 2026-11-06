@@ -1,0 +1,75 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "implementation_commit": "5cb1c8303",
+  "focused_verification": "docs/performance/chatgpt-font-radius-longhands-focused-verification-20261106.json",
+  "production_controller": "docs/performance/chatgpt-font-radius-longhands-production-r1-controller-20261106.json",
+  "diagnostic": "docs/performance/chatgpt-font-radius-longhands-production-r1-diagnostic-20261106.json",
+  "matched": "docs/performance/chatgpt-font-radius-longhands-production-r1-matched-20261106.json",
+  "production_executable_sha256": "0e59c6e2b34951b099bab844a519e52074dbb6607fc2aa1c50e90bcfbe71c9b9",
+  "c_compile": {
+    "mode": "single",
+    "requested": "single",
+    "v_prod": true
+  },
+  "control_median": 24486735339.5,
+  "candidate_median": 24474626699.5,
+  "observed_reduction_percent": 0.0494497932538529,
+  "conservative_page_reduction": -98299756,
+  "page_instruction_credit": 0,
+  "broad_checks": 0,
+  "broad_carry": 0,
+  "target_instructions": 20000000000,
+  "target_met": false,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-font-radius-longhands-checked-20261106-evidence.zip",
+      "sha256": "46ce5aa69063009659ec5f90a8b448c9166204f260bac8d7ffe0507e8bfdebc8",
+      "bytes": 22583653,
+      "verified_entries": 192
+    },
+    {
+      "path": "docs/performance/chatgpt-font-radius-longhands-component-20261106-evidence.zip",
+      "sha256": "453964662aec37d74078ab4b0f34be25edb2e8f9a5c88442a6094f97b1e216de",
+      "bytes": 40095101,
+      "verified_entries": 80
+    },
+    {
+      "path": "docs/performance/chatgpt-font-radius-longhands-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "1122292d629fe8d8224f2299b2995350848ce723e5b7329f607a1f27145e9c63",
+      "bytes": 1435741,
+      "verified_entries": 63
+    },
+    {
+      "path": "docs/performance/chatgpt-font-radius-longhands-production-r1-matched-20261106-evidence.zip",
+      "sha256": "8448f209983de951ede0496d0dee9f7887180f49d5d4133172ce54bc5c4ddeb8",
+      "bytes": 8269588,
+      "verified_entries": 165
+    },
+    {
+      "path": "docs/performance/chatgpt-font-radius-longhands-controller-20261106-evidence.zip",
+      "sha256": "d858577e045fe714d7ed7b232a189db3f3155f3bff6ce634739538041f749f34",
+      "bytes": 18334,
+      "verified_entries": 10
+    }
+  ],
+  "qualification": "Final rem-only direct radius eligibility uses exact existing typed radius snapshots and complete scalar root/policy environment guards. All 480 final focused executions and both component attempts are retained, including excluded em and every regression. Four control/candidate pairs are diagnostic, below seven-pair acceptance; all 20 captures pass path/content/pixel/exit audits on one frozen-source-proven single-unit executable. No component-to-page extrapolation or claim across C modes.",
+  "finalization_guard": {
+    "path": "Build/chatgpt-font-radius-longhands-finalize-20261106-r1/finalize-guard.json",
+    "sha256": "51b252390c3a92f9dac96b0395ef07b900559a8b6255b6daaee5f8785454d1f8",
+    "receipt": {
+      "command": [
+        "python3",
+        "Build/chatgpt-font-radius-longhands-finalize-20261106-r1/finalize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 56901632,
+      "elapsed_seconds": 1.092419958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}

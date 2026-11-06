@@ -1,0 +1,3622 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "implementation_commit": "5cb1c8303",
+  "final_test_functions": 60,
+  "final_test_function_executions": 480,
+  "final_guarded_jobs": 12,
+  "attempts": [
+    {
+      "kind": "checked",
+      "attempts": [
+        {
+          "attempt": 1,
+          "result": {
+            "complete": false,
+            "passed": false,
+            "source_before": {
+              "css/longhand_font_size_units.v": "c364df632e47b9fe2ecc6ccf9e2a6037d7802773e8a5e854c4cb366a70027ecb",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "e9a4e00804b0c70b5298c15cea65f06e4acc59bef70ff1b66d363519a088049b",
+              "css/longhand_font_radius_test.v": "79fa33c177e32c84de436d02a13d0c668be63f4f40407a1a3fe7eaf5a25ac53d"
+            },
+            "source_after": {
+              "css/longhand_font_size_units.v": "c364df632e47b9fe2ecc6ccf9e2a6037d7802773e8a5e854c4cb366a70027ecb",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "e9a4e00804b0c70b5298c15cea65f06e4acc59bef70ff1b66d363519a088049b",
+              "css/longhand_font_radius_test.v": "79fa33c177e32c84de436d02a13d0c668be63f4f40407a1a3fe7eaf5a25ac53d"
+            },
+            "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+            "rows": [
+              {
+                "label": "compile-css-prealloc",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r1/compile-css-prealloc.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r1/compile-css-prealloc-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r1/css-prealloc",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793959783.890558,
+                  "cpu_count": 18,
+                  "load": [
+                    27.6845703125,
+                    21.03466796875,
+                    18.86767578125
+                  ]
+                },
+                "exit": 1,
+                "host_after": {
+                  "unix": 1793959785.07932,
+                  "load": [
+                    27.6845703125,
+                    21.03466796875,
+                    18.86767578125
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "attempt": 2,
+          "result": {
+            "complete": false,
+            "passed": false,
+            "source_before": {
+              "css/longhand_font_size_units.v": "c364df632e47b9fe2ecc6ccf9e2a6037d7802773e8a5e854c4cb366a70027ecb",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "e9a4e00804b0c70b5298c15cea65f06e4acc59bef70ff1b66d363519a088049b",
+              "css/longhand_font_radius_test.v": "44bd854cf771ef1ae766162b6a5e595aec03b700611a6552fcf1ebce5caf4c74"
+            },
+            "source_after": {
+              "css/longhand_font_size_units.v": "c364df632e47b9fe2ecc6ccf9e2a6037d7802773e8a5e854c4cb366a70027ecb",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "e9a4e00804b0c70b5298c15cea65f06e4acc59bef70ff1b66d363519a088049b",
+              "css/longhand_font_radius_test.v": "44bd854cf771ef1ae766162b6a5e595aec03b700611a6552fcf1ebce5caf4c74"
+            },
+            "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+            "rows": [
+              {
+                "label": "compile-css-prealloc",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r2/compile-css-prealloc.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r2/compile-css-prealloc-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r2/css-prealloc",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793959815.1930282,
+                  "cpu_count": 18,
+                  "load": [
+                    26.60791015625,
+                    21.38623046875,
+                    19.06787109375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959821.558542,
+                  "load": [
+                    27.35986328125,
+                    21.62841796875,
+                    19.1669921875
+                  ]
+                }
+              },
+              {
+                "label": "run-css-prealloc-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r2/run-css-prealloc-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r2/run-css-prealloc-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r2/css-prealloc"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959821.5767,
+                  "cpu_count": 18,
+                  "load": [
+                    27.35986328125,
+                    21.62841796875,
+                    19.1669921875
+                  ]
+                },
+                "exit": 139,
+                "host_after": {
+                  "unix": 1793959822.0325189,
+                  "load": [
+                    27.35986328125,
+                    21.62841796875,
+                    19.1669921875
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "attempt": 3,
+          "result": {
+            "complete": true,
+            "passed": true,
+            "source_before": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "94bf449947d9baf8b8db9bfe021baf1ca4850f85b32f5ace67f7aa8f2dde0437"
+            },
+            "source_after": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "94bf449947d9baf8b8db9bfe021baf1ca4850f85b32f5ace67f7aa8f2dde0437"
+            },
+            "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+            "rows": [
+              {
+                "label": "compile-css-prealloc",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-prealloc.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-prealloc-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-prealloc",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793959981.3850791,
+                  "cpu_count": 18,
+                  "load": [
+                    11.68408203125,
+                    18.20068359375,
+                    18.248046875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959987.270911,
+                  "load": [
+                    11.388671875,
+                    18.03125,
+                    18.18798828125
+                  ]
+                }
+              },
+              {
+                "label": "run-css-prealloc-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-prealloc-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-prealloc-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-prealloc"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959987.287626,
+                  "cpu_count": 18,
+                  "load": [
+                    11.388671875,
+                    18.03125,
+                    18.18798828125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959987.8473039,
+                  "load": [
+                    11.388671875,
+                    18.03125,
+                    18.18798828125
+                  ]
+                }
+              },
+              {
+                "label": "run-css-prealloc-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-prealloc-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-prealloc-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-prealloc"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959987.856181,
+                  "cpu_count": 18,
+                  "load": [
+                    11.388671875,
+                    18.03125,
+                    18.18798828125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959988.1826,
+                  "load": [
+                    11.357421875,
+                    17.9140625,
+                    18.1455078125
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-default",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-default.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-default-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-default",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793959988.1925929,
+                  "cpu_count": 18,
+                  "load": [
+                    11.357421875,
+                    17.9140625,
+                    18.1455078125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959994.292033,
+                  "load": [
+                    10.84814453125,
+                    17.69921875,
+                    18.068359375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-default-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-default-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-default-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-default"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959994.3009121,
+                  "cpu_count": 18,
+                  "load": [
+                    10.84814453125,
+                    17.69921875,
+                    18.068359375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959994.7489831,
+                  "load": [
+                    10.84814453125,
+                    17.69921875,
+                    18.068359375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-default-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-default-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-default-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-default"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959994.757426,
+                  "cpu_count": 18,
+                  "load": [
+                    10.84814453125,
+                    17.69921875,
+                    18.068359375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959994.961204,
+                  "load": [
+                    10.84814453125,
+                    17.69921875,
+                    18.068359375
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-none",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-none.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-none-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-none",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793959994.9696481,
+                  "cpu_count": 18,
+                  "load": [
+                    10.84814453125,
+                    17.69921875,
+                    18.068359375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960001.102766,
+                  "load": [
+                    10.29931640625,
+                    17.4716796875,
+                    17.98583984375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-none-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-none-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-none-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-none"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960001.111451,
+                  "cpu_count": 18,
+                  "load": [
+                    10.29931640625,
+                    17.4716796875,
+                    17.98583984375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960001.5668569,
+                  "load": [
+                    10.29931640625,
+                    17.4716796875,
+                    17.98583984375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-none-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-none-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-none-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-none"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960001.5756538,
+                  "cpu_count": 18,
+                  "load": [
+                    10.29931640625,
+                    17.4716796875,
+                    17.98583984375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960001.7915058,
+                  "load": [
+                    10.29931640625,
+                    17.4716796875,
+                    17.98583984375
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-sanitized",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-sanitized.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/compile-css-sanitized-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-cflags",
+                  "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+                  "-ldflags",
+                  "-fsanitize=address,undefined",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-sanitized",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960001.800549,
+                  "cpu_count": 18,
+                  "load": [
+                    10.29931640625,
+                    17.4716796875,
+                    17.98583984375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960016.262774,
+                  "load": [
+                    9.29638671875,
+                    16.8935546875,
+                    17.77001953125
+                  ]
+                }
+              },
+              {
+                "label": "run-css-sanitized-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-sanitized-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-sanitized-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-sanitized"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960016.2818828,
+                  "cpu_count": 18,
+                  "load": [
+                    9.29638671875,
+                    16.8935546875,
+                    17.77001953125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960017.2228491,
+                  "load": [
+                    9.29638671875,
+                    16.8935546875,
+                    17.77001953125
+                  ]
+                }
+              },
+              {
+                "label": "run-css-sanitized-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-sanitized-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/run-css-sanitized-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r3/css-sanitized"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960017.231315,
+                  "cpu_count": 18,
+                  "load": [
+                    9.29638671875,
+                    16.8935546875,
+                    17.77001953125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960017.808887,
+                  "load": [
+                    9.29638671875,
+                    16.8935546875,
+                    17.77001953125
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "attempt": 4,
+          "result": {
+            "complete": true,
+            "passed": true,
+            "source_before": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "b8293720dfdd53e7682c4bf4cf80526491dc90d89516814784ae0a5f4139b8b7"
+            },
+            "source_after": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "b8293720dfdd53e7682c4bf4cf80526491dc90d89516814784ae0a5f4139b8b7"
+            },
+            "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+            "rows": [
+              {
+                "label": "compile-css-prealloc",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-prealloc.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-prealloc-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-prealloc",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960104.467277,
+                  "cpu_count": 18,
+                  "load": [
+                    20.93017578125,
+                    17.8857421875,
+                    18.00048828125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960110.347682,
+                  "load": [
+                    22.376953125,
+                    18.23583984375,
+                    18.123046875
+                  ]
+                }
+              },
+              {
+                "label": "run-css-prealloc-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-prealloc-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-prealloc-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-prealloc"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960110.364753,
+                  "cpu_count": 18,
+                  "load": [
+                    22.376953125,
+                    18.23583984375,
+                    18.123046875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960111.0597801,
+                  "load": [
+                    22.376953125,
+                    18.23583984375,
+                    18.123046875
+                  ]
+                }
+              },
+              {
+                "label": "run-css-prealloc-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-prealloc-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-prealloc-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-prealloc"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960111.070166,
+                  "cpu_count": 18,
+                  "load": [
+                    22.376953125,
+                    18.23583984375,
+                    18.123046875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960111.4057631,
+                  "load": [
+                    22.376953125,
+                    18.23583984375,
+                    18.123046875
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-default",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-default.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-default-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-default",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960111.415582,
+                  "cpu_count": 18,
+                  "load": [
+                    22.376953125,
+                    18.23583984375,
+                    18.123046875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960117.628819,
+                  "load": [
+                    22.5869140625,
+                    18.34765625,
+                    18.1630859375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-default-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-default-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-default-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-default"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960117.637152,
+                  "cpu_count": 18,
+                  "load": [
+                    22.5869140625,
+                    18.34765625,
+                    18.1630859375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960118.0950952,
+                  "load": [
+                    23.58056640625,
+                    18.6240234375,
+                    18.26171875
+                  ]
+                }
+              },
+              {
+                "label": "run-css-default-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-default-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-default-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-default"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960118.103145,
+                  "cpu_count": 18,
+                  "load": [
+                    23.58056640625,
+                    18.6240234375,
+                    18.26171875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960118.311986,
+                  "load": [
+                    23.58056640625,
+                    18.6240234375,
+                    18.26171875
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-none",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-none.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-none-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-none",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960118.3198578,
+                  "cpu_count": 18,
+                  "load": [
+                    23.58056640625,
+                    18.6240234375,
+                    18.26171875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960124.245606,
+                  "load": [
+                    24.65478515625,
+                    18.9287109375,
+                    18.37109375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-none-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-none-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-none-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-none"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960124.254288,
+                  "cpu_count": 18,
+                  "load": [
+                    24.65478515625,
+                    18.9287109375,
+                    18.37109375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960124.727506,
+                  "load": [
+                    24.65478515625,
+                    18.9287109375,
+                    18.37109375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-none-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-none-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-none-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-none"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960124.7356632,
+                  "cpu_count": 18,
+                  "load": [
+                    24.65478515625,
+                    18.9287109375,
+                    18.37109375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960124.945199,
+                  "load": [
+                    24.65478515625,
+                    18.9287109375,
+                    18.37109375
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-sanitized",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-sanitized.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/compile-css-sanitized-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-cflags",
+                  "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+                  "-ldflags",
+                  "-fsanitize=address,undefined",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-sanitized",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960124.953351,
+                  "cpu_count": 18,
+                  "load": [
+                    24.65478515625,
+                    18.9287109375,
+                    18.37109375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960137.357722,
+                  "load": [
+                    24.48974609375,
+                    19.06640625,
+                    18.42529296875
+                  ]
+                }
+              },
+              {
+                "label": "run-css-sanitized-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-sanitized-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-sanitized-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-sanitized"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960137.375264,
+                  "cpu_count": 18,
+                  "load": [
+                    24.48974609375,
+                    19.06640625,
+                    18.42529296875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960138.312293,
+                  "load": [
+                    22.9287109375,
+                    18.83251953125,
+                    18.34619140625
+                  ]
+                }
+              },
+              {
+                "label": "run-css-sanitized-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-sanitized-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/run-css-sanitized-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r4/css-sanitized"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960138.3211892,
+                  "cpu_count": 18,
+                  "load": [
+                    22.9287109375,
+                    18.83251953125,
+                    18.34619140625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960138.897604,
+                  "load": [
+                    22.9287109375,
+                    18.83251953125,
+                    18.34619140625
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "attempt": 5,
+          "result": {
+            "complete": true,
+            "passed": true,
+            "source_before": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "52d83816bed889899725ccd31dc5d7d7b47ff82330f5a02089b8d41fb0b7599e"
+            },
+            "source_after": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "52d83816bed889899725ccd31dc5d7d7b47ff82330f5a02089b8d41fb0b7599e"
+            },
+            "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+            "rows": [
+              {
+                "label": "compile-css-prealloc",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-prealloc.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-prealloc-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-prealloc",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960186.206187,
+                  "cpu_count": 18,
+                  "load": [
+                    23.8681640625,
+                    19.64111328125,
+                    18.666015625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960192.102693,
+                  "load": [
+                    24.03857421875,
+                    19.74658203125,
+                    18.708984375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-prealloc-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-prealloc-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-prealloc-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-prealloc"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960192.1196291,
+                  "cpu_count": 18,
+                  "load": [
+                    24.03857421875,
+                    19.74658203125,
+                    18.708984375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960192.693706,
+                  "load": [
+                    24.03857421875,
+                    19.74658203125,
+                    18.708984375
+                  ]
+                }
+              },
+              {
+                "label": "run-css-prealloc-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-prealloc-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-prealloc-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-prealloc"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960192.701854,
+                  "cpu_count": 18,
+                  "load": [
+                    24.03857421875,
+                    19.74658203125,
+                    18.708984375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960193.022945,
+                  "load": [
+                    24.03857421875,
+                    19.74658203125,
+                    18.708984375
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-default",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-default.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-default-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-default",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960193.0323389,
+                  "cpu_count": 18,
+                  "load": [
+                    24.03857421875,
+                    19.74658203125,
+                    18.708984375
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960198.796204,
+                  "load": [
+                    25.35498046875,
+                    20.16650390625,
+                    18.86962890625
+                  ]
+                }
+              },
+              {
+                "label": "run-css-default-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-default-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-default-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-default"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960198.804231,
+                  "cpu_count": 18,
+                  "load": [
+                    25.35498046875,
+                    20.16650390625,
+                    18.86962890625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960199.257866,
+                  "load": [
+                    25.35498046875,
+                    20.16650390625,
+                    18.86962890625
+                  ]
+                }
+              },
+              {
+                "label": "run-css-default-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-default-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-default-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-default"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960199.2665532,
+                  "cpu_count": 18,
+                  "load": [
+                    25.35498046875,
+                    20.16650390625,
+                    18.86962890625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960199.4758751,
+                  "load": [
+                    25.35498046875,
+                    20.16650390625,
+                    18.86962890625
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-none",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-none.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-none-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-none",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960199.484045,
+                  "cpu_count": 18,
+                  "load": [
+                    25.35498046875,
+                    20.16650390625,
+                    18.86962890625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960205.4995708,
+                  "load": [
+                    23.96484375,
+                    19.96435546875,
+                    18.8056640625
+                  ]
+                }
+              },
+              {
+                "label": "run-css-none-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-none-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-none-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-none"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960205.5112162,
+                  "cpu_count": 18,
+                  "load": [
+                    23.96484375,
+                    19.96435546875,
+                    18.8056640625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960205.962419,
+                  "load": [
+                    23.96484375,
+                    19.96435546875,
+                    18.8056640625
+                  ]
+                }
+              },
+              {
+                "label": "run-css-none-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-none-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-none-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-none"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960205.970855,
+                  "cpu_count": 18,
+                  "load": [
+                    23.96484375,
+                    19.96435546875,
+                    18.8056640625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960206.184086,
+                  "load": [
+                    23.96484375,
+                    19.96435546875,
+                    18.8056640625
+                  ]
+                }
+              },
+              {
+                "label": "compile-css-sanitized",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-sanitized.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/compile-css-sanitized-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-cflags",
+                  "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+                  "-ldflags",
+                  "-fsanitize=address,undefined",
+                  "-file-list",
+                  "/Users/alex/code/vox2/css/longhand_font_size_root_test.v,/Users/alex/code/vox2/css/longhand_font_size_units_test.v,/Users/alex/code/vox2/css/computed_longhand_reuse_test.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs_test.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints_test.v,/Users/alex/code/vox2/css/longhand_callback_lifetime_test.v,/Users/alex/code/vox2/css/computation_context_on_demand_test.v",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-sanitized",
+                  "/Users/alex/code/vox2/css/longhand_font_radius_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793960206.192652,
+                  "cpu_count": 18,
+                  "load": [
+                    23.96484375,
+                    19.96435546875,
+                    18.8056640625
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960219.296535,
+                  "load": [
+                    22.6943359375,
+                    19.88330078125,
+                    18.79638671875
+                  ]
+                }
+              },
+              {
+                "label": "run-css-sanitized-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-sanitized-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-sanitized-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-sanitized"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960219.315742,
+                  "cpu_count": 18,
+                  "load": [
+                    22.6943359375,
+                    19.88330078125,
+                    18.79638671875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960220.267533,
+                  "load": [
+                    22.6943359375,
+                    19.88330078125,
+                    18.79638671875
+                  ]
+                }
+              },
+              {
+                "label": "run-css-sanitized-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-sanitized-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/run-css-sanitized-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-checked-20261106-r5/css-sanitized"
+                ],
+                "environment": {
+                  "VOX_ARENA_POISON": "1",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1",
+                  "VOX_FONT_RADIUS_LONGHAND_DIAGNOSTICS": "1",
+                  "ASAN_OPTIONS": "detect_leaks=0",
+                  "UBSAN_OPTIONS": "halt_on_error=1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960220.276818,
+                  "cpu_count": 18,
+                  "load": [
+                    22.6943359375,
+                    19.88330078125,
+                    18.79638671875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960220.8557,
+                  "load": [
+                    22.6943359375,
+                    19.88330078125,
+                    18.79638671875
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "component",
+      "attempts": [
+        {
+          "attempt": 1,
+          "result": {
+            "complete": true,
+            "passed": true,
+            "source_before": {
+              "css/longhand_font_size_units.v": "c364df632e47b9fe2ecc6ccf9e2a6037d7802773e8a5e854c4cb366a70027ecb",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "e9a4e00804b0c70b5298c15cea65f06e4acc59bef70ff1b66d363519a088049b",
+              "css/longhand_font_radius_test.v": "44bd854cf771ef1ae766162b6a5e595aec03b700611a6552fcf1ebce5caf4c74",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc": "00fee1091e685dad16ee8a474c468c64f0fb503b8e1d2c3428d0774286491017",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r1/driver_test.v": "67d223994dded390c0b17d5d5bb8055cb98ef213d7db01db30467c20af478406",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r1/checks.py": "54d7c8a47db6034fd84c9ac0d2a75d5898bb5784a768e8fb5cbbf8fb68e90253",
+              "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+            },
+            "source_after": {
+              "css/longhand_font_size_units.v": "c364df632e47b9fe2ecc6ccf9e2a6037d7802773e8a5e854c4cb366a70027ecb",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "e9a4e00804b0c70b5298c15cea65f06e4acc59bef70ff1b66d363519a088049b",
+              "css/longhand_font_radius_test.v": "44bd854cf771ef1ae766162b6a5e595aec03b700611a6552fcf1ebce5caf4c74",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc": "00fee1091e685dad16ee8a474c468c64f0fb503b8e1d2c3428d0774286491017",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r1/driver_test.v": "67d223994dded390c0b17d5d5bb8055cb98ef213d7db01db30467c20af478406",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r1/checks.py": "54d7c8a47db6034fd84c9ac0d2a75d5898bb5784a768e8fb5cbbf8fb68e90253",
+              "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+            },
+            "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+            "rows": [
+              {
+                "label": "compile-component-prealloc",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/compile-component-prealloc.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/compile-component-prealloc-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prod",
+                  "-cflags",
+                  "-O2",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/driver_test.v",
+                  "-run-only",
+                  "test_font_radius_longhand_component",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc",
+                  "/Users/alex/code/vox2/css/computed_longhand_reuse_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793959847.5357141,
+                  "cpu_count": 18,
+                  "load": [
+                    22.4130859375,
+                    20.97119140625,
+                    19.0029296875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959887.342043,
+                  "load": [
+                    24.10693359375,
+                    21.43212890625,
+                    19.251953125
+                  ]
+                }
+              },
+              {
+                "label": "sample-0-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-0-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-0-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959887.450194,
+                  "cpu_count": 18,
+                  "load": [
+                    24.10693359375,
+                    21.43212890625,
+                    19.251953125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959888.026721,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              },
+              {
+                "label": "sample-1-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-1-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-1-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959888.0641348,
+                  "cpu_count": 18,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959888.278064,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              },
+              {
+                "label": "sample-2-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-2-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-2-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959888.312897,
+                  "cpu_count": 18,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959888.5244942,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              },
+              {
+                "label": "sample-3-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-3-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-3-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959888.560596,
+                  "cpu_count": 18,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959888.7698119,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              },
+              {
+                "label": "sample-4-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-4-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-4-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959888.805002,
+                  "cpu_count": 18,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959889.018085,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              },
+              {
+                "label": "sample-5-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-5-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-5-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959889.0535161,
+                  "cpu_count": 18,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959889.2755399,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              },
+              {
+                "label": "sample-6-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-6-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-6-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959889.312064,
+                  "cpu_count": 18,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959889.531209,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              },
+              {
+                "label": "sample-7-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-7-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/sample-7-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r1/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793959889.5696251,
+                  "cpu_count": 18,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793959889.790715,
+                  "load": [
+                    22.81689453125,
+                    21.208984375,
+                    19.185546875
+                  ]
+                }
+              }
+            ]
+          },
+          "components": {
+            "absolute": {
+              "raw": {
+                "control": [
+                  2405275,
+                  2404934,
+                  2404814,
+                  2456106
+                ],
+                "candidate": [
+                  2433391,
+                  2423083,
+                  2423089,
+                  2423018
+                ]
+              },
+              "control_median": 2405104.5,
+              "candidate_median": 2423086.0,
+              "reduction_percent": -0.7476390319006931
+            },
+            "em": {
+              "raw": {
+                "control": [
+                  8022978,
+                  7995908,
+                  8041815,
+                  7989181
+                ],
+                "candidate": [
+                  2590742,
+                  2591347,
+                  2650724,
+                  2591351
+                ]
+              },
+              "control_median": 8009443.0,
+              "candidate_median": 2591349.0,
+              "reduction_percent": 67.64632696680655
+            },
+            "rem": {
+              "raw": {
+                "control": [
+                  8049590,
+                  8050497,
+                  8052030,
+                  8051731
+                ],
+                "candidate": [
+                  2591686,
+                  2592067,
+                  2592065,
+                  2592278
+                ]
+              },
+              "control_median": 8051114.0,
+              "candidate_median": 2592066.0,
+              "reduction_percent": 67.80487768524952
+            },
+            "mixed": {
+              "raw": {
+                "control": [
+                  8200035,
+                  8205437,
+                  8166586,
+                  8203522
+                ],
+                "candidate": [
+                  2605581,
+                  2586199,
+                  2586276,
+                  2586170
+                ]
+              },
+              "control_median": 8201778.5,
+              "candidate_median": 2586237.5,
+              "reduction_percent": 68.46735741522403
+            },
+            "unsupported": {
+              "raw": {
+                "control": [
+                  9094447,
+                  9073671,
+                  9113383,
+                  9090038
+                ],
+                "candidate": [
+                  8974866,
+                  8928178,
+                  9068773,
+                  9113358
+                ]
+              },
+              "control_median": 9092242.5,
+              "candidate_median": 9021819.5,
+              "reduction_percent": 0.774539394434326
+            },
+            "changing-own": {
+              "raw": {
+                "control": [
+                  8150595,
+                  8159945,
+                  8122681,
+                  8159872
+                ],
+                "candidate": [
+                  2728119,
+                  2728676,
+                  2728465,
+                  2728077
+                ]
+              },
+              "control_median": 8155233.5,
+              "candidate_median": 2728292.0,
+              "reduction_percent": 66.54550725003766
+            },
+            "changing-parent": {
+              "raw": {
+                "control": [
+                  8091329,
+                  8091036,
+                  8128942,
+                  8104795
+                ],
+                "candidate": [
+                  3678182,
+                  3678698,
+                  3677817,
+                  3677852
+                ]
+              },
+              "control_median": 8098062.0,
+              "candidate_median": 3678017.0,
+              "reduction_percent": 54.58151592319249
+            },
+            "changing-root": {
+              "raw": {
+                "control": [
+                  8049488,
+                  8049769,
+                  8051640,
+                  8086976
+                ],
+                "candidate": [
+                  8023712,
+                  8005176,
+                  8002834,
+                  8002482
+                ]
+              },
+              "control_median": 8050704.5,
+              "candidate_median": 8004005.0,
+              "reduction_percent": 0.5800672475309465
+            },
+            "fresh-batch": {
+              "raw": {
+                "control": [
+                  8256564,
+                  8064308,
+                  8102692,
+                  8067049
+                ],
+                "candidate": [
+                  8333594,
+                  8210810,
+                  8172340,
+                  8172064
+                ]
+              },
+              "control_median": 8084870.5,
+              "candidate_median": 8191575.0,
+              "reduction_percent": -1.3198046895123383
+            }
+          }
+        },
+        {
+          "attempt": 2,
+          "result": {
+            "complete": true,
+            "passed": true,
+            "source_before": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "94bf449947d9baf8b8db9bfe021baf1ca4850f85b32f5ace67f7aa8f2dde0437",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc": "4ac74d4cfb39f72bb33de2163637fd3e6b2728eded0e4df24c2eda473f2daa20",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r2/driver_test.v": "d79364f86466e44505f501fe31cddf59d8a3acc92e81d54a190a37f669d3033c",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r2/checks.py": "54d7c8a47db6034fd84c9ac0d2a75d5898bb5784a768e8fb5cbbf8fb68e90253",
+              "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+            },
+            "source_after": {
+              "css/longhand_font_size_units.v": "e3aaa5487fd68de163f4c7a0c9cb2dc10e008fb38f466e9419c4d3307e20658f",
+              "css/longhand_font_size_units_test.v": "beb4564f29d1e5aead492402994ba5a8f42edd8ccc10ff9642ead67fe8e121fe",
+              "css/computed_longhand_reuse.v": "7d80441fd599ed1b292019267e9d03a9bce185970852974df14970efae451acf",
+              "css/computed_longhand_reuse_test.v": "371aa376b0055b97bcc86447d3101bcd3c7e11892743c99c044f5e45b083ebaa",
+              "css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+              "css/explicit_parent_longhand_inputs_test.v": "3da031245bd48f3a768d67d0ff41ebca8d3aa6816322b7d7af41f84acb7f8313",
+              "css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+              "css/longhand_parent_hash_hints_test.v": "570c770d3de79a9e433ce566ac4d949b7e3a4ab503bc19e932ce6f845f13da23",
+              "css/computed_longhand_shapes.v": "a6aac9c4c3b3c48a5a15b736da7848d8fed02928f8d399158aee5395ae15f4d3",
+              "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+              "css/longhand_callback_lifetime_test.v": "4ab97adbaef830073e09122fd7639b1199c915dc067e68645bb81e2ec8dd25ad",
+              "css/computation_context_on_demand_test.v": "74812efd7c0f9711d2b658b7ffafafa55863bc4848a07d100b666c8e19ea2268",
+              "css/longhand_font_size_root_test.v": "f8b15a75258f2d986fcb764db3bd72524f49143ded47723a23068746d0bcb29d",
+              "css/longhand_font_radius.v": "aab7ef189e44c32ebdc76e232bb8dfa41603577b8d7d88c1efdb28d546a31168",
+              "css/longhand_font_radius_test.v": "94bf449947d9baf8b8db9bfe021baf1ca4850f85b32f5ace67f7aa8f2dde0437",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc": "4ac74d4cfb39f72bb33de2163637fd3e6b2728eded0e4df24c2eda473f2daa20",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r2/driver_test.v": "d79364f86466e44505f501fe31cddf59d8a3acc92e81d54a190a37f669d3033c",
+              "Build/chatgpt-font-radius-longhands-component-20261106-r2/checks.py": "54d7c8a47db6034fd84c9ac0d2a75d5898bb5784a768e8fb5cbbf8fb68e90253",
+              "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+            },
+            "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+            "rows": [
+              {
+                "label": "compile-component-prealloc",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/compile-component-prealloc.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/compile-component-prealloc-guard.json",
+                  "--limit-gib",
+                  "12",
+                  "--",
+                  "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+                  "-path",
+                  "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+                  "-memory-limit",
+                  "10G",
+                  "-enable-globals",
+                  "-b",
+                  "c",
+                  "-cc",
+                  "clang",
+                  "-nocache",
+                  "-w",
+                  "-keepc",
+                  "-cflags",
+                  "-O0",
+                  "-skip-running",
+                  "-prod",
+                  "-cflags",
+                  "-O2",
+                  "-prealloc",
+                  "-gc",
+                  "none",
+                  "-file-list",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/driver_test.v",
+                  "-run-only",
+                  "test_font_radius_longhand_component",
+                  "-o",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc",
+                  "/Users/alex/code/vox2/css/computed_longhand_reuse_test.v"
+                ],
+                "environment": {},
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+                "host_before": {
+                  "unix": 1793959982.51491,
+                  "cpu_count": 18,
+                  "load": [
+                    11.68408203125,
+                    18.20068359375,
+                    18.248046875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960021.800838,
+                  "load": [
+                    9.7529296875,
+                    16.86181640625,
+                    17.75341796875
+                  ]
+                }
+              },
+              {
+                "label": "sample-0-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-0-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-0-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960021.913986,
+                  "cpu_count": 18,
+                  "load": [
+                    9.7529296875,
+                    16.86181640625,
+                    17.75341796875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960022.4869308,
+                  "load": [
+                    9.7529296875,
+                    16.86181640625,
+                    17.75341796875
+                  ]
+                }
+              },
+              {
+                "label": "sample-1-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-1-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-1-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960022.523055,
+                  "cpu_count": 18,
+                  "load": [
+                    9.7529296875,
+                    16.86181640625,
+                    17.75341796875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960022.731733,
+                  "load": [
+                    9.7529296875,
+                    16.86181640625,
+                    17.75341796875
+                  ]
+                }
+              },
+              {
+                "label": "sample-2-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-2-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-2-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960022.767703,
+                  "cpu_count": 18,
+                  "load": [
+                    9.7529296875,
+                    16.86181640625,
+                    17.75341796875
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960022.9715478,
+                  "load": [
+                    9.7529296875,
+                    16.86181640625,
+                    17.75341796875
+                  ]
+                }
+              },
+              {
+                "label": "sample-3-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-3-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-3-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960023.0056021,
+                  "cpu_count": 18,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960023.209686,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                }
+              },
+              {
+                "label": "sample-4-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-4-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-4-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960023.245517,
+                  "cpu_count": 18,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960023.45119,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                }
+              },
+              {
+                "label": "sample-5-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-5-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-5-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960023.487054,
+                  "cpu_count": 18,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960023.6929522,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                }
+              },
+              {
+                "label": "sample-6-candidate",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-6-candidate.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-6-candidate-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": ""
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960023.728286,
+                  "cpu_count": 18,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960023.936055,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                }
+              },
+              {
+                "label": "sample-7-control",
+                "command": [
+                  "python3",
+                  "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+                  "--lock",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-7-control.lock",
+                  "--report",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/sample-7-control-guard.json",
+                  "--limit-gib",
+                  "3",
+                  "--",
+                  "/Users/alex/code/vox2/Build/chatgpt-font-radius-longhands-component-20261106-r2/component-prealloc"
+                ],
+                "environment": {
+                  "JSC_thresholdForJITAfterWarmUp": "10000",
+                  "VOX_RETAIN_FONT_RADIUS_LONGHANDS": "1"
+                },
+                "compiler_environment": {
+                  "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+                },
+                "cwd": "/Users/alex/code/vox2",
+                "host_before": {
+                  "unix": 1793960023.970191,
+                  "cpu_count": 18,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                },
+                "exit": 0,
+                "host_after": {
+                  "unix": 1793960024.177474,
+                  "load": [
+                    9.2919921875,
+                    16.64794921875,
+                    17.67236328125
+                  ]
+                }
+              }
+            ]
+          },
+          "components": {
+            "absolute": {
+              "raw": {
+                "control": [
+                  2404503,
+                  2405275,
+                  2404503,
+                  2404503
+                ],
+                "candidate": [
+                  2423233,
+                  2423296,
+                  2421931,
+                  2421993
+                ]
+              },
+              "control_median": 2404503.0,
+              "candidate_median": 2422613.0,
+              "reduction_percent": -0.7531701977498084
+            },
+            "em": {
+              "raw": {
+                "control": [
+                  8021475,
+                  7989790,
+                  7987463,
+                  7987495
+                ],
+                "candidate": [
+                  8041305,
+                  8003491,
+                  8008174,
+                  8008987
+                ]
+              },
+              "control_median": 7988642.5,
+              "candidate_median": 8008580.5,
+              "reduction_percent": -0.24957932464746424
+            },
+            "rem": {
+              "raw": {
+                "control": [
+                  8051357,
+                  8051639,
+                  8087412,
+                  8211240
+                ],
+                "candidate": [
+                  2589316,
+                  2589344,
+                  2588416,
+                  2587781
+                ]
+              },
+              "control_median": 8069525.5,
+              "candidate_median": 2588866.0,
+              "reduction_percent": 67.91798972566603
+            },
+            "mixed": {
+              "raw": {
+                "control": [
+                  8101908,
+                  8104686,
+                  8104707,
+                  8133269
+                ],
+                "candidate": [
+                  2584065,
+                  2584088,
+                  2583081,
+                  2582605
+                ]
+              },
+              "control_median": 8104696.5,
+              "candidate_median": 2583573.0,
+              "reduction_percent": 68.12252007215815
+            },
+            "unsupported": {
+              "raw": {
+                "control": [
+                  9073374,
+                  9077481,
+                  9126934,
+                  8917297
+                ],
+                "candidate": [
+                  8973677,
+                  8949940,
+                  8978398,
+                  8920475
+                ]
+              },
+              "control_median": 9075427.5,
+              "candidate_median": 8961808.5,
+              "reduction_percent": 1.2519410242658013
+            },
+            "changing-own": {
+              "raw": {
+                "control": [
+                  8119881,
+                  8153244,
+                  8122557,
+                  8151903
+                ],
+                "candidate": [
+                  2725920,
+                  2725720,
+                  2724109,
+                  2724016
+                ]
+              },
+              "control_median": 8137230.0,
+              "candidate_median": 2724914.5,
+              "reduction_percent": 66.51299643736259
+            },
+            "changing-parent": {
+              "raw": {
+                "control": [
+                  8084879,
+                  8086592,
+                  8115683,
+                  8089838
+                ],
+                "candidate": [
+                  3676086,
+                  3676049,
+                  3673905,
+                  3834579
+                ]
+              },
+              "control_median": 8088215.0,
+              "candidate_median": 3676067.5,
+              "reduction_percent": 54.55032414444967
+            },
+            "changing-root": {
+              "raw": {
+                "control": [
+                  8044596,
+                  8074726,
+                  8044561,
+                  8204793
+                ],
+                "candidate": [
+                  8009092,
+                  8009024,
+                  8040662,
+                  8003158
+                ]
+              },
+              "control_median": 8059661.0,
+              "candidate_median": 8009058.0,
+              "reduction_percent": 0.6278551914280284
+            },
+            "fresh-batch": {
+              "raw": {
+                "control": [
+                  8065577,
+                  8066286,
+                  8234889,
+                  8066335
+                ],
+                "candidate": [
+                  8176887,
+                  8206914,
+                  8172206,
+                  8171426
+                ]
+              },
+              "control_median": 8066310.5,
+              "candidate_median": 8174546.5,
+              "reduction_percent": -1.341827840621801
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "components": {
+    "absolute": {
+      "raw": {
+        "control": [
+          2404503,
+          2405275,
+          2404503,
+          2404503
+        ],
+        "candidate": [
+          2423233,
+          2423296,
+          2421931,
+          2421993
+        ]
+      },
+      "control_median": 2404503.0,
+      "candidate_median": 2422613.0,
+      "reduction_percent": -0.7531701977498084
+    },
+    "em": {
+      "raw": {
+        "control": [
+          8021475,
+          7989790,
+          7987463,
+          7987495
+        ],
+        "candidate": [
+          8041305,
+          8003491,
+          8008174,
+          8008987
+        ]
+      },
+      "control_median": 7988642.5,
+      "candidate_median": 8008580.5,
+      "reduction_percent": -0.24957932464746424
+    },
+    "rem": {
+      "raw": {
+        "control": [
+          8051357,
+          8051639,
+          8087412,
+          8211240
+        ],
+        "candidate": [
+          2589316,
+          2589344,
+          2588416,
+          2587781
+        ]
+      },
+      "control_median": 8069525.5,
+      "candidate_median": 2588866.0,
+      "reduction_percent": 67.91798972566603
+    },
+    "mixed": {
+      "raw": {
+        "control": [
+          8101908,
+          8104686,
+          8104707,
+          8133269
+        ],
+        "candidate": [
+          2584065,
+          2584088,
+          2583081,
+          2582605
+        ]
+      },
+      "control_median": 8104696.5,
+      "candidate_median": 2583573.0,
+      "reduction_percent": 68.12252007215815
+    },
+    "unsupported": {
+      "raw": {
+        "control": [
+          9073374,
+          9077481,
+          9126934,
+          8917297
+        ],
+        "candidate": [
+          8973677,
+          8949940,
+          8978398,
+          8920475
+        ]
+      },
+      "control_median": 9075427.5,
+      "candidate_median": 8961808.5,
+      "reduction_percent": 1.2519410242658013
+    },
+    "changing-own": {
+      "raw": {
+        "control": [
+          8119881,
+          8153244,
+          8122557,
+          8151903
+        ],
+        "candidate": [
+          2725920,
+          2725720,
+          2724109,
+          2724016
+        ]
+      },
+      "control_median": 8137230.0,
+      "candidate_median": 2724914.5,
+      "reduction_percent": 66.51299643736259
+    },
+    "changing-parent": {
+      "raw": {
+        "control": [
+          8084879,
+          8086592,
+          8115683,
+          8089838
+        ],
+        "candidate": [
+          3676086,
+          3676049,
+          3673905,
+          3834579
+        ]
+      },
+      "control_median": 8088215.0,
+      "candidate_median": 3676067.5,
+      "reduction_percent": 54.55032414444967
+    },
+    "changing-root": {
+      "raw": {
+        "control": [
+          8044596,
+          8074726,
+          8044561,
+          8204793
+        ],
+        "candidate": [
+          8009092,
+          8009024,
+          8040662,
+          8003158
+        ]
+      },
+      "control_median": 8059661.0,
+      "candidate_median": 8009058.0,
+      "reduction_percent": 0.6278551914280284
+    },
+    "fresh-batch": {
+      "raw": {
+        "control": [
+          8065577,
+          8066286,
+          8234889,
+          8066335
+        ],
+        "candidate": [
+          8176887,
+          8206914,
+          8172206,
+          8171426
+        ]
+      },
+      "control_median": 8066310.5,
+      "candidate_median": 8174546.5,
+      "reduction_percent": -1.341827840621801
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-font-radius-longhands-checked-20261106-evidence.zip",
+      "sha256": "46ce5aa69063009659ec5f90a8b448c9166204f260bac8d7ffe0507e8bfdebc8",
+      "bytes": 22583653,
+      "verified_entries": 192
+    },
+    {
+      "path": "docs/performance/chatgpt-font-radius-longhands-component-20261106-evidence.zip",
+      "sha256": "453964662aec37d74078ab4b0f34be25edb2e8f9a5c88442a6094f97b1e216de",
+      "bytes": 40095101,
+      "verified_entries": 80
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_carry": 0,
+  "qualification": "Only direct two-scalar border radii containing rem plus existing absolute/viewport/percentage leaves are newly eligible. em, glyph/line-height/container units, calculations and list-wrapped radii stay on full computation. Existing exact radius snapshots/hash and root-size/policy/viewport guards are reused. Output ownership survives cache retirement and in-place mutation of an old percentage leaf. The original em/rem prototype, failed missing-argument fixture and incorrect assumption of a retained radius inheritance-source record are retained; the final implementation supports rem only. Sixty final functions execute under both policies in ordinary GC, no GC, poisoned preallocation and ASan/UBSan. All component prototype/regression counts remain preserved; no component-to-page extrapolation."
+}

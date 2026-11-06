@@ -6059,3 +6059,42 @@ All 63 additive rows are retained in the [full table](performance/chatgpt-parall
 The separate optional nested-GPU/text-compositing probe also completes all four content/pixel/normal-exit audits, but emits no actual nested-layer marker in either variant. Its eligibility gate is therefore rejected and receives no performance credit. The selected single-unit executable’s frozen source explicitly disables non-reused full-frame GPU canvas while automatic screenshot delay is present. Its bounded batches report zero draws. Enabling those existing switches alone cannot validate nested GPU compositing on this capture workload; no production default or measurement boundary was changed.
 
 The [verification receipt](performance/chatgpt-parallel-load-stages-verification-20261106.json) retains the failed preflight, both diagnostics, raw counters/logs, source/binary proofs, PNGs, guards and authenticated archives. These are optimization leads only. Page credit and broad carry remain zero; the 20B target remains unmet.
+
+## Root-relative border-radius longhand reuse toward 20B (2026-11-06)
+
+Implementation `5cb1c8303` extends the synchronous longhand reuse path to direct border-radius pairs containing `rem` and existing supported scalar components. It reuses the exact horizontal/vertical/elliptical snapshot and hash, plus guarded cached/live root sizes, optional fractional size, viewport and font policy. Calculations, `em`, glyph/line-height/container units and list-wrapped relative radii retain ordinary computation. The original page eligibility log includes these `rem` radii.
+
+The initial prototype also admitted `em`, but the ownership fixture found that the existing radius computation has no radius inheritance-source record. That fixture dereferenced the absent map and exited 139; an earlier compile also caught a missing fixture argument. Both failed attempts remain retained. The final implementation admits root-relative `rem` only and preserves the ordinary no-map state. Published output remains independent after cache retirement, replacement of an old input radius, and verified in-place mutation of an old percentage leaf.
+
+All **480 final focused test executions** pass: 60 functions under both radius policies in ordinary GC, no GC, poisoned preallocation and AddressSanitizer/UndefinedBehaviorSanitizer. They compare every longhand and dependency flag against independent full computation and cover both font policies, fractional root changes, parent changes, horizontal/vertical/elliptical mutation, output lifetime, mixed percentages and excluded units.
+
+The component measures 100 computations after setup and one warm call, retaining four alternating observations per variant. Every case validates full computed values outside the counters. Both prototype attempts and all raw counts remain archived; component gains are not scaled into page savings.
+
+| Component | Control median | Final candidate median | Observed reduction |
+|---|---:|---:|---:|
+| absolute | 2,404,503 | 2,422,613 | -0.753% |
+| em | 7,988,642.5 | 8,008,580.5 | -0.250% |
+| rem | 8,069,525.5 | 2,588,866 | +67.918% |
+| mixed | 8,104,696.5 | 2,583,573 | +68.123% |
+| unsupported | 9,075,427.5 | 8,961,808.5 | +1.252% |
+| changing-own | 8,137,230 | 2,724,914.5 | +66.513% |
+| changing-parent | 8,088,215 | 3,676,067.5 | +54.550% |
+| changing-root | 8,059,661 | 8,009,058 | +0.628% |
+| fresh-batch | 8,066,310.5 | 8,174,546.5 | -1.342% |
+
+The excluded `em` case stays on full computation. The final component retains a **1.342% fresh-batch regression** and a **0.753% absolute-radius regression**; they receive no optimization credit.
+
+The first available bundle lacked the final rem-only marker. A subsequent completed canonical executable `0e59c6e2b34951b099bab844a519e52074dbb6607fc2aa1c50e90bcfbe71c9b9` contains the final code and uses `single` C compilation with production source conditions. Its frozen C proves rem-only eligibility, exact shape snapshot/match/hash integration, root-environment guards and restore diagnostics. The candidate-only actual restore marker and Wasm module lexer path pass separately. A nonblocking shared publication lease pins the same bundle throughout; no app/source tree is copied and no duplicate manual build is queued. All four diagnostic captures pass complete content/bootstrap/button audits, exact reference pixels and browser/kernel exits.
+
+The unprofiled cohort keeps the original SOCKS fixture/scripts/references, original-origin replay, empty private profiles/caches, 1024×768 scale two and five-second unfocused settle. The boundary remains exclusive coalition creation through encoded document PNG, including startup/window setup and Brave CDP delivery. OS filesystem/shader caches are retained; GPU/outside-coalition work is excluded. All sixteen matched captures pass complete audits, exact per-engine reference pixels and normal browser/kernel exits. Commands, helper ownership, host load/timestamps and memory adoption remain in the raw reports.
+
+| Pair | Vox control instructions | Vox candidate instructions |
+|---|---:|---:|
+| 1 | 24,551,509,458 | 24,511,026,638 |
+| 2 | 24,487,920,092 | 24,244,194,285 |
+| 3 | 24,433,888,209 | 24,438,226,761 |
+| 4 | 24,485,550,587 | 24,532,187,965 |
+
+Medians: **24,486,735,339.5 control → 24,474,626,699.5 candidate**, an observed **+0.049% reduction**. Conservative separation `min(control lower) − max(candidate upper)` is **-98,299,756** instructions. The ranges overlap, so no whole-page saving is credited and no new 5M broad checkpoint is due. Carry remains zero.
+
+The candidate median remains **4,474,626,699.5 instructions above 20B**. Four pairs cannot establish seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-font-radius-longhands-verification-20261106.json) retains all focused/component attempts, failures, source witnesses, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
