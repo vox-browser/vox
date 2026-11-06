@@ -1,0 +1,758 @@
+{
+  "status": "Cohort130 invalid for acceptance due Bravepair6 pixel mismatch; target fails and candidate median regresses. Experiment retired.",
+  "implementation": "dcacc48e9",
+  "tooling": "4640982a6",
+  "retirement": "6db6b9f46",
+  "control_removal": "d6eb6597c",
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "dcc6946376183584cc0b3f7b401b8fd72d4c89ddad9fd2684e90e3244cf0ed8c",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-065813-e9a1326f/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "aa1c7e884809404383db4e71c60f4332a7f088c601188ae1de2d7dfd942b3bf1",
+      "dirty": true,
+      "head": "f531061a6a5971e0eebc00f5070f4a3c053bc1de",
+      "repository_sha256": "9a912df1145504fdbd2ec75227a0e1ce26f0a0c81e009903621d9fdd4587b6cc"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "304f6a92d1642330f01c70fa7f972ddffdba7773524a9a2e5c43d36e0da08f73",
+      "dirty": true,
+      "head": "dcacc48e95c1983b66e7664331ba27a83fd4dc67",
+      "repository_sha256": "8c75eaa1949c3059d13698de11f271d87b2b5fee0900d8a67976e92c096f5b67"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "f531061a6a5971e0eebc00f5070f4a3c053bc1de",
+      "id": "31a8f84599594986bc5566559d468275",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "aa1c7e884809404383db4e71c60f4332a7f088c601188ae1de2d7dfd942b3bf1",
+      "dirty": true,
+      "head": "4640982a67daefb69f8564328b89cc1dfa0afce0",
+      "repository_sha256": "a27542c0a8c6848971696ef6ce2c8b35a6759e6f7b314ea0a35bf786ca33da53"
+    }
+  },
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "same_pass_grid_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "same_pass_grid_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "dcc6946376183584cc0b3f7b401b8fd72d4c89ddad9fd2684e90e3244cf0ed8c",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-065813-e9a1326f/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "aa1c7e884809404383db4e71c60f4332a7f088c601188ae1de2d7dfd942b3bf1",
+        "dirty": true,
+        "head": "f531061a6a5971e0eebc00f5070f4a3c053bc1de",
+        "repository_sha256": "9a912df1145504fdbd2ec75227a0e1ce26f0a0c81e009903621d9fdd4587b6cc"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "304f6a92d1642330f01c70fa7f972ddffdba7773524a9a2e5c43d36e0da08f73",
+        "dirty": true,
+        "head": "dcacc48e95c1983b66e7664331ba27a83fd4dc67",
+        "repository_sha256": "8c75eaa1949c3059d13698de11f271d87b2b5fee0900d8a67976e92c096f5b67"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "f531061a6a5971e0eebc00f5070f4a3c053bc1de",
+        "id": "31a8f84599594986bc5566559d468275",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "aa1c7e884809404383db4e71c60f4332a7f088c601188ae1de2d7dfd942b3bf1",
+        "dirty": true,
+        "head": "4640982a67daefb69f8564328b89cc1dfa0afce0",
+        "repository_sha256": "a27542c0a8c6848971696ef6ce2c8b35a6759e6f7b314ea0a35bf786ca33da53"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; committed same-pass grid reuse disabled only in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793937732.8717608
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/disabled committed same-pass grid reuse control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793937743.6174028
+  },
+  "actual_production_wrapper_proof": {
+    "passed": true,
+    "actual_c": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-065813-e9a1326f/generated/Vox.c",
+    "actual_c_sha256": "273cfe806e36dbb397b4916b17bac0d031a0f15e7cbf66991ef9280a9f11b286",
+    "tested_c": "/Users/alex/code/vox2/Build/bbc-same-pass-grid-20261106-1300/exact-key-refined/default.c",
+    "tested_c_sha256": "70c2f5d9392982dbd580c0152102d7c4e69c0e45dc886dd07940bd273b80cde3",
+    "normalized_body_sha256": "69fd9dab0ef4aed3451a1db48b5f773a4f6cfefd781dfafd94ebfc9cfaef7ae1",
+    "normalization": "Only generated string constant identifiers; all wrapper operations,guards and calls remain exact."
+  },
+  "retired_longhand_capacity_confirmation": {
+    "passed": true,
+    "executable_sha256": "dcc6946376183584cc0b3f7b401b8fd72d4c89ddad9fd2684e90e3244cf0ed8c",
+    "actual_c_sha256": "273cfe806e36dbb397b4916b17bac0d031a0f15e7cbf66991ef9280a9f11b286",
+    "retired_marker_absent": true,
+    "native_original_checks_passed": true,
+    "qualification": "Complete sealed producer input lacks the retired capacity marker; both fresh native captures pass original pixels/content/72sources/images/ownership/exits. Successor grid candidate-only marker beforePNG is verified separately. No saving credit."
+  },
+  "statistics": {
+    "valid_capture_cohort": false,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 25314748631,
+            "upper": 25314748631
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25824362590,
+            "upper": 25824362590
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17529500846,
+            "upper": 17540738525
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 26817403515,
+            "upper": 26817403515
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26172554494,
+            "upper": 26172554494
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17450932180,
+            "upper": 17451198482
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 26492541515,
+            "upper": 26492541515
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25831244243,
+            "upper": 25831244243
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17372310563,
+            "upper": 17397886284
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 26574910750,
+            "upper": 26574910750
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25159281350,
+            "upper": 25159281350
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17596463227,
+            "upper": 17626548003
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 27774065757,
+            "upper": 27774065757
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26596656894,
+            "upper": 26596656894
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17622271928,
+            "upper": 17623836700
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 26936765035,
+            "upper": 26936765035
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 25615446444,
+            "upper": 25615446444
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17478369807,
+            "upper": 17478712876
+          },
+          "exit": 1,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": false,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "passed": false
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 26321531803,
+            "upper": 26321531803
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26055845797,
+            "upper": 26055845797
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17469205190,
+            "upper": 17502848549
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [
+      {
+        "pair": 6,
+        "arm": "brave",
+        "error": "Captured document differs from its unchanged pixel reference",
+        "native_exit": 0,
+        "cleanup_native_exit": null
+      }
+    ],
+    "attempts_retained": 21,
+    "capture_audits_passed": 20,
+    "median_vox": 26574910750,
+    "median_control": 25831244243,
+    "median_brave_lower": 17478369807,
+    "point_reduction": -743666507,
+    "point_fraction": -0.028789418736634258,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": -743666507,
+    "paired_control_minus_vox": [
+      509613959,
+      -644849021,
+      -661297272,
+      -1415629400,
+      -1177408863,
+      -1321318591,
+      -265686006
+    ],
+    "improvements": 1,
+    "regressions": 6,
+    "worst_vox_over_best_control": 1.1039292168414818,
+    "strict_left": 277740657570,
+    "strict_right": 156350795067,
+    "conservative_brave_ratio": 1.5987548493493968,
+    "target_met": false,
+    "broad_trigger": false,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 124,
+      "acceptance_browser_attempts": 2671,
+      "last_measured_id": 130,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113,
+        118,
+        124
+      ]
+    },
+    "qualification": "Every acceptance attempt retained,including failures and regressions; no retries or exclusions. Only creation-to-encodedPNG launch_instruction_interval used; asymmetric navigation deltas are diagnostic. Native/ownership/inputidentity/originalpixels/content/normalexit/counters required. Seven complete valid triples required for acceptance. No unavailable statistic replaced with zero. Invalid cohort earns no saving/acceptance credit. A positive full/partial matched median point >=5M triggers broad checks even without robust saving.",
+    "unix": 1793937918.1794481
+  },
+  "restoration": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-restored",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-restored",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-restored",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/retained_values_restore_test.v": "983a5049164afdaae93fb3ce532fe55a072a1514bbbe69cf7fba36877af9097c",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "2bf523eb2bf9c62530e654df60edf57564b7ddf88d892d09a84b0e87646ccceb",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "441119e110d9a288a4eac65d57506d238ee675222325ca42cf9622634da16539",
+      "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a"
+    },
+    "unchanged": true,
+    "cases_per_run": 20,
+    "expected_cases": [
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+      "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_grid_measurement_revalidates_svg_attributes_before_replay",
+      "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+      "test_grid_measurement_preserves_unused_height_proof_rejections",
+      "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+      "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+      "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+      "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+      "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+    ]
+  },
+  "restored_executions": 60,
+  "instruction_tool_tests": 347,
+  "tool_audit": {
+    "exit": 0,
+    "unchanged": true,
+    "changed": []
+  },
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-same-pass-grid-cohort130-20261106.tar.gz",
+      "bytes": 39124032,
+      "sha256": "9d12487b56b8532ba93b0d46b58289dff7abbcf05e25a7acaf4b276b373a6260",
+      "physical_members": 268,
+      "file_paths": 344,
+      "all_file_paths_verified": true
+    },
+    {
+      "path": "docs/performance/raw/bbc-same-pass-grid-retirement-20261106.tar.gz",
+      "bytes": 13477220,
+      "sha256": "97f7dbc96c2d20d2cd5a126c663b4b09337784785b0d3c642352092fa5cbc180",
+      "physical_members": 39,
+      "file_paths": 39,
+      "all_file_paths_verified": true
+    }
+  ],
+  "history": {
+    "measured_cohorts": 124,
+    "acceptance_browser_attempts": 2671,
+    "last_measured_id": 130,
+    "preflight_only_ids": [
+      104,
+      110,
+      111,
+      113,
+      118,
+      124
+    ]
+  },
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "broad_run": false,
+  "broad_condition": "Median full/partial point reduction is negative; no >=5M positive carry. The778case prospective broad plan is unexecuted. Last actual broad remains771unique/default andno-GC,766pass/five known baseline failures,with no fullsuitepass/cadencereset.",
+  "qualifications": "Only committed same-pass grid reuse differs within pinned literalV-prod/singleC executable. Candidate-only actual marker beforePNG andoriginalpixels/content/72external evaluations/nativeimages/ownership/normalexits/exactSVGsource-switch verified. Complete actual wrapper equals tested C after only generated stringID normalization. First available pre-budget-recheck bundle rejected before native launch and consumes no ID. All21acceptance attempts retained; sixpairedregressions andoneimprovement. Original609responses/scripts/clock,1024x768CSS/DPR2,privateprofiles/caches,retainedOScaches,readiness+visibleimages+2secsettle,logicalsnapping/CSSSVG/degenerateborderrasterpolicies,originalreferences/counters/scope unchanged. Exclusivecoalitioncreation\u2192encodedPNG includesstartup/window/target,exitedownedaggregates/allowedservices;Voxbeforefilewrite,BraveincludesCDPdelivery,audits/teardownfollow,GPU/outside excluded. KnownpartialDOM/script/font/paint behavior,unsupportedperformance.measure and82.7154%cross-browserpixel difference remain. No robustsaving,live-site/render-only/FPS/catalogcredit or cross-build gainattribution. Committed regression removal passes60focused restorations/347tooltests; native rollback confirmation on a subsequent completed bundle remains pending.",
+  "unix": 1793938048.362114
+}

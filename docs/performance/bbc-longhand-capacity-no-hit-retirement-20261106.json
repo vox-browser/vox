@@ -540,5 +540,11 @@
     "attempts": 2650
   },
   "qualification": "Both original-reference native captures pass pixels/content,72exactexternal sources,actual image and ownership audits,normal exits and checked identity. Candidate andcontrol both lack the marker for actual restore of an entry admitted beyond old256capacity. Eligibility audit therefore fails; controller stops before SVG and before any acceptance launch. No cohort ID consumed. Provisional engine/control removed,135restoration checks and347tools pass. Subsequent native confirmation of retirement on a completed bundle remains pending. Fresh v-profile evidence is separate; no saving or broad cadence credit.",
-  "unix": 1793937134.9526541
+  "unix": 1793937134.9526541,
+  "native_retirement_confirmation": {
+    "passed": true,
+    "evidence": "bbc-same-pass-grid-cohort130-20261106.json",
+    "executable_sha256": "dcc6946376183584cc0b3f7b401b8fd72d4c89ddad9fd2684e90e3244cf0ed8c",
+    "qualification": "Complete sealed producer lacks retired capacity marker; both native captures retain original pixels/content,72sources/images/ownership/exits. No performance credit."
+  }
 }

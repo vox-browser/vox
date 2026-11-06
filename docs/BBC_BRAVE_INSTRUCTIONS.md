@@ -1,6 +1,34 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 129**, literal V `-prod` / single-C-unit production
+Latest attempt — **cohort 130**, literal V `-prod` / single-C-unit production
+`dcc694637618`, tests committed same-pass grid reuse against its disabled control.
+All **21 attempts** are retained; **20 capture audits** pass, while Brave pair 6
+fails its unchanged pixel reference, invalidating acceptance. Launch-to-PNG
+medians are **26,574,910,750 Vox**, **25,831,244,243 control** and
+**17,478,369,807 Brave lower bound** instructions. The candidate median regresses
+**743,666,507 (2.878942%)**, with one paired improvement and six regressions.
+The conservative control ratio **1.10393** fails; so does the strict Brave gate
+`277740657570 > 156350795067` (ratio **1.59875**). The experiment and control are
+removed (`6db6b9f46`, `d6eb6597c`) after **60 focused restoration executions** and
+**347 tooling tests** pass. Native retirement confirmation on a newer completed
+bundle remains pending. No savings or catalog credit is claimed.
+
+Native checks before the cohort prove candidate-only grid reuse before encoded
+PNG, exact original pixels/content, 72 external source evaluations, mapped-image/
+ownership checks and normal exits. The SVG source-switch guard is exact. The
+complete production wrapper matches tested C after only generated string-ID
+normalization. An earlier bundle lacks the final budget recheck and is rejected
+before native launch. The retired longhand capacity extension is confirmed absent
+from the completed producer and both original-reference native captures pass.
+The negative full/partial median triggers **no broad run**; the 778-case prospective
+plan remains unexecuted. Last actual broad coverage remains 771 unique cases per
+mode, 766 passes and five known baseline failures, without a full-suite pass or
+cadence reset. History through 130 is **124 measured cohorts / 2,671 acceptance
+attempts**, retaining all previous failures and preflight-only IDs. The BBC
+homepage still fails the 10% target and remains outside the instruction catalog.
+[Every attempt, native checks and retirement evidence](performance/bbc-same-pass-grid-cohort130-20261106.json).
+
+Retained attempt — **cohort 129**, literal V `-prod` / single-C-unit production
 `c8ecf46fa46f`, compares current-pass retained inline geometry with that reuse
 disabled on the same executable. All **21 attempts** are retained, with **20
 passing capture audits**; Brave pair 2 differs from its unchanged pixel reference,
