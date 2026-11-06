@@ -754,5 +754,11 @@
   "broad_run": false,
   "broad_condition": "Median full/partial point reduction is negative; no >=5M positive carry. The778case prospective broad plan is unexecuted. Last actual broad remains771unique/default andno-GC,766pass/five known baseline failures,with no fullsuitepass/cadencereset.",
   "qualifications": "Only committed same-pass grid reuse differs within pinned literalV-prod/singleC executable. Candidate-only actual marker beforePNG andoriginalpixels/content/72external evaluations/nativeimages/ownership/normalexits/exactSVGsource-switch verified. Complete actual wrapper equals tested C after only generated stringID normalization. First available pre-budget-recheck bundle rejected before native launch and consumes no ID. All21acceptance attempts retained; sixpairedregressions andoneimprovement. Original609responses/scripts/clock,1024x768CSS/DPR2,privateprofiles/caches,retainedOScaches,readiness+visibleimages+2secsettle,logicalsnapping/CSSSVG/degenerateborderrasterpolicies,originalreferences/counters/scope unchanged. Exclusivecoalitioncreation\u2192encodedPNG includesstartup/window/target,exitedownedaggregates/allowedservices;Voxbeforefilewrite,BraveincludesCDPdelivery,audits/teardownfollow,GPU/outside excluded. KnownpartialDOM/script/font/paint behavior,unsupportedperformance.measure and82.7154%cross-browserpixel difference remain. No robustsaving,live-site/render-only/FPS/catalogcredit or cross-build gainattribution. Committed regression removal passes60focused restorations/347tooltests; native rollback confirmation on a subsequent completed bundle remains pending.",
-  "unix": 1793938048.362114
+  "unix": 1793938048.362114,
+  "native_retirement_confirmation": {
+    "passed": true,
+    "evidence": "bbc-same-pass-grid-native-retirement-20261106.json",
+    "executable_sha256": "5b749b145cfe1534830b1c0e5f6a9e78ce3289fb1c2e2f19a7070630ab83546f",
+    "qualification": "Two fresh original-reference native captures,72external sources,existing inline hit,nativeimages,ownership andnormalexits plus exact SVGsource-switch pass. No acceptancecohort or performancecredit."
+  }
 }

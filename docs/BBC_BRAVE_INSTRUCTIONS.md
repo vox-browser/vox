@@ -10,8 +10,9 @@ medians are **26,574,910,750 Vox**, **25,831,244,243 control** and
 The conservative control ratio **1.10393** fails; so does the strict Brave gate
 `277740657570 > 156350795067` (ratio **1.59875**). The experiment and control are
 removed (`6db6b9f46`, `d6eb6597c`) after **60 focused restoration executions** and
-**347 tooling tests** pass. Native retirement confirmation on a newer completed
-bundle remains pending. No savings or catalog credit is claimed.
+**347 tooling tests** pass. Native retirement is confirmed on completed bundle `5b749b145cfe`,
+with exact original-reference captures and SVG guard. No savings or catalog
+credit is claimed.
 
 Native checks before the cohort prove candidate-only grid reuse before encoded
 PNG, exact original pixels/content, 72 external source evaluations, mapped-image/
@@ -7621,3 +7622,14 @@ predates the final nested-budget recheck and is rejected before native launch.
 Native eligibility and unprofiled savings remain pending; no acceptance ID,
 broad cadence or catalog credit advances.
 [Grid focused checks](performance/bbc-same-pass-grid-focus-20261106.json).
+
+Native retirement is now confirmed on literal-prod/single-C production
+`5b749b145cfe`. Two fresh default-arm captures retain original pixels/content,
+all 72 external source evaluations, mapped native images, ownership and normal
+exits. Existing inline reuse still fires before PNG in both arms. The restored
+grid wrapper matches focused C after only generated string-ID normalization;
+retired grid/capacity markers and the experimental wrapper are absent from the
+actual sealed producer. The SVG source-switch guard is exact. Two earlier
+receipt/executable identity mismatches reject before launch and remain retained.
+These checks advance no acceptance history, saving, broad cadence or catalog claim.
+[Native retirement and rejected identity preflights](performance/bbc-same-pass-grid-native-retirement-20261106.json).
