@@ -40,6 +40,9 @@ extern void ladybird_v_skia_gpu_canvas_frame_surface(void *) __attribute__((weak
 extern void ladybird_v_skia_gpu_canvas_document_top(int) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_filters(void) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_layers(void) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_push_layer(CGContextRef) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_pop_layer(CGContextRef, CGContextRef, float, int) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_layer_active(CGContextRef) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_context_access(CGContextRef) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_context_read(CGContextRef) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_layer_pixels(CGContextRef, const uint8_t *,
@@ -1159,6 +1162,9 @@ static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGCon
 		.left = left, .top = top, .right = right, .bottom = bottom,
 	};
 	native_font_compositing_context = context;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (ladybird_v_skia_gpu_canvas_push_layer) ladybird_v_skia_gpu_canvas_push_layer(context);
+#endif
 	return 1;
 }
 
@@ -1170,6 +1176,17 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 	[NSGraphicsContext restoreGraphicsState];
 	native_font_compositing_context = group->parent;
 	native_font_compositing_transparency_depth = 0;
+    int nested_gpu = 0;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (ladybird_v_skia_gpu_canvas_pop_layer)
+        nested_gpu = ladybird_v_skia_gpu_canvas_pop_layer(group->context,group->parent,
+            group->opacity,group->blend_mode);
+    if (nested_gpu == 1 || nested_gpu < 0) {
+        native_release_opacity_canvas((VoxOpacityCanvas){group->context,group->pixels},
+            group->left,group->top,group->right,group->bottom);
+        return;
+    }
+#endif
 	CGContextFlush(group->context);
 	CGContextFlush(group->parent);
 	size_t width = CGBitmapContextGetWidth(group->parent);
@@ -1183,7 +1200,7 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 			group->right, group->bottom, &left, &top, &right, &bottom)) {
 		size_t ink_width = (size_t)(right - left), ink_height = (size_t)(bottom - top);
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-        int gpu_result = ladybird_v_skia_gpu_canvas_layer_pixels
+        int gpu_result = nested_gpu == 2 ? 2 : ladybird_v_skia_gpu_canvas_layer_pixels
             ? ladybird_v_skia_gpu_canvas_layer_pixels(group->parent,
                 group->pixels + top * layer_pitch + (size_t)left * 4,
                 (int)ink_width, (int)ink_height, (int)layer_pitch, left, top, group->opacity, group->blend_mode) : 0;
@@ -2953,8 +2970,15 @@ void native_set_scroll_damage_rects(float const *rects, int count) {
 
 // A top-level video's retained backdrop, in document CSS pixels.
 void native_capture_video_backdrop(double x, double y, double width, double height) {
-#ifdef LADYBIRD_V_HAS_SKIA_TEXT
     CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    VoxScrollRaster *cache = &native_scroll_raster;
+    long rect[4], origin, first, end;
+    // An isolated layer cannot seed the root's backdrop cache. Validate before
+    // synchronizing: an ignored capture must not download its parent's tiles.
+    if (!cache->active || context != cache->context
+        || !native_video_backdrop_geometry(cache,cache->scroll,x,y,width,height,rect,&origin)
+        || !native_video_backdrop_visible(cache,rect,origin,&first,&end)) return;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
     if (!getenv("VOX_GPU_CANVAS_READONLY_VIDEO_CAPTURE")
         || !ladybird_v_skia_gpu_canvas_context_read
         || !ladybird_v_skia_gpu_canvas_context_read(context))
@@ -3071,6 +3095,15 @@ int native_gpu_canvas_command(const char *kind, int kind_len, int flags) {
 	return ladybird_v_skia_gpu_canvas_command(kind, kind_len, flags);
 #else
 	return 0;
+#endif
+}
+
+int native_gpu_canvas_nested_layer_active(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    return ladybird_v_skia_gpu_canvas_layer_active
+        && ladybird_v_skia_gpu_canvas_layer_active(NSGraphicsContext.currentContext.CGContext);
+#else
+    return 0;
 #endif
 }
 

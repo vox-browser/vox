@@ -26,7 +26,9 @@ struct GpuCanvasFrame {
     bool begun = false;
     bool gpu_valid = false;
     bool cpu_stale = false;
-    bool compositor = false, presented = false;
+    bool compositor = false, presented = false, queued_upload = false;
+    bool has_initial_clip = false;
+    VoxGraphiteCanvasClip initial_clip {};
     unsigned draws = 0, uploads = 0, flushes = 0, declined = 0, cpu_leaves = 0;
     // Verification: compared pixels, differing pixels and largest channel error.
     uint64_t compared = 0, differing = 0;
@@ -57,6 +59,7 @@ struct GpuCanvasFrame {
     char timed_command[96] {};
 };
 std::unique_ptr<GpuCanvasFrame> s_gpu_canvas;
+std::vector<std::unique_ptr<GpuCanvasFrame>> s_gpu_canvas_layers;
 // A transfer failure loses GPU-only leaves. Reject this replay and use the
 // ordinary renderer for subsequent attempts, rather than publishing old rows.
 bool s_gpu_canvas_read_failed = false;
@@ -66,6 +69,8 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_begin_native_grid) begin_native_grid = nullptr;
     decltype(&vox_graphite_canvas_upload) upload = nullptr;
     decltype(&vox_graphite_canvas_upload_queued) upload_queued = nullptr;
+    decltype(&vox_graphite_canvas_push_layer) push_layer = nullptr;
+    decltype(&vox_graphite_canvas_pop_layer) pop_layer = nullptr;
     decltype(&vox_graphite_canvas_present) present = nullptr;
     decltype(&vox_graphite_canvas_wait_present) wait_present = nullptr;
     decltype(&vox_graphite_canvas_release_present) release_present = nullptr;
@@ -97,6 +102,8 @@ GpuCanvasApi const* gpu_canvas_api()
         value.begin_native_grid = reinterpret_cast<decltype(value.begin_native_grid)>(dlsym(library, "vox_graphite_canvas_begin_native_grid"));
         value.upload = reinterpret_cast<decltype(value.upload)>(dlsym(library, "vox_graphite_canvas_upload"));
         value.upload_queued = reinterpret_cast<decltype(value.upload_queued)>(dlsym(library, "vox_graphite_canvas_upload_queued"));
+        value.push_layer = reinterpret_cast<decltype(value.push_layer)>(dlsym(library, "vox_graphite_canvas_push_layer"));
+        value.pop_layer = reinterpret_cast<decltype(value.pop_layer)>(dlsym(library, "vox_graphite_canvas_pop_layer"));
         value.present = reinterpret_cast<decltype(value.present)>(dlsym(library, "vox_graphite_canvas_present"));
         value.wait_present = reinterpret_cast<decltype(value.wait_present)>(dlsym(library, "vox_graphite_canvas_wait_present"));
         value.release_present = reinterpret_cast<decltype(value.release_present)>(dlsym(library, "vox_graphite_canvas_release_present"));
@@ -123,6 +130,12 @@ GpuCanvasApi const* gpu_canvas_api()
         ? &api : nullptr;
 }
 
+bool gpu_canvas_nested_layers_enabled()
+{
+    if (!std::getenv("VOX_GPU_CANVAS_NESTED_LAYERS") || s_gpu_canvas_read_failed) return false;
+    auto* api=gpu_canvas_api();
+    return api && api->push_layer && api->pop_layer && api->upload_queued;
+}
 // The browser consults the user's setting before beginning a frame; the
 // environment switch keeps a same-binary control arm for measurements.
 bool gpu_canvas_enabled()
@@ -402,7 +415,7 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
                         + size_t(row - rect.top()) * rect.width() + visible.left() - rect.left()),
                     data + size_t(row) * pitch + size_t(visible.left()) * 4, size_t(visible.width()));
         }
-        auto upload = frame.compositor ? api->upload_queued : api->upload;
+        auto upload = frame.queued_upload ? api->upload_queued : api->upload;
         if (!upload || !upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), rect.width() * 4))
             return false;
     }
@@ -451,6 +464,31 @@ bool gpu_canvas_shared_recording(CGContextRef destination)
         || (s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled));
 }
 
+bool gpu_canvas_collect_clips(GpuCanvasFrame const& frame, CGContextRef destination,
+    std::vector<VoxGraphiteCanvasClip>& clips)
+{
+    if (frame.has_initial_clip) clips.push_back(frame.initial_clip);
+    auto found = s_shared_clips.find(destination);
+    bool clips_supported = true;
+    if (found != s_shared_clips.end()) {
+        if (found->second.unsupported) clips_supported = false;
+        for (auto const& clip : found->second.clips) {
+            VoxGraphiteCanvasClip value {};
+            auto const& rect = clip.rect.rect();
+            float data[12] {rect.x(), rect.y(), rect.width(), rect.height(),
+                clip.rect.radii(SkRRect::kUpperLeft_Corner).fX, clip.rect.radii(SkRRect::kUpperLeft_Corner).fY,
+                clip.rect.radii(SkRRect::kUpperRight_Corner).fX, clip.rect.radii(SkRRect::kUpperRight_Corner).fY,
+                clip.rect.radii(SkRRect::kLowerRight_Corner).fX, clip.rect.radii(SkRRect::kLowerRight_Corner).fY,
+                clip.rect.radii(SkRRect::kLowerLeft_Corner).fX, clip.rect.radii(SkRRect::kLowerLeft_Corner).fY};
+            std::copy_n(data, 12, value.rect);
+            SkMatrix::Concat(SkMatrix::Scale(frame.scale, frame.scale), clip.matrix).get9(value.matrix);
+            value.antialias = clip.antialias;
+            clips.push_back(value);
+        }
+    }
+    return clips_supported;
+}
+
 // The canvas for `destination`, ready for a GPU leaf, with its clips in device
 // space. Returns null (after flushing) when this leaf must use the CPU canvas.
 GpuCanvasFrame* gpu_canvas_for_leaf(CGContextRef destination,
@@ -467,24 +505,7 @@ GpuCanvasFrame* gpu_canvas_for_leaf(CGContextRef destination,
     }
     // Compare the previous leaf by itself before this one draws.
     if (gpu_canvas_verify_leaves() && frame->cpu_stale) gpu_canvas_flush();
-    auto found = s_shared_clips.find(destination);
-    bool clips_supported = true;
-    if (found != s_shared_clips.end()) {
-        if (found->second.unsupported) clips_supported = false;
-        for (auto const& clip : found->second.clips) {
-            VoxGraphiteCanvasClip value {};
-            auto const& rect = clip.rect.rect();
-            float data[12] {rect.x(), rect.y(), rect.width(), rect.height(),
-                clip.rect.radii(SkRRect::kUpperLeft_Corner).fX, clip.rect.radii(SkRRect::kUpperLeft_Corner).fY,
-                clip.rect.radii(SkRRect::kUpperRight_Corner).fX, clip.rect.radii(SkRRect::kUpperRight_Corner).fY,
-                clip.rect.radii(SkRRect::kLowerRight_Corner).fX, clip.rect.radii(SkRRect::kLowerRight_Corner).fY,
-                clip.rect.radii(SkRRect::kLowerLeft_Corner).fX, clip.rect.radii(SkRRect::kLowerLeft_Corner).fY};
-            std::copy_n(data, 12, value.rect);
-            SkMatrix::Concat(SkMatrix::Scale(frame->scale, frame->scale), clip.matrix).get9(value.matrix);
-            value.antialias = clip.antialias;
-            clips.push_back(value);
-        }
-    }
+    bool clips_supported=gpu_canvas_collect_clips(*frame,destination,clips);
     if (!clips_supported || !gpu_canvas_upload(*frame)) {
         ++frame->declined;
         gpu_canvas_flush();
@@ -527,14 +548,15 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     // access when needed. A video with no backdrop operation can therefore
     // join the pending GPU leaves without an unconditional earlier readback.
     if (kind == "draw_video") return s_gpu_canvas && s_gpu_canvas->video_backdrop_callbacks
-        && ((std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS")
+        && (((std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS") || gpu_canvas_nested_layers_enabled())
                 && s_gpu_canvas->video_cpu_fallback_synchronized)
             || (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") && gpu_canvas_api()->copy_pixels));
     if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
     if (kind == "begin_css_filter_layer" || kind == "end_css_filter_layer")
         return std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") || std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS");
     if (kind == "begin_css_effect_layer" || kind == "end_css_effect_layer")
-        return std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS") && gpu_canvas_api()->draw_layer_pixels;
+        return (std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS") || gpu_canvas_nested_layers_enabled())
+            && gpu_canvas_api()->draw_layer_pixels;
     static bool const insets = !std::getenv("VOX_GPU_CANVAS_DISABLE_INSET");
     if (kind == "paint_inner_box_shadow") return insets && gpu_canvas_api()->draw_picture;
     return false;
@@ -822,6 +844,83 @@ extern "C" int ladybird_v_skia_gpu_canvas_begin(CGContextRef destination, int co
     return 1;
 }
 
+extern "C" int ladybird_v_skia_gpu_canvas_push_layer(CGContextRef context)
+{
+    auto* parent=s_gpu_canvas.get();
+    if (!parent || !context || !gpu_canvas_nested_layers_enabled() || s_gpu_canvas_layers.size()>=8
+        || parent->rects.size()>8 || context==parent->destination
+        || CGBitmapContextGetWidth(context)!=CGBitmapContextGetWidth(parent->destination)
+        || CGBitmapContextGetHeight(context)!=CGBitmapContextGetHeight(parent->destination)
+        || raster_scale_for_context(context)!=parent->scale || !gpu_canvas_upload(*parent)) return 0;
+    auto* api=gpu_canvas_api();
+    std::vector<VoxGraphiteCanvasClip> parent_clips;
+    if (!gpu_canvas_collect_clips(*parent,parent->destination,parent_clips)
+        || gpu_canvas_shared_recording(parent->destination)) return 0;
+    auto ctm=CGContextGetCTM(context);
+    auto box=CGContextGetClipBoundingBox(context);
+    if (ctm.a!=parent->scale || ctm.d!=ctm.a || ctm.b || ctm.c || ctm.tx || ctm.ty
+        || CGRectIsEmpty(box) || CGRectIsInfinite(box) || CGRectIsNull(box)) return 0;
+    float h=float(CGBitmapContextGetHeight(context));
+    auto clip=SkRect::MakeLTRB(box.origin.x*ctm.a,h-CGRectGetMaxY(box)*ctm.a,
+        CGRectGetMaxX(box)*ctm.a,h-box.origin.y*ctm.a);
+    if (!clip.isFinite()) return 0;
+    auto extent=clip.roundOut();
+    std::vector<int> rects;
+    for (auto r:parent->rects) if (r.intersect(extent))
+        rects.insert(rects.end(),{r.x(),r.y(),r.width(),r.height()});
+    if (rects.empty() || !api->push_layer()) return 0;
+    bool compositor=parent->compositor, command=parent->in_gpu_command;
+    bool callbacks=parent->video_backdrop_callbacks, synchronized=parent->video_cpu_fallback_synchronized;
+    s_gpu_canvas_layers.push_back(std::move(s_gpu_canvas));
+    if (!ladybird_v_skia_gpu_canvas_begin(context,rects.data(),int(rects.size()/4))) {
+        api->pop_layer(nullptr,0,0,0,0);
+        s_gpu_canvas=std::move(s_gpu_canvas_layers.back());s_gpu_canvas_layers.pop_back();return 0;
+    }
+    s_gpu_canvas->compositor=compositor;
+    s_gpu_canvas->queued_upload=true;
+    s_gpu_canvas->has_initial_clip=true;
+    auto& initial=s_gpu_canvas->initial_clip;
+    initial.matrix[0]=initial.matrix[4]=initial.matrix[8]=1;
+    initial.rect[0]=clip.x();initial.rect[1]=clip.y();initial.rect[2]=clip.width();initial.rect[3]=clip.height();
+    initial.antialias=1;
+    s_gpu_canvas->video_backdrop_callbacks=callbacks;
+    s_gpu_canvas->video_cpu_fallback_synchronized=synchronized;
+    s_gpu_canvas->in_gpu_command=command;
+    return 1;
+}
+extern "C" int ladybird_v_skia_gpu_canvas_layer_active(CGContextRef context)
+{
+    return s_gpu_canvas && !s_gpu_canvas_layers.empty() && s_gpu_canvas->destination==context;
+}
+extern "C" int ladybird_v_skia_gpu_canvas_pop_layer(CGContextRef context, CGContextRef parent,
+    float opacity, int blend_mode)
+{
+    if (!s_gpu_canvas || s_gpu_canvas->destination!=context || s_gpu_canvas_layers.empty()) return 0;
+    bool ready=gpu_canvas_upload(*s_gpu_canvas);
+    auto child=std::move(s_gpu_canvas);
+    s_gpu_canvas=std::move(s_gpu_canvas_layers.back());s_gpu_canvas_layers.pop_back();
+    auto& frame=*s_gpu_canvas;
+    frame.in_gpu_command=child->in_gpu_command;
+    std::vector<VoxGraphiteCanvasClip> clips;
+    ready=ready && frame.destination==parent && gpu_canvas_collect_clips(frame,parent,clips)
+        && !gpu_canvas_shared_recording(parent);
+    int result=gpu_canvas_api()->pop_layer(clips.data(),int(clips.size()),opacity,blend_mode,ready);
+    if (!ready || result!=1) {
+        s_gpu_canvas_read_failed=true;s_deferred_layer_frame_failed=true;return -1;
+    }
+    SkRect ink=SkRect::MakeEmpty();
+    for (auto const& r:child->rects) ink.join(SkRect::Make(r));
+    gpu_canvas_name_leaf(frame,blend_mode==3?"nested-screen-layer":"nested-opacity-layer",ink,blend_mode,clips.size());
+    frame.cpu_stale=true;frame.gpu_valid=true;
+    frame.draws+=child->draws+1;frame.uploads+=child->uploads;frame.flushes+=child->flushes;
+    frame.compared+=child->compared;frame.differing+=child->differing;
+    frame.max_error=std::max(frame.max_error,child->max_error);
+    if (gpu_canvas_diagnostics())
+        std::fprintf(stderr,"VOX_GPU_CANVAS_LAYER depth=%zu draws=%u uploads=%u flushes=%u blend=%d opacity=%g\n",
+            s_gpu_canvas_layers.size()+1,child->draws,child->uploads,child->flushes,blend_mode,opacity);
+    return gpu_canvas_verify()?2:1;
+}
+
 extern "C" void ladybird_v_skia_gpu_canvas_cpu_access()
 {
     if (s_gpu_canvas) {
@@ -839,7 +938,10 @@ extern "C" int ladybird_v_skia_bitmap_pixels_are_current(CGContextRef context)
     return context && !s_isolated_input_recordings.count(context)
         && !s_deferred_layer_destinations.count(context)
         && (!s_shared_root_recording || s_shared_root_recording->destination != context)
-        && (!s_gpu_canvas || s_gpu_canvas->destination != context || !s_gpu_canvas->cpu_stale);
+        && (!s_gpu_canvas || s_gpu_canvas->destination != context || !s_gpu_canvas->cpu_stale)
+        && std::none_of(s_gpu_canvas_layers.begin(),s_gpu_canvas_layers.end(),[&](auto const& frame) {
+            return frame->destination==context && frame->cpu_stale;
+        });
 }
 
 extern "C" int ladybird_v_skia_gpu_canvas_defer_filters()
@@ -871,7 +973,8 @@ extern "C" int ladybird_v_skia_gpu_canvas_context_read(CGContextRef destination)
 
 extern "C" int ladybird_v_skia_gpu_canvas_defer_layers()
 {
-    return s_gpu_canvas && !s_gpu_canvas_read_failed && std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS")
+    return s_gpu_canvas && !s_gpu_canvas_read_failed
+        && (std::getenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS") || gpu_canvas_nested_layers_enabled())
         && gpu_canvas_api()->draw_layer_pixels;
 }
 
@@ -1009,6 +1112,13 @@ extern "C" int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef de
 extern "C" void ladybird_v_skia_gpu_canvas_end()
 {
     if (!s_gpu_canvas) return;
+    if (!s_gpu_canvas_layers.empty()) {
+        s_gpu_canvas_read_failed=true;s_deferred_layer_frame_failed=true;
+        while (!s_gpu_canvas_layers.empty()) {
+            if (auto* api=gpu_canvas_api()) api->pop_layer(nullptr,0,0,0,0);
+            s_gpu_canvas=std::move(s_gpu_canvas_layers.back());s_gpu_canvas_layers.pop_back();
+        }
+    }
     gpu_canvas_flush();
     gpu_canvas_time_command(nullptr,0);
     if (gpu_canvas_diagnostics())
@@ -1050,7 +1160,7 @@ extern "C" int ladybird_v_skia_gpu_canvas_set_compositor(CGContextRef destinatio
     auto* frame=s_gpu_canvas.get();
     if (!frame || frame->destination!=destination || frame->begun
         || !ladybird_v_skia_gpu_canvas_compositor_available()) return 0;
-    frame->compositor=true;
+    frame->compositor=frame->queued_upload=true;
     return 1;
 }
 extern "C" int ladybird_v_skia_gpu_canvas_can_present(CGContextRef destination)

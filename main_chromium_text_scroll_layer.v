@@ -72,7 +72,8 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int, command_inde
 		C.native_set_chromium_opaque_layer_continuation(i32(resume))
 		C.native_set_chromium_layer_shared_recording(i32(resume))
 		C.native_begin_css_effect_layer(1, 0)
-		C.native_set_chromium_layer_shared_recording(i32(recorded))
+		C.native_set_chromium_layer_shared_recording(i32(recorded
+            && C.native_gpu_canvas_nested_layer_active() == 0))
 		background := app.chromium_raster_plan.layers[index].scroll_background_command
 		if background >= 0 && background < app.paint_commands.len
 			&& app.chromium_raster_plan.layers[index].command_indices.any(app.paint_commands[it].kind == 'fill_gradient') {

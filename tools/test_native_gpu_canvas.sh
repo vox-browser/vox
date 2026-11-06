@@ -12,6 +12,17 @@ output_dir=${NATIVE_SKIA_TEST_OUTPUT_DIR:-"$repo_dir/Build/native-gpu-canvas-tes
 # A libVoxGraphite.dylib exporting the vox_graphite_canvas_* entry points.
 graphite_dir=${NATIVE_GRAPHITE_DIR:-"$repo_dir/Build/v/Vox.app/Contents/MacOS"}
 mkdir -p "$output_dir"
+# An explicit backend must never silently fall back to the installed bundle.
+VOX_TEST_GRAPHITE_LIBRARY=$(CDPATH= cd -- "$graphite_dir" && pwd -P)/libVoxGraphite.dylib
+export VOX_TEST_GRAPHITE_LIBRARY
+python3 - "$repo_dir" "$VOX_TEST_GRAPHITE_LIBRARY" "$output_dir/inputs.json" <<'PIN'
+import hashlib,json,sys
+from pathlib import Path
+root=Path(sys.argv[1]);backend=Path(sys.argv[2]).resolve()
+if not backend.is_file(): raise SystemExit('Requested GPU backend is missing: '+str(backend))
+files=[backend,root/'native_skia_text_darwin.cpp',root/'tools/native_gpu_canvas_test.cpp',root/'tools/test_native_gpu_canvas.sh',*root.glob('native*.h')]
+Path(sys.argv[3]).write_text(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files},indent=2)+'\n')
+PIN
 python3 - "$repo_dir/native_capture_darwin.m" "$output_dir/native_video_backdrop_entry_points.inc" <<'PY'
 from pathlib import Path
 import sys
@@ -35,7 +46,9 @@ for signature in ('void native_capture_video_backdrop(', 'int native_gpu_canvas_
     functions.append(source[first:source.index('\n}\n', first) + 2])
 Path(sys.argv[2]).write_text('\n'.join(functions) + '\n')
 PY
-clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
+compile_flags=-O2
+if [ "${NATIVE_GPU_CANVAS_SANITIZERS:-0}" = 1 ]; then compile_flags='-O1 -g -fsanitize=address,undefined'; fi
+clang++ -std=c++20 $compile_flags -fno-rtti -x objective-c++ \
     -I"$skia_root/include/skia" -I"$skia_root/include" -I"$output_dir" \
     "$repo_dir/tools/native_gpu_canvas_test.cpp" \
     -L"$skia_root/lib" -lskia \
@@ -43,6 +56,12 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" \
     -Wl,-rpath,"$repo_dir/Build/v/Vox.app/Contents/MacOS" \
     -o "$output_dir/native_gpu_canvas_test"
+wrong_backend_status=0
+VOX_TEST_GRAPHITE_LIBRARY="$repo_dir/tools/native_gpu_canvas_test.cpp" \
+    "$output_dir/native_gpu_canvas_test" --check-backend || wrong_backend_status=$?
+if [ "$wrong_backend_status" -ne 1 ]; then
+    echo "Backend identity check did not reject a mismatched library" >&2; exit 1
+fi
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
 "$output_dir/native_gpu_canvas_test" --deferred-video-barriers
@@ -60,8 +79,19 @@ VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES=1 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=
 VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-verify
 
 if [ "${NATIVE_GPU_CANVAS_PRESENT_TEST:-0}" = 1 ]; then
+    "$output_dir/native_gpu_canvas_test" --nested-gpu-layers
+    "$output_dir/native_gpu_canvas_test" --nested-pop-failure
+    "$output_dir/native_gpu_canvas_test" --nested-unclosed
     "$output_dir/native_gpu_canvas_test" --present-tiles
     "$output_dir/native_gpu_canvas_test" --resident-ring
     VOX_GPU_CANVAS_PRESENT_VERIFY=1 "$output_dir/native_gpu_canvas_test" --present-tiles
     VOX_GPU_CANVAS_PRESENT_VERIFY=1 "$output_dir/native_gpu_canvas_test" --resident-ring
 fi
+
+python3 - "$output_dir/inputs.json" <<'PIN'
+import hashlib,json,sys
+from pathlib import Path
+inputs=json.loads(Path(sys.argv[1]).read_text())
+changed=[p for p,sha in inputs.items() if hashlib.sha256(Path(p).read_bytes()).hexdigest()!=sha]
+if changed: raise SystemExit('GPU test inputs changed: '+', '.join(changed))
+PIN

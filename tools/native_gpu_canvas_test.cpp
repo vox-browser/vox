@@ -4,6 +4,9 @@
 // match within blending rounding, pixels outside the repainted strip are never
 // touched, and a CPU draw of an unapproved command keeps its paint order.
 #import <Cocoa/Cocoa.h>
+// Match the linked release Skia TArray layout while sanitizing this fixture.
+#include "include/private/base/SkASAN.h"
+#undef SK_SANITIZE_ADDRESS
 #include "../native_skia_text_darwin.cpp"
 #include "../native_scroll_raster_darwin.h"
 #include "../native_layer_presentation_darwin.h"
@@ -189,7 +192,7 @@ static void draw_video_leaves(CGContextRef context, bool canvas)
 {
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == int(
         s_gpu_canvas->video_backdrop_callbacks && (std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP")
-            || (std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS")
+            || ((std::getenv("VOX_GPU_CANVAS_DEFER_VIDEO_BARRIERS") || gpu_canvas_nested_layers_enabled())
                 && s_gpu_canvas->video_cpu_fallback_synchronized))));
     float radii[] {13, 13, 13, 13, 0, 0, 0, 0};
     assert(ladybird_v_skia_draw_rgba_image(context, s_video_frame.data(), 1426, 1080, 1426 * 4,
@@ -800,6 +803,91 @@ static void test_text_layer_barrier_eligibility()
     CGContextRelease(context);
 }
 
+static std::vector<uint8_t> render_nested_gpu_sources(bool nested_gpu,int depth,int blend,
+    float opacity,bool full,bool cpu_barrier,bool video,bool present=false) {
+    if (nested_gpu) setenv("VOX_GPU_CANVAS_NESTED_LAYERS","1",1);
+    else unsetenv("VOX_GPU_CANVAS_NESTED_LAYERS");
+    setenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS","1",1);
+    auto pixels=backdrop();auto color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context=CGBitmapContextCreate(pixels.data(),width,height,8,width*4,color,
+        kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color);assert(context);CGContextScaleCTM(context,scale,scale);
+    if (!full) CGContextClipToRect(context,CGRectMake(0,css_height-(strip_top+strip_height)/float(scale),css_width,strip_height/float(scale)));
+    auto saved=NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext=[NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    native_font_compositing_context=context;
+    ladybird_v_skia_set_chromium_painting(1);ladybird_v_skia_set_shared_recording(0,css_width,css_height);
+    int rect[]={0,full?0:strip_top,width,full?height:strip_height};
+    assert(ladybird_v_skia_gpu_canvas_begin(context,rect,1));
+    if (present) assert(ladybird_v_skia_gpu_canvas_set_compositor(context));
+    ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(2);
+    unsigned reads=s_successful_reads;
+    draw_mixed_shape(context,true);
+    auto cache=native_scroll_raster;
+    native_scroll_raster=(VoxScrollRaster){.width=width,.height=height,.scale=scale,.owner=7,.active=1,.context=context};
+    if (nested_gpu) {
+        native_capture_video_backdrop(.125,30,100,50);
+        assert(s_successful_reads==reads && s_gpu_canvas->cpu_stale);
+    }
+    for (int level=0;level<depth;++level) {
+        assert(ladybird_v_skia_gpu_canvas_command("begin_css_effect_layer",22,0));
+        native_begin_css_effect_layer(level? .73f:opacity,level?3:blend);
+        auto source=NSGraphicsContext.currentContext.CGContext;
+        if (nested_gpu) {
+            assert(ladybird_v_skia_gpu_canvas_layer_active(source));
+            assert(!ladybird_v_skia_bitmap_pixels_are_current(context));
+        }
+        draw_mixed_shape(source,true);
+    }
+    auto source=NSGraphicsContext.currentContext.CGContext;
+    if (nested_gpu) {
+        // This capture cannot populate the root cache and must not download
+        // either the isolated source or its pending ancestor.
+        unsigned before=s_successful_reads;
+        native_capture_video_backdrop(20,30,100,50);
+        assert(s_successful_reads==before);
+    }
+    if (video) draw_video_leaves(source,true);
+    if (cpu_barrier) {
+        ladybird_v_skia_gpu_canvas_context_access(source);
+        CGContextSetRGBFillColor(source,.2,.7,.4,.63);
+        CGContextFillRect(source,CGRectMake(41.25,css_height-149.5,111.5,23.25));
+    }
+    for (int level=0;level<depth;++level) {
+        assert(ladybird_v_skia_gpu_canvas_command("end_css_effect_layer",20,0));
+        native_end_css_effect_layer();
+    }
+    assert(NSGraphicsContext.currentContext.CGContext==context && s_gpu_canvas_layers.empty());
+    draw_mixed_shape(context,true);
+    IOSurfaceRef output=nullptr;void* completion=nullptr;
+    if (present) {
+        NSDictionary* properties=@{(id)kIOSurfaceWidth:@(width),(id)kIOSurfaceHeight:@(height),
+            (id)kIOSurfaceBytesPerElement:@4,(id)kIOSurfacePixelFormat:@(0x52474241u)};
+        auto previous=IOSurfaceCreate((CFDictionaryRef)properties);
+        output=IOSurfaceCreate((CFDictionaryRef)properties);assert(previous && output);
+        assert(!IOSurfaceLock(previous,0,nullptr));
+        for (int y=0;y<height;++y) memcpy((uint8_t*)IOSurfaceGetBaseAddress(previous)+y*IOSurfaceGetBytesPerRow(previous),
+            pixels.data()+size_t(y)*width*4,width*4);
+        IOSurfaceUnlock(previous,0,nullptr);
+        VoxGraphiteCanvasSurfaceRegion target {output,previous,0,0,0,0,width,height};
+        assert(ladybird_v_skia_gpu_canvas_present(context,&target,1,&completion)==1 && completion);
+        CFRelease(previous);
+    }
+    ladybird_v_skia_gpu_canvas_end();
+    if (nested_gpu && !gpu_canvas_verify()) assert(s_successful_reads-reads==unsigned(cpu_barrier)+unsigned(!present));
+    if (output) {
+        assert(gpu_canvas_api()->wait_present(completion));
+        assert(!IOSurfaceLock(output,kIOSurfaceLockReadOnly,nullptr));
+        for (int y=0;y<height;++y) memcpy(pixels.data()+size_t(y)*width*4,
+            (uint8_t*)IOSurfaceGetBaseAddress(output)+y*IOSurfaceGetBytesPerRow(output),width*4);
+        IOSurfaceUnlock(output,kIOSurfaceLockReadOnly,nullptr);CFRelease(output);
+    }
+    native_scroll_raster=cache;
+    ladybird_v_skia_set_chromium_painting(0);native_font_compositing_context=nullptr;
+    NSGraphicsContext.currentContext=saved;CGContextFlush(context);CGContextRelease(context);
+    return pixels;
+}
+
 static double s_resident_scroll;
 static void draw_resident_scene(CGContextRef context, bool canvas) {
     CGContextSetRGBFillColor(context,1,1,1,1);
@@ -837,9 +925,83 @@ static void resident_ring_draw(id self, SEL selector, NSRect bounds) {
     vox_browser_frame_completed();
 }
 
+static decltype(&vox_graphite_canvas_pop_layer) s_real_pop;
+static int failed_nested_pop(VoxGraphiteCanvasClip const*,int,float,int,int) {
+    assert(s_real_pop(nullptr,0,0,0,0)==1); return -1;
+}
+static void test_nested_failure(bool unclosed) {
+    setenv("VOX_GPU_CANVAS_NESTED_LAYERS","1",1);
+    auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->push_layer && api->pop_layer);
+    auto color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context=CGBitmapContextCreate(nullptr,8,8,8,32,color,kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+    auto child=CGBitmapContextCreate(nullptr,8,8,8,32,color,kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+    auto incompatible=CGBitmapContextCreate(nullptr,8,8,8,32,color,kCGImageAlphaPremultipliedFirst|kCGBitmapByteOrder32Little);
+    CGColorSpaceRelease(color);assert(context && child && incompatible);
+    ladybird_v_skia_set_chromium_painting(1);ladybird_v_skia_set_shared_recording(0,8,8);
+    ladybird_v_skia_begin_deferred_layer_frame(0);
+    int rect[]={0,0,8,8};assert(ladybird_v_skia_gpu_canvas_begin(context,rect,1));
+    assert(gpu_canvas_upload(*s_gpu_canvas));
+    assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+    assert(ladybird_v_skia_draw_rounded_rect(context,1,1,4,4,0,0,0,0,0,0,0,0,
+        1,0,0,1,0,0,0,0,0,8,8,110,40,70,255,1,0,1,0));
+    assert(s_gpu_canvas->cpu_stale);
+    auto push=api->push_layer;api->push_layer=nullptr;
+    assert(!ladybird_v_skia_gpu_canvas_push_layer(child) && s_gpu_canvas_layers.empty());api->push_layer=push;
+    assert(!ladybird_v_skia_gpu_canvas_push_layer(incompatible));
+    assert(s_gpu_canvas->destination==context && s_gpu_canvas->cpu_stale && s_gpu_canvas_layers.empty());
+    assert(ladybird_v_skia_gpu_canvas_push_layer(child));
+    assert(!ladybird_v_skia_bitmap_pixels_are_current(context));
+    if (!unclosed) {
+        s_real_pop=api->pop_layer;api->pop_layer=failed_nested_pop;
+        assert(ladybird_v_skia_gpu_canvas_pop_layer(child,context,.7f,3)==-1);
+        api->pop_layer=s_real_pop;
+    }
+    ladybird_v_skia_gpu_canvas_end();
+    assert(!s_gpu_canvas && s_gpu_canvas_layers.empty() && !ladybird_v_skia_finish_deferred_layer_frame());
+    assert(!ladybird_v_skia_gpu_canvas_begin(context,rect,1));
+    ladybird_v_skia_set_chromium_painting(0);
+    CGContextRelease(incompatible);CGContextRelease(child);CGContextRelease(context);
+    printf("Nested GPU rejection: %s, capability decline, failed begin and pending ancestor inspection passed\n",unclosed?"unclosed source":"failed composition");
+}
+
 int main(int argc, char** argv)
 {
+    if (auto expected=std::getenv("VOX_TEST_GRAPHITE_LIBRARY")) {
+        auto* api=gpu_canvas_api();Dl_info loaded {};char actual[PATH_MAX],wanted[PATH_MAX];
+        assert(api && dladdr(reinterpret_cast<void*>(api->begin),&loaded));
+        assert(realpath(loaded.dli_fname,actual) && realpath(expected,wanted));
+        if (std::strcmp(actual,wanted)) {
+            std::cerr<<"Wrong GPU backend: "<<actual<<" expected "<<wanted<<"\n";return 1;
+        }
+    }
+    if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
     test_bitmap_inspection_pending_inputs();
+    if (argc==2 && (!std::strcmp(argv[1],"--nested-pop-failure") || !std::strcmp(argv[1],"--nested-unclosed"))) {
+        test_nested_failure(!std::strcmp(argv[1],"--nested-unclosed"));return 0;
+    }
+
+    if (argc==2 && !std::strcmp(argv[1],"--nested-gpu-layers")) { @autoreleasepool {
+        [NSApplication sharedApplication];
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->push_layer && api->pop_layer);
+        s_backend_read=api->read;api->read=counted_read;
+        s_mixed_fill=1;s_mixed_alpha=173;s_mixed_offset=.375f;
+        int error=0;unsigned cases=0;
+        for (int depth : {1,2,3}) for (int blend : {0,3}) for (float alpha : {.41f,1.f})
+        for (bool full : {false,true}) for (bool barrier : {false,true}) for (bool video : {false,true})
+        for (bool present : {false,true}) {
+            auto reference=render_nested_gpu_sources(false,depth,blend,alpha,full,barrier,video,present);
+            auto candidate=render_nested_gpu_sources(true,depth,blend,alpha,full,barrier,video,present);
+            for (size_t n=0;n<reference.size();++n)
+                error=std::max(error,std::abs(int(reference[n])-int(candidate[n])));
+            if(error>3) { std::cerr<<"Nested sources depth="<<depth<<" blend="<<blend<<" opacity="<<alpha
+                <<" full="<<full<<" barrier="<<barrier<<" video="<<video<<" max_error="<<error<<"\n";return 1; }
+            ++cases;
+        }
+        std::cout<<"Nested GPU sources: "<<cases<<" alpha/screen/full/strip/video/CPU-barrier cases max error "
+            <<error<<"; no source readback without CPU access\n";
+        return 0;
+    } }
+
     if (argc==2 && !std::strcmp(argv[1],"--resident-ring")) { @autoreleasepool {
         [NSApplication sharedApplication];
         assert(ladybird_v_skia_gpu_canvas_compositor_available());
