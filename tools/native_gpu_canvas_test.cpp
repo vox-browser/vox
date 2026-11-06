@@ -289,7 +289,7 @@ static void direct_read_regions(GpuCanvasApi const* api)
     api->end();
 }
 
-static bool s_compositor, s_present_tiles;
+static bool s_compositor, s_present_tiles, s_capture_wrapper;
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
     void (*leaves)(CGContextRef, bool) = draw_leaves, bool full = false)
@@ -309,9 +309,17 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
     ladybird_v_skia_set_chromium_painting(1);
     // Root raster layer: a frame-wide shared recording.
     ladybird_v_skia_set_shared_recording(shared, css_width, css_height);
+    auto previous_cache = native_scroll_raster;
     if (canvas) {
         int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
-        assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        if (s_capture_wrapper) {
+            assert(full);
+            native_scroll_raster = {.width=width, .height=height, .canvas_width=width,
+                .canvas_height=height, .scale=scale, .owner=7, .active=1, .damage_optimized=1,
+                .context=context};
+            assert(native_gpu_canvas_begin());
+            assert(s_gpu_canvas->video_backdrop_callbacks);
+        } else assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
         if (s_compositor) assert(ladybird_v_skia_gpu_canvas_set_compositor(context));
         if(s_expect_native_grid)ladybird_v_skia_gpu_canvas_document_top(0);
     }
@@ -346,7 +354,8 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
             assert(ladybird_v_skia_gpu_canvas_present(context,&region,1,&completion)==1 && completion);
             CFRelease(previous);
         }
-        ladybird_v_skia_gpu_canvas_end();
+        if (s_capture_wrapper) native_gpu_canvas_end();
+        else ladybird_v_skia_gpu_canvas_end();
         assert(!s_gpu_canvas);
         assert(ladybird_v_skia_bitmap_pixels_are_current(context));
         // Every earlier flush succeeded; final publication adds at most one.
@@ -362,6 +371,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
             CFRelease(output);
         }
     }
+    native_scroll_raster=previous_cache;
     ladybird_v_skia_set_chromium_painting(0);
     CGContextFlush(context);
     CGContextRelease(context);
@@ -564,9 +574,17 @@ static std::vector<uint8_t> render_filter_image(bool canvas, bool bgra, int alph
     ladybird_v_skia_set_shared_recording(0, css_width, css_height);
     s_raster_layer_is_root = false;
     ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
+    auto previous_cache = native_scroll_raster;
     if (canvas) {
         int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
-        assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        if (s_capture_wrapper) {
+            assert(full);
+            native_scroll_raster = {.width=width, .height=height, .canvas_width=width,
+                .canvas_height=height, .scale=scale, .owner=7, .active=1, .damage_optimized=1,
+                .context=context};
+            assert(native_gpu_canvas_begin());
+            assert(s_gpu_canvas->video_backdrop_callbacks);
+        } else assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
         assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0));
     }
     assert(ladybird_v_skia_draw_rounded_rect(context, 30, 90, 80, 40, 0,0,0,0,0,0,0,0,
@@ -1024,6 +1042,66 @@ static void draw_cached_blur(CGContextRef destination, bool canvas)
     CGContextFillRect(destination,CGRectMake(50,120,30,30));
 }
 
+// The capture switch admits the same ordinary full-frame GPU pipeline. The
+// real host begin/end wrappers must preserve its pixels and finish CPU readback.
+static void test_capture_full_frame_policy()
+{
+    auto previous_cache=native_scroll_raster;
+    auto color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context=CGBitmapContextCreate(nullptr,8,8,8,32,color,
+        kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color);assert(context);
+    native_scroll_raster={.width=8,.height=8,.canvas_width=8,.canvas_height=8,
+        .scale=1,.active=1,.damage_optimized=1,.context=context};
+    setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS","5",1);
+    unsetenv("VOX_ENABLE_GPU_CANVAS_CAPTURE");
+    unsetenv("VOX_DISABLE_FULL_FRAME_GPU_CANVAS");
+    assert(!native_gpu_canvas_begin() && !s_gpu_canvas);
+    setenv("VOX_ENABLE_GPU_CANVAS_CAPTURE","1",1);
+    assert(native_gpu_canvas_begin() && s_gpu_canvas);
+    native_gpu_canvas_end();assert(!s_gpu_canvas);
+    setenv("VOX_DISABLE_FULL_FRAME_GPU_CANVAS","1",1);
+    assert(!native_gpu_canvas_begin() && !s_gpu_canvas);
+    // The full-frame switch cannot disable the existing reused-strip path.
+    auto previous_count=native_scroll_repainted_count;
+    long previous_rect[4];std::copy_n(native_scroll_repainted[0],4,previous_rect);
+    native_scroll_raster.reused=1;native_scroll_repainted_count=1;
+    long rect[]={0,1,8,4};std::copy_n(rect,4,native_scroll_repainted[0]);
+    assert(native_gpu_canvas_begin());native_gpu_canvas_end();
+    native_scroll_repainted_count=previous_count;
+    std::copy_n(previous_rect,4,native_scroll_repainted[0]);
+    native_scroll_raster.reused=0;
+    unsetenv("VOX_DISABLE_FULL_FRAME_GPU_CANVAS");
+    native_scroll_raster.width=4097;native_scroll_raster.height=4097;
+    assert(!native_gpu_canvas_begin());
+    native_scroll_raster.width=8;native_scroll_raster.height=8;
+    native_scroll_raster.active=0;assert(!native_gpu_canvas_begin());
+    native_scroll_raster.active=1;native_scroll_raster.damage_optimized=0;
+    assert(!native_gpu_canvas_begin());native_scroll_raster.damage_optimized=1;
+    unsetenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");unsetenv("VOX_ENABLE_GPU_CANVAS_CAPTURE");
+    assert(native_gpu_canvas_begin());native_gpu_canvas_end();
+    native_scroll_raster=previous_cache;CGContextRelease(context);
+
+    setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS","5",1);
+    setenv("VOX_ENABLE_GPU_CANVAS_CAPTURE","1",1);
+    unsigned cases=0,draws=0;
+    for (auto draw:{draw_leaves,draw_cpu_leaves,draw_inset_leaves,draw_outline_leaves,
+            draw_pattern_leaves,draw_video_leaves,draw_native_image_cpu_fallback})
+    for (bool shared:{false,true}) {
+        s_capture_wrapper=false;
+        auto reference=render(true,shared,draw,true);
+        s_capture_wrapper=true;
+        auto candidate=render(true,shared,draw,true);
+        assert(reference==candidate);draws+=s_draws;++cases;
+    }
+    s_capture_wrapper=false;
+    unsetenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");unsetenv("VOX_ENABLE_GPU_CANVAS_CAPTURE");
+    assert(draws>0);
+    std::cout<<"Capture full-frame GPU: "<<cases<<" exact ordinary/capture GPU frames, "
+        <<draws<<" GPU draws; actual host begin/end, CPU readback, default rejection, "
+        <<"disable precedence, cap, inactive/unoptimized and reused-strip guards\n";
+}
+
 int main(int argc, char** argv)
 {
     if (auto expected=std::getenv("VOX_TEST_GRAPHITE_LIBRARY")) {
@@ -1035,6 +1113,11 @@ int main(int argc, char** argv)
         }
     }
     if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
+    if (argc==2 && !std::strcmp(argv[1],"--capture-full-frame")) {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
+        s_backend_read=api->read;api->read=counted_read;
+        test_capture_full_frame_policy();return 0;
+    }
     if (argc==2 && (!std::strcmp(argv[1],"--cached-gpu-blurs") || !std::strcmp(argv[1],"--cached-gpu-blur-textures"))) {
         setenv("VOX_GPU_CANVAS_CACHED_BLURS","1",1);
         setenv("VOX_GPU_CANVAS_DIAGNOSTICS","1",1);

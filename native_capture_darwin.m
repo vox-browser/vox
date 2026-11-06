@@ -3053,7 +3053,8 @@ int native_gpu_canvas_begin(void) {
 	if (!cache->active || !cache->damage_optimized || !cache->context) return 0;
 	if (!cache->reused) {
 		if (getenv("VOX_DISABLE_FULL_FRAME_GPU_CANVAS")
-			|| getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+			|| (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+				&& !getenv("VOX_ENABLE_GPU_CANVAS_CAPTURE"))
 			|| cache->width * cache->height > 64 * 1024 * 1024 / 4) return 0;
 		int rect[] = {0, (int)cache->top, (int)cache->width, (int)cache->height};
 		int begun = ladybird_v_skia_gpu_canvas_begin(cache->context, rect, 1);

@@ -55,7 +55,10 @@ clang++ -std=c++20 $compile_flags -fno-rtti -x objective-c++ \
     -framework Cocoa -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal -framework QuartzCore -framework IOSurface \
     -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" \
     -Wl,-rpath,"$repo_dir/Build/v/Vox.app/Contents/MacOS" \
+    -MMD -MF "$output_dir/native_gpu_canvas_test.d" \
     -o "$output_dir/native_gpu_canvas_test"
+# Build-only is for controllers that run each runtime mode under its own RSS guard.
+if [ "${NATIVE_GPU_CANVAS_BUILD_ONLY:-0}" = 1 ]; then exit 0; fi
 wrong_backend_status=0
 VOX_TEST_GRAPHITE_LIBRARY="$repo_dir/tools/native_gpu_canvas_test.cpp" \
     "$output_dir/native_gpu_canvas_test" --check-backend || wrong_backend_status=$?
@@ -63,6 +66,7 @@ if [ "$wrong_backend_status" -ne 1 ]; then
     echo "Backend identity check did not reject a mismatched library" >&2; exit 1
 fi
 "$output_dir/native_gpu_canvas_test"
+"$output_dir/native_gpu_canvas_test" --capture-full-frame
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
 "$output_dir/native_gpu_canvas_test" --cached-gpu-blurs
 VOX_GPU_CACHED_BLUR_TEXTURE_DIAGNOSTICS=1 "$output_dir/native_gpu_canvas_test" --cached-gpu-blur-textures > "$output_dir/blur-textures.log" 2>&1
