@@ -2474,3 +2474,28 @@ The [collection receipt](performance/vlang-literal-prod-20261106-collection.json
 also records the correction of the two default timing runs' generated role
 labels; their raw evidence and archive are unchanged. Later shared bundles have
 separate identities and do not replace this measured cohort.
+
+### Matched literal compiler-mode comparison, November 6
+
+The requested `-prod` versus `-prod -parallel-cc` comparison now uses the same
+verified source closure, one common pinned native renderer, and GPU scrolling
+in both variants. Seven alternating 600-input counter pairs have median totals
+of **35.139B versus 39.559B retired instructions**. Single-unit counts are
+lower in every pair. CPU totals are **5,288.52 versus 5,166.39 ms**, with
+**534 versus 496** scroll-changing publications. Normalized per trial, CPU
+cost is **9.85 versus 11.09 ms/publication**, including main-process media and
+background work.
+
+The two separate unprofiled timing pairs are mixed: `updateLayer` means are
+**9.83 / 12.99 ms** single, versus **10.15 / 12.17 ms** parallel. Single-unit
+scroll publication rates are **82.32 / 68.18**, versus **70.78 / 71.64**
+parallel; p95 intervals span **25.47–37.35 ms**, so smooth 60 fps remains open.
+These are frozen-page native publications, not live-site or physical display
+acceptance. Both GPU parity diagnostics retain maximum channel error three.
+The original production executable is restored byte-for-byte.
+
+The [compiler-mode report](PARALLEL_CC_PERFORMANCE.md#literal--prod-versus--prod--parallel-cc-vlangio-scrolling)
+describes the exact defaults, CPU-clock unit correction, common renderer,
+failed attempts and measurement limits. The [full data](performance/vlang-literal-prod-compare-20261106.json)
+and [raw archive](performance/raw/vlang-literal-prod-compare-20261106.tar.gz)
+retain every trial and its input/publication timestamps.

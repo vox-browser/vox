@@ -17,6 +17,9 @@ Its receipt records `c_compile.v_prod: true`. Automatic commit requests retain
 this explicit selection; `sh build-prod-browser.sh` explicitly restores the
 default build configuration. This additional mode changes V generation as
 well as C compilation, so the historical table below does not measure it.
+`sh build-prod-browser.sh --prod --parallel-cc` selects literal V
+`-prod -parallel-cc`: V's per-unit optimization defaults and no LTO. The
+literal-mode scrolling comparison is recorded at the end of this document.
 
 The main Vox process's own retired instructions at `capture_document_encoded`
 (fresh launch through encoded document PNG), median of 7 alternating pairs:
@@ -117,3 +120,69 @@ ad-block helper, signing) are the same in both modes. Raw timings:
 
 Evidence: [per-trial counts and identities](performance/parallel-cc-ab-20261105.json),
 [driver, analysis and receipts](performance/raw/parallel-cc-ab-20261105.tar.gz).
+
+## Literal `-prod` versus `-prod -parallel-cc`: vlang.io scrolling
+
+Measured November 6 with GPU scrolling enabled in both modes. Both V
+generations consumed the same verified 4,638-file source/header closure.
+Single-unit `-prod` uses `-O2 -flto -mllvm -inline-threshold=75`; the actual
+33-unit parallel plan uses V's per-unit `-O2`/`-O3` defaults without LTO.
+No custom ThinLTO or inline-threshold-1500 options are added.
+
+Seven alternating counter pairs, with 600 precise native wheel inputs per
+fresh process, give these medians for the main process (all threads):
+
+| Mode | CPU time, ms | Retired instructions | Scroll-changing publications |
+| --- | ---: | ---: | ---: |
+| `-prod` | 5,288.52 | 35,139,338,700 | 534 |
+| `-prod -parallel-cc` | 5,166.39 | 39,558,848,211 | 496 |
+
+Single-unit instructions are lower in all seven pairs, with an **11.2% lower
+median total**. Input coalescing produces fewer publications in the parallel
+runs. Normalizing each trial by its scroll-changing publications gives median
+CPU costs of **9.85 versus 11.09 ms/publication**, and **67.12M versus 82.02M
+instructions/publication**. Those are 11.2% and 18.2% lower for single-unit
+`-prod`. These normalized costs include background/media work in the main
+process; they are not isolated render costs.
+
+Separate unprofiled timing pairs show mixed wall-time changes:
+
+| Pair | Mode | Mean updateLayer, ms | Scroll publications/s | Interval median / p95 / max, ms | Over 16.67 ms |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 | `-prod` | 9.83 | 82.32 | 8.79 / 25.47 / 99.83 | 15.2% |
+| 1 | `-prod -parallel-cc` | 10.15 | 70.78 | 10.82 / 28.28 / 182.55 | 27.5% |
+| 2 | `-prod` | 12.99 | 68.18 | 10.27 / 37.35 / 155.29 | 22.6% |
+| 2 | `-prod -parallel-cc` | 12.17 | 71.64 | 9.29 / 33.88 / 102.56 | 22.1% |
+
+This establishes an observed instruction-efficiency difference, with no
+consistent wall-time win in these trials. Smooth 60 fps remains open.
+Publication throughput uses the entire first-to-last actual input window and
+does not measure physical display scanout.
+
+The workload is a 42-response original-origin vlang.io replay, including its
+video, at 1708×953 document pixels and 2× backing. Each run uses an empty private
+profile/cache, automatic script policy, ten seconds of settling after the
+matching title, and nominal 120 Hz delta-8 input reversing every 150 events.
+OS filesystem/shader caches are retained. All 20 final trials complete 600
+inputs and exit normally. Separate GPU diagnostics observe 2,224/2,508 GPU
+draws during the input/publication period, with maximum channel error three
+in both modes. The 18-core host's one-minute load ranges from 6.37 to 13.25.
+
+CPU counters cover first wheel dispatch through completion of both the last
+dispatch and its first publication. Startup, settling, child processes, GPU
+execution and outside services are excluded. Raw legacy `user_ns`/`system_ns`
+fields contain Mach ticks; the derived report converts them with the measured
+125/3 ns timebase. Calibration against `CLOCK_PROCESS_CPUTIME_ID` agrees to
+0.0023%. Raw summaries are retained unchanged. The reader is fixed, and all
+45 precise-scroll tests pass, including a native CPU-clock scale check.
+
+The final cohort holds the canonical bundle's publication lease and changes
+only its V executable. Shared native publications between build attempts
+updated the renderer; the final cohort pins the same newer installed renderer
+for both variants and verifies its loaded identity and GPU parity. This is a
+comparison of V executable modes with one common renderer. The original
+signed executable is restored byte-for-byte after both controllers. Rejected
+source/build attempts, the corrected buffered-log analysis failure, original
+counter data, all input/publication timestamps, identities and exits remain in
+the [report](performance/vlang-literal-prod-compare-20261106.json) and
+[raw evidence](performance/raw/vlang-literal-prod-compare-20261106.tar.gz).
