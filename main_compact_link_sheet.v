@@ -3,13 +3,7 @@ module main
 import browserjs
 import css
 import platform
-import os
 import x.json2
-
-const disable_cssom_handle_index = os.getenv('VOX_DISABLE_CSSOM_HANDLE_INDEX') != ''
-const cssom_handle_diagnostics = os.getenv('VOX_CSSOM_HANDLE_DIAGNOSTICS') != ''
-
-__global cssom_handle_reuse_reported bool
 
 struct CompactSheetRequest {
 	op       string
@@ -25,73 +19,27 @@ struct CompactSheetRequest {
 }
 
 fn (mut binding CompactElementQueryBinding) sheet_key(sheet &css.CSSStyleSheet) string {
-	// These helpers are the sole writers of the forward handle tables. They
-	// retain each owner once; reverse entries borrow that retained identity.
-	// Check the forward entry before a hit so cleared/rebound tables fall back.
-	if !disable_cssom_handle_index {
-		if key := binding.style_sheet_keys[voidptr(sheet)] {
-			if current := binding.style_sheets[key] {
-				if voidptr(current) == voidptr(sheet) { return key }
-			}
-			binding.style_sheet_keys.clear()
-		}
-	}
-	// Only these helpers append forward owners. Equal cardinality proves a
-	// missing reverse identity is new; preseeded/incomplete tables still scan.
-	if disable_cssom_handle_index || binding.style_sheet_keys.len != binding.style_sheets.len {
 	for key, candidate in binding.style_sheets {
-		if voidptr(candidate) == voidptr(sheet) {
-			if !disable_cssom_handle_index { binding.style_sheet_keys[voidptr(sheet)] = key }
-			return key
-		}
-	}
+		if voidptr(candidate) == voidptr(sheet) { return key }
 	}
 	binding.next_key++
 	key := '__sheet_${binding.next_key}'
 	binding.style_sheets[key] = sheet
-	if !disable_cssom_handle_index { binding.style_sheet_keys[voidptr(sheet)] = key }
 	return key
 }
 
 fn (mut binding CompactElementQueryBinding) rule_key(rule &css.CSSRule) json2.Any {
-	if !disable_cssom_handle_index {
-		if key := binding.css_rule_keys[voidptr(rule)] {
-			if current := binding.css_rules[key] {
-				if voidptr(current) == voidptr(rule) {
-					if cssom_handle_diagnostics && !cssom_handle_reuse_reported {
-						cssom_handle_reuse_reported = true
-						eprintln('Vox CSSOM handles: reused current rule identity')
-					}
-					// Metadata remains live even when the identity is already known.
-					return json2.Any({'id': json2.Any(key), 'type': json2.Any(int(rule.type_for_bindings()))})
-				}
-			}
-			binding.css_rule_keys.clear()
-		}
-	}
-	// Only these helpers append forward owners. Equal cardinality proves a
-	// missing reverse identity is new; preseeded/incomplete tables still scan.
-	if disable_cssom_handle_index || binding.css_rule_keys.len != binding.css_rules.len {
 	for key, candidate in binding.css_rules {
 		if voidptr(candidate) == voidptr(rule) {
-			if !disable_cssom_handle_index { binding.css_rule_keys[voidptr(rule)] = key }
 			return json2.Any({
 				'id':   json2.Any(key)
 				'type': json2.Any(int(rule.type_for_bindings()))
 			})
 		}
 	}
-	}
-	if !disable_cssom_handle_index && binding.css_rule_keys.len == binding.css_rules.len
-		&& cssom_handle_diagnostics && !cssom_handle_reuse_reported {
-		cssom_handle_reuse_reported = true
-		eprintln('Vox CSSOM handles: indexed a new rule without a table scan')
-	}
-
 	binding.next_key++
 	key := '__rule_${binding.next_key}'
 	binding.css_rules[key] = rule
-	if !disable_cssom_handle_index { binding.css_rule_keys[voidptr(rule)] = key }
 	return json2.Any({
 		'id':   json2.Any(key)
 		'type': json2.Any(int(rule.type_for_bindings()))
@@ -99,28 +47,12 @@ fn (mut binding CompactElementQueryBinding) rule_key(rule &css.CSSRule) json2.An
 }
 
 fn (mut binding CompactElementQueryBinding) rule_list_key(list &css.CSSRuleList) string {
-	if !disable_cssom_handle_index {
-		if key := binding.css_rule_list_keys[voidptr(list)] {
-			if current := binding.css_rule_lists[key] {
-				if voidptr(current) == voidptr(list) { return key }
-			}
-			binding.css_rule_list_keys.clear()
-		}
-	}
-	// Only these helpers append forward owners. Equal cardinality proves a
-	// missing reverse identity is new; preseeded/incomplete tables still scan.
-	if disable_cssom_handle_index || binding.css_rule_list_keys.len != binding.css_rule_lists.len {
 	for key, candidate in binding.css_rule_lists {
-		if voidptr(candidate) == voidptr(list) {
-			if !disable_cssom_handle_index { binding.css_rule_list_keys[voidptr(list)] = key }
-			return key
-		}
-	}
+		if voidptr(candidate) == voidptr(list) { return key }
 	}
 	binding.next_key++
 	key := '__rules_${binding.next_key}'
 	binding.css_rule_lists[key] = list
-	if !disable_cssom_handle_index { binding.css_rule_list_keys[voidptr(list)] = key }
 	return key
 }
 

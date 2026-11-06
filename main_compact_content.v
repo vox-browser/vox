@@ -22,9 +22,6 @@ mut:
 	style_sheets map[string]&css.CSSStyleSheet
 	css_rules map[string]&css.CSSRule
 	css_rule_lists map[string]&css.CSSRuleList
-	style_sheet_keys map[voidptr]string
-	css_rule_keys map[voidptr]string
-	css_rule_list_keys map[voidptr]string
 	radio_lists map[string]&html.RadioNodeList
 	next_key int
 	scroll_promises map[string]&dom.Promise
