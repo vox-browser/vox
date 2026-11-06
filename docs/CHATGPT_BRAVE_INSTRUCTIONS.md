@@ -5179,3 +5179,34 @@ The following **63-row additive table** is the traced prototype candidate, total
 | **Total (exclusive)** | | **28,828,843,071** | **100%** | |
 
 The [verification receipt](performance/chatgpt-picture-cache-verification-20261106.json) links every authenticated archive, exact raw instruction count, command, guard, PNG, source witness, host condition and actual exit. The [candidate table](performance/chatgpt-picture-cache-candidate-stages-20261106.csv) and [control table](performance/chatgpt-picture-cache-control-stages-20261106.csv) are machine-readable. **The 20B target and the original 5%-below-Brave target remain open.**
+
+## Lazy Wasm module lexer toward 20B (2026-11-06)
+
+`c43317438` lazily initializes the pinned es-module-lexer 1.7.0 Wasm implementation when a specifier actually needs lexing. Keyword-free scripts initialize neither lexer. The original asm build remains available with `VOX_RETAIN_ASM_MODULE_LEXER=1` and is the fallback when Wasm is unavailable or initialization fails. The module declarations, linking, live bindings, cycles, author-script bytes and native JavaScriptCore backend remain unchanged.
+
+The Wasm implementation reuses the exact strict string-literal decoder from the retained asm distribution. Its upstream eval-based decoder did not preserve every existing escape/error behavior; the failed candidate and its module/import-map errors are retained. Native Wasm constructors and instance/memory/global accessors are captured before author replacement. The private fixed-payload decoder adds no global Buffer/atob dependency. No runtime network request is added. The npm archive integrity, matching original asm bytes/license and pinned Wasm hash are recorded.
+
+All **293 captured JavaScript responses (3,610,641 bytes)** produce byte-identical rewritten output in the actual native Runtime. These include archived resources outside any particular page execution path, so their component totals are not a page attribution. The separate fresh system-JSC CLI lexer comparison also has identical structural output.
+
+| Native rewrite component, browser warm-up 10,000 | asm median | Wasm median | Reduction |
+| --- | ---: | ---: | ---: |
+| Factory creation | 7,563,185 | 7,568,128 | -0.0654% |
+| First corpus rewrite, including lazy initialization | 11,812,075,210 | 5,844,158,200 | 50.5239% |
+| Five warm corpus rewrites | 58,926,864,320 | 28,879,633,612 | 50.9907% |
+
+The factory/cold/warm intervals exclude Runtime construction and corpus reads; they include V/JS conversion, the existing keyword filter, strict decoding, rewriting, and concurrent process-thread work. Factory construction slightly regresses and is retained. The system-default-JIT cohort, original CLI lead, oracles, checksums and all guarded processes remain archived. No component result receives whole-page credit.
+
+Final focused selections pass **32 guarded jobs / 276 test-function executions**: normal GC, no GC, poisoned preallocation and ASan/UBSan, each with Wasm, retained asm and engine-disabled Wasm. They cover lazy initialization, escaped/invalid literals, unavailable/rejected Wasm, replaced constructors/accessors, linear-memory growth, native import maps/cycles/top-level-await, concurrent native transport, classic dynamic imports and module/classic worker ownership.
+
+`2aae223d7` corrects the worker retention fixture: its receiving sender Runtime was itself created in the scratch arena that the test deliberately retired. Both the Wasm and retained-asm controls faulted on that fixture. The receiving Runtime now shares the persistent fixture lifetime; the agent payloads still cross both retired scratch arenas and every ownership assertion remains. Two earlier fixture/driver compile errors, disabled-Wasm fixture assumptions and the decoder mismatch are also retained.
+
+| Untraced frozen-page variant | All four retained instruction counts | Median |
+| --- | --- | ---: |
+| Retained asm control | 28,175,907,519, 27,819,624,822, 27,686,796,850, 28,398,629,584 | 27,997,766,170 |
+| Lazy Wasm candidate | 27,685,872,840, 27,587,051,242, 27,785,065,572, 26,840,437,789 | 27,636,462,041 |
+
+The page median is **1.2905% lower**, but the conservative separation is **-98,268,722 instructions**, so the observed ranges overlap. Page credit, broad carry and cadence reset remain **zero**; no new 5M checkpoint is due. All **20** diagnostic/matched captures pass complete content/bootstrap identity, unchanged pixel references and normal browser exits. Separate candidate markers prove Wasm consumption without fallback, while control markers prove actual asm execution. The comparison drivers return 1 for the failed Brave threshold; guarded capture/controller wrappers return 0. Four candidate/control pairs are diagnostic, below seven-pair acceptance.
+
+The measured production executable is `03bdf80d7cdd730a593b9a840cd086ddf35771bdf7a6cdd8f82a2f43ec44f41a` with its single-unit V `-prod` build receipt and pinned native libraries. The original SOCKS capture, five-second unfocused settle, viewport 1024×768 at scale 2, fresh profiles and encoded-document-PNG endpoint are unchanged. OS filesystem/shader caches remain warm; GPU work and outside-coalition services remain excluded. Host load and frame/checkpoint counts are retained in the raw logs rather than normalized away.
+
+The candidate median remains **7,636,462,041 instructions above the 20B target**. This later cohort does not retroactively alter the preceding 63-row table, which belongs to its separately pinned instrumented executable. The [verification receipt](performance/chatgpt-wasm-lexer-verification-20261106.json) links every counter, source witness, PNG, guard, failure and authenticated archive. **Both the 20B goal and the original 5%-below-Brave goal remain unmet.**
