@@ -12,10 +12,40 @@ not refresh on resumption. TLS 1.3-only checks pass with an OpenSSL 3 endpoint.
 BBC native diagnostics now independently confirm server-accepted resumption for
 original author scripts evaluated before PNG, with original pixel/content,
 72-source, native-image, ownership, exit and SVG checks passing in both arms.
-Matched cohort 133 is pending; no instruction saving or catalog credit is claimed.
+Cohort 133 confirms a same-build reduction; its separate Brave target still fails.
 [Focused evidence](performance/bbc-tls12-session-focus-20261106.json).
 
-Latest attempt — **cohort 132**, literal V `-prod` / single-C-unit production
+Latest attempt — **cohort 133**, literal V `-prod` / single-C-unit production
+`cf225957fe7f`, completes **seven alternating candidate/control/Brave triples**.
+All **21 capture audits pass**, with unchanged original references, complete
+content, identities, counters, ownership and normal exits. Launch-to-PNG medians
+are **24,112,544,072 Vox**, **25,838,698,835 control** and **17,369,766,878 Brave
+lower bound** instructions. Verified TLS 1.2 reuse reduces the observed median
+by **1,726,154,763 (6.680502%)**, with **seven paired improvements and zero
+regressions**. The conservative same-build control ratio **0.967831** passes.
+The strict Brave gate still fails `243320067510 > 155696220657`
+(ratio **1.406509**); the homepage remains outside the instruction catalog.
+
+Native diagnostics independently verify accepted TLS 1.2 resumption for uniquely
+served original script sources evaluated before encoded PNG. Both Vox arms pass
+original pixels/content, all 72 source checks, native-image, ownership, exit and
+private-PID memory adoption checks; the SVG guard is exact. Actual changed V
+bodies and native cache operations/layout match focused C. The first producer
+checker rejects before browser launch because its isolated header uses different
+string-macro preprocessing; the corrected check mirrors the generated prefix
+and matches every operation without semantic normalization. Both attempts remain
+retained. The required broader run freshly exercises **786 unique cases per
+mode**, default and no-GC: **781 passes and the same five known baseline
+failures**. All 14 new HTTP scenarios pass in both arms/modes. One new canonical
+module-host case extends the prior browser coverage to 16. The **2,008 actual
+executions** include **1,994 passes / 14 repeated baseline failures**; this is no
+full-suite pass or cadence reset. History through 133 is **127 measured cohorts /
+2,734 acceptance attempts**. This establishes a frozen-fixture instruction
+reduction, with existing rendering/script limitations and host contention
+recorded; it does not establish a live-site, rendering-time or scrolling result.
+[All attempts, native checks and broad verification](performance/bbc-tls12-session-cohort133-20261106.json).
+
+Retained attempt — **cohort 132**, literal V `-prod` / single-C-unit production
 `ec6ef38e95bb`, completes **seven alternating candidate/control/Brave triples**.
 All **21 attempts** remain retained; **20 capture audits pass**, while Brave
 pair 6 differs from its unchanged pixel reference, invalidating acceptance.
