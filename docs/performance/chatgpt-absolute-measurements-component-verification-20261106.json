@@ -1,0 +1,2948 @@
+{
+  "complete": true,
+  "component_only": true,
+  "acceptance": false,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "implementation_commits": [
+    "7bab2ab7c",
+    "55b347634"
+  ],
+  "checks": [
+    {
+      "attempt": 1,
+      "commit": "7bab2ab7c",
+      "complete": false,
+      "passed": false,
+      "jobs": 2,
+      "result": {
+        "complete": false,
+        "passed": false,
+        "source_before": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "d8dbc66c8f2032d803d54b2ddcc694b9c2bb2c08b7067631ef4c58b822ae2f26",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "e8a39ef7b7b2e7520322652862918c7d3016f7017ef40a1a1683bfdbb024a765"
+        },
+        "source_after": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "d8dbc66c8f2032d803d54b2ddcc694b9c2bb2c08b7067631ef4c58b822ae2f26",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "e8a39ef7b7b2e7520322652862918c7d3016f7017ef40a1a1683bfdbb024a765"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-layout-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r1/compile-layout-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r1/compile-layout-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r1/layout-prealloc",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793952602.8387651,
+              "cpu_count": 18,
+              "load": [
+                16.78515625,
+                18.79638671875,
+                18.83740234375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952613.582911,
+              "load": [
+                15.2197265625,
+                18.3916015625,
+                18.69287109375
+              ]
+            }
+          },
+          {
+            "label": "run-layout-prealloc-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r1/run-layout-prealloc-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r1/run-layout-prealloc-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r1/layout-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952613.6067772,
+              "cpu_count": 18,
+              "load": [
+                15.2197265625,
+                18.3916015625,
+                18.69287109375
+              ]
+            },
+            "exit": 1,
+            "host_after": {
+              "unix": 1793952615.2893791,
+              "load": [
+                15.2197265625,
+                18.3916015625,
+                18.69287109375
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "commit": "7bab2ab7c",
+      "complete": false,
+      "passed": false,
+      "jobs": 2,
+      "result": {
+        "complete": false,
+        "passed": false,
+        "source_before": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "9efe0c79c88c21ffda28f04a203cf14c94f3bf4e9142d2e5cbfed0ba57756089",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "a9935c91a2285165e7bdea261fbe0bd48dd652ba612f4d1f88ea10a752c83114"
+        },
+        "source_after": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "9efe0c79c88c21ffda28f04a203cf14c94f3bf4e9142d2e5cbfed0ba57756089",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "a9935c91a2285165e7bdea261fbe0bd48dd652ba612f4d1f88ea10a752c83114"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-layout-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r2/compile-layout-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r2/compile-layout-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r2/layout-prealloc",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793952697.130691,
+              "cpu_count": 18,
+              "load": [
+                14.10546875,
+                17.46630859375,
+                18.31982421875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952707.5084312,
+              "load": [
+                14.3798828125,
+                17.43017578125,
+                18.2978515625
+              ]
+            }
+          },
+          {
+            "label": "run-layout-prealloc-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r2/run-layout-prealloc-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r2/run-layout-prealloc-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r2/layout-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952707.5312362,
+              "cpu_count": 18,
+              "load": [
+                14.3798828125,
+                17.43017578125,
+                18.2978515625
+              ]
+            },
+            "exit": 1,
+            "host_after": {
+              "unix": 1793952709.444696,
+              "load": [
+                14.3798828125,
+                17.43017578125,
+                18.2978515625
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "attempt": 3,
+      "commit": "7bab2ab7c",
+      "complete": true,
+      "passed": true,
+      "jobs": 12,
+      "result": {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "9efe0c79c88c21ffda28f04a203cf14c94f3bf4e9142d2e5cbfed0ba57756089",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "e64aa03b0b7b37e56bb4d81d4aa337f59ec3e4df1245547ff5bae3817c8c374e"
+        },
+        "source_after": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "9efe0c79c88c21ffda28f04a203cf14c94f3bf4e9142d2e5cbfed0ba57756089",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "e64aa03b0b7b37e56bb4d81d4aa337f59ec3e4df1245547ff5bae3817c8c374e"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-layout-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-prealloc",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793952795.3434849,
+              "cpu_count": 18,
+              "load": [
+                19.78955078125,
+                18.04345703125,
+                18.4169921875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952805.728595,
+              "load": [
+                21.8173828125,
+                18.5791015625,
+                18.60107421875
+              ]
+            }
+          },
+          {
+            "label": "run-layout-prealloc-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-prealloc-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-prealloc-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952805.751561,
+              "cpu_count": 18,
+              "load": [
+                21.8173828125,
+                18.5791015625,
+                18.60107421875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952807.645219,
+              "load": [
+                21.8173828125,
+                18.5791015625,
+                18.60107421875
+              ]
+            }
+          },
+          {
+            "label": "run-layout-prealloc-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-prealloc-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-prealloc-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952807.652831,
+              "cpu_count": 18,
+              "load": [
+                21.8173828125,
+                18.5791015625,
+                18.60107421875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952809.203068,
+              "load": [
+                21.8173828125,
+                18.5791015625,
+                18.60107421875
+              ]
+            }
+          },
+          {
+            "label": "compile-layout-default",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-default.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-default-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-default",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793952809.210787,
+              "cpu_count": 18,
+              "load": [
+                21.8173828125,
+                18.5791015625,
+                18.60107421875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952819.644937,
+              "load": [
+                23.09716796875,
+                18.96875,
+                18.7392578125
+              ]
+            }
+          },
+          {
+            "label": "run-layout-default-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-default-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-default-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-default"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952819.660218,
+              "cpu_count": 18,
+              "load": [
+                23.09716796875,
+                18.96875,
+                18.7392578125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952822.209295,
+              "load": [
+                23.64990234375,
+                19.15185546875,
+                18.80517578125
+              ]
+            }
+          },
+          {
+            "label": "run-layout-default-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-default-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-default-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-default"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952822.217095,
+              "cpu_count": 18,
+              "load": [
+                23.64990234375,
+                19.15185546875,
+                18.80517578125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952824.412467,
+              "load": [
+                23.64990234375,
+                19.15185546875,
+                18.80517578125
+              ]
+            }
+          },
+          {
+            "label": "compile-layout-none",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-none.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-none-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-none",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793952824.4201548,
+              "cpu_count": 18,
+              "load": [
+                23.64990234375,
+                19.15185546875,
+                18.80517578125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952835.168975,
+              "load": [
+                23.6875,
+                19.296875,
+                18.85986328125
+              ]
+            }
+          },
+          {
+            "label": "run-layout-none-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-none-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-none-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-none"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952835.177077,
+              "cpu_count": 18,
+              "load": [
+                23.6875,
+                19.296875,
+                18.85986328125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952836.38435,
+              "load": [
+                23.15185546875,
+                19.25830078125,
+                18.8486328125
+              ]
+            }
+          },
+          {
+            "label": "run-layout-none-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-none-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-none-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-none"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952836.393343,
+              "cpu_count": 18,
+              "load": [
+                23.15185546875,
+                19.25830078125,
+                18.8486328125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952837.3482409,
+              "load": [
+                23.15185546875,
+                19.25830078125,
+                18.8486328125
+              ]
+            }
+          },
+          {
+            "label": "compile-layout-sanitized",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-sanitized.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/compile-layout-sanitized-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-cflags",
+              "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+              "-ldflags",
+              "-fsanitize=address,undefined",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-sanitized",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793952837.3562071,
+              "cpu_count": 18,
+              "load": [
+                23.15185546875,
+                19.25830078125,
+                18.8486328125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952861.240649,
+              "load": [
+                27.0234375,
+                20.48828125,
+                19.30322265625
+              ]
+            }
+          },
+          {
+            "label": "run-layout-sanitized-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-sanitized-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-sanitized-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-sanitized"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952861.2664802,
+              "cpu_count": 18,
+              "load": [
+                27.0234375,
+                20.48828125,
+                19.30322265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952865.870996,
+              "load": [
+                25.580078125,
+                20.29736328125,
+                19.24267578125
+              ]
+            }
+          },
+          {
+            "label": "run-layout-sanitized-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-sanitized-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/run-layout-sanitized-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r3/layout-sanitized"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952865.8793018,
+              "cpu_count": 18,
+              "load": [
+                25.580078125,
+                20.29736328125,
+                19.24267578125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952869.8455548,
+              "load": [
+                25.580078125,
+                20.29736328125,
+                19.24267578125
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "attempt": 4,
+      "commit": "55b347634",
+      "complete": true,
+      "passed": true,
+      "jobs": 12,
+      "result": {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "c1c88fb8e5a98cf250fc2c56f81d55df86a162cb2e19224d4494437bdd96fb24",
+          "layout/flex_measurement_layout.v": "264cfe724305814617bfcddafe74701702d1fa1e4411f729f9b7ecf580c410c4",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "2349eb252b6ebd3691c3d1ab15909465197628914a3e284855a6c6e33f73ea5e",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "9ec139033fa6fdfe5e3e0b1deb7a23d11a999fa07a95f022865c88c4669cada8",
+          "layout/measurement_absolute_test.v": "71afb9e4b462b0ed843201b23a25bdc447e8464e51804f26f2506d67ba7d54dc"
+        },
+        "source_after": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "c1c88fb8e5a98cf250fc2c56f81d55df86a162cb2e19224d4494437bdd96fb24",
+          "layout/flex_measurement_layout.v": "264cfe724305814617bfcddafe74701702d1fa1e4411f729f9b7ecf580c410c4",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "2349eb252b6ebd3691c3d1ab15909465197628914a3e284855a6c6e33f73ea5e",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "9ec139033fa6fdfe5e3e0b1deb7a23d11a999fa07a95f022865c88c4669cada8",
+          "layout/measurement_absolute_test.v": "71afb9e4b462b0ed843201b23a25bdc447e8464e51804f26f2506d67ba7d54dc"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-layout-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-prealloc",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793953122.681108,
+              "cpu_count": 18,
+              "load": [
+                22.48388671875,
+                22.5107421875,
+                20.5869140625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953135.202795,
+              "load": [
+                21.220703125,
+                22.2451171875,
+                20.51513671875
+              ]
+            }
+          },
+          {
+            "label": "run-layout-prealloc-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-prealloc-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-prealloc-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953135.229256,
+              "cpu_count": 18,
+              "load": [
+                21.220703125,
+                22.2451171875,
+                20.51513671875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953137.3620238,
+              "load": [
+                20.16162109375,
+                22.00830078125,
+                20.44140625
+              ]
+            }
+          },
+          {
+            "label": "run-layout-prealloc-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-prealloc-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-prealloc-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953137.370571,
+              "cpu_count": 18,
+              "load": [
+                20.16162109375,
+                22.00830078125,
+                20.44140625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953139.226871,
+              "load": [
+                20.16162109375,
+                22.00830078125,
+                20.44140625
+              ]
+            }
+          },
+          {
+            "label": "compile-layout-default",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-default.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-default-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-default",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793953139.236097,
+              "cpu_count": 18,
+              "load": [
+                20.16162109375,
+                22.00830078125,
+                20.44140625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953153.168726,
+              "load": [
+                20.857421875,
+                22.033203125,
+                20.474609375
+              ]
+            }
+          },
+          {
+            "label": "run-layout-default-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-default-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-default-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-default"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953153.177919,
+              "cpu_count": 18,
+              "load": [
+                20.857421875,
+                22.033203125,
+                20.474609375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953156.223517,
+              "load": [
+                20.70849609375,
+                21.982421875,
+                20.4658203125
+              ]
+            }
+          },
+          {
+            "label": "run-layout-default-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-default-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-default-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-default"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953156.232852,
+              "cpu_count": 18,
+              "load": [
+                20.70849609375,
+                21.982421875,
+                20.4658203125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953158.882645,
+              "load": [
+                20.70849609375,
+                21.982421875,
+                20.4658203125
+              ]
+            }
+          },
+          {
+            "label": "compile-layout-none",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-none.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-none-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-none",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793953158.891949,
+              "cpu_count": 18,
+              "load": [
+                20.70849609375,
+                21.982421875,
+                20.4658203125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953172.1653628,
+              "load": [
+                20.37451171875,
+                21.8115234375,
+                20.42919921875
+              ]
+            }
+          },
+          {
+            "label": "run-layout-none-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-none-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-none-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-none"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953172.174518,
+              "cpu_count": 18,
+              "load": [
+                20.37451171875,
+                21.8115234375,
+                20.42919921875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953173.521972,
+              "load": [
+                20.37451171875,
+                21.8115234375,
+                20.42919921875
+              ]
+            }
+          },
+          {
+            "label": "run-layout-none-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-none-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-none-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-none"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953173.532844,
+              "cpu_count": 18,
+              "load": [
+                20.37451171875,
+                21.8115234375,
+                20.42919921875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953174.594965,
+              "load": [
+                20.37451171875,
+                21.8115234375,
+                20.42919921875
+              ]
+            }
+          },
+          {
+            "label": "compile-layout-sanitized",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-sanitized.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/compile-layout-sanitized-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-cflags",
+              "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+              "-ldflags",
+              "-fsanitize=address,undefined",
+              "-file-list",
+              "/Users/alex/code/vox2/layout/measurement_opacity_test.v,/Users/alex/code/vox2/layout/grid_measurement_layout_test.v,/Users/alex/code/vox2/layout/flex_measurement_layout_test.v,/Users/alex/code/vox2/layout/measurement_images_test.v,/Users/alex/code/vox2/layout/inline_measurement_layout_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-sanitized",
+              "/Users/alex/code/vox2/layout/measurement_absolute_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793953174.603873,
+              "cpu_count": 18,
+              "load": [
+                20.37451171875,
+                21.8115234375,
+                20.42919921875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953197.8971891,
+              "load": [
+                16.16748046875,
+                20.7275390625,
+                20.078125
+              ]
+            }
+          },
+          {
+            "label": "run-layout-sanitized-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-sanitized-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-sanitized-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-sanitized"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953197.9225118,
+              "cpu_count": 18,
+              "load": [
+                16.16748046875,
+                20.7275390625,
+                20.078125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953202.5613408,
+              "load": [
+                15.35302734375,
+                20.48291015625,
+                19.99560546875
+              ]
+            }
+          },
+          {
+            "label": "run-layout-sanitized-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-sanitized-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/run-layout-sanitized-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-checked-20261106-r4/layout-sanitized"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1",
+              "VOX_ABSOLUTE_MEASUREMENT_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953202.569876,
+              "cpu_count": 18,
+              "load": [
+                15.35302734375,
+                20.48291015625,
+                19.99560546875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953206.7076778,
+              "load": [
+                14.36376953125,
+                20.1923828125,
+                19.89599609375
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "final_focused_jobs": 12,
+  "final_test_function_executions": 416,
+  "component_attempts": [
+    {
+      "attempt": 1,
+      "commit": "7bab2ab7c",
+      "table": {
+        "absolute-flex": {
+          "control": [
+            5475289,
+            5484739,
+            5481589,
+            5475289
+          ],
+          "candidate": [
+            1929689,
+            1929688,
+            1929739,
+            1929689
+          ],
+          "control_median": 5478439.0,
+          "candidate_median": 1929689.0,
+          "reduction_percent": 64.77666357150275,
+          "conservative_separation": 3545550,
+          "calls": 100
+        },
+        "absolute-grid": {
+          "control": [
+            8426006,
+            8426081,
+            8426006,
+            8425994
+          ],
+          "candidate": [
+            2096956,
+            2096868,
+            2096877,
+            2096869
+          ],
+          "control_median": 8426006.0,
+          "candidate_median": 2096873.0,
+          "reduction_percent": 75.11427122173899,
+          "conservative_separation": 6329038,
+          "calls": 100
+        },
+        "changing-inset": {
+          "control": [
+            8435069,
+            8435081,
+            8435106,
+            8435081
+          ],
+          "candidate": [
+            10554535,
+            10554480,
+            10554517,
+            10554667
+          ],
+          "control_median": 8435081.0,
+          "candidate_median": 10554526.0,
+          "reduction_percent": -25.126551837498656,
+          "conservative_separation": -2119598,
+          "calls": 100
+        },
+        "external-containing": {
+          "control": [
+            8315440,
+            8315514,
+            8315489,
+            8315514
+          ],
+          "candidate": [
+            8306289,
+            8306314,
+            8306314,
+            8306289
+          ],
+          "control_median": 8315501.5,
+          "candidate_median": 8306301.5,
+          "reduction_percent": 0.11063674271479806,
+          "conservative_separation": 9126,
+          "calls": 100
+        },
+        "fixed": {
+          "control": [
+            8315527,
+            8330408,
+            8315489,
+            8315539
+          ],
+          "candidate": [
+            8315489,
+            8315513,
+            8315514,
+            8315440
+          ],
+          "control_median": 8315533.0,
+          "candidate_median": 8315501.0,
+          "reduction_percent": 0.00038482199516964855,
+          "conservative_separation": -25,
+          "calls": 100
+        },
+        "fresh-pool": {
+          "control": [
+            68979371,
+            69018996,
+            68974127,
+            69039941
+          ],
+          "candidate": [
+            77648895,
+            77688038,
+            77670513,
+            77705663
+          ],
+          "control_median": 68999183.5,
+          "candidate_median": 77679275.5,
+          "reduction_percent": -12.579992341503576,
+          "conservative_separation": -8731536,
+          "calls": 100
+        },
+        "nested-absolute": {
+          "control": [
+            13422289,
+            13403514,
+            13403514,
+            13410302
+          ],
+          "candidate": [
+            2388489,
+            2388488,
+            2388489,
+            2388489
+          ],
+          "control_median": 13406908.0,
+          "candidate_median": 2388489.0,
+          "reduction_percent": 82.18463944110006,
+          "conservative_separation": 11015025,
+          "calls": 100
+        },
+        "plain-flex": {
+          "control": [
+            1865489,
+            1865589,
+            1865489,
+            1865452
+          ],
+          "candidate": [
+            1865514,
+            1865489,
+            1865514,
+            1865452
+          ],
+          "control_median": 1865489.0,
+          "candidate_median": 1865501.5,
+          "reduction_percent": -0.0006700655967417646,
+          "conservative_separation": -62,
+          "calls": 100
+        },
+        "plain-grid": {
+          "control": [
+            2086065,
+            2086081,
+            2086065,
+            2086039
+          ],
+          "candidate": [
+            2086065,
+            2086014,
+            2086115,
+            2086040
+          ],
+          "control_median": 2086065.0,
+          "candidate_median": 2086052.5,
+          "reduction_percent": 0.0005992143101929415,
+          "conservative_separation": -76,
+          "calls": 100
+        }
+      },
+      "result": {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "9efe0c79c88c21ffda28f04a203cf14c94f3bf4e9142d2e5cbfed0ba57756089",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "e64aa03b0b7b37e56bb4d81d4aa337f59ec3e4df1245547ff5bae3817c8c374e",
+          "Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc": "d05663d801f34ed1d7965b23c646cc13766ca654d86abe6a169ebc6544e5dc3b",
+          "Build/chatgpt-absolute-measurements-component-20261106-r1/driver_test.v": "2b9797078605caddb6fe779c861177cdc9b05e7e507969316e24f21c82049811",
+          "Build/chatgpt-absolute-measurements-component-20261106-r1/checks.py": "c729b7506591c0f74bf4755d221b5dd809dd57d647739c604d39579e4ba332e4",
+          "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "source_after": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "9efe0c79c88c21ffda28f04a203cf14c94f3bf4e9142d2e5cbfed0ba57756089",
+          "layout/flex_measurement_layout.v": "81adfb1bce575214ca43c377a3b4524ba0b94637e3cf824fbaf9d188c2722b8f",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "3fbe789d519aebd0574120a484ef9ac9508d8ca892229074bfbdf9c8d06d9bf4",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "dce708b2f12c8e9ebb10905e02fca36a2c61592f759228782f9068e564b77374",
+          "layout/measurement_absolute_test.v": "e64aa03b0b7b37e56bb4d81d4aa337f59ec3e4df1245547ff5bae3817c8c374e",
+          "Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc": "d05663d801f34ed1d7965b23c646cc13766ca654d86abe6a169ebc6544e5dc3b",
+          "Build/chatgpt-absolute-measurements-component-20261106-r1/driver_test.v": "2b9797078605caddb6fe779c861177cdc9b05e7e507969316e24f21c82049811",
+          "Build/chatgpt-absolute-measurements-component-20261106-r1/checks.py": "c729b7506591c0f74bf4755d221b5dd809dd57d647739c604d39579e4ba332e4",
+          "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-component-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/compile-component-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/compile-component-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prod",
+              "-cflags",
+              "-O2",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/driver_test.v",
+              "-run-only",
+              "test_absolute_measurement_component",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc",
+              "/Users/alex/code/vox2/layout/grid_block_intrinsic_reuse_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793952891.463927,
+              "cpu_count": 18,
+              "load": [
+                25.34326171875,
+                20.6337890625,
+                19.3916015625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952954.7266061,
+              "load": [
+                26.44775390625,
+                21.86328125,
+                19.9384765625
+              ]
+            }
+          },
+          {
+            "label": "sample-0-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-0-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-0-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952954.824353,
+              "cpu_count": 18,
+              "load": [
+                26.44775390625,
+                21.86328125,
+                19.9384765625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952955.535031,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          },
+          {
+            "label": "sample-1-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-1-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-1-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952955.572431,
+              "cpu_count": 18,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952955.772754,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          },
+          {
+            "label": "sample-2-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-2-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-2-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952955.810085,
+              "cpu_count": 18,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952956.017647,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          },
+          {
+            "label": "sample-3-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-3-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-3-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952956.05485,
+              "cpu_count": 18,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952956.253761,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          },
+          {
+            "label": "sample-4-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-4-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-4-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952956.290245,
+              "cpu_count": 18,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952956.486573,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          },
+          {
+            "label": "sample-5-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-5-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-5-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952956.5232692,
+              "cpu_count": 18,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952956.7296078,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          },
+          {
+            "label": "sample-6-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-6-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-6-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952956.76662,
+              "cpu_count": 18,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952956.9715352,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          },
+          {
+            "label": "sample-7-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-7-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/sample-7-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793952957.0084639,
+              "cpu_count": 18,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793952957.214473,
+              "load": [
+                26.73193359375,
+                21.998046875,
+                19.9970703125
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "commit": "55b347634",
+      "table": {
+        "absolute-flex": {
+          "control": [
+            5474964,
+            5477864,
+            5481264,
+            5474964
+          ],
+          "candidate": [
+            2027057,
+            2027056,
+            2027031,
+            2027079
+          ],
+          "control_median": 5476414.0,
+          "candidate_median": 2027056.5,
+          "reduction_percent": 62.98569647948457,
+          "conservative_separation": 3447885,
+          "calls": 100
+        },
+        "absolute-grid": {
+          "control": [
+            8425664,
+            8425644,
+            8425706,
+            8425681
+          ],
+          "candidate": [
+            2223515,
+            2223478,
+            2223405,
+            2223394
+          ],
+          "control_median": 8425672.5,
+          "candidate_median": 2223441.5,
+          "reduction_percent": 73.61110938028983,
+          "conservative_separation": 6202129,
+          "calls": 100
+        },
+        "changing-inset": {
+          "control": [
+            8434756,
+            8434756,
+            8434756,
+            8434756
+          ],
+          "candidate": [
+            8471120,
+            8447489,
+            8462389,
+            8453997
+          ],
+          "control_median": 8434756.0,
+          "candidate_median": 8458193.0,
+          "reduction_percent": -0.2778622167612266,
+          "conservative_separation": -36364,
+          "calls": 100
+        },
+        "external-containing": {
+          "control": [
+            8320012,
+            8315164,
+            8315164,
+            8315164
+          ],
+          "candidate": [
+            8306038,
+            8305989,
+            8305964,
+            8305964
+          ],
+          "control_median": 8315164.0,
+          "candidate_median": 8305976.5,
+          "reduction_percent": 0.11049090553114649,
+          "conservative_separation": 9126,
+          "calls": 100
+        },
+        "fixed": {
+          "control": [
+            8316026,
+            8319688,
+            8315164,
+            8315164
+          ],
+          "candidate": [
+            8315264,
+            8315189,
+            8315164,
+            8315164
+          ],
+          "control_median": 8315595.0,
+          "candidate_median": 8315176.5,
+          "reduction_percent": 0.0050327126321136895,
+          "conservative_separation": -100,
+          "calls": 100
+        },
+        "fresh-pool": {
+          "control": [
+            69064610,
+            69082796,
+            69064401,
+            69061324
+          ],
+          "candidate": [
+            70987263,
+            70998556,
+            70975035,
+            70998247
+          ],
+          "control_median": 69064505.5,
+          "candidate_median": 70992755.0,
+          "reduction_percent": -2.7919543997893426,
+          "conservative_separation": -1937232,
+          "calls": 100
+        },
+        "nested-absolute": {
+          "control": [
+            13413912,
+            13415864,
+            13403264,
+            13403264
+          ],
+          "candidate": [
+            2582736,
+            2582666,
+            2582612,
+            2582612
+          ],
+          "control_median": 13408588.0,
+          "candidate_median": 2582639.0,
+          "reduction_percent": 80.73891896745579,
+          "conservative_separation": 10820528,
+          "calls": 100
+        },
+        "plain-flex": {
+          "control": [
+            1865364,
+            1865364,
+            1865389,
+            1865364
+          ],
+          "candidate": [
+            1865489,
+            1865389,
+            1865364,
+            1865364
+          ],
+          "control_median": 1865364.0,
+          "candidate_median": 1865376.5,
+          "reduction_percent": -0.0006701104985351591,
+          "conservative_separation": -125,
+          "calls": 100
+        },
+        "plain-grid": {
+          "control": [
+            2085881,
+            2085889,
+            2085915,
+            2085906
+          ],
+          "candidate": [
+            2085990,
+            2085939,
+            2085940,
+            2085906
+          ],
+          "control_median": 2085897.5,
+          "candidate_median": 2085939.5,
+          "reduction_percent": -0.0020135217574157593,
+          "conservative_separation": -109,
+          "calls": 100
+        }
+      },
+      "result": {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "c1c88fb8e5a98cf250fc2c56f81d55df86a162cb2e19224d4494437bdd96fb24",
+          "layout/flex_measurement_layout.v": "264cfe724305814617bfcddafe74701702d1fa1e4411f729f9b7ecf580c410c4",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "2349eb252b6ebd3691c3d1ab15909465197628914a3e284855a6c6e33f73ea5e",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "9ec139033fa6fdfe5e3e0b1deb7a23d11a999fa07a95f022865c88c4669cada8",
+          "layout/measurement_absolute_test.v": "71afb9e4b462b0ed843201b23a25bdc447e8464e51804f26f2506d67ba7d54dc",
+          "Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc": "0ef623b322dee66a38b1d3a883f1ae3a786edf568bab9c6ac4c19c15c3796def",
+          "Build/chatgpt-absolute-measurements-component-20261106-r2/driver_test.v": "2b9797078605caddb6fe779c861177cdc9b05e7e507969316e24f21c82049811",
+          "Build/chatgpt-absolute-measurements-component-20261106-r2/checks.py": "c729b7506591c0f74bf4755d221b5dd809dd57d647739c604d39579e4ba332e4",
+          "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "source_after": {
+          "css/computed_property_storage.v": "d9f3122aa7efcda51c0b36bb41a5cb6b0acce2fe873a3c0e0489cfcc164fd68a",
+          "css/single_animated_property_test.v": "5735a97578979339b488e6d122830357439512e49ed4231274fa1c63b69a7d77",
+          "layout/measurement_opacity.v": "1dd95ec0ad061762c11678611188a187d30f3564860f98da6823dfb6dc5daf95",
+          "layout/measurement_opacity_test.v": "6280cedbd6e4764a92cbd9237b6746e316c045233ebd898555d72b1f2ebf4142",
+          "layout/retained_block_layout.v": "a05964bd3d5696e1041fb8fd00b877c4e50b198b41595dde2ddfda5d41a578ab",
+          "layout/grid_measurement_layout.v": "c1c88fb8e5a98cf250fc2c56f81d55df86a162cb2e19224d4494437bdd96fb24",
+          "layout/flex_measurement_layout.v": "264cfe724305814617bfcddafe74701702d1fa1e4411f729f9b7ecf580c410c4",
+          "layout/inline_measurement_layout.v": "3f0e9c78677ce80757f2c5ee2ebf2818e438875fdad6103f4b91c670f41afe77",
+          "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+          "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+          "layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+          "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+          "css/computed_property_storage_test.v": "3e5e71955aab65d9961c215fcb012742e97760129a863c3f2f89abb3d3a1f89f",
+          "css/computed_mutation_revision_test.v": "5a8ebd277e54d86ffa835f4385b669ff5094b810973ad91ef6e9fedcd8c61289",
+          "layout/layout_state.v": "2349eb252b6ebd3691c3d1ab15909465197628914a3e284855a6c6e33f73ea5e",
+          "layout/measurement_rejection_diagnostics.v": "eeb5e8ec38f591b0e9300c1e4ce27bd9d1fffcb9ebbfb9d2103e4b91e876a4cd",
+          "layout/measurement_absolute.v": "9ec139033fa6fdfe5e3e0b1deb7a23d11a999fa07a95f022865c88c4669cada8",
+          "layout/measurement_absolute_test.v": "71afb9e4b462b0ed843201b23a25bdc447e8464e51804f26f2506d67ba7d54dc",
+          "Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc": "0ef623b322dee66a38b1d3a883f1ae3a786edf568bab9c6ac4c19c15c3796def",
+          "Build/chatgpt-absolute-measurements-component-20261106-r2/driver_test.v": "2b9797078605caddb6fe779c861177cdc9b05e7e507969316e24f21c82049811",
+          "Build/chatgpt-absolute-measurements-component-20261106-r2/checks.py": "c729b7506591c0f74bf4755d221b5dd809dd57d647739c604d39579e4ba332e4",
+          "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-component-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/compile-component-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/compile-component-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prod",
+              "-cflags",
+              "-O2",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/driver_test.v",
+              "-run-only",
+              "test_absolute_measurement_component",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc",
+              "/Users/alex/code/vox2/layout/grid_block_intrinsic_reuse_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793953143.589088,
+              "cpu_count": 18,
+              "load": [
+                18.947265625,
+                21.7255859375,
+                20.3505859375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953215.084811,
+              "load": [
+                14.01416015625,
+                20.02294921875,
+                19.837890625
+              ]
+            }
+          },
+          {
+            "label": "sample-0-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-0-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-0-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953215.1848,
+              "cpu_count": 18,
+              "load": [
+                14.01416015625,
+                20.02294921875,
+                19.837890625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953215.762335,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          },
+          {
+            "label": "sample-1-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-1-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-1-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953215.8008919,
+              "cpu_count": 18,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953216.005551,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          },
+          {
+            "label": "sample-2-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-2-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-2-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953216.0443652,
+              "cpu_count": 18,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953216.256876,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          },
+          {
+            "label": "sample-3-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-3-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-3-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953216.2963352,
+              "cpu_count": 18,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953216.502768,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          },
+          {
+            "label": "sample-4-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-4-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-4-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953216.541273,
+              "cpu_count": 18,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953216.748905,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          },
+          {
+            "label": "sample-5-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-5-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-5-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953216.78663,
+              "cpu_count": 18,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953216.992285,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          },
+          {
+            "label": "sample-6-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-6-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-6-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953217.0312471,
+              "cpu_count": 18,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953217.2304351,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          },
+          {
+            "label": "sample-7-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-7-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/sample-7-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-absolute-measurements-component-20261106-r2/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_ABSOLUTE_MEASUREMENT_LAYOUT": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793953217.2679172,
+              "cpu_count": 18,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793953217.470103,
+              "load": [
+                13.2919921875,
+                19.7734375,
+                19.75048828125
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-absolute-measurements-checked-r1-20261106-evidence.zip",
+      "sha256": "38d00de193d64efded4cf964132fff1438ee884dc39e28226ce34715d3488a2f",
+      "bytes": 4230765,
+      "verified_entries": 30
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-measurements-checked-r2-20261106-evidence.zip",
+      "sha256": "59cd08b00f17b74845a45ac838c19108f98515b657aa45e4e8970b556cf1625e",
+      "bytes": 4229267,
+      "verified_entries": 28
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-measurements-checked-r3-20261106-evidence.zip",
+      "sha256": "3362ab5cf63262efcd4e49300ed62af13d80ec8f872d2acdcbf95bf216a9d20d",
+      "bytes": 12443497,
+      "verified_entries": 51
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-measurements-checked-r4-20261106-evidence.zip",
+      "sha256": "d2ac5f2e911b059a02cb194763e196cf318911b5560ed7ff854e626c5b0a2644",
+      "bytes": 12446213,
+      "verified_entries": 51
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-measurements-component-r1-20261106-evidence.zip",
+      "sha256": "47f0370dc338e0b16eff88010f159ba4fc5130f862a001ec67d2089efcf3f409",
+      "bytes": 21676209,
+      "verified_entries": 30
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-measurements-component-r2-20261106-evidence.zip",
+      "sha256": "78e4259c72458e365508c03a3f1c96dac071763ca24b69cd68af7a17e4fcae28",
+      "bytes": 21676934,
+      "verified_entries": 30
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-measurements-finalizer-20261106-evidence.zip",
+      "sha256": "a11ba656b0115674c6960fcc7067fd2ce5c53a2d22a809c6564cbb8261121d42",
+      "bytes": 9822,
+      "verified_entries": 4
+    }
+  ],
+  "qualification": "Final tests cover 52 selected functions under two policies and four GC/storage modes. Complete numeric/glyph/static/grid-area geometry agrees with a separate unpooled algorithm before and after final absolute layout, producer scratch retirement and GC. Includes mutations, raw aliases, containing-block changes, committed promotion, pool release, rare-data COW and specialized exclusions. Two original assertions incorrectly required cache readmission after style mutation despite stale absolute-text font-owner projections; corrected tests demand invalidation and exact outputs, allowing safe fallback. Initial and refined component costs retained. Component setup/document layout/styles/one warm question excluded; 100 probe create/layout/release/mutation/pool/checksum operations included. Unpooled final absolute numeric/glyph oracle outside timing. No page extrapolation, optimization acceptance or broad checkpoint from components.",
+  "finalizer_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-absolute-measurements-finalize-20261106-r1/prepare.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 36192256,
+    "elapsed_seconds": 10.311890042,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

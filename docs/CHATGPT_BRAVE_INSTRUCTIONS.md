@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest independent-query diagnostic observes a **24.226B** candidate median versus **24.144B** for its retained-recursion control. Observed ranges overlap; no whole-page savings credit is assigned. All 20 captures pass content and exact pixels; 264 focused test executions pass. The [latest verification](performance/chatgpt-leaf-query-verification-20261106.json) retains every attempt. Only this same-build comparison measures the change; differences against earlier builds receive no credit. Four pairs remain below seven-pair acceptance; the historical cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest absolute-descendant measurement diagnostic observes a **24.237B** candidate median versus **24.223B** for its full-layout control. Ranges overlap; no page savings are credited. All 20 captures pass content and exact pixels, and 416 final focused test executions pass. The [latest verification](performance/chatgpt-absolute-measurements-verification-20261106.json) retains every observation. Four pairs remain below seven-pair acceptance; historical cohorts below retain their pinned builds.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5794,3 +5794,40 @@ Two fresh original-origin replay captures pass full content/button identity, Jav
 These are rejection **events**, not distinct DOM elements, elapsed-time shares or instruction counts. Multiple flags coexist, the combined guard does not isolate a single cause, and layout node addresses can be reused after a rebuild. Earlier subtree rejection can hide animated descendants; zero reported animations does not mean the page has no animations. The records motivate checking ordinary absolute descendants whose containing/static-position dependencies stay within a measured subtree. Persistent reuse, generated content, controls, shifted relative/sticky positioning and external dependencies still need their full algorithms.
 
 No unprofiled optimization cohort or broad checkpoint follows from logging. The [verification receipt](performance/chatgpt-measurement-rejections-verification-20261106.json) retains the test controllers, source witnesses, generated C, rejected preflight, both captures, PNGs and memory guards. **The 20B target remains unmet.**
+
+## Ordinary absolute descendants in within-pass measurements (2026-11-06)
+
+Commits `7bab2ab7c` and `55b347634` extend the shared within-pass grid/flex measurement cache to ordinary absolute HTML descendants. The snapshot owns their static-position/grid-area records, line/glyph payloads and rare data after producer scratch retirement. Final absolute sizing/positioning still executes. The root stays caller-owned; persistent layout caches retain their original guard. Only a bounded set of ordinary HTML tags is admitted, and containing/static-position dependencies must stay inside the captured subtree. Absolute roots, controls/specialized elements, generated content, fixed/sticky/shifted relative positions, anchors/calculated insets and external dependencies remain excluded.
+
+The final policy waits for a second question before retaining a context. A matching cached entry that fails validation, or an absolute entry that fails post-layout validation, retires this context for the rest of the pass. Exact geometry keys and complete style revision, text, membership, font and image checks remain. Absolute subtrees explicitly fail the proof that external heights are unused, so height-relaxed reuse cannot apply. Admission state is released with the pass pool.
+
+Final validation passes **12 guarded jobs / 416 test-function executions**: 52 selected functions, both policies, ordinary GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers. Tests compare complete numeric/glyph/static/grid-area geometry with a separate unpooled algorithm before and after final absolute layout, including inline static positions, percentages, RTL/alignment, nested positioning, committed consumption, producer retirement, rare-data copy-on-write, mutations/raw aliases, containing-block changes and pool release. Two initial test attempts incorrectly required readmission after a style mutation despite stale absolute-text font projections; the corrected test demands invalidation and exact outputs while allowing safe fallback. Both rejected attempts and the passing earlier prototype selection are preserved.
+
+| Component: 100 calls | Final control median | Final candidate median | Reduction |
+| --- | ---: | ---: | ---: |
+| Ordinary absolute child, grid | 8,425,672.5 | 2,223,441.5 | 73.6111% |
+| Ordinary absolute child, flex | 5,476,414.0 | 2,027,056.5 | 62.9857% |
+| Nested absolute child | 13,408,588.0 | 2,582,639.0 | 80.7389% |
+| Plain grid control | 2,085,897.5 | 2,085,939.5 | -0.0020% |
+| Plain flex control | 1,865,364.0 | 1,865,376.5 | -0.0007% |
+| External containing block | 8,315,164.0 | 8,305,976.5 | 0.1105% |
+| Fixed descendant | 8,315,595.0 | 8,315,176.5 | 0.0050% |
+| Inset changes each call | 8,434,756.0 | 8,458,193.0 | -0.2779% |
+| Fresh pool each call | 69,064,505.5 | 70,992,755.0 | -2.7920% |
+
+Setup, first document layout/styles and one warm question are outside the component counter interval. The interval includes 100 probe creation/layout/release operations and any mutations, pool turnover and checksums. A separate final-absolute numeric/glyph oracle runs outside timing. Four observations per variant are retained. The immediate-admission prototype saves 64.8–82.2% on repeated eligible scenes but regresses 25.1266% with changing insets and 12.5800% with fresh pools; the final policy reduces those regressions to 0.2779% and 2.7920%. These are component totals, not a page attribution.
+
+The production source preflight authenticates the final collector, dependency closure, input validation, delayed admission, retained-scope rejection, owned geometry and conservative height guard. The first preflight expected a symbolic absolute enum after preprocessing; V -prod emits numeric `((css__Positioning)(2))`. That attempt launched no browsers. The corrected preflight passes, and separate diagnostics observe the useful reuse marker only with the candidate; both Vox modes confirm Wasm lexer execution and bootstrap.
+
+| Unprofiled frozen-page variant | Every retained launch-through-PNG count | Median |
+| --- | --- | ---: |
+| Retained full-layout control | 24,213,674,700; 24,231,495,382; 24,210,542,578; 24,233,397,083 | 24,222,585,041.0 |
+| Absolute-descendant candidate | 24,240,110,557; 24,250,780,084; 24,214,104,062; 24,232,933,993 | 24,236,522,275.0 |
+
+The candidate median is **0.0575% higher**. Conservative observed separation is **-40,237,506 instructions**. Ranges overlap; page credit and broad carry remain zero, so no new 5M broad checkpoint is due. The result does not demonstrate a whole-page gain.
+
+All **20** captures pass complete content/button identity, JavaScriptCore bootstrap, exact unchanged per-engine pixels and normal browser/kernel exits. Executable `4c101683471d3cac7e38dc42222c043a42317c49004c678c686e079848aaff2f` and native libraries/tools/fixture stay fixed under one nonblocking shared publication lease. Capture/controller guards exit zero and verify PID adoption; comparison drivers return one for the unmet Brave threshold. This uses the latest completed single-C-unit V -prod bundle, with no copied app or manual build request.
+
+The same one-time SOCKS capture and original scripts/references, private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. Counts cover coalition creation through completed encoded document PNG, including startup/window setup; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded. Four control/candidate pairs are diagnostic, below seven-pair acceptance. No live-site or isolated rendering claim follows.
+
+The candidate median remains **4,236,522,275.0 instructions above 20B**. The [verification receipt](performance/chatgpt-absolute-measurements-verification-20261106.json) retains every component/prototype result, failed test/preflight, source witness, guard, PNG, counter, command and identity. **The 20B target and original 5%-below-Brave target remain unmet.**
