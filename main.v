@@ -7079,11 +7079,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				device_clip := pixel_snapped_background_bitmap_rect(original_clip.translated(offset))
 					.translated(painting.Point{-offset.x, -offset.y})
 				$if macos {
-					C.native_draw_image_part_transformed_background(image, f32(destination.x), f32(destination.y),
+					local := chromium_background_local_origin(destination, source, device_clip, matrix, image.width, image.height)
+					C.native_draw_image_part_transformed_background(image, local.destination_x, local.destination_y,
 						f32(destination.width), f32(destination.height), f32(source.x), f32(source.y),
-						f32(source.width), f32(source.height), f32(device_clip.x), f32(device_clip.y),
+						f32(source.width), f32(source.height), local.clip_x, local.clip_y,
 						f32(device_clip.width), f32(device_clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]),
-						f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width),
+						local.transform_e, local.transform_f, page_x, page_y, f32(scroll_y), f32(app.ctx.width),
 						f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
 						1
 					} else {
