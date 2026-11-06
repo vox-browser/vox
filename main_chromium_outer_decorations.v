@@ -1,6 +1,7 @@
 module main
 
 import layout
+import processmetrics
 import math
 import os
 
@@ -111,6 +112,8 @@ fn (mut app BrowserApp) draw_chromium_outer_decorations(index int, page_y f32, w
 			app.chromium_raster_plan.command_layers, index, culling,
 			page_y, app.ctx.width, window_height - app.status_height())
 		if end == index { return index }
+		stage := processmetrics.begin_instruction_stage('paint_outer_group')
+		defer { stage.finish() }
 		app.flush_rounded_rect_underlay(0, page_y, window_height)
 		// The recording includes the document viewport and its complete raster
 		// tiles. Including browser chrome would give the first row a negative

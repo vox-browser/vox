@@ -1,6 +1,7 @@
 module processmetrics
 
-import os
+#include <stdlib.h>
+fn C.getenv(&char) &char
 
 pub struct InstructionSnapshot {
 pub:
@@ -10,7 +11,12 @@ pub:
 }
 
 pub fn instructions_enabled() bool {
-	return os.getenv('VOX_PROFILE_INSTRUCTIONS') != ''
+	// Borrow the flag rather than cloning it at every nested counter boundary.
+	// Keep the lookup dynamic for callers that enable diagnostics after startup.
+	unsafe {
+		value := C.getenv(c'VOX_PROFILE_INSTRUCTIONS')
+		return value != nil && value[0] != 0
+	}
 }
 
 pub fn begin_instructions() InstructionSnapshot {

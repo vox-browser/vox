@@ -3,6 +3,27 @@ module main
 import layout
 import os
 import time
+import processmetrics
+
+// Static labels keep enabled command tracing out of the V allocation arena.
+// Nested replay subtracts its own leaf scopes from the enclosing leaf.
+fn paint_leaf_instruction_stage(kind string) processmetrics.InstructionStage {
+	if !processmetrics.load_stages_enabled() { return processmetrics.InstructionStage{} }
+	label := match kind {
+		'fill_rect', 'fill_rounded_rect', 'fill_ellipse', 'fill_polygon', 'fill_gradient' { 'paint_leaf_fill' }
+		'draw_text' { 'paint_leaf_text' }
+		'draw_svg_path' { 'paint_leaf_svg' }
+		'paint_outer_box_shadow', 'paint_inner_box_shadow' { 'paint_leaf_shadow' }
+		'paint_uniform_border', 'paint_partial_rounded_border', 'stroke_rounded_rect' { 'paint_leaf_border' }
+		'draw_replaced_image', 'draw_background_image', 'paint_nested_display_list' { 'paint_leaf_image' }
+		'draw_canvas', 'draw_video' { 'paint_leaf_media' }
+		'begin_css_effect_layer' { 'paint_leaf_effect_begin' }
+		'end_css_effect_layer' { 'paint_leaf_effect_end' }
+		'begin_css_filter_layer', 'end_css_filter_layer', 'apply_backdrop_filter' { 'paint_leaf_filter' }
+		else { if kind.starts_with('begin_') || kind.starts_with('end_') { 'paint_leaf_scope' } else { 'paint_leaf_other' } }
+	}
+	return processmetrics.begin_instruction_stage(label)
+}
 
 // Diagnostic: wall time of each document replay step, charged to the command
 // index that began it (grouped handlers charge their first command). One line

@@ -5766,6 +5766,8 @@ fn replaced_image_bitmap_for_renderer(command &layout.PaintCommand, native_rende
 }
 
 fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x f32, page_y f32, window_height int) {
+	leaf_instructions := paint_leaf_instruction_stage(source_command.kind)
+	defer { leaf_instructions.finish() }
 	// A native border or coincident antialiased fill can consume the underlay
 	// in the same render pass, retaining fractional coverage between draws.
 	if pending := app.rounded_rect_underlay_source {
@@ -7662,6 +7664,7 @@ fn (mut app BrowserApp) draw() {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len {
 						next_layer := app.chromium_raster_plan.command_layers[command_index]
 						if next_layer != raster_layer {
+							layer_instructions := processmetrics.begin_instruction_stage('paint_layer_transition')
 							app.flush_rounded_rect_underlay(0, page_y, window.height)
 							// Eligible text layers can composite on the pending GPU canvas.
 							if gpu_canvas && text_scroll_layer
@@ -7672,6 +7675,7 @@ fn (mut app BrowserApp) draw() {
 							app.select_chromium_raster_layer(next_layer)
 							text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer, command_index)
 							raster_layer = next_layer
+							layer_instructions.finish()
 						}
 					}
 				}

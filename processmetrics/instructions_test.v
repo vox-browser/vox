@@ -1,5 +1,23 @@
 module processmetrics
 
+import os
+
+fn test_instruction_flag_observes_unset_empty_and_changed_values() {
+	previous := os.getenv_opt('VOX_PROFILE_INSTRUCTIONS')
+	defer {
+		if value := previous { os.setenv('VOX_PROFILE_INSTRUCTIONS', value, true) }
+		else { os.unsetenv('VOX_PROFILE_INSTRUCTIONS') }
+	}
+	os.unsetenv('VOX_PROFILE_INSTRUCTIONS')
+	assert !instructions_enabled()
+	os.setenv('VOX_PROFILE_INSTRUCTIONS', '', true)
+	assert !instructions_enabled()
+	os.setenv('VOX_PROFILE_INSTRUCTIONS', '1', true)
+	assert instructions_enabled()
+	os.setenv('VOX_PROFILE_INSTRUCTIONS', '0', true)
+	assert instructions_enabled()
+}
+
 fn test_instruction_intervals_reject_unavailable_or_decreasing_counters() {
 	start := InstructionSnapshot{ instructions: 100, available: true }
 	end := InstructionSnapshot{ instructions: 175, available: true }

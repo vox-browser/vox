@@ -1,5 +1,7 @@
 module main
 
+import processmetrics
+
 import layout
 
 #include "native_graphite_bridge.h"
@@ -72,6 +74,8 @@ fn (mut app BrowserApp) prefetch_chromium_rects(start int, page_y f32) int {
 		}
 		end := chromium_rect_prefetch_end(app.paint_commands, app.chromium_raster_plan.command_layers, start)
 		if end == start { return start }
+		stage := processmetrics.begin_instruction_stage('paint_rect_prefetch')
+		defer { stage.finish() }
 		mut shapes := []C.VoxGraphiteShape{cap: 16}
 		for index in start .. end {
 			command := &app.paint_commands[index]
