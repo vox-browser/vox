@@ -2130,7 +2130,6 @@ pub mut:
 	produces_line_box_fragment_when_empty_ bool
 	retains_empty_generated_fragment_ bool
 	cached_inline_chunks_         ?[]TextNodeChunk
-	cached_inline_context_slices_ ?&InlineContextSlices
 	cached_font_environment_generation_ u64
 	cached_inline_font_owner_ ?&css.FontCascadeList
 	cached_inline_font_style_ voidptr
@@ -2209,7 +2208,6 @@ pub fn (mut node TextNode) update_produces_line_box_fragment_when_empty_flag() b
 	node.produces_line_box_fragment_when_empty_ = produces
 	// The cached chunk list may contain an empty fragment from the old state.
 	node.cached_inline_chunks_ = none
-	node.cached_inline_context_slices_ = none
 	node.cached_intrinsic_text_shapes_.clear()
 	return true
 }
@@ -2245,7 +2243,6 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.cached_inline_bidi_processing_ = none
 	n.rendered_text_edits_.clear()
 	n.cached_inline_chunks_ = none
-	n.cached_inline_context_slices_ = none
 	n.cached_font_environment_generation_ = 0
 	n.cached_inline_font_owner_ = none
 	n.cached_inline_font_style_ = unsafe { nil }

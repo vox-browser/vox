@@ -65,6 +65,5 @@ fn refresh_inline_chunk_font_owner(text &TextNode) {
 	mutable_text.cached_inline_font_style_ = voidptr(style)
 	mutable_text.cached_inline_font_style_revision_ = style.mutation_revision()
 	mutable_text.cached_inline_chunks_ = none
-	mutable_text.cached_inline_context_slices_ = none
 	mutable_text.cached_intrinsic_text_shapes_.clear()
 }
