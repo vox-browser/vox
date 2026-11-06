@@ -5731,3 +5731,42 @@ All **20** diagnostic/matched captures pass full content/button identity, bootst
 Frame-complete checkpoints are 426, 466, 470, 460 for controls and 437, 465, 481, 464 for candidates. Raw counters and host load remain preserved without normalization.
 
 The candidate median remains **4,226,101,587.0 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-leaf-query-verification-20261106.json) links the fresh profile, source witnesses, focused/component checks, every failure, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Opacity-only animation measurements within one pass (2026-11-06)
+
+Commit `fc2be3446` permits pass-local grid/flex measurement reuse when a subtree has only an opacity animation and no animated custom properties. Opacity does not change the numeric geometry being restored. The full property-graph revision still invalidates a snapshot after any animation or raw-value write, alongside membership, text, font, dimensions and containing-block keys. A borrowed single-property query inspects the live animation map without cloning it or retaining a sample value. Persistent layout/paint caches keep their previous animation rejection. Other animations, SVG/UA-shadow/generated-content exclusions and other existing eligibility rules remain in place.
+
+The first implementation rebuilt snapshots after every sample mutation, regressing the mutation components by 88–103% and single-use pools by 19%. All those results remain retained. The final policy waits until a second animated measurement before retaining its geometry. When a matching cached opacity entry fails input validation, it marks the context rejected for the rest of that pass. Both admission and rejection metadata live in the shared pool owner; rejection writes enter retained allocation scope, and pool release clears the admission map.
+
+**24 final guarded jobs / 464 test-function executions pass**: 10 CSS and 48 layout cases in ordinary GC, no GC, poisoned preallocation and ASan/UBSan, with both policies. Coverage includes borrowed-map allocation checks, alias writes, custom-property separation, producer scratch retirement, numeric/glyph geometry versus unpooled algorithms, copy-on-write line storage, repeated opacity replacement, raw width changes, persistent-cache rejection and complete pool retirement. The initial focused prototype also passes its own 24 jobs. The first component compile includes existing test assertions that require explicit pointer-map unwraps under `-prod`; that failed attempt is retained. The replacement component driver supplies an independent unpooled geometry oracle without changing those tests.
+
+Each component has four alternating observations per variant and 100 calls. Construction, initial document layout, style setup and one warm measurement are outside the process-instruction interval. Measurement-state creation/release, layout, requested mutations/pool replacements and scalar checksums are inside. Because admission is delayed, the final policy can still populate its first retained entry during the measured interval. The complete numeric/glyph oracle runs after timing. Executable, source, controller and guard identities stay fixed. All output checksums match.
+
+| Measurement component | Full-layout control median | Final candidate median | Reduction |
+| --- | ---: | ---: | ---: |
+| plain-grid | 1,717,380.0 | 1,717,397.0 | -0.0010% |
+| opacity-grid | 12,523,525.5 | 1,935,477.5 | 84.5453% |
+| plain-flex | 1,551,346.0 | 1,551,284.0 | 0.0040% |
+| opacity-flex | 15,676,681.0 | 1,770,110.0 | 88.7086% |
+| opacity-plus-width | 12,574,908.5 | 12,575,308.5 | -0.0032% |
+| opacity-custom | 12,524,215.0 | 12,524,908.5 | -0.0055% |
+| changing-opacity | 12,543,508.5 | 13,432,681.0 | -7.0887% |
+| changing-width | 12,533,000.5 | 13,422,233.0 | -7.0951% |
+| opacity-root | 7,979,583.5 | 1,858,648.0 | 76.7075% |
+| fresh-pool | 62,546,928.5 | 66,097,591.5 | -5.6768% |
+
+Negative values are regressions. Stable reuse saves 76.7–88.7% in these components; repeated mutations still regress about 7.1%, and fresh single-use pools regress 5.7%. Static and unsupported-animation controls are nearly unchanged. No component total is extrapolated to ChatGPT.
+
+The latest completed production bundle, executable `8fe7188244335c797d346b295b77fb6781eb5368b7f9e00118d2331d393abca9`, contains the final admission and retained-scope rejection policy. Sealed C witnesses cover the borrowed property query, opacity predicate, unchanged persistent collector, shared collector/validator, grid/flex cache paths, admission and pool release. The executable contains the control flag and diagnostic marker. Libraries stay pinned for identity. No copied app or separate manual build is requested.
+
+| Production diagnostic | Content / bootstrap | Exact reference pixels | Browser / kernel exit | Useful opacity-measurement reuse |
+| --- | --- | --- | --- | --- |
+| Vox candidate | Pass | Pass | 0 / 0 | Not observed |
+| Vox retained full-layout control | Pass | Pass | 0 / 0 | Not observed |
+| Brave, both reference captures | Pass | Pass | 0 / 0 | Not applicable |
+
+**No useful opacity-measurement reuse is observed on this frozen ChatGPT capture.** Presence of the code is not evidence of execution. The path audit correctly rejects the diagnostic with controller/guard exit one; every browser/kernel exit is zero, identities stay fixed and PID adoption succeeds. No unprofiled matched cohort is launched, no instruction difference is credited and no 5M broad checkpoint is due. Carry remains zero.
+
+Original author scripts, single SOCKS fixture/references, fresh private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. Both Vox variants confirm Wasm module lexer execution and JavaScriptCore bootstrap. Counts cover coalition creation through encoded document PNG, including startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded. These instrumented counts supply no performance credit.
+
+The latest complete matched result remains **24.226B versus 24.144B control** for leaf-query elision, with overlapping ranges. The [verification receipt](performance/chatgpt-opacity-measurements-verification-20261106.json) retains every focused/component attempt, prototype regression, source witness, command, counter, memory guard, PNG and rejected path audit. **The 20B target and original 5%-below-Brave target remain unmet.**
