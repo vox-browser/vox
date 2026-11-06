@@ -106,6 +106,7 @@ fn (mut app BrowserApp) open_process_tab(address string, background bool) {
 		'--window-height=${app.viewport_height + app.chrome_height()}', '--js-engine=${app.js_engine}']
 	if app.script_policy == .enabled { call_arguments << '--enable-javascript' }
 	if app.script_policy == .disabled { call_arguments << '--disable-javascript' }
+	if app.auto_open_devtools { call_arguments << '--auto-open-devtools-for-tabs' }
 	call_arguments << address
 	// On macOS os.executable() can name an injected dylib (dyld image zero).
 	// Use the kernel-backed path shared with the isolated worker launcher.

@@ -414,6 +414,8 @@ mut:
 	// Interactive shells restrict navigation; engine and capture callers keep
 	// their explicitly requested test inputs independent of this UI mode.
 	restrict_to_optimized_sites          bool
+	// --auto-open-devtools-for-tabs, as in Chrome.
+	auto_open_devtools                   bool
 	navigation_restriction_notice        string
 	address_select                      bool
 	native_address_bar                  bool
@@ -575,6 +577,7 @@ mut:
 	screenshot                 string
 	screenshot_viewport_height int
 	screenshot_scroll_y        int
+	auto_open_devtools         bool
 	width                      int = initial_width
 	height                     int = initial_height
 }
@@ -748,6 +751,7 @@ fn (mut app BrowserApp) initialize_native_window() {
 		}
 		app.mount_address_bar()
 	}
+	if app.auto_open_devtools { app.show_devtools(false) }
 	if app.source_label == browser_new_tab_url { app.focus_address_bar() }
 	app.update_window_title()
 }
@@ -776,6 +780,8 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 		argument := arguments[index]
 		if argument == '--headless-smoke' {
 			options.headless_smoke = true
+		} else if argument == '--auto-open-devtools-for-tabs' {
+			options.auto_open_devtools = true
 		} else if argument == '--enable-javascript' {
 			options.script_policy = .enabled
 		} else if argument == '--disable-javascript' {
@@ -8418,6 +8424,7 @@ fn main() {
 		background_resource_results: chan PreloadedResource{ cap: max_cached_resources }
 		background_resource_pending: map[string]bool{}
 		screenshot_path: options.screenshot
+		auto_open_devtools: options.auto_open_devtools
 		screenshot_viewport_height: options.screenshot_viewport_height
 		screenshot_scroll_y: options.screenshot_scroll_y
 		layout_tree_only: options.headless_layout_tree

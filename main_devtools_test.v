@@ -38,6 +38,13 @@ fn devtools_test_id(app &BrowserApp, id string) i64 {
 	return devtools.node_id(element.as_node())
 }
 
+fn test_auto_open_devtools_launch_switch_follows_chrome() {
+	options := parse_launch_options(['--auto-open-devtools-for-tabs', 'page.html']) or { panic(err) }
+	assert options.auto_open_devtools
+	assert options.source == 'page.html'
+	assert !(parse_launch_options(['page.html']) or { panic(err) }).auto_open_devtools
+}
+
 fn test_devtools_dock_below_the_document_and_take_viewport_height() {
 	mut app := devtools_test_app()
 	defer { app.dispose_browser_tab() }
