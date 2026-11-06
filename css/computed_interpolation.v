@@ -11779,6 +11779,8 @@ fn publish_animated_custom_properties(computed_properties &ComputedProperties, a
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_computed_properties')
+	defer { load_instruction_stage.finish() }
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(4, diagnostic_scope_start) }
 
@@ -12366,6 +12368,8 @@ fn html_input_element_adjust_computed_style(mut properties ComputedProperties, e
 }
 
 pub fn (s &StyleComputer) compute_property_values(mut computed_properties ComputedProperties, abstract_element ?dom.AbstractElement) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_value_conversion')
+	defer { load_instruction_stage.finish() }
 	property_source := ComputedPropertyValueSource{properties: &computed_properties}
 	for property_id in computed_interpolation_property_computation_order() {
 		specified_value := computed_properties.property(property_id, .no) or {
@@ -13775,6 +13779,8 @@ fn cascade_may_have_logical_aliases(abstract_element dom.AbstractElement, matchi
 }
 
 fn (s &StyleComputer) logical_alias_context_for_cascade(abstract_element dom.AbstractElement, mode ComputeStyleMode, matching_rule_set MatchingRuleSet) LogicalAliasMappingContext {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_logical_mapping')
+	defer { load_instruction_stage.finish() }
 	if cascade_may_have_logical_aliases(abstract_element, matching_rule_set) {
 		return s.compute_logical_alias_mapping_context(abstract_element, mode, matching_rule_set)
 	}
@@ -14093,6 +14099,8 @@ fn has_cascaded_custom_property_declarations(abstract_element dom.AbstractElemen
 }
 
 fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_custom_properties')
+	defer { load_instruction_stage.finish() }
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(8, diagnostic_scope_start) }
 
@@ -14179,6 +14187,8 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 }
 
 fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?&bool, scope &StyleScope, allow_animated_custom_property_recompute bool) ?&ComputedProperties {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_construction')
+	defer { load_instruction_stage.finish() }
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(5, diagnostic_scope_start) }
 
@@ -14238,9 +14248,11 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	mut attempted_pseudo_class_matches := PseudoClassBitmap{}
 	mut matching_workspace := s.acquire_matching_rule_set_workspace()
 	defer { matching_workspace.finish() }
+	matching_instruction_stage := processmetrics.begin_instruction_stage('style_rule_matching')
 	matching_rule_set := build_matching_rule_set_with_storage(s, abstract_element,
 		mut attempted_pseudo_class_matches, &did_match_any_pseudo_element_rules, mode, scope,
 		matching_workspace.arena)
+	matching_instruction_stage.finish()
 	next_matching_checkpoint, matching_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_matching_checkpoint
 	css_style_profile_matching_ns += matching_elapsed
@@ -14374,6 +14386,8 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 }
 
 fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_cascade')
+	defer { load_instruction_stage.finish() }
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(6, diagnostic_scope_start) }
 
