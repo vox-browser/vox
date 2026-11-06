@@ -30,6 +30,55 @@ fn image_host_drain(owner &html.EventLoop) {
 	loop.perform_a_microtask_checkpoint()
 }
 
+fn test_native_image_load_property_handler_receives_the_actual_request_event_in_listener_order() {
+	$if !darwin { return }
+	mut runtime, _, owner, mut model := image_host_fixture()
+	defer { runtime.close() }
+	model.set_fetch_hook(fn (_ dom.URL) !html.DecodedImageData {
+		bitmap := &dom.Bitmap_{ width: 1, height: 1, pitch: 4, data: [u8(0), 128, 0, 255] }
+		return html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{ frame: dom.DecodedImageFrame_.create(bitmap) }], 0, false)
+	})
+	runtime.evaluate_host(r'
+ globalThis.imageEvents=[];
+ image.addEventListener("load",()=>imageEvents.push("before"));
+ globalThis.imageLoaded=function(event){
+  imageEvents.push(this===image&&event.target===image&&event.currentTarget===image&&image.naturalWidth===1?"property":"wrong owner");
+ };
+ image.onload=imageLoaded;
+ image.addEventListener("load",()=>imageEvents.push("after"));
+ __ladybirdImageSetAttribute(image,"src","/loaded.png");
+ ')!
+	image_host_drain(owner)
+	assert runtime.evaluate_host('JSON.stringify(imageEvents)')! == '["before","property","after"]'
+	assert runtime.evaluate_host('image.onload===imageLoaded&&image.onerror===null')! == 'true'
+	runtime.evaluate_host('image.onload=null;image.dispatchEvent(new Event("load"));')!
+	assert runtime.evaluate_host('image.onload===null')! == 'true'
+	assert runtime.evaluate_host('JSON.stringify(imageEvents)')! == '["before","property","after","before","after"]'
+}
+
+fn test_native_image_error_property_handler_replacement_null_conversion_and_receiver_checks() {
+	$if !darwin { return }
+	mut runtime, _, owner, mut model := image_host_fixture()
+	defer { runtime.close() }
+	model.set_fetch_hook(fn (_ dom.URL) !html.DecodedImageData { return error('image failed') })
+	runtime.evaluate_host(r'
+ globalThis.imageErrors=[];
+ image.onerror=()=>imageErrors.push("replaced");
+ globalThis.imageFailed=function(event){imageErrors.push(this===image&&event.target===image&&event.type==="error"?"error":"wrong owner");};
+ image.onerror=imageFailed;
+ __ladybirdImageSetAttribute(image,"src","/broken.png");
+ ')!
+	image_host_drain(owner)
+	assert runtime.evaluate_host('JSON.stringify(imageErrors)')! == '["error"]'
+	assert runtime.evaluate_host(r'(function(){
+ if(image.onerror!==imageFailed)return false;
+ image.onerror=42;if(image.onerror!==null)return false;
+ const property=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,"onload");
+ let invalid=0;for(const call of [()=>property.get.call({}),()=>property.set.call({},function(){})])try{call()}catch(error){if(error instanceof TypeError)invalid++;}
+ return property.enumerable&&property.configurable&&invalid===2;
+ })()')! == 'true'
+}
+
 fn test_native_image_decode_fulfills_on_actual_owning_task_and_has_distinct_capabilities() {
 	$if !darwin {
 		return

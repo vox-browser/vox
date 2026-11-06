@@ -28,6 +28,10 @@ pub fn (mut host ImageHost) install(mut runtime Runtime) ! {
 		mut host := unsafe { &ImageHost(host_handle) }
 		return host.bind(arguments) or { host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err)) }
 	})!
+	handler := runtime.make_value_host_function(fn [host_handle] (receiver voidptr, arguments []voidptr) !voidptr {
+		mut host := unsafe { &ImageHost(host_handle) }
+		return host.event_handler(receiver, arguments) or { host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err)) }
+	})!
 	installer := runtime.evaluate_host_value(image_host_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
 	host.prototype = runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
@@ -35,6 +39,7 @@ pub fn (mut host ImageHost) install(mut runtime Runtime) ! {
 		get,
 		set_attribute,
 		bind,
+		handler,
 	])!
 	runtime.retain_javascript_value(host.prototype)!
 	runtime.add_canvas_element_provider_with_identity_lookup(fn [host_handle] () map[string]&dom.Element {
@@ -163,13 +168,26 @@ fn (mut host ImageHost) get(receiver voidptr, arguments []voidptr) !voidptr {
 	}
 }
 
-const image_host_bootstrap = r'(function(decode,get,setAttribute,bind){
+fn (mut host ImageHost) event_handler(receiver voidptr, arguments []voidptr) !voidptr {
+	if host.closed { return error('Image binding is closed') }
+	record := host.records[receiver] or { return error('TypeError: HTMLImageElement receiver is not an image') }
+	if arguments.len !in [1, 2] { return error('TypeError: Invalid image event handler binding') }
+	name := host.runtime.binding_dom_string(arguments[0])!
+	if name !in ['load', 'error'] { return error('TypeError: Unknown image event handler') }
+	target := unsafe { &dom.EventTarget(record.element) }
+	if arguments.len == 1 { return host.runtime.javascript_event_handler(target, name) }
+	host.runtime.set_javascript_event_handler(target, name, arguments[1])!
+	return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
+}
+
+const image_host_bootstrap = r'(function(decode,get,setAttribute,bind,handler){
  const apply=Reflect.apply,define=Object.defineProperty,String=globalThis.String;
  function HTMLImageElement(){throw new TypeError("Illegal HTMLImageElement constructor")}
  const prototype=HTMLImageElement.prototype;Object.setPrototypeOf(prototype,EventTarget.prototype);
  define(prototype,"decode",{value:function decode(){return apply(decodeNative,this,[])},writable:true,enumerable:true,configurable:true});
  const decodeNative=decode;
  for(const name of ["complete","naturalWidth","naturalHeight","currentSrc"])define(prototype,name,{get:function(){return apply(get,this,[name])},enumerable:true,configurable:true});
+	for(const name of ["load","error"])define(prototype,"on"+name,{get:function(){return apply(handler,this,[name])},set:function(value){apply(handler,this,[name,value])},enumerable:true,configurable:true});
  define(prototype,"crossOrigin",{get:function(){return apply(get,this,["crossOrigin"])},set:function(value){const converted=value===null?null:String(value);setAttribute(this,"crossorigin",converted);const state=this.__state;if(state&&state.attributes){if(converted===null)delete state.attributes.crossorigin;else state.attributes.crossorigin=converted;state.attributesDirty=true;}},enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLImageElement",configurable:true});
  define(globalThis,"HTMLImageElement",{value:HTMLImageElement,writable:true,configurable:true});

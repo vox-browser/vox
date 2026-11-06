@@ -2,6 +2,7 @@ module main
 
 import dom
 import browserjs
+import encoding.base64
 import html
 import io
 import layout
@@ -74,6 +75,74 @@ fn child_browser_serve(mut listener net.TcpListener, finished chan bool) {
 	body := '<!doctype html><style>body{background:rgb(17 83 29)}</style><p id="loaded">loaded child</p><script>document.getElementById("loaded").textContent="script ran in child";globalThis.childRan=true;globalThis.childWidth=innerWidth;globalThis.receivedMessages=[];globalThis.parentAck=false;window.addEventListener("message",e=>{receivedMessages.push(e.data);parentAck=e.data==="parent-ack"&&e.source===parent&&parent===top;});parent.postMessage({kind:"child-ready"},"*");</script>'
 	socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: ${body.len}\r\nConnection: close\r\n\r\n${body}') or { panic(err) }
 	finished <- true
+}
+
+fn child_canvas_serve_image(mut listener net.TcpListener, requested chan bool, release chan bool, finished chan bool) {
+	mut socket := listener.accept() or { finished <- false; return }
+	defer { socket.close() or {} }
+	socket.set_read_timeout(5 * time.second)
+	mut reader := io.new_buffered_reader(reader: socket)
+	request := reader.read_line() or { panic(err) }
+	assert request.contains('/canvas.png')
+	for { if (reader.read_line() or { '' }) == '' { break } }
+	requested <- true
+	select {
+		_ := <-release {}
+		5 * time.second { panic('image response was never released') }
+	}
+	body := base64.decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=').bytestr()
+	socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: ${body.len}\r\nConnection: close\r\n\r\n${body}') or { panic(err) }
+	finished <- true
+}
+
+fn test_browser_child_async_image_onload_draws_into_its_native_canvas() {
+	$if !darwin { return }
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	listener.set_accept_timeout(10 * time.second)
+	defer { listener.close() or {} }
+	address := 'http://${listener.addr()!}'
+	requested := chan bool{cap: 1}
+	release := chan bool{cap: 1}
+	finished := chan bool{cap: 1}
+	spawn child_canvas_serve_image(mut listener, requested, release, finished)
+	mut host, mut parent := child_browser_fixture('<!doctype html><iframe id="frame" style="width:100px;height:100px"></iframe>', '${address}/parent')
+	defer {
+		host.close()
+		parent.destroy_a_document_and_its_descendants()
+		parent.finalize()
+		parent.release_native_storage()
+	}
+	mut frame := parent.get_element_by_id('frame')?
+	frame.set_attribute_value('srcdoc', r'<!doctype html><canvas id="drawing" width="1" height="1"></canvas><script>
+ globalThis.drawn=false;globalThis.image=new Image();
+ image.onload=function(event){
+  drawing.getContext("2d").drawImage(image,0,0);
+  drawn=this===image&&event.target===image&&image.naturalWidth===1&&image.width===1&&image.height===1;
+ };
+ image.src="/canvas.png";
+ </script>')
+	mut messages := []string{}
+	child_browser_wait(host, 'drawing', mut messages)
+	service := host.children[0].service?
+	assert <-requested
+	assert service.runtime.evaluate_host('drawn===false&&!image.complete')! == 'true'
+	release <- true
+	assert <-finished
+	mut loop := html.main_thread_event_loop()
+	deadline := time.sys_mono_now() + 5 * time.second
+	loop.spin_until(fn [host, service, deadline] () bool {
+		mut owner := unsafe { &BrowserChildDocumentHost(host) }
+		mut log := []string{}
+		owner.poll(mut log)
+		return (service.runtime.evaluate_host('drawn') or { 'false' }) == 'true' || time.sys_mono_now() >= deadline
+	})
+	assert service.runtime.evaluate_host('drawn&&image.complete')! == 'true'
+	element := service.document.get_element_by_id('drawing')?
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	bitmap := html.html_canvas_element_surface(canvas) or { panic('missing child canvas surface') }
+	assert bitmap.width == 1 && bitmap.height == 1
+	assert bitmap.data[..4] == [u8(0), 0, 0, 255]
+	assert parent.get_element_by_id('drawing') == none
 }
 
 fn test_browser_child_host_loads_and_scripts_a_network_iframe_then_removes_it() {
