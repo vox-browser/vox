@@ -18,7 +18,8 @@ result table (as wptrunner does), posts each top-level document's results to the
 server and navigates to the next test, so one fresh-profile window runs a whole
 chunk after an unrecorded warm-up page. Chunks alternate the browser that runs
 first. A test whose document is never requested (NO_DOCUMENT), whose harness
-scripts are never requested (NO_HARNESS), that does not report by its harness
+never starts (NO_HARNESS: no testharnessreport.js request and no alive ping
+from a test still running after 500 ms), that does not report by its harness
 timeout plus a grace period (HARD_TIMEOUT), or whose browser exits (CRASH) is
 recorded as such and the browser is relaunched at the next test. Per-test time
 is measured by the server from the test document request to its result post.
@@ -71,8 +72,17 @@ REPORT_SCRIPT = r"""(function () {
     if (typeof window === "undefined" || window.top !== window || window.opener)
         return;
     setup({ output: false });
+    // Vox reuses subresources across navigations despite no-store, so the
+    // server cannot rely on seeing this script requested. A test still
+    // running after %(alive_ms)d ms says so once; quicker tests send nothing.
+    var alive = setTimeout(function () {
+        var request = new XMLHttpRequest();
+        request.open("POST", "%(alive)s");
+        request.send("");
+    }, %(alive_ms)d);
     add_completion_callback(function (tests, harness_status) {
         var finished = performance.now();
+        clearTimeout(alive);
         function text(value) {
             return value === null || value === undefined ? null : String(value).slice(0, %(limit)d);
         }
@@ -98,7 +108,8 @@ REPORT_SCRIPT = r"""(function () {
         }, 0);
     });
 })();
-""" % dict(limit=MESSAGE_LIMIT, result=RUNNER_PREFIX + 'result')
+""" % dict(limit=MESSAGE_LIMIT, result=RUNNER_PREFIX + 'result', alive=RUNNER_PREFIX + 'alive',
+           alive_ms=500)
 
 
 # Each launch first runs this page so that no measured test pays for loading
@@ -221,7 +232,7 @@ class Session:
         self.launched_at = time.monotonic() if now is None else now
         self.active_since = self.launched_at
         self.document_requested_at = None
-        self.harness_requested_at = None
+        self.harness_seen_at = None
         self.first_of_launch = True
         self.finished = start >= len(tests)
         self.aborted = False
@@ -241,7 +252,7 @@ class Session:
             self.first_of_launch = False
         self.active_since = now
         self.document_requested_at = None
-        self.harness_requested_at = None
+        self.harness_seen_at = None
         if self.index >= len(self.tests):
             self.finished = True
             return None
@@ -251,16 +262,17 @@ class Session:
         """Return when the current test stops waiting, and the outcome it then gets.
 
         Each phase is bounded separately: a browser that never requests the
-        test document, a document whose scripts never load (Vox does not run
+        test document, a document whose harness never starts (Vox does not run
         scripts in standalone SVG documents), and a harness that does not report
-        within its own timeout.
+        within its own timeout. The harness has started once the document
+        requests testharnessreport.js or that script's alive ping arrives.
         """
         if self.document_requested_at is None:
             return self.active_since + (limits.startup if self.first_of_launch
                                         else limits.navigation), 'NO_DOCUMENT'
-        if self.harness_requested_at is None:
+        if self.harness_seen_at is None:
             return self.document_requested_at + limits.harness_start, 'NO_HARNESS'
-        return self.harness_requested_at + self.current['harness_timeout'] + limits.grace, \
+        return self.harness_seen_at + self.current['harness_timeout'] + limits.grace, \
             'HARD_TIMEOUT'
 
 
@@ -294,9 +306,16 @@ class Runner:
             if session.document_requested_at is None:
                 if normalized_target(target) == normalized_target(test['url']):
                     session.document_requested_at = time.monotonic()
-            elif session.harness_requested_at is None \
-                    and urlsplit(target).path == '/resources/testharnessreport.js':
-                session.harness_requested_at = time.monotonic()
+            elif urlsplit(target).path == '/resources/testharnessreport.js':
+                self.note_harness()
+
+    def note_harness(self):
+        with self.condition:
+            session = self.session
+            if session and session.current and session.document_requested_at is not None \
+                    and session.harness_seen_at is None:
+                session.harness_seen_at = time.monotonic()
+                self.condition.notify_all()
 
     def accept(self, payload):
         now = time.monotonic()
@@ -346,7 +365,7 @@ class Runner:
                 cycle_ms=round((time.monotonic() - session.active_since) * 1000, 3),
                 launch=session.launch, first_of_launch=session.first_of_launch,
                 document_requested=session.document_requested_at is not None,
-                harness_requested=session.harness_requested_at is not None))
+                harness_seen=session.harness_seen_at is not None))
             session.aborted = True
             self.condition.notify_all()
             return session.index + 1
@@ -409,7 +428,11 @@ def make_handler(runner, root, host, port_holder):
         def do_POST(self):
             length = int(self.headers.get('Content-Length') or 0)
             body = self.rfile.read(length) if length else b''
-            if urlsplit(self.path).path != RUNNER_PREFIX + 'result':
+            path = urlsplit(self.path).path
+            if path == RUNNER_PREFIX + 'alive':
+                runner.note_harness()
+                return self.send_body(204, b'', 'text/plain')
+            if path != RUNNER_PREFIX + 'result':
                 return self.send_body(404, b'Not found', 'text/plain')
             try:
                 payload = json.loads(body)
@@ -652,7 +675,7 @@ def format_report(summary, identity):
     row('Harness ERROR', lambda item: item.get('harness', {}).get('ERROR', 0))
     row('Harness TIMEOUT', lambda item: item.get('harness', {}).get('TIMEOUT', 0))
     row('Document never requested', lambda item: item.get('outcomes', {}).get('NO_DOCUMENT', 0))
-    row('Harness scripts never requested', lambda item: item.get('outcomes', {}).get('NO_HARNESS', 0))
+    row('Harness never started', lambda item: item.get('outcomes', {}).get('NO_HARNESS', 0))
     row('No report after harness timeout', lambda item: item.get('outcomes', {}).get('HARD_TIMEOUT', 0))
     row('Browser exited', lambda item: item.get('outcomes', {}).get('CRASH', 0))
     row('Tests with every subtest passing', lambda item: item.get('tests_all_pass', 0))
@@ -693,6 +716,8 @@ def chunks_of(tests, size):
 
 
 def main():
+    # Browsers run in their own sessions; unwinding stops them on SIGTERM.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--include', action='append', default=[],
@@ -709,7 +734,7 @@ def main():
     parser.add_argument('--navigation-seconds', type=float, default=10,
                         help='Wait for the next test document after a result')
     parser.add_argument('--harness-start-seconds', type=float, default=5,
-                        help='Wait for testharnessreport.js after the document')
+                        help='Wait for the harness to start after the document')
     parser.add_argument('--grace-seconds', type=float, default=10,
                         help='Wait beyond the harness timeout for its report')
     args = parser.parse_args()

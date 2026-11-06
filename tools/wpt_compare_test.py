@@ -64,10 +64,10 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(session.deadline(limits), (130, 'NO_DOCUMENT'))
         session.document_requested_at = 131
         self.assertEqual(session.deadline(limits), (136, 'NO_HARNESS'))
-        session.harness_requested_at = 132
+        session.harness_seen_at = 132
         self.assertEqual(session.deadline(limits), (199, 'HARD_TIMEOUT'))
         session.first_of_launch = False
-        session.document_requested_at = session.harness_requested_at = None
+        session.document_requested_at = session.harness_seen_at = None
         self.assertEqual(session.deadline(limits), (110, 'NO_DOCUMENT'))
 
     def test_warmup_is_not_recorded_and_results_advance_through_the_chunk(self):
@@ -82,10 +82,14 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(runner.accept(result), '/a.html')
         runner.note_request('/a.html')
         runner.note_request('/resources/testharnessreport.js')
-        self.assertIsNotNone(session.harness_requested_at)
+        self.assertIsNotNone(session.harness_seen_at)
         self.assertEqual(runner.accept(dict(result, url='/a.html')), '/b%20c.html?x=1')
         runner.note_request('/b c.html?x=1')
         self.assertIsNotNone(session.document_requested_at)
+        # A cached harness is not requested again; its alive ping still counts.
+        self.assertIsNone(session.harness_seen_at)
+        runner.note_harness()
+        self.assertIsNotNone(session.harness_seen_at)
         self.assertEqual(runner.abandon(session, 'HARD_TIMEOUT'), 2)
         self.assertIsNone(runner.accept(result))
         self.assertEqual(runner.unexpected_posts, 1)
