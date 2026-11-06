@@ -35,6 +35,8 @@ work on the document of the tab that opens them.
   with a filter. **Attributes** edits, removes and adds attributes.
 - Cmd+Z and Cmd+Shift+Z (Ctrl elsewhere) undo and redo panel edits while the
   tree has focus, including deletions, edit-as-HTML and style changes.
+- Cmd+F (Ctrl+F) while the tree has focus searches it by text or CSS
+  selector. Matches are shaded; Enter and Shift+Enter step through them.
 - Row context menus also copy a node and expand or collapse subtrees. The
   breadcrumb bar selects ancestors.
 - The top edge resizes the panel; the document viewport shrinks to fit it.
