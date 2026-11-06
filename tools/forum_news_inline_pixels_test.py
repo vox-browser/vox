@@ -112,6 +112,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_css_ratio_blocks_keep_border_box_sizes_and_percentage_descendants(self):
         self.compare_fixture('block-border-box-aspect-ratio', width=1024, height=768)
 
+    def test_positioned_ratio_boxes_keep_border_box_sizes_and_percentage_descendants(self):
+        self.compare_fixture('positioned-border-box-aspect-ratio', width=1024, height=768)
+
     def test_degenerate_border_arcs_keep_rounded_images_in_their_own_raster_mode(self):
         self.compare_fixture('chromium-degenerate-border-arcs', width=1024, height=768)
 

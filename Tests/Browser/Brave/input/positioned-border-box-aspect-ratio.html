@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<title>Positioned border-box aspect ratio</title><link rel="icon" href="data:,">
+<style>
+html,body{margin:0;background:white}
+.target{position:absolute;left:24px;top:24px;display:block;box-sizing:border-box;
+ width:464px;aspect-ratio:16/9;border:1px solid #123456;background:#ddd;overflow:hidden}
+.child{width:100%;height:100%;background:#78b4d2}
+.small{left:536px;width:212px}
+.padded{left:788px;width:212px;aspect-ratio:2;border-width:3px;padding:5px}
+.clamped{top:320px;width:400px;max-width:212px;aspect-ratio:2;border-width:3px;padding:5px}
+.explicit{position:fixed;left:536px;top:320px;width:212px;height:70px;aspect-ratio:2;border-width:3px;padding:5px}
+.content{position:fixed;left:788px;top:320px;width:180px;box-sizing:content-box;aspect-ratio:2;border-width:3px;padding:5px}
+.auto{top:500px;width:212px;aspect-ratio:auto 2;border-width:3px;padding:5px}
+.maximum{left:536px;top:500px;width:212px;aspect-ratio:2;border-width:3px;padding:5px;max-height:80px}
+.minimum{position:fixed;left:788px;top:500px;width:212px;aspect-ratio:2;border-width:3px;padding:5px;min-height:120px}
+footer{position:absolute;top:1800px}
+</style>
+<div class="target"><div class="child"></div></div>
+<div class="target small"><div class="child"></div></div>
+<div class="target padded"><div class="child"></div></div>
+<div class="target clamped"><div class="child"></div></div>
+<div class="target explicit"><div class="child"></div></div>
+<div class="target content"><div class="child"></div></div>
+<div class="target auto"><div class="child"></div></div>
+<div class="target maximum"><div class="child"></div></div>
+<div class="target minimum"><div class="child"></div></div>
+<footer>
+This fixture checks absolute and fixed ratio boxes with percentage descendants, border, padding, inline constraints, explicit height, content-box sizing and block-axis clamps.
+This fixture checks absolute and fixed ratio boxes with percentage descendants, border, padding, inline constraints, explicit height, content-box sizing and block-axis clamps.
+This fixture checks absolute and fixed ratio boxes with percentage descendants, border, padding, inline constraints, explicit height, content-box sizing and block-axis clamps.
+This fixture checks absolute and fixed ratio boxes with percentage descendants, border, padding, inline constraints, explicit height, content-box sizing and block-axis clamps.
+This fixture checks absolute and fixed ratio boxes with percentage descendants, border, padding, inline constraints, explicit height, content-box sizing and block-axis clamps.
+This fixture checks absolute and fixed ratio boxes with percentage descendants, border, padding, inline constraints, explicit height, content-box sizing and block-axis clamps.
+This fixture checks absolute and fixed ratio boxes with percentage descendants, border, padding, inline constraints, explicit height, content-box sizing and block-axis clamps.
+</footer></html>

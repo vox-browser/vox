@@ -393,7 +393,12 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 		AvailableSize.make_definite(containing_height))
 	if box_is_sized_as_replaced_element(state, box, abspos_available_space) {
 		replaced := box.as_box() or { return }
-		size := compute_replaced_size(replaced, abspos_available_space)
+		// CSS ratio boxes transfer the border-box inline size before removing
+		// block-axis edges, just as they do in normal flow. The resolved ratio
+		// height supplies the existing percentage-size basis for descendants.
+		size := chromium_concrete_ratio_block_size(replaced, box_state, abspos_available_space) or {
+			compute_replaced_size(replaced, abspos_available_space)
+		}
 		if forced_width == none {
 			forced_width = size.width()
 		}
