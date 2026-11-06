@@ -93,8 +93,10 @@ if [ "${NATIVE_GPU_CANVAS_PRESENT_TEST:-0}" = 1 ]; then
     "$output_dir/native_gpu_canvas_test" --nested-unclosed
     "$output_dir/native_gpu_canvas_test" --present-tiles
     "$output_dir/native_gpu_canvas_test" --resident-ring
+    "$output_dir/native_gpu_canvas_test" --resident-ring-sparse
     VOX_GPU_CANVAS_PRESENT_VERIFY=1 "$output_dir/native_gpu_canvas_test" --present-tiles
     VOX_GPU_CANVAS_PRESENT_VERIFY=1 "$output_dir/native_gpu_canvas_test" --resident-ring
+    VOX_GPU_CANVAS_PRESENT_VERIFY=1 "$output_dir/native_gpu_canvas_test" --resident-ring-sparse
 fi
 
 python3 - "$output_dir/inputs.json" <<'PIN'

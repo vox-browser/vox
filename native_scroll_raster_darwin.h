@@ -99,6 +99,50 @@ static int native_scroll_raster_integer(double value) {
         && fabs(value - round(value)) < 0.0000001;
 }
 
+static size_t native_scroll_raster_white_rect(uint8_t *pixels, size_t pitch,
+    size_t width, size_t height, long left, long top, long right, long bottom) {
+    left = left < 0 ? 0 : left; top = top < 0 ? 0 : top;
+    right = right > (long)width ? (long)width : right;
+    bottom = bottom > (long)height ? (long)height : bottom;
+    if (right <= left || bottom <= top) return 0;
+    for (long y = top; y < bottom; ++y)
+        memset(pixels + (size_t)y * pitch + (size_t)left * 4, 255, (size_t)(right-left)*4);
+    return (size_t)(right-left)*(size_t)(bottom-top)*4;
+}
+
+// Retained GPU tiles cover the complete document at publication. Only current
+// damage is uploaded from the CPU bitmap; stale bytes elsewhere are neither
+// uploaded nor displayed. Initialize that input and the chrome, keeping a small
+// sampling fringe. Mode changes and rejected frames still use a complete clear.
+static void native_scroll_raster_clear_gpu_input(VoxScrollRaster const *cache,
+    uint8_t *pixels, size_t pitch, int reuse, double delta, const double *damage, int count) {
+    int sparse = reuse && getenv("VOX_GPU_TILE_SPARSE_CLEAR");
+    size_t cleared = 0, w = cache->canvas_width, h = cache->canvas_height;
+    if (!sparse) cleared = native_scroll_raster_white_rect(pixels,pitch,w,h,0,0,w,h);
+    else {
+        cleared += native_scroll_raster_white_rect(pixels,pitch,w,h,0,0,w,cache->top);
+        cleared += native_scroll_raster_white_rect(pixels,pitch,w,h,0,cache->top+cache->height,w,h);
+        if (w > cache->width)
+            cleared += native_scroll_raster_white_rect(pixels,pitch,w,h,cache->width,cache->top,w,cache->top+cache->height);
+        long rows = lround(delta);
+        if (rows) {
+            long first = rows < 0 ? 0 : (long)cache->height-rows;
+            long last = rows < 0 ? -rows : (long)cache->height;
+            cleared += native_scroll_raster_white_rect(pixels,pitch,w,h,0,
+                (long)cache->top+first-8,cache->width,(long)cache->top+last+8);
+        }
+        for (int index=0; index<count; ++index) {
+            const double *rect=damage+index*4;
+            cleared += native_scroll_raster_white_rect(pixels,pitch,w,h,
+                lround(rect[0]*cache->scale)-8,(long)cache->top+lround(rect[1]*cache->scale)-8,
+                lround((rect[0]+rect[2])*cache->scale)+8,
+                (long)cache->top+lround((rect[1]+rect[3])*cache->scale)+8);
+        }
+    }
+    if (getenv("VOX_GPU_TILE_CLEAR_DIAGNOSTICS"))
+        fprintf(stderr,"VOX_GPU_TILE_CLEAR sparse=%d cleared_bytes=%zu canvas_bytes=%zu\n",sparse,cleared,w*h*4);
+}
+
 // Rows form a ring: advancing the origin keeps the overlapping document pixels
 // in place. Only the exposed rows need writing back after replay. Contiguous
 // canvases need at most two copies even when the ring wraps.
@@ -386,7 +430,7 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     cache->gpu_tiled = gpu_tiled;
     if (gpu_tiled) {
         CGContextFlush(context);
-        for (size_t y = 0; y < canvas_height; ++y) memset(pixels + y * pitch, 255, canvas_width * 4);
+        native_scroll_raster_clear_gpu_input(cache,pixels,pitch,reuse,delta,damage,damage_count);
     }
     memset(cache->tile_dirty, 0, sizeof(cache->tile_dirty));
     if (cache->tiled && (!reuse || !cache->tiles_current)) native_scroll_tiles_clear();

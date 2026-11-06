@@ -895,6 +895,7 @@ static std::vector<uint8_t> render_nested_gpu_sources(bool nested_gpu,int depth,
 }
 
 static double s_resident_scroll;
+static bool s_resident_cpu_barrier;
 static void draw_resident_scene(CGContextRef context, bool canvas) {
     CGContextSetRGBFillColor(context,1,1,1,1);
     CGContextFillRect(context,CGRectMake(0,0,css_width,css_height));
@@ -906,6 +907,11 @@ static void draw_resident_scene(CGContextRef context, bool canvas) {
             (n*47)%255,(n*83)%255,(n*103)%255,213,1,0,1,1));
     }
     // The fixed overlay participates in the root and repaints vacated ink.
+    if (s_resident_cpu_barrier) {
+        if (canvas) assert(!ladybird_v_skia_gpu_canvas_command("unapproved",10,0));
+        CGContextSetRGBFillColor(context,.1,.3,.8,.4);
+        CGContextFillRect(context,CGRectMake(61,css_height-(119-s_resident_scroll)-63,211,63));
+    }
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,4));
     assert(ladybird_v_skia_draw_rounded_rect(context,380,71,9,67,4,4,4,4,4,4,4,4,
         1,0,0,1,0,0,0,0,0,css_width,css_height,20,40,60,117,1,0,1,1));
@@ -1008,7 +1014,11 @@ int main(int argc, char** argv)
         return 0;
     } }
 
-    if (argc==2 && !std::strcmp(argv[1],"--resident-ring")) { @autoreleasepool {
+    if (argc==2 && (!std::strcmp(argv[1],"--resident-ring")
+            || !std::strcmp(argv[1],"--resident-ring-sparse"))) { @autoreleasepool {
+        if (!std::strcmp(argv[1],"--resident-ring-sparse")) {
+            setenv("VOX_GPU_TILE_SPARSE_CLEAR","1",1);s_resident_cpu_barrier=true;
+        }
         [NSApplication sharedApplication];
         assert(ladybird_v_skia_gpu_canvas_compositor_available());
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
