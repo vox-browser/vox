@@ -62,11 +62,11 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	operation := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		settings := runtime.scripting_settings_ or { return error('IndexedDB requires an owning environment') }
-		document := settings.responsible_document() or { return error('IndexedDB requires an owning document') }
-		mut storage := document.native_storage()
-		mut allocation_scope := platform.RetainedArenaScope{}
-		if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
-		defer { allocation_scope.finish() }
+		if settings.responsible_document() == none { return error('IndexedDB requires an owning document') }
+		// Databases and connection queues are shared across navigations. Their
+		// records and later mutations must outlive this Window's DOM payload.
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		return runtime.indexed_db_operation(mut binding, args) or {
 			if err is JavaScriptValueException { return err }
 			value := webidl.exception_value(err)
@@ -115,6 +115,8 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	})!
 	indexed_db_bindings_[owner] = binding
 	runtime.add_close_handler(fn [owner, mut binding] () {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		binding.closed = true
 		for _, mut entry in binding.entries {
 			if entry.kind == .database { entry.database.close() }

@@ -8,6 +8,8 @@
 @[has_globals]
 module indexeddb
 
+import platform
+
 pub type DatabaseTask = fn ()
 
 pub type RequestAlgorithm = fn (mut IDBRequest) !RequestResultKind
@@ -109,6 +111,10 @@ pub fn create_a_sorted_name_list(names []string) []string {
 }
 
 pub fn commit_a_transaction(mut transaction IDBTransaction) ! {
+	// Auto-commit can run in a frame checkpoint. Its completion callbacks are
+	// retained by the shared transaction after that frame's scratch expires.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	transaction.state = .committing
 	transaction.set_cleanup_event_loop(unsafe { nil })
 	transaction_pointer := voidptr(&transaction)

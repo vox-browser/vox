@@ -1024,6 +1024,10 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) indexed_db() &GlobalScopeIndex
 	if value := scope.indexed_db_ {
 		return value
 	}
+	// The factory publishes into IndexedDB's process-wide storage and queues.
+	// Neither its context nor database task results belong to a DOM arena.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	origin := if window := scope.associated_window_ {
 		window.associated_document().origin()
 	} else {
@@ -1045,13 +1049,9 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) indexed_db() &GlobalScopeIndex
 		storage_key: if key := storage_key { key.to_string() } else { '' }
 		event_loop_handle: voidptr(loop)
 		queue_database_task: fn [loop, document] (task indexeddb.DatabaseTask) {
-			queue_a_task(.database_access, loop, document, fn [document, task] () {
-				mut allocation_scope := platform.RetainedArenaScope{}
-				if owner := document {
-					mut storage := owner.native_storage()
-					if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
-				}
-				defer { allocation_scope.finish() }
+			queue_a_task(.database_access, loop, document, fn [task] () {
+				persistent := platform.enter_persistent()
+				defer { platform.leave_persistent(persistent) }
 				task()
 			})
 		}
