@@ -7543,3 +7543,28 @@ its shared correctness work earns no current-pass reuse credit. Initial native
 preparation rejected an available bundle whose recorded HEAD predates the tested
 files, before launching any browser. No acceptance ID or history advances.
 [Production assertion-elision audit and corrected focused checks](performance/bbc-cached-inline-margin-prod-focus-20261106.json).
+
+A fresh **actual V `-profile -profile-no-inline` diagnostic** uses literal
+V `-prod`, C-O2/LTO, a single C unit and bounded preallocation. Its 129 prospective
+main-thread wall scopes preserve the normalized engine bodies; 124 execute.
+Original pixels/content, all 72 external source evaluations, mapped native
+images, private-PID memory adoption and normal exit pass. Selected wall self
+costs include JavaScript receiver calls (776.974 ms), uncached grid layout
+(157.271 ms), inline iterator construction (111.353 ms), and engine-function
+calls (108.922 ms). Chrome updates take 10.065 ms selected self time across 164
+calls. These are instrumented wall observations, including unselected callees,
+waits and post-PNG work; recursive inclusive times overlap. They establish no CPU
+shares, production instruction total, browser ratio or saving. The initial
+source-changing codegen attempt was rejected before C compilation and is retained.
+[Fresh profile and sealed compiler/native evidence](performance/bbc-frame-v-profile-20261106.json).
+
+A provisional per-batch longhand snapshot quota extension (`45a2759fa`, control
+`371cd01ac`) passes **288 focused executions**: 48 cases in both arms across all
+three memory modes. Three new cases compare late entries against uncached
+computation and cover the hard bound, live typed/parent mutations, copy-on-write,
+nested batches, GC lifetime and reset. A separate test-header compatibility fix
+(`9ffd05aa7`) recognizes current V's Boehm macro; seven lifetime cases pass. The
+original default compile rejection and corrected run are both retained. All
+**348 instruction-tool tests** pass. Native workload eligibility is evaluated
+separately; this correctness evidence earns no performance or catalog credit.
+[Focused capacity and GC-header checks](performance/bbc-longhand-capacity-focus-20261106.json).
