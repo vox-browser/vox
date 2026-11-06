@@ -109,7 +109,7 @@ def main():
                       '-I' + str(skia / 'include/skia'), '-I' + str(skia / 'include'),
                       str(REPO / 'tools/native_skia_image_color_profile_test.cpp'),
                       '-L' + str(skia / 'lib'), '-lskia', '-Wl,-rpath,' + str(skia / 'lib')]
-    for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
+    for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal', 'IOSurface']:
         native_compile += ['-framework', framework]
     native_compile += ['-o', str(native)]
     webp_compile = ['clang++', '-std=c++20', '-O1', '-g', '-fno-rtti', '-fsanitize=address',
