@@ -1,6 +1,46 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 128**, literal V `-prod` / single-C-unit production
+Latest attempt — **cohort 129**, literal V `-prod` / single-C-unit production
+`c8ecf46fa46f`, compares current-pass retained inline geometry with that reuse
+disabled on the same executable. All **21 attempts** are retained, with **20
+passing capture audits**; Brave pair 2 differs from its unchanged pixel reference,
+invalidating acceptance. Launch-to-PNG medians are **25,861,678,931 Vox**,
+**26,292,623,478 control** and **17,446,101,724 Brave lower bound** instructions.
+The median point reduction is **430,944,547 (1.639032%)**, with five paired
+improvements and two regressions; the conservative control ratio **1.07508**
+fails. The strict Brave gate also fails `264089283480 > 155651359428`
+(ratio **1.52700**). No robust saving or catalog credit is claimed. Fresh native
+checks prove candidate-only actual reuse before encoded PNG and retain original
+pixels/content, all 72 external source evaluations, native-image/ownership audits
+and normal exits. SVG source-switch is exact in both arms. Both arms contain the
+explicit production margin-commit fix; that common correctness work earns no
+isolated reuse credit. The retired relative-root-only experiment is absent from
+the complete sealed producer input. [All attempts and native/broad evidence](performance/bbc-same-pass-inline-cohort129-20261106.json).
+
+The point reduction triggers **771 freshly executed unique cases per default
+and no-GC mode: 766 passes and the original five baseline failures**. Layout 568,
+main 78, CSS 110 and browser-JS 15 include eight current inline/margin cases and
+two full-bootstrap regressions. Main/CSS repeat candidate/control; browser-JS
+repeats its existing lexer arms, with automatic GC markers throughout. Primary
+coverage is **1,948 executions, 1,934 passes and 14 repeated baseline failures**,
+with current checked inputs and actual entered/called bodies verified. All
+**2,860 broad executions** remain recorded, including two earlier stable-input
+main batches and one later main batch exposing a common bootstrap defect after
+intervening shared changes. Helper assertions in that failed epoch do not identify
+the active case, so its per-case pass totals and the all-attempt pass total remain
+unset. The separately committed initialization fix restores the two original main
+failures; no tolerance, assertion or baseline exemption is relaxed. Initial
+missing-helper compile failures and later stale-input/failed-audit receipts are
+also retained. No full-suite pass or cadence reset is claimed.
+
+History through 129 is **123 measured cohorts / 2,650 acceptance browser
+attempts**; preflight-only IDs remain 104, 110, 111, 113, 118 and 124. Native-only
+rejections before this cohort launch consume no acceptance ID or attempt. The 10%
+target remains unmet, and the BBC homepage remains outside the qualifying
+instruction catalog. Earlier builds and C modes remain separate, without
+cross-build gain attribution.
+
+Retained attempt — **cohort 128**, literal V `-prod` / single-C-unit production
 `c78955b3151b`, tests one configured JSC GC marker against the automatic policy
 on the same executable. This is a runtime-configuration experiment; **production
 GC defaults remain unchanged**. All **21 attempts** are retained, with **20

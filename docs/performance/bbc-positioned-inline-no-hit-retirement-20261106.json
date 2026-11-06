@@ -314,5 +314,11 @@
   "acceptance_browser_attempts": 0,
   "history_advanced": false,
   "qualification": "Both native arms on productionaf70e02c48e4 pass exact original pixels/content,72externalbytes,nativeimage/ownership/normalexits. Candidate marker remains absent beforePNG,so eligibility gate stops beforeSVG or acceptance launch. Planned129 remains unlaunched and will not be counted or combined with a future cohort129. Implementation/tests and control remain recorded in linear history,then removed after84passingrestoration cases inthreeGCmodes and346currenttoolchecks;unchanged checkedpins/actualcalls/exitsverified. Native rollback confirmation awaits a bundle containing retirement; its successor experiment must assert retiredmarkerabsence. No performance,cadence,Brave orcatalogcredit.",
-  "unix": 1793932653.5057821
+  "unix": 1793932653.5057821,
+  "native_rollback_confirmation": {
+    "passed": true,
+    "production": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+    "evidence": "bbc-same-pass-inline-cohort129-20261106.json",
+    "qualification": "Complete sealed generated input lacks retired marker/control; both original native audits and successor candidate-only hit pass. Original pending receipt remains preserved in its raw archive."
+  }
 }
