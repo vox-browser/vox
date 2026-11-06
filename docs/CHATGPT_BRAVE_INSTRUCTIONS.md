@@ -5433,3 +5433,19 @@ The latest completed executable `fe2d2e8e8f79669f9f63b519e849069936558d9d1077720
 The [focused verification receipt](performance/chatgpt-opacity-ink-rows-focused-verification-20261106.json) links committed source, both component generations, exact test results, memory guards, commands, link failures and authenticated evidence archives.
 
 The final production compile subsequently finished normally under the memory guard (196.148 seconds, peak sampled RSS 5.69 GiB). Its authenticated sealed C contains the final once-per-scan policy. A nonblocking exclusive publication-lease attempt reports busy, and the completed bundle remains unpublished behind another reader; the canonical app still has the earlier prototype. No staging app is launched or copied. [Publication evidence](performance/chatgpt-opacity-ink-rows-publication-pending-20261106-evidence.zip) preserves the successful compile, exact source witness, lock observation and pending canonical identity. Final browser validation remains pending.
+
+## Opacity interior rows: production eligibility result (2026-11-06)
+
+The publication block above cleared. The final completed canonical bundle was checked in four fresh diagnostic captures under one nonblocking shared publication lease. Sealed C proves the once-per-scan policy, reverse last-row search and complete-row control; both the executable and Skia bridge images contain the new control and diagnostic strings.
+
+| Diagnostic variant | Content / bootstrap | Exact reference pixels | Browser / kernel exits | Skipped-interior marker |
+| --- | --- | --- | --- | --- |
+| Vox candidate | Pass | Pass | 0 / 0 | Absent |
+| Vox complete-row control | Pass | Pass | 0 / 0 | Absent |
+| Brave reference, both captures | Pass | Pass | 0 / 0 | Not applicable |
+
+**No useful skipped-interior execution was observed on this ChatGPT capture.** This does not establish that the bounds function never runs. The source path is present, but neither Vox log contains its benefit marker. The controller correctly rejects the path audit with exit one; the outer memory guard records that same exit, successful process adoption and no budget violation. Every browser/kernel exit is zero. No matched optimization cohort is launched, and no instruction difference from this instrumented diagnostic is credited.
+
+Executable `4fa001c1a7e820167c920a5739e3aa7def2267045c199af51ba42cdedff050ab` and native libraries stay unchanged through the captures. Original author scripts, frozen one-time SOCKS capture/references, fresh profiles/caches, 1024×768 scale two and the five-second unfocused settle remain fixed. Both Vox variants confirm the Wasm module lexer and JavaScriptCore bootstrap. GPU/outside-coalition work remains excluded; OS filesystem/shader caches remain retained.
+
+The exact focused/component results above remain useful general rendering evidence. They do not establish a ChatGPT improvement. **Page credit and broad carry stay zero. The latest complete matched result remains 26.586B versus 26.598B for module normalization, with overlapping ranges; the 20B and original Brave targets remain unmet.** The [production verification](performance/chatgpt-opacity-ink-rows-browser-verification-20261106.json) links all four captures, source witnesses, guards, counters, PNGs, the rejected path audit and earlier focused/build/publication evidence.

@@ -1,0 +1,104 @@
+{
+  "complete": true,
+  "kind": "production_eligibility_diagnostic",
+  "implementation_commits": [
+    "27a879435e8e2fe05f95fcae18a16f8b1578dbf8",
+    "dcd2d0b539394da18773be37ae7c07cb5319b12e"
+  ],
+  "build_fix_commit": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "4fa001c1a7e820167c920a5739e3aa7def2267045c199af51ba42cdedff050ab",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-075935-783004f9/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "f4e9364c83ec4947849b9d57f3dacc49eba026524732d310f151e7dae3a8283f",
+      "dirty": true,
+      "head": "ddd9ea7d7ff3454a16a4ed7bd0c66735f96fb025",
+      "repository_sha256": "f74e7808c351714c96669c2b7f9eed2760ee73c7f6486ca5f758fa724e34a11e"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "c472a12c4804f492c9b6add634c88ff3dbfdb6ac1ea5d11a7b594ec47a0518f4",
+      "dirty": true,
+      "head": "38036155921df00dcdd3c578ba707e3d879838e7",
+      "repository_sha256": "08e7f26b03d21fc72f7667c15bda51a72fb59529df9a569567d90e692be100d2"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "dcd2d0b539394da18773be37ae7c07cb5319b12e",
+      "id": "d21e1402311e4250a1fcb7e4a1ba8f3a",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f4e9364c83ec4947849b9d57f3dacc49eba026524732d310f151e7dae3a8283f",
+      "dirty": true,
+      "head": "6f7a77893a8b657edf9f8a3563a2450206744356",
+      "repository_sha256": "0292d43c63b8a41920de0b6b055b80109c009d9076a7cdfbe4cd019d9ffe4119"
+    }
+  },
+  "inputs_stable": true,
+  "valid_captures": 4,
+  "content_bootstrap_and_pixels_passed": true,
+  "observed_skipped_interior_path": false,
+  "matched_cohort_launched": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "focused_verification": {
+    "path": "docs/performance/chatgpt-opacity-ink-rows-focused-verification-20261106.json",
+    "sha256": "b866c3bc4e908ad054f7434a40ddcffb904e8acbee258c856c519f45e0a21086"
+  },
+  "controller_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-opacity-ink-rows-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {
+      "63267": "Fri Nov  6 08:05:50 2026    ",
+      "63269": "Fri Nov  6 08:05:50 2026    ",
+      "63782": "Fri Nov  6 08:06:00 2026    ",
+      "63786": "Fri Nov  6 08:06:00 2026    ",
+      "63795": "Fri Nov  6 08:06:00 2026    ",
+      "63796": "Fri Nov  6 08:06:00 2026    ",
+      "63798": "Fri Nov  6 08:06:00 2026    ",
+      "64422": "Fri Nov  6 08:06:10 2026    ",
+      "64430": "Fri Nov  6 08:06:10 2026    ",
+      "64442": "Fri Nov  6 08:06:10 2026    ",
+      "64443": "Fri Nov  6 08:06:10 2026    ",
+      "64447": "Fri Nov  6 08:06:10 2026    ",
+      "64485": "Fri Nov  6 08:06:11 2026    ",
+      "64493": "Fri Nov  6 08:06:11 2026    ",
+      "64974": "Fri Nov  6 08:06:21 2026    ",
+      "64976": "Fri Nov  6 08:06:21 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2003943424,
+    "elapsed_seconds": 47.95588225,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-opacity-ink-rows-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "4fad740423484ab6ce6056b4970be9d21b5fffa9a73cf0c075c317e3bea4078c",
+      "bytes": 1380362,
+      "verified_entries": 59
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-ink-rows-browser-controller-20261106-evidence.zip",
+      "sha256": "e923551b9dba2239e4241f67b00b0accbbfacf46c8bc2dd611d332361c2437ca",
+      "bytes": 20235,
+      "verified_entries": 9
+    }
+  ],
+  "qualification": "Publication completed after the retained pending checkpoint. Latest completed canonical single-C-unit V-prod bundle pinned with nonblocking shared publication lease; authenticated sealed C contains once-per-scan policy and both executable/Skia bridge images contain control+diagnostic strings. Fresh candidate/control Vox and Brave processes preserve original single SOCKS fixture/scripts/references, 1024x768 scale2, five-second unfocused settle, private profiles/caches and exact content/bootstrap/pixels with normal exits. Neither Vox log has the skipped-interior-row marker. This does not prove the bounds function never runs; it establishes no observed useful interior skip, so no attribution or matched optimization cohort is collected. Diagnostic counters remain raw only, not page savings. Controller/outer guard exit1 from explicit path audit; browser/kernel exits0; comparison driver also exits1 for unmet Brave gate. All source/preparation/link/prototype/publication attempts preserved. Focused pure-C gains remain general component evidence, not a ChatGPT gain. OS filesystem/shader caches retained, GPU/outside coalition excluded. 20B and original Brave goals remain unmet."
+}
