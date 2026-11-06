@@ -81,7 +81,14 @@ static void test_immutable_image_uploads() {
     image_upload_cache.finish(std::move(video.upload),video.texture);
     PreparedImageDraw video_reused;plan_image_draw(&source,video_reused);
     assert(prepare_image_texture(recorder.get(),&source,video_reused)
-        && video_reused.upload.verified_by_identity && !video_reused.upload.pending && video_reused.texture==video.texture);
+        && video_reused.upload.identity_hit && !video_reused.upload.pending && video_reused.texture==video.texture);
+    vox_graphite_set_image_immutable_source((UINT64_C(1)<<63)|74,bytes.data(),2,2,8);
+    PreparedImageDraw identical_generation;plan_image_draw(&source,identical_generation);
+    assert(prepare_image_texture(recorder.get(),&source,identical_generation)
+        && !identical_generation.upload.identity_hit && !identical_generation.upload.pending
+        && identical_generation.texture==video.texture);
+    PreparedImageDraw repeated_generation;plan_image_draw(&source,repeated_generation);
+    assert(prepare_image_texture(recorder.get(),&source,repeated_generation) && repeated_generation.upload.identity_hit);
     vox_graphite_set_image_immutable_source(73,bytes.data(),2,2,8);
     PreparedImageDraw wrong_domain;plan_image_draw(&source,wrong_domain);
     assert(prepare_image_texture(recorder.get(),&source,wrong_domain) && !wrong_domain.upload.verified_by_identity);

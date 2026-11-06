@@ -69,7 +69,7 @@ python3 - "$output_dir/immutable-uploads.log" <<'IDENTITY'
 import re,sys
 from pathlib import Path
 log=Path(sys.argv[1]).read_text()
-assert re.search(r'VOX_IMAGE_UPLOAD width=1426 height=1080 .*reused=1 .*immutable=1',log), 'No immutable texture reuse through the primary bridge'
+assert re.search(r'VOX_IMAGE_UPLOAD width=1426 height=1080 .*reused=1 .*immutable=1 identity_hit=1',log), 'No immutable texture reuse through the primary bridge'
 print('Immutable primary/backend bridge: exported API and keyed texture reuse observed')
 IDENTITY
 "$output_dir/native_gpu_canvas_test" --masked-images
@@ -78,7 +78,7 @@ python3 - "$output_dir/video-uploads.log" <<'VIDEO_IDENTITY'
 import re,sys
 from pathlib import Path
 log=Path(sys.argv[1]).read_text()
-assert re.search(r'VOX_IMAGE_UPLOAD width=1426 height=1080 .*reused=1 .*immutable=1',log), 'No video generation reuse through the primary bridge'
+assert re.search(r'VOX_IMAGE_UPLOAD width=1426 height=1080 .*reused=1 .*immutable=1 identity_hit=1',log), 'No video generation reuse through the primary bridge'
 print('Video primary/backend bridge: generation-keyed texture reuse observed')
 VIDEO_IDENTITY
 for resource_mode in optimized sanitized; do

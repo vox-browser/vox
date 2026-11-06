@@ -98,6 +98,7 @@ public:
         bool needs_planar_mipmaps = false;
         bool verified_by_digest = false;
         bool verified_by_identity = false;
+        bool identity_hit = false;
     };
     Request prepare(VoxGraphiteImage const& image, int upload_width, int upload_height, bool mipmapped,
         uint64_t immutable_key = 0)
@@ -124,11 +125,17 @@ public:
         // its digest: vlang.io's 3993x2317 mascot (37 MB decoded) uploads at
         // 999x580, and would otherwise repeat a CPU scale for every draw.
         size_t source_bytes = row_bytes * rows;
-        // Trusted keys come only from immutable decoded-resource generations.
-        // They retain no source allocation: charge the owned texture and key.
+        // Static decoded-resource keys need only the owned texture and key.
         // Unknown/mutable callers keep complete byte/digest verification.
-        bool digested = !immutable_key && (source_bytes > limit || source_bytes + texture_bytes > limit);
-        size_t cost = (immutable_key ? sizeof(immutable_key) : digested ? sizeof(Entry::digest) : source_bytes) + texture_bytes;
+        bool keyed_video = immutable_key && (image.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME);
+        bool omit_source = immutable_key && !keyed_video;
+        // Different decoded video generations often contain identical pixels.
+        // Retain ordinary byte verification for new generations, then bind the
+        // matched texture to the latest key. Repeated draws of that generation
+        // need neither byte comparison nor another upload.
+        bool digested = !omit_source && (source_bytes > limit || source_bytes + texture_bytes > limit);
+        size_t cost = (omit_source ? sizeof(immutable_key) : digested ? sizeof(Entry::digest) : source_bytes)
+            + texture_bytes + (keyed_video ? sizeof(immutable_key) : 0);
         if (cost > limit) return {};
         uint64_t digest[2] {};
         bool have_digest = false;
@@ -142,7 +149,7 @@ public:
             auto const& entry = **it;
             auto const& prior = entry.image;
             if (entry.upload_width != upload_width || entry.upload_height != upload_height
-                || entry.immutable_key != immutable_key
+                || (entry.immutable_key != immutable_key && !(keyed_video && entry.immutable_key))
                 || prior.width != image.width || prior.height != image.height
                 || ((image.flags & 4) && (upload_width != image.width || upload_height != image.height)
                     && prior.nearest != image.nearest)
@@ -150,11 +157,12 @@ public:
                 || (image.has_color_profile && std::memcmp(prior.color_profile, image.color_profile, sizeof(image.color_profile)))) continue;
             if (entry.digested != digested) continue;
             bool equal = true;
-            if (digested) {
+            bool identity_hit = immutable_key && entry.immutable_key == immutable_key;
+            if (digested && !identity_hit) {
                 image_digest();
                 equal = entry.digest[0] == digest[0] && entry.digest[1] == digest[1];
             }
-            for (size_t y = 0; !immutable_key && !digested && equal && y < rows; ++y)
+            for (size_t y = 0; !identity_hit && !omit_source && !digested && equal && y < rows; ++y)
                 equal = !std::memcmp(entry.source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);
             if (!equal) continue;
             // Prefer an existing complete upload to upgrading another entry.
@@ -165,8 +173,9 @@ public:
                 continue;
             }
             auto texture = entry.texture;
+            (*it)->immutable_key = immutable_key;
             entries.splice(entries.begin(), entries, it);
-            return {std::move(texture), nullptr, false, false, digested, bool(immutable_key)};
+            return {std::move(texture), nullptr, false, false, digested && !identity_hit, bool(immutable_key), identity_hit};
         }
         auto entry = std::make_unique<Entry>();
         entry->image = image; entry->image.pixels = nullptr;
@@ -177,7 +186,7 @@ public:
         if (digested) {
             image_digest();
             std::copy_n(digest, 2, entry->digest);
-        } else if (!immutable_key) {
+        } else if (!omit_source) {
             entry->source.resize(source_bytes);
             for (size_t y = 0; y < rows; ++y)
                 std::memcpy(entry->source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);

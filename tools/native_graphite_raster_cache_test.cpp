@@ -106,6 +106,34 @@ static void immutable_upload_generations()
     assert(!uploads.prepare(source,200,100,false,96).texture);
 }
 
+static void keyed_video_preserves_equal_frame_reuse()
+{
+    VoxGraphiteImageUploadCache<std::shared_ptr<int>> uploads;
+    std::vector<uint8_t> bytes(16,37);
+    auto frame=image(bytes.data());frame.flags|=VOX_GRAPHITE_IMAGE_VIDEO_FRAME;
+    uint64_t first=(UINT64_C(1)<<63)|1;
+    auto request=uploads.prepare(frame,2,2,false,first);
+    assert(request.pending && request.pending->source==bytes && !request.identity_hit);
+    auto original=std::make_shared<int>(1);
+    uploads.finish(std::move(request),original);
+    assert(uploads.prepare(frame,2,2,false,first).identity_hit);
+    auto identical=uploads.prepare(frame,2,2,false,first+1);
+    assert(identical.texture==original && !identical.pending && !identical.identity_hit);
+    assert(uploads.prepare(frame,2,2,false,first+1).identity_hit);
+    bytes[0]++;
+    auto changed=uploads.prepare(frame,2,2,false,first+2);
+    assert(!changed.texture && changed.pending && !changed.identity_hit);
+    uploads.finish(std::move(changed),std::make_shared<int>(2));
+    bytes[0]--;
+    auto returned=uploads.prepare(frame,2,2,false,first+3);
+    assert(returned.texture==original && !returned.identity_hit);
+    assert(uploads.prepare(frame,2,2,false,first+3).identity_hit);
+    // Mutable callers and new video generations must still verify every byte.
+    assert(!uploads.prepare(frame,2,2,false).texture);
+    bytes.back()++;
+    assert(!uploads.prepare(frame,2,2,false,first+4).texture);
+}
+
 static void retained_large_upload_admission()
 {
     setenv("VOX_RETAIN_LARGE_IMAGE_UPLOAD_BYTES", "1", 1);
@@ -252,6 +280,7 @@ int main(int argc, char** argv)
     large_draw_admission();
     large_upload_admission();
     immutable_upload_generations();
+    keyed_video_preserves_equal_frame_reuse();
     retained_large_upload_admission();
     equivalent_path_admission(true);
     equivalent_path_admission(false);

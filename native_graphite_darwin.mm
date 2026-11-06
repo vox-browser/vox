@@ -545,9 +545,9 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
     if (std::getenv("VOX_IMAGE_UPLOAD_DIAGNOSTICS")) {
         using Clock = double (*)();
         static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-        std::fprintf(stderr, "VOX_IMAGE_UPLOAD width=%d height=%d upload_width=%d upload_height=%d reused=%d pending=%d upgrade=%d digested=%d immutable=%d t_us=%.3f\n",
+        std::fprintf(stderr, "VOX_IMAGE_UPLOAD width=%d height=%d upload_width=%d upload_height=%d reused=%d pending=%d upgrade=%d digested=%d immutable=%d identity_hit=%d t_us=%.3f\n",
             image->width, image->height, upload_width, upload_height, bool(upload.texture),
-            bool(upload.pending), upload.needs_mipmaps, upload.verified_by_digest, upload.verified_by_identity, clock ? clock() : -1.0);
+            bool(upload.pending), upload.needs_mipmaps, upload.verified_by_digest, upload.verified_by_identity, upload.identity_hit, clock ? clock() : -1.0);
     }
     sk_sp<SkImage> texture = upload.texture;
     if (upload.needs_mipmaps) {
