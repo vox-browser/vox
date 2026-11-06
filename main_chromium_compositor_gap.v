@@ -141,8 +141,10 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 		}
 	}
 
-	mut masks := []u64{}
-	mut mask_owners := []int{}
+	mut scopes := []u64{}
+	mut scope_kinds := []string{}
+	mut scope_owners := []int{}
+	mut mask_depth := 0
 	for index in start .. end {
 		owner := plan.command_layers[index]
 		if owner < 0 { continue }
@@ -150,29 +152,40 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 		child := plan.layers[owner]
 		command := unsafe { &commands[index] }
 		if command.fixed_to_viewport { return false }
-		if command.kind in ['begin_svg_mask_layer', 'end_svg_mask_layer'] {
+		if command.kind in ['begin_svg_mask_layer', 'end_svg_mask_layer',
+			'begin_css_effect_layer', 'end_css_effect_layer'] {
 			// A complete SVG mask only removes its children's pixels. Their
 			// bounded ink can prove separation without treating a resource or
 			// filter scope as an independently drawable leaf.
-			mask := command.visual_layer_data or { return false }
-			if !child.legacy_raster || mask.kind != .svg_mask || mask.scope_id == 0
-				|| mask.opacity != 1 || mask.blend_mode != .normal || mask.filter != none {
+			// An identity effect around that mask does not expand its output.
+			// Keep it in the same balanced stack, including when a clipped
+			// backdrop filter inside the mask is entirely outside the viewport.
+			layer := command.visual_layer_data or { return false }
+			mask := command.kind in ['begin_svg_mask_layer', 'end_svg_mask_layer']
+			if (mask && (!child.legacy_raster || layer.kind != .svg_mask))
+				|| (!mask && layer.kind != .css_effect) || layer.scope_id == 0
+				|| layer.opacity != 1 || layer.blend_mode != .normal || layer.filter != none {
 				return false
 			}
-			if command.kind == 'begin_svg_mask_layer' {
-				if mask_owners.len > 0 && mask_owners.last() != owner { return false }
-				masks << u64(mask.scope_id)
-				mask_owners << owner
+			kind := if mask { 'svg_mask_layer' } else { 'css_effect_layer' }
+			if command.kind.starts_with('begin_') {
+				if scope_owners.len > 0 && scope_owners.last() != owner { return false }
+				scopes << u64(layer.scope_id)
+				scope_kinds << kind
+				scope_owners << owner
+				if mask { mask_depth++ }
 			} else {
-				if masks.len == 0 || masks.last() != u64(mask.scope_id)
-					|| mask_owners.last() != owner { return false }
-				masks.delete_last()
-				mask_owners.delete_last()
+				if scopes.len == 0 || scopes.last() != u64(layer.scope_id)
+					|| scope_kinds.last() != kind || scope_owners.last() != owner { return false }
+				scopes.delete_last()
+				scope_kinds.delete_last()
+				scope_owners.delete_last()
+				if mask { mask_depth-- }
 			}
 			continue
 		}
-		masked := mask_owners.len > 0 && mask_owners.last() == owner
-		if mask_owners.len > 0 && !masked { return false }
+		if scope_owners.len > 0 && scope_owners.last() != owner { return false }
+		masked := mask_depth > 0
 		if chromium_compositor_leaf_is_culled(command, viewport) { continue }
 		scrollbar := command.scrollbar_axis != '' && command.kind in [
 			'fill_rounded_rect',
@@ -200,5 +213,5 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 			return chromium_svg_compositor_layer_declined(parent, index, 'gap child overlaps resumed parent', command.kind)
 		}
 	}
-	return masks.len == 0
+	return scopes.len == 0
 }
