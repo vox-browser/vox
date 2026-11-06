@@ -1,0 +1,84 @@
+{
+  "complete": true,
+  "diagnostic": true,
+  "acceptance": false,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "instruction_credit": 0,
+  "broad_cadence": 0,
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "204abd9c10a1f5bc74f6a52a0dae65b0e5967575079a37593825e74debda38ff",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-080530-ab6fa61b/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "c472a12c4804f492c9b6add634c88ff3dbfdb6ac1ea5d11a7b594ec47a0518f4",
+      "dirty": true,
+      "head": "dbd7404fb3441f0ca3eb8388c666bf364d002070",
+      "repository_sha256": "3cd9061e0af0049f0ec2d4e779eb1b7a8c0ddff201b9d50a53def9e408ac4887"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "82392b8b5b4e8e9b6c9ab21b49f82fa445c382b95d86b3b3f90f023c39d201e9",
+      "dirty": true,
+      "head": "181307df1c502a4a9863b43a32ddf68c765a14cf",
+      "repository_sha256": "a3b06be2d84b758ce8aa780ea1231f12241238399f3d04a7b53410d4e718856f"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "dbd7404fb3441f0ca3eb8388c666bf364d002070",
+      "id": "87ceec88a62241a894859636b8ad9470",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "c472a12c4804f492c9b6add634c88ff3dbfdb6ac1ea5d11a7b594ec47a0518f4",
+      "dirty": true,
+      "head": "181307df1c502a4a9863b43a32ddf68c765a14cf",
+      "repository_sha256": "1a019aeed4c315825f9809083d25981e60e4a8cd3296116e7735ed2e5c299c63"
+    }
+  },
+  "native_sample": {
+    "path": "docs/performance/chatgpt-current-native-sample-20261106-r2-evidence.zip",
+    "sha256": "17b63d0dfdc6022f008740e36b05dbc8454f43130bebe6b02b9a8ac5b0af9d48",
+    "bytes": 739723,
+    "entries": 17
+  },
+  "stage_capture": {
+    "path": "docs/performance/chatgpt-load-stages-current-r1-diagnostic-20261106-evidence.zip",
+    "sha256": "d54c85f00938697277819ece0516635fddcd204d6780ebd48b784778bbbdadae",
+    "bytes": 2152875,
+    "entries": 80,
+    "checkpoints": 6
+  },
+  "stage_rows": 63,
+  "exact_traced_total": 28048917731,
+  "single_untraced_total": 26195148792,
+  "traced_minus_untraced": 1853768939,
+  "javascript_associated_scopes": 6847976634,
+  "style_update": 4099468162,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-current-native-sample-20261106-r2-evidence.zip",
+      "sha256": "17b63d0dfdc6022f008740e36b05dbc8454f43130bebe6b02b9a8ac5b0af9d48",
+      "bytes": 739723,
+      "verified_entries": 17
+    },
+    {
+      "path": "docs/performance/chatgpt-load-stages-current-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "d54c85f00938697277819ece0516635fddcd204d6780ebd48b784778bbbdadae",
+      "bytes": 2152875,
+      "verified_entries": 80
+    },
+    {
+      "path": "docs/performance/chatgpt-current-budget-controllers-20261106-evidence.zip",
+      "sha256": "2dae1355650b0203052603aa11a470c3628e8c3dd3b5f365a1ed7761fba537c0",
+      "bytes": 16066,
+      "verified_entries": 10
+    }
+  ],
+  "qualification": "Fresh native statistical stack sample and independent traced/untraced captures use the same pinned completed canonical single-C-unit V-prod production identity, original one-time SOCKS fixture/scripts/references, 1024x768 scale2, five-second unfocused settle and private profiles/caches. Every content/bootstrap/pixel audit passes with normal browser/kernel exits. The 63 exclusive stage rows reconcile exactly to the traced coalition creation-through-PNG total; inclusive scopes overlap. Main-thread boundaries read process-wide counters, so concurrent worker/JSC work is charged to whichever scope is active. Module completion is a host/native/engine callback scope, not pure author JS. Process/coalition endpoint remainder stays explicitly unattributed. Instrumentation and frame/work variation mean the traced/untraced difference is not an overhead estimate or optimization gain. Native 1ms sample frequencies include waits, recursion, concurrency and startup/attachment gaps; no instruction percentages derived. No copied app/source checkout or manual build. Neither run is an acceptance cohort or scaled to 26.59B, 29B or 20B. OS filesystem/shader caches retained, GPU/outside coalition excluded."
+}

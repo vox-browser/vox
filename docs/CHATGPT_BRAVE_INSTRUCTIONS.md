@@ -5449,3 +5449,83 @@ The publication block above cleared. The final completed canonical bundle was ch
 Executable `4fa001c1a7e820167c920a5739e3aa7def2267045c199af51ba42cdedff050ab` and native libraries stay unchanged through the captures. Original author scripts, frozen one-time SOCKS capture/references, fresh profiles/caches, 1024×768 scale two and the five-second unfocused settle remain fixed. Both Vox variants confirm the Wasm module lexer and JavaScriptCore bootstrap. GPU/outside-coalition work remains excluded; OS filesystem/shader caches remain retained.
 
 The exact focused/component results above remain useful general rendering evidence. They do not establish a ChatGPT improvement. **Page credit and broad carry stay zero. The latest complete matched result remains 26.586B versus 26.598B for module normalization, with overlapping ranges; the 20B and original Brave targets remain unmet.** The [production verification](performance/chatgpt-opacity-ink-rows-browser-verification-20261106.json) links all four captures, source witnesses, guards, counters, PNGs, the rejected path audit and earlier focused/build/publication evidence.
+
+## Current production stage budget after module and opacity work (2026-11-06)
+
+The new diagnostic uses completed executable `204abd9c10a1f5bc74f6a52a0dae65b0e5967575079a37593825e74debda38ff`. A fresh native stack sample and a separate traced/untraced capture pair all pass full content/bootstrap audits, exact unchanged per-engine pixels and normal exits. The same one-time SOCKS capture/scripts, 1024×768 scale two, five-second unfocused settle and private profiles/caches remain fixed. The app and native libraries stay pinned under a shared publication lease for each diagnostic; no bundle is copied and no build is requested.
+
+The traced total is **28,048,917,731 instructions**. Its **63** exclusive stage rows below sum exactly to that total. The separate untraced observation is **26,195,148,792 instructions**; one observation per mode is not a performance cohort, and their difference is not an instrumentation-overhead estimate. No table row is scaled to the earlier 26.59B/29B totals or the 20B target.
+
+The module-completion and JS/bindings scopes together account for **6,847,976,634** instructions (24.41% of this trace). Module completion includes native host/source/loading/engine callback work, so this sum is not an isolated JavaScript engine total. Style updates alone account for **4,099,468,162**. Main-thread scope boundaries read process-wide counters: concurrent native/JSC work is charged to the active interval. The explicit coalition/process endpoint remainder remains unattributed. Inclusive scopes overlap and must not be added.
+
+| Exclusive stage | Calls | Instructions | Share of traced total |
+| --- | ---: | ---: | ---: |
+| style_update | 754 | 4,099,468,162 | 14.6154% |
+| javascript_module_completion | 281 | 4,014,987,308 | 14.3142% |
+| paint_layer_transition | 147 | 2,936,182,435 | 10.4681% |
+| javascript_execution_and_bindings | 1,757 | 2,832,989,326 | 10.1002% |
+| browser_main | 1 | 2,798,863,766 | 9.9785% |
+| absolute_positioned_layout | 12 | 2,070,653,437 | 7.3823% |
+| coalition_endpoint_remainder | 0 | 808,538,959 | 2.8826% |
+| gpu_frame_finalization | 15 | 720,976,913 | 2.5704% |
+| paint_leaf_text | 292 | 623,459,106 | 2.2228% |
+| platform_timer_delivery | 2,272 | 619,081,344 | 2.2071% |
+| paint_leaf_shadow | 35 | 604,438,564 | 2.1549% |
+| css_parsing | 11 | 587,735,064 | 2.0954% |
+| paint_leaf_fill | 206 | 524,779,894 | 1.8709% |
+| paint_leaf_border | 99 | 497,219,050 | 1.7727% |
+| paint_leaf_svg | 198 | 402,434,253 | 1.4348% |
+| background_resource_completion | 383 | 311,931,374 | 1.1121% |
+| html_networking_task | 567 | 276,359,549 | 0.9853% |
+| document_layout | 741 | 213,566,812 | 0.7614% |
+| frame | 383 | 186,168,718 | 0.6637% |
+| navigation_html_parsing | 1 | 183,149,504 | 0.6530% |
+| paint_leaf_effect_end | 44 | 167,359,446 | 0.5967% |
+| viewport_relayout | 9 | 162,468,157 | 0.5792% |
+| unscoped_process | 0 | 159,873,678 | 0.5700% |
+| paint_command_dispatch | 15 | 158,860,870 | 0.5664% |
+| frame_preparation | 383 | 156,050,027 | 0.5563% |
+| flow_layout | 12 | 155,669,974 | 0.5550% |
+| html_event_loop | 1,149 | 146,946,745 | 0.5239% |
+| layout_tree_construction | 10 | 143,833,604 | 0.5128% |
+| html_rendering_task | 359 | 141,466,578 | 0.5044% |
+| stationary_raster_finish | 383 | 123,499,511 | 0.4403% |
+| paint_command_recording | 17 | 114,986,033 | 0.4099% |
+| native_raster_replay | 383 | 108,318,278 | 0.3862% |
+| native_document_replay | 383 | 96,299,585 | 0.3433% |
+| native_window_initialization | 2 | 72,836,686 | 0.2597% |
+| script_state_replay | 761 | 71,741,538 | 0.2558% |
+| initial_resource_preload | 1 | 68,388,375 | 0.2438% |
+| script_runtime_setup | 1 | 62,842,389 | 0.2240% |
+| native_frame_bitmap | 383 | 62,124,629 | 0.2215% |
+| document_install | 1 | 59,422,229 | 0.2119% |
+| browser_chrome | 391 | 55,606,658 | 0.1982% |
+| native_frame_presentation | 383 | 50,224,392 | 0.1791% |
+| scroll_raster_probe | 15 | 48,644,775 | 0.1734% |
+| stationary_raster_probe | 375 | 47,625,209 | 0.1698% |
+| browser_tab_frame | 383 | 43,481,816 | 0.1550% |
+| html_rendering_opportunity | 383 | 32,585,358 | 0.1162% |
+| layout_geometry | 12 | 31,385,913 | 0.1119% |
+| raster_frame_commit | 15 | 30,944,884 | 0.1103% |
+| animation_driver | 383 | 26,995,585 | 0.0962% |
+| html_other_task | 202 | 23,053,466 | 0.0822% |
+| raster_frame_setup | 15 | 22,583,558 | 0.0805% |
+| stationary_raster_eligibility | 375 | 22,032,443 | 0.0786% |
+| native_frame_context | 383 | 21,347,807 | 0.0761% |
+| png_encoding | 1 | 18,055,441 | 0.0644% |
+| style_computation | 29 | 7,750,046 | 0.0276% |
+| capture_snapshot | 1 | 5,854,697 | 0.0209% |
+| html_posted_message_task | 17 | 4,227,431 | 0.0151% |
+| raster_tile_setup | 15 | 3,478,376 | 0.0124% |
+| paint_leaf_effect_begin | 44 | 3,294,043 | 0.0117% |
+| relative_positioned_layout | 12 | 1,781,721 | 0.0064% |
+| viewport_raster_plan | 15 | 866,116 | 0.0031% |
+| html_timer_task | 5 | 622,781 | 0.0022% |
+| stationary_blank_probe | 8 | 444,440 | 0.0016% |
+| capture_conversion | 1 | 58,905 | 0.0002% |
+
+| Total | | 28,048,917,731 | 100% |
+
+The native stack sample again observes active grid/flex/absolute layout, style, DOM query traversal and opacity scans. Recursive counts and unknown JIT symbols cannot be ranked as additive instruction costs; the requested 1ms statistical samples include waits, concurrent threads and attachment gaps. These are leads only. The previous opacity fast path still has no observed useful execution on this fixture.
+
+The [verification receipt](performance/chatgpt-current-budget-verification-20261106.json), [traced JSON](performance/chatgpt-load-stages-current-r1-traced-20261106.json), [CSV](performance/chatgpt-load-stages-current-r1-traced-20261106.csv) and [fresh native sample](performance/chatgpt-current-native-sample-20261106-r2.json) retain exact totals, every stage, raw logs, PNGs, counters, source witnesses, guards and authenticated archives. **No optimization credit is assigned; the 20B and original Brave targets remain unmet.**

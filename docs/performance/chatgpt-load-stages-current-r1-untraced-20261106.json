@@ -1,0 +1,238 @@
+{
+  "complete": true,
+  "process_instructions": 25392218126,
+  "coalition_instructions": 26195148792,
+  "rows": [
+    {
+      "checkpoint": "startup",
+      "instructions": 185609528,
+      "calls": 1
+    },
+    {
+      "checkpoint": "startup_page_model",
+      "instructions": 6915249,
+      "calls": 1
+    },
+    {
+      "checkpoint": "startup_browser_state",
+      "instructions": 122546,
+      "calls": 1
+    },
+    {
+      "checkpoint": "startup_input_bridge",
+      "instructions": 1138780,
+      "calls": 1
+    },
+    {
+      "checkpoint": "startup_context",
+      "instructions": 644508,
+      "calls": 1
+    },
+    {
+      "checkpoint": "navigation_started",
+      "instructions": 150712,
+      "calls": 1
+    },
+    {
+      "checkpoint": "startup_navigation",
+      "instructions": 296170,
+      "calls": 1
+    },
+    {
+      "checkpoint": "startup_filter_worker",
+      "instructions": 21429295,
+      "calls": 1
+    },
+    {
+      "checkpoint": "frame_prepared",
+      "instructions": 5105460720,
+      "calls": 382
+    },
+    {
+      "checkpoint": "frame_complete",
+      "instructions": 6742846103,
+      "calls": 382
+    },
+    {
+      "checkpoint": "main_resource_fetch",
+      "instructions": 111183355,
+      "calls": 1
+    },
+    {
+      "checkpoint": "main_resource_cache",
+      "instructions": 94098,
+      "calls": 1
+    },
+    {
+      "checkpoint": "parse_document",
+      "instructions": 191130744,
+      "calls": 1
+    },
+    {
+      "checkpoint": "preload_resources",
+      "instructions": 372352220,
+      "calls": 1
+    },
+    {
+      "checkpoint": "install_styles",
+      "instructions": 182056,
+      "calls": 1
+    },
+    {
+      "checkpoint": "install_video_frames",
+      "instructions": 8195001,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_native_bindings",
+      "instructions": 81885616,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_initial_state",
+      "instructions": 10215292,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_bootstrap_source",
+      "instructions": 308668,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_bootstrap_evaluated",
+      "instructions": 53913233,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_document_bindings",
+      "instructions": 40215795,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_adblock_scriptlets",
+      "instructions": 13118252,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_readiness_events",
+      "instructions": 916743298,
+      "calls": 1
+    },
+    {
+      "checkpoint": "javascript_finalized",
+      "instructions": 363345,
+      "calls": 1
+    },
+    {
+      "checkpoint": "run_javascript",
+      "instructions": 904151,
+      "calls": 1
+    },
+    {
+      "checkpoint": "cookie_blocker",
+      "instructions": 167348,
+      "calls": 1
+    },
+    {
+      "checkpoint": "script_inserted_stylesheets",
+      "instructions": 514995,
+      "calls": 1
+    },
+    {
+      "checkpoint": "unsized_script_images",
+      "instructions": 324033,
+      "calls": 1
+    },
+    {
+      "checkpoint": "build_boxes",
+      "instructions": 7810980990,
+      "calls": 10
+    },
+    {
+      "checkpoint": "tree_fixups",
+      "instructions": 2386748,
+      "calls": 10
+    },
+    {
+      "checkpoint": "build_tree_total",
+      "instructions": 181559161,
+      "calls": 12
+    },
+    {
+      "checkpoint": "formatting_contexts",
+      "instructions": 161308797,
+      "calls": 12
+    },
+    {
+      "checkpoint": "absolute_descendants",
+      "instructions": 2171280662,
+      "calls": 12
+    },
+    {
+      "checkpoint": "relative_insets",
+      "instructions": 2138647,
+      "calls": 12
+    },
+    {
+      "checkpoint": "scrollable_overflow",
+      "instructions": 5823128,
+      "calls": 12
+    },
+    {
+      "checkpoint": "attach_layout",
+      "instructions": 14599974,
+      "calls": 12
+    },
+    {
+      "checkpoint": "layout_tree",
+      "instructions": 490008446,
+      "calls": 10
+    },
+    {
+      "checkpoint": "relayout",
+      "instructions": 104605,
+      "calls": 1
+    },
+    {
+      "checkpoint": "script_inserted_images",
+      "instructions": 323923,
+      "calls": 1
+    },
+    {
+      "checkpoint": "install_total",
+      "instructions": 102904,
+      "calls": 1
+    },
+    {
+      "checkpoint": "paint_commands",
+      "instructions": 661020859,
+      "calls": 19
+    },
+    {
+      "checkpoint": "capture_started",
+      "instructions": 206963,
+      "calls": 1
+    },
+    {
+      "checkpoint": "capture_cached",
+      "instructions": 5871315,
+      "calls": 1
+    },
+    {
+      "checkpoint": "capture_converted",
+      "instructions": 53431,
+      "calls": 1
+    },
+    {
+      "checkpoint": "capture_document_encoded",
+      "instructions": 18022462,
+      "calls": 1
+    },
+    {
+      "checkpoint": "coalition_endpoint_remainder",
+      "instructions": 802930666,
+      "calls": 0
+    }
+  ],
+  "qualification": "Non-overlapping gaps ending at named checkpoints. A gap can include preceding unmarked parent work; its name is not a pure function attribution. Nested scope records are excluded. No retroactive attribution."
+}
