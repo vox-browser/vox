@@ -1,6 +1,6 @@
 # Developer tools
 
-Vox has a Chrome-style Elements panel docked below the document. It is
+Vox has Chrome-style Elements and Console panels docked below the document. They are
 declared in V/UI2 like the rest of the browser chrome and works on the
 document of the tab that opens it.
 
@@ -9,6 +9,7 @@ document of the tab that opens it.
 | Toggle the panel | Cmd+Option+I, F12, Browser > Developer Tools | Ctrl+Shift+I, F12 |
 | Pick an element in the page | Cmd+Shift+C or Cmd+Option+C, the toolbar arrow | Ctrl+Shift+C |
 | Inspect the element under the pointer | Right-click > Inspect | Right-click > Inspect |
+| Open the console | Cmd+Option+J, Browser > JavaScript Console | Ctrl+Shift+J |
 | Open with every tab | `--auto-open-devtools-for-tabs` | `--auto-open-devtools-for-tabs` |
 
 ## Elements panel
@@ -39,6 +40,18 @@ document of the tab that opens it.
 - The top edge resizes the panel; the document viewport shrinks to fit it.
   Script mutations refresh the tree while the panel is open.
 
+## Console panel
+
+- Lists what the page logged through `console.*` and its script errors, then
+  each input (`›`) and its result (`‹`), formatted as Chrome prints them:
+  quoted strings, summarized arrays and objects, and nodes by tag.
+- Input runs in the page as global code, so `var` and function declarations
+  persist. Its DOM changes and logs replay through the compact script bridge
+  as an asynchronous page task does. A script-enabled page without scripts
+  gets its runtime on first use; pages with JavaScript disabled report it.
+- Up and Down recall earlier input; Cmd+K (Ctrl+K) or the toolbar button
+  clears the console. Navigation starts a new console.
+
 ## Structure
 
 `devtools/` holds the model, DOM edits and UI2 declarations. Rows refer to
@@ -66,7 +79,7 @@ shares these declarations but has not been exercised in a Linux window.
 
 ## Not yet implemented
 
-The console, network and sources panels, adding declarations to author
+Network and sources panels, expandable console objects, adding declarations to author
 rules, inherited styles, inline attribute editing in the tree, `<template>`
 contents and iframe documents. The Styles tab shows the CSSOM serialization
 of rules rather than their authored text.
