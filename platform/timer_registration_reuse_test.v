@@ -6,6 +6,7 @@ fn C.libweb_v_idle_timer_pool_size() u32
 fn C.libweb_v_idle_timer_pool_has_no_receivers() bool
 fn C.libweb_v_clear_idle_timer_pool()
 fn C.vox_timer_pool_worker_is_not_pooled() bool
+fn C.vox_timer_pool_foreign_stop_is_not_pooled() bool
 
 @[heap]
 struct NativeTimerReuseObservation {
@@ -101,6 +102,8 @@ fn test_positive_interval_and_worker_timers_do_not_enter_the_zero_delay_pool() {
 		timer.stop()
 		assert C.libweb_v_idle_timer_pool_size() == 0
 		assert C.vox_timer_pool_worker_is_not_pooled()
+		assert C.libweb_v_idle_timer_pool_size() == 0
+		assert C.vox_timer_pool_foreign_stop_is_not_pooled()
 		assert C.libweb_v_idle_timer_pool_size() == 0
 	}
 }

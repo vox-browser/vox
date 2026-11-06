@@ -20,5 +20,25 @@ static bool vox_timer_pool_worker_is_not_pooled(void)
         return false;
     return !pthread_join(worker, NULL) && result;
 }
+static void* vox_timer_pool_foreign_stop(void* registration)
+{
+    libweb_v_unregister_timer(registration);
+    return NULL;
+}
+static bool vox_timer_pool_foreign_stop_is_not_pooled(void)
+{
+    unsigned before = libweb_v_idle_timer_pool_size();
+    bool reused = false;
+    // The caller clears the pool first, so this registration cannot come from
+    // an idle entry. Stop it on another thread before the main loop is pumped.
+    void* state = libweb_v_register_timer(NULL, 0,
+        vox_timer_pool_worker_timeout, true, &reused);
+    pthread_t worker;
+    if (pthread_create(&worker, NULL, vox_timer_pool_foreign_stop, state)) {
+        libweb_v_unregister_timer(state);
+        return false;
+    }
+    return !pthread_join(worker, NULL) && libweb_v_idle_timer_pool_size() == before;
+}
 #endif
 #endif

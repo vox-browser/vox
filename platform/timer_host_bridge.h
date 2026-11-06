@@ -33,7 +33,8 @@ static void libweb_v_timer_context_release(const void* context)
 
 static void libweb_v_recycle_timer(LibWebVTimerContext* state)
 {
-    if (state->reusable && libweb_v_idle_timer_count < LIBWEB_V_IDLE_TIMER_LIMIT) {
+    if (state->reusable && pthread_main_np()
+        && libweb_v_idle_timer_count < LIBWEB_V_IDLE_TIMER_LIMIT) {
         libweb_v_idle_timers[libweb_v_idle_timer_count++] = state;
         return;
     }
