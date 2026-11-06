@@ -871,6 +871,20 @@ int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
         }
         prefixes.push_back(prefix);
     }
+    auto submit_render=[&] {
+        auto recording=canvas_recorder->snap();
+        if (recording) {
+            skgpu::graphite::InsertRecordingInfo insertion;
+            insertion.fRecording=recording.get();
+            if (gpu->insertRecording(insertion)!=skgpu::graphite::InsertStatus::kSuccess) return false;
+        }
+        return gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kNo));
+    };
+    // Every leaf and MSAA tile is complete at this point. Start that same
+    // recording while the CPU encodes its following IOSurface copies. Both
+    // submissions retain their existing order on the same Metal queue.
+    bool early_render=std::getenv("VOX_GPU_TILE_EARLY_RENDER_SUBMIT") != nullptr;
+    if (early_render && !submit_render()) { release_textures(); return -1; }
     id<MTLCommandBuffer> commands=[gpu_frame_queue commandBuffer];
     bool encoded=commands!=nil;
     for (size_t index=0; encoded && index<targets.size(); ++index) {
@@ -916,13 +930,13 @@ int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
     }
     release_textures();
     if (!encoded) return 0;
-    auto recording=canvas_recorder->snap();
-    if (recording) {
-        skgpu::graphite::InsertRecordingInfo insertion;
-        insertion.fRecording=recording.get();
-        if (gpu->insertRecording(insertion)!=skgpu::graphite::InsertStatus::kSuccess) return -1;
+    if (!early_render && !submit_render()) return -1;
+    if (std::getenv("VOX_GPU_TILE_SUBMISSION_DIAGNOSTICS")) {
+        using Clock=double (*)();
+        static auto clock=reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT,"vox_precise_scroll_diagnostic_time"));
+        std::fprintf(stderr,"VOX_GPU_TILE_SUBMISSION early_render=%d t_us=%.3f\n",
+            int(early_render),clock ? clock() : -1);
     }
-    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kNo))) return -1;
     for (auto surface:targets) leases.push_back(surface);
     for (auto surface:previous) if (surface && !std::any_of(leases.begin(),leases.end(),[&](auto value){return same_surface(value,surface);})) leases.push_back(surface);
     for (auto surface:leases) { CFRetain(surface); IOSurfaceIncrementUseCount(surface); }

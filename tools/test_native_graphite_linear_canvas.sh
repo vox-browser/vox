@@ -14,4 +14,7 @@ for mode in optimized sanitized; do
         -framework Foundation -framework Metal -framework CoreGraphics -framework ImageIO -framework IOSurface \
         -o "$output_dir/$mode"
     "$output_dir/$mode"
+    # Exercise the same pixel/ownership/failure references with the completed
+    # render submitted before the following IOSurface-copy encoder work.
+    VOX_GPU_TILE_EARLY_RENDER_SUBMIT=1 "$output_dir/$mode"
 done
