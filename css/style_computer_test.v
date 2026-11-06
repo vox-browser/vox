@@ -2319,8 +2319,8 @@ fn test_animation_refresh_can_override_base_display_none() {
 
 	dom_computed := abstract_target.computed_properties() or { panic('missing computed style') }
 	computed := computed_properties_from_dom(dom_computed) or { panic('missing CSS style') }
-	assert computed.property(.display, .no)!.css_text == 'none'
-	assert computed.property(.display, .yes)!.css_text == 'block'
+	assert (computed.property(.display, .no) or { panic('missing base display') }).css_text == 'none'
+	assert (computed.property(.display, .yes) or { panic('missing animated display') }).css_text == 'block'
 	assert is_in_display_none_subtree_ignoring_animations(abstract_target)
 }
 
