@@ -1,0 +1,2155 @@
+{
+ "evidence": "Build/wpt-brave-20261106c (results.jsonl, requests.log, logs; not committed)",
+ "identity": {
+  "started": "2026-11-06T18:06:29+0300",
+  "finished": "2026-11-06T19:19:32+0300",
+  "argv": [
+   "tools/wpt_compare.py",
+   "--output",
+   "Build/wpt-brave-20261106c",
+   "--chunk-size",
+   "100"
+  ],
+  "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+  "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+  "host_cpus": 18,
+  "load_start": [
+   14.24,
+   12.51,
+   9.6
+  ],
+  "load_end": [
+   6.21,
+   5.79,
+   5.98
+  ],
+  "brave_version": "Brave Browser 156.1.98.60",
+  "width": 1024,
+  "height": 768,
+  "chunk_size": 100,
+  "limits": {
+   "startup": 30,
+   "navigation": 10,
+   "harness_start": 5,
+   "grace": 10,
+   "browser_memory_gib": 4
+  },
+  "base_url": "http://127.0.0.1:65203",
+  "changed_inputs": [],
+  "aborted": null,
+  "unexpected_posts": 0,
+  "pinned": {
+   "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ed12977224de2dc85f8514d1952b8298e5db299fb6181178744fcebe5a26fc32",
+   "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "981f9ee52898e2624b0d1970134468f715228e7556440b7e95b95eb26a802aa6",
+   "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "cb34090321466b2ebc7d0cbdbb1f252c9f211616c9acd59d5a7e6b97dbba0629",
+   "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "762090da9068e25237a9f1f8896979661f4f3bf019cd8cff3473174bd770819a",
+   "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "23a14a5fb0984f93867a2b5611115f83b92420a3e17ebef7ca92eed796e0a953",
+   "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+   "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+   "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5"
+  },
+  "vox_receipt": {
+   "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+   "executable_sha256": "ed12977224de2dc85f8514d1952b8298e5db299fb6181178744fcebe5a26fc32",
+   "inputs": {
+    "build_inputs_sha256": "70242bb48841125cf06a522e4b35fbfeda28e0b2dbdb17b255eda9e0d12288d1",
+    "dirty": true,
+    "head": "0229dc7fbb7f56df001e4978e2e384db4c95d9e7",
+    "repository_sha256": "6874055d11fe35cc834cc432cd1229fcdd9d4493b6f1ddfbfe7b2c9904be9a39"
+   },
+   "c_compile": {
+    "mode": "single",
+    "requested": "single",
+    "v_prod": true
+   },
+   "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-173314-1b41aca8/frozen-compile.json"
+  }
+ },
+ "summary": {
+  "tests": 3808,
+  "browsers": {
+   "vox": {
+    "tests": 3808,
+    "outcomes": {
+     "COMPLETE": 3740,
+     "NO_HARNESS": 48,
+     "CRASH": 13,
+     "MEMORY_LIMIT": 7
+    },
+    "harness": {
+     "OK": 3415,
+     "ERROR": 97,
+     "TIMEOUT": 228
+    },
+    "subtests": {
+     "PASS": 61729,
+     "FAIL": 65737,
+     "TIMEOUT": 459,
+     "NOTRUN": 2018,
+     "PRECONDITION_FAILED": 9
+    },
+    "subtest_total": 129952,
+    "subtest_pass_rate": 0.475,
+    "tests_all_pass": 1213
+   },
+   "brave": {
+    "tests": 3808,
+    "outcomes": {
+     "COMPLETE": 3801,
+     "HARD_TIMEOUT": 2,
+     "MEMORY_LIMIT": 1,
+     "NO_DOCUMENT": 4
+    },
+    "harness": {
+     "OK": 3767,
+     "ERROR": 16,
+     "TIMEOUT": 18
+    },
+    "subtests": {
+     "PASS": 172368,
+     "FAIL": 9973,
+     "TIMEOUT": 23,
+     "NOTRUN": 18,
+     "PRECONDITION_FAILED": 6
+    },
+    "subtest_total": 182388,
+    "subtest_pass_rate": 0.9451,
+    "tests_all_pass": 3192
+   }
+  },
+  "wall_seconds": {
+   "vox": 3814.8,
+   "brave": 566.6
+  },
+  "launches": {
+   "vox": 106,
+   "brave": 46
+  },
+  "both_clean": {
+   "tests": 3404,
+   "vox_total_ms": 251164.9,
+   "brave_total_ms": 106234.8,
+   "total_ratio": 2.364,
+   "vox_median_ms": 35.71,
+   "brave_median_ms": 14.46,
+   "ratio_geomean": 2.34,
+   "ratio_median": 2.46,
+   "ratio_p10": 1.445,
+   "ratio_p90": 3.724,
+   "vox_faster": 171
+  },
+  "identical_results": {
+   "tests": 1306,
+   "vox_total_ms": 74486.3,
+   "brave_total_ms": 34240.8,
+   "total_ratio": 2.175,
+   "vox_median_ms": 32.52,
+   "brave_median_ms": 13.65,
+   "ratio_geomean": 2.33,
+   "ratio_median": 2.435,
+   "ratio_p10": 1.627,
+   "ratio_p90": 3.12,
+   "vox_faster": 24
+  },
+  "directories": {
+   "FileAPI": {
+    "tests": 4,
+    "vox_total_ms": 193.1,
+    "brave_total_ms": 156.4,
+    "total_ratio": 1.235,
+    "vox_median_ms": 46.34,
+    "brave_median_ms": 33.2,
+    "ratio_geomean": 1.299,
+    "ratio_median": 1.54,
+    "ratio_p10": 0.929,
+    "ratio_p90": 1.674,
+    "vox_faster": 1
+   },
+   "IndexedDB": {
+    "tests": 48,
+    "vox_total_ms": 2864.8,
+    "brave_total_ms": 3748.6,
+    "total_ratio": 0.764,
+    "vox_median_ms": 51.16,
+    "brave_median_ms": 47.18,
+    "ratio_geomean": 1.023,
+    "ratio_median": 1.157,
+    "ratio_p10": 0.386,
+    "ratio_p90": 2.016,
+    "vox_faster": 21
+   },
+   "WebCryptoAPI": {
+    "tests": 74,
+    "vox_total_ms": 6626.8,
+    "brave_total_ms": 3787.5,
+    "total_ratio": 1.75,
+    "vox_median_ms": 69.0,
+    "brave_median_ms": 33.27,
+    "ratio_geomean": 1.817,
+    "ratio_median": 1.819,
+    "ratio_p10": 1.194,
+    "ratio_p90": 2.708,
+    "vox_faster": 3
+   },
+   "accname": {
+    "tests": 13,
+    "vox_total_ms": 1117.8,
+    "brave_total_ms": 446.3,
+    "total_ratio": 2.505,
+    "vox_median_ms": 69.33,
+    "brave_median_ms": 31.44,
+    "ratio_geomean": 2.39,
+    "ratio_median": 2.043,
+    "ratio_p10": 1.527,
+    "ratio_p90": 4.095,
+    "vox_faster": 0
+   },
+   "clipboard-apis": {
+    "tests": 1,
+    "vox_total_ms": 44.5,
+    "brave_total_ms": 24.4,
+    "total_ratio": 1.824,
+    "vox_median_ms": 44.5,
+    "brave_median_ms": 24.4,
+    "ratio_geomean": 1.824,
+    "ratio_median": 1.824,
+    "ratio_p10": 1.824,
+    "ratio_p90": 1.824,
+    "vox_faster": 0
+   },
+   "compat": {
+    "tests": 3,
+    "vox_total_ms": 226.1,
+    "brave_total_ms": 97.7,
+    "total_ratio": 2.314,
+    "vox_median_ms": 47.36,
+    "brave_median_ms": 28.61,
+    "ratio_geomean": 2.071,
+    "ratio_median": 1.739,
+    "ratio_p10": 1.672,
+    "ratio_p90": 2.816,
+    "vox_faster": 0
+   },
+   "compression": {
+    "tests": 17,
+    "vox_total_ms": 814.7,
+    "brave_total_ms": 541.5,
+    "total_ratio": 1.505,
+    "vox_median_ms": 46.73,
+    "brave_median_ms": 27.75,
+    "ratio_geomean": 1.577,
+    "ratio_median": 1.654,
+    "ratio_p10": 1.204,
+    "ratio_p90": 2.023,
+    "vox_faster": 2
+   },
+   "cookies": {
+    "tests": 1,
+    "vox_total_ms": 30.1,
+    "brave_total_ms": 28.9,
+    "total_ratio": 1.043,
+    "vox_median_ms": 30.12,
+    "brave_median_ms": 28.88,
+    "ratio_geomean": 1.043,
+    "ratio_median": 1.043,
+    "ratio_p10": 1.043,
+    "ratio_p90": 1.043,
+    "vox_faster": 0
+   },
+   "credential-management": {
+    "tests": 2,
+    "vox_total_ms": 60.4,
+    "brave_total_ms": 53.8,
+    "total_ratio": 1.124,
+    "vox_median_ms": 30.21,
+    "brave_median_ms": 26.88,
+    "ratio_geomean": 1.124,
+    "ratio_median": 1.124,
+    "ratio_p10": 1.105,
+    "ratio_p90": 1.143,
+    "vox_faster": 0
+   },
+   "css": {
+    "tests": 1913,
+    "vox_total_ms": 82318.2,
+    "brave_total_ms": 38439.4,
+    "total_ratio": 2.142,
+    "vox_median_ms": 32.54,
+    "brave_median_ms": 13.25,
+    "ratio_geomean": 2.599,
+    "ratio_median": 2.566,
+    "ratio_p10": 2.028,
+    "ratio_p90": 3.574,
+    "vox_faster": 27
+   },
+   "custom-elements": {
+    "tests": 45,
+    "vox_total_ms": 1783.1,
+    "brave_total_ms": 925.5,
+    "total_ratio": 1.927,
+    "vox_median_ms": 32.35,
+    "brave_median_ms": 12.87,
+    "ratio_geomean": 2.387,
+    "ratio_median": 2.543,
+    "ratio_p10": 1.971,
+    "ratio_p90": 3.276,
+    "vox_faster": 1
+   },
+   "dom": {
+    "tests": 110,
+    "vox_total_ms": 8722.4,
+    "brave_total_ms": 5552.5,
+    "total_ratio": 1.571,
+    "vox_median_ms": 32.11,
+    "brave_median_ms": 13.69,
+    "ratio_geomean": 2.217,
+    "ratio_median": 2.443,
+    "ratio_p10": 1.111,
+    "ratio_p90": 3.201,
+    "vox_faster": 9
+   },
+   "domparsing": {
+    "tests": 5,
+    "vox_total_ms": 164.4,
+    "brave_total_ms": 63.0,
+    "total_ratio": 2.608,
+    "vox_median_ms": 31.42,
+    "brave_median_ms": 12.65,
+    "ratio_geomean": 2.605,
+    "ratio_median": 2.695,
+    "ratio_p10": 2.388,
+    "ratio_p90": 2.781,
+    "vox_faster": 0
+   },
+   "domxpath": {
+    "tests": 21,
+    "vox_total_ms": 786.6,
+    "brave_total_ms": 277.8,
+    "total_ratio": 2.831,
+    "vox_median_ms": 30.34,
+    "brave_median_ms": 12.32,
+    "ratio_geomean": 2.652,
+    "ratio_median": 2.474,
+    "ratio_p10": 2.197,
+    "ratio_p90": 3.001,
+    "vox_faster": 0
+   },
+   "ecmascript": {
+    "tests": 1,
+    "vox_total_ms": 38.6,
+    "brave_total_ms": 12.8,
+    "total_ratio": 3.013,
+    "vox_median_ms": 38.62,
+    "brave_median_ms": 12.82,
+    "ratio_geomean": 3.013,
+    "ratio_median": 3.013,
+    "ratio_p10": 3.013,
+    "ratio_p90": 3.013,
+    "vox_faster": 0
+   },
+   "editing": {
+    "tests": 14,
+    "vox_total_ms": 855.9,
+    "brave_total_ms": 732.0,
+    "total_ratio": 1.169,
+    "vox_median_ms": 61.85,
+    "brave_median_ms": 52.12,
+    "ratio_geomean": 1.415,
+    "ratio_median": 1.226,
+    "ratio_p10": 0.748,
+    "ratio_p90": 2.684,
+    "vox_faster": 4
+   },
+   "encoding": {
+    "tests": 20,
+    "vox_total_ms": 1282.3,
+    "brave_total_ms": 339.7,
+    "total_ratio": 3.775,
+    "vox_median_ms": 35.88,
+    "brave_median_ms": 15.63,
+    "ratio_geomean": 2.747,
+    "ratio_median": 2.438,
+    "ratio_p10": 1.98,
+    "ratio_p90": 4.086,
+    "vox_faster": 0
+   },
+   "encoding-detection": {
+    "tests": 44,
+    "vox_total_ms": 1362.7,
+    "brave_total_ms": 638.9,
+    "total_ratio": 2.133,
+    "vox_median_ms": 29.84,
+    "brave_median_ms": 13.21,
+    "ratio_geomean": 2.199,
+    "ratio_median": 2.29,
+    "ratio_p10": 1.765,
+    "ratio_p90": 2.593,
+    "vox_faster": 1
+   },
+   "fetch": {
+    "tests": 14,
+    "vox_total_ms": 548.5,
+    "brave_total_ms": 209.2,
+    "total_ratio": 2.622,
+    "vox_median_ms": 31.82,
+    "brave_median_ms": 13.72,
+    "ratio_geomean": 2.462,
+    "ratio_median": 2.401,
+    "ratio_p10": 1.968,
+    "ratio_p90": 2.779,
+    "vox_faster": 0
+   },
+   "fullscreen": {
+    "tests": 58,
+    "vox_total_ms": 2487.0,
+    "brave_total_ms": 2522.1,
+    "total_ratio": 0.986,
+    "vox_median_ms": 39.21,
+    "brave_median_ms": 21.16,
+    "ratio_geomean": 1.781,
+    "ratio_median": 1.993,
+    "ratio_p10": 1.217,
+    "ratio_p90": 3.04,
+    "vox_faster": 3
+   },
+   "gamepad": {
+    "tests": 1,
+    "vox_total_ms": 86.3,
+    "brave_total_ms": 81.6,
+    "total_ratio": 1.057,
+    "vox_median_ms": 86.28,
+    "brave_median_ms": 81.62,
+    "ratio_geomean": 1.057,
+    "ratio_median": 1.057,
+    "ratio_p10": 1.057,
+    "ratio_p90": 1.057,
+    "vox_faster": 0
+   },
+   "geolocation": {
+    "tests": 1,
+    "vox_total_ms": 68.7,
+    "brave_total_ms": 68.3,
+    "total_ratio": 1.005,
+    "vox_median_ms": 68.69,
+    "brave_median_ms": 68.32,
+    "ratio_geomean": 1.005,
+    "ratio_median": 1.005,
+    "ratio_p10": 1.005,
+    "ratio_p90": 1.005,
+    "vox_faster": 0
+   },
+   "graphics-aria": {
+    "tests": 1,
+    "vox_total_ms": 36.1,
+    "brave_total_ms": 27.6,
+    "total_ratio": 1.309,
+    "vox_median_ms": 36.07,
+    "brave_median_ms": 27.56,
+    "ratio_geomean": 1.309,
+    "ratio_median": 1.309,
+    "ratio_p10": 1.309,
+    "ratio_p90": 1.309,
+    "vox_faster": 0
+   },
+   "hr-time": {
+    "tests": 1,
+    "vox_total_ms": 34.5,
+    "brave_total_ms": 33.3,
+    "total_ratio": 1.037,
+    "vox_median_ms": 34.49,
+    "brave_median_ms": 33.26,
+    "ratio_geomean": 1.037,
+    "ratio_median": 1.037,
+    "ratio_p10": 1.037,
+    "ratio_p90": 1.037,
+    "vox_faster": 0
+   },
+   "html": {
+    "tests": 633,
+    "vox_total_ms": 122481.0,
+    "brave_total_ms": 33304.1,
+    "total_ratio": 3.678,
+    "vox_median_ms": 49.09,
+    "brave_median_ms": 28.39,
+    "ratio_geomean": 2.293,
+    "ratio_median": 2.184,
+    "ratio_p10": 1.096,
+    "ratio_p90": 4.605,
+    "vox_faster": 53
+   },
+   "html-aam": {
+    "tests": 10,
+    "vox_total_ms": 474.6,
+    "brave_total_ms": 165.6,
+    "total_ratio": 2.866,
+    "vox_median_ms": 44.5,
+    "brave_median_ms": 16.39,
+    "ratio_geomean": 2.817,
+    "ratio_median": 2.691,
+    "ratio_p10": 2.378,
+    "ratio_p90": 3.372,
+    "vox_faster": 0
+   },
+   "inert": {
+    "tests": 1,
+    "vox_total_ms": 35.7,
+    "brave_total_ms": 12.6,
+    "total_ratio": 2.826,
+    "vox_median_ms": 35.67,
+    "brave_median_ms": 12.62,
+    "ratio_geomean": 2.826,
+    "ratio_median": 2.826,
+    "ratio_p10": 2.826,
+    "ratio_p90": 2.826,
+    "vox_faster": 0
+   },
+   "infrastructure": {
+    "tests": 3,
+    "vox_total_ms": 123.4,
+    "brave_total_ms": 48.4,
+    "total_ratio": 2.549,
+    "vox_median_ms": 40.17,
+    "brave_median_ms": 14.11,
+    "ratio_geomean": 2.592,
+    "ratio_median": 2.847,
+    "ratio_p10": 2.251,
+    "ratio_p90": 2.896,
+    "vox_faster": 0
+   },
+   "input-events": {
+    "tests": 1,
+    "vox_total_ms": 61.1,
+    "brave_total_ms": 28.2,
+    "total_ratio": 2.167,
+    "vox_median_ms": 61.09,
+    "brave_median_ms": 28.2,
+    "ratio_geomean": 2.167,
+    "ratio_median": 2.167,
+    "ratio_p10": 2.167,
+    "ratio_p90": 2.167,
+    "vox_faster": 0
+   },
+   "intersection-observer": {
+    "tests": 3,
+    "vox_total_ms": 180.2,
+    "brave_total_ms": 120.8,
+    "total_ratio": 1.492,
+    "vox_median_ms": 31.43,
+    "brave_median_ms": 18.28,
+    "ratio_geomean": 1.704,
+    "ratio_median": 1.715,
+    "ratio_p10": 1.41,
+    "ratio_p90": 2.075,
+    "vox_faster": 0
+   },
+   "mathml": {
+    "tests": 1,
+    "vox_total_ms": 35.9,
+    "brave_total_ms": 16.4,
+    "total_ratio": 2.186,
+    "vox_median_ms": 35.92,
+    "brave_median_ms": 16.43,
+    "ratio_geomean": 2.186,
+    "ratio_median": 2.186,
+    "ratio_p10": 2.186,
+    "ratio_p90": 2.186,
+    "vox_faster": 0
+   },
+   "media-capabilities": {
+    "tests": 1,
+    "vox_total_ms": 30.3,
+    "brave_total_ms": 12.9,
+    "total_ratio": 2.345,
+    "vox_median_ms": 30.27,
+    "brave_median_ms": 12.91,
+    "ratio_geomean": 2.345,
+    "ratio_median": 2.345,
+    "ratio_p10": 2.345,
+    "ratio_p90": 2.345,
+    "vox_faster": 0
+   },
+   "media-source": {
+    "tests": 2,
+    "vox_total_ms": 61.8,
+    "brave_total_ms": 33.5,
+    "total_ratio": 1.844,
+    "vox_median_ms": 30.91,
+    "brave_median_ms": 16.77,
+    "ratio_geomean": 1.87,
+    "ratio_median": 1.902,
+    "ratio_p10": 1.624,
+    "ratio_p90": 2.18,
+    "vox_faster": 0
+   },
+   "navigation-api": {
+    "tests": 15,
+    "vox_total_ms": 499.3,
+    "brave_total_ms": 340.5,
+    "total_ratio": 1.466,
+    "vox_median_ms": 31.29,
+    "brave_median_ms": 20.91,
+    "ratio_geomean": 1.495,
+    "ratio_median": 1.512,
+    "ratio_p10": 1.111,
+    "ratio_p90": 2.126,
+    "vox_faster": 1
+   },
+   "notifications": {
+    "tests": 3,
+    "vox_total_ms": 145.0,
+    "brave_total_ms": 73.1,
+    "total_ratio": 1.984,
+    "vox_median_ms": 36.3,
+    "brave_median_ms": 13.71,
+    "ratio_geomean": 2.208,
+    "ratio_median": 2.434,
+    "ratio_p10": 1.823,
+    "ratio_p90": 2.604,
+    "vox_faster": 0
+   },
+   "permissions": {
+    "tests": 5,
+    "vox_total_ms": 399.8,
+    "brave_total_ms": 158.9,
+    "total_ratio": 2.516,
+    "vox_median_ms": 40.98,
+    "brave_median_ms": 26.6,
+    "ratio_geomean": 2.271,
+    "ratio_median": 2.043,
+    "ratio_p10": 1.648,
+    "ratio_p90": 3.333,
+    "vox_faster": 0
+   },
+   "pointerevents": {
+    "tests": 5,
+    "vox_total_ms": 163.5,
+    "brave_total_ms": 72.1,
+    "total_ratio": 2.269,
+    "vox_median_ms": 30.25,
+    "brave_median_ms": 14.02,
+    "ratio_geomean": 2.261,
+    "ratio_median": 2.242,
+    "ratio_p10": 2.14,
+    "ratio_p90": 2.4,
+    "vox_faster": 0
+   },
+   "scroll-animations": {
+    "tests": 47,
+    "vox_total_ms": 1930.5,
+    "brave_total_ms": 4444.8,
+    "total_ratio": 0.434,
+    "vox_median_ms": 35.72,
+    "brave_median_ms": 17.1,
+    "ratio_geomean": 0.938,
+    "ratio_median": 2.015,
+    "ratio_p10": 0.203,
+    "ratio_p90": 2.55,
+    "vox_faster": 19
+   },
+   "selection": {
+    "tests": 1,
+    "vox_total_ms": 32.2,
+    "brave_total_ms": 14.1,
+    "total_ratio": 2.279,
+    "vox_median_ms": 32.2,
+    "brave_median_ms": 14.13,
+    "ratio_geomean": 2.279,
+    "ratio_median": 2.279,
+    "ratio_p10": 2.279,
+    "ratio_p90": 2.279,
+    "vox_faster": 0
+   },
+   "serial": {
+    "tests": 1,
+    "vox_total_ms": 68.4,
+    "brave_total_ms": 44.2,
+    "total_ratio": 1.549,
+    "vox_median_ms": 68.39,
+    "brave_median_ms": 44.16,
+    "ratio_geomean": 1.549,
+    "ratio_median": 1.549,
+    "ratio_p10": 1.549,
+    "ratio_p90": 1.549,
+    "vox_faster": 0
+   },
+   "service-workers": {
+    "tests": 7,
+    "vox_total_ms": 254.2,
+    "brave_total_ms": 422.0,
+    "total_ratio": 0.602,
+    "vox_median_ms": 35.76,
+    "brave_median_ms": 52.95,
+    "ratio_geomean": 0.7,
+    "ratio_median": 0.656,
+    "ratio_p10": 0.405,
+    "ratio_p90": 1.376,
+    "vox_faster": 5
+   },
+   "shadow-dom": {
+    "tests": 13,
+    "vox_total_ms": 629.7,
+    "brave_total_ms": 242.5,
+    "total_ratio": 2.597,
+    "vox_median_ms": 36.75,
+    "brave_median_ms": 14.43,
+    "ratio_geomean": 2.546,
+    "ratio_median": 2.446,
+    "ratio_p10": 2.013,
+    "ratio_p90": 3.481,
+    "vox_faster": 0
+   },
+   "speech-api": {
+    "tests": 1,
+    "vox_total_ms": 80.6,
+    "brave_total_ms": 313.0,
+    "total_ratio": 0.258,
+    "vox_median_ms": 80.61,
+    "brave_median_ms": 312.98,
+    "ratio_geomean": 0.258,
+    "ratio_median": 0.258,
+    "ratio_p10": 0.258,
+    "ratio_p90": 0.258,
+    "vox_faster": 1
+   },
+   "storage": {
+    "tests": 2,
+    "vox_total_ms": 66.7,
+    "brave_total_ms": 25.8,
+    "total_ratio": 2.583,
+    "vox_median_ms": 33.36,
+    "brave_median_ms": 12.92,
+    "ratio_geomean": 2.581,
+    "ratio_median": 2.596,
+    "ratio_p10": 2.373,
+    "ratio_p90": 2.819,
+    "vox_faster": 0
+   },
+   "streams": {
+    "tests": 28,
+    "vox_total_ms": 2196.6,
+    "brave_total_ms": 3461.9,
+    "total_ratio": 0.635,
+    "vox_median_ms": 38.54,
+    "brave_median_ms": 38.65,
+    "ratio_geomean": 1.136,
+    "ratio_median": 1.32,
+    "ratio_p10": 0.373,
+    "ratio_p90": 2.838,
+    "vox_faster": 12
+   },
+   "svg": {
+    "tests": 19,
+    "vox_total_ms": 791.9,
+    "brave_total_ms": 367.9,
+    "total_ratio": 2.153,
+    "vox_median_ms": 34.99,
+    "brave_median_ms": 14.57,
+    "ratio_geomean": 2.249,
+    "ratio_median": 2.296,
+    "ratio_p10": 1.727,
+    "ratio_p90": 2.841,
+    "vox_faster": 0
+   },
+   "svg-aam": {
+    "tests": 3,
+    "vox_total_ms": 169.6,
+    "brave_total_ms": 51.0,
+    "total_ratio": 3.327,
+    "vox_median_ms": 44.32,
+    "brave_median_ms": 18.62,
+    "ratio_geomean": 3.159,
+    "ratio_median": 2.883,
+    "ratio_p10": 2.472,
+    "ratio_p90": 4.269,
+    "vox_faster": 0
+   },
+   "trusted-types": {
+    "tests": 26,
+    "vox_total_ms": 875.9,
+    "brave_total_ms": 442.0,
+    "total_ratio": 1.982,
+    "vox_median_ms": 30.75,
+    "brave_median_ms": 15.74,
+    "ratio_geomean": 1.997,
+    "ratio_median": 2.026,
+    "ratio_p10": 1.783,
+    "ratio_p90": 2.315,
+    "vox_faster": 0
+   },
+   "uievents": {
+    "tests": 1,
+    "vox_total_ms": 31.1,
+    "brave_total_ms": 11.3,
+    "total_ratio": 2.766,
+    "vox_median_ms": 31.13,
+    "brave_median_ms": 11.25,
+    "ratio_geomean": 2.766,
+    "ratio_median": 2.766,
+    "ratio_p10": 2.766,
+    "ratio_p90": 2.766,
+    "vox_faster": 0
+   },
+   "url": {
+    "tests": 17,
+    "vox_total_ms": 599.0,
+    "brave_total_ms": 251.0,
+    "total_ratio": 2.386,
+    "vox_median_ms": 31.5,
+    "brave_median_ms": 12.79,
+    "ratio_geomean": 2.426,
+    "ratio_median": 2.433,
+    "ratio_p10": 1.736,
+    "ratio_p90": 2.901,
+    "vox_faster": 0
+   },
+   "urlpattern": {
+    "tests": 1,
+    "vox_total_ms": 39.5,
+    "brave_total_ms": 24.3,
+    "total_ratio": 1.629,
+    "vox_median_ms": 39.5,
+    "brave_median_ms": 24.25,
+    "ratio_geomean": 1.629,
+    "ratio_median": 1.629,
+    "ratio_p10": 1.629,
+    "ratio_p90": 1.629,
+    "vox_faster": 0
+   },
+   "user-timing": {
+    "tests": 1,
+    "vox_total_ms": 29.9,
+    "brave_total_ms": 11.6,
+    "total_ratio": 2.579,
+    "vox_median_ms": 29.93,
+    "brave_median_ms": 11.61,
+    "ratio_geomean": 2.579,
+    "ratio_median": 2.579,
+    "ratio_p10": 2.579,
+    "ratio_p90": 2.579,
+    "vox_faster": 0
+   },
+   "wai-aria": {
+    "tests": 27,
+    "vox_total_ms": 1114.4,
+    "brave_total_ms": 422.4,
+    "total_ratio": 2.638,
+    "vox_median_ms": 38.95,
+    "brave_median_ms": 15.67,
+    "ratio_geomean": 2.572,
+    "ratio_median": 2.541,
+    "ratio_p10": 2.208,
+    "ratio_p90": 2.755,
+    "vox_faster": 0
+   },
+   "wasm": {
+    "tests": 17,
+    "vox_total_ms": 639.5,
+    "brave_total_ms": 263.2,
+    "total_ratio": 2.43,
+    "vox_median_ms": 35.48,
+    "brave_median_ms": 13.73,
+    "ratio_geomean": 2.475,
+    "ratio_median": 2.584,
+    "ratio_p10": 2.168,
+    "ratio_p90": 2.908,
+    "vox_faster": 0
+   },
+   "web-animations": {
+    "tests": 9,
+    "vox_total_ms": 527.5,
+    "brave_total_ms": 429.5,
+    "total_ratio": 1.228,
+    "vox_median_ms": 36.83,
+    "brave_median_ms": 38.57,
+    "ratio_geomean": 1.309,
+    "ratio_median": 1.826,
+    "ratio_p10": 0.389,
+    "ratio_p90": 3.458,
+    "vox_faster": 4
+   },
+   "web-locks": {
+    "tests": 11,
+    "vox_total_ms": 349.6,
+    "brave_total_ms": 293.6,
+    "total_ratio": 1.191,
+    "vox_median_ms": 31.08,
+    "brave_median_ms": 13.14,
+    "ratio_geomean": 1.641,
+    "ratio_median": 2.326,
+    "ratio_p10": 0.759,
+    "ratio_p90": 2.803,
+    "vox_faster": 2
+   },
+   "webaudio": {
+    "tests": 30,
+    "vox_total_ms": 1066.4,
+    "brave_total_ms": 604.3,
+    "total_ratio": 1.765,
+    "vox_median_ms": 31.96,
+    "brave_median_ms": 15.67,
+    "ratio_geomean": 1.968,
+    "ratio_median": 2.075,
+    "ratio_p10": 1.559,
+    "ratio_p90": 2.398,
+    "vox_faster": 1
+   },
+   "webidl": {
+    "tests": 16,
+    "vox_total_ms": 618.4,
+    "brave_total_ms": 316.7,
+    "total_ratio": 1.952,
+    "vox_median_ms": 33.89,
+    "brave_median_ms": 16.55,
+    "ratio_geomean": 1.982,
+    "ratio_median": 2.068,
+    "ratio_p10": 1.48,
+    "ratio_p90": 2.559,
+    "vox_faster": 1
+   },
+   "webmessaging": {
+    "tests": 3,
+    "vox_total_ms": 94.7,
+    "brave_total_ms": 43.1,
+    "total_ratio": 2.194,
+    "vox_median_ms": 31.17,
+    "brave_median_ms": 14.55,
+    "ratio_geomean": 2.194,
+    "ratio_median": 2.143,
+    "ratio_p10": 2.119,
+    "ratio_p90": 2.296,
+    "vox_faster": 0
+   },
+   "webstorage": {
+    "tests": 8,
+    "vox_total_ms": 522.6,
+    "brave_total_ms": 175.1,
+    "total_ratio": 2.984,
+    "vox_median_ms": 33.01,
+    "brave_median_ms": 15.43,
+    "ratio_geomean": 2.495,
+    "ratio_median": 2.21,
+    "ratio_p10": 1.954,
+    "ratio_p90": 3.748,
+    "vox_faster": 0
+   },
+   "webxr": {
+    "tests": 3,
+    "vox_total_ms": 99.0,
+    "brave_total_ms": 50.4,
+    "total_ratio": 1.962,
+    "vox_median_ms": 31.86,
+    "brave_median_ms": 16.36,
+    "ratio_geomean": 1.967,
+    "ratio_median": 2.092,
+    "ratio_p10": 1.765,
+    "ratio_p90": 2.148,
+    "vox_faster": 0
+   },
+   "workers": {
+    "tests": 9,
+    "vox_total_ms": 679.3,
+    "brave_total_ms": 179.3,
+    "total_ratio": 3.789,
+    "vox_median_ms": 76.81,
+    "brave_median_ms": 19.29,
+    "ratio_geomean": 3.805,
+    "ratio_median": 3.803,
+    "ratio_p10": 3.215,
+    "ratio_p90": 4.452,
+    "vox_faster": 0
+   },
+   "xhr": {
+    "tests": 8,
+    "vox_total_ms": 412.6,
+    "brave_total_ms": 133.9,
+    "total_ratio": 3.081,
+    "vox_median_ms": 35.89,
+    "brave_median_ms": 14.04,
+    "ratio_geomean": 2.701,
+    "ratio_median": 2.553,
+    "ratio_p10": 2.089,
+    "ratio_p90": 4.003,
+    "vox_faster": 0
+   }
+  },
+  "slowest_ratio": [
+   {
+    "test": "streams/piping/general-addition.any",
+    "vox_ms": 228.231,
+    "brave_ms": 10.943
+   },
+   {
+    "test": "css/css-logical/logical-box-size",
+    "vox_ms": 155.629,
+    "brave_ms": 19.849
+   },
+   {
+    "test": "css/css-flexbox/relayout-align-items",
+    "vox_ms": 140.739,
+    "brave_ms": 19.364
+   },
+   {
+    "test": "css/selectors/invalidation/not-pseudo-containing-complex-in-has",
+    "vox_ms": 95.419,
+    "brave_ms": 13.741
+   },
+   {
+    "test": "css/css-logical/logical-box-inset",
+    "vox_ms": 129.354,
+    "brave_ms": 19.006
+   },
+   {
+    "test": "wai-aria/role/tree-roles",
+    "vox_ms": 102.477,
+    "brave_ms": 15.6
+   },
+   {
+    "test": "css/css-flexbox/flex-minimum-height-flex-items-031",
+    "vox_ms": 98.297,
+    "brave_ms": 15.747
+   },
+   {
+    "test": "encoding/streams/invalid-realm.window",
+    "vox_ms": 116.78,
+    "brave_ms": 19.453
+   },
+   {
+    "test": "css/selectors/invalidation/is-pseudo-containing-complex-in-has",
+    "vox_ms": 79.819,
+    "brave_ms": 13.558
+   },
+   {
+    "test": "css/css-logical/logical-box-border-color",
+    "vox_ms": 130.899,
+    "brave_ms": 22.352
+   },
+   {
+    "test": "css/css-flexbox/multiline-min-max",
+    "vox_ms": 86.699,
+    "brave_ms": 15.061
+   },
+   {
+    "test": "css/css-logical/logical-box-border-style",
+    "vox_ms": 123.965,
+    "brave_ms": 22.251
+   },
+   {
+    "test": "css/css-logical/logical-box-border-radius",
+    "vox_ms": 114.323,
+    "brave_ms": 20.688
+   },
+   {
+    "test": "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-iframe-percentage",
+    "vox_ms": 8879.674,
+    "brave_ms": 1622.759
+   },
+   {
+    "test": "css/css-backgrounds/border-width-cssom",
+    "vox_ms": 74.279,
+    "brave_ms": 13.961
+   },
+   {
+    "test": "accname/name/comp_labelledby",
+    "vox_ms": 145.082,
+    "brave_ms": 27.907
+   },
+   {
+    "test": "encoding-detection/es-nuestra-senora-windows-1252.tentative",
+    "vox_ms": 60.026,
+    "brave_ms": 11.607
+   },
+   {
+    "test": "dom/nodes/ParentNode-replaceChildren",
+    "vox_ms": 69.325,
+    "brave_ms": 13.413
+   },
+   {
+    "test": "css/css-logical/logical-box-padding",
+    "vox_ms": 128.844,
+    "brave_ms": 24.951
+   },
+   {
+    "test": "css/css-anchor-position/position-area-parsing",
+    "vox_ms": 95.426,
+    "brave_ms": 18.542
+   },
+   {
+    "test": "html/syntax/parsing/inhead-noscript-head",
+    "vox_ms": 87.444,
+    "brave_ms": 17.644
+   },
+   {
+    "test": "css/css-scroll-snap/resnap-on-layout-is-immediate",
+    "vox_ms": 57.629,
+    "brave_ms": 11.772
+   },
+   {
+    "test": "css/css-flexbox/abspos/position-absolute-014",
+    "vox_ms": 62.81,
+    "brave_ms": 12.886
+   },
+   {
+    "test": "fetch/api/cors/sandboxed-iframe",
+    "vox_ms": 119.402,
+    "brave_ms": 24.553
+   },
+   {
+    "test": "css/css-cascade/presentational-hints-cascade",
+    "vox_ms": 56.407,
+    "brave_ms": 11.78
+   }
+  ],
+  "largest_difference": [
+   {
+    "test": "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-iframe-percentage",
+    "vox_ms": 8879.674,
+    "brave_ms": 1622.759
+   },
+   {
+    "test": "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-iframe-auto",
+    "vox_ms": 6188.314,
+    "brave_ms": 1890.016
+   },
+   {
+    "test": "html/rendering/replaced-elements/svg-embedded-sizing/svg-in-iframe-fixed",
+    "vox_ms": 6131.468,
+    "brave_ms": 1926.748
+   },
+   {
+    "test": "html/rendering/replaced-elements/svg-inline-sizing/svg-inline",
+    "vox_ms": 442.492,
+    "brave_ms": 175.89
+   },
+   {
+    "test": "streams/piping/general-addition.any",
+    "vox_ms": 228.231,
+    "brave_ms": 10.943
+   },
+   {
+    "test": "WebCryptoAPI/import_export/rsa_importKey.https.any",
+    "vox_ms": 350.848,
+    "brave_ms": 191.118
+   },
+   {
+    "test": "css/css-logical/logical-box-size",
+    "vox_ms": 155.629,
+    "brave_ms": 19.849
+   },
+   {
+    "test": "accname/name/comp_host_language_label",
+    "vox_ms": 172.595,
+    "brave_ms": 41.418
+   },
+   {
+    "test": "css/css-flexbox/relayout-align-items",
+    "vox_ms": 140.739,
+    "brave_ms": 19.364
+   },
+   {
+    "test": "accname/name/comp_labelledby",
+    "vox_ms": 145.082,
+    "brave_ms": 27.907
+   },
+   {
+    "test": "css/css-logical/logical-box-inset",
+    "vox_ms": 129.354,
+    "brave_ms": 19.006
+   },
+   {
+    "test": "css/css-logical/logical-box-border-color",
+    "vox_ms": 130.899,
+    "brave_ms": 22.352
+   },
+   {
+    "test": "WebCryptoAPI/historical.any.worker",
+    "vox_ms": 137.271,
+    "brave_ms": 32.724
+   },
+   {
+    "test": "css/css-logical/logical-box-padding",
+    "vox_ms": 128.844,
+    "brave_ms": 24.951
+   },
+   {
+    "test": "css/css-logical/logical-box-border-style",
+    "vox_ms": 123.965,
+    "brave_ms": 22.251
+   },
+   {
+    "test": "WebCryptoAPI/import_export/ML-DSA_importKey.tentative.https.any",
+    "vox_ms": 141.654,
+    "brave_ms": 43.96
+   },
+   {
+    "test": "encoding/streams/invalid-realm.window",
+    "vox_ms": 116.78,
+    "brave_ms": 19.453
+   },
+   {
+    "test": "fetch/api/cors/sandboxed-iframe",
+    "vox_ms": 119.402,
+    "brave_ms": 24.553
+   },
+   {
+    "test": "css/css-logical/logical-box-border-radius",
+    "vox_ms": 114.323,
+    "brave_ms": 20.688
+   },
+   {
+    "test": "html/canvas/element/text/2d.text.draw.baseline.middle",
+    "vox_ms": 123.363,
+    "brave_ms": 29.789
+   },
+   {
+    "test": "accname/name/comp_embedded_control",
+    "vox_ms": 124.974,
+    "brave_ms": 32.816
+   },
+   {
+    "test": "wai-aria/role/tree-roles",
+    "vox_ms": 102.477,
+    "brave_ms": 15.6
+   },
+   {
+    "test": "css/css-flexbox/flex-minimum-height-flex-items-031",
+    "vox_ms": 98.297,
+    "brave_ms": 15.747
+   },
+   {
+    "test": "css/selectors/invalidation/not-pseudo-containing-complex-in-has",
+    "vox_ms": 95.419,
+    "brave_ms": 13.741
+   },
+   {
+    "test": "css/css-anchor-position/position-area-parsing",
+    "vox_ms": 95.426,
+    "brave_ms": 18.542
+   }
+  ]
+ },
+ "chunks": [
+  {
+   "browser": "vox",
+   "chunk": 0,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 24.796
+  },
+  {
+   "browser": "brave",
+   "chunk": 0,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 7.561
+  },
+  {
+   "browser": "brave",
+   "chunk": 1,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 25.515
+  },
+  {
+   "browser": "vox",
+   "chunk": 1,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 120.744
+  },
+  {
+   "browser": "vox",
+   "chunk": 2,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 95.476
+  },
+  {
+   "browser": "brave",
+   "chunk": 2,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 6.332
+  },
+  {
+   "browser": "brave",
+   "chunk": 3,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 3.142
+  },
+  {
+   "browser": "vox",
+   "chunk": 3,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 7.519
+  },
+  {
+   "browser": "vox",
+   "chunk": 4,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 35.544
+  },
+  {
+   "browser": "brave",
+   "chunk": 4,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.335
+  },
+  {
+   "browser": "brave",
+   "chunk": 5,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.261
+  },
+  {
+   "browser": "vox",
+   "chunk": 5,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 5.49
+  },
+  {
+   "browser": "vox",
+   "chunk": 6,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 5.905
+  },
+  {
+   "browser": "brave",
+   "chunk": 6,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.201
+  },
+  {
+   "browser": "brave",
+   "chunk": 7,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.111
+  },
+  {
+   "browser": "vox",
+   "chunk": 7,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 14.864
+  },
+  {
+   "browser": "vox",
+   "chunk": 8,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 26.151
+  },
+  {
+   "browser": "brave",
+   "chunk": 8,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.322
+  },
+  {
+   "browser": "brave",
+   "chunk": 9,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.198
+  },
+  {
+   "browser": "vox",
+   "chunk": 9,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 25.125
+  },
+  {
+   "browser": "vox",
+   "chunk": 10,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 5.326
+  },
+  {
+   "browser": "brave",
+   "chunk": 10,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.258
+  },
+  {
+   "browser": "brave",
+   "chunk": 11,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.32
+  },
+  {
+   "browser": "vox",
+   "chunk": 11,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 7.232
+  },
+  {
+   "browser": "vox",
+   "chunk": 12,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 26.549
+  },
+  {
+   "browser": "brave",
+   "chunk": 12,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.393
+  },
+  {
+   "browser": "brave",
+   "chunk": 13,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.738
+  },
+  {
+   "browser": "vox",
+   "chunk": 13,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 85.204
+  },
+  {
+   "browser": "vox",
+   "chunk": 14,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 45.252
+  },
+  {
+   "browser": "brave",
+   "chunk": 14,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 3.561
+  },
+  {
+   "browser": "brave",
+   "chunk": 15,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.125
+  },
+  {
+   "browser": "vox",
+   "chunk": 15,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 6.994
+  },
+  {
+   "browser": "vox",
+   "chunk": 16,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 86.607
+  },
+  {
+   "browser": "brave",
+   "chunk": 16,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 4.301
+  },
+  {
+   "browser": "brave",
+   "chunk": 17,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 7.803
+  },
+  {
+   "browser": "vox",
+   "chunk": 17,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 455.441
+  },
+  {
+   "browser": "vox",
+   "chunk": 18,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 176.091
+  },
+  {
+   "browser": "brave",
+   "chunk": 18,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.183
+  },
+  {
+   "browser": "brave",
+   "chunk": 19,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 24.996
+  },
+  {
+   "browser": "vox",
+   "chunk": 19,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 71.554
+  },
+  {
+   "browser": "vox",
+   "chunk": 20,
+   "tests": 100,
+   "launches": 5,
+   "seconds": 122.679
+  },
+  {
+   "browser": "brave",
+   "chunk": 20,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 10.356
+  },
+  {
+   "browser": "brave",
+   "chunk": 21,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.193
+  },
+  {
+   "browser": "vox",
+   "chunk": 21,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 126.217
+  },
+  {
+   "browser": "vox",
+   "chunk": 22,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 55.786
+  },
+  {
+   "browser": "brave",
+   "chunk": 22,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 2.76
+  },
+  {
+   "browser": "brave",
+   "chunk": 23,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 17.127
+  },
+  {
+   "browser": "vox",
+   "chunk": 23,
+   "tests": 100,
+   "launches": 17,
+   "seconds": 126.592
+  },
+  {
+   "browser": "vox",
+   "chunk": 24,
+   "tests": 100,
+   "launches": 3,
+   "seconds": 100.4
+  },
+  {
+   "browser": "brave",
+   "chunk": 24,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 3.372
+  },
+  {
+   "browser": "brave",
+   "chunk": 25,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 36.236
+  },
+  {
+   "browser": "vox",
+   "chunk": 25,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 75.402
+  },
+  {
+   "browser": "vox",
+   "chunk": 26,
+   "tests": 100,
+   "launches": 3,
+   "seconds": 200.758
+  },
+  {
+   "browser": "brave",
+   "chunk": 26,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 99.706
+  },
+  {
+   "browser": "brave",
+   "chunk": 27,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 5.718
+  },
+  {
+   "browser": "vox",
+   "chunk": 27,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 18.217
+  },
+  {
+   "browser": "vox",
+   "chunk": 28,
+   "tests": 100,
+   "launches": 3,
+   "seconds": 371.566
+  },
+  {
+   "browser": "brave",
+   "chunk": 28,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 22.194
+  },
+  {
+   "browser": "brave",
+   "chunk": 29,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 4.151
+  },
+  {
+   "browser": "vox",
+   "chunk": 29,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 44.825
+  },
+  {
+   "browser": "vox",
+   "chunk": 30,
+   "tests": 100,
+   "launches": 3,
+   "seconds": 252.638
+  },
+  {
+   "browser": "brave",
+   "chunk": 30,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 12.104
+  },
+  {
+   "browser": "brave",
+   "chunk": 31,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 6.081
+  },
+  {
+   "browser": "vox",
+   "chunk": 31,
+   "tests": 100,
+   "launches": 3,
+   "seconds": 32.207
+  },
+  {
+   "browser": "vox",
+   "chunk": 32,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 31.879
+  },
+  {
+   "browser": "brave",
+   "chunk": 32,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 8.021
+  },
+  {
+   "browser": "brave",
+   "chunk": 33,
+   "tests": 100,
+   "launches": 5,
+   "seconds": 114.683
+  },
+  {
+   "browser": "vox",
+   "chunk": 33,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 110.936
+  },
+  {
+   "browser": "vox",
+   "chunk": 34,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 176.832
+  },
+  {
+   "browser": "brave",
+   "chunk": 34,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 9.023
+  },
+  {
+   "browser": "brave",
+   "chunk": 35,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 4.656
+  },
+  {
+   "browser": "vox",
+   "chunk": 35,
+   "tests": 100,
+   "launches": 27,
+   "seconds": 252.223
+  },
+  {
+   "browser": "vox",
+   "chunk": 36,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 260.9
+  },
+  {
+   "browser": "brave",
+   "chunk": 36,
+   "tests": 100,
+   "launches": 2,
+   "seconds": 23.646
+  },
+  {
+   "browser": "brave",
+   "chunk": 37,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 73.279
+  },
+  {
+   "browser": "vox",
+   "chunk": 37,
+   "tests": 100,
+   "launches": 1,
+   "seconds": 126.071
+  },
+  {
+   "browser": "vox",
+   "chunk": 38,
+   "tests": 8,
+   "launches": 1,
+   "seconds": 0.796
+  },
+  {
+   "browser": "brave",
+   "chunk": 38,
+   "tests": 8,
+   "launches": 1,
+   "seconds": 0.679
+  }
+ ],
+ "abnormal_outcomes": [
+  {
+   "browser": "vox",
+   "test": "IndexedDB/idbcursor-advance-invalid.any",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "compression/decompression-empty-input.any",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "css/css-grid/computed-grid-column",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "vox",
+   "test": "css/css-values/if-conditionals",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "brave",
+   "test": "css/css-values/urls/resolve-relative-to-base.sub",
+   "outcome": "HARD_TIMEOUT"
+  },
+  {
+   "browser": "vox",
+   "test": "css/css-values/urls/resolve-relative-to-base.sub",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "css/filter-effects/animation/backdrop-filter-composition-001",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "css/filter-effects/animation/filter-interpolation-003",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "css/filter-effects/parsing/flood-opacity-computed",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "css/filter-effects/parsing/flood-opacity-valid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "css/selectors/invalidation/not-002",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/events/scrolling/scrollend-event-fired-for-scroll-attr-change?include=subframe-scrollTop-smooth",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Document-constructor-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-childElement-null-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-childElementCount-dynamic-add-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-childElementCount-dynamic-remove-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-childElementCount-nochild-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-childElementCount-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-firstElementChild-entity",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-firstElementChild-namespace-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-firstElementChild-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-lastElementChild-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-nextElementSibling-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-previousElementSibling-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Element-siblingElement-null-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/Node-replaceChild",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/moveBefore/Node-moveBefore",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "dom/nodes/moveBefore/object-crash-regression",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "editing/plaintext-only/insertLineBreak?white-space=pre",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "html/browsers/history/the-history-interface/history_forward_cross_realm_method",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "html/browsers/origin/api/origin-from-global.any",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "html/canvas/element/text/2d.text.draw.baseline.ideographic",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "html/infrastructure/urls/resolving-urls/query-encoding/attributes.sub?encoding=windows-1252",
+   "outcome": "CRASH"
+  },
+  {
+   "browser": "vox",
+   "test": "html/semantics/embedded-content/the-img-element/img.complete",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "vox",
+   "test": "html/semantics/forms/the-select-element/customizable-select/selectedcontent",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "vox",
+   "test": "html/semantics/scripting-1/the-script-element/script-type-and-language-js-svg",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "html/syntax/parsing/html5lib_url?file=tests10",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "vox",
+   "test": "html/syntax/parsing/html5lib_url?file=webkit02",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "vox",
+   "test": "html/syntax/parsing/html5lib_write?file=tests3",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "vox",
+   "test": "html/syntax/parsing/html5lib_write_single?file=tests24",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "vox",
+   "test": "html/the-xhtml-syntax/parsing-xhtml-documents/xml-stylesheet-blocking",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "brave",
+   "test": "html/the-xhtml-syntax/parsing-xhtml-documents/xhtml-mathml-dtd-entity-3",
+   "outcome": "MEMORY_LIMIT"
+  },
+  {
+   "browser": "brave",
+   "test": "navigation-api/navigation-methods/return-value/navigate-interrupted-within-onnavigate",
+   "outcome": "NO_DOCUMENT"
+  },
+  {
+   "browser": "brave",
+   "test": "navigation-api/navigation-methods/return-value/reload-intercept",
+   "outcome": "NO_DOCUMENT"
+  },
+  {
+   "browser": "brave",
+   "test": "navigation-api/ordering-and-transition/anchor-download-intercept?currententrychange",
+   "outcome": "NO_DOCUMENT"
+  },
+  {
+   "browser": "brave",
+   "test": "navigation-api/state/history-pushState?method=navigate",
+   "outcome": "NO_DOCUMENT"
+  },
+  {
+   "browser": "vox",
+   "test": "html/webappapis/dynamic-markup-insertion/the-innerhtml-property/innerhtml-and-xml-namespaces",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/geometry/parsing/height-computed",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/geometry/parsing/r-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/geometry/parsing/rx-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/geometry/parsing/ry-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/geometry/parsing/width-computed",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/inheritance",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/color-interpolation-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/color-interpolation-valid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/paint-order-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/paint-order-valid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/shape-rendering-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/shape-rendering-valid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/stroke-dasharray-computed",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/stroke-dasharray-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/stroke-dashoffset-computed",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/stroke-dashoffset-valid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/stroke-width-computed",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/text-rendering-invalid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/parsing/text-rendering-valid",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/painting/scripted/paint-order-computed-value-01",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/path/property/d-interpolation-discrete",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/path/property/d-interpolation-relative-absolute",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/path/property/d-interpolation-single",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/path/property/getComputedStyle",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/shapes/line-pathLength",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "svg/types/scripted/SVGGeometryElement.getTotalLength-01",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "vox",
+   "test": "url/a-element-origin",
+   "outcome": "NO_HARNESS"
+  },
+  {
+   "browser": "brave",
+   "test": "url/a-element-origin",
+   "outcome": "HARD_TIMEOUT"
+  }
+ ]
+}
