@@ -12,6 +12,11 @@ import fetch
 import http
 import os
 import platform
+import time
+
+// Diagnostic JSON lines for completed transfers: new connections, handshake
+// and first-byte times, and wall-clock start/header/finish timestamps.
+const curl_transfer_log_path = os.getenv('VOX_CURL_TRANSFER_LOG')
 
 @[heap]
 pub struct CurlRequest {
@@ -36,6 +41,8 @@ mut:
 	response_headers_ &http.HeaderList = http.HeaderList.create()
 	reason_phrase_ ?string
 	request_body_ []u8
+	started_us_ i64
+	headers_us_ i64
 }
 
 pub fn (mut connection CurlConnection) fetch_host() &fetch.FetchHost {
@@ -100,6 +107,7 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 		receiver_: fetch.FetchedDataReceiver.create(params, body.stream())
 		id_: connection.next_id_
 		easy_: C.vox_curl_easy_init()
+		started_us_: if curl_transfer_log_path != '' { time.now().unix_micro() } else { 0 }
 	}
 	connection.next_id_++
 	if native.easy_ == unsafe { nil } {
@@ -240,6 +248,7 @@ fn curl_data_received(buffer voidptr, size uint, count uint, owner voidptr) uint
 fn (mut request CurlRequest) transfer_headers_to_client_if_needed() bool {
 	if request.sent_headers_ { return !request.adblock_blocked_ }
 	request.sent_headers_ = true
+	if curl_transfer_log_path != '' { request.headers_us_ = time.now().unix_micro() }
 	mut response := fetch.Response.create()
 	response.status = u16(C.vox_curl_status(request.easy_))
 	response.status_message = request.reason_phrase_ or { '' }
@@ -290,8 +299,16 @@ fn (request &CurlRequest) acquire_timing_info() fetch.RequestTimingInfo {
 	}
 }
 
+fn (request &CurlRequest) log_transfer(result int) {
+	mut file := os.open_append(curl_transfer_log_path) or { return }
+	defer { file.close() }
+	address := request.request_.current_url().serialize().replace('\\', '\\\\').replace('"', '\\"')
+	file.writeln('{"url":"${address}","method":"${request.request_.method}","pool":"${ptr_str(request.connection_)}","owner":"${ptr_str(request.owner_)}","result":${result},"status":${C.vox_curl_status(request.easy_)},"version":${C.vox_curl_version(request.easy_)},"connects":${C.vox_curl_num_connects(request.easy_)},"started_us":${request.started_us_},"headers_us":${request.headers_us_},"finished_us":${time.now().unix_micro()},"queue_us":${C.vox_curl_queue_time(request.easy_)},"connect_us":${C.vox_curl_time(request.easy_, C.CURLINFO_CONNECT_TIME_T)},"tls_us":${C.vox_curl_time(request.easy_, C.CURLINFO_APPCONNECT_TIME_T)},"pretransfer_us":${C.vox_curl_time(request.easy_, C.CURLINFO_PRETRANSFER_TIME_T)},"first_byte_us":${C.vox_curl_time(request.easy_, C.CURLINFO_STARTTRANSFER_TIME_T)},"total_us":${C.vox_curl_time(request.easy_, C.CURLINFO_TOTAL_TIME_T)}}') or {}
+}
+
 fn (mut request CurlRequest) notify_fetch_complete(result int) {
 	if request.finished_ { return }
+	if curl_transfer_log_path != '' { request.log_transfer(result) }
 	if request.adblock_blocked_ { request.stop(); return }
 	if result == C.CURLE_OK {
 		if !request.transfer_headers_to_client_if_needed() { request.stop(); return }

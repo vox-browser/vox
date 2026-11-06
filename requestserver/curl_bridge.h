@@ -110,6 +110,7 @@ static void* vox_curl_next_completion(void* multi, int* result) {
 }
 static long vox_curl_status(void* handle) { long value = 0; vox_curl_api()->easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &value); return value; }
 static long vox_curl_version(void* handle) { long value = 0; vox_curl_api()->easy_getinfo(handle, CURLINFO_HTTP_VERSION, &value); return value; }
+static long vox_curl_num_connects(void* handle) { long value = 0; vox_curl_api()->easy_getinfo(handle, CURLINFO_NUM_CONNECTS, &value); return value; }
 static long long vox_curl_time(void* handle, int option) { curl_off_t value = 0; vox_curl_api()->easy_getinfo(handle, option, &value); return value; }
 static long long vox_curl_queue_time(void* handle) {
 #if LIBCURL_VERSION_NUM >= 0x080600

@@ -27,6 +27,7 @@ fn C.vox_curl_multi_setopt_timer(handle voidptr, callback fn (voidptr, i64, void
 fn C.vox_curl_next_completion(handle voidptr, result &i32) voidptr
 fn C.vox_curl_status(handle voidptr) i64
 fn C.vox_curl_version(handle voidptr) i64
+fn C.vox_curl_num_connects(handle voidptr) i64
 fn C.vox_curl_time(handle voidptr, option i32) i64
 fn C.vox_curl_queue_time(handle voidptr) i64
 fn C.vox_curl_socket_create(owner voidptr, socket i32, callback fn (voidptr, i32, i32)) voidptr
