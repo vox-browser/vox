@@ -245,7 +245,6 @@ void vox_graphite_finish_frame()
 
 static int retire_graphics_context_locked()
 {
-    vox_shared_readback_pool.clear();
     if (!gpu_context) return 0;
     // CPU raster results remain reusable after the unused upload/context die.
     image_upload_cache.clear();
@@ -281,7 +280,6 @@ void vox_graphite_release_unused_graphics_memory()
 {
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
-    vox_shared_readback_pool.clear();
     image_cache.clear();
     image_upload_cache.clear();
     shape_cache.clear();
