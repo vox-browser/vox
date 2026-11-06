@@ -236,11 +236,12 @@ static void tick(void) {
                 (fabs(NSMinY(r)-NSMinY(bounds)) < .01 ||
                  fabs(NSMaxY(r)-NSMaxY(bounds)) < .01)) chrome += r.size.height;
         }
-        fprintf(stderr, "SCROLL_START precise=%d delta_y=%g view_width=%g view_height=%g document_width=%g document_height=%g chrome_height=%g scale=%g input_hz=%g title=%s\n",
+        fprintf(stderr, "SCROLL_START precise=%d delta_y=%g view_width=%g view_height=%g document_width=%g document_height=%g chrome_height=%g scale=%g input_hz=%g layer_flipped=%d view_flipped=%d title=%s\n",
             event.hasPreciseScrollingDeltas, event.scrollingDeltaY,
             page_view.bounds.size.width, page_view.bounds.size.height,
             page_view.bounds.size.width, page_view.bounds.size.height-chrome, chrome,
-            page_view.window.backingScaleFactor, input_hz, page_view.window.title.UTF8String);
+            page_view.window.backingScaleFactor, input_hz, page_view.layer.geometryFlipped,
+            page_view.isFlipped, page_view.window.title.UTF8String);
         fprintf(stderr, "SCROLL_POSITION window=%ld event_window=%ld x=%g y=%g\n",
             (long)input_view.window.windowNumber, (long)event.windowNumber,
             event.locationInWindow.x, event.locationInWindow.y);
