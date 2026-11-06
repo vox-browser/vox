@@ -7661,3 +7661,37 @@ busy; no separate production build is queued. Rejected preflight, actual body
 hashes, pending build identity and prepared cohort 131/776-case conditional broad
 protocol are preserved. No native browser, acceptance sample or cohort ID is
 consumed by this rejection. [Pending native validation](performance/bbc-clamped-inline-workspace-native-pending-20261106.json).
+
+The clamped-inline workspace is **retired** in shared commit `022b370e5`.
+On pinned literal-prod/single-C production `d237a1d842ba`, the four actual
+implementation bodies match the tested C after generated string-ID normalization.
+Both native captures retain original pixels/content, all 72 external source
+byte evaluations, mapped images, ownership and normal exits, but neither arm
+enters the workspace before PNG. The eligibility audit therefore stops before
+SVG or cohort 131. All **102 restoration executions** and **347 tooling tests**
+pass. The staged engine/control removal was incorporated by another session's
+shared commit while these checks ran; exact pre-feature source bytes are verified,
+without claiming its unrelated GPU work or rewriting history. No acceptance ID,
+attempt or broad cadence advances; history remains 124 cohorts / 2,671 attempts
+through 130. Native retirement confirmation remains pending.
+[No-hit captures, body proof and verified removal](performance/bbc-clamped-inline-workspace-no-hit-retirement-20261106.json).
+
+A calibrated follow-up to the valid `v -profile` run records reached inline
+collector and workspace exclusions in a separate sealed production diagnostic.
+It retains exact original pixels/content, 72 external sources, native-image
+identity, ownership of the diagnostic PID, normal exit and memory adoption;
+the complete preprocessed source normalizes unchanged after removing observer
+calls. There are **33130 uncached inline calls and zero active root clamps**.
+Workspace first-rejection observations include **14,464 positioned-root** and
+**13,774 positioned-descendant** calls, with recursive propagation tagged
+separately. These are predicate calls, not unique contexts, CPU shares,
+instruction costs or savings. Compilation and capture use separate read leases;
+only the unlaunched base executable changes between them, while every used
+compiler/native input and actual mapped image remains pinned. This supports
+investigating positioned inline allocation boundaries rather than further clamp
+work. [Reached exclusions and complete compiler/native evidence](performance/bbc-inline-exclusions-diagnostic-20261106.json).
+
+Two exploratory `v -profile` intrinsic-width fixture compiles fail embedded-asset
+typechecking before execution. They establish no width-equivalence or profiling
+result and no instruction credit; the earlier successful full-browser profile
+remains independent. [Rejected profile attempts](performance/bbc-intrinsic-clamp-width-rejected-profile-20261106.json).

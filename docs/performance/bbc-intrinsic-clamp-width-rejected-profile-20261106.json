@@ -1,0 +1,69 @@
+{
+  "status": "Inconclusive: both V -profile fixture compiles rejected embedded asset types before execution.",
+  "attempts": [
+    {
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 1
+        }
+      ],
+      "proof": [],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+        "/Users/alex/code/vox2/layout/intrinsic_sizing.v": "e40c995478ea2fb95cf9f88f3e67e0a0fe02dee7104d73009e79b5d864ae60bf",
+        "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "0acb13315c68c70473d94d51c80973f285dd3ce474e2a6bc7c4170cc829cd123",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c17adc7eb7efb3706e089e18934182abec10fb4893e7261884b88ca7d43b1cb",
+        "/Users/alex/code/vox2/layout/inline_formatting_context.v": "611aba44708d5b8a24d95c1f5de241d6404873cfca969a4f3612cd620d761aef",
+        "/Users/alex/code/vox2/layout/inline_level_iterator.v": "399447a5fcf01ccc74c9c8b060ddba859caf76f121ea32a925f7f40e34280fdf",
+        "/Users/alex/code/vox2/layout/line_builder.v": "9d0732d3c9f305c4d2226d0c6f03b5008a874b73d48957bb11078d196bb6c0ee",
+        "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc"
+      },
+      "unchanged": true,
+      "cases_per_run": 1,
+      "expected_cases": [
+        "test_intrinsic_clamp_diagnostic_width_only_matches_full_layout_and_published_geometry"
+      ]
+    },
+    {
+      "results": [
+        {
+          "name": "prealloc-compile",
+          "exit": 1
+        }
+      ],
+      "proof": [],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+        "/Users/alex/code/vox2/layout/intrinsic_sizing.v": "e40c995478ea2fb95cf9f88f3e67e0a0fe02dee7104d73009e79b5d864ae60bf",
+        "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "0acb13315c68c70473d94d51c80973f285dd3ce474e2a6bc7c4170cc829cd123",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c17adc7eb7efb3706e089e18934182abec10fb4893e7261884b88ca7d43b1cb",
+        "/Users/alex/code/vox2/layout/inline_formatting_context.v": "611aba44708d5b8a24d95c1f5de241d6404873cfca969a4f3612cd620d761aef",
+        "/Users/alex/code/vox2/layout/inline_level_iterator.v": "399447a5fcf01ccc74c9c8b060ddba859caf76f121ea32a925f7f40e34280fdf",
+        "/Users/alex/code/vox2/layout/line_builder.v": "9d0732d3c9f305c4d2226d0c6f03b5008a874b73d48957bb11078d196bb6c0ee",
+        "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc"
+      },
+      "unchanged": true,
+      "cases_per_run": 1,
+      "expected_cases": [
+        "test_intrinsic_clamp_diagnostic_width_only_matches_full_layout_and_published_geometry"
+      ]
+    }
+  ],
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-intrinsic-clamp-width-rejected-profile-20261106.tar.gz",
+      "bytes": 16493,
+      "sha256": "7aaedeaa300a8ce0cd0204835cac386ccf45fe9d0f45b64efe33de1d6c335e5c",
+      "physical_members": 17,
+      "file_paths": 19,
+      "all_file_paths_verified": true
+    }
+  ],
+  "runtime_executions": 0,
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "qualification": "Exploratory synthetic width-only/full intrinsic comparison fixture, not an engine change or BBC acceptance. Both default andboundedprealloc profiling attempts reject EmbedFileData types; no binary/profile rows,semantic result or performance finding established. The initial option omitted explicit stdout filename; refined command uses known -profile - -profile-no-inline form but still fails asset typechecking. Allcommands/actual compiler guards/exits andsource retained. Earlier successful full-browser V-profile evidence remains independent. No production code edited and no acceptance ID,broad cadence or saving advanced.",
+  "unix": 1793940929.8581388
+}
