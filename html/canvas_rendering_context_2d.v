@@ -345,7 +345,8 @@ pub fn html_canvas_element_to_data_url(element &dom.HTMLCanvasElement, type_ str
 	serialized := serialize_bitmap(bitmap, type_, quality, encode_png, encode_jpeg) or {
 		return 'data:,'
 	}
-	return 'data:${serialized.mime_type};base64,${base64.encode(serialized.buffer)}'
+	encoded := base64.encode(serialized.buffer)
+	return 'data:${serialized.mime_type};base64,' + encoded
 }
 
 pub fn html_canvas_element_to_blob(element &dom.HTMLCanvasElement, type_ string, quality ?f64, encode_png PNGEncodeCallback, encode_jpeg JPEGEncodeCallback) !SerializeBitmapResult {

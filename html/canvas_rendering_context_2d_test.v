@@ -2,7 +2,9 @@
 module html
 
 import css
+import crypto.sha256
 import dom
+import encoding.base64
 import math
 
 fn html_canvas_test_png(bitmap &dom.Bitmap_) ![]u8 {
@@ -34,6 +36,10 @@ fn test_html_canvas_defaults_context_pixels_and_serialization() {
 
 	data_url := html_canvas_element_to_data_url(canvas, 'image/png', none, html_canvas_test_png, html_canvas_test_jpeg) or { panic(err) }
 	assert data_url.starts_with('data:image/png;base64,')
+	encoded_pixels := base64.decode(data_url.all_after(','))
+	bitmap := html_canvas_element_get_bitmap_from_surface(canvas) or { panic('missing serialized bitmap') }
+	assert encoded_pixels.len == bitmap.data.len
+	assert sha256.sum(encoded_pixels) == sha256.sum(bitmap.data)
 }
 
 fn test_tainted_html_canvas_rejects_serialization() {

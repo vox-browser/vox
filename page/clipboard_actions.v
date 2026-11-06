@@ -239,7 +239,8 @@ pub fn (mut handler EventHandler) perform_paste_action_with_data_store(mut data_
 			} else if mime_type == 'text/plain' {
 				plain_text = item.data.bytestr()
 			} else if item.kind == .file && mime_type.starts_with('image/') {
-				html = '<img src="data:${mime_type};base64,${base64.encode(item.data)}" />'
+				encoded := base64.encode(item.data)
+				html = '<img src="data:${mime_type};base64,' + encoded + '" />'
 			}
 		}
 		if html != none || plain_text != '' {

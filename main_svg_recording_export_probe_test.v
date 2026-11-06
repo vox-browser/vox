@@ -13,7 +13,8 @@ fn test_export_svg_native_recording_diagnostic() {
 	width := (os.getenv_opt('VOX_SVG_RECORDING_WIDTH') or { '80' }).int()
 	assert width > 0
 	source := os.read_bytes(input)!
-	markup := '<!doctype html><base href="https://asgardpvp.com/"><style>body{margin:0}img{position:absolute;left:0;top:0;display:block;height:auto;width:${width}px}</style><img src="data:image/svg+xml;base64,${base64.encode(source)}">'
+	encoded_source := base64.encode(source)
+	markup := '<!doctype html><base href="https://asgardpvp.com/"><style>body{margin:0}img{position:absolute;left:0;top:0;display:block;height:auto;width:${width}px}</style><img src="data:image/svg+xml;base64,' + encoded_source + '">'
 	mut document := parse_loaded_browser_navigation_document(LoadedPage{ url: 'about:blank', markup: markup }, dom.url_about_blank(), none, none, none, false)
 	install_static_browser_image_fetch_hooks(document, map[string]bool{})
 	mut app := BrowserApp{ document: document }

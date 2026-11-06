@@ -166,6 +166,11 @@ fn (mut app BrowserApp) close_process_tab(index int) {
 	app.tabs.session.close(index, process_tab_window_frame()) or { eprintln(err) }
 }
 
+fn process_tab_icon_data_url(bytes []u8) string {
+	// Current V can stringify an encoder call inside interpolation as an Option.
+	return 'data:image/png;base64,' + base64.encode(bytes)
+}
+
 fn (mut app BrowserApp) poll_process_tabs() {
 	if !app.process_tabs() || app.tabs.polling_process || app.browser_tabs_busy() || platform.arena_entered() {
 		return
@@ -187,7 +192,7 @@ fn (mut app BrowserApp) poll_process_tabs() {
 				cache.favicon_url
 			}
 			if bytes := app.background_image_bytes(address) {
-				app.tabs.process_icon = 'data:image/png;base64,${base64.encode(bytes)}'
+				app.tabs.process_icon = process_tab_icon_data_url(bytes)
 			}
 		}
 	}

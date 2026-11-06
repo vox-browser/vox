@@ -128,7 +128,7 @@ fn test_image_paste_creates_data_url_and_text_input_is_cancelable() {
 	}
 	assert handler.perform_paste_action_with_data_store(mut store) == .handled
 	_, html := handler.pasted_content()
-	assert html?.starts_with('<img src="data:image/png;base64,')
+	assert html? == '<img src="data:image/png;base64,AQID" />'
 	assert handler.fire_text_input_event('x') == .accepted
 	handler.focused_target_state = InputTarget{ id: 'editor', is_editable: true, cancel_keyboard: true }
 	assert handler.fire_text_input_event('x') == .cancelled
