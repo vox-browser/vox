@@ -61,6 +61,7 @@ struct GridMeasurementBasis {
 @[heap]
 struct GridMeasurementLayout {
 	key GridMeasurementKey
+	opacity_measurement bool
 	external_heights_independent bool
 	inputs []RetainedInlineInput
 	values []RetainedBlockValues
@@ -146,7 +147,7 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 
 fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
-	if !collect_retained_block_inputs_in_svg(root, false, !disable_extended_image_measurements,
+	if !collect_retained_block_inputs_in_svg(root, false, !disable_extended_image_measurements, true,
 		mut inputs, mut rejected) { return false }
 	for index, input in inputs {
 		// Controls, subgrids, floats, fragmentation and shifted positions
@@ -204,8 +205,17 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		if (!keys_match && !unused_heights)
 			|| cached.font_generation != font_generation
 			|| cached.font_policy != container.document().font_rendering_policy()
-			|| cached.style_environment != style_environment
-			|| !grid_measurement_inputs_are_current(cached.inputs) { continue }
+			|| cached.style_environment != style_environment { continue }
+		if !grid_measurement_inputs_are_current(cached.inputs) {
+			if cached.opacity_measurement {
+				mut retained := platform.enter_retained_allocations()
+				pool.grid_measurement_rejections_[node_key] = true
+				retained.finish()
+				return run_uncached_grid_formatting_context_internal(mut state, container,
+					mut used, mode, space, width_only)
+			}
+			continue
+		}
 		// The caller owns the root's size, offset and relative-position basis.
 		// The normal definite-width grid algorithm publishes only these tracks.
 		used.set_grid_template_columns(cached.columns)
@@ -225,6 +235,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
+		report_opacity_measurement_reuse(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
 		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		return cached.result
@@ -236,8 +247,10 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	}
 	mut retained_inputs := platform.enter_retained_allocations()
 	mut inputs := []RetainedInlineInput{}
-	eligible := collect_grid_measurement_inputs(container, mut inputs, mut pool.grid_measurement_rejections_)
+	mut eligible := collect_grid_measurement_inputs(container, mut inputs, mut pool.grid_measurement_rejections_)
 	if !eligible { pool.grid_measurement_rejections_[node_key] = true }
+	opacity_measurement := eligible && measurement_inputs_have_animated_opacity(inputs)
+	if opacity_measurement && !pool.admit_opacity_measurement(node_key) { eligible = false }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	if eligible {
 		for input in inputs { owned_inputs << own_image_measurement_input(input) }
@@ -258,6 +271,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	}
 	cached := &GridMeasurementLayout{
 		key: GridMeasurementKey{ ...key, external_bases: key.external_bases.clone() }
+		opacity_measurement: opacity_measurement
 		external_heights_independent: grid_measurement_external_heights_are_unused(owned_inputs)
 		inputs: owned_inputs
 		values: snapshots

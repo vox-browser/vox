@@ -53,10 +53,10 @@ mut:
 // run through the complete algorithm.
 fn collect_retained_block_inputs(node &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
-	return collect_retained_block_inputs_in_svg(node, false, false, mut inputs, mut rejected)
+	return collect_retained_block_inputs_in_svg(node, false, false, false, mut inputs, mut rejected)
 }
 
-fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurement_images bool, mut inputs []RetainedInlineInput,
+fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurement_images bool, measurement_only bool, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
 	key := u64(voidptr(node))
 	if !in_simple_svg && !disable_retained_block_rejection_cache && rejected[key] {
@@ -82,7 +82,9 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 		|| node.is_list_item_box()
 		|| node.is_list_item_marker_box() || node.is_fieldset_box()
 		|| node.has_layout_containment() || node.has_paint_containment()
-		|| computed.writing_mode() != .horizontal_tb || computed.has_animated_properties()
+		|| computed.writing_mode() != .horizontal_tb
+		|| (computed.has_animated_properties() && (!measurement_only
+			|| !measurement_style_has_reusable_animation(computed)))
 		|| computed.mutation_revision() == 0 || computed.content_visibility() != .visible
 		|| computed.establishes_multi_column_container()
 		|| computed.continue_value() in [.collapse, .discard]
@@ -123,7 +125,7 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 		simple_svg: simple_svg
 	}
 	for child in node.children() {
-		if !collect_retained_block_inputs_in_svg(child, inside_svg, measurement_images, mut inputs, mut rejected) { return false }
+		if !collect_retained_block_inputs_in_svg(child, inside_svg, measurement_images, measurement_only, mut inputs, mut rejected) { return false }
 	}
 	accepted = true
 	return true

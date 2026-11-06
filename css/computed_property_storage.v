@@ -68,6 +68,14 @@ pub fn (c &ComputedProperties) has_animated_property(property_id PropertyID) boo
 		&& property_id in c.animated_property_storage_.values
 }
 
+// Inspect the live store without cloning a map or borrowing a sample value.
+// Custom properties live in their own store and are queried separately.
+pub fn (c &ComputedProperties) has_only_animated_property(property_id PropertyID) bool {
+	return c.animated_property_storage_ != unsafe { nil }
+		&& c.animated_property_storage_.values.len == 1
+		&& property_id in c.animated_property_storage_.values
+}
+
 pub fn (c &ComputedProperties) animated_property_value(property_id PropertyID) ?&dom.StyleValue {
 	if !c.has_animated_property(property_id) {
 		return none

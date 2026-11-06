@@ -89,7 +89,7 @@ fn inline_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 		computed := input.node.computed_values()
 		if voidptr(computed) != voidptr(input.style)
 			|| computed.mutation_revision() != input.style_revision
-			|| computed.has_animated_properties()
+			|| !measurement_style_has_reusable_animation(computed)
 			|| input.node.child_count() != input.child_count {
 			return false
 		}
