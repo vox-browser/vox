@@ -12,8 +12,8 @@ fidelity and native equality; CNN matches frozen Brave but retains its separate
 source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
-The latest rendering checkpoint passes **139 tests / 145 captures at zero
-pixels** on `03bdf80d…`, with unchanged inputs and references. The AVIF sampling
+The latest rendering checkpoint passes **140 tests / 146 captures at zero
+pixels** on `409d48a1…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2700,6 +2700,75 @@ or whole-site parity claim follows from these archived viewport checks.
 
 [Independent byte checks and qualifications](evidence/discord-pending-image-scopes-20261106.json),
 [sealed captures, resources, commands, guards, failures and patch](evidence/discord-pending-image-scopes-20261106.zip).
+
+## Background filtering and local image decoding (2026-11-06)
+
+Three focused fixes make the new image regression exact without changing its
+reference PNG or original Discord image bytes:
+
+- `798d00d24` preserves unclamped source filtering for a whole background tile.
+  Scaling the 1690px source into a 423px upload produces a floating-point source
+  edge of **422.999969482421875**. Strict source clamping changes edge samples;
+  whole snapped tiles now keep the unclamped policy, while sprite subsets retain
+  strict filtering. `24be41004` removes unrelated concurrent readback-pool lines
+  from that commit's result; the evidence contains the focused net patch.
+- `030bc35c6` sends local Chromium-policy PNG files through the fetched-image
+  decoder, including PNGs with gamma/chromaticity metadata and no ICC chunk.
+  Their previous ColorSync path produced different colors.
+- `260605890` sends local static WebP files through the fetched-image decoder
+  and its alpha multiplication. Animated WebP and other rendering policies keep
+  their existing native provider.
+
+The authored original-origin regression improves **45 → 0 pixels**, with its
+saved source and two fresh Brave replays also exact. The same fixture loaded
+from a local file exposed the two decoder inconsistencies: **650,419 → 1,949 →
+0 pixels** across the PNG and WebP fixes. Every stage retains the same expected
+PNG. The new fixture is registered in the rendering suite with all four
+original image resources.
+
+The geometry checks pass **9 functions**, PNG checks **9 functions**, and WebP
+checks **5 functions**, each in default GC, GC disabled and preallocation with
+arena poisoning. Four native whole-tile/strict-source controls pass optimized and with
+ASan/UBSan. The initial WebP cohort's tests ran successfully, but unrelated
+uncompiled renderer files changed under its overly broad input pin; that
+cohort receives no whole-run pass credit. The five-function repeat has unchanged
+inputs. Optional tagged-backend unit branches remain guarded, and a separate
+transport unit skipped its Skia-only branch; neither establishes full native
+transport coverage. Production captures exercise the browser path.
+
+Production executable
+`409d48a11f6aa03f78dfbf377df2f5d3cee08919a2190ee1d4d6f1632e312479`
+contains all three fixes in its sealed compiler input. Fresh processes run
+under one canonical bundle lease. Executable, native-library, tool, filter,
+extension, fixture and reference hashes remain unchanged throughout the run.
+All **140 tests / 146 captures** pass at zero pixels; three additional focused
+captures also pass. Hacker News, TechCrunch and WIRED retain cold-cache source,
+independent replay and native zero. WIRED keeps its recorded first-frame policy.
+
+Discord remains unqualified: its new cold run records **614 native / 598 source
+/ 289 independent replay pixels**. Against the same earlier Brave reference,
+native improves **621 → 614**; against the saved source it improves **65 → 18**.
+Exactly **75 native pixels** change, all in the hero image. The native capture
+is identical across the first filtering check, final run and separate trace.
+Brave replay variation is retained as a separate open gate. No registered site
+manifest, source PNG or tolerance changes.
+
+Decoded source and resized-upload byte checks rule out the tested decoder and
+resizing hypotheses for the original-origin image. Wrong tile sizes, alternative
+upload formats and mipmap controls remain diagnostics. Installed-browser paint
+and tile traces, the strict-versus-unclamped native control, and the ordinary
+production capture establish the filtering correction. The linked current
+Chromium source explains the rule; the installed revision could not be fetched
+from that public endpoint and is not claimed as an exact source pin.
+
+Failed readiness, canvas-export, native-regression setup and initial test
+compilation attempts remain recorded, along with shared-build input rejections.
+The latest completed bundle containing the fixes was reused. Stack Overflow
+and Pikabu site work remains deferred. Live scripting, animation, performance
+and whole-site parity remain outside these frozen viewport results.
+
+[Checks, independent byte counts and qualifications](evidence/discord-whole-tile-filtering-20261106.json),
+[sealed captures, resources, commands, guards, failures and patches](evidence/discord-whole-tile-filtering-20261106.zip).
 
 ## Run
 
