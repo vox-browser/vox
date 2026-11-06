@@ -406,8 +406,17 @@ void shared_recording_content(CGContextRef destination, SkRect bounds, float pag
     group.tile_width = s_msaa_grid_width;
     group.tile_height = s_msaa_grid_height;
     group.columns = s_msaa_grid_columns;
-    int height = std::max(1, int(std::ceil(s_raster_layer_height * group.scale)));
-    group.rows = std::max(1, (height - 2 + group.tile_height - 3) / (group.tile_height - 2));
+    double device_height = std::ceil(s_raster_layer_height * group.scale);
+    if (!std::isfinite(device_height) || device_height < 1 || device_height > INT32_MAX
+        || group.tile_height <= 2) {
+        group.columns = 0;
+        return;
+    }
+    // A malformed extent must decline before any float-to-int conversion.
+    // Use a wide numerator even when both accepted dimensions fit an int.
+    int64_t height = static_cast<int64_t>(device_height);
+    group.rows = int(std::max<int64_t>(1,
+        (height - 2 + int64_t(group.tile_height) - 3) / (group.tile_height - 2)));
 }
 
 void shared_recording_speculative_content(CGContextRef destination, SkRect bounds,

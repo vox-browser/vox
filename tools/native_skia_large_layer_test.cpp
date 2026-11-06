@@ -52,7 +52,10 @@ int main()
         check(scale,16777216.0/scale+2,40320,false);
         check(scale,1024,0,false);
         check(scale,1024,std::numeric_limits<double>::quiet_NaN(),false);
+        check(scale,1024,std::numeric_limits<double>::infinity(),false);
+        check(scale,1024,1e30,false);
+        check(scale,1024,-10,false);
         check(scale,std::numeric_limits<double>::infinity(),40320,false);
     }
-    std::puts("PASS: 16 bounded large-layer publications and invalid-extent controls");
+    std::puts("PASS: 22 bounded large-layer publications and invalid-extent controls");
 }
