@@ -2564,7 +2564,7 @@ control fails while inspecting layout because no nested paint record is
 present, before the changed drawing bridge runs. A visible-path trial fails
 the same assertion; that hypothesis was rejected and its edit restored. Both
 failed checks and the exact trial source remain recorded. No container fix is
-claimed.
+claimed at that checkpoint; the data URL follow-up below repairs this control.
 
 The reduced fixture passes **source / independent replay / native 0** on
 the available completed production browser. Its source PNG also equals the
@@ -2593,6 +2593,57 @@ Stack Overflow and Pikabu site work remains deferred.
 [Independent byte checks and receipts](evidence/discord-svg-pattern-decode-20261106.json),
 [sealed captures, original resources, failures, commands and patch](evidence/discord-svg-pattern-decode-20261106.zip).
 
+
+## Binary image data URLs (2026-11-06)
+
+`36c896046` repairs malformed image data URLs in canvas serialization, pasted
+image markup and shared tab favicons. With the current V compiler and full
+browser-module imports, putting a qualified Base64 encoder call directly in
+string interpolation emits an `Option(...)` wrapper. The browser-module
+regression returns `data:image/png;base64,Option('AP8BAA==')` before the fix;
+the image-paste regression fails too. Standalone canvas-package checks pass
+before the fix, so that compilation context alone does not catch the defect.
+Encoding before interpolation or concatenating the encoder's string preserves
+the binary payload. Tests check complete URLs and decoded bytes, including
+zero bytes, all 256 byte values, empty input and Base64 padding.
+
+This also explains the previously open SVG-container control: its fixture
+encodes an invalid URL, its image request errors, and painting records a
+fallback image. Decoding the original SVG bytes directly succeeds. After
+repairing the fixture and SVG recording-export helper, the container control
+loads its SVG. Its remaining assertions assumed the old URL-selected font
+policy and a 1× display. It now selects both policies explicitly and expresses
+the same 80×86.328125 CSS geometry in the document's coordinate scale. This
+changes test setup, without changing renderer geometry or PNG references.
+
+All **16 focused functions pass in default GC, GC disabled and preallocation
+with arena poisoning**. The container also passes a separate **2× density**
+check. The first standalone clipboard-suite compilation exceeds the sampled
+12 GiB guard and is killed; no pass is claimed for that suite. The affected
+image-paste API passes through the browser-module integration test in all
+three GC modes. The initial test compilation errors, memory stop, failed
+payload checks and stale-geometry failures remain recorded.
+
+The completed shared browser `00b6764c…` already contains the fix in its sealed
+compiler input, despite its earlier dirty-build commit receipt. The recorded
+function constructs the tab-icon URL directly, without the optional wrapper.
+The measurement reuses that bundle, launches fresh processes, and verifies
+unchanged executable, libraries, tools, filters, extension and fixture hashes.
+Five existing SVG screenshot regressions pass at **zero pixels**, with
+independent RGBA byte checks. Hacker News retains strict cold-cache source,
+independent replay and native zero. The earlier **139-test / 145-capture**
+complete rendering run remains a separate historical result; this follow-up
+runs the focused browser controls.
+
+Discord's companion cold run reports **589 native / 309 source / 309 independent
+replay pixels**. Its new Vox image differs from the preceding cohort's Vox
+image by **0 pixels**; these data URL changes earn no image-parity improvement
+credit. Discord's image, saved-source and reference gaps remain open. Existing
+archives and references are unchanged; Stack Overflow and Pikabu remain
+deferred. No performance or whole-site scripting acceptance is claimed.
+
+[Checks, independent byte counts and qualifications](evidence/image-data-urls-20261106.json),
+[sealed logs, commands, guards, captures and patch](evidence/image-data-urls-20261106.zip).
 
 ## Run
 

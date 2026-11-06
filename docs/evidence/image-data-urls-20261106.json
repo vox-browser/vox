@@ -1,0 +1,510 @@
+{
+  "schema": 1,
+  "date": "2026-11-06",
+  "scope": "V image data URL payloads in the browser module: SVG requests, clipboard images, canvas serialization and interprocess tab icons. Focused runtime/ownership checks, no new full-site or screenshot acceptance.",
+  "commit": "36c89604629edced96882eb4942556a8367ac741",
+  "cause": "With the current V compiler and full browser-module imports, a qualified Base64 encoder call directly inside string interpolation can become Option(...) text. Generated browser C and failed runtime URL assertions reproduce it. Standalone canvas-package checks already pass before the fix; the defect depends on compilation context.",
+  "fix": "Evaluate Base64 outside interpolation or concatenate its string result. Preserve exact binary payloads for canvas/clipboard data URLs and shared tab icons. Repair SVG fixture/recording-export URL construction, assert successful image requests, explicitly select font policies, and use the document coordinate scale for SVG container geometry.",
+  "positive": {
+    "results": [
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_group_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_group_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_group_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_group_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_group_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_group_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_loading_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_loading_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_loading_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_loading_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_loading_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_loading_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      }
+    ],
+    "functions_by_file": {
+      "main_svg_image_group_test.v": 1,
+      "main_svg_image_loading_test.v": 2,
+      "main_svg_image_container_test.v": 1,
+      "html/canvas_rendering_context_2d_test.v": 9,
+      "main_image_data_url_test.v": 3
+    },
+    "total_functions": 16,
+    "modes": [
+      "default GC",
+      "GC disabled",
+      "preallocation with arena poisoning"
+    ],
+    "inputs_unchanged": true,
+    "extra_scale2_container": [
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_image_container_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      }
+    ]
+  },
+  "negative": {
+    "browser_module": [
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_image_data_url_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 1
+      }
+    ],
+    "original_svg_request_error": "XML document has no document element; decoded resource length is zero while decoding the original SVG bytes succeeds",
+    "initial_standalone_canvas_compile": "A first draft test called sha256.hexhash with bytes and failed compilation. It was corrected to sha256.sum before runtime checks.",
+    "standalone_canvas": [
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "html/canvas_rendering_context_2d_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "page/clipboard_actions_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 125
+      }
+    ],
+    "standalone_clipboard_guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "-cflags",
+        "-O0",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-nocache",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/4e8f528a7ffe7579/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/discord-image-residuals-20261106/data-url-negative-v2/clipboard_actions_test-default",
+        "/Users/alex/code/vox2/page/clipboard_actions_test.v"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 13003374592,
+      "elapsed_seconds": 6.22940725,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "geometry_trial": [
+      {
+        "test": "main_svg_container_probe_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "main_svg_container_probe_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 1
+      }
+    ],
+    "geometry_explanation": "After loading succeeds, the stale test sees160x173 snapped coordinates and160x172.65625 unsnapped coordinates on the Retina display; both policy cases were Chromium because the old URL-based selection no longer applies. The repaired test retains80x86.328125 CSS geometry and selects both policies explicitly."
+  },
+  "production": {
+    "checks": {
+      "status": "verified",
+      "inputs": {
+        "c_compile": {
+          "mode": "single",
+          "requested": "single",
+          "v_prod": true
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "00b6764c2c9663607e435997aa630b5302bdf88affccf3ef94f0f7fa05decf7f",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-035228-edaafd3d/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "f3f07f80375860f260343d833ca21dd9cd5fea9c1a77995f072b172ec27dbf34",
+          "dirty": true,
+          "head": "52223dfd46cba7fdbb700a1c4f2cda570b461405",
+          "repository_sha256": "22cc38032e356b9a4a05cba6d43cf3539bb4949690523d213f400a36dc90b621"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "20d1e04c82ba28742d375965feb8ea950ede27a3ed4919e62e01f808cf1b5878",
+          "dirty": true,
+          "head": "36c89604629edced96882eb4942556a8367ac741",
+          "repository_sha256": "18d1f35129f0812fdfc3d04a29fe4111bc3e44e962a1f48a8ad7b365e1312044"
+        },
+        "request": {
+          "c_mode": "single",
+          "head": "52223dfd46cba7fdbb700a1c4f2cda570b461405",
+          "id": "d336a4c809a24d3d8380b0f7fc40508c",
+          "v_prod": true
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "f3f07f80375860f260343d833ca21dd9cd5fea9c1a77995f072b172ec27dbf34",
+          "dirty": true,
+          "head": "95e23648a10e91577da1a436f2b7d133d1206371",
+          "repository_sha256": "22cc38032e356b9a4a05cba6d43cf3539bb4949690523d213f400a36dc90b621"
+        }
+      },
+      "results": [
+        {
+          "name": "inline",
+          "exit": 0
+        },
+        {
+          "name": "hacker-news",
+          "exit": 0
+        },
+        {
+          "name": "discord",
+          "exit": 1
+        }
+      ],
+      "inventory": [
+        {
+          "path": "/Users/alex/code/vox2/Build/forum-news-inline-3mzw7pdo",
+          "fixture": "Tests/Browser/Brave/input/translated-svg-background-viewport.html",
+          "rgba_sha256": "aa7f5aa5d64bdbbd46865c1ae21c53a59cb67bd5452424f0b2e2d2d020a24f91"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/forum-news-inline-5hdooz4s",
+          "fixture": "Tests/Browser/Brave/input/svg-pattern-image-blur.html",
+          "rgba_sha256": "494d4223512319c403590b8d36abe2e45043a1208dbae538ae15c0192fded701"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/forum-news-inline-fpp_e9u7",
+          "fixture": "Tests/Browser/Brave/input/engadget-svg-auto-image.html",
+          "rgba_sha256": "53540ae00cef3e872f6ac58255588c281e359d838ca56cde863c2edfbd62838a"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/forum-news-inline-u6p4x65y",
+          "fixture": "Tests/Browser/Brave/input/fractional-svg-viewport-fringe.html",
+          "rgba_sha256": "31a4bb384740c2e5c59fc29599eb79452350a2691e037441639d50b4e7ba127a"
+        },
+        {
+          "path": "/Users/alex/code/vox2/Build/forum-news-inline-u9pi2h63",
+          "fixture": "Tests/Browser/Brave/input/translated-svg-viewport-clip.html",
+          "rgba_sha256": "77aab0d73ecd7108febc01f400fdc3a7a53c31ed827bf47ce0354af46e33e306"
+        }
+      ]
+    },
+    "site_pixels": [
+      {
+        "site": "hacker-news",
+        "result": {
+          "id": "hacker-news",
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/discord-image-residuals-20261106/production-checks/hacker-news/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        },
+        "independent_rgba_counts": {
+          "source": 0,
+          "reference": 0,
+          "native": 0
+        },
+        "images": [
+          {
+            "path": "Tests/Browser/Brave/sites/hacker-news/live.png",
+            "png_sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+            "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+          },
+          {
+            "path": "Build/discord-image-residuals-20261106/production-checks/hacker-news/hacker-news/brave.png",
+            "png_sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+            "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+          },
+          {
+            "path": "Build/discord-image-residuals-20261106/production-checks/hacker-news/hacker-news/brave-repeat.png",
+            "png_sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+            "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+          },
+          {
+            "path": "Build/discord-image-residuals-20261106/production-checks/hacker-news/hacker-news/vox.png",
+            "png_sha256": "75423e1774abde26ee131961d08a7a73fd2833564cfd884964898be1230ef889",
+            "rgba_sha256": "fc3c7fb37b54077baf5613ea50054fcd1ca28fe9ca3a1cb1aad06d1426d0a8f6"
+          }
+        ]
+      },
+      {
+        "site": "discord",
+        "result": {
+          "id": "discord",
+          "name": "Discord",
+          "url": "https://discord.com/",
+          "status": "reference-replay-mismatch",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 589,
+          "artifacts": "/Users/alex/code/vox2/Build/discord-image-residuals-20261106/production-checks/discord/discord",
+          "live_to_frozen_different_pixels": 309,
+          "reference_replay_different_pixels": 309,
+          "manifest_sha256": "ede02bfd8cb2c3587d1d0eb3810635baa5712fea91cb704f22e2dcddde1f732c"
+        },
+        "independent_rgba_counts": {
+          "source": 309,
+          "reference": 309,
+          "native": 589
+        },
+        "images": [
+          {
+            "path": "Tests/Browser/Brave/sites/discord/live.png",
+            "png_sha256": "d35fdd8e492515c01681890f2d3b55d5b801934daa1a7862f7740d8406b57f68",
+            "rgba_sha256": "c96a1e90974c2c5eeaea9adb179f6f3aabf94645f3ffeee021fe3f1cddc5bff9"
+          },
+          {
+            "path": "Build/discord-image-residuals-20261106/production-checks/discord/discord/brave.png",
+            "png_sha256": "cbc6a291d4153011f68095abbc7765fbfda4c1ccb4dc57e97daba6fcfb594c0a",
+            "rgba_sha256": "ebc4dfbe617e197fd9d5bfc60454ccb6b179a875d9ba38ecf1ab2e7671baa090"
+          },
+          {
+            "path": "Build/discord-image-residuals-20261106/production-checks/discord/discord/brave-repeat.png",
+            "png_sha256": "d35fdd8e492515c01681890f2d3b55d5b801934daa1a7862f7740d8406b57f68",
+            "rgba_sha256": "c96a1e90974c2c5eeaea9adb179f6f3aabf94645f3ffeee021fe3f1cddc5bff9"
+          },
+          {
+            "path": "Build/discord-image-residuals-20261106/production-checks/discord/discord/vox.png",
+            "png_sha256": "36297272a3ae44459d1a6470432d6c6521751aac427665b286a9a42bb4e2c435",
+            "rgba_sha256": "fe1319d5529a09e74ef1409377b0bda5bb1f52378777e8ddbd51b1a0cb7c62b1"
+          }
+        ]
+      }
+    ],
+    "discord_native_change_from_previous_cohort": 0,
+    "prior_vox_sha256": "36297272a3ae44459d1a6470432d6c6521751aac427665b286a9a42bb4e2c435"
+  },
+  "qualifications": [
+    "All failed compilation/runtime attempts are retained. The standalone clipboard suite could not compile within the12GiB process-tree guard; its targeted image-paste API is exercised by the passing browser-module integration regression in all three GC modes. No standalone clipboard-suite pass is claimed.",
+    "The initial positive cohort passes the three payload tests in all GC modes, then reveals the stale SVG geometry assertions; the complete second cohort verifies the repaired setup with unchanged pins.",
+    "Existing site archives, PNG references and zero-pixel tolerances are unchanged. The previous139-test/145-capture rendering result remains historical; this feature does not close Discord image, source or reference gaps.",
+    "No instruction, timing, scripting-completeness or live-site parity claim."
+  ],
+  "archive": {
+    "path": "docs/evidence/image-data-urls-20261106.zip",
+    "bytes": 4597606,
+    "sha256": "6af2bdc19c055d7d4d957a3d9fea7bc03dcdd42fb788910263c12e0f87dac584",
+    "files": 377,
+    "validation": "ZIP CRC and every member SHA256 verified",
+    "exclusions": "Generated C, compiled binaries, app bundles, disposable profiles/caches and private keys."
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/discord-image-residuals-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 606420992,
+    "elapsed_seconds": 1.601657375,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
