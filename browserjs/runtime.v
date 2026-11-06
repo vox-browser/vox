@@ -413,13 +413,17 @@ pub fn (mut runtime Runtime) close() {
 	// Binding callbacks are closures written at their definitions. The
 	// runtime that owns them can no longer call them, and they would otherwise
 	// keep their hosts, and through them the document, alive.
-	for record in runtime.host_functions_ {
+	for index, record in runtime.host_functions_ {
+		report_host_callback_diagnostic(&runtime, 'text', index, record.diagnostic)
 		if record.callback != unsafe { nil } { platform.release_closure(voidptr(record.callback)) }
 		if record.temporary_callback != unsafe { nil } {
 			platform.release_closure(voidptr(record.temporary_callback))
 		}
 	}
-	for record in runtime.value_host_functions_ { platform.release_closure(voidptr(record.callback)) }
+	for index, record in runtime.value_host_functions_ {
+		report_host_callback_diagnostic(&runtime, 'value', index, record.diagnostic)
+		platform.release_closure(voidptr(record.callback))
+	}
 	for owned in runtime.owned_closures_ { platform.release_closure(owned) }
 	for provider in runtime.canvas_element_providers_ {
 		platform.release_closure(voidptr(provider.snapshot))

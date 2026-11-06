@@ -12,6 +12,7 @@ struct ValueHostFunctionRecord {
 	runtime &Runtime
 	@[required]
 	callback ValueHostFunction
+	diagnostic &HostCallbackDiagnostic = unsafe { nil }
 }
 
 struct JavaScriptValueException {
@@ -28,7 +29,7 @@ fn (exception JavaScriptValueException) code() int { return 0 }
 pub fn (mut runtime Runtime) define_value_host_function(name string, callback ValueHostFunction) ! {
 	runtime.require_javascript_value_context()!
 	$if darwin || linux {
-		record := &ValueHostFunctionRecord{ runtime: runtime, callback: callback }
+		record := &ValueHostFunctionRecord{ runtime: runtime, callback: callback, diagnostic: new_host_callback_diagnostic(name) }
 		if !C.vox_install_js_value_host_function(runtime.context, name.str, record) {
 			return error('JavaScriptCore native-value host function installation failed')
 		}

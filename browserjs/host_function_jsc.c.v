@@ -24,6 +24,8 @@ fn host_function_error(context voidptr, message string, exception &voidptr) void
 @[export: 'vox_jsc_host_function']
 fn javascript_core_host_function(context voidptr, function voidptr, _ voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	record := unsafe { &HostFunctionRecord(C.JSObjectGetPrivate(function)) }
+	diagnostic_start := begin_host_callback_diagnostic(record.diagnostic)
+	defer { finish_host_callback_diagnostic(record.diagnostic, diagnostic_start) }
 	mut argument := C.vox_jsc_JSValueMakeUndefined(context)
 	if count > 0 { argument = unsafe { arguments[0] } }
 	// Temporary hosts consume transport text synchronously. Ordinary hosts can

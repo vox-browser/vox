@@ -25,6 +25,7 @@ fn (reply HostFunctionReply) finish() { reply.workspace.finish() }
 struct HostFunctionRecord {
 	callback HostFunction = unsafe { nil }
 	temporary_callback TemporaryHostFunction = unsafe { nil }
+	diagnostic &HostCallbackDiagnostic = unsafe { nil }
 }
 
 fn (record &HostFunctionRecord) invoke(input string) !HostFunctionReply {
@@ -33,11 +34,11 @@ fn (record &HostFunctionRecord) invoke(input string) !HostFunctionReply {
 }
 
 pub fn (mut runtime Runtime) define_host_function(name string, callback HostFunction) ! {
-	runtime.install_host_function(name, &HostFunctionRecord{callback: callback})!
+	runtime.install_host_function(name, &HostFunctionRecord{callback: callback, diagnostic: new_host_callback_diagnostic(name)})!
 }
 
 pub fn (mut runtime Runtime) define_temporary_host_function(name string, callback TemporaryHostFunction) ! {
-	runtime.install_host_function(name, &HostFunctionRecord{temporary_callback: callback})!
+	runtime.install_host_function(name, &HostFunctionRecord{temporary_callback: callback, diagnostic: new_host_callback_diagnostic(name)})!
 }
 
 fn (mut runtime Runtime) install_host_function(name string, record &HostFunctionRecord) ! {

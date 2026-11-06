@@ -43,6 +43,8 @@ fn native_value_host_function_record(function voidptr) ?&ValueHostFunctionRecord
 
 fn invoke_value_host_function_record(record &ValueHostFunctionRecord, context voidptr, receiver voidptr, count uint, arguments &voidptr, exception &voidptr) voidptr {
 	if record.runtime.closed { return host_function_error(context, 'JavaScript runtime is closed', exception) }
+	diagnostic_start := begin_host_callback_diagnostic(record.diagnostic)
+	defer { finish_host_callback_diagnostic(record.diagnostic, diagnostic_start) }
 	// Native callbacks can create streams, promises and wrappers retained by
 	// the realm after this engine entry. Keep those allocations out of the
 	// caller's temporary evaluation/delivery arena, including exceptional exits.
@@ -96,7 +98,7 @@ pub fn (mut runtime Runtime) release_javascript_value(value voidptr) {
 
 pub fn (mut runtime Runtime) make_value_host_function(callback ValueHostFunction) !voidptr {
 	runtime.require_javascript_value_context()!
-	record := &ValueHostFunctionRecord{ runtime: runtime, callback: callback }
+	record := &ValueHostFunctionRecord{ runtime: runtime, callback: callback, diagnostic: new_host_callback_diagnostic('') }
 	function := C.vox_make_js_value_host_function(runtime.context, record)
 	runtime.value_host_functions_ << record
 	return runtime.retain_javascript_value(function)
@@ -107,7 +109,7 @@ pub fn (mut runtime Runtime) make_value_host_function(callback ValueHostFunction
 // host records until the owning Runtime closes; this is not full wrapper GC.
 pub fn (mut runtime Runtime) make_native_value_host_function(name string, length int, callback ValueHostFunction) !voidptr {
 	runtime.require_javascript_value_context()!
-	record := &ValueHostFunctionRecord{runtime: &runtime, callback: callback}
+	record := &ValueHostFunctionRecord{runtime: &runtime, callback: callback, diagnostic: new_host_callback_diagnostic(name)}
 	actual_name := js_source_string(name)
 	defer { C.JSStringRelease(actual_name) }
 	function := C.vox_make_js_native_value_host_function(runtime.context, actual_name)
