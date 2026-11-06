@@ -7728,16 +7728,18 @@ fn (mut app BrowserApp) draw() {
 						continue
 					}
 				}
-				if !gpu_leaf && command.kind in ['fill_rect', 'fill_rounded_rect'] {
-					coverage_end := app.draw_chromium_text_coverage_run(command_index, page_y, window.height)
-					if coverage_end > command_index {
-						shared_svg_end = coverage_end
-						continue
-					}
+				if command.kind in ['fill_rect', 'fill_rounded_rect'] {
 					header_index := app.draw_chromium_disjoint_partial_header(command_index, page_y, window.height)
 					if header_index >= 0 {
 						early_partial_headers << header_index
 						shared_svg_end = command_index + 2
+						continue
+					}
+				}
+				if !gpu_leaf && command.kind in ['fill_rect', 'fill_rounded_rect'] {
+					coverage_end := app.draw_chromium_text_coverage_run(command_index, page_y, window.height)
+					if coverage_end > command_index {
+						shared_svg_end = coverage_end
 						continue
 					}
 					rounded_end := app.draw_chromium_rounded_background_pair(command_index, page_y, window.height)

@@ -162,6 +162,10 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         self.compare_fixture('chromium-positioned-header-image-gap', width=1024, height=768,
                              settle_seconds=5)
 
+    def test_positioned_headers_keep_coverage_across_square_border_paths(self):
+        self.compare_fixture('chromium-positioned-header-border-gap', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_decorated_text_and_rounded_icon_backings_retain_coverage(self):
         self.compare_fixture('chromium-decorated-text-coverage', width=1024, height=768,
                              settle_seconds=5)

@@ -69,7 +69,10 @@ fn chromium_partial_gap_ink(command &layout.PaintCommand) ?layout.LayoutRect {
 		|| command.blur != 0 || command.outer_shadow { return none }
 	if command.kind == 'draw_svg_path' {
 		if !chromium_svg_compositor_path_supported(command) { return none }
-		return chromium_msaa_trigger_rect(command)
+		// Square CSS border paths have bounded ink even though they do not
+		// trigger MSAA. Paint coverage, rather than tile eligibility, decides
+		// whether a later header may cross this leaf.
+		return layout.paint_svg_path_native_ink_bounds(command)
 	}
 	if command.kind in ['paint_uniform_border', 'paint_partial_rounded_border'] {
 		mut outset := math.max(command.stroke_width, 0.0)
@@ -128,6 +131,9 @@ fn (mut app BrowserApp) draw_chromium_disjoint_partial_header(index int, page_y 
 		header := chromium_disjoint_partial_header_index(app.paint_commands,
 			app.chromium_raster_plan.command_layers,index)
 		if header <= index+2 { return -1 }
+		// A GPU leaf resolves its coverage separately. This decoration group
+		// needs the shared recording and its current backdrop instead.
+		C.native_gpu_canvas_cpu_access()
 		app.flush_rounded_rect_underlay(0,page_y,window_height)
 		grouped := C.native_begin_deferred_inset_decorations(2,page_y+2,
 			f32(app.viewport_width-4),f32(app.viewport_height-4),
