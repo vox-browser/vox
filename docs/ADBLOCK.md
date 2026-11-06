@@ -80,9 +80,53 @@ records identities, tests and every attempt; the
 [document capture](parity/raw/chatgpt-basic-query-20261106.vox.png) retains the
 rendered reply. A longer earlier observation received the answer, then exceeded
 the default 12 GiB guard after 50.3 seconds. Sustained browsing and the overall
-slowdown remain unresolved. This changes author-script policy and establishes
-basic query functionality; it does not establish a quantified speed improvement
-or engine optimization.
+slowdown remain unresolved. This first check establishes basic query
+functionality; performance is measured separately below.
+
+### Before and after collector blocking
+
+Seven alternating pairs compare the original three filter assets at
+`01a58382b^` with the assets from `01a58382b`, using the same completed production
+executable `4b1ce3741d725cd0947002d089a3a553b4df5ba7937903609a649d183b28d842`
+and native libraries. Both variants retain the full uBO subscriptions. The
+retained November 4 homepage is replayed at its original origin without live
+forwarding. Each trial has an empty private profile/cache, a 1024×768 viewport,
+scale two, an unfocused window and the same five-second settle. OS filesystem
+and shader caches remain retained. No production rebuild or app copy is used.
+
+| Metric, median of seven runs | Before | After | Observed reduction |
+| --- | ---: | ---: | ---: |
+| Process creation through PNG file write | 6.2336 s | 5.8964 s | 5.41% |
+| Coalition instructions through encoded PNG | 26,362,796,603 | 26,326,045,842 | 0.1394% |
+| Peak sampled browser physical footprint | 1,355.03 MiB | 1,336.47 MiB | 1.37% |
+| Decoded HTTP JavaScript response bytes | 3,574,639 | 3,401,349 | 4.85% |
+| HTTP JavaScript requests | 288 | 279 | Nine requests |
+
+The elapsed-time metric includes the fixed five-second wait, startup, raster,
+PNG encoding and file write; it is not isolated load/render time. Instructions
+include startup and exited helpers through the native encoded-PNG marker, before
+file write and semantic audit. Physical footprint covers sampled simultaneous
+browser/descendant memory through exit, including capture and audit work; it is
+a polling lower bound, separate from the guard's summed RSS.
+
+CPU ranges overlap: 25.971–26.699 billion before and 26.192–26.678 billion after.
+Two paired CPU results regress, and the highest-after/lowest-before ratio is
+**1.02722**, so no conservative CPU saving is established. All seven paired
+elapsed times improve, with overlapping absolute ranges of 6.011–6.598 s and
+5.828–6.499 s. One-minute host load spans 9.94–13.64 before and 9.44–14.22 after
+on 18 CPUs; timing variation remains material. Every attempt is retained.
+
+All fourteen captures pass the unchanged content, author-bootstrap and exact
+pixel checks. A separate logged diagnostic confirms both replacements execute;
+its timings are excluded from the cohort. The default 12 GiB guard adopts all
+browser identities and both diagnostic/cohort jobs exit zero. This short frozen
+homepage workload does not resolve the longer conversation memory failure or
+measure live query latency. It changes author-script policy, so it earns no
+engine optimization credit or broad-check cadence reset.
+
+The [comparison receipt](performance/chatgpt-blocking-comparison-20261106.json)
+records every count, pair, scope and identity, with a verified durable archive of
+the raw logs, counters, memory samples, screenshots and replay requests.
 
 ## Startup snapshots
 
