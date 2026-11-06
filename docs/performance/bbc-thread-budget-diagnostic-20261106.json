@@ -1,0 +1,276 @@
+{
+  "status": "Aligned first-JavaScript-to-PNG thread/process diagnostic and validated current CPU sample; no production change or performance credit.",
+  "summary": {
+    "passed": true,
+    "pid": 52174,
+    "start": {
+      "before": 4536212272,
+      "thread": 2400839576,
+      "after": 4536226502
+    },
+    "rows": [
+      {
+        "label": "capture_started",
+        "original_process_checkpoint": 24869020821,
+        "observed_process_before": 24869070072,
+        "observed_main_thread": 19861116458,
+        "observed_process_after": 24869089960,
+        "process_delta_lower": 20332843570,
+        "process_delta_upper": 20332877688,
+        "main_delta": 17460276882,
+        "unattributed_residual_lower": 2872566688,
+        "unattributed_residual_upper": 2872600806
+      },
+      {
+        "label": "capture_cached",
+        "original_process_checkpoint": 24875064945,
+        "observed_process_before": 24875111221,
+        "observed_main_thread": 19867157632,
+        "observed_process_after": 24875131134,
+        "process_delta_lower": 20338884719,
+        "process_delta_upper": 20338918862,
+        "main_delta": 17466318056,
+        "unattributed_residual_lower": 2872566663,
+        "unattributed_residual_upper": 2872600806
+      },
+      {
+        "label": "capture_converted",
+        "original_process_checkpoint": 24875182389,
+        "observed_process_before": 24875228507,
+        "observed_main_thread": 19867274910,
+        "observed_process_after": 24875248420,
+        "process_delta_lower": 20339002005,
+        "process_delta_upper": 20339036148,
+        "main_delta": 17466435334,
+        "unattributed_residual_lower": 2872566671,
+        "unattributed_residual_upper": 2872600814
+      },
+      {
+        "label": "capture_document_encoded",
+        "original_process_checkpoint": 25177895820,
+        "observed_process_before": 25177941954,
+        "observed_main_thread": 20169970610,
+        "observed_process_after": 25177961892,
+        "process_delta_lower": 20641715452,
+        "process_delta_upper": 20641749620,
+        "main_delta": 17769131034,
+        "unattributed_residual_lower": 2872584418,
+        "unattributed_residual_upper": 2872618586
+      }
+    ],
+    "native": {
+      "passed": true,
+      "checks": [
+        {
+          "arm": "vox",
+          "passed": true,
+          "native_exit": 0,
+          "content_exact": true,
+          "pixels_exact": true,
+          "scripts72": true,
+          "actual_runtime_images_pinned": true,
+          "bidi_cache_before_png": true,
+          "border_before_png": true,
+          "ownership_passed": true
+        }
+      ],
+      "executable_unchanged": true,
+      "production": {
+        "c_compile": {
+          "mode": "single",
+          "requested": "single",
+          "v_prod": true
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "d164c867f13b7aa024a697c11ec956705a396427c6bba88885b3dd15b81c67e5",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-041427-1a555445/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "9cbe2747112916106a70cc83f6427fd40a6ca8e3baf93f4cdbd179f181ee5fb0",
+          "dirty": true,
+          "head": "dbc3f540098ff6c4a0fec99844fcb66ef4c4d290",
+          "repository_sha256": "c1457309e2649d6e3fdcad11f6a1d6a1a11c6edc8793d36a73e172d8445830c4"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "a77f3794c2f09f137b11f796b2943a4842e60bd21e9b5f145bf17d550f490a64",
+          "dirty": true,
+          "head": "78ac19d371676369e1f36704000d924eb2ff2633",
+          "repository_sha256": "327b72745d72b7ef707409a5bc44a68cd40283736272833cb04a92e3b330ed6b"
+        },
+        "request": {
+          "c_mode": "single",
+          "head": "dbc3f540098ff6c4a0fec99844fcb66ef4c4d290",
+          "id": "f1600430f2454d0f8133208dcfa4edfd",
+          "v_prod": true
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "9cbe2747112916106a70cc83f6427fd40a6ca8e3baf93f4cdbd179f181ee5fb0",
+          "dirty": true,
+          "head": "dbc3f540098ff6c4a0fec99844fcb66ef4c4d290",
+          "repository_sha256": "1e5d074024e3637dd3a1699ec838268ab22908a3d0a25936481822cc339c90e2"
+        }
+      },
+      "scope": "Fresh diagnostic launches of the canonical completed production app; aligned main-thread/process observer from first main-thread JavaScript evaluation. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+      "unix": 1793928369.519495
+    },
+    "calibration": {
+      "passed": true,
+      "results": [
+        {
+          "name": "probe-compile",
+          "exit": 0
+        },
+        {
+          "name": "fixture-compile",
+          "exit": 0
+        },
+        {
+          "name": "calibration-baseline",
+          "exit": 0
+        },
+        {
+          "name": "calibration-probe",
+          "exit": 0
+        }
+      ],
+      "rows": [
+        [
+          "51534",
+          "capture_started",
+          "33049137",
+          "33144025",
+          "36038219",
+          "33152298"
+        ],
+        [
+          "51534",
+          "capture_document_encoded",
+          "80352873",
+          "80399895",
+          "51239478",
+          "80408119"
+        ]
+      ],
+      "process_delta_bounds": [
+        47247597,
+        47264094
+      ],
+      "main_delta": 15201259,
+      "source_inputs": {
+        "/Users/alex/code/vox2/Build/bbc-thread-budget-diagnostic-20261106-0730/refined/thread-probe.c": "7eb2f32545e394fe42d5a832b381045f0619f97054ff7c1cb9752f193d62005a",
+        "/Users/alex/code/vox2/Build/bbc-thread-budget-diagnostic-20261106-0730/refined/calibrate.c": "708097054ec5f190e37f4dd8e5d714e9ca5b783203afe6129f58958e51cc7990",
+        "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/jsc-author-probe.c": "24d0eebf85b9483d10354de0577ac233e8ec8a87d473538a2a0e9885a389345e"
+      },
+      "inputs_unchanged": true,
+      "qualification": "Both fixtures execute identical main/worker volatile loops and exit0. Original cumulative checkpoint lines preserved. Observer sees two native-format checkpoints,positive increasing current-main-thread counts and aligned process deltas including exited worker CPU. Absolute cumulative process/thread origins are not assumed equal. One-million-instruction residual check is diagnostic calibration, not an overhead subtraction or production ratio."
+    },
+    "probe_identity": {
+      "sha256": "36531bf79774cd2adf323b5420a5b7fcfe93b6cef8c27c9e68792d062d58312b",
+      "source_sha256": "7eb2f32545e394fe42d5a832b381045f0619f97054ff7c1cb9752f193d62005a",
+      "scope": "Identity recorded after successful refined calibration and before native launch."
+    },
+    "source_abi_verification": {
+      "header": "https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/resource_private.h",
+      "accounting": "https://github.com/apple-oss-distributions/xnu/blob/main/doc/observability/recount.md",
+      "verified": "THSC_CPI=1; two u64 fields instructions then cycles; Recount supplies both task and thread counters. This does not align their absolute starting origins."
+    },
+    "qualification": "Instrumented partial interval from first main-thread JSEvaluateScript through native encoded-PNG checkpoint observations. Cumulative thread and process origins differ; only shared-start deltas are used. Process readings bracket the thread reading; residual is unattributed and includes background work, sampling boundaries and observer overhead, not a subsystem measurement. Original process endpoint remains in raw logs; acceptance launch scope/counts are unchanged and this diagnostic earns no instruction optimization or Brave credit. Native original pixels/content/72external evaluations/images/ownership/exits/PID adoption pass. The failed initial absolute-counter calibration is retained. Main instruction counter ABI verified against primary Apple XNU sources; no production CPU-share or cross-run scaling claim."
+  },
+  "sample": {
+    "passed": true,
+    "sample": {
+      "pid": 67517,
+      "start_ticks": 4604819701159,
+      "command": [
+        "/usr/bin/sample",
+        "67517",
+        "3",
+        "1",
+        "-file",
+        "/Users/alex/code/vox2/Build/bbc-thread-budget-diagnostic-20261106-0730/sample/page/pair-1-vox/cpu.sample.txt"
+      ],
+      "started_unix": 1793928726.604512,
+      "exit": 0,
+      "finished_unix": 1793928731.263183
+    },
+    "actual_executable_uuid": "2A1B72E8-AD43-3B4C-9531-88F19D6D781F",
+    "load_start": 4336058368,
+    "load_end": 4379644895,
+    "vox_frames_checked": 370,
+    "original_pixels_content_and72_external_sources": true,
+    "native_images_pinned": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "0c5a5e732821255d940e8ecf649b2536f9186e0b01f1c53e970fa35be271a375",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-042637-ecdef6c3/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "02ca7696241947f08e28173b09ce79ae5c6a08a7e5326ade87dbb7dd34218177",
+        "dirty": true,
+        "head": "80f5222383af99ee804ab86f396655c2aaedf6e0",
+        "repository_sha256": "59cc23271dd447489942661508595aaecb28a192624b50ae7d7091e1a02e2a67"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "8ebcc313e4d9ee5676db3ec22bcc730666f2b95e02138ec1cd1508d5118f9600",
+        "dirty": true,
+        "head": "80f5222383af99ee804ab86f396655c2aaedf6e0",
+        "repository_sha256": "cf1bf7bbe169d626985071d81c29de5fd02b0f3b171f159ed173ede7be7bbadc"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "80f5222383af99ee804ab86f396655c2aaedf6e0",
+        "id": "3fa8c0aa11a540e9b51693a7fa58db5a",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "02ca7696241947f08e28173b09ce79ae5c6a08a7e5326ade87dbb7dd34218177",
+        "dirty": true,
+        "head": "80f5222383af99ee804ab86f396655c2aaedf6e0",
+        "repository_sha256": "59cc23271dd447489942661508595aaecb28a192624b50ae7d7091e1a02e2a67"
+      }
+    },
+    "qualification": "Requested3seconds/1ms,actual cadence not established. Per-thread observations include idle waits and possible PNG/audit/teardown work;recursive stacks overlap. Main/worker labels and running JSC Heap Helper/GC/JIT frames are investigative leads,not CPU-instruction shares. Absence of TLS frames does not prove absence of TLS cost outside the sample. No performance or acceptance credit.",
+    "unix": 1793929109.458267
+  },
+  "initial_failed_calibration": {
+    "passed": false,
+    "reason": "Initial main-thread counter36461471 exceeds bracketed process33511751 despite successful APIs: cumulative counters have different initial origins. Absolute process-minus-thread attribution is rejected.",
+    "calibration_browser_or_fixture_exits": [
+      0,
+      0
+    ],
+    "native_browser_launched": false,
+    "performance_credit": 0,
+    "unix": 1793928223.023605
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-thread-budget-diagnostic-20261106.tar.gz",
+    "bytes": 62833572,
+    "sha256": "f690ff0f457b4f75066525adb1b168efd8cf20c4fb416d9d3a574d4f53a0776e",
+    "physical_members": 110,
+    "file_paths": 120,
+    "all_file_paths_verified": true
+  },
+  "acceptance_browser_attempts": 0,
+  "performance_credit": 0,
+  "unix": 1793929220.8586261,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-thread-budget-diagnostic-20261106-0730/archive.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 22691840,
+    "elapsed_seconds": 5.1100207079999995,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

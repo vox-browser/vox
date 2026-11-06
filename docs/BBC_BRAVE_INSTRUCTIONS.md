@@ -264,6 +264,31 @@ source-switch. Cohort 127 and its fresh 759-case broad check are recorded above;
 no robust saving or catalog credit is claimed.
 [Focused checks and control evidence](performance/bbc-text-bidi-classification-focus-20261106.json).
 
+A separate thread-budget diagnostic passes the original native audits and
+records an aligned interval from the **first main-thread JavaScript evaluation**
+through encoded PNG: process delta **20,641,715,452–20,641,749,620** instructions,
+main-thread delta **17,769,131,034**, and an unattributed residual of
+**2,872,584,418–2,872,618,586**. Process readings bracket each thread reading.
+The first calibration rejects absolute subtraction because process and thread
+counters have different initial origins; that failure is retained. The refined
+main/worker-loop calibration passes. The ABI was checked against Apple's
+[counter definitions](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/resource_private.h)
+and [Recount documentation](https://github.com/apple-oss-distributions/xnu/blob/main/doc/observability/recount.md).
+This partial diagnostic excludes earlier startup and includes observer overhead;
+it changes no acceptance scope or count and supplies no production CPU shares.
+
+An accompanying current-bundle CPU sample passes original pixels/content and
+72 external source checks, with verified PID/start identity, executable/dyld UUID
+and all Vox frames inside the executable's mapped range. It contains JSC
+heap-helper, GC and JIT activity. Idle observations and overlapping recursive
+stacks prevent instruction-share attribution; missing TLS stacks do not exclude
+TLS work outside the sampled window. An initial auditor schema error is retained
+before the successful independent pixel comparison; no browser was relaunched
+for that correction. The replay explicitly closes connections, so ordinary HTTP
+keep-alive would not apply to this frozen workload. No network or GC change is
+implemented by these diagnostics.
+[Calibrations, native counters and validated sample](performance/bbc-thread-budget-diagnostic-20261106.json).
+
 The fresh [CPU sample](performance/bbc-current-production-sample-20261106.json)
 validates PID/start identity, executable UUID and Vox address ranges, with no
 instruction credit.
