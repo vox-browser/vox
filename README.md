@@ -15,16 +15,11 @@ dependencies, the Skia bootstrap, headless operation, and platform limitations.
 
 On macOS, **Cmd+,** or **Vox → Settings…** opens the native UI2 settings
 window. By default, the bookmarks bar offers **Wikipedia (English Main Page)**, **Old Reddit
-(r/programming)** and **vlang.io**, with bundled favicons visible even offline,
-and the address bar is read-only. Custom bookmarks load their favicons in the
-background and show a globe until an icon is available. Navigation stays within those
-site families, including their subdomains; existing custom bookmarks are kept
-and become available when unrestricted browsing is enabled. Choose **Allow
-opening any site** and **Apply** to unlock the address bar and other sites.
-The setting starts off for new and existing profiles. Settings explains that
-unconfirmed, untested sites may render slowly and performance is improving
-quickly. See [the recorded comparisons](OPTIMIZED_SITES.md) for the exact tested
-workloads. Automated screenshot captures and headless engine checks retain
+(r/programming)** and **vlang.io**, with bundled favicons visible even offline.
+Custom bookmarks load their favicons in the background and show a globe until an
+icon is available. The address bar opens any site; sites outside
+[the recorded comparisons](OPTIMIZED_SITES.md) may render slowly while
+performance improves. Automated screenshot captures and headless engine checks retain
 their explicitly requested inputs and viewport geometry.
 
 In Settings, enable **Use SOCKS5 proxy**, enter its host and port, and choose
