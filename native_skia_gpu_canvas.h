@@ -1059,6 +1059,55 @@ extern "C" int ladybird_v_skia_gpu_canvas_can_present(CGContextRef destination)
     return frame && frame->destination==destination && frame->compositor
         && ladybird_v_skia_gpu_canvas_compositor_available();
 }
+// Separate diagnostic: compare scheduled transport with the same GPU surfaces
+// after recording has ended. It adds a CPU wait and never supplies FPS credit.
+static bool gpu_canvas_verify_present(GpuCanvasFrame const& frame,
+    VoxGraphiteCanvasSurfaceRegion const* regions, int count)
+{
+    std::vector<std::vector<uint8_t>> pixels(frame.rects.size());
+    std::vector<VoxGraphitePixelRegion> views;
+    for (size_t i=0; i<frame.rects.size(); ++i) {
+        auto const& r=frame.rects[i]; auto const& tile=frame.tiles[i];
+        pixels[i].resize(size_t(r.width())*r.height()*4);
+        views.push_back({r.x()-tile.x(),r.y()-tile.y(),r.width(),r.height(),r.width()*4,pixels[i].data()});
+    }
+    bool read=gpu_canvas_api()->read(views.data(),int(views.size()));
+    std::vector<IOSurfaceRef> locked;
+    for (int i=0; read && i<count; ++i) {
+        auto surface=static_cast<IOSurfaceRef>(regions[i].surface);
+        if (std::find(locked.begin(),locked.end(),surface)!=locked.end()) continue;
+        if (IOSurfaceLock(surface,kIOSurfaceLockReadOnly,nullptr)!=kIOReturnSuccess) { read=false; break; }
+        locked.push_back(surface);
+    }
+    size_t compared=0; int error=0;
+    for (size_t i=0; read && i<frame.rects.size(); ++i) {
+        auto const& r=frame.rects[i];
+        for (int y=r.top(); y<r.bottom(); ++y) for (int x=r.left(); x<r.right(); ++x) {
+            bool replaced=false;
+            for (size_t n=i+1; n<frame.rects.size(); ++n)
+                replaced |= frame.rects[n].contains(x,y);
+            if (replaced) continue;
+            auto expected=pixels[i].data()+(size_t(y-r.top())*r.width()+x-r.left())*4;
+            bool found=false;
+            for (int n=0; n<count; ++n) {
+                auto const& target=regions[n];
+                if (x<target.canvas_x || y<target.canvas_y
+                    || x>=target.canvas_x+target.width || y>=target.canvas_y+target.height) continue;
+                auto surface=static_cast<IOSurfaceRef>(target.surface);
+                auto actual=static_cast<uint8_t const*>(IOSurfaceGetBaseAddress(surface))
+                    +size_t(target.surface_y+y-target.canvas_y)*IOSurfaceGetBytesPerRow(surface)
+                    +size_t(target.surface_x+x-target.canvas_x)*4;
+                for (int c=0; c<4; ++c) error=std::max(error,
+                    std::abs(int(expected[c==0?2:c==2?0:c])-int(actual[c])));
+                found=true; ++compared; break;
+            }
+            if (!found) read=false;
+        }
+    }
+    for (auto surface:locked) IOSurfaceUnlock(surface,kIOSurfaceLockReadOnly,nullptr);
+    std::fprintf(stderr,"VOX_GPU_PRESENT_VERIFY read=%d pixels=%zu max_error=%d\n",int(read),compared,error);
+    return read && compared && !error;
+}
 extern "C" int ladybird_v_skia_gpu_canvas_present(CGContextRef destination,
     VoxGraphiteCanvasSurfaceRegion const* regions, int count, void** completion)
 {
@@ -1067,6 +1116,8 @@ extern "C" int ladybird_v_skia_gpu_canvas_present(CGContextRef destination,
     auto* frame=s_gpu_canvas.get();
     int result=gpu_canvas_upload(*frame)
         ? gpu_canvas_api()->present(regions,count,completion) : -1;
+    if (result>0 && std::getenv("VOX_GPU_CANVAS_PRESENT_VERIFY")
+        && !gpu_canvas_verify_present(*frame,regions,count)) result=-1;
     if (result>0) {
         // The immutable surfaces now own every GPU-only pixel. Ordinary end
         // must not download them into the incomplete CPU publication bitmap.

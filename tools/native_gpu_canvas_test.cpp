@@ -338,7 +338,8 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
         assert(!s_gpu_canvas);
         assert(ladybird_v_skia_bitmap_pixels_are_current(context));
         // Every earlier flush succeeded; final publication adds at most one.
-        assert(s_successful_reads - before_final_read == (s_present_tiles ? 0 : expected_reads - s_flushes));
+        assert(s_successful_reads - before_final_read == (s_present_tiles ? unsigned(std::getenv("VOX_GPU_CANVAS_PRESENT_VERIFY") != nullptr)
+            : expected_reads - s_flushes));
         if (output) {
             assert(gpu_canvas_api()->wait_present(completion));
             assert(!IOSurfaceLock(output,kIOSurfaceLockReadOnly,nullptr));

@@ -62,4 +62,6 @@ VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-ve
 if [ "${NATIVE_GPU_CANVAS_PRESENT_TEST:-0}" = 1 ]; then
     "$output_dir/native_gpu_canvas_test" --present-tiles
     "$output_dir/native_gpu_canvas_test" --resident-ring
+    VOX_GPU_CANVAS_PRESENT_VERIFY=1 "$output_dir/native_gpu_canvas_test" --present-tiles
+    VOX_GPU_CANVAS_PRESENT_VERIFY=1 "$output_dir/native_gpu_canvas_test" --resident-ring
 fi
