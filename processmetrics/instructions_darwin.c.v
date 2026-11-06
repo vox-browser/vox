@@ -1,9 +1,11 @@
 module processmetrics
 
 #include "instruction_counter_darwin.h"
+#include "thread_instruction_counter_darwin.h"
 #include <pthread.h>
 
 fn C.vox_process_instructions(&u64) int
+fn C.vox_thread_instructions(&u64) int
 fn C.vox_coalition_instructions(&u64, &u64, &u64, &u64) int
 fn C.pthread_main_np() int
 
@@ -14,6 +16,14 @@ fn instruction_stage_main_thread() bool {
 pub fn instruction_snapshot() InstructionSnapshot {
 	mut count := u64(0)
 	status := C.vox_process_instructions(&count)
+	return InstructionSnapshot{ instructions: count, available: status == 0, error_code: status }
+}
+
+// Calling-thread instructions, including its kernel work. Never mix this
+// snapshot with a process or coalition snapshot when forming an interval.
+pub fn thread_instruction_snapshot() InstructionSnapshot {
+	mut count := u64(0)
+	status := C.vox_thread_instructions(&count)
 	return InstructionSnapshot{ instructions: count, available: status == 0, error_code: status }
 }
 

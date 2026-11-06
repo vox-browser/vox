@@ -6,8 +6,12 @@ import os
 fn C.vox_load_stage_begin_log(i32, u64, u64, &char, uint)
 fn C.vox_load_stage_end_log(i32, u64, u64)
 fn C.vox_load_stage_unavailable_log(i32, u64, i32)
+fn C.vox_thread_stage_begin_log(i32, u64, u64, &char, uint)
+fn C.vox_thread_stage_end_log(i32, u64, u64)
+fn C.vox_thread_stage_unavailable_log(i32, u64, i32)
 
 const load_stage_diagnostics = os.getenv('VOX_DIAGNOSTIC_LOAD_STAGES') != ''
+const thread_load_stage_diagnostics = os.getenv('VOX_DIAGNOSTIC_THREAD_LOAD_STAGES') != ''
 __global load_stage_next_id u64
 __global load_stage_current_is_javascript bool
 
@@ -32,12 +36,24 @@ pub fn begin_instruction_stage(label string) InstructionStage {
 	previous_is_javascript := load_stage_current_is_javascript
 	load_stage_current_is_javascript = false
 	C.vox_load_stage_begin_log(i32(os.getpid()), id, reading.instructions, label.str, uint(label.len))
+	if thread_load_stage_diagnostics {
+		thread_reading := thread_instruction_snapshot()
+		if thread_reading.available {
+			C.vox_thread_stage_begin_log(i32(os.getpid()), id, thread_reading.instructions, label.str, uint(label.len))
+		} else { C.vox_thread_stage_unavailable_log(i32(os.getpid()), id, i32(thread_reading.error_code)) }
+	}
 	return InstructionStage{id: id, previous_is_javascript: previous_is_javascript}
 }
 
 pub fn (stage InstructionStage) finish() {
 	if stage.id == 0 { return }
 	load_stage_current_is_javascript = stage.previous_is_javascript
+	if thread_load_stage_diagnostics {
+		thread_reading := thread_instruction_snapshot()
+		if thread_reading.available {
+			C.vox_thread_stage_end_log(i32(os.getpid()), stage.id, thread_reading.instructions)
+		} else { C.vox_thread_stage_unavailable_log(i32(os.getpid()), stage.id, i32(thread_reading.error_code)) }
+	}
 	reading := instruction_snapshot()
 	if !reading.available {
 		C.vox_load_stage_unavailable_log(i32(os.getpid()), stage.id, i32(reading.error_code))

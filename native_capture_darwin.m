@@ -17,9 +17,11 @@
 #include <execinfo.h>
 #include <unistd.h>
 #include "processmetrics/instruction_counter_darwin.h"
+#include "processmetrics/thread_instruction_counter_darwin.h"
 
 static void native_capture_instruction_checkpoint(const char *label) {
     if (!getenv("VOX_PROFILE_INSTRUCTIONS")) return;
+    vox_thread_instruction_checkpoint(label);
     uint64_t instructions = 0;
     if (vox_process_instructions(&instructions) == 0)
         fprintf(stderr, "Vox instructions cumulative: %s %llu\n", label,
