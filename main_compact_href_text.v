@@ -1,13 +1,41 @@
 module main
 
+import os
+
+const retain_uncached_href_text = os.getenv('VOX_RETAIN_UNCACHED_HREF_TEXT') != ''
+
 fn compact_href_text_bootstrap() string {
-	return r'
+	return 'const __hrefTextCacheEnabled=' + if retain_uncached_href_text {
+		'false;'
+	} else {
+		'true;'
+	} + r'
 const __hrefTextNative=globalThis.__ladybirdSerializeURLText;
 const __hrefTextConstructor=typeof __hrefTextNative==="function"?__hrefTextNative.nativeConstructor:null;
 const __hrefTextPrototype=typeof __hrefTextNative==="function"?__hrefTextNative.nativePrototype:null;
 const __hrefTextGetter=typeof __hrefTextNative==="function"?__hrefTextNative.nativeHrefGetter:null;
 const __hrefTextDescriptor=Object.getOwnPropertyDescriptor,__hrefTextDefine=Object.defineProperty;
 const __hrefTextHasOwn=Object.prototype.hasOwnProperty;
+const __hrefTextCache=new Map(),__hrefTextGet=Map.prototype.get,__hrefTextSet=Map.prototype.set;
+const __hrefTextCacheReport=typeof __hrefTextNative==="function"?__hrefTextNative.reportCacheHit:undefined;
+let __hrefTextCacheEntries=0,__hrefTextCacheUnits=0,__hrefTextCacheReported=false;
+function __compactHrefText(value,base){
+ const eligible=__hrefTextCacheEnabled&&typeof value==="string"&&typeof base==="string"&&value.length<=2048&&base.length<=2048;
+ const old=eligible?__elementApply(__hrefTextGet,__hrefTextCache,[value]):undefined;
+ if(old&&old.base===base){
+  if(!__hrefTextCacheReported&&typeof __hrefTextCacheReport==="function"){__hrefTextCacheReported=true;__hrefTextCacheReport();}
+  return old.text;
+ }
+ const text=__hrefTextNative(value,base);
+ if(eligible&&typeof text==="string"&&text.length<=4096){
+  const units=value.length+base.length+text.length,nextUnits=__hrefTextCacheUnits-(old?old.units:0)+units;
+  // Keep admitted entries when full: cyclic oversized working sets must not evict every hit.
+  if((old||__hrefTextCacheEntries<256)&&nextUnits<=262144){
+   __elementApply(__hrefTextSet,__hrefTextCache,[value,{base,text,units}]);__hrefTextCacheUnits=nextUnits;if(!old)__hrefTextCacheEntries++;
+  }
+ }
+ return text;
+}
 function __compactHrefTextBindings(object,state){
  if(typeof __hrefTextNative!=="function"||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||!["a","area","link","base"].includes(state.tagName))return;
  const original=__hrefTextDescriptor(object,"href");if(!original||typeof original.get!=="function")return;
@@ -19,7 +47,7 @@ function __compactHrefTextBindings(object,state){
    const constructor=globalThis.URL,base=__state.location;
    if(constructor===__hrefTextConstructor&&constructor.prototype===__hrefTextPrototype&&typeof base==="string"){
     const descriptor=__hrefTextDescriptor(__hrefTextPrototype,"href");
-    if(descriptor&&__elementApply(__hrefTextHasOwn,descriptor,["get"])&&descriptor.get===__hrefTextGetter){const text=__hrefTextNative(value,base);if(typeof text==="string")return text;}
+    if(descriptor&&__elementApply(__hrefTextHasOwn,descriptor,["get"])&&descriptor.get===__hrefTextGetter){const text=__compactHrefText(value,base);if(typeof text==="string")return text;}
    }
    return new constructor(value,base).href;
   }catch(error){return value;}

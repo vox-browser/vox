@@ -5,7 +5,9 @@ import platform
 import sync.stdatomic
 
 const retain_href_url_objects = os.getenv('VOX_RETAIN_HREF_URL_OBJECTS') != ''
+const href_text_cache_diagnostics = os.getenv('VOX_HREF_TEXT_CACHE_DIAGNOSTICS') != ''
 const href_url_text_diagnostics = os.getenv('VOX_HREF_URL_TEXT_DIAGNOSTICS') != ''
+
 __global href_url_text_reported stdatomic.AtomicVal[bool]
 
 // This internal scalar transport borrows primitive strings and returns copied
@@ -35,7 +37,21 @@ fn (mut runtime Runtime) install_url_text_binding(native_getter voidptr) ! {
 	function := runtime.binding_property(C.JSContextGetGlobalObject(runtime.context), '__ladybirdSerializeURLText')!
 	// Authenticate against the actual native constructor and its original getter,
 	// including embedders that replace either before the document bootstrap.
-	factory := runtime.evaluate_host_value(r'(function(fn,constructor,prototype,getter){Object.defineProperties(fn,{nativeConstructor:{value:constructor},nativePrototype:{value:prototype},nativeHrefGetter:{value:getter}});})')!
+	report_cache_hit := if href_text_cache_diagnostics {
+		runtime.make_value_host_function(fn (_ voidptr, _ []voidptr) !voidptr {
+			eprintln('Vox href text cache: reused primitive input/base result')
+			return unsafe { nil }
+		})!
+	} else {
+		C.vox_jsc_JSValueMakeUndefined(runtime.context)
+	}
+	factory := runtime.evaluate_host_value(r'(function(fn,constructor,prototype,getter,report){Object.defineProperties(fn,{nativeConstructor:{value:constructor},nativePrototype:{value:prototype},nativeHrefGetter:{value:getter}});if(typeof report==="function")Object.defineProperty(fn,"reportCacheHit",{value:report});})')!
 	defer { runtime.release_javascript_value(factory) }
-	_ = runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [function, host.constructor, host.prototype, native_getter])!
+	_ = runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
+		function,
+		host.constructor,
+		host.prototype,
+		native_getter,
+		report_cache_hit,
+	])!
 }
