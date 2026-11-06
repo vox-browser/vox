@@ -126,6 +126,8 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 	// inputs, as the closed inline measurement cache does, without clearing them.
 	if !inline_measurement_inputs_are_current(inputs) { return false }
 	for input in inputs {
+		if input.node.is_absolutely_positioned() && input.measurement_image == none
+			&& !measurement_absolute_dependencies_are_internal(inputs[0].node, input.node) { return false }
 		if image := input.measurement_image {
 			if (measurement_image_input(input.node) or { return false }) != image { return false }
 		}
@@ -154,7 +156,8 @@ fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 		// keep their full algorithms. Every containing block must be inside the
 		// captured subtree; only the root may depend on the keyed outer block.
 		// The shared collector proves relative insets are all auto. Its
-		// measurement-only exception admits validated absolute HTML images;
+		// measurement-only exceptions admit validated absolute HTML images and
+		// ordinary absolute descendants with internal static-position dependencies;
 		// their final absolute layout still runs after restoring static positions.
 		// It also admits only closed SVG shapes, with complete DOM attributes
 		// and child identities retained under the caller's document owner.
@@ -165,6 +168,8 @@ fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 			return false
 		}
 		if index > 0 {
+			if input.node.is_absolutely_positioned() && input.measurement_image == none
+				&& !measurement_absolute_dependencies_are_internal(root, input.node) { return false }
 			containing := input.node.containing_block() or { return false }
 			if voidptr(containing) != voidptr(root)
 				&& !root.is_inclusive_ancestor_of(unsafe { &Node(containing) }) {
@@ -245,6 +250,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
 		report_opacity_measurement_reuse(cached.inputs)
+		report_absolute_measurement_reuse(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
 		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		return cached.result

@@ -124,6 +124,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
 		report_opacity_measurement_reuse(cached.inputs)
+		report_absolute_measurement_reuse(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
 		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		if committed && committed_flex_measurement_diagnostics && !committed_flex_measurement_reported {
