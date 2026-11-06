@@ -7,7 +7,6 @@ module css
 import encoding.binary
 import gfxfont
 import platform
-import skia
 import sync
 import threading
 
@@ -89,7 +88,7 @@ pub fn requires_off_thread_vector_font_preparation(data []u8, mime_type_essence 
 }
 
 fn font_typeface_from_prepared_bytes(data []u8, family_name string) !&PlatformTypeface {
-	if !skia.font_typeface_is_valid(data, 0) { return error('Failed to load font') }
+	if !gfxfont.typeface_data_is_valid(data, 0) { return error('Failed to load font') }
 	path := platform.cache_prepared_font_data(data) or {
 		return error('Failed to retain prepared font')
 	}

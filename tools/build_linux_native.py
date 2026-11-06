@@ -17,7 +17,7 @@ def main():
     for package, names, dependencies in [
         ("platform", ["unicode_case_mapping"], ["icu-uc", "icu-i18n"]),
         ("gfxfont", ["woff2"], []),
-        ("skia", ["canvas_raster", "shadow_raster", "font_typeface", "bitmap_export"], ["skia"]),
+        ("skia", ["canvas_raster", "shadow_raster", "bitmap_export"], ["skia"]),
     ]:
         flags = shlex.split(subprocess.check_output(
             ["pkg-config", "--cflags", *dependencies], text=True)) if dependencies else []

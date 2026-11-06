@@ -5,7 +5,6 @@ module gfxfont
 
 import encoding.binary
 import os
-import skia
 
 fn source_font_fixture(name string) []u8 {
 	return os.read_bytes(os.join_path(os.dir(@FILE), 'testdata', name)) or { panic(err) }
@@ -17,7 +16,7 @@ fn test_source_woff_font_decodes_with_retained_sfnt_table_directory() {
 	assert font.len == int(binary.big_endian_u32_at(compressed, 16))
 	assert binary.big_endian_u32(font) == binary.big_endian_u32_at(compressed, 4)
 	assert binary.big_endian_u16_at(font, 4) == binary.big_endian_u16_at(compressed, 12)
-	assert skia.font_typeface_is_valid(font, 0)
+	assert typeface_data_is_valid(font, 0)
 }
 
 struct WoffMutation {
@@ -80,9 +79,9 @@ fn test_source_woff_keeps_unpadded_table_offsets_and_header_search_calculation()
 
 fn test_source_woff2_decoder_accepts_valid_fonts_and_tolerates_incorrect_declared_sfnt_size() {
 	font := convert_woff2_to_sfnt(source_font_fixture('variable-font-example.woff2'))!
-	assert skia.font_typeface_is_valid(font, 0)
+	assert typeface_data_is_valid(font, 0)
 	tolerated := convert_woff2_to_sfnt(source_font_fixture('incorrect_sfnt_size.woff2'))!
-	assert skia.font_typeface_is_valid(tolerated, 0)
+	assert typeface_data_is_valid(tolerated, 0)
 	for name in ['incorrect_compressed_size.woff2', 'invalid_numtables.woff2'] {
 		if _ := convert_woff2_to_sfnt(source_font_fixture(name)) {
 			assert false, name
