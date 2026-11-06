@@ -208,6 +208,42 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
 
 // The rows and columns of a premultiplied raster region that contain any
 // painted pixel. Returns 0 when the region is empty.
+VOX_NATIVE_STATE int vox_opacity_ink_rows_policy;
+VOX_NATIVE_STATE int vox_opacity_ink_rows_reported;
+
+static int native_opacity_trim_ink_rows(void)
+{
+    int policy = __atomic_load_n(&vox_opacity_ink_rows_policy, __ATOMIC_RELAXED);
+    if (!policy) {
+        const char *retain = getenv("VOX_RETAIN_FULL_OPACITY_INK_ROWS");
+        policy = retain && *retain ? 2 : 1;
+        __atomic_store_n(&vox_opacity_ink_rows_policy, policy, __ATOMIC_RELAXED);
+    }
+    return policy == 1;
+}
+
+static int native_opacity_row_has_ink(const uint32_t *row, int left, int right)
+{
+    int x = left;
+#if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+    // Ink often starts at the edge; avoid loading a wide block in that case.
+    if (right - x >= 4) {
+        if (vmaxvq_u32(vld1q_u32(row + x)) != 0) return 1;
+        x += 4;
+    }
+    for (; right - x >= 16; x += 16) {
+        uint32x4x4_t block = vld1q_u32_x4(row + x);
+        uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
+            vorrq_u32(block.val[2], block.val[3]));
+        if (vmaxvq_u32(ink) != 0) return 1;
+    }
+    for (; right - x >= 4; x += 4)
+        if (vmaxvq_u32(vld1q_u32(row + x)) != 0) return 1;
+#endif
+    for (; x < right; ++x) if (row[x]) return 1;
+    return 0;
+}
+
 static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, int left,
     int top, int right, int bottom, int *ink_left, int *ink_top, int *ink_right,
     int *ink_bottom)
@@ -254,6 +290,25 @@ static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, 
         if (last > max_x) max_x = last;
         if (y < min_y) min_y = y;
         max_y = y + 1;
+        // Once both horizontal limits are reached, no interior row can widen
+        // them. Only the final nonempty row remains unknown. Search backwards
+        // for it, retaining the same any-channel ink definition and crop.
+        if (min_x == left && max_x == right && bottom - y > 2
+            && native_opacity_trim_ink_rows()) {
+            int tail = bottom - 1;
+            for (; tail > y; --tail) {
+                const uint32_t *tail_row = (const uint32_t *)(pixels + (size_t)tail * pitch);
+                if (native_opacity_row_has_ink(tail_row, left, right)) break;
+            }
+            max_y = tail + 1;
+            if (tail > y + 1
+                && !__atomic_exchange_n(&vox_opacity_ink_rows_reported, 1, __ATOMIC_RELAXED)) {
+                const char *diagnostics = getenv("VOX_OPACITY_INK_ROWS_DIAGNOSTICS");
+                if (diagnostics && *diagnostics)
+                    fprintf(stderr, "Vox opacity ink bounds: skipped resolved interior rows=%d\n", tail - y - 1);
+            }
+            break;
+        }
     }
     if (!found) return 0;
     *ink_left = min_x;

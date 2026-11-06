@@ -78,5 +78,60 @@ int main(void)
         }
     }
     assert(munmap(mapping, page * 2) == 0);
+
+    // Horizontal limits can be established by different rows. Empty gaps and
+    // tails must not change the last painted row, nor may cropped-out ink help.
+    for (int height = 3; height <= 33; ++height) {
+        size_t stride = 71;
+        uint32_t *pixels = calloc(stride * height, 4);
+        assert(pixels);
+        for (int last = 1; last < height; ++last) {
+            memset(pixels, 0, stride * height * 4);
+            pixels[2] = 1; pixels[stride + 66] = 0x80000000u;
+            pixels[(size_t)last * stride + 37] = 0x100u;
+            // Padding and pixels outside the crop never supply a bound.
+            for (int y = 0; y < height; ++y) pixels[y * stride + 70] = ~0u;
+            check(pixels, stride * 4, 2, 0, 67, height); ++comparisons;
+            check(pixels, stride * 4, 3, 0, 66, height); ++comparisons;
+        }
+        free(pixels);
+    }
+
+    // Every tail probe ends immediately before an inaccessible page. Exercise
+    // vector widths and all possible nonzero positions in the final row.
+    mapping = mmap(NULL, page * 18, PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANON, -1, 0);
+    assert(mapping != MAP_FAILED);
+    for (int y = 0; y < 9; ++y)
+        assert(mprotect(mapping + (y * 2 + 1) * page, page, PROT_NONE) == 0);
+    for (int width = 1; width < 128; ++width) {
+        uint32_t *pixels = (uint32_t *)(mapping + page - width * 4);
+        for (int position = -1; position < width; ++position) {
+            for (int y = 0; y < 9; ++y)
+                memset((uint8_t *)pixels + y * page * 2, 0, width * 4);
+            pixels[0] = 1; pixels[width - 1] = 0x100u;
+            if (position >= 0)
+                ((uint32_t *)((uint8_t *)pixels + page * 16))[position] = 1u << (position % 32);
+            check(pixels, page * 2, 0, 0, width, 9); ++comparisons;
+        }
+    }
+    assert(munmap(mapping, page * 18) == 0);
+
+    // A resolved interior is unnecessary input. Protect it to prove that the
+    // candidate consumes just the first and last rows in this dense-bound case.
+    if (native_opacity_trim_ink_rows()) {
+        mapping = mmap(NULL, page * 4, PROT_READ | PROT_WRITE,
+            MAP_PRIVATE | MAP_ANON, -1, 0);
+        assert(mapping != MAP_FAILED);
+        uint32_t *pixels = (uint32_t *)mapping;
+        pixels[0] = 1; pixels[31] = 0x10000u;
+        ((uint32_t *)(mapping + page * 3))[17] = 0x100u;
+        assert(mprotect(mapping + page, page * 2, PROT_NONE) == 0);
+        int bounds[4];
+        assert(native_opacity_layer_ink_bounds(mapping, page, 0, 0, 32, 4,
+            &bounds[0], &bounds[1], &bounds[2], &bounds[3]));
+        assert(bounds[0] == 0 && bounds[1] == 0 && bounds[2] == 32 && bounds[3] == 4);
+        assert(munmap(mapping, page * 4) == 0);
+    }
     printf("Opacity ink bounds: %zu exact comparisons, including protected row tails\n", comparisons);
 }
