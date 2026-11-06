@@ -769,6 +769,7 @@ static bool canvas_ensure_copy_pipeline(id<MTLDevice> device)
 static void (*canvas_present_test_before_commit)(void*);
 static void* canvas_present_test_context;
 static int canvas_present_test_fail_target = -1;
+static bool canvas_present_test_fail_encoding;
 #endif
 // The kernel tracks cross-process IOSurface hazards once Metal work has been
 // scheduled. Chromium uses the same boundary before Core Animation access;
@@ -886,6 +887,9 @@ static int canvas_present_impl(VoxGraphiteCanvasSurfaceRegion const* regions,
     if (early_render && !submit_render()) { release_textures(); return -1; }
     id<MTLCommandBuffer> commands=[gpu_frame_queue commandBuffer];
     bool encoded=commands!=nil;
+#ifdef VOX_TEST_CANVAS_PRESENT
+    if (canvas_present_test_fail_encoding) encoded=false;
+#endif
     for (size_t index=0; encoded && index<targets.size(); ++index) {
         if (prefixes[index]) {
             auto encoder=[commands blitCommandEncoder];
@@ -928,7 +932,9 @@ static int canvas_present_impl(VoxGraphiteCanvasSurfaceRegion const* regions,
         }
     }
     release_textures();
-    if (!encoded) return 0;
+    // Early submission has already consumed the source recording. A caller
+    // must reject that frame rather than treating it as an untouched decline.
+    if (!encoded) return early_render ? -1 : 0;
     if (!early_render && !submit_render()) return -1;
     if (std::getenv("VOX_GPU_TILE_SUBMISSION_DIAGNOSTICS")) {
         using Clock=double (*)();

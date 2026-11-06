@@ -188,6 +188,13 @@ static void test_canvas_present() {
     canvas_present_test_fail_target=1;
     assert(!test_present_submission(regions,3,&ticket) && !ticket);
     canvas_present_test_fail_target=-1;
+    // After early render submission the source has been consumed, even when
+    // copy encoding fails. Report rejection rather than an untouched decline.
+    canvas_present_test_fail_encoding=true;
+    assert(test_present_submission(regions,3,&ticket)
+        == (getenv("VOX_GPU_TILE_EARLY_RENDER_SUBMIT") ? -1 : 0));
+    assert(!ticket);
+    canvas_present_test_fail_encoding=false;
     for(auto surface:outputs) {
         assert(IOSurfaceLock(surface,kIOSurfaceLockReadOnly,nullptr)==kIOReturnSuccess);
         for(size_t byte=0;byte<IOSurfaceGetBytesPerRow(surface)*IOSurfaceGetHeight(surface);++byte)
