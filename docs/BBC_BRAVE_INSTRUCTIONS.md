@@ -7568,3 +7568,14 @@ original default compile rejection and corrected run are both retained. All
 **348 instruction-tool tests** pass. Native workload eligibility is evaluated
 separately; this correctness evidence earns no performance or catalog credit.
 [Focused capacity and GC-header checks](performance/bbc-longhand-capacity-focus-20261106.json).
+
+The quota extension is **retired** (`c84cf21c2`; control removal `cbd87e91e`).
+On pinned literal-prod/single-C production `065088847096`, both native arms
+retain exact original pixels/content, all 72 external source evaluations,
+normal exits, ownership and mapped-image checks, but neither uses an entry
+admitted beyond the old quota. The eligibility audit fails and stops before SVG
+or acceptance launches. No cohort ID or acceptance attempt is consumed. All
+**135 restoration executions** and **347 tooling tests** pass. Native retirement
+confirmation on a subsequent completed bundle remains pending. History stays
+123 measured cohorts / 2,650 attempts through cohort 129; target unmet.
+[No-hit launches and rollback evidence](performance/bbc-longhand-capacity-no-hit-retirement-20261106.json).
