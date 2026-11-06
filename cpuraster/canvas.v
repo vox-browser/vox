@@ -1,5 +1,7 @@
 module cpuraster
 
+import math
+
 // Canvas2D path fills, as skia/canvas_raster.cpp's vox_skia_canvas_path()
 // draws them with LibWeb Skia for a solid source-over fill without clips,
 // filters or shadows: writePixels() premultiplies the bitmap,
@@ -38,9 +40,7 @@ const max_untiled_dimension = 8191
 // premultiplied when alpha_type is 2 and premultiplied first otherwise.
 // Returns false without changing pixels for devices Skia would tile.
 pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32) bool {
-	if path.is_inverse_fill() || width <= 0 || height <= 0 || width > max_untiled_dimension
-		|| height > max_untiled_dimension || pitch < width * 4 || pitch % 4 != 0
-		|| i64(pitch) * i64(height - 1) + i64(width) * 4 > i64(pixels.len) {
+	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
 	if alpha_type != 2 {
@@ -49,6 +49,163 @@ pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
 	mut blitter := new_solid_blitter(mut pixels, pitch, color)
 	return anti_fill_path(path.transform(matrix), IRect{0, 0, width, height}, mut blitter)
+}
+
+fn untiled_device(pixels []u8, width int, height int, pitch int) bool {
+	return width > 0 && height > 0 && width <= max_untiled_dimension
+		&& height <= max_untiled_dimension && pitch >= width * 4 && pitch % 4 == 0
+		&& i64(pitch) * i64(height - 1) + i64(width) * 4 <= i64(pixels.len)
+}
+
+// The line joins Canvas2D passes, in its encoding.
+pub enum StrokeJoin {
+	round
+	bevel
+	miter
+}
+
+// stroke_canvas_path strokes path the way vox_skia_canvas_path() does for a
+// solid source-over stroke without dashes, clips, filters or shadows when
+// SkDraw treats the stroke as a hairline: line_width mapped through transform
+// is at most one device pixel along both axes, so it draws a one-pixel
+// hairline with alpha scaled by the width. color is the style's SkColor
+// before global_alpha. Returns false without changing pixels for wider
+// strokes and for devices Skia would tile.
+pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32) bool {
+	if !untiled_device(pixels, width, height, pitch) {
+		return false
+	}
+	for v in transform {
+		if !is_finite_f32(v) {
+			return false
+		}
+	}
+	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
+	// SkPaint::setStrokeWidth() and setStrokeMiter() ignore negative and NaN
+	// values; the defaults are 0 (a hairline) and 4.
+	stroke_width := if line_width >= 0 { line_width } else { f32(0) }
+	miter_limit := if miter >= 0 { miter } else { f32(4) }
+	// DrawTreatAsHairline(): the stroke width's device vectors.
+	mut coverage := f32(1)
+	if stroke_width != 0 {
+		len0 := fast_len(stroke_width * matrix.a, stroke_width * matrix.b)
+		len1 := fast_len(stroke_width * matrix.c, stroke_width * matrix.d)
+		if !(len0 <= 1 && len1 <= 1) {
+			return false
+		}
+		coverage = float_midpoint(len0, len1)
+	}
+	if alpha_type != 2 {
+		premultiply_rows(mut pixels, width, height, pitch)
+	}
+	// vox_skia_canvas_path() draws nothing for non-positive widths.
+	if line_width <= 0 {
+		return true
+	}
+	paint_alpha := canvas_paint_alpha(color, global_alpha)
+	alpha := paint_alpha_byte(paint_alpha)
+	// SkCanvas::onDrawPath(): non-finite paths, SkPaint::nothingToDraw() and
+	// internalQuickReject().
+	bounds := path.bounds() or { return true }
+	if alpha == 0 || path.is_inverse_fill() {
+		return true
+	}
+	radius := inflation_radius(stroke_width, cap, join, miter_limit)
+	outset := Rect{bounds.left - radius, bounds.top - radius, bounds.right + radius, bounds.bottom +
+		radius}
+	device := map_rect_affine(outset, matrix)
+	if !is_finite_f32(device.left) || !is_finite_f32(device.top) || !is_finite_f32(device.right)
+		|| !is_finite_f32(device.bottom) {
+		return true
+	}
+	reject_left := fmax(device.left, -1)
+	reject_right := fmin(device.right, f32(width) + 1)
+	reject_top := fmax(device.top, -1)
+	reject_bottom := fmin(device.bottom, f32(height) + 1)
+	if !(reject_left < reject_right && reject_top < reject_bottom) {
+		return true
+	}
+	// modifyPaintForHairlines(): partial coverage scales the paint's alpha.
+	mut hair_alpha := paint_alpha
+	if coverage != 1 {
+		scale := int(saturate_to_i32(coverage * f32(256)))
+		hair_alpha = tpin(f32((alpha * scale) >> 8) * inv_255, 0, 1)
+	}
+	hair_color := (canvas_fill_color(color, global_alpha) & 0xffffff) | (color4f_byte(hair_alpha) << 24)
+	mut blitter := new_solid_blitter(mut pixels, pitch, hair_color)
+	anti_hair_path(path.transform(matrix), cap, IRect{0, 0, width, height}, mut blitter)
+	return true
+}
+
+// fast_len(): max + min / 2.
+fn fast_len(x f32, y f32) f32 {
+	mut ax := f32(math.abs(x))
+	mut ay := f32(math.abs(y))
+	if ax < ay {
+		ax, ay = ay, ax
+	}
+	half := ay * f32(0.5)
+	return ax + half
+}
+
+// SkStrokeRec::GetInflationRadius().
+fn inflation_radius(width f32, cap StrokeCap, join StrokeJoin, miter_limit f32) f32 {
+	if width == 0 {
+		return 1
+	}
+	mut multiplier := f32(1)
+	if join == .miter && multiplier < miter_limit {
+		multiplier = miter_limit
+	}
+	sqrt2 := f32(1.41421356)
+	if cap == .square && multiplier < sqrt2 {
+		multiplier = sqrt2
+	}
+	half := width / 2
+	return half * multiplier
+}
+
+// SkMatrixPriv::MapRect() for an affine SkM44: the bounds of the mapped
+// corners, translated last.
+fn map_rect_affine(r Rect, m Matrix) Rect {
+	mut mins := [4]f32{}
+	for i, corner in [Point{r.left, r.top}, Point{r.right, r.top}, Point{r.left, r.bottom},
+		Point{r.right, r.bottom}] {
+		ax := m.a * corner.x
+		cy := m.c * corner.y
+		bx := m.b * corner.x
+		dy := m.d * corner.y
+		nax := -m.a * corner.x
+		ncy := -m.c * corner.y
+		nbx := -m.b * corner.x
+		ndy := -m.d * corner.y
+		lanes := [ax + cy, bx + dy, nax + ncy, nbx + ndy]!
+		for k in 0 .. 4 {
+			mins[k] = if i == 0 { lanes[k] } else { fmin(mins[k], lanes[k]) }
+		}
+	}
+	return Rect{m.e + mins[0], m.f + mins[1], m.e - mins[2], m.f - mins[3]}
+}
+
+// SkPaint::getAlpha(): sk_float_round2int(alpha * 255).
+fn paint_alpha_byte(alpha f32) int {
+	scaled := alpha * f32(255)
+	return int(math.floor(f64(scaled) + 0.5))
+}
+
+// SkColor4f::toSkColor() for one channel: trunc(pin(v * 255 + 0.5, 0, 255)).
+fn color4f_byte(v f32) u32 {
+	scaled := v * f32(255)
+	biased := scaled + f32(0.5)
+	return u32(u8(fmin(fmax(biased, 0), 255)))
+}
+
+// The paint's SkColor4f alpha after SkPaint::setAlphaf(getAlphaf() * global_alpha).
+fn canvas_paint_alpha(color u32, global_alpha f32) f32 {
+	v := f32(color >> 24) * inv_255
+	product := v * global_alpha
+	pinned := if product < 1 { product } else { f32(1) }
+	return if f32(0) < pinned { pinned } else { f32(0) }
 }
 
 // SkConvertPixels' RGBA_to_rgbA(): (c * a + 127) / 255.
@@ -70,18 +227,9 @@ fn premultiply_rows(mut pixels []u8, width int, height int, pitch int) {
 // SkColor4f stores byte * (1/255), and SkColor4f::toSkColor() rounds with
 // trunc(pin(v * 255 + 0.5, 0, 255)).
 pub fn canvas_fill_color(color u32, global_alpha f32) u32 {
-	mut result := u32(0)
-	for shift in [u32(0), 8, 16, 24] {
-		mut v := f32((color >> shift) & 0xff) * inv_255
-		if shift == 24 {
-			product := v * global_alpha
-			v = if product < 1 { product } else { f32(1) }
-			v = if f32(0) < v { v } else { f32(0) }
-		}
-		scaled := v * f32(255)
-		biased := scaled + f32(0.5)
-		pinned := fmin(fmax(biased, 0), 255)
-		result |= u32(u8(pinned)) << shift
+	mut result := color4f_byte(canvas_paint_alpha(color, global_alpha)) << 24
+	for shift in [u32(0), 8, 16] {
+		result |= color4f_byte(f32((color >> shift) & 0xff) * inv_255) << shift
 	}
 	return result
 }

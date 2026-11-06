@@ -82,3 +82,64 @@ fn test_solid_canvas_fills_match_skia() {
 	assert bitmap.data == expected
 	assert expected.any(it != 0 && it != 255)
 }
+
+struct CpuRasterTestStroke {
+	width     f64
+	cap       CanvasLineCap
+	join      CanvasLineJoin
+	transform CanvasAffineTransform
+	alpha     f64
+}
+
+// Strokes at most a device pixel wide take the Skia-free hairline
+// rasterizer, wider ones Skia's stroker; both must produce the pixels
+// skia.draw_path() produces for the same command.
+fn test_canvas_strokes_match_skia() {
+	strokes := [
+		CpuRasterTestStroke{1, .butt, .miter, CanvasAffineTransform{1, 0, 0, 1, 0, 0}, 1},
+		CpuRasterTestStroke{0.45, .round, .round, CanvasAffineTransform{1, 0, 0, 1, 0.5, 0}, 0.8},
+		CpuRasterTestStroke{1.6, .square, .bevel, CanvasAffineTransform{0.5, 0.2, -0.1, 0.55, 12, 4}, 1},
+		CpuRasterTestStroke{3, .round, .miter, CanvasAffineTransform{1, 0, 0, 1, 0, 0}, 0.7},
+	]
+	mut context := cpu_raster_test_context()
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, stroke in strokes {
+		color := dom.Color{
+			r: u8(40 + i * 50)
+			g: 120
+			b: u8(220 - i * 40)
+			a: if i == 1 { u8(200) } else { u8(255) }
+		}
+		context.drawing_state.stroke_style = FillOrStrokeStyle.from_color(color)
+		context.drawing_state.transform = stroke.transform
+		context.drawing_state.global_alpha = stroke.alpha
+		context.drawing_state.line_width = stroke.width
+		context.drawing_state.line_cap = stroke.cap
+		context.drawing_state.line_join = stroke.join
+		cpu_raster_test_path(mut context, i % 2)
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		state := context.drawing_state
+		command := skia.Command{
+			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
+			style:        canvas_skia_style(state.stroke_style.to_gfx_paint_style())
+			transform:    canvas_skia_transform(stroke.transform)
+			stroke:       true
+			cap:          int(stroke.cap)
+			join:         int(stroke.join)
+			width:        f32(stroke.width)
+			miter:        f32(state.miter_limit)
+			global_alpha: f32(stroke.alpha)
+		}
+		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			command)
+		expected = pixels.clone()
+		expected_alpha_type = 2
+		context.stroke()
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'stroke ${i} differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}

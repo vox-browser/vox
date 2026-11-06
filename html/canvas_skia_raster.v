@@ -86,15 +86,24 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	native_style := canvas_skia_style(style)
 	native_transform := canvas_skia_transform(transform)
 	filters := context.canvas_skia_filters()
-	// Solid source-over fills without clips, shadows or filters use the
-	// Skia-free rasterizer, which reproduces Skia's pixels.
-	if !stroke && native_style.kind == 0 && blur <= 0 && clips.len == 0 && filters.len == 0
-		&& state.current_compositing_and_blending_operator == .source_over {
+	// Solid source-over fills, and undashed strokes Skia draws as hairlines,
+	// without clips, shadows or filters use the Skia-free rasterizer, which
+	// reproduces Skia's pixels.
+	if native_style.kind == 0 && blur <= 0 && clips.len == 0 && filters.len == 0
+		&& state.current_compositing_and_blending_operator == .source_over
+		&& (!stroke || state.dash_list.len == 0) {
 		cpu_path := cpuraster.canvas_path(native_path.segments, native_path.even_odd)
-		if cpuraster.fill_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
-			bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform,
-			cpuraster.canvas_fill_color(native_style.color, f32(alpha)))
-		{
+		painted := if stroke {
+			cpuraster.stroke_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
+				bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color,
+				f32(alpha), f32(state.line_width), cpu_stroke_cap(state.line_cap), cpu_stroke_join(state.line_join),
+				f32(state.miter_limit))
+		} else {
+			cpuraster.fill_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
+				bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform,
+				cpuraster.canvas_fill_color(native_style.color, f32(alpha)))
+		}
+		if painted {
 			mutable_bitmap.alpha_type = 2
 			mutable_bitmap.native_rows_are_top_down = true
 			return
@@ -122,6 +131,22 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	assert painted
 	mutable_bitmap.alpha_type = 2
 	mutable_bitmap.native_rows_are_top_down = true
+}
+
+fn cpu_stroke_cap(cap CanvasLineCap) cpuraster.StrokeCap {
+	return match cap {
+		.butt { .butt }
+		.round { .round }
+		.square { .square }
+	}
+}
+
+fn cpu_stroke_join(join CanvasLineJoin) cpuraster.StrokeJoin {
+	return match join {
+		.round { .round }
+		.bevel { .bevel }
+		.miter { .miter }
+	}
 }
 
 fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &platform.GlyphRun, translation FloatPoint) bool {

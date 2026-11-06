@@ -216,6 +216,139 @@ fn flatten_double_cubic_extrema(mut dst []Point, start int, y_axis bool) {
 	}
 }
 
+// SkChopCubicAt(src, dst, tValues, tCount): two chops at a time, then the
+// last one rescaled into the remaining cubic.
+fn chop_cubic_at_ts(src []Point, ts []f32) []Point {
+	if ts.len == 0 {
+		return src[..4].clone()
+	}
+	if ts.len == 1 {
+		return chop_cubic_at(src, ts[0])
+	}
+	mut dst := chop_cubic_at2(src, ts[0], ts[1])
+	if ts.len == 3 {
+		last_t := ts[1]
+		numer := ts[2] - last_t
+		denom := 1 - last_t
+		tail := chop_cubic_at(dst[6..10], tpin(numer / denom, 0, 1))
+		dst = dst[..6].clone()
+		dst << tail
+	}
+	return dst
+}
+
+// SkTPin(): std::max(lo, std::min(x, hi)).
+@[inline]
+fn tpin(x f32, lo f32, hi f32) f32 {
+	m := if hi < x { hi } else { x }
+	return if lo < m { m } else { lo }
+}
+
+// SkFindCubicMaxCurvature()'s solve_cubic_poly(): the distinct roots of
+// coeff[0]t^3 + coeff[1]t^2 + coeff[2]t + coeff[3], pinned to [0, 1] and sorted.
+fn solve_cubic_poly(coeff [4]f32) []f32 {
+	if f32(math.abs(coeff[0])) <= scalar_nearly_zero {
+		return find_unit_quad_roots(coeff[1], coeff[2], coeff[3])
+	}
+	inva := f32(1) / coeff[0]
+	a := coeff[1] * inva
+	b := coeff[2] * inva
+	c := coeff[3] * inva
+	aa := a * a
+	b3 := b * 3
+	q := (aa - b3) / 9
+	a2 := 2 * a
+	a2a := a2 * a
+	a2aa := a2a * a
+	a9 := 9 * a
+	a9b := a9 * b
+	r_partial := a2aa - a9b
+	c27 := 27 * c
+	r_sum := r_partial + c27
+	r := r_sum / 54
+	qq := q * q
+	q3 := qq * q
+	rr := r * r
+	r2_minus_q3 := rr - q3
+	adiv3 := a / 3
+	if r2_minus_q3 < 0 {
+		theta := C.acosf(tpin(r / C.sqrtf(q3), -1, 1))
+		neg2_root_q := -2 * C.sqrtf(q)
+		two_pi := f32(2) * scalar_pi
+		mut roots := []f32{len: 3}
+		for i, angle in [theta, theta + two_pi, theta - two_pi] {
+			cosine := C.cosf(angle / 3)
+			scaled := neg2_root_q * cosine
+			roots[i] = tpin(scaled - adiv3, 0, 1)
+		}
+		for i := 2; i > 0; i-- {
+			for j := i; j > 0; j-- {
+				if roots[j] < roots[j - 1] {
+					roots[j], roots[j - 1] = roots[j - 1], roots[j]
+				}
+			}
+		}
+		// collaps_duplicates()
+		mut count := 3
+		mut start := 0
+		for n := 3; n > 1; n-- {
+			if roots[start] == roots[start + 1] {
+				for i in start + 1 .. start + n {
+					roots[i - 1] = roots[i]
+				}
+				count--
+			} else {
+				start++
+			}
+		}
+		return roots[..count]
+	}
+	sqrt_disc := C.sqrtf(r2_minus_q3)
+	mut big_a := f32(math.abs(r)) + sqrt_disc
+	big_a = C.powf(big_a, f32(0.3333333))
+	if r > 0 {
+		big_a = -big_a
+	}
+	if big_a != 0 {
+		big_a += q / big_a
+	}
+	return [tpin(big_a - adiv3, 0, 1)]
+}
+
+// formulate_F1DotF2() on one axis: F' dot F'' as a cubic in t.
+fn f1_dot_f2(p0 f32, p1 f32, p2 f32, p3 f32) [4]f32 {
+	a := p1 - p0
+	p1_2 := 2 * p1
+	b_partial := p2 - p1_2
+	b := b_partial + p0
+	diff := p1 - p2
+	diff3 := 3 * diff
+	c_partial := p3 + diff3
+	c := c_partial - p0
+	b3 := 3 * b
+	bb2 := 2 * b
+	bb := bb2 * b
+	ca := c * a
+	return [c * c, b3 * c, bb + ca, a * b]!
+}
+
+// SkChopCubicAtMaxCurvature(): count + 1 cubics sharing end points.
+fn chop_cubic_at_max_curvature(src []Point) []Point {
+	x := f1_dot_f2(src[0].x, src[1].x, src[2].x, src[3].x)
+	y := f1_dot_f2(src[0].y, src[1].y, src[2].y, src[3].y)
+	mut coeff := [4]f32{}
+	for i in 0 .. 4 {
+		coeff[i] = x[i] + y[i]
+	}
+	mut ts := []f32{cap: 3}
+	for root in solve_cubic_poly(coeff) {
+		if 0 < root && root < 1 {
+			ts << root
+		}
+	}
+	return chop_cubic_at_ts(src, ts)
+}
+
 // SkConic.
 struct Conic {
 mut:
@@ -372,6 +505,8 @@ fn C.acos(x f64) f64
 fn C.cos(x f64) f64
 fn C.cbrt(x f64) f64
 fn C.fma(x f64, y f64, z f64) f64
+fn C.acosf(x f32) f32
+fn C.powf(x f32, y f32) f32
 
 const float_epsilon = f64(1.1920928955078125e-07)
 const double_pi = f64(3.14159265358979323846264338327950288)
