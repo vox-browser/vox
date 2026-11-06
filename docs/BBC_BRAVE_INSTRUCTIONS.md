@@ -44,6 +44,21 @@ the actual fresh `v -profile` run without changing cipher, trust, workload,
 references, counters or the acceptance history.
 [TLS diagnostic and complete compiler inputs](performance/bbc-tls-instruction-diagnostic-20261106.json).
 
+The fresh `v -profile` timer registration/removal lead now has a bounded native
+carrier experiment (`1eca8ed5d`, main-thread guard `ea62175ec`; tooling
+`5ee30c331`). At most 16 inactive zero-delay registrations retain native records
+with both V receiver/callback pointers cleared. Active delivery defers recycling;
+positive intervals, worker registrations and foreign-thread disposal remain
+ordinary. Final focused coverage is **27 cases / 162 executions** in candidate
+and control across default, no-GC and bounded preallocation, with **348 tooling
+tests** passing. All **324** initial, lifetime and refined focused executions
+remain retained. Cancellation, nested restart, repeating interval changes,
+capacity and document-owner retirement are covered. The first completed bundle
+lacks the final native recycling guard and is rejected before browser launch.
+Native workload eligibility and the matched instruction comparison remain
+pending; this adds no instruction saving, broad reset or catalog credit.
+[Focused checks and provenance](performance/bbc-native-timer-registration-focus-20261106.json).
+
 Retained attempt — **cohort 130**, literal V `-prod` / single-C-unit production
 `dcc694637618`, tests committed same-pass grid reuse against its disabled control.
 All **21 attempts** are retained; **20 capture audits** pass, while Brave pair 6
