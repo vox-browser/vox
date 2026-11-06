@@ -7485,3 +7485,21 @@ cover nested/relative text, unchanged dirty roots, live mutation/detachment,
 sizing/style/font/environment misses, clamp state and native storage retirement.
 No workload eligibility or unprofiled saving is claimed yet.
 [Current-pass focused verification](performance/bbc-same-pass-inline-focus-20261106.json).
+
+A sealed production C audit then finds a correctness issue in cached inline
+replay: the pending-margin commit existed only inside an `assert`, so literal
+V `-prod` removed the required state change. Fix `658ba29b4` moves the call before
+the assertion in both retained-inline restoration and the separate measurement
+cache. The updated **216 focused executions** pass in both arms across all three
+memory modes. Another **12 literal-`-prod` executions** select two explicit
+panic-based regressions, whose checks and layout calls remain active when
+implementation assertions are removed. They cover current-pass, previous-pass
+and measurement-cache replay, pending-margin callback/reset and root-offset
+updates. Actual test-main calls and unchanged checked inputs are verified;
+generated C retains exactly one commit call in each replay body in every mode.
+The earlier 204-case matrix is preserved, without supplying validation for this
+later fix. Both arms of any future comparison must contain the margin correction;
+its shared correctness work earns no current-pass reuse credit. Initial native
+preparation rejected an available bundle whose recorded HEAD predates the tested
+files, before launching any browser. No acceptance ID or history advances.
+[Production assertion-elision audit and corrected focused checks](performance/bbc-cached-inline-margin-prod-focus-20261106.json).
