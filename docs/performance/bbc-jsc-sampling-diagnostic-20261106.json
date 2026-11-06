@@ -1,0 +1,2218 @@
+{
+  "passed": true,
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "2bf8bad8591139b3cc0ea149150614ab4de943065f803d4c792a42f190ab1ba4",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-050847-423eb140/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "7312483050e191d207bacb29720d1ed7dbb36165611cb82d1d710de5d096f092",
+      "dirty": true,
+      "head": "53d6e2001f7e6695b3eae7698dbeaaf2745db1f7",
+      "repository_sha256": "eabfc6a12085f518854dcc5f78f8180fb913f10996dc3dcb7885d811977ac903"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "2cbd707d63013b07f528e4065847f720b77575f80818b85231aa079a72efd200",
+      "dirty": true,
+      "head": "53d6e2001f7e6695b3eae7698dbeaaf2745db1f7",
+      "repository_sha256": "c00a68e3b2911fb4d500e2d388fbcae59958ddafd64e750f478d23373289dfc0"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "53d6e2001f7e6695b3eae7698dbeaaf2745db1f7",
+      "id": "4370aac807ee44f386cf270c673a9b49",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7312483050e191d207bacb29720d1ed7dbb36165611cb82d1d710de5d096f092",
+      "dirty": true,
+      "head": "53d6e2001f7e6695b3eae7698dbeaaf2745db1f7",
+      "repository_sha256": "eabfc6a12085f518854dcc5f78f8180fb913f10996dc3dcb7885d811977ac903"
+    }
+  },
+  "native_output": "/Users/alex/code/vox2/Build/bbc-jsc-sampling-diagnostic-20261106-0910/production-2bf8bad85911-1793931139961107000",
+  "calibration": {
+    "passed": true,
+    "exit": 0,
+    "top_level_type": "dict",
+    "top_level_keys": [
+      "interval",
+      "traces",
+      "sources"
+    ],
+    "known_function_sampled": true
+  },
+  "original_pixels_exact": true,
+  "content_exact": true,
+  "scripts72_exact_before_png": true,
+  "actual_images_pinned": true,
+  "normal_native_exit": 0,
+  "private_pid_rss_adopted": true,
+  "sampling_api_enabled": true,
+  "sampling_faults": 0,
+  "samples": 497,
+  "declared_interval": 0.001,
+  "sources": [
+    {
+      "sourceID": 13,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0uleyy2687dl3.js"
+    },
+    {
+      "sourceID": 32,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0c.fzizjof3_9.js"
+    },
+    {
+      "sourceID": 37,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07ngao.t8frq0.js"
+    },
+    {
+      "sourceID": 44
+    },
+    {
+      "sourceID": 41,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0d9awe5d081.2.js"
+    },
+    {
+      "sourceID": 5
+    },
+    {
+      "sourceID": 9,
+      "url": "https://cdn.tinypass.com/api/tinypass.min.js"
+    },
+    {
+      "sourceID": 12
+    },
+    {
+      "sourceID": 50,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js"
+    },
+    {
+      "sourceID": 33,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00su1kxuv.aa_.js"
+    },
+    {
+      "sourceID": 45,
+      "url": "https://gn-web-assets.api.bbc.com/ngas/latest/dotcom-bootstrap.js"
+    },
+    {
+      "sourceID": 18,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06nzlhdny82mu.js"
+    },
+    {
+      "sourceID": 30,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0a--~b-snp6to.js"
+    },
+    {
+      "sourceID": 43
+    },
+    {
+      "sourceID": 49,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jl4bpoiy-t_p.js"
+    },
+    {
+      "sourceID": 39,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0x01rgvk49mtx.js"
+    },
+    {
+      "sourceID": 58
+    },
+    {
+      "sourceID": 48
+    },
+    {
+      "sourceID": 8
+    },
+    {
+      "sourceID": 2
+    },
+    {
+      "sourceID": 54
+    },
+    {
+      "sourceID": 14,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0y-nyl-getpga.js"
+    },
+    {
+      "sourceID": 4
+    },
+    {
+      "sourceID": 17,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05el2iwpn3pyx.js"
+    },
+    {
+      "sourceID": 19,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05bsy3xzra8wq.js"
+    },
+    {
+      "sourceID": 29,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/18bprfc204vpd.js"
+    },
+    {
+      "sourceID": 42,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0pr885e78gdj8.js"
+    },
+    {
+      "sourceID": 31,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04n.yg_e~~1ci.js"
+    },
+    {
+      "sourceID": 38,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07yl_.h914mqi.js"
+    },
+    {
+      "sourceID": 3
+    },
+    {
+      "sourceID": 26,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0sm_sfi0c1mq-.js"
+    },
+    {
+      "sourceID": 15,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/12w5u9fluro3i.js"
+    },
+    {
+      "sourceID": 28,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/138t46x7lzh0_.js"
+    },
+    {
+      "sourceID": 16,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.ws-k_jzc8i2.js"
+    },
+    {
+      "sourceID": 22,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/116azxjox4uhk.js"
+    },
+    {
+      "sourceID": 51
+    },
+    {
+      "sourceID": 53
+    },
+    {
+      "sourceID": 20
+    },
+    {
+      "sourceID": 10,
+      "url": "https://emp.bbci.co.uk/emp/bump-4/bump-4.js"
+    },
+    {
+      "sourceID": 35,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b_bpuxw-.1p..js"
+    },
+    {
+      "sourceID": 57
+    },
+    {
+      "sourceID": 47,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0fmsfuctu-bad.js"
+    },
+    {
+      "sourceID": 27,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00pv_7c.hjx18.js"
+    },
+    {
+      "sourceID": 6,
+      "url": "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js"
+    },
+    {
+      "sourceID": 56
+    },
+    {
+      "sourceID": 21,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13ad5orspgznk.js"
+    },
+    {
+      "sourceID": 52,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0z3rjge5m4grx.js"
+    },
+    {
+      "sourceID": 25,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0n-kjrsnwe2tb.js"
+    },
+    {
+      "sourceID": 23,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/1556fllq~t8x3.js"
+    },
+    {
+      "sourceID": 11,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/03~yq9q893hmn.js"
+    },
+    {
+      "sourceID": 46
+    },
+    {
+      "sourceID": 40
+    },
+    {
+      "sourceID": 34,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0rn767pe.qoie.js"
+    },
+    {
+      "sourceID": 7
+    },
+    {
+      "sourceID": 36,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ltjlb3luz40f.js"
+    },
+    {
+      "sourceID": 24,
+      "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0iid2kl3pm46u.js"
+    },
+    {
+      "sourceID": 55
+    }
+  ],
+  "categories": {
+    "Unknown Executable": 70,
+    "Baseline": 27,
+    "LLInt": 37,
+    "Host": 325,
+    "DFG": 14,
+    "FTL": 23,
+    "RegExp": 1
+  },
+  "leaves": [
+    {
+      "frame": [
+        "(host)",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 314
+    },
+    {
+      "frame": [
+        "concat",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 8
+    },
+    {
+      "frame": [
+        "defineProperties",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 7
+    },
+    {
+      "frame": [
+        "map",
+        7,
+        1,
+        11,
+        "FTL"
+      ],
+      "samples": 5
+    },
+    {
+      "frame": [
+        "tu",
+        21,
+        1,
+        26029,
+        "FTL"
+      ],
+      "samples": 5
+    },
+    {
+      "frame": [
+        "stringify",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 4
+    },
+    {
+      "frame": [
+        "",
+        9,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 3
+    },
+    {
+      "frame": [
+        "",
+        31,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 3
+    },
+    {
+      "frame": [
+        "test",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "",
+        11,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "",
+        14,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "replace",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "parse",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "iY",
+        14,
+        1,
+        119902,
+        "Baseline"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "",
+        47,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "get host",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "get origin",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "tt",
+        21,
+        1,
+        21883,
+        "FTL"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "__element",
+        4,
+        945,
+        129,
+        "DFG"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "c",
+        18,
+        1,
+        8987,
+        "DFG"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "iq",
+        14,
+        1,
+        118859,
+        "DFG"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "assign",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "p",
+        23,
+        439,
+        2708,
+        "FTL"
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "",
+        2,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        4,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__queryElements",
+        4,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "apply",
+        7,
+        1,
+        11,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "toUTCString",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        9,
+        1,
+        7675,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        9,
+        1,
+        15934,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        9,
+        1,
+        497579,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        11,
+        1,
+        112527,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "defineProperty",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        14,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        16,
+        1,
+        12962,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "get port",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        18,
+        1,
+        21456,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__compactNativeParent",
+        4,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        22,
+        1,
+        16703,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        23,
+        439,
+        11835,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "Uint8Array",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "tR",
+        25,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        26,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        29,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "toFlatObject",
+        30,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        32,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        19,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        34,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "push",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "tl",
+        21,
+        1,
+        26078,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "Im",
+        11,
+        1,
+        99807,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "e",
+        21,
+        1,
+        26295,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        42,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "classify",
+        43,
+        32,
+        14,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "ec",
+        15,
+        1,
+        30623,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        45,
+        1,
+        18445,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "e9",
+        21,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        19,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "ed",
+        19,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "append",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        22,
+        1,
+        18862,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "e3",
+        21,
+        1,
+        19745,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "l",
+        14,
+        1,
+        52859,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "X",
+        21,
+        1,
+        8196,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "v",
+        21,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        41,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        21,
+        1,
+        24439,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        21,
+        1,
+        22888,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__styleProxy",
+        4,
+        421,
+        16,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "state",
+        4,
+        4294967295,
+        4294967295,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "s",
+        48,
+        1,
+        28,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        22,
+        1,
+        19664,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "apply",
+        7,
+        1,
+        11,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "I",
+        49,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        39,
+        1,
+        6035,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        34,
+        40,
+        18,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        21,
+        1,
+        16095,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        17,
+        10,
+        29,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        37,
+        65,
+        21,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        31,
+        11,
+        1428,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__compactElementCommonProperties",
+        4,
+        130,
+        33,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        17,
+        7,
+        7627,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "ec",
+        21,
+        1,
+        9620,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "LoadableComponent",
+        39,
+        1,
+        14411,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "hasOwnProperty",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "tc",
+        21,
+        1,
+        25974,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "get username",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        21,
+        1,
+        16105,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        29,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "S",
+        21,
+        1,
+        1368,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "C",
+        18,
+        1,
+        4161,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "set",
+        4,
+        35,
+        123,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__mutationOptions",
+        4,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "p",
+        23,
+        439,
+        2817,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "Ky",
+        11,
+        1,
+        100330,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "u",
+        14,
+        1,
+        126825,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "o",
+        14,
+        1,
+        86856,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "AdSlot",
+        27,
+        78,
+        1256,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "o",
+        14,
+        1,
+        86836,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "c",
+        18,
+        1,
+        9018,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        39,
+        1,
+        6232,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "tc",
+        21,
+        1,
+        25932,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "startsWith",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "p",
+        23,
+        439,
+        2687,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        41,
+        455,
+        550,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "/^(.*?)([#?].*)/",
+        4294967295,
+        4294967295,
+        4294967295,
+        "RegExp"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        39,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "queueMicrotask",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        18,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "e",
+        21,
+        1,
+        17265,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        34,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        22,
+        1,
+        7181,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "construct",
+        53,
+        8,
+        160,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__element",
+        4,
+        939,
+        302,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        23,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "eb",
+        14,
+        4294967295,
+        4294967295,
+        "Unknown Executable"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "u",
+        14,
+        1,
+        126885,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "u",
+        14,
+        1,
+        126318,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "c",
+        18,
+        1,
+        8963,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "get pathname",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        23,
+        1,
+        2214,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "x",
+        18,
+        1,
+        3647,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "o",
+        14,
+        1,
+        87228,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        34,
+        134,
+        28,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "nD",
+        14,
+        1,
+        33627,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        13,
+        1,
+        3070,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        21,
+        1,
+        16131,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "ec",
+        21,
+        1,
+        9620,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "set",
+        4,
+        36,
+        14,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        14,
+        1,
+        1336,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "iU",
+        14,
+        1,
+        117221,
+        "DFG"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        19,
+        261,
+        4592,
+        "FTL"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "g",
+        14,
+        5,
+        75,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        22,
+        1,
+        2265,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "l_",
+        14,
+        1,
+        65123,
+        "Baseline"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        23,
+        439,
+        8201,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "audio-new",
+        26,
+        47,
+        18908,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        23,
+        439,
+        9103,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "toString",
+        4294967295,
+        4294967295,
+        4294967295,
+        "Host"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "get",
+        4,
+        1750,
+        164,
+        "LLInt"
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        23,
+        439,
+        7078,
+        "LLInt"
+      ],
+      "samples": 1
+    }
+  ],
+  "host_callers": [
+    {
+      "frame": [
+        "__queryElements",
+        4,
+        360,
+        619
+      ],
+      "samples": 231
+    },
+    {
+      "frame": [
+        "timer",
+        57,
+        3,
+        192
+      ],
+      "samples": 30
+    },
+    {
+      "frame": [
+        "",
+        20,
+        9,
+        82
+      ],
+      "samples": 4
+    },
+    {
+      "frame": [
+        "construct",
+        51,
+        22,
+        10
+      ],
+      "samples": 4
+    },
+    {
+      "frame": [
+        "value",
+        8,
+        9,
+        29
+      ],
+      "samples": 3
+    },
+    {
+      "frame": [
+        "MessageChannel",
+        12,
+        12,
+        105
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "b",
+        17,
+        23,
+        4640
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "get",
+        4,
+        1915,
+        636
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "call",
+        56,
+        4,
+        51
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        "get",
+        4,
+        1915,
+        390
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "module evaluation",
+        24,
+        1,
+        5869
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "matchMedia",
+        46,
+        8,
+        105
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        33,
+        1,
+        4659
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__element",
+        4,
+        945,
+        286
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "b",
+        17,
+        23,
+        5563
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        23,
+        439,
+        11032
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "a",
+        17,
+        23,
+        6168
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        39,
+        1,
+        16858
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "Rm",
+        11,
+        1,
+        99047
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__compactOwnerDocument",
+        4,
+        1770,
+        178
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "construct",
+        54,
+        35,
+        10
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "__callDocumentCookie",
+        4,
+        1918,
+        175
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "construct",
+        55,
+        9,
+        10
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "b",
+        17,
+        23,
+        5001
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        32,
+        1,
+        7819
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        17,
+        23,
+        6483
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        "",
+        39,
+        1,
+        16881
+      ],
+      "samples": 1
+    }
+  ],
+  "bridge_callers": [
+    {
+      "frame": [
+        [
+          "__compactReadElementGeometry",
+          1449,
+          24
+        ],
+        [
+          "getBoundingClientRect",
+          1452,
+          98
+        ]
+      ],
+      "samples": 110
+    },
+    {
+      "frame": [
+        [
+          "__compactReadElementGeometry",
+          1449,
+          24
+        ],
+        [
+          "get",
+          1456,
+          79
+        ]
+      ],
+      "samples": 56
+    },
+    {
+      "frame": [
+        [
+          "__cssCall",
+          427,
+          63
+        ],
+        [
+          "insertRule",
+          447,
+          182
+        ]
+      ],
+      "samples": 20
+    },
+    {
+      "frame": [
+        [
+          "get",
+          1169,
+          24
+        ]
+      ],
+      "samples": 10
+    },
+    {
+      "frame": [
+        [
+          "__compactMutationFlush",
+          2066,
+          21
+        ],
+        [
+          "appendChild",
+          933,
+          1382
+        ]
+      ],
+      "samples": 9
+    },
+    {
+      "frame": [
+        [
+          "get",
+          113,
+          185
+        ]
+      ],
+      "samples": 7
+    },
+    {
+      "frame": [
+        [
+          "__compactMutationFlush",
+          2066,
+          21
+        ],
+        [
+          "__setAttribute",
+          2122,
+          179
+        ],
+        [
+          "setAttribute",
+          933,
+          416
+        ]
+      ],
+      "samples": 6
+    },
+    {
+      "frame": [
+        [
+          "value",
+          1757,
+          384
+        ]
+      ],
+      "samples": 3
+    },
+    {
+      "frame": [
+        [
+          "__element",
+          945,
+          689
+        ],
+        [
+          "__compactNodeWrapper",
+          1153,
+          45
+        ],
+        [
+          "__queryElement",
+          271,
+          217
+        ]
+      ],
+      "samples": 3
+    },
+    {
+      "frame": [
+        [
+          "querySelectorAll",
+          955,
+          598
+        ]
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        [
+          "",
+          8,
+          76
+        ]
+      ],
+      "samples": 2
+    },
+    {
+      "frame": [
+        [
+          "__compactInsertNode",
+          1186,
+          389
+        ],
+        [
+          "appendChild",
+          933,
+          1123
+        ]
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        [
+          "get",
+          1135,
+          44
+        ]
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        [
+          "__element",
+          945,
+          286
+        ],
+        [
+          "__compactNodeWrapper",
+          1153,
+          45
+        ],
+        [
+          "__queryElement",
+          271,
+          217
+        ]
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        [
+          "__cssCall",
+          427,
+          63
+        ],
+        [
+          "deleteRule",
+          448,
+          170
+        ]
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        [
+          "__compactMutationFlush",
+          2066,
+          21
+        ],
+        [
+          "__removeAttribute",
+          2123,
+          173
+        ],
+        [
+          "removeAttribute",
+          933,
+          473
+        ]
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        [
+          "__compactMutationFlush",
+          2066,
+          21
+        ],
+        [
+          "set",
+          116,
+          281
+        ]
+      ],
+      "samples": 1
+    },
+    {
+      "frame": [
+        [
+          "__inlineStyleQuery",
+          387,
+          30
+        ],
+        [
+          "set",
+          416,
+          22
+        ]
+      ],
+      "samples": 1
+    }
+  ],
+  "performance_credit": 0,
+  "primary_sources": {
+    "api": "https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/API/JSContextRefPrivate.h",
+    "implementation": "https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/API/JSContextRef.cpp",
+    "qualification": "Private sampling API discovered in current primary WebKit headers/implementation; actual local export availability, enablement, nonempty sampled frames and original browser audits must pass. Diagnostic only, no performance/acceptance credit."
+  },
+  "qualification": "Private JSC sampling enabled at first main-thread JSEvaluateScript; disabled and raw JSON taken at encodedPNG checkpoint. Retained raw source IDs/URLs/timestamps/stacks, calibration known named function, actual option/export behavior and all original capture/source/image/ownership/normal-exit checks. Nominal interval does not prove exact sampling cadence. Host frames, tier labels and source samples are investigative leads only, not CPU instruction shares or unprofiled savings. No author edits, changed workload/reference/settlement, acceptance or catalog credit. First wrapper-created trial-directory preflight launched no browser and is retained.",
+  "unix": 1793931502.193516,
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-jsc-sampling-diagnostic-20261106.tar.gz",
+      "bytes": 32511823,
+      "sha256": "dd8140c165336107b277f3430922d111584c03aaa881b3564f639ee4a6b81256",
+      "physical_members": 63,
+      "file_paths": 72,
+      "all_file_paths_verified": true
+    }
+  ],
+  "target_met": false,
+  "catalog_added": false
+}

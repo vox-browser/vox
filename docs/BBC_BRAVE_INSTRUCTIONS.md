@@ -7397,3 +7397,36 @@ React or BBC scripting conformance. No new engine saving, broad-check checkpoint
 or catalog credit is claimed. Cohort 121 remains the current acceptance result
 and still fails the 10% target.
 [Helper counters, JIT observations and raw evidence](performance/bbc-javascript-helper-and-jit-diagnostics-20261106.json).
+
+A follow-up to the fresh 101-scope `v -profile` uses **16 diagnostic main-thread
+instruction scopes** in completed literal V `-prod` / single-C production
+`f55e4a249749`. Calibration verifies nested-call subtraction and worker exclusion;
+normalizing the injected cleanup calls reproduces the complete sealed C input.
+The fresh launch passes original pixels/content, all 72 exact external source
+evaluations, native-image pins and private-PID RSS adoption. All scope counters
+reconcile at the encoded-PNG boundary with zero faults. There are **16,305
+uncached grid calls**; 10,712 are ordinary definite-width, indefinite-height
+layouts, with 1,383,255,655 selected self instructions. Width-only min/max probes
+have 1,874/1,794 calls and 250,160,861/130,458,959 selected self instructions.
+This separates the ordinary-layout lead from the smaller intrinsic-width lead.
+Nested inclusive values overlap; selected self retains unselected work and
+observer overhead, excludes background threads and is not a production CPU share.
+No optimization or acceptance credit is claimed.
+[Calibrated matrix, unchanged-body proof and raw inputs](performance/bbc-grid-instruction-matrix-20261106.json).
+
+A separate **JSC sampling diagnostic** on literal V `-prod` / single-C production
+`2bf8bad85911` uses the private context-group sampling API after a known-function
+calibration. Sampling begins at the first main-thread script evaluation and stops
+at encoded PNG. All original pixels/content/source/image/ownership/normal-exit
+checks pass. The raw JSON has **497 samples**: 325 host-category leaves, 70 unknown
+executable, 37 LLInt, 27 baseline, 23 FTL, 14 DFG and one regexp. Among host leaves,
+231 lead through `__queryElements`; 110 of those have `getBoundingClientRect` in
+the compact helper chain and 56 have another geometry getter. These observations
+support investigating repeated native geometry work; nominal 1 ms sampling does
+not prove exact cadence, instruction shares or a saving. Source IDs, URLs,
+timestamps and stacks are retained. The first wrapper preflight created a
+driver-owned directory and stopped before launching a browser; that failure is
+preserved. The corrected wrapper uses a sibling sampling directory. Author
+sources, workload and references are unchanged. The sampler and grid matrix use
+separate pinned builds and are not compared as performance results.
+[Sampler calibration, primary API sources and all attempts](performance/bbc-jsc-sampling-diagnostic-20261106.json).
