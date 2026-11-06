@@ -43,7 +43,8 @@ static void draw_leaves(CGContextRef context, bool canvas)
 {
     auto approve = [&](char const* kind) {
         if (canvas) {
-            bool expected = !s_gpu_canvas->complete_viewport || !std::strcmp(kind, "paint_outer_box_shadow");
+            bool expected = !s_gpu_canvas->complete_viewport || gpu_canvas_isolated_shapes_enabled()
+                || !std::strcmp(kind, "paint_outer_box_shadow");
             assert(ladybird_v_skia_gpu_canvas_command(kind, int(std::strlen(kind)), 0) == int(expected));
         }
     };
@@ -276,6 +277,8 @@ static void direct_read_regions(GpuCanvasApi const* api)
     api->end();
 }
 
+static bool s_compositor, s_present_tiles;
+
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
     void (*leaves)(CGContextRef, bool) = draw_leaves, bool full = false)
 {
@@ -297,6 +300,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
     if (canvas) {
         int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
         assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        if (s_compositor) assert(ladybird_v_skia_gpu_canvas_set_compositor(context));
         if(s_expect_native_grid)ladybird_v_skia_gpu_canvas_document_top(0);
     }
     leaves(context, canvas);
@@ -312,11 +316,38 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
         s_cpu_leaves = s_gpu_canvas->cpu_leaves;
         unsigned expected_reads = s_gpu_canvas->flushes + unsigned(s_gpu_canvas->cpu_stale);
         unsigned before_final_read = s_successful_reads;
+        IOSurfaceRef output = nullptr;
+        void* completion = nullptr;
+        if (s_present_tiles) {
+            NSDictionary* properties = @{
+                (id)kIOSurfaceWidth:@(width), (id)kIOSurfaceHeight:@(height),
+                (id)kIOSurfaceBytesPerElement:@4, (id)kIOSurfacePixelFormat:@(0x52474241u) };
+            auto previous = IOSurfaceCreate((CFDictionaryRef)properties);
+            output = IOSurfaceCreate((CFDictionaryRef)properties);
+            assert(previous && output && !IOSurfaceLock(previous,0,nullptr));
+            for (int row=0; row<height; ++row)
+                memcpy((uint8_t*)IOSurfaceGetBaseAddress(previous)+row*IOSurfaceGetBytesPerRow(previous),
+                    pixels.data()+size_t(row)*width*4,width*4);
+            IOSurfaceUnlock(previous,0,nullptr);
+            VoxGraphiteCanvasSurfaceRegion region {output,previous,0,0,0,0,width,height};
+            assert(ladybird_v_skia_gpu_canvas_can_present(context));
+            assert(ladybird_v_skia_gpu_canvas_present(context,&region,1,&completion)==1 && completion);
+            CFRelease(previous);
+        }
         ladybird_v_skia_gpu_canvas_end();
         assert(!s_gpu_canvas);
         assert(ladybird_v_skia_bitmap_pixels_are_current(context));
         // Every earlier flush succeeded; final publication adds at most one.
-        assert(s_successful_reads - before_final_read == expected_reads - s_flushes);
+        assert(s_successful_reads - before_final_read == (s_present_tiles ? 0 : expected_reads - s_flushes));
+        if (output) {
+            assert(gpu_canvas_api()->wait_present(completion));
+            assert(!IOSurfaceLock(output,kIOSurfaceLockReadOnly,nullptr));
+            for (int row=0; row<height; ++row)
+                memcpy(pixels.data()+size_t(row)*width*4,
+                    (uint8_t*)IOSurfaceGetBaseAddress(output)+row*IOSurfaceGetBytesPerRow(output),width*4);
+            IOSurfaceUnlock(output,kIOSurfaceLockReadOnly,nullptr);
+            CFRelease(output);
+        }
     }
     ladybird_v_skia_set_chromium_painting(0);
     CGContextFlush(context);
@@ -771,6 +802,25 @@ static void test_text_layer_barrier_eligibility()
 int main(int argc, char** argv)
 {
     test_bitmap_inspection_pending_inputs();
+    if (argc==2 && !std::strcmp(argv[1],"--present-tiles")) {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        assert(ladybird_v_skia_gpu_canvas_compositor_available());
+        s_backend_read=api->read; api->read=counted_read;
+        s_compositor=true;
+        unsigned cases=0;
+        for (auto draw : {draw_leaves,draw_cpu_leaves,draw_inset_leaves,draw_outline_leaves,
+                draw_pattern_leaves,draw_video_leaves,draw_native_image_cpu_fallback})
+        for (bool full : {false,true}) for (bool shared : {false,true}) {
+            s_present_tiles=false;
+            auto reference=render(true,shared,draw,full);
+            s_present_tiles=true;
+            auto candidate=render(true,shared,draw,full);
+            assert(reference==candidate); ++cases;
+        }
+        std::cout << "Retained GPU publication: " << cases
+            << " exact full/strip/shared/CPU-barrier frames; no final CPU readback\n";
+        return 0;
+    }
     if (argc == 2 && !std::strcmp(argv[1], "--text-layer-composite")) {
         setenv("VOX_GPU_CANVAS_OFFSCREEN_LAYERS","1",1);
         test_text_layer_barrier_eligibility();

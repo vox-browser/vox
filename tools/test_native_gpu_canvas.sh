@@ -57,3 +57,7 @@ VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test
 VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES=1 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 "$output_dir/native_gpu_canvas_test" --overlay-batch
 VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-verify
+
+if [ "${NATIVE_GPU_CANVAS_PRESENT_TEST:-0}" = 1 ]; then
+    "$output_dir/native_gpu_canvas_test" --present-tiles
+fi

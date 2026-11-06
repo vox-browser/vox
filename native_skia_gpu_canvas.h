@@ -26,6 +26,7 @@ struct GpuCanvasFrame {
     bool begun = false;
     bool gpu_valid = false;
     bool cpu_stale = false;
+    bool compositor = false, presented = false;
     unsigned draws = 0, uploads = 0, flushes = 0, declined = 0, cpu_leaves = 0;
     // Verification: compared pixels, differing pixels and largest channel error.
     uint64_t compared = 0, differing = 0;
@@ -64,6 +65,10 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_begin) begin = nullptr;
     decltype(&vox_graphite_canvas_begin_native_grid) begin_native_grid = nullptr;
     decltype(&vox_graphite_canvas_upload) upload = nullptr;
+    decltype(&vox_graphite_canvas_upload_queued) upload_queued = nullptr;
+    decltype(&vox_graphite_canvas_present) present = nullptr;
+    decltype(&vox_graphite_canvas_wait_present) wait_present = nullptr;
+    decltype(&vox_graphite_canvas_release_present) release_present = nullptr;
     decltype(&vox_graphite_canvas_draw_shadow) draw_shadow = nullptr;
     decltype(&vox_graphite_canvas_draw_shape) draw_shape = nullptr;
     decltype(&vox_graphite_canvas_read) read = nullptr;
@@ -91,6 +96,10 @@ GpuCanvasApi const* gpu_canvas_api()
         value.begin = reinterpret_cast<decltype(value.begin)>(dlsym(library, "vox_graphite_canvas_begin"));
         value.begin_native_grid = reinterpret_cast<decltype(value.begin_native_grid)>(dlsym(library, "vox_graphite_canvas_begin_native_grid"));
         value.upload = reinterpret_cast<decltype(value.upload)>(dlsym(library, "vox_graphite_canvas_upload"));
+        value.upload_queued = reinterpret_cast<decltype(value.upload_queued)>(dlsym(library, "vox_graphite_canvas_upload_queued"));
+        value.present = reinterpret_cast<decltype(value.present)>(dlsym(library, "vox_graphite_canvas_present"));
+        value.wait_present = reinterpret_cast<decltype(value.wait_present)>(dlsym(library, "vox_graphite_canvas_wait_present"));
+        value.release_present = reinterpret_cast<decltype(value.release_present)>(dlsym(library, "vox_graphite_canvas_release_present"));
         value.draw_shadow = reinterpret_cast<decltype(value.draw_shadow)>(dlsym(library, "vox_graphite_canvas_draw_shadow"));
         value.draw_shape = reinterpret_cast<decltype(value.draw_shape)>(dlsym(library, "vox_graphite_canvas_draw_shape"));
         value.read = reinterpret_cast<decltype(value.read)>(dlsym(library, "vox_graphite_canvas_read"));
@@ -393,7 +402,8 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
                         + size_t(row - rect.top()) * rect.width() + visible.left() - rect.left()),
                     data + size_t(row) * pitch + size_t(visible.left()) * 4, size_t(visible.width()));
         }
-        if (!api->upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), rect.width() * 4))
+        auto upload = frame.compositor ? api->upload_queued : api->upload;
+        if (!upload || !upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), rect.width() * 4))
             return false;
     }
     frame.gpu_valid = true;
@@ -1002,11 +1012,11 @@ extern "C" void ladybird_v_skia_gpu_canvas_end()
     gpu_canvas_flush();
     gpu_canvas_time_command(nullptr,0);
     if (gpu_canvas_diagnostics())
-        std::fprintf(stderr, "VOX_GPU_CANVAS rects=%zu draws=%u uploads=%u flushes=%u declined=%u cpu_leaves=%u compared=%llu differing=%llu max_error=%d\n",
+        std::fprintf(stderr, "VOX_GPU_CANVAS rects=%zu draws=%u uploads=%u flushes=%u declined=%u cpu_leaves=%u compared=%llu differing=%llu max_error=%d composited=%d\n",
             s_gpu_canvas->rects.size(), s_gpu_canvas->draws, s_gpu_canvas->uploads,
             s_gpu_canvas->flushes, s_gpu_canvas->declined, s_gpu_canvas->cpu_leaves,
             (unsigned long long)s_gpu_canvas->compared, (unsigned long long)s_gpu_canvas->differing,
-            s_gpu_canvas->max_error);
+            s_gpu_canvas->max_error,int(s_gpu_canvas->presented));
     if (gpu_canvas_diagnostics() && !s_gpu_canvas->leaf_misses.empty()) {
         std::string misses;
         for (auto const& [name, count] : s_gpu_canvas->leaf_misses)
@@ -1027,4 +1037,48 @@ extern "C" void ladybird_v_skia_gpu_canvas_end()
     }
     if (auto* api = gpu_canvas_api()) api->end();
     s_gpu_canvas.reset();
+}
+
+extern "C" int ladybird_v_skia_gpu_canvas_compositor_available()
+{
+    auto* api = gpu_canvas_api();
+    return gpu_canvas_enabled() && !s_gpu_canvas_read_failed && api && api->upload_queued
+        && api->present && api->wait_present && api->release_present;
+}
+extern "C" int ladybird_v_skia_gpu_canvas_set_compositor(CGContextRef destination)
+{
+    auto* frame=s_gpu_canvas.get();
+    if (!frame || frame->destination!=destination || frame->begun
+        || !ladybird_v_skia_gpu_canvas_compositor_available()) return 0;
+    frame->compositor=true;
+    return 1;
+}
+extern "C" int ladybird_v_skia_gpu_canvas_can_present(CGContextRef destination)
+{
+    auto* frame=s_gpu_canvas.get();
+    return frame && frame->destination==destination && frame->compositor
+        && ladybird_v_skia_gpu_canvas_compositor_available();
+}
+extern "C" int ladybird_v_skia_gpu_canvas_present(CGContextRef destination,
+    VoxGraphiteCanvasSurfaceRegion const* regions, int count, void** completion)
+{
+    if (completion) *completion=nullptr;
+    if (!completion || !ladybird_v_skia_gpu_canvas_can_present(destination)) return 0;
+    auto* frame=s_gpu_canvas.get();
+    int result=gpu_canvas_upload(*frame)
+        ? gpu_canvas_api()->present(regions,count,completion) : -1;
+    if (result>0) {
+        // The immutable surfaces now own every GPU-only pixel. Ordinary end
+        // must not download them into the incomplete CPU publication bitmap.
+        frame->cpu_stale=false; frame->gpu_valid=false; frame->presented=true;
+    } else if (result<0) {
+        s_gpu_canvas_read_failed=true;
+        s_deferred_layer_frame_failed=true;
+    }
+    return result;
+}
+
+extern "C" void ladybird_v_skia_gpu_canvas_release_present(void* completion)
+{
+    if (auto* api=gpu_canvas_api(); api && api->release_present) api->release_present(completion);
 }

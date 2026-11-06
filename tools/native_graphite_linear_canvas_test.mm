@@ -72,7 +72,7 @@ static void test_canvas_present() {
             uint8_t bgra[]={uint8_t((x+y)%80),uint8_t((y*3)%100),uint8_t((x*5)%120),uint8_t(140+(x*y)%100)};
             std::memcpy(input.data()+(size_t(y)*tile.width+x)*4,bgra,4);
         }
-        assert(vox_graphite_canvas_upload(index,input.data(),tile.width*4));
+        assert(vox_graphite_canvas_upload_queued(index,input.data(),tile.width*4));
     }
     for(auto const& tile:canvas_tiles) {
         SkPaint marker; marker.setColor(0xff2080c0); marker.setBlendMode(SkBlendMode::kSrc);

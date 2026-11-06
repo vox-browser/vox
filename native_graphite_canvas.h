@@ -170,8 +170,7 @@ int vox_graphite_canvas_begin(int const* rects,int count) { return canvas_begin_
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_begin_native_grid(int const* rects,int count) { return canvas_begin_impl(rects,count,true); }
 
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
+static int canvas_upload_impl(int index, uint8_t const* bgra, int pitch, bool queued)
 {
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
@@ -184,7 +183,7 @@ int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
             int(texture && texture.buffer), tile.width, tile.height);
     }
     auto pixels = SkPixmap(canvas_info(tile.width, tile.height), bgra, pitch);
-    if (std::getenv("VOX_GPU_CANVAS_STAGED_UPLOAD")) {
+    if (queued || std::getenv("VOX_GPU_CANVAS_STAGED_UPLOAD")) {
         // Graphite copies the source into its upload buffer now and orders the
         // transfer with subsequent draws. Finish them together at readback,
         // rather than submitting/waiting before a CPU texture replacement.
@@ -196,6 +195,13 @@ int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
     vox_shared_write(gpu, tile.surface, pixels, 0, 0);
     return 1;
 }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_upload(int index, uint8_t const* bgra, int pitch)
+{ return canvas_upload_impl(index,bgra,pitch,false); }
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_upload_queued(int index, uint8_t const* bgra, int pitch)
+{ return canvas_upload_impl(index,bgra,pitch,true); }
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_draw_shadow(VoxGraphiteShadow const* shadow, float const* bounds,
