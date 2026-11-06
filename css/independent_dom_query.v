@@ -1,6 +1,18 @@
 module css
 
 import dom
+import os
+
+const retain_leaf_query_recursion = os.getenv('VOX_RETAIN_LEAF_QUERY_RECURSION') != ''
+const leaf_query_diagnostics = os.getenv('VOX_LEAF_QUERY_DIAGNOSTICS') != ''
+
+__global leaf_query_reported u8
+
+fn report_leaf_query_skip(kind u8) {
+	if !leaf_query_diagnostics || leaf_query_reported & kind != 0 { return }
+	leaf_query_reported |= kind
+	eprintln('Vox DOM query: skipped empty child recursion kind=${kind}')
+}
 
 // These selectors read only the candidate element. Establish the compound
 // boundaries and matching context once per query rather than for every node.
@@ -77,7 +89,11 @@ fn independent_query_first_in(root &dom.Node, compounds []CompoundSelector,
 		if element := child.as_element() {
 			if independent_query_matches(element, compounds, mut context) { return element }
 		}
-		if found := independent_query_first_in(child, compounds, mut context) { return found }
+		// Matching above reads this child even when it has no descendants.
+		// Avoid a recursive frame whose loop would immediately be empty.
+		if retain_leaf_query_recursion || child.children.len > 0 {
+			if found := independent_query_first_in(child, compounds, mut context) { return found }
+		} else if leaf_query_diagnostics { report_leaf_query_skip(1) }
 	}
 	return none
 }
@@ -88,6 +104,8 @@ fn independent_query_all_in(root &dom.Node, compounds []CompoundSelector,
 		if element := child.as_element() {
 			if independent_query_matches(element, compounds, mut context) { result << element }
 		}
-		independent_query_all_in(child, compounds, mut context, mut result)
+		if retain_leaf_query_recursion || child.children.len > 0 {
+			independent_query_all_in(child, compounds, mut context, mut result)
+		} else if leaf_query_diagnostics { report_leaf_query_skip(2) }
 	}
 }
