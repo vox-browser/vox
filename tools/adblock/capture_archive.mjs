@@ -151,6 +151,40 @@ function isCompleteMediaRange(response, length) {
         && total>0 && end===total-1 && length===total;
 }
 
+export function imageResponseDelivery(events, entry, body) {
+    const finite = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
+    const count = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+    // Request IDs can survive a redirect. Keep only notifications following
+    // this final response, in observation order. In particular, a finish
+    // timestamp can precede the final data notification's timestamp.
+    const start = events.findLastIndex(event => event.method === 'Network.responseReceived'
+        && event.params === entry);
+    const delivery = [];
+    for (let index = start + 1; start >= 0 && index < events.length; ++index) {
+        const {method, params} = events[index];
+        if (params?.requestId !== entry.requestId) continue;
+        if (method === 'Network.responseReceived') break;
+        if (method === 'Network.dataReceived') delivery.push({kind:'data',
+            timestamp:finite(params.timestamp), data_bytes:count(params.dataLength),
+            encoded_bytes:count(params.encodedDataLength)});
+        else if (method === 'Network.loadingFinished') delivery.push({kind:'finished',
+            timestamp:finite(params.timestamp), encoded_bytes:count(params.encodedDataLength)});
+    }
+    const data = delivery.filter(event => event.kind === 'data');
+    const sum = data.reduce((total, event) => total + (event.data_bytes ?? 0), 0);
+    const observed = data.every(event => event.data_bytes !== null)
+        && Number.isSafeInteger(sum) ? sum : null;
+    return {version:1, clock:'CDP Network monotonic seconds',
+        scope:'Observed decoded-response notifications; not TCP packets or image-generator state',
+        body_sha256:digest(body), body_bytes:body.length,
+        request_id:typeof entry.requestId === 'string' ? entry.requestId : null,
+        response_timestamp:finite(entry.timestamp),
+        from_disk_cache:Boolean(entry.response.fromDiskCache),
+        from_service_worker:Boolean(entry.response.fromServiceWorker),
+        observed_data_bytes:observed, observed_body_bytes_match:observed === body.length,
+        events:delivery};
+}
+
 async function captureNetworkResources(page,cache,documentURL,{mainFrameID,headerCache}={}) {
     const requests = new Map(page.events.filter(e => e.method === 'Network.requestWillBeSent')
         .map(e => [e.params.requestId, e.params.request]));
@@ -208,6 +242,7 @@ async function captureNetworkResources(page,cache,documentURL,{mainFrameID,heade
                 await fs.writeFile(filename + '.headers.json', JSON.stringify(headers));
             }
             row.bytes = body.length; row.sha256 = digest(body);
+            if (type === 'Image') row.image_delivery = imageResponseDelivery(page.events, entry, body);
         } catch (error) {
             row.error = error.message;
         }

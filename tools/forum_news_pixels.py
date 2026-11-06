@@ -98,6 +98,7 @@ def seal_capture(capture, archive, report_file):
     archive.mkdir(parents=True, exist_ok=False)
     (archive / 'bodies').mkdir()
     entries = {}
+    image_deliveries = {}
     for resource in metadata['resources']:
         if resource.get('error'):
             continue
@@ -114,6 +115,17 @@ def seal_capture(capture, archive, report_file):
         sha = digest(body)
         (archive / 'bodies' / sha).write_bytes(body)
         entries[url] = dict(status=200, headers=headers, sha256=sha, bytes=len(body))
+        if 'image_delivery' in resource:
+            delivery = resource['image_delivery']
+            if (resource.get('type') != 'Image' or not isinstance(delivery, dict)
+                    or type(delivery.get('version')) is not int or delivery['version'] != 1
+                    or delivery.get('body_sha256') != sha
+                    or type(delivery.get('body_bytes')) is not int or delivery['body_bytes'] != len(body)
+                    or not isinstance(delivery.get('events'), list)):
+                raise RuntimeError('Image delivery audit does not identify its captured body: ' + url)
+            image_deliveries.setdefault(url, []).append(delivery)
+    for url, deliveries in image_deliveries.items():
+        entries[url]['source_image_deliveries'] = deliveries
     if metadata['url'] not in entries:
         raise RuntimeError('Missing main document')
     # Keep the complete full-uBO evidence, including the engine and list hashes.

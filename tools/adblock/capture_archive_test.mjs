@@ -5,9 +5,82 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
-import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, captureEncodedResponseCache, freezeDocument, imageAccept, installCSSOMAuthorRecorder, reuseArchivedResponseHeaders} from './capture_archive.mjs';
+import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, captureEncodedResponseCache, freezeDocument, imageAccept, imageResponseDelivery, installCSSOMAuthorRecorder, reuseArchivedResponseHeaders} from './capture_archive.mjs';
 
 const ready = snapshot => ({ready:'complete',fonts:'loaded',images:[],styles:[],rects:[],...snapshot});
+
+test('image delivery keeps final-response observation order when finish timestamps run earlier',()=>{
+    const response={requestId:'image',timestamp:10,type:'Image',
+        response:{url:'https://news.example/photo.avif',status:200,headers:{}}};
+    const body=Buffer.from('abcdefg');
+    const events=[
+        {method:'Network.responseReceived',params:{...response,timestamp:1}},
+        {method:'Network.dataReceived',params:{requestId:'image',timestamp:2,dataLength:99,encodedDataLength:99}},
+        {method:'Network.responseReceived',params:response},
+        {method:'Network.dataReceived',params:{requestId:'image',timestamp:10.1,dataLength:4,encodedDataLength:3}},
+        {method:'Network.dataReceived',params:{requestId:'other',timestamp:10.2,dataLength:100}},
+        {method:'Network.dataReceived',params:{requestId:'image',timestamp:10.3,dataLength:3,encodedDataLength:2}},
+        {method:'Network.loadingFinished',params:{requestId:'image',timestamp:10.25,encodedDataLength:50}},
+    ];
+    const result=imageResponseDelivery(events,response,body);
+    assert.equal(result.body_sha256,crypto.createHash('sha256').update(body).digest('hex'));
+    assert.equal(result.observed_data_bytes,7);
+    assert.equal(result.observed_body_bytes_match,true);
+    assert.deepEqual(result.events,[
+        {kind:'data',timestamp:10.1,data_bytes:4,encoded_bytes:3},
+        {kind:'data',timestamp:10.3,data_bytes:3,encoded_bytes:2},
+        {kind:'finished',timestamp:10.25,encoded_bytes:50},
+    ]);
+});
+
+test('cached or missing image delivery observations do not invent transport or decode completion',()=>{
+    const response={requestId:'cached',type:'Image',response:{fromDiskCache:true}};
+    const result=imageResponseDelivery([{method:'Network.responseReceived',params:response}],response,Buffer.from('pixels'));
+    assert.equal(result.from_disk_cache,true);
+    assert.equal(result.response_timestamp,null);
+    assert.equal(result.observed_data_bytes,0);
+    assert.equal(result.observed_body_bytes_match,false);
+    assert.deepEqual(result.events,[]);
+    assert.match(result.scope,/not TCP packets or image-generator state/);
+    const invalid=imageResponseDelivery([{method:'Network.responseReceived',params:response},
+        {method:'Network.dataReceived',params:{requestId:'cached',timestamp:NaN,dataLength:-1}}],response,Buffer.from('pixels'));
+    assert.equal(invalid.observed_data_bytes,null);
+    assert.equal(invalid.events[0].timestamp,null);
+    assert.equal(invalid.events[0].data_bytes,null);
+    assert.equal(invalid.events[0].encoded_bytes,null);
+});
+
+test('later reuse of a request ID cannot enter an earlier image response audit',()=>{
+    const first={requestId:'reused',response:{},timestamp:1};
+    const second={requestId:'reused',response:{},timestamp:2};
+    const events=[{method:'Network.responseReceived',params:first},
+        {method:'Network.dataReceived',params:{requestId:'reused',dataLength:3}},
+        {method:'Network.responseReceived',params:second},
+        {method:'Network.dataReceived',params:{requestId:'reused',dataLength:4}}];
+    assert.equal(imageResponseDelivery(events,first,Buffer.from('one')).observed_data_bytes,3);
+    assert.equal(imageResponseDelivery(events,second,Buffer.from('four')).observed_data_bytes,4);
+});
+
+test('captured encoded image caches retain delivery audit beside unchanged bytes',async t=>{
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-image-delivery-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    const url='https://news.example/photo.avif',body=Buffer.from('encoded AVIF body');
+    const page={events:[
+        {method:'Network.requestWillBeSent',params:{requestId:'image',request:{url,method:'GET'}}},
+        {method:'Network.responseReceived',params:{requestId:'image',type:'Image',timestamp:20,
+            response:{url,status:200,headers:{'Content-Type':'image/avif'}}}},
+        {method:'Network.dataReceived',params:{requestId:'image',timestamp:20.1,dataLength:body.length,encodedDataLength:body.length}},
+        {method:'Network.loadingFinished',params:{requestId:'image',timestamp:20.2,encodedDataLength:100}},
+    ],send:async method=>{assert.equal(method,'Network.getResponseBody');return {body:body.toString('base64'),base64Encoded:true}}};
+    const directory=path.join(root,'capture');
+    await captureEncodedResponseCache(page,directory,'https://news.example/');
+    const metadata=JSON.parse(await fs.readFile(path.join(directory,'archive.json'),'utf8'));
+    const resource=metadata.resources[0];
+    assert.equal(resource.image_delivery.body_sha256,resource.sha256);
+    assert.equal(resource.image_delivery.body_bytes,body.length);
+    assert.equal(resource.image_delivery.observed_body_bytes_match,true);
+    assert.deepEqual(await fs.readFile(path.join(directory,'cache/resources',crypto.createHash('sha256').update(url).digest('hex'))),body);
+});
 
 test('freezing retains live CSSOM author rules, raw color syntax and document mode',()=>{
     const raw='p{color:rgb(51 51 51 / 59%)}';

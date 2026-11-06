@@ -521,6 +521,44 @@ class ForumNewsPixelTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 check_native(dict(audit, **change), reference)
 
+    def test_image_delivery_provenance_is_bound_to_its_encoded_response(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            capture = root / 'capture'
+            (capture / 'cache/resources').mkdir(parents=True)
+            url, image_url = 'https://news.example/', 'https://news.example/photo.avif'
+            html, image = b'<!doctype html><p>Frozen story</p>', b'captured encoded image'
+            (capture / 'frozen.html').write_bytes(html)
+            (capture / 'live.png').write_bytes(b'captured PNG')
+            for address, body in [(url, html), (image_url, image)]:
+                path = capture / 'cache/resources' / digest(address.encode())
+                path.write_bytes(body)
+                write_json(Path(str(path) + '.headers.json'), [])
+            delivery = dict(version=1, body_sha256=digest(image), body_bytes=len(image),
+                            events=[dict(kind='data', timestamp=4.1, data_bytes=len(image))])
+            report = root / 'report.json'
+            write_json(report, self.report())
+            for index, audit in enumerate([delivery,
+                    dict(delivery, body_sha256=digest(b'other image')),
+                    dict(delivery, body_bytes=len(image) + 1),
+                    dict(delivery, version=True)]):
+                write_json(capture / 'archive.json', dict(url=url, frozen_html_sha256=digest(html), resources=[
+                    dict(url=url, sha256=digest(html)),
+                    dict(url=image_url, type='Image', sha256=digest(image), image_delivery=audit),
+                    dict(url=image_url, type='Image', sha256=digest(image),
+                         image_delivery=dict(audit, request_id='second-request'))]))
+                archive = root / str(index)
+                if index:
+                    with self.assertRaisesRegex(RuntimeError, 'delivery audit'):
+                        seal_capture(capture, archive, report)
+                    self.assertFalse((archive / 'manifest.json').exists())
+                else:
+                    seal_capture(capture, archive, report)
+                    entry = load_archive(archive)['responses'][image_url]
+                    self.assertEqual(entry['source_image_deliveries'],
+                                     [delivery, dict(delivery, request_id='second-request')])
+                    self.assertEqual((archive / 'bodies' / entry['sha256']).read_bytes(), image)
+
     def test_sealed_fixture_uses_only_captured_bytes_and_retains_filter_provenance(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
