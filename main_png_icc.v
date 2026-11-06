@@ -35,11 +35,9 @@ fn (mut app BrowserApp) create_local_image_with_profile(image_url string, path s
 			&& app.document != unsafe { nil }
 			&& app.document.font_rendering_policy() == .chromium {
 			bytes := app.background_image_bytes(image_url) or { return app.ctx.create_image(path) }
-			// AppKit's file decoder uses ColorSync. Route ICC PNGs through the
-			// same original-profile conversion as fetched resource images.
-			if C.native_png_has_icc_profile(bytes.data, uint(bytes.len)) != 0 {
-				return app.create_image_from_resource_bytes(image_url, bytes)
-			}
+			// ColorSync also interprets PNG gamma/chromaticity metadata without
+			// an ICC chunk. Keep file and fetched PNG pixels and tagging alike.
+			return app.create_image_from_resource_bytes(image_url, bytes)
 		}
 	}
 	return app.ctx.create_image(path)
