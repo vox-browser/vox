@@ -137,6 +137,54 @@ def intervals(rows):
     return values
 
 
+def instruction_counters(log, inputs):
+    """Exact main-process counters; float parsing would lose large integers."""
+    samples = {}
+    integer_fields = {'pid', 'start_ticks', 'instructions', 'cycles', 'user_ns', 'system_ns'}
+    for line in log.splitlines():
+        if not line.startswith('SCROLL_COUNTER '):
+            continue
+        fields = line.split()
+        if len(fields) != 9:
+            raise ValueError('Incomplete instruction counter sample')
+        phase = fields[1]
+        if phase in samples or phase not in {'start', 'input_end', 'publication_end', 'complete'}:
+            raise ValueError('Duplicate or unknown instruction boundary')
+        values = dict(part.split('=', 1) for part in fields[2:])
+        if set(values) != integer_fields | {'t_us'}:
+            raise ValueError('Incomplete instruction counter sample')
+        sample = {key: int(values[key]) for key in integer_fields}
+        sample['t_us'] = float(values['t_us'])
+        if (not math.isfinite(sample['t_us']) or sample['t_us'] < 0
+                or any(sample[key] < 0 for key in integer_fields)
+                or not sample['pid'] or not sample['start_ticks'] or not sample['instructions']):
+            raise ValueError('Invalid instruction counter sample')
+        samples[phase] = sample
+    if not samples:
+        return None
+    if set(samples) != {'start', 'input_end', 'publication_end', 'complete'}:
+        raise ValueError('Missing instruction boundary')
+    start, end = samples['start'], samples['complete']
+    if any((row['pid'], row['start_ticks']) != (start['pid'], start['start_ticks']) for row in samples.values()):
+        raise ValueError('Instruction process identity changed')
+    measured = {'instructions', 'cycles', 'user_ns', 'system_ns', 't_us'}
+    if any(end[key] < row[key] or row[key] < start[key] for row in samples.values() for key in measured):
+        raise ValueError('Instruction counters or clock decreased')
+    if end['instructions'] == start['instructions'] or end['t_us'] <= start['t_us']:
+        raise ValueError('Stationary instruction measurement')
+    if end not in (samples['input_end'], samples['publication_end']):
+        raise ValueError('Instruction completion is not an observed input/publication boundary')
+    count = end['instructions'] - start['instructions']
+    return dict(counter='proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions',
+                scope='main browser process, all threads; first wheel dispatch through completion of both final dispatch and first native publication accounting for it',
+                excludes='startup, settle, later animation tail, child processes, GPU execution and external services',
+                diagnostic_only=True, samples=samples, instructions=count,
+                cycles=end['cycles'] - start['cycles'],
+                cpu_ms=((end['user_ns'] - start['user_ns']) + (end['system_ns'] - start['system_ns'])) / 1e6,
+                wall_ms=(end['t_us'] - start['t_us']) / 1000,
+                instructions_per_input=count / inputs)
+
+
 def summarize(log, expected_inputs, target_hz=60, required_title="", expected_viewport=None):
     # A fault on another thread can race the probe's successful _exit(0)
     # after SCROLL_DONE. A completed input log and zero exit do not erase it.
@@ -195,7 +243,7 @@ def summarize(log, expected_inputs, target_hz=60, required_title="", expected_vi
             scrolled.append(frame)
     scroll_gaps = intervals(scrolled)
     budget = 1_000_000 / target_hz
-    return dict(protocol_version=2, endpoint=ENDPOINT, start=starts[0], completion=ends[0],
+    summary = dict(protocol_version=2, endpoint=ENDPOINT, start=starts[0], completion=ends[0],
                 completed_inputs=len(inputs), completed_publications=len(frames),
                 measured_publications=len(selected), moving_intervals=moving,
                 measurement_window_us=window_us,
@@ -216,6 +264,10 @@ def summarize(log, expected_inputs, target_hz=60, required_title="", expected_vi
                 intervals_over_budget=sum(gap > budget for gap in scroll_gaps),
                 fraction_over_budget=sum(gap > budget for gap in scroll_gaps) / len(scroll_gaps),
                 inputs=inputs, publications=frames)
+    counters = instruction_counters(log, len(inputs))
+    if counters is not None:
+        summary['instruction_measurement'] = counters
+    return summary
 
 
 def sha256(path):
@@ -236,6 +288,8 @@ def main():
                         help="Diagnostic only: reset v -profile counters immediately before native input")
     parser.add_argument("--capture-faults", action="store_true",
                         help="Diagnostic only: record first-fault registers and bounded readable memory")
+    parser.add_argument("--instructions", action="store_true",
+                        help="Separate counter cohort: main-process hardware instructions and CPU ms over the input/publication pipeline")
     parser.add_argument("--network-policy", required=True,
                         help="Describe live access or supplied network-blocking interposer; recorded verbatim")
     parser.add_argument("--insert-library", action="append", type=Path, default=[])
@@ -354,6 +408,7 @@ def main():
                VOX_PRECISE_SETTLE=str(args.settle_seconds),
                VOX_PRECISE_RESET_V_PROFILE="1" if args.v_profile_reset else "",
                VOX_PRECISE_CAPTURE_FAULTS="1" if args.capture_faults else "",
+               VOX_PRECISE_INSTRUCTIONS="1" if args.instructions else "",
                VOX_PRECISE_FAILURE_CAPTURE=str(output / "navigation-error.png"),
                VOX_PRECISE_REQUIRED_TITLE=args.require_title)
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
@@ -373,7 +428,7 @@ def main():
     command = [str(binary), *script_flags, "--window-width", str(args.width),
                "--window-height", str(args.height + args.chrome_height), args.url]
     evidence = dict(command=command, compile_command=compile_command,
-                    diagnostic_only=args.v_profile_reset or args.capture_faults,
+                    diagnostic_only=args.v_profile_reset or args.capture_faults or args.instructions,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
                     runtime_input_sha256={str(path): hashes[str(path)] for path in runtime_paths},
                     input_file_identity=file_identities,
@@ -423,6 +478,8 @@ def main():
             raise RuntimeError('Loaded native image was not pinned before launch')
         summary = summarize(browser_log,
                             args.inputs, args.target_hz, args.require_title, (args.width, args.height))
+        if args.instructions and 'instruction_measurement' not in summary:
+            raise ValueError('Requested hardware instruction measurement is missing')
         (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
         evidence["valid"] = True
         print(json.dumps({key: value for key, value in summary.items()

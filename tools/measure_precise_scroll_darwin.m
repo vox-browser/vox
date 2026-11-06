@@ -9,6 +9,9 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
+#include <libproc.h>
+#include <errno.h>
+#include <unistd.h>
 #include "precise_scroll_faults.h"
 
 static void record_native_image(const struct mach_header *header, intptr_t slide) {
@@ -69,6 +72,32 @@ static unsigned inputs, publications, input_limit, reverse_every, frame_capacity
 static BOOL active;
 static const char *required_title;
 static double settle_seconds, ready_since = -1;
+typedef struct {
+    struct rusage_info_v4 usage;
+    double time;
+    int present;
+} CounterSample;
+static BOOL count_instructions;
+static int (*read_process_usage)(int,int,rusage_info_t*);
+static CounterSample counter_start, counter_input_end, counter_publication_end, counter_complete;
+
+static void read_counter(CounterSample *sample) {
+    if (!count_instructions) return;
+    if (!read_process_usage || read_process_usage(getpid(),RUSAGE_INFO_V4,(rusage_info_t*)&sample->usage)
+        || !sample->usage.ri_instructions) {
+        fprintf(stderr,"SCROLL_ERROR hardware instruction counter failed errno=%d\n",errno);
+        exit(2);
+    }
+    sample->time=CACurrentMediaTime()-started;
+    sample->present=1;
+}
+
+static void print_counter(const char *phase, CounterSample const *sample) {
+    if (!sample->present) return;
+    fprintf(stderr,"SCROLL_COUNTER %s pid=%d start_ticks=%llu instructions=%llu cycles=%llu user_ns=%llu system_ns=%llu t_us=%.3f\n",
+        phase,getpid(),sample->usage.ri_proc_start_abstime,sample->usage.ri_instructions,
+        sample->usage.ri_cycles,sample->usage.ri_user_time,sample->usage.ri_system_time,sample->time*1e6);
+}
 
 // Optional native diagnostics share the observer's input epoch. They can
 // distinguish startup and tail work without changing the acceptance schedule.
@@ -115,11 +144,22 @@ static void published(id self, SEL selector) {
     }
     frame_samples[publications++] = (Frame){
         now-started, now-before, now-last_input, rendered_scroll, inputs };
+    if (count_instructions && inputs==input_limit && !counter_publication_end.present) {
+        read_counter(&counter_publication_end);
+        if (counter_input_end.present) counter_complete=counter_publication_end;
+    }
 }
 
 static void finish(int status) {
     active = NO;
     double finished = CACurrentMediaTime();
+    if (count_instructions && status==0 && !counter_complete.present) {
+        fprintf(stderr,"SCROLL_ERROR missing complete instruction boundary\n");status=2;
+    }
+    print_counter("start",&counter_start);
+    print_counter("input_end",&counter_input_end);
+    print_counter("publication_end",&counter_publication_end);
+    print_counter("complete",&counter_complete);
     for (unsigned i = 0; i < inputs; ++i)
         fprintf(stderr, "SCROLL_INPUT %u t_us=%.3f wheel_us=%.3f delta_x=%g delta_y=%g modifiers=%llu\n", i,
             input_samples[i].time*1e6, input_samples[i].elapsed*1e6,
@@ -205,9 +245,14 @@ static void tick(void) {
     input_samples[index].delta_x = positioned.backing.scrollingDeltaX;
     input_samples[index].delta_y = positioned.backing.scrollingDeltaY;
     input_samples[index].modifiers = positioned.backing.modifierFlags;
+    if (count_instructions && index==0) read_counter(&counter_start);
     [input_view scrollWheel:(NSEvent *)positioned];
     input_samples[index].elapsed = CACurrentMediaTime()-last_input;
     if (inputs == input_limit) {
+        if (count_instructions) {
+            read_counter(&counter_input_end);
+            if (counter_publication_end.present) counter_complete=counter_input_end;
+        }
         dispatch_source_cancel(timer);
         // A slow page can take longer than 250ms to publish. Wait for evidence
         // of the final input, with a bounded timeout. Tail frames remain outside
@@ -266,6 +311,12 @@ static void begin(void) {
 
 __attribute__((constructor)) static void boot(void) {
     if (!ladybird_v_skia_set_root_raster_scroll_y) return;
+    count_instructions=getenv("VOX_PRECISE_INSTRUCTIONS") && !strcmp(getenv("VOX_PRECISE_INSTRUCTIONS"),"1");
+    if (count_instructions) {
+        void *library=dlopen("/usr/lib/libproc.dylib",RTLD_LAZY|RTLD_LOCAL);
+        read_process_usage=library?dlsym(library,"proc_pid_rusage"):NULL;
+        if (!read_process_usage) { fprintf(stderr,"SCROLL_ERROR libproc instruction counter unavailable\n");exit(2); }
+    }
     scroll_fault_schedule();
     _dyld_register_func_for_add_image(record_native_image);
     const char *names[] = {"VOX_PRECISE_INPUTS", "VOX_PRECISE_REVERSE",
