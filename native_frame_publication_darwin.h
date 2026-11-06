@@ -31,6 +31,7 @@ VOX_NATIVE_STATE VoxNativeFramePublishedObserver native_frame_published_observer
     uint64_t epoch, latest_generation, latest_token;
     NSRect latest_bounds;
     CGFloat latest_scale;
+    double work_submitted;
 }
 + (unsigned)observerProtocol;
 + (void)observePrepared:(VoxNativeFramePreparedObserver)prepared
@@ -66,6 +67,19 @@ VOX_NATIVE_STATE VoxNativeFramePublishedObserver native_frame_published_observer
 #endif
 
 VOX_NATIVE_STATE char native_frame_publication_key;
+VOX_NATIVE_STATE dispatch_queue_t native_frame_readiness_queue;
+VOX_NATIVE_STATE dispatch_once_t native_frame_readiness_once;
+static dispatch_queue_t native_frame_publication_queue(void) {
+    if (getenv("VOX_GPU_FRAME_GLOBAL_QUEUE"))
+        return dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE,0);
+    dispatch_once(&native_frame_readiness_once, ^{
+        // Serial queues use an overcommit root rather than sharing the global
+        // concurrent pool with unrelated jobs blocked on driver callbacks.
+        native_frame_readiness_queue = dispatch_queue_create("org.vox.gpu-frame-readiness",
+            dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL,QOS_CLASS_USER_INTERACTIVE,0));
+    });
+    return native_frame_readiness_queue;
+}
 static VoxNativeFramePublication *native_frame_publication_state(NSView *view, BOOL create) {
     VoxNativeFramePublication *state = objc_getAssociatedObject(view, &native_frame_publication_key);
     if (!state && create) {
@@ -162,6 +176,14 @@ static void native_frame_publication_deliver(NSView *view, VoxNativeFramePublica
 }
 static void native_frame_publication_work(NSView *view, VoxNativeFramePublication *state,
     VoxNativeFrameCompletion complete, VoxNativeFrameCanComplete can_complete) {
+    if (getenv("VOX_GPU_FRAME_QUEUE_DIAGNOSTICS")) {
+        double submitted;
+        @synchronized(state) { submitted = state->work_submitted; }
+        double (*clock)(void) = (double (*)(void))dlsym(RTLD_DEFAULT,"vox_precise_scroll_diagnostic_time");
+        fprintf(stderr,"VOX_GPU_WORKER_START global=%d dispatch_us=%.3f t_us=%.3f\n",
+            getenv("VOX_GPU_FRAME_GLOBAL_QUEUE") != NULL,
+            (CACurrentMediaTime()-submitted)*1e6, clock ? clock() : -1);
+    }
     // Do not wait for main-queue installation to drain the next GPU fence.
     // The bounded mailbox holds one pending, one in-flight and one completed
     // frame; completed output is replaceable until the main queue takes it.
@@ -217,9 +239,12 @@ static void native_frame_publication_enqueue(NSView *view, VoxNativePreparedFram
         state->latest_bounds = frame->bounds;
         state->latest_scale = frame->scale;
         native_frame_publication_set_pending(state, frame);
-        if (!state->working) state->working = start = YES;
+        if (!state->working) {
+            state->working = start = YES;
+            state->work_submitted = getenv("VOX_GPU_FRAME_QUEUE_DIAGNOSTICS") ? CACurrentMediaTime() : 0;
+        }
     }
-    if (start) dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE,0), ^{
+    if (start) dispatch_async(native_frame_publication_queue(), ^{
         native_frame_publication_work(view,state,complete,can_complete);
     });
 }

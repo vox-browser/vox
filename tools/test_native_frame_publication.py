@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run native GPU readiness/mailbox ownership checks under the memory guard."""
 import argparse
+import os
 from pathlib import Path
 import subprocess
 
@@ -21,6 +22,8 @@ def main():
         with (args.output / (name + '.log')).open('w') as log:
             subprocess.run(command, check=True, stdout=log, stderr=subprocess.STDOUT)
             subprocess.run([str(binary)], check=True, stdout=log, stderr=subprocess.STDOUT)
+            subprocess.run([str(binary)], env={**os.environ,'VOX_GPU_FRAME_GLOBAL_QUEUE':'1'},
+                           check=True, stdout=log, stderr=subprocess.STDOUT)
         print(name + ': passed', flush=True)
     observer = args.output.resolve() / 'observer'
     command = ['clang', '-O2', '-fobjc-arc', '-Wl,-undefined,dynamic_lookup',
