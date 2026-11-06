@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include "zero_timer_dispatch.h"
 
 static bool libweb_v_is_main_thread(void) { return pthread_main_np() != 0; }
 
@@ -29,6 +30,11 @@ static void libweb_v_timer_callback(CFRunLoopTimerRef timer, void* context)
 
 static void* libweb_v_register_timer(void* context, int interval_ms, void (*timeout)(void*))
 {
+    if (interval_ms == 0) {
+        void* queued = libweb_v_register_zero_timer(context, timeout);
+        if (queued)
+            return queued;
+    }
     LibWebVTimerContext* state = malloc(sizeof(*state));
     if (!state)
         abort();
@@ -50,6 +56,10 @@ static void* libweb_v_register_timer(void* context, int interval_ms, void (*time
 
 static void libweb_v_unregister_timer(void* timer)
 {
+    if (libweb_v_zero_timer_is_handle(timer)) {
+        libweb_v_unregister_zero_timer(timer);
+        return;
+    }
     CFRunLoopTimerInvalidate((CFRunLoopTimerRef)timer);
     CFRelease(timer);
 }
