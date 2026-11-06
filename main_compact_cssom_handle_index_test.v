@@ -92,3 +92,21 @@ fn test_cssom_handle_indexes_are_binding_local_and_keep_detached_rules() {
 	assert first.css_rules.len == 1
 	assert second.css_rules.len == 1
 }
+
+fn test_cssom_partial_rule_index_keeps_preseeded_handles_during_new_exports() {
+	mut binding := cssom_index_binding()
+	seeded := css.CSSRule.create(.style)
+	first := css.CSSRule.create(.style)
+	second := css.CSSRule.create(.style)
+	binding.css_rules['seeded-rule'] = seeded
+	first_key := cssom_index_rule_id(binding.rule_key(first))
+	assert first_key != 'seeded-rule'
+	assert cssom_index_rule_id(binding.rule_key(seeded)) == 'seeded-rule'
+	second_key := cssom_index_rule_id(binding.rule_key(second))
+	assert second_key != first_key
+	assert second_key != 'seeded-rule'
+	gc_collect()
+	assert cssom_index_rule_id(binding.rule_key(first)) == first_key
+	assert cssom_index_rule_id(binding.rule_key(second)) == second_key
+	assert binding.css_rules.len == 3
+}

@@ -33,13 +33,18 @@ fn (mut binding CompactElementQueryBinding) sheet_key(sheet &css.CSSStyleSheet) 
 			if current := binding.style_sheets[key] {
 				if voidptr(current) == voidptr(sheet) { return key }
 			}
+			binding.style_sheet_keys.clear()
 		}
 	}
+	// Only these helpers append forward owners. Equal cardinality proves a
+	// missing reverse identity is new; preseeded/incomplete tables still scan.
+	if disable_cssom_handle_index || binding.style_sheet_keys.len != binding.style_sheets.len {
 	for key, candidate in binding.style_sheets {
 		if voidptr(candidate) == voidptr(sheet) {
 			if !disable_cssom_handle_index { binding.style_sheet_keys[voidptr(sheet)] = key }
 			return key
 		}
+	}
 	}
 	binding.next_key++
 	key := '__sheet_${binding.next_key}'
@@ -61,8 +66,12 @@ fn (mut binding CompactElementQueryBinding) rule_key(rule &css.CSSRule) json2.An
 					return json2.Any({'id': json2.Any(key), 'type': json2.Any(int(rule.type_for_bindings()))})
 				}
 			}
+			binding.css_rule_keys.clear()
 		}
 	}
+	// Only these helpers append forward owners. Equal cardinality proves a
+	// missing reverse identity is new; preseeded/incomplete tables still scan.
+	if disable_cssom_handle_index || binding.css_rule_keys.len != binding.css_rules.len {
 	for key, candidate in binding.css_rules {
 		if voidptr(candidate) == voidptr(rule) {
 			if !disable_cssom_handle_index { binding.css_rule_keys[voidptr(rule)] = key }
@@ -72,6 +81,13 @@ fn (mut binding CompactElementQueryBinding) rule_key(rule &css.CSSRule) json2.An
 			})
 		}
 	}
+	}
+	if !disable_cssom_handle_index && binding.css_rule_keys.len == binding.css_rules.len
+		&& cssom_handle_diagnostics && !cssom_handle_reuse_reported {
+		cssom_handle_reuse_reported = true
+		eprintln('Vox CSSOM handles: indexed a new rule without a table scan')
+	}
+
 	binding.next_key++
 	key := '__rule_${binding.next_key}'
 	binding.css_rules[key] = rule
@@ -88,13 +104,18 @@ fn (mut binding CompactElementQueryBinding) rule_list_key(list &css.CSSRuleList)
 			if current := binding.css_rule_lists[key] {
 				if voidptr(current) == voidptr(list) { return key }
 			}
+			binding.css_rule_list_keys.clear()
 		}
 	}
+	// Only these helpers append forward owners. Equal cardinality proves a
+	// missing reverse identity is new; preseeded/incomplete tables still scan.
+	if disable_cssom_handle_index || binding.css_rule_list_keys.len != binding.css_rule_lists.len {
 	for key, candidate in binding.css_rule_lists {
 		if voidptr(candidate) == voidptr(list) {
 			if !disable_cssom_handle_index { binding.css_rule_list_keys[voidptr(list)] = key }
 			return key
 		}
+	}
 	}
 	binding.next_key++
 	key := '__rules_${binding.next_key}'
