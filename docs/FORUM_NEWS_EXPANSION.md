@@ -12,8 +12,8 @@ fidelity and native equality; CNN matches frozen Brave but retains its separate
 source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
-The latest rendering checkpoint passes **140 tests / 146 captures at zero
-pixels** on `409d48a1…`, with unchanged inputs and references. The AVIF sampling
+The latest rendering checkpoint passes **141 tests / 147 captures at zero
+pixels** on `06508884…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2769,6 +2769,50 @@ and whole-site parity remain outside these frozen viewport results.
 
 [Checks, independent byte counts and qualifications](evidence/discord-whole-tile-filtering-20261106.json),
 [sealed captures, resources, commands, guards, failures and patches](evidence/discord-whole-tile-filtering-20261106.zip).
+
+## Direct whole-background rectangles (2026-11-06)
+
+`f8e61ca6f` removes an extra natural-size canvas transform from whole background
+tiles. Brave's installed-browser paint log records a direct source/destination
+rectangle for the hero background, while replaced images keep their natural-size
+transform. Both Vox native paths now preserve that distinction. Source filtering,
+the image bytes and existing reference PNGs remain unchanged.
+
+The new overlapping-background fixture reproduces **19 pixels** before the fix
+with exact saved source and two independent Brave references. It now passes
+locally at **0 pixels** on production
+`065088847096502fc917a23c0d8231e9344e1edb7baa2bfbb2a38185fa99d97d`.
+The native operation-order control also fails before the fix and passes four
+cases optimized and with ASan/UBSan after it. Five focused browser captures pass.
+The full **141-test / 147-capture** suite is exact, under one canonical bundle
+lease with unchanged executable, library, tool, filter, extension and fixture
+hashes. The shared build contains the committed correction; no separate build
+was queued for this session.
+
+Discord's cold run remains unqualified: **602 native / 598 source / 0 independent
+replay pixels**. Against the same Brave reference, native improves **614 → 602**;
+against the saved source it improves **18 → 4**. Exactly 14 native pixels change
+in the main image. The remaining four are in the decorative star at x=925.
+A separate diagnostic that gives the star a local drawing origin reaches zero
+against the saved source; that override does not validate a production fix.
+
+Hacker News and TechCrunch pass all strict cold-cache gates. WIRED's first
+Brave replay differs by **1,838 pixels** from both its saved source and second
+replay. Vox matches the source and second replay exactly. This run therefore
+retains a WIRED reference failure, without replacing or retrying its reference
+to obtain a pass. Earlier qualified first-frame runs remain recorded.
+
+Tracing confirms the full hero's 672×407 picture and 704×256 tiles. Moving its
+image draws into the document raster makes the result worse. Equal logical
+Brave tiles also report different GPU memory sizes; this is a lead for reference
+variation, not a proved cause. The no-uBO traces are diagnostics, while the
+full-uBO source and replay checks supply the reported conformance results.
+Failed proxy, linkage, import, stale-layer and scan attempts remain retained.
+Stack Overflow/Pikabu remain deferred; live scripting, animation, performance
+and whole-site parity remain outside these archived viewport checks.
+
+[Independent byte counts and qualifications](evidence/discord-direct-background-rectangles-20261106.json),
+[sealed captures, commands, guards, diagnostics and patch](evidence/discord-direct-background-rectangles-20261106.zip).
 
 ## Run
 
