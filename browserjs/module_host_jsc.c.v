@@ -24,6 +24,8 @@ fn C.JSObjectDeleteProperty(voidptr, voidptr, voidptr, &voidptr) bool
 
 const retain_utf8_module_source = os.getenv('VOX_RETAIN_UTF8_MODULE_SOURCE') != ''
 const module_source_value_diagnostics = os.getenv('VOX_MODULE_SOURCE_VALUE_DIAGNOSTICS') != ''
+const retain_duplicate_module_normalization = os.getenv('VOX_RETAIN_DUPLICATE_MODULE_NORMALIZATION') != ''
+const module_normalization_diagnostics = os.getenv('VOX_MODULE_NORMALIZATION_DIAGNOSTICS') != ''
 
 pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 	$if !darwin {
@@ -134,13 +136,26 @@ pub fn (mut host ModuleHost) close() {
 }
 
 fn (mut host ModuleHost) resolve(specifier string, base string, parent string) !string {
-	resolved := html.resolve_module_specifier(host.settings.universal_global_scope().import_map(),
-		dom.URL{ value: base }, specifier)!
+	import_map := host.settings.universal_global_scope().import_map()
+	resolution := if retain_duplicate_module_normalization {
+		resolved := html.resolve_module_specifier(import_map, dom.URL{ value: base }, specifier)!
+		as_url := html.resolve_url_like_module_specifier(specifier, dom.URL{ value: base })
+		html.ResolvedModuleSpecifier{
+			url: resolved
+			normalized_specifier: if address := as_url { address.serialize() } else { specifier }
+			url_like: as_url
+		}
+	} else {
+		html.resolve_module_specifier_with_metadata(import_map, dom.URL{ value: base }, specifier)!
+	}
+	resolved := resolution.url
 	key := resolved.serialize()
 	mut settings := unsafe { &html.EnvironmentSettingsObject(host.settings) }
-	as_url := html.resolve_url_like_module_specifier(specifier, dom.URL{ value: base })
-	normalized := if address := as_url { address.serialize() } else { specifier }
-	settings.add_module_to_resolved_module_set(base, normalized, as_url)
+	settings.add_module_to_resolved_module_set(base, resolution.normalized_specifier, resolution.url_like)
+	if module_normalization_diagnostics && !retain_duplicate_module_normalization && !host.normalization_reported {
+		host.normalization_reported = true
+		eprintln('Vox module resolution: reused normalized URL metadata')
+	}
 	if key !in host.sources {
 		options := if source := host.sources[parent] {
 			html.get_descendant_script_fetch_options(source.options, resolved, host.settings)

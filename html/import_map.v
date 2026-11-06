@@ -87,6 +87,15 @@ pub:
 	specifier_is_null_or_url_like_that_is_special bool
 }
 
+// Keep the input normalization alongside the resolved target: import maps may
+// remap it to a different URL, but resolved-module bookkeeping uses the input.
+pub struct ResolvedModuleSpecifier {
+pub:
+	url                  dom.URL
+	normalized_specifier string
+	url_like             ?dom.URL
+}
+
 fn ignore_import_map_warning(message string) {
 	_ = message
 }
@@ -323,23 +332,37 @@ pub fn resolve_imports_match(normalized_specifier string, as_url ?dom.URL, speci
 // Core of https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-specifier.
 // Realm bookkeeping is represented separately by ResolvedModuleRecord.
 pub fn resolve_module_specifier(import_map &ImportMap, base_url dom.URL, specifier string) !dom.URL {
+	return resolve_module_specifier_with_metadata(import_map, base_url, specifier)!.url
+}
+
+// Resolve once for callers that also publish a ResolvedModuleRecord. The bare
+// specifier is copied into the result's owner just like a serialized URL.
+pub fn resolve_module_specifier_with_metadata(import_map &ImportMap, base_url dom.URL, specifier string) !ResolvedModuleSpecifier {
 	serialized_base_url := base_url.serialize()
 	as_url := resolve_url_like_module_specifier(specifier, base_url)
-	normalized_specifier := if url := as_url { url.serialize() } else { specifier }
+	normalized_specifier := if url := as_url { url.serialize() } else { specifier.clone() }
 	for scope in import_map.scopes {
 		if scope.prefix == serialized_base_url || (scope.prefix.ends_with('/') && serialized_base_url.starts_with(scope.prefix)) {
 			matched := resolve_imports_match(normalized_specifier, as_url, &scope.imports)!
 			if matched.matched {
-				return matched.url or { return error('Import map produced a null URL') }
+				return ResolvedModuleSpecifier{
+					url: matched.url or { return error('Import map produced a null URL') }
+					normalized_specifier: normalized_specifier
+					url_like: as_url
+				}
 			}
 		}
 	}
 	matched := resolve_imports_match(normalized_specifier, as_url, &import_map.imports)!
 	if matched.matched {
-		return matched.url or { return error('Import map produced a null URL') }
+		return ResolvedModuleSpecifier{
+			url: matched.url or { return error('Import map produced a null URL') }
+			normalized_specifier: normalized_specifier
+			url_like: as_url
+		}
 	}
 	if url := as_url {
-		return url
+		return ResolvedModuleSpecifier{url: url, normalized_specifier: normalized_specifier, url_like: as_url}
 	}
 	return error("Failed to resolve non relative module specifier '${specifier}' from an import map.")
 }
