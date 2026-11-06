@@ -34,7 +34,7 @@ original dylib with the existing `tools/native_graphite_*_test.cpp` harnesses.
 
 ## Status (2026-11-06)
 
-The opt-in browser adapters and differential tools now live on canonical Vox
+The browser adapters and differential tools now live on canonical Vox
 `master` (`05ffb14b8`, `edeebc78e`). They were integrated from `gg-migration`
 `7377e0384`; the original worktree and its historical results remain intact.
 Build and test from `/Users/alex/code/vox2`.
@@ -52,15 +52,56 @@ Its `vlib/gg/canvas` directory is byte-identical to the reviewed source head
 `5b06b5a56b` in `~/code/v-gg`. The shared parallel compiler still uses its
 earlier V checkout without this module; it has not been overwritten.
 `V_BIN=~/code/v-gg/v sh build-prod-browser.sh` selects the existing GG compiler.
-The build recognizes `vlib/gg/canvas` and supplies `-d vox_gg_canvas`; builds
-whose V library lacks that module exclude the adapters. A V build containing
-the merged module can compile them, but runtime selection remains `VOX_GG_TEXT=1`,
-`VOX_GG_SHAPES=1`, and `VOX_GG_PATHS=1`. Unsupported draws retain Skia fallback.
+The default macOS build requires `gg.canvas` and supplies `-d vox_gg_canvas`.
+GG's text, shape and path adapters now register by default. `VOX_USE_SKIA=1`
+at launch selects the legacy renderer, overriding all three adapter switches.
+Explicit `VOX_GG_TEXT=0`, `VOX_GG_SHAPES=0` and `VOX_GG_PATHS=0` still isolate
+individual adapters for differential checks. Unsupported and unmigrated draws
+retain Skia fallback; **the default binary is not Skia-free**.
+
+With `V_BIN` unset, an older shared compiler can use the existing
+`~/code/v-gg/v` without overwriting the shared parallel compiler. An explicit
+compiler lacking `gg.canvas` fails the default build. An explicit
+`VOX_USE_SKIA=1 sh build-prod-browser.sh` builds the legacy renderer without
+requiring or compiling the GG adapters. This build choice is recorded in the
+shared queue and its renderer receipt. Linux's existing Skia renderer is unchanged;
+the GG browser adapters currently require macOS.
 
 The GG compiler predates `v root`. Build detection now uses the existing
 `@VEXEROOT` library probe (`aa03e9ba8`), including for moved compilers and
 staged runtimes. Three focused checks pass; real compiler probes detect the
-GG module and leave it disabled for the standard shared V compiler.
+GG module and identify its absence from the standard shared V compiler.
+
+### Default selection and remaining Skia dependencies
+
+`e76d0e595` makes GG the macOS default and adds the explicit Skia override. Build
+workers use protocol `bundle-lease-v4`, preserving a queued legacy request and
+rebuilding when the requested renderer changes even if source bytes do not.
+`renderer.json` records both the selected default and `skia_free:false`.
+Comparison tools explicitly select Skia for controls, clear inherited renderer
+overrides, and retain the existing selective adapter cohorts.
+
+Production receipt `20261106-133828-93b254e2`, executable
+`7f519bf2f01db83bf45be3da6b09f7031f7c4d894df4b50f07662e8a07e5544e`,
+verifies registration with **no renderer flags** (all three GG adapters true)
+and `VOX_USE_SKIA=1` (all three false). The two fresh captures match. Twelve
+focused fixture pairs also match, with unchanged executable, native libraries,
+fixtures and resources: 57 unclipped and 38 device-clipped text draws, six
+shape draws, 24 path draws and three path declines. Those three gradient
+declines still require Skia to preserve pixels. All 26 launches exit zero;
+the four V selection cases and 55 build/comparison-tool checks pass.
+
+The requested binary-size reduction remains unfinished. `otool -L` confirms
+both Vox and `libLadybirdVSkiaText.dylib` directly link `libskia.dylib`.
+The Graphite and Dawn picture libraries also retain their Skia implementation.
+The `skia/` package still supplies canvas paths/text/filters, font validation,
+shadows and bitmap export; the native text bridge creates Skia fonts and blobs
+before invoking GG. Removing these links now would leave required symbols and
+rendering operations unimplemented. Runtime environment selection cannot
+eliminate compiled dependencies. See the
+[default-selection receipt](gg-migration/default-20261106.json) for the verified
+selection, pixel tests and dependency audit. Skia-free rendering still requires
+the ports listed under Remaining work.
 
 ### Upstream review fixes
 

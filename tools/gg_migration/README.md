@@ -76,7 +76,7 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   Metal work of any process started with `DYLD_INSERT_LIBRARIES` into
   `$VOX_METAL_TRACE_DIR` (used to inventory the pipelines of the Brave fixtures).
 - `capture_ab.py` captures every Brave fixture with one Vox bundle, alternating
-  a plain launch and one with extra environment (`VOX_GG_TEXT=1` lets
+  explicit legacy Skia (`VOX_USE_SKIA=1`) and a GG candidate (`VOX_GG_TEXT=1` lets
   `gg.canvas` draw the bridge's CPU glyph runs, `VOX_GG_SHAPES=1` its Graphite
   shape descriptors). It compares decoded pixels
   outside the status bar's live RAM readout, captures the control again when
@@ -106,13 +106,23 @@ combined with `--svg` and `--gradients`. The adapter transforms the finished pat
 like SkPath, preserves its original clips, and cancels only the SVG path matrix
 using SkMatrix's inverse and SkM44 concatenation. Perspective strokes still decline.
 
-The adapters on master require `-d vox_gg_canvas` and a V compiler containing
-`gg.canvas`. `build-prod-browser.sh` detects that module in the selected compiler
-through the existing `@VEXEROOT` library probe and supplies the flag. This also
-works with the GG compiler, which predates `v root`. Upstream V includes the module
-since PR #31826 (squash `ac9fbda08a`); older V libraries exclude the adapters.
-Renderer selection remains opt-in at runtime (`VOX_GG_TEXT`,
-`VOX_GG_SHAPES`, `VOX_GG_PATHS`).
+The macOS default build requires `-d vox_gg_canvas` and a V compiler containing
+`gg.canvas`, included upstream since PR #31826 (squash `ac9fbda08a`). The build
+uses its `@VEXEROOT` probe, including with the compiler predating `v root`.
+With `V_BIN` unset, an older shared compiler can select the existing
+`~/code/v-gg/v`; an explicit compiler without GG fails the default build.
+An explicit `VOX_USE_SKIA=1 sh build-prod-browser.sh` builds legacy Skia without
+the GG adapters. Neither build is Skia-free yet: required native preparation,
+canvas, shadows, images, filters and recording paths still depend on Skia.
+
+The GG-capable binary registers all three adapters by default. Launch with
+`VOX_USE_SKIA=1` for legacy Skia; that override dominates individual adapter flags.
+Explicit `VOX_GG_TEXT=0`, `VOX_GG_SHAPES=0` and `VOX_GG_PATHS=0` isolate a port.
+`capture_ab.py` explicitly uses legacy Skia for its control. A candidate with no
+adapter flags selects all three; specifying any adapter flag preserves the
+historical selective behavior (unspecified adapters off). The saved metadata
+records both environments. The Hacker News performance tool likewise selects
+both variants explicitly, so a default change cannot compare GG with itself.
 Build and test from the canonical Vox checkout, following its shared-build rules:
 
 ```sh
