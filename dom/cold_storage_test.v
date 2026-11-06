@@ -86,15 +86,16 @@ fn test_element_custom_storage_copies_values_and_queue_membership() {
 	mut document := Document.create(url_about_blank())
 	defer { document.finalize() }
 	mut element := document.create_element_ns(namespace_html_uri, 'div')!
-	definition := CustomElementDefinition.create('x-first', 'div', [], false, false, false)
+	mut definition := CustomElementDefinition.create('x-first', 'div', [], false, false, false)
+	definition.lifecycle_callbacks_ = ['connectedCallback']
 	element.set_is_value('x-first')
 	element.set_custom_element_definition(definition)
 	element.enqueue_a_custom_element_callback_reaction('connectedCallback', ['first'])
 	mut states := element.ensure_custom_state_set()
 	snapshot := *element
 	element.set_is_value('x-next')
-	element.set_custom_element_definition(none)
 	element.enqueue_a_custom_element_callback_reaction('connectedCallback', ['second'])
+	element.set_custom_element_definition(none)
 	mut reactions := element.ensure_custom_element_reaction_queue()
 	reactions.clear()
 	assert element.ensure_custom_element_reaction_queue().len == 2

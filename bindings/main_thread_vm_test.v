@@ -148,6 +148,9 @@ fn test_mutation_microtask_and_custom_element_reaction_dispatch() {
 	assert !html.relevant_similar_origin_window_agent().mutation_observer_microtask_queued
 
 	mut element := document.create_element('div') or { panic(err) }
+	mut definition := dom.CustomElementDefinition.create('x-reaction', 'div', [], false, false, false)
+	definition.lifecycle_callbacks_ = ['connectedCallback']
+	element.set_custom_element_definition(definition)
 	element.enqueue_a_custom_element_callback_reaction('connectedCallback', [])
 	state := &BindingsTestState{}
 	mut queue := [&dom.Element(element)]

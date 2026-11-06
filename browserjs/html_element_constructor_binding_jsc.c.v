@@ -6,6 +6,8 @@ import html
 import platform
 import webidl
 
+fn C.JSValueIsStrictEqual(context voidptr, a voidptr, b voidptr) bool
+
 pub type HTMLElementWrapper = fn (&dom.Element) !voidptr
 pub type HTMLElementConstructionReplay = fn () !
 
@@ -53,6 +55,8 @@ pub fn (mut runtime Runtime) install_html_element_constructor_binding(wrap HTMLE
 		target: owner
 		construct: construct_javascript_custom_element
 		report: report_javascript_custom_element_exception
+		upgrade: upgrade_javascript_custom_element
+		invoke: invoke_javascript_custom_element_callback
 	})
 	runtime.add_close_handler(fn [owner, document] () {
 		mut mutable_document := unsafe { &dom.Document(document) }
@@ -77,18 +81,20 @@ fn report_javascript_custom_element_exception(owner voidptr, exception IError) {
 	runtime.report_event_callback_exception(runtime.actual_javascript_exception(value))
 }
 
+fn custom_element_constructor_value(owner voidptr, definition &dom.CustomElementDefinition, registry_handle voidptr) !voidptr {
+	registry_binding := custom_element_registry_bindings_[owner] or { return error('TypeError: Custom element registry is not installed') }
+	for _, registry in registry_binding.registries {
+		if voidptr(registry.native) == registry_handle {
+			return registry.constructors[definition.constructor()] or { return error('TypeError: Custom element constructor belongs to another realm') }
+		}
+	}
+	return error('TypeError: Custom element registry belongs to another realm')
+}
+
 fn construct_javascript_custom_element(owner voidptr, definition &dom.CustomElementDefinition, registry_handle voidptr) !&dom.Element {
 	mut runtime := unsafe { &Runtime(owner) }
 	mut construction := html_element_constructor_bindings_[owner] or { return error('HTMLConstructor binding is closed') }
-	registry_binding := custom_element_registry_bindings_[owner] or { return error('TypeError: Custom element registry is not installed') }
-	mut constructor := voidptr(0)
-	for _, registry in registry_binding.registries {
-		if voidptr(registry.native) == registry_handle {
-			constructor = registry.constructors[definition.constructor()] or { return error('TypeError: Custom element constructor belongs to another realm') }
-			break
-		}
-	}
-	if constructor == unsafe { nil } { return error('TypeError: Custom element registry belongs to another realm') }
+	constructor := custom_element_constructor_value(owner, definition, registry_handle)!
 	construction.active_registries[definition.constructor()] = registry_handle
 	defer { construction.active_registries.delete(definition.constructor()) }
 	result := runtime.call_javascript_function(construction.construct, C.vox_jsc_JSValueMakeUndefined(runtime.context), [constructor])!
@@ -104,6 +110,49 @@ fn construct_javascript_custom_element(owner voidptr, definition &dom.CustomElem
 	return unsafe { &dom.Element(target) }
 }
 
+// Upgrade steps 7-9.4. The element's existing wrapper is on the definition's
+// construction stack, so HTMLConstructor returns it with C's prototype.
+fn upgrade_javascript_custom_element(owner voidptr, element &dom.Element, definition &dom.CustomElementDefinition) ! {
+	mut runtime := unsafe { &Runtime(owner) }
+	mut construction := html_element_constructor_bindings_[owner] or { return error('HTMLConstructor binding is closed') }
+	registry_handle := element.custom_element_registry()
+	constructor := custom_element_constructor_value(owner, definition, registry_handle)!
+	wrapper := runtime.retain_javascript_value(construction.wrap(element)!)!
+	defer { runtime.release_javascript_value(wrapper) }
+	construction.active_registries[definition.constructor()] = registry_handle
+	defer { construction.active_registries.delete(definition.constructor()) }
+	result := runtime.call_javascript_function(construction.construct, C.vox_jsc_JSValueMakeUndefined(runtime.context), [constructor])!
+	runtime.mark_document_state_dirty()
+	if !C.JSValueIsStrictEqual(runtime.context, result, wrapper) {
+		return runtime.event_binding_type_error('Custom element constructor returned a different element than the one being upgraded')
+	}
+}
+
+fn invoke_javascript_custom_element_callback(owner voidptr, element &dom.Element, reaction dom.CustomElementCallbackReaction) ! {
+	mut runtime := unsafe { &Runtime(owner) }
+	construction := html_element_constructor_bindings_[owner] or { return }
+	registry_binding := custom_element_registry_bindings_[owner] or { return }
+	definition := element.custom_element_definition() or { return }
+	callback := registry_binding.lifecycle_callback(element.custom_element_registry(), definition.constructor(), reaction.callback_name) or { return }
+	receiver := runtime.retain_javascript_value(construction.wrap(element)!)!
+	defer { runtime.release_javascript_value(receiver) }
+	mut arguments := []voidptr{}
+	if change := reaction.attribute {
+		null := C.vox_jsc_JSValueMakeNull(runtime.context)
+		arguments << runtime.binding_string(change.name)
+		arguments << if value := change.old_value { runtime.binding_string(value) } else { null }
+		arguments << if value := change.new_value { runtime.binding_string(value) } else { null }
+		arguments << if value := change.namespace_ { runtime.binding_string(value) } else { null }
+	} else if reaction.old_document != unsafe { nil } && reaction.new_document != unsafe { nil } {
+		arguments << runtime.javascript_event_target(unsafe { &dom.EventTarget(reaction.old_document) }, none)!
+		arguments << runtime.javascript_event_target(unsafe { &dom.EventTarget(reaction.new_document) }, none)!
+	} else {
+		for argument in reaction.arguments { arguments << runtime.binding_string(argument) }
+	}
+	defer { runtime.mark_document_state_dirty() }
+	runtime.call_javascript_function(callback, receiver, arguments)!
+}
+
 fn (mut runtime Runtime) construct_html_element(mut construction HTMLElementConstructorBinding, args []voidptr) !voidptr {
 	if args.len != 3 { return runtime.event_binding_type_error('Invalid HTMLConstructor invocation') }
 	binding := custom_element_registry_bindings_[voidptr(&runtime)] or { return runtime.event_binding_type_error('No custom element definition is installed') }
@@ -117,6 +166,12 @@ fn (mut runtime Runtime) construct_html_element(mut construction HTMLElementCons
 	registry := unsafe { &html.CustomElementRegistry(registry_handle) }
 	definition := registry.get_definition_from_new_target(id) or { return runtime.event_binding_type_error('No custom element definition is assigned to this constructor') }
 	interface_name := runtime.binding_dom_string(args[1])!
+	if dom.html_constructor_is_upgrading(definition) {
+		// 10-14. Return the element being upgraded with its prototype set.
+		upgrading := dom.take_html_constructor_upgrade_element(definition, interface_name)!
+		existing := construction.wrap(upgrading)!
+		return runtime.call_javascript_function(construction.set_prototype, C.vox_jsc_JSValueMakeUndefined(runtime.context), [existing, args[0], args[2]])
+	}
 	element := dom.create_element_for_html_constructor(construction.document, definition, registry_handle, interface_name)!
 	wrapper := construction.wrap(element)!
 	return runtime.call_javascript_function(construction.set_prototype, C.vox_jsc_JSValueMakeUndefined(runtime.context), [wrapper, args[0], args[2]])

@@ -178,12 +178,8 @@ pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, 
 
 	mut mutable_element := unsafe { &Element(element) }
 	if element.is_custom() {
-		mutable_element.enqueue_a_custom_element_callback_reaction('attributeChangedCallback', [
-			a.local_name_,
-			old_value or { '' },
-			new_value or { '' },
-			a.namespace_uri_ or { '' },
-		])
+		mutable_element.enqueue_an_attribute_changed_callback_reaction(a.local_name_, old_value,
+			new_value, a.namespace_uri_)
 	}
 	mutable_element.run_attribute_change_steps(a.local_name_, old_value, new_value, a.namespace_uri_)
 }
@@ -281,10 +277,25 @@ pub mut:
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#callback-reaction
+// The scripting host resolves callback_name against the definition's captured
+// lifecycle callbacks. attributeChangedCallback and adoptedCallback carry
+// their nullable and node arguments separately from the plain string list.
 pub struct CustomElementCallbackReaction {
 pub mut:
-	callback  voidptr
-	arguments []string
+	callback      voidptr
+	callback_name string
+	arguments     []string
+	attribute     ?CustomElementAttributeChange
+	old_document  voidptr
+	new_document  voidptr
+}
+
+pub struct CustomElementAttributeChange {
+pub:
+	name       string
+	old_value  ?string
+	new_value  ?string
+	namespace_ ?string
 }
 
 // https://dom.spec.whatwg.org/#concept-element-custom-element-state
@@ -4500,14 +4511,65 @@ pub fn (mut e Element) enqueue_a_custom_element_upgrade_reaction(definition &Cus
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#enqueue-a-custom-element-callback-reaction
 pub fn (mut e Element) enqueue_a_custom_element_callback_reaction(callback_name string, arguments []string) {
-	_ = callback_name
+	e.enqueue_custom_element_callback(CustomElementCallbackReaction{
+		callback_name: callback_name
+		arguments:     arguments.clone()
+	})
+}
+
+pub fn (mut e Element) enqueue_an_attribute_changed_callback_reaction(name string, old_value ?string, new_value ?string, namespace_ ?string) {
+	e.enqueue_custom_element_callback(CustomElementCallbackReaction{
+		callback_name: 'attributeChangedCallback'
+		attribute:     CustomElementAttributeChange{
+			name:       name
+			old_value:  old_value
+			new_value:  new_value
+			namespace_: namespace_
+		}
+	})
+}
+
+pub fn (mut e Element) enqueue_an_adopted_callback_reaction(old_document &Document, new_document &Document) {
+	e.enqueue_custom_element_callback(CustomElementCallbackReaction{
+		callback_name: 'adoptedCallback'
+		old_document:  voidptr(old_document)
+		new_document:  voidptr(new_document)
+	})
+}
+
+fn (mut e Element) enqueue_custom_element_callback(reaction CustomElementCallbackReaction) {
+	// 1. Let definition be element's custom element definition.
+	definition := e.custom_element_definition() or { return }
+	// 2-4. Let callback be definition's lifecycle callback named callbackName.
+	//      If callback is null, then return.
+	if reaction.callback_name !in definition.lifecycle_callbacks_ { return }
+	// 5. If callbackName is "attributeChangedCallback", then return unless the
+	//    first argument is one of definition's observed attributes.
+	if reaction.callback_name == 'attributeChangedCallback' {
+		attribute_name := if change := reaction.attribute {
+			change.name
+		} else if reaction.arguments.len > 0 {
+			reaction.arguments[0]
+		} else {
+			return
+		}
+		if attribute_name !in definition.observed_attributes { return }
+	}
+	// 6. Add a new callback reaction to element's custom element reaction queue.
 	mut state := e.copy_custom_data()
 	state.reactions = state.reactions.clone()
-	state.reactions << CustomElementCallbackReaction{
-		arguments: arguments.clone()
-	}
+	state.reactions << reaction
 	e.custom_data_ = state
+	// 7. Enqueue an element on the appropriate element queue given element.
 	e.enqueue_an_element_on_the_appropriate_element_queue()
+}
+
+// Upgrade failures empty the element's reaction queue before rethrowing.
+fn (mut e Element) clear_custom_element_reactions() {
+	if e.custom_data_ == unsafe { nil } || e.custom_data_.reactions.len == 0 { return }
+	mut state := e.copy_custom_data()
+	state.reactions = []CustomElementReaction{}
+	e.custom_data_ = state
 }
 
 pub fn (mut e Element) ensure_custom_state_set() &CustomStateSet {
@@ -4634,12 +4696,8 @@ pub fn (mut e Element) upgrade_element(definition &CustomElementDefinition) ! {
 	if attrs := e.attributes_ {
 		for i := 0; i < attrs.length(); i++ {
 			if a := attrs.item(i) {
-				e.enqueue_a_custom_element_callback_reaction('attributeChangedCallback', [
-					a.local_name_,
-					'',
-					a.value(),
-					a.namespace_uri_ or { '' },
-				])
+				e.enqueue_an_attribute_changed_callback_reaction(a.local_name_, none, a.value(),
+					a.namespace_uri_)
 			}
 		}
 	}
@@ -4648,7 +4706,42 @@ pub fn (mut e Element) upgrade_element(definition &CustomElementDefinition) ! {
 		e.enqueue_a_custom_element_callback_reaction('connectedCallback', [])
 	}
 
+	// 6-9. A scripting host constructs the existing element in place. Unhosted
+	// translation fixtures keep the bookkeeping-only upgrade.
+	document := e.document()
+	if document != unsafe { nil } {
+		if hook := document.custom_element_construction_hook_ {
+			if hook.upgrade != unsafe { nil } {
+				e.run_custom_element_upgrade_constructor(definition, hook) or {
+					// 9. On exception: set element's custom element definition to
+					// null, empty its custom element reaction queue, and rethrow.
+					e.set_custom_element_definition(none)
+					e.clear_custom_element_reactions()
+					return err
+				}
+			}
+		}
+	}
+
 	e.set_custom_element_state(.custom)
+}
+
+fn (mut e Element) run_custom_element_upgrade_constructor(definition &CustomElementDefinition, hook CustomElementConstructionHook) ! {
+	mut stack_owner := unsafe { &CustomElementDefinition(definition) }
+	// 6. Add element to the end of definition's construction stack.
+	stack_owner.construction_stack << &e
+	// 9. Remove the last entry from the end of definition's construction stack,
+	//    regardless of whether the construction steps threw.
+	defer { stack_owner.construction_stack.delete_last() }
+	// 9.1. If definition's disable shadow is true and element's shadow root is
+	//      non-null, then throw a "NotSupportedError" DOMException.
+	if definition.disable_shadow() && e.shadow_root() != none {
+		return error('NotSupportedError: Custom element disables shadow but already has a shadow root')
+	}
+	// 9.2. Set element's custom element state to "precustomized".
+	e.set_custom_element_state(.precustomized)
+	// 7-8, 9.3-9.4. Construct C with no arguments; the result must be element.
+	hook.upgrade(hook.target, &e, definition)!
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#concept-try-upgrade

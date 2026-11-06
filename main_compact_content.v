@@ -209,6 +209,11 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 			binding.keys[voidptr(element)] = key
 		}
 	}
+	// Replayed writes, and earlier native actions, may have queued custom
+	// element reactions. Run them before this operation observes the tree;
+	// the request's own writes are already applied, preserving their order.
+	mut reaction_document := unsafe { &dom.Document(binding.document) }
+	reaction_document.invoke_custom_element_reactions()
 	selector := request.selector or {
 		return error('Invalid selector request')
 	}

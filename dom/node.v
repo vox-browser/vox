@@ -2687,10 +2687,32 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 			assign_slottables(slot)
 		}
 	}
+	// 12. Let isParentConnected be parent's connected.
+	is_parent_connected := parent.is_connected()
 	n.removed_from_with_context(.yes, parent, parent_root)
-	n.visit_shadow_including_descendants(fn [parent, parent_root] (descendant &Node) TraversalDecision {
+	// 13. If node is custom and isParentConnected is true, then enqueue a custom
+	//     element callback reaction with node, "disconnectedCallback", and « ».
+	if is_parent_connected {
+		if element := n.as_element() {
+			if element.is_custom() {
+				mut mutable_element := unsafe { &Element(element) }
+				mutable_element.enqueue_a_custom_element_callback_reaction('disconnectedCallback', [])
+			}
+		}
+	}
+	n.visit_shadow_including_descendants(fn [parent, parent_root, is_parent_connected] (descendant &Node) TraversalDecision {
 		mut mutable_descendant := unsafe { &Node(descendant) }
 		mutable_descendant.removed_from_with_context(.no, parent, parent_root)
+		// 14.2. If descendant is custom and isParentConnected is true, enqueue
+		//       its "disconnectedCallback" reaction.
+		if is_parent_connected {
+			if element := descendant.as_element() {
+				if element.is_custom() {
+					mut mutable_element := unsafe { &Element(element) }
+					mutable_element.enqueue_a_custom_element_callback_reaction('disconnectedCallback', [])
+				}
+			}
+		}
 		return .@continue
 	})
 	// For each inclusive ancestor of parent, copy subtree observers into transient observers on the removed node.

@@ -4678,7 +4678,7 @@ pub fn (mut d Document) remove_element_by_id(id string, element &Element) {
 
 pub fn (mut d Document) enqueue_custom_element_reaction_element(element &Element) {
 	for queued in d.custom_element_reaction_backup_queue {
-		if queued == element {
+		if voidptr(queued) == voidptr(element) {
 			return
 		}
 	}
@@ -5460,6 +5460,7 @@ pub mut:
 	custom_element_reaction_backup_queue            []&Element
 	custom_element_construction_hook_               ?CustomElementConstructionHook
 	processing_custom_element_reaction_backup_queue bool
+	invoking_custom_element_reactions               bool
 	mutation_observer_microtask_queued              bool
 	pending_mutation_observers                      []&MutationObserver
 	signal_slots                                    []&HTMLSlotElement
@@ -8137,11 +8138,11 @@ pub fn (mut d Document) adopt_node(node &Node) {
 		// 2. For each inclusiveDescendant in node's shadow-including inclusive descendants that is custom,
 		//    enqueue a custom element callback reaction with inclusiveDescendant, callback name "adoptedCallback",
 		//    and an argument list containing oldDocument and document.
-		node.for_each_shadow_including_inclusive_descendant(fn (inclusive_descendant &Node) TraversalDecision {
+		node.for_each_shadow_including_inclusive_descendant(fn [old_document, d_ptr] (inclusive_descendant &Node) TraversalDecision {
 			if element := inclusive_descendant.as_element() {
 				if element.is_custom() {
 					mut mutable_element := unsafe { &Element(element) }
-					mutable_element.enqueue_a_custom_element_callback_reaction('adoptedCallback', [])
+					mutable_element.enqueue_an_adopted_callback_reaction(old_document, d_ptr)
 				}
 			}
 			return .@continue

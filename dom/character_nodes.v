@@ -215,12 +215,8 @@ pub fn (a &Attr) handle_attribute_changes(element &Element, old_value ?string, n
 	// 2. If element is custom, then enqueue a custom element callback reaction with element, callback name
 	//    "attributeChangedCallback", and << attribute's local name, oldValue, newValue, attribute's namespace >>.
 	if element.is_custom() {
-		mutable_element.enqueue_a_custom_element_callback_reaction('attributeChangedCallback', [
-			a.local_name_,
-			old_value or { '' },
-			new_value or { '' },
-			a.namespace_uri_ or { '' },
-		])
+		mutable_element.enqueue_an_attribute_changed_callback_reaction(a.local_name_, old_value,
+			new_value, a.namespace_uri_)
 	}
 
 	// 3. Run the attribute change steps with element, attribute's local name, oldValue, newValue, and attribute's namespace.

@@ -7,6 +7,11 @@ pub:
 	target voidptr
 	construct fn (voidptr, &CustomElementDefinition, voidptr) !&Element = unsafe { nil }
 	report fn (voidptr, IError) = unsafe { nil }
+	// Upgrade steps 7-9.4: construct the definition's constructor while the
+	// existing element is on its construction stack.
+	upgrade fn (voidptr, &Element, &CustomElementDefinition) ! = unsafe { nil }
+	// Invoke a lifecycle callback reaction with the element as this value.
+	invoke fn (voidptr, &Element, CustomElementCallbackReaction) ! = unsafe { nil }
 }
 
 pub fn (mut document Document) set_custom_element_construction_hook(hook ?CustomElementConstructionHook) {
@@ -19,14 +24,42 @@ pub fn (mut document Document) clear_custom_element_construction_hook(owner void
 	}
 }
 
-// HTMLConstructor, empty construction-stack branch. Existing-element upgrades
-// use a separate algorithm and must not allocate a replacement native owner.
-pub fn create_element_for_html_constructor(document &Document, definition &CustomElementDefinition, registry voidptr, interface_name string) !&Element {
+fn validate_html_constructor_interface(definition &CustomElementDefinition, interface_name string) ! {
 	if definition.local_name() == definition.name() {
 		if interface_name != 'HTMLElement' { return error('TypeError: Autonomous custom elements must inherit from HTMLElement') }
 	} else if definition.local_name() !in valid_local_names_for_given_html_element_interface(interface_name) {
 		return error('TypeError: Custom element local name does not match its HTML interface')
 	}
+}
+
+pub fn html_constructor_is_upgrading(definition &CustomElementDefinition) bool {
+	return definition.construction_stack.len != 0
+}
+
+// HTMLConstructor steps 10-13 for an element being upgraded. The caller sets
+// the wrapper's prototype (step 12) and returns that existing wrapper.
+pub fn take_html_constructor_upgrade_element(definition &CustomElementDefinition, interface_name string) !&Element {
+	validate_html_constructor_interface(definition, interface_name)!
+	if definition.construction_stack.len == 0 {
+		return error('TypeError: No element is being upgraded')
+	}
+	// 10. Let element be the last entry in definition's construction stack.
+	element := definition.construction_stack.last()
+	// 11. If element is an already constructed marker, then throw a TypeError.
+	if element == unsafe { nil } {
+		return error('TypeError: Custom element constructor already constructed this element')
+	}
+	// 13. Replace the last entry in definition's construction stack with an
+	//     already constructed marker.
+	mut stack_owner := unsafe { &CustomElementDefinition(definition) }
+	stack_owner.construction_stack[stack_owner.construction_stack.len - 1] = unsafe { nil }
+	return element
+}
+
+// HTMLConstructor, empty construction-stack branch. Existing-element upgrades
+// use take_html_constructor_upgrade_element and keep their native owner.
+pub fn create_element_for_html_constructor(document &Document, definition &CustomElementDefinition, registry voidptr, interface_name string) !&Element {
+	validate_html_constructor_interface(definition, interface_name)!
 	if definition.construction_stack().len != 0 {
 		return error('TypeError: Existing-element construction requires an upgrade construction stack')
 	}
@@ -72,4 +105,44 @@ fn construct_custom_element_synchronously(document &Document, definition &Custom
 	}
 	element.set_prefix(prefix)
 	return element
+}
+
+pub fn (d &Document) has_pending_custom_element_reactions() bool {
+	return d.custom_element_reaction_backup_queue.len != 0
+}
+
+// https://html.spec.whatwg.org/multipage/custom-elements.html#invoke-custom-element-reactions
+// The compact script bridge has no per-operation [CEReactions] stack. It
+// drains the backup element queue at its replay boundaries instead: after
+// define(), after queued script writes reach the native tree, and after task
+// replays. A nested request leaves newly queued elements to the active drain.
+pub fn (mut d Document) invoke_custom_element_reactions() {
+	if d.custom_element_reaction_backup_queue.len == 0 || d.invoking_custom_element_reactions {
+		return
+	}
+	hook := d.custom_element_construction_hook_ or { return }
+	if hook.upgrade == unsafe { nil } || hook.invoke == unsafe { nil } { return }
+	d.invoking_custom_element_reactions = true
+	defer { d.invoking_custom_element_reactions = false }
+	for d.custom_element_reaction_backup_queue.len > 0 {
+		mut element := d.custom_element_reaction_backup_queue[0]
+		d.custom_element_reaction_backup_queue.delete(0)
+		for {
+			reactions := element.take_custom_element_reactions()
+			if reactions.len == 0 { break }
+			for reaction in reactions {
+				match reaction {
+					CustomElementUpgradeReaction {
+						element.upgrade_element(reaction.custom_element_definition) or {
+							hook.report(hook.target, err)
+						}
+					}
+					CustomElementCallbackReaction {
+						hook.invoke(hook.target, element, reaction) or { hook.report(hook.target, err) }
+					}
+				}
+			}
+		}
+	}
+	d.processing_custom_element_reaction_backup_queue = false
 }

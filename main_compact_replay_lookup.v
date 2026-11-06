@@ -114,7 +114,12 @@ fn apply_javascript_runtime_state(document &dom.Document, encoded string,
 	state := replay.state
 	note_compact_replay_effects(state, runtime)
 	elements := runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
-	return apply_decoded_javascript_state(document, state, elements, mut messages)
+	navigation := apply_decoded_javascript_state(document, state, elements, mut messages)
+	// Deliver reactions queued by this replay; callback writes mark the
+	// runtime's document state dirty for the next task replay.
+	mut reaction_document := unsafe { &dom.Document(document) }
+	reaction_document.invoke_custom_element_reactions()
+	return navigation
 }
 
 fn note_compact_replay_effects(state map[string]json2.Any, runtime &browserjs.Runtime) {
