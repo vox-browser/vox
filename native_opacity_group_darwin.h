@@ -244,7 +244,7 @@ static int native_opacity_row_has_ink(const uint32_t *row, int left, int right)
     return 0;
 }
 
-static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, int left,
+static int native_opacity_layer_ink_bounds_rows(const uint8_t *pixels, size_t pitch, int left,
     int top, int right, int bottom, int *ink_left, int *ink_top, int *ink_right,
     int *ink_bottom)
 {
@@ -316,6 +316,127 @@ static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, 
     *ink_right = max_x;
     *ink_bottom = max_y;
     return 1;
+}
+
+VOX_NATIVE_STATE int vox_opacity_margin_bounds_policy;
+VOX_NATIVE_STATE int vox_opacity_margin_bounds_reported;
+
+static int native_opacity_margin_bounds_enabled(void)
+{
+    int policy = __atomic_load_n(&vox_opacity_margin_bounds_policy, __ATOMIC_RELAXED);
+    if (!policy) {
+        const char *rows = getenv("VOX_RETAIN_OPACITY_ROW_SCANS");
+        const char *full = getenv("VOX_RETAIN_FULL_OPACITY_INK_ROWS");
+        policy = (rows && *rows) || (full && *full) ? 2 : 1;
+        __atomic_store_n(&vox_opacity_margin_bounds_policy, policy, __ATOMIC_RELAXED);
+    }
+    return policy == 1;
+}
+
+// Both helpers return the edge of their requested interval when it is empty.
+// Loads never include pixels outside that interval, even for unaligned crops.
+static int native_opacity_first_ink_pixel(const uint32_t *row, int left, int right)
+{
+    int first = left;
+#if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+    if (right - first >= 4 && vmaxvq_u32(vld1q_u32(row + first)) == 0) {
+        first += 4;
+        while (right - first >= 16) {
+            uint32x4x4_t block = vld1q_u32_x4(row + first);
+            uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
+                vorrq_u32(block.val[2], block.val[3]));
+            if (vmaxvq_u32(ink) != 0) break;
+            first += 16;
+        }
+        while (right - first >= 4 && vmaxvq_u32(vld1q_u32(row + first)) == 0) first += 4;
+    }
+#endif
+    while (first < right && row[first] == 0) ++first;
+    return first;
+}
+
+static int native_opacity_last_ink_edge(const uint32_t *row, int left, int right)
+{
+    int last = right;
+#if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+    if (last - left >= 4 && vmaxvq_u32(vld1q_u32(row + last - 4)) == 0) {
+        last -= 4;
+        while (last - left >= 16) {
+            uint32x4x4_t block = vld1q_u32_x4(row + last - 16);
+            uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
+                vorrq_u32(block.val[2], block.val[3]));
+            if (vmaxvq_u32(ink) != 0) break;
+            last -= 16;
+        }
+        while (last - left >= 4 && vmaxvq_u32(vld1q_u32(row + last - 4)) == 0) last -= 4;
+    }
+#endif
+    while (last > left && row[last - 1] == 0) --last;
+    return last;
+}
+
+static int native_opacity_layer_margin_ink_bounds(const uint8_t *pixels, size_t pitch,
+    int left, int top, int right, int bottom, int *ink_left, int *ink_top,
+    int *ink_right, int *ink_bottom)
+{
+    int first_y = top, min_x = right, max_x = left;
+    for (; first_y < bottom; ++first_y) {
+        const uint32_t *row = (const uint32_t *)(pixels + (size_t)first_y * pitch);
+        min_x = native_opacity_first_ink_pixel(row, left, right);
+        if (min_x == right) continue;
+        max_x = native_opacity_last_ink_edge(row, min_x + 1, right);
+        break;
+    }
+    if (first_y == bottom) return 0;
+
+    // Resolve Y before inspecting the remaining rows. With X already at both
+    // crop edges, retain the cheap any-ink tail probe used by the row scan.
+    int last_y = bottom - 1;
+    const int full_width = min_x == left && max_x == right;
+    for (; last_y > first_y; --last_y) {
+        const uint32_t *row = (const uint32_t *)(pixels + (size_t)last_y * pitch);
+        if (full_width) {
+            if (native_opacity_row_has_ink(row, left, right)) break;
+        } else {
+            int first = native_opacity_first_ink_pixel(row, left, right);
+            if (first == right) continue;
+            int last = native_opacity_last_ink_edge(row, first + 1, right);
+            if (first < min_x) min_x = first;
+            if (last > max_x) max_x = last;
+            break;
+        }
+    }
+
+    // Y is final. Interior pixels already inside [min_x, max_x) cannot change
+    // any bound, including on a completely empty row. Only the margins matter.
+    if (!full_width && last_y > first_y + 1 && max_x - min_x >= 32
+        && !__atomic_exchange_n(&vox_opacity_margin_bounds_reported, 1, __ATOMIC_RELAXED)) {
+        const char *diagnostics = getenv("VOX_OPACITY_MARGIN_BOUNDS_DIAGNOSTICS");
+        if (diagnostics && *diagnostics)
+            fprintf(stderr, "Vox opacity margin bounds: skipped interior columns=%d rows=%d\n",
+                max_x - min_x, last_y - first_y - 1);
+    }
+    for (int y = first_y + 1; y < last_y && (min_x > left || max_x < right); ++y) {
+        const uint32_t *row = (const uint32_t *)(pixels + (size_t)y * pitch);
+        if (min_x > left) min_x = native_opacity_first_ink_pixel(row, left, min_x);
+        if (max_x < right) max_x = native_opacity_last_ink_edge(row, max_x, right);
+    }
+    *ink_left = min_x;
+    *ink_top = first_y;
+    *ink_right = max_x;
+    *ink_bottom = last_y + 1;
+    return 1;
+}
+
+static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, int left,
+    int top, int right, int bottom, int *ink_left, int *ink_top, int *ink_right,
+    int *ink_bottom)
+{
+    if (right - left >= 64 && bottom - top >= 4 && native_opacity_margin_bounds_enabled())
+        return native_opacity_layer_margin_ink_bounds(pixels, pitch, left, top, right, bottom,
+            ink_left, ink_top, ink_right, ink_bottom);
+    return native_opacity_layer_ink_bounds_rows(pixels, pitch, left, top, right, bottom,
+        ink_left, ink_top, ink_right, ink_bottom);
 }
 
 #endif

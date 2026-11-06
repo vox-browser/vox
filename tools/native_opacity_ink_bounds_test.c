@@ -117,6 +117,67 @@ int main(void)
     }
     assert(munmap(mapping, page * 18) == 0);
 
+    // Hollow bands leave a wide, already bounded interior even though neither
+    // crop edge contains ink. Later rows may still extend either X bound.
+    const int band_widths[] = {63, 64, 65, 127, 128, 129, 511, 512, 513};
+    const int band_heights[] = {4, 5, 17, 33};
+    for (size_t wi = 0; wi < sizeof(band_widths) / sizeof(band_widths[0]); ++wi)
+    for (size_t hi = 0; hi < sizeof(band_heights) / sizeof(band_heights[0]); ++hi) {
+        int width = band_widths[wi], height = band_heights[hi];
+        size_t stride = (size_t)width + 7;
+        uint32_t *pixels = calloc(stride * height, 4);
+        assert(pixels);
+        for (int pattern = 0; pattern < 6; ++pattern) {
+            memset(pixels, 0, stride * height * 4);
+            for (int y = 0; y < height; ++y) {
+                pixels[y * stride + width + 3] = ~0u;
+                for (int x = 0; x < width; ++x) {
+                    if ((pattern == 0 && (y == 0 || y == height - 1)
+                            && (x == width / 4 || x == width * 3 / 4))
+                        || (pattern == 1 && ((y == 0 || y == height - 1)
+                                && (x == width / 3 || x == width * 2 / 3)))
+                        || (pattern == 1 && ((y == 1 && x == 1)
+                                || (y == height - 2 && x == width - 2)))
+                        || (pattern == 2 && y == 0 && x == width / 2)
+                        || (pattern == 3 && (y == 0 || y == height - 1)
+                            && (x == 0 || x == width - 1))
+                        || (pattern == 4 && y % 3 == 1 && x >= width / 4
+                            && x < width * 3 / 4 && next() % 17 == 0)
+                        || (pattern == 5 && y == height / 2 && x == width / 2))
+                        pixels[y * stride + x] = 1u << (next() % 32);
+                }
+            }
+            for (int crop = 0; crop < 4; ++crop) {
+                int inset = crop & 1;
+                check(pixels, stride * 4, inset, crop / 2, width - inset,
+                    height - crop / 2); ++comparisons;
+            }
+        }
+        free(pixels);
+    }
+
+    // Partial-width bounds must also permit an unread interior. Each middle
+    // row has accessible margins around a protected center page. The complete
+    // row scan would fault while searching these otherwise empty rows.
+    if (native_opacity_margin_bounds_enabled()) {
+        mapping = mmap(NULL, page * 24, PROT_READ | PROT_WRITE,
+            MAP_PRIVATE | MAP_ANON, -1, 0);
+        assert(mapping != MAP_FAILED);
+        int words = (int)(page / 4), width = words * 3;
+        uint32_t *pixels = (uint32_t *)mapping;
+        pixels[words - 1] = 1;
+        pixels[words * 2] = 0x10000u;
+        ((uint32_t *)(mapping + page * 21))[words + 1] = 0x100u;
+        for (int y = 1; y < 7; ++y)
+            assert(mprotect(mapping + (y * 3 + 1) * page, page, PROT_NONE) == 0);
+        int bounds[4];
+        assert(native_opacity_layer_ink_bounds(mapping, page * 3, 0, 0, width, 8,
+            &bounds[0], &bounds[1], &bounds[2], &bounds[3]));
+        assert(bounds[0] == words - 1 && bounds[1] == 0
+            && bounds[2] == words * 2 + 1 && bounds[3] == 8);
+        assert(munmap(mapping, page * 24) == 0);
+    }
+
     // A resolved interior is unnecessary input. Protect it to prove that the
     // candidate consumes just the first and last rows in this dense-bound case.
     if (native_opacity_trim_ink_rows()) {
