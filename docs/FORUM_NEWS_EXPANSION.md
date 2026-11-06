@@ -3,17 +3,18 @@
 The [forum/news catalog](../Tests/Browser/Brave/forum-news.json) contains
 16 sites, including Discord. TechCrunch, Engadget, The Register, Slate and
 WIRED have sealed guest DOM archives, original response bodies, full-uBlock
-Origin reports and source PNGs. **TechCrunch and The Register pass every strict
-pixel gate with cold and complete caches. WIRED passes with its explicit first-frame
-image policy.** The other additions retain the open gaps documented below.
+Origin reports and source PNGs. **TechCrunch and The Register have strict cold
+and complete-cache passes. WIRED's earlier strict first-frame passes remain
+recorded; recent cold Brave references vary.** The other additions retain the open gaps documented below.
 
-The original ten are also incomplete: six accessible archives pass both source
-fidelity and native equality; CNN matches frozen Brave but retains its separate
-source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
-deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
+The original ten remain incomplete. Latest cold controls retain strict zero
+for Hacker News, Lobsters and BBC; Slashdot, Guardian and The Verge have the
+stable-reference rendering gaps listed below. CNN retains source/replay gaps.
+Reddit is blocked, and Stack Overflow/Pikabu remain deferred. See
+[the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
 The latest rendering checkpoint passes **141 tests / 147 captures at zero
-pixels** on `06508884…`, with unchanged inputs and references. The AVIF sampling
+pixels** on `0f2d286a…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2813,6 +2814,79 @@ and whole-site parity remain outside these archived viewport checks.
 
 [Independent byte counts and qualifications](evidence/discord-direct-background-rectangles-20261106.json),
 [sealed captures, commands, guards, diagnostics and patch](evidence/discord-direct-background-rectangles-20261106.zip).
+
+## Local background origins and catalog controls (2026-11-06)
+
+`b3351a1c8` and `929a712cf` fix the four remaining pixels in Discord's decorative
+star. A cropped background in an independent compositor raster keeps a local
+image rectangle; its position belongs in the float32 matrix, with an equally
+translated clip. Complete images retain their existing operation. Root and
+legacy rasters retain document coordinates: the initial broader rule produced
+one pixel in the existing background fixture, caught and corrected before
+acceptance. Five final helper checks pass in default GC, GC disabled and
+preallocation with arena poisoning, including an addition-order regression.
+
+On executable
+`0f2d286a234b511098f41914a012e4d876749af972dbb3cca6721e872d97e6d9`,
+**Vox matches Discord's saved source at 0 pixels**, improving 4 → 0 in this
+step and 18 → 0 across the two image-coordinate corrections. Five focused
+browser captures and the **141-test / 147-capture** rendering suite are exact.
+The available build's sealed C contains the final helper, grouped float32
+addition and raster-scope assignments, despite its receipt Git head preceding
+the commit. Fresh processes use one canonical bundle lease with unchanged
+executable, native libraries, runtime tools, lists and original fixture pins.
+
+The strict Discord gate still fails: its two agreeing Brave replays differ
+by 598 pixels from the saved source, and Vox differs by the same 598 from both.
+The registered archive, source PNG and zero tolerance remain unchanged.
+
+The same run expands controls to every other accessible, non-deferred catalog
+archive. These independently recomputed RGBA counts retain all failures:
+
+| Site | Vox / saved source | Source / Brave 1 | Brave 1 / 2 | Vox / Brave 1 | Vox / Brave 2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Discord | 0 | 598 | 0 | 598 | 598 |
+| Hacker News | 0 | 0 | 0 | 0 | 0 |
+| TechCrunch | 0 | 0 | 0 | 0 | 0 |
+| WIRED | 0 | 5,525 | 5,525 | 5,525 | 0 |
+| Lobsters | 0 | 0 | 0 | 0 | 0 |
+| Slashdot | 7 | 0 | 0 | 7 | 7 |
+| BBC | 0 | 0 | 0 | 0 | 0 |
+| CNN | 101,696 | 107,289 | 31,766 | 31,766 | 0 |
+| Guardian | 70 | 0 | 0 | 70 | 70 |
+| The Verge | 3,889 | 0 | 0 | 3,889 | 3,889 |
+| Engadget | 90,850 | 90,833 | 17 | 17 | 0 |
+| The Register | 0 | 0 | 0 | 0 | 0 |
+| Slate | 19,064 | 19,064 | 0 | 0 | 0 |
+
+Slashdot's 7 pixels, Guardian's 70 and The Verge's 3,889 have exact source and
+independent Brave references; they remain open rendering work. CNN, Engadget
+and WIRED match their second replay exactly, while their reference/source
+failures remain separate. WIRED keeps its recorded first-frame image policy;
+the earlier 1,838-pixel variation and this 5,525-pixel variation are both retained.
+
+The nine additional catalog directories were omitted from the original
+top-level prospective pin list. Their replay servers validate every served
+body's SHA256 and length. A supplementary audit verifies all 746 files against
+the pre-cohort committed blobs, verifies filesystem change times before the
+original capture start, and confirms unchanged hashes and change times afterward.
+The evidence distinguishes that audit from the original prospective pins.
+
+The invented star-inside-perspective scene was not a faithful reduction of the
+page's raster: it differed by 3,309 before localization and 3,311 after it.
+Its original HTML, PNG, resource and failures remain sealed as a diagnostic;
+its active test and unused asset are retired. A separate sibling scene also
+remains diagnostic at 627 pixels. No expected PNG was replaced to obtain a pass.
+The registered full Discord archive and unchanged root-background fixture supply
+the browser integration checks for the final correction.
+
+Failed arithmetic, concurrent CORS compilation, input-inventory and build-wait
+attempts remain recorded. Stack Overflow and Pikabu site work remains deferred;
+Reddit's access failure is retained. These frozen guest viewports establish no
+live scripting, animation, scrolling, performance or whole-site parity claim.
+
+[Byte counts, checks and qualifications](evidence/discord-background-local-origin-20261106.json),
+[sealed captures, commands, guards, failed attempts and patches](evidence/discord-background-local-origin-20261106.zip).
 
 ## Run
 
