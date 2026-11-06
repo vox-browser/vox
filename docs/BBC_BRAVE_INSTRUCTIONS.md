@@ -66,16 +66,29 @@ actual cadence. Idle waits, recursive stacks and possible work outside PNG are
 included. No CPU share or saving is inferred.
 [Validated sample](performance/bbc-tls12-cpu-sample-20261106.json).
 
-Repeated CSSOM handle lookup is now indexed (`f95af40c0`; isolated control
-`d922a5091`). Cache hits verify the retained forward owner and read current
-rule type; first exports retain their original lookup. All **96 focused
-executions** (16 cases, two arms, three memory modes) and **349 tooling tests**
-pass. Initial runs retain a common legacy canvas-test failure: CSSRule edits
-were incorrectly expected to rewrite style text. Test-only correction
-`d3b2df0a2` checks the live rule value and unchanged source, keeping the canvas
-identity/pixel assertions. Native BBC eligibility and matched measurement remain
-pending; no instruction credit is claimed for the index.
-[Focused CSSOM checks](performance/bbc-cssom-handle-index-focus-20261106.json).
+The provisional CSSOM handle index (`f95af40c0`, first-export refinement
+`a8013c312`) is removed (`47656a493`; control removal `f9ac4eff8`). Native
+captures pass original pixels/content, all 72 source checks, mapped images,
+ownership and normal exits, but neither the repeated-rule nor first-export
+rule marker fires before PNG. This does not prove every sheet/list branch is
+unused; it supplies no rule-path attribution or instruction credit. Preparation
+for cohort 134 stops at eligibility before any acceptance browser launches;
+no measured ID or history advance is recorded.
+
+The original 96 focused executions include six common legacy canvas-test
+failures. Test-only correction `d3b2df0a2` checks the live CSSRule value and
+unchanged style source, retaining canvas identity/pixel assertions. The corrected
+96 executions, first-export 96, final 102 (17 cases / two arms / three modes),
+and 36 restoration executions all pass. All 348 tooling tests pass after
+control removal. Complete producer `373a64303e0e` matches restored V functions
+and binding layout, lacks index fields/markers, and passes two fresh equivalent
+default-policy captures plus exact SVG checks. Initial checker errors (obsolete
+generated symbol prefix and a deleted test still named during retirement) reject
+before browsers and remain retained. No broad run is triggered; the latest
+actual broad remains 786 unique cases per mode with five known failures.
+The legacy test correction stays; TLS reuse and its verified saving stay.
+[Focused stages](performance/bbc-cssom-handle-index-focus-20261106.json),
+[no-hit diagnostics and verified removal](performance/bbc-cssom-retirement-20261106.json).
 
 Retained attempt — **cohort 132**, literal V `-prod` / single-C-unit production
 `ec6ef38e95bb`, completes **seven alternating candidate/control/Brave triples**.
