@@ -266,6 +266,7 @@ mut:
 
 @[heap]
 struct InlineTextNodeContext {
+	prepared_slices ?&InlineContextSlices
 mut:
 	chromium_context_run       ?&platform.GlyphRun
 	chromium_segment_runs      []ChromiumTextContextRun
@@ -623,7 +624,8 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			iterator.skip_to_next()
 			return iterator.generate_next_item()
 		}
-		chunk := context.chunks[context.next_chunk_index]
+		chunk_index := context.next_chunk_index
+		chunk := context.chunks[chunk_index]
 		context.next_chunk_index++
 		is_last_chunk := context.next_chunk_index >= context.chunks.len
 		mut text_type := chunk.text_type
@@ -681,7 +683,11 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
 			x = stop_distance
 		}
-		shaped := if run := context.chromium_context_run {
+		shaped := if prepared := context.prepared_slices {
+			prepared.fork_slice(chunk_index) or {
+				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+			}
+		} else if run := context.chromium_context_run {
 			chromium_context_slice_with_cursor(run, chunk, mut context.chromium_slice_cursor) or {
 				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 			}
@@ -889,13 +895,17 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	// forced line breaks. Reserve their known demand once instead of growing
 	// and copying the wide item vector while emitting that text node.
 	reserve_inline_items_in_storage(mut iterator.items, chunks.len, iterator.item_storage_)
-	context_run := iterator.chromium_single_script_context_run(text_node, chunks)
-	segment_runs := if context_run == none
+	prepared_slices := iterator.retained_inline_context_slices(text_node, chunks)
+	context_run := if prepared_slices == none {
+		iterator.chromium_single_script_context_run(text_node, chunks)
+	} else { ?&platform.GlyphRun(none) }
+	segment_runs := if prepared_slices == none && context_run == none
 		&& text_node.Node.document().font_rendering_policy() == .chromium {
 		iterator.chromium_segmented_context_runs(text_node, chunks)
 	} else { []ChromiumTextContextRun{} }
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
+		prepared_slices: prepared_slices
 		chromium_context_run: context_run
 		chromium_segment_runs: segment_runs
 		chunks: chunks
