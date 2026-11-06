@@ -70,6 +70,42 @@ static void large_upload_admission()
     assert(uploads.prepare(large, 912, 734, false).texture == texture);
 }
 
+static void immutable_upload_generations()
+{
+    VoxGraphiteImageUploadCache<std::shared_ptr<int>> uploads(1024*1024,4);
+    std::vector<uint8_t> pixels(size_t(3993)*2317*4,37);
+    auto source=image(pixels.data());source.width=3993;source.height=2317;source.pitch=3993*4;
+    auto cold=uploads.prepare(source,200,100,false,91);
+    assert(cold.pending && cold.verified_by_identity && !cold.verified_by_digest
+        && cold.pending->source.empty());
+    auto texture=std::make_shared<int>(1);std::weak_ptr<int> held=texture;
+    uploads.finish(std::move(cold),texture);texture.reset();
+    auto hit=uploads.prepare(source,200,100,false,91);
+    assert(hit.texture && hit.verified_by_identity && !hit.verified_by_digest);hit.texture.reset();
+    // Recycled storage has a fresh generation; callers without an immutable
+    // key can never inherit an immutable entry, even with identical bytes.
+    pixels.back()++;
+    assert(!uploads.prepare(source,200,100,false,92).texture);
+    assert(!uploads.prepare(source,200,100,false).texture);
+    pixels.back()--;
+    auto changed=source;changed.flags^=1;
+    assert(!uploads.prepare(changed,200,100,false,91).texture);
+    changed=source;changed.has_color_profile=1;changed.color_profile[0]=2.2f;
+    assert(!uploads.prepare(changed,200,100,false,91).texture);
+    changed=source;changed.width--;
+    assert(!uploads.prepare(changed,200,100,false,91).texture);
+    auto upgraded=uploads.prepare(source,200,100,true,91);
+    assert(upgraded.texture && upgraded.needs_mipmaps && upgraded.pending && upgraded.verified_by_identity);
+    upgraded.texture.reset();upgraded.pending.reset();
+    // The same bounded LRU owns only uploaded textures, never the 37 MB source.
+    for(uint64_t key=92;key<97;++key) {
+        cold=uploads.prepare(source,200,100,false,key);assert(cold.pending);
+        uploads.finish(std::move(cold),std::make_shared<int>(int(key)));
+    }
+    assert(held.expired());uploads.clear();
+    assert(!uploads.prepare(source,200,100,false,96).texture);
+}
+
 static void retained_large_upload_admission()
 {
     setenv("VOX_RETAIN_LARGE_IMAGE_UPLOAD_BYTES", "1", 1);
@@ -215,6 +251,7 @@ int main(int argc, char** argv)
     unsetenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION");
     large_draw_admission();
     large_upload_admission();
+    immutable_upload_generations();
     retained_large_upload_admission();
     equivalent_path_admission(true);
     equivalent_path_admission(false);

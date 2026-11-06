@@ -512,6 +512,21 @@ static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& pr
 
 // The texture a planned draw samples, from the upload cache or a new upload.
 // The caller finishes the upload once its draw has been read back.
+struct VoxImmutableImageSource {
+    uint64_t key;
+    uint8_t const* pixels;
+    int width, height, pitch;
+};
+static thread_local VoxImmutableImageSource immutable_image_source {};
+
+// A caller-scoped decoded-resource generation. No image ABI or source lifetime
+// changes: prepare copies/uploads the bytes before the scope ends as usual.
+extern "C" __attribute__((visibility("default")))
+void vox_graphite_set_image_immutable_source(uint64_t key, uint8_t const* pixels, int width, int height, int pitch)
+{
+    immutable_image_source={key,pixels,width,height,pitch};
+}
+
 static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
     VoxGraphiteImage const* image, PreparedImageDraw& prepared)
 {
@@ -519,13 +534,17 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
     SkImage::RequiredProperties properties{.fMipmapped = prepared.needs_mips};
     auto content_image = *image;
     content_image.flags &= ~VOX_GRAPHITE_IMAGE_FORCE_MSAA;
-    auto upload = image_upload_cache.prepare(content_image, upload_width, upload_height, prepared.needs_mips);
+    auto const& identity=immutable_image_source;
+    uint64_t key=std::getenv("VOX_IMMUTABLE_IMAGE_UPLOADS") && identity.pixels==image->pixels
+        && identity.width==image->width && identity.height==image->height && identity.pitch==image->pitch
+        && !(image->flags & (4 | VOX_GRAPHITE_IMAGE_VIDEO_FRAME)) ? identity.key : 0;
+    auto upload = image_upload_cache.prepare(content_image, upload_width, upload_height, prepared.needs_mips,key);
     if (std::getenv("VOX_IMAGE_UPLOAD_DIAGNOSTICS")) {
         using Clock = double (*)();
         static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-        std::fprintf(stderr, "VOX_IMAGE_UPLOAD width=%d height=%d upload_width=%d upload_height=%d reused=%d pending=%d upgrade=%d digested=%d t_us=%.3f\n",
+        std::fprintf(stderr, "VOX_IMAGE_UPLOAD width=%d height=%d upload_width=%d upload_height=%d reused=%d pending=%d upgrade=%d digested=%d immutable=%d t_us=%.3f\n",
             image->width, image->height, upload_width, upload_height, bool(upload.texture),
-            bool(upload.pending), upload.needs_mipmaps, upload.verified_by_digest, clock ? clock() : -1.0);
+            bool(upload.pending), upload.needs_mipmaps, upload.verified_by_digest, upload.verified_by_identity, clock ? clock() : -1.0);
     }
     sk_sp<SkImage> texture = upload.texture;
     if (upload.needs_mipmaps) {

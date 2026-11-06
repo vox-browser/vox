@@ -2085,6 +2085,29 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
 // green, blue and white chromaticities.
 static bool s_has_image_color_profile = false;
 static float s_image_color_profile[VOX_IMAGE_COLOR_PROFILE_VALUES] {};
+static uint64_t s_image_immutable_key;
+static uint8_t const* s_image_immutable_pixels;
+
+extern "C" void ladybird_v_skia_set_image_immutable_source(uint64_t key, uint8_t const* pixels)
+{
+    s_image_immutable_key=key;s_image_immutable_pixels=pixels;
+}
+
+class GraphiteImmutableImageScope {
+    using Setter=void (*)(uint64_t,uint8_t const*,int,int,int);
+    Setter setter=nullptr;
+public:
+    GraphiteImmutableImageScope(uint8_t const* pixels,int width,int height,int pitch) {
+        if (!s_image_immutable_key || s_image_immutable_pixels!=pixels || !std::getenv("VOX_IMMUTABLE_IMAGE_UPLOADS")) return;
+        static auto set=[] {
+            auto library=dlopen("@rpath/libVoxGraphite.dylib",RTLD_LAZY|RTLD_LOCAL);
+            return library ? reinterpret_cast<Setter>(dlsym(library,"vox_graphite_set_image_immutable_source")) : nullptr;
+        }();
+        setter=set;
+        if (setter) setter(s_image_immutable_key,pixels,width,height,pitch);
+    }
+    ~GraphiteImmutableImageScope() { if(setter) setter(0,nullptr,0,0,0); }
+};
 
 extern "C" int ladybird_v_skia_supports_yuv422(void) { return 1; }
 
@@ -2496,6 +2519,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height)
         / static_cast<float>(region.height());
+    GraphiteImmutableImageScope immutable_source(source_pixels,image_width,image_height,image_pitch);
     if (rounded_mask && (static_cast<size_t>(raster_width) * raster_height > 8 * 1024 * 1024
             || !clip_radii || image_border_width > 0)) return 0;
     std::vector<uint32_t> pixels;

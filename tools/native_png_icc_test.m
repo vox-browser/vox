@@ -39,6 +39,10 @@ int main(int argc, char **argv) {
         assert(!native_image_color_profile(pixels, 2, 2, &profile));
         NSData *converted = native_image_icc_pixels(pixels, 2, 2);
         assert(converted.length == 16 && conversions == 1);
+        uint64_t identity=native_image_icc_source_identity(pixels,2,2,converted);
+        assert(identity && native_image_icc_source_identity(pixels,2,2,converted)==identity);
+        assert(!native_image_icc_source_identity(pixels,4,1,converted));
+        assert(!native_image_icc_source_identity(pixels,2,2,[NSData dataWithBytes:converted.bytes length:converted.length]));
         for (int index = 0; index < 16; ++index) {
             assert(((const uint8_t *)converted.bytes)[index] == 0x55);
             assert(pixels[index] == 0);
@@ -52,6 +56,7 @@ int main(int argc, char **argv) {
         assert(!native_image_icc_source(pixels, 4, 1, &cached_profile));
         assert(cached_profile.values[0] == 0 && cached_profile.values[16] == 0);
         native_tag_image_color_profile(pixels, 2, 2, png.bytes, png.length, 0);
+        assert(!native_image_icc_source_identity(pixels,2,2,converted));
         assert(!native_image_color_profile(pixels, 2, 2, &profile));
         assert(!native_image_icc_pixels(pixels, 2, 2));
         native_tag_image_color_profile(pixels, 2, 2, png.bytes, png.length, 1);
@@ -72,6 +77,7 @@ int main(int argc, char **argv) {
         fail_conversion = 0;
         native_tag_image_color_profile(pixels, 2, 2, png.bytes, png.length, 1);
         assert(native_image_icc_pixels(pixels, 2, 2));
+        assert(native_image_icc_source_identity(pixels,2,2,native_image_icc_pixels(pixels,2,2))!=identity);
         assert(conversions == before_failure + 2);
         native_tag_image_color_profile(pixels, 2, 2, NULL, 0, 0);
         assert(!native_image_icc_profile(pixels, 2, 2));
@@ -91,14 +97,22 @@ int main(int argc, char **argv) {
         native_tag_image_color_profile(pixels, 2, 2, NULL, 0, 0);
         assert(!native_image_color_profile(pixels, 2, 2, &profile));
         uint8_t many[129][16] = {{0}};
+        NSData *evicted=nil; uint64_t evicted_identity=0;
         for (int index = 0; index < 129; ++index) {
             native_tag_image_color_profile(many[index], 2, 2, png.bytes, png.length, 1);
             assert(native_image_icc_pixels(many[index], 2, 2));
+            if (!index) {
+                evicted=native_image_icc_pixels(many[index],2,2);
+                evicted_identity=native_image_icc_source_identity(many[index],2,2,evicted);
+                assert(evicted_identity);
+            }
         }
         assert(native_png_icc_lru.count == 128);
         assert(!native_png_icc_tags[[NSValue valueWithPointer:many[0]]].converted);
+        assert(!native_image_icc_source_identity(many[0],2,2,evicted));
         int prior = conversions;
         assert(native_image_icc_pixels(many[0], 2, 2) && conversions == prior + 1);
+        assert(native_image_icc_source_identity(many[0],2,2,native_image_icc_pixels(many[0],2,2))!=evicted_identity);
         for (int index = 0; index < 129; ++index)
             native_tag_image_color_profile(many[index], 2, 2, NULL, 0, 0);
         assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
@@ -130,6 +144,16 @@ int main(int argc, char **argv) {
         free(mascot);
         assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
         puts("ICC metadata routing and retagging passed");
+        // Exhaustion fails closed instead of recycling a prior resource key.
+        native_png_icc_source_clock=UINT64_MAX;
+        native_tag_image_color_profile(pixels,2,2,png.bytes,png.length,1);
+        converted=native_image_icc_pixels(pixels,2,2);
+        assert(converted && !native_image_icc_source_identity(pixels,2,2,converted));
+        native_tag_image_color_profile(pixels,2,2,png.bytes,png.length,1);
+        converted=native_image_icc_pixels(pixels,2,2);
+        assert(converted && !native_image_icc_source_identity(pixels,2,2,converted));
+        native_tag_image_color_profile(pixels,2,2,NULL,0,0);
+        puts("Immutable ICC identities: stable conversion, retag/dimensions/source mismatch and exhaustion passed");
         return 0;
     }
 }

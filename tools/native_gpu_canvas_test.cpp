@@ -208,8 +208,10 @@ static float s_static_image_offset;
 static int s_static_image_nearest;
 static bool s_static_image_explicit_clip;
 static bool s_static_image_mask;
+static uint64_t s_immutable_image_generation;
 static void draw_static_msaa_image(CGContextRef context, bool canvas)
 {
+    ladybird_v_skia_set_image_immutable_source(s_immutable_image_generation,s_video_frame.data());
     if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_replaced_image", 19, 0));
     float radii[] {13, 13, 13, 13, 0, 0, 0, 0};
     float square_radii[8] {};
@@ -220,6 +222,7 @@ static void draw_static_msaa_image(CGContextRef context, bool canvas)
         2 | (s_static_image_explicit_clip ? VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP : 0)
             | (s_static_image_mask ? VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK : 0),
         s_video_rounded ? radii : s_static_image_mask ? square_radii : nullptr));
+    ladybird_v_skia_set_image_immutable_source(0,nullptr);
 }
 
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
@@ -1134,7 +1137,10 @@ int main(int argc, char** argv)
         return 0;
     }
     if (argc == 2 && (!std::strcmp(argv[1], "--static-msaa-images")
+            || !std::strcmp(argv[1], "--immutable-msaa-images")
             || !std::strcmp(argv[1], "--masked-images"))) {
+        bool immutable=!std::strcmp(argv[1], "--immutable-msaa-images");
+        if (immutable) setenv("VOX_IMMUTABLE_IMAGE_UPLOADS","1",1);
         s_static_image_mask=!std::strcmp(argv[1], "--masked-images");
         setenv(s_static_image_mask ? "VOX_GPU_CANVAS_MASKED_IMAGES" : "VOX_GPU_CANVAS_MSAA_IMAGES", "1", 1);
         assert(gpu_canvas_api()->draw_image_msaa);
@@ -1146,6 +1152,7 @@ int main(int argc, char** argv)
         for (bool rounded : {false, true}) for (int alpha : {128, 255})
         for (float offset : {0.f, .375f}) for (int nearest : {0, 1}) for (bool explicit_clip : {false, true}) {
             if (!s_static_image_mask && !coverage) continue;
+            if (immutable) ++s_immutable_image_generation;
             s_video_rounded=rounded; s_static_image_offset=offset; s_static_image_nearest=nearest;
             s_static_image_explicit_clip=explicit_clip;
             for (size_t at=3; at<s_video_frame.size(); at+=4) s_video_frame[at]=alpha;
@@ -1167,7 +1174,8 @@ int main(int argc, char** argv)
             }
             ++cases;
         }
-        std::cout << (s_static_image_mask ? "Masked images: " : "Static MSAA images: ")
+        std::cout << (s_static_image_mask ? "Masked images: "
+            : immutable ? "Immutable MSAA images: " : "Static MSAA images: ")
             << cases << " ordinary/canvas frames, max error " << error << '\n';
         return 0;
     }

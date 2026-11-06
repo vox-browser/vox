@@ -35,6 +35,45 @@ static std::vector<uint8_t> read_surface(skgpu::graphite::Context* gpu,
     return output;
 }
 
+static void test_immutable_image_uploads() {
+    setenv("VOX_IMMUTABLE_IMAGE_UPLOADS","1",1);
+    auto* gpu=context();assert(gpu);
+    auto recorder=gpu->makeRecorder();assert(recorder);
+    std::vector<uint8_t> bytes(16,255),replacement(16,128);
+    VoxGraphiteImage source {};
+    source.matrix[0]=source.matrix[4]=source.matrix[8]=1;
+    source.width=source.height=2;source.pitch=8;source.pixels=bytes.data();source.flags=1;
+    source.source[2]=source.source[3]=2;source.destination[2]=source.destination[3]=20;
+    source.clip[2]=source.clip[3]=20;source.opacity=1;
+    image_upload_cache.clear();
+    vox_graphite_set_image_immutable_source(71,bytes.data(),2,2,8);
+    PreparedImageDraw cold;plan_image_draw(&source,cold);
+    assert(prepare_image_texture(recorder.get(),&source,cold));
+    assert(cold.upload.verified_by_identity && cold.upload.pending && !cold.upload.verified_by_digest);
+    image_upload_cache.finish(std::move(cold.upload),cold.texture);
+    PreparedImageDraw warm;plan_image_draw(&source,warm);
+    assert(prepare_image_texture(recorder.get(),&source,warm));
+    assert(warm.upload.verified_by_identity && !warm.upload.pending && warm.texture==cold.texture);
+    // A different pointer or shape cannot inherit the caller's active key.
+    source.pixels=replacement.data();
+    PreparedImageDraw mismatch;plan_image_draw(&source,mismatch);
+    assert(prepare_image_texture(recorder.get(),&source,mismatch) && !mismatch.upload.verified_by_identity);
+    source.pixels=bytes.data();
+    vox_graphite_set_image_immutable_source(71,bytes.data(),1,4,8);
+    PreparedImageDraw dimensions;plan_image_draw(&source,dimensions);
+    assert(prepare_image_texture(recorder.get(),&source,dimensions) && !dimensions.upload.verified_by_identity);
+    // Retagged data behind the same allocation must allocate a fresh upload.
+    bytes[0]=37;vox_graphite_set_image_immutable_source(72,bytes.data(),2,2,8);
+    PreparedImageDraw retagged;plan_image_draw(&source,retagged);
+    assert(prepare_image_texture(recorder.get(),&source,retagged));
+    assert(retagged.upload.verified_by_identity && retagged.upload.pending && retagged.texture!=cold.texture);
+    vox_graphite_set_image_immutable_source(0,nullptr,0,0,0);
+    PreparedImageDraw cleared;plan_image_draw(&source,cleared);
+    assert(prepare_image_texture(recorder.get(),&source,cleared) && !cleared.upload.verified_by_identity);
+    image_upload_cache.clear();unsetenv("VOX_IMMUTABLE_IMAGE_UPLOADS");
+    std::puts("Immutable GPU uploads: texture reuse, changed generation, source/geometry mismatch and cleared scope passed");
+}
+
 static void test_canvas_present() {
     canvas_reset();
     constexpr int width=79,height=53;
@@ -294,6 +333,7 @@ static void test_nested_canvas_layers() {
 }
 
 int main() { @autoreleasepool {
+    test_immutable_image_uploads();
     auto* gpu = context(); assert(gpu);
     auto recorder = gpu->makeRecorder(); assert(recorder);
     for (auto [width, height] : {std::pair{37, 29}, {1024, 512}, {3421, 1906}}) {

@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <zlib.h>
 #include "native_image_color_profile.h"
+#include "platform/native_state.h"
 
 // Packed, top-down, straight RGBA with a separately retained PNG ICC profile.
 // Ordinary RGBA and planar YUV buffers must never consult the ICC pointer map.
@@ -79,6 +80,7 @@ static int native_png_has_icc_profile(const uint8_t *bytes, size_t length)
 @property(nonatomic, strong) NSData *converted;
 @property(nonatomic) VoxImageColorProfile color_profile;
 @property(nonatomic) BOOL conversion_failed;
+@property(nonatomic) uint64_t source_identity;
 @end
 @implementation VoxPNGICCTag
 @end
@@ -86,6 +88,8 @@ static int native_png_has_icc_profile(const uint8_t *bytes, size_t length)
 static NSMutableDictionary<NSValue *, VoxPNGICCTag *> *native_png_icc_tags;
 static NSMutableArray<VoxPNGICCTag *> *native_png_icc_lru;
 static size_t native_png_icc_cached_bytes;
+VOX_NATIVE_STATE uint64_t native_png_icc_source_clock;
+VOX_NATIVE_STATE BOOL native_png_icc_source_clock_exhausted;
 // A conversion larger than the budget is redone on every draw: vlang.io's
 // 3993x2317 tagged mascot converts 37 MB, which took 40-120 ms per scroll
 // frame while it was visible under the former 32 MB budget.
@@ -177,6 +181,11 @@ static NSData *native_image_icc_source(const void *pixels, int width, int height
                 [native_png_icc_lru removeObjectAtIndex:0];
             }
             tag.converted = converted;
+            tag.source_identity = 0;
+            if (!native_png_icc_source_clock_exhausted) {
+                tag.source_identity = ++native_png_icc_source_clock;
+                if (!tag.source_identity) native_png_icc_source_clock_exhausted = YES;
+            }
             tag.color_profile = prepared_profile;
             native_png_icc_cached_bytes += size;
             [native_png_icc_lru addObject:tag];
@@ -188,6 +197,19 @@ static NSData *native_image_icc_source(const void *pixels, int width, int height
 static NSData *native_image_icc_pixels(const void *pixels, int width, int height)
 {
     return native_image_icc_source(pixels, width, height, NULL);
+}
+
+// The retained conversion owns immutable bytes. A monotonically allocated key
+// identifies this conversion, never its recyclable address or URL. Retagging,
+// eviction/reconversion, dimensions and a concurrent retag all reject old keys.
+static uint64_t native_image_icc_source_identity(const void *pixels, int width, int height, NSData *converted)
+{
+    if (!pixels || !converted) return 0;
+    @synchronized ([NSValue class]) {
+        VoxPNGICCTag *tag = native_png_icc_tags[[NSValue valueWithPointer:pixels]];
+        return tag && tag.width == width && tag.height == height && tag.converted == converted
+            ? tag.source_identity : 0;
+    }
 }
 #endif
 #endif

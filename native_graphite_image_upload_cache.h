@@ -78,6 +78,7 @@ template<typename Texture> class VoxGraphiteImageUploadCache {
         std::vector<uint8_t> source;
         bool digested = false;
         uint64_t digest[2] {};
+        uint64_t immutable_key = 0;
         Texture texture;
     };
     std::list<std::unique_ptr<Entry>> entries;
@@ -96,8 +97,10 @@ public:
         // without flattening the YUVA image into an RGBA texture.
         bool needs_planar_mipmaps = false;
         bool verified_by_digest = false;
+        bool verified_by_identity = false;
     };
-    Request prepare(VoxGraphiteImage const& image, int upload_width, int upload_height, bool mipmapped)
+    Request prepare(VoxGraphiteImage const& image, int upload_width, int upload_height, bool mipmapped,
+        uint64_t immutable_key = 0)
     {
         // One entry may use half the budget. A large decoded image (vlang.io's
         // 1824x1468 DOOM screenshot, 13.4 MiB with its source copy) otherwise
@@ -121,8 +124,11 @@ public:
         // its digest: vlang.io's 3993x2317 mascot (37 MB decoded) uploads at
         // 999x580, and would otherwise repeat a CPU scale for every draw.
         size_t source_bytes = row_bytes * rows;
-        bool digested = source_bytes > limit || source_bytes + texture_bytes > limit;
-        size_t cost = (digested ? sizeof(Entry::digest) : source_bytes) + texture_bytes;
+        // Trusted keys come only from immutable decoded-resource generations.
+        // They retain no source allocation: charge the owned texture and key.
+        // Unknown/mutable callers keep complete byte/digest verification.
+        bool digested = !immutable_key && (source_bytes > limit || source_bytes + texture_bytes > limit);
+        size_t cost = (immutable_key ? sizeof(immutable_key) : digested ? sizeof(Entry::digest) : source_bytes) + texture_bytes;
         if (cost > limit) return {};
         uint64_t digest[2] {};
         bool have_digest = false;
@@ -136,6 +142,7 @@ public:
             auto const& entry = **it;
             auto const& prior = entry.image;
             if (entry.upload_width != upload_width || entry.upload_height != upload_height
+                || entry.immutable_key != immutable_key
                 || prior.width != image.width || prior.height != image.height
                 || ((image.flags & 4) && (upload_width != image.width || upload_height != image.height)
                     && prior.nearest != image.nearest)
@@ -147,7 +154,7 @@ public:
                 image_digest();
                 equal = entry.digest[0] == digest[0] && entry.digest[1] == digest[1];
             }
-            for (size_t y = 0; !digested && equal && y < rows; ++y)
+            for (size_t y = 0; !immutable_key && !digested && equal && y < rows; ++y)
                 equal = !std::memcmp(entry.source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);
             if (!equal) continue;
             // Prefer an existing complete upload to upgrading another entry.
@@ -159,23 +166,24 @@ public:
             }
             auto texture = entry.texture;
             entries.splice(entries.begin(), entries, it);
-            return {std::move(texture), nullptr, false, false, digested};
+            return {std::move(texture), nullptr, false, false, digested, bool(immutable_key)};
         }
         auto entry = std::make_unique<Entry>();
         entry->image = image; entry->image.pixels = nullptr;
         entry->upload_width = upload_width; entry->upload_height = upload_height;
         entry->mipmapped = mipmapped; entry->cost = cost;
         entry->digested = digested;
+        entry->immutable_key = immutable_key;
         if (digested) {
             image_digest();
             std::copy_n(digest, 2, entry->digest);
-        } else {
+        } else if (!immutable_key) {
             entry->source.resize(source_bytes);
             for (size_t y = 0; y < rows; ++y)
                 std::memcpy(entry->source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);
         }
         bool needs_mipmaps = bool(mipmap_source);
-        return {std::move(mipmap_source), std::move(entry), needs_mipmaps, planar_mipmap_source, digested};
+        return {std::move(mipmap_source), std::move(entry), needs_mipmaps, planar_mipmap_source, digested, bool(immutable_key)};
     }
     void finish(Request&& request, Texture texture)
     {

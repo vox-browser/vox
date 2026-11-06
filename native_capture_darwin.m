@@ -101,6 +101,7 @@ extern void ladybird_v_skia_release_unused_graphics_memory(void);
 extern int ladybird_v_skia_release_idle_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
+extern void ladybird_v_skia_set_image_immutable_source(uint64_t, const uint8_t *) __attribute__((weak_import));
 extern void ladybird_v_skia_set_image_resource_identity(const char *value, int length);
 extern void ladybird_v_skia_add_image_decoding_hint(const char *, int, int);
 extern void ladybird_v_skia_begin_image_decode_frame(const void *, uint64_t, uint64_t);
@@ -6816,6 +6817,10 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 	    icc_pixels && icc_color_profile.values[0] == -1 ? icc_color_profile.values :
 	    native_image_color_profile(image->data, image->width, image->height,
 	        &color_profile) ? color_profile.values : NULL);
+	if (ladybird_v_skia_set_image_immutable_source)
+		ladybird_v_skia_set_image_immutable_source(icc_pixels
+		    ? native_image_icc_source_identity(image->data,image->width,image->height,icc_pixels) : 0,
+		    source_pixels);
 	*source = (NativeSkiaImageSource){
 		.pixels = source_pixels,
 		.flipped_pixels = flipped_pixels,
@@ -6835,6 +6840,7 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 
 static void native_end_skia_image_source(NativeSkiaImageSource *source) {
 	ladybird_v_skia_set_image_color_profile(NULL);
+	if (ladybird_v_skia_set_image_immutable_source) ladybird_v_skia_set_image_immutable_source(0,NULL);
 	if (source->icc_pixels) CFRelease(source->icc_pixels);
 	source->icc_pixels = NULL;
 	free(source->flipped_pixels);
