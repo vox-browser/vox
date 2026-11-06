@@ -43,6 +43,47 @@ The filter engine has its own serialized JavaScriptCore context, inaccessible to
 page scripts. Default lists are compiled at development time. Normal builds and
 the installed bundle require neither Node nor a network connection for filtering.
 
+## ChatGPT collector modules
+
+The default snapshot also compiles Vox's local
+[`site_resources.js`](../tools/adblock/site_resources.js) supplement through the
+same uBO parser and network engine. The ten subscription identities stay intact;
+independent custom-filter engines do not inherit the supplement.
+
+For two reviewed ChatGPT web-client deployments, the business-event serializer
+and performance bootstrap receive local ES module replacements before transport
+or cache access. The business replacement preserves `reportCesBusinessEvent()`.
+The performance replacement preserves its asynchronous result, drains initial
+long-task metrics, installs a measurement sink and completes the telemetry
+caller's cleanup contract. It avoids importing the performance collector and its
+dynamic dependencies. Empty JavaScript would break their named imports.
+
+The rules require the reviewed, case-sensitive asset filenames, the script
+request type and a ChatGPT document owner; worker-version queries are supported.
+New filenames retain the site's original implementation until reviewed. Native
+telemetry, shared analytics, consent, authentication, Sentinel and conversation
+submission stay available because their modules also perform application work.
+The existing event-endpoint blocking remains active.
+
+On November 6, a fresh process using the signed bundle's updated filter assets
+submitted **“capital of italy”** through its native composer and visibly rendered
+**“The capital of Italy is Rome (Roma). 🇮🇹”**. Both replacements were active and
+the performance-metrics module was never requested. Browser and memory-guard
+exits were zero, with no reported JavaScript errors. The installed data update
+uses the existing bundle resource loader; it does not require a browser compile.
+Existing browser processes need restarting to adopt it. All 48 filter-package
+tests and the native V engine checks pass (`-nocache` avoids a stale compiler
+bridge encountered during verification).
+
+The [verification receipt](performance/chatgpt-basic-blocking-20261106.json)
+records identities, tests and every attempt; the
+[document capture](parity/raw/chatgpt-basic-query-20261106.vox.png) retains the
+rendered reply. A longer earlier observation received the answer, then exceeded
+the default 12 GiB guard after 50.3 seconds. Sustained browsing and the overall
+slowdown remain unresolved. This changes author-script policy and establishes
+basic query functionality; it does not establish a quantified speed improvement
+or engine optimization.
+
 ## Startup snapshots
 
 The checked-in default snapshot contains **276,172 network filters from all ten

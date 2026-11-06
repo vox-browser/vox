@@ -1,0 +1,536 @@
+{
+  "date": "2026-11-06",
+  "feature_commit": "01a58382b",
+  "scope": "Reviewed versioned ChatGPT analytics and performance script replacements through full uBlock Origin; no quantified speed or instruction saving claimed",
+  "installed": {
+    "kind": "adblock-resource-update",
+    "feature_commit": "01a58382b",
+    "utc": "2026-11-06T03:08:19.624906Z",
+    "base_build": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-054551-334f3244/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "c868db9382625f073d0522996ca7e36d2cc2efd228926083e2dce6031d3d312f",
+        "dirty": true,
+        "head": "658ba29b4b3838814daac049d97b998c4e496d38",
+        "repository_sha256": "e3c0cf11257a530357a1564256c6a0330f6bf703d898d39d871b4ed342903298"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "c868db9382625f073d0522996ca7e36d2cc2efd228926083e2dce6031d3d312f",
+        "dirty": true,
+        "head": "4e6d0b77f6574f713fbe885dd3cb82e37810b5ae",
+        "repository_sha256": "7a143963ceb2955b8060abc634cc4d1a8bf2c8ab25fb0ddeafa5d5b79439a7ab"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "658ba29b4b3838814daac049d97b998c4e496d38",
+        "id": "50fad570554e40568b2db4c1b8dac519",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "c868db9382625f073d0522996ca7e36d2cc2efd228926083e2dce6031d3d312f",
+        "dirty": true,
+        "head": "658ba29b4b3838814daac049d97b998c4e496d38",
+        "repository_sha256": "9843aa82dc48b705d3d614c1b0bf3c94d31026b222a6439cf49d04636031e3e3"
+      }
+    },
+    "sources": {
+      "engine.js.gz": "796abeb8f57835bf8512c9546802cf62b8bbd8350c98de004d3e82264eb81ef6",
+      "engine.snapshot.json.gz": "8b12920c5d165a9654470e11bc8ce8f0737bd6e658155e8b8b31bff745cc1a80",
+      "engine.snapshot.bin": "6a7024d5810fda9e43cc28823dadcb9ffdbeae1b55d1b5b289945ba767b54852"
+    },
+    "executable_before": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+    "before": {
+      "engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "engine.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39"
+    },
+    "executable_after": "8ca5235c3d40512decb83d426f4d089ae9e7711fb9ca0a7dbacb19d504157eab",
+    "after": {
+      "engine.js.gz": "796abeb8f57835bf8512c9546802cf62b8bbd8350c98de004d3e82264eb81ef6",
+      "engine.snapshot.json.gz": "8b12920c5d165a9654470e11bc8ce8f0737bd6e658155e8b8b31bff745cc1a80",
+      "engine.snapshot.bin": "6a7024d5810fda9e43cc28823dadcb9ffdbeae1b55d1b5b289945ba767b54852"
+    },
+    "codesign_verified": true
+  },
+  "validation": {
+    "command": [
+      "python3",
+      "Build/chatgpt-lightweight-20261106/capture.py",
+      "installed-query-r1",
+      "installed"
+    ],
+    "browser": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width=1024",
+        "--window-height=880",
+        "https://chatgpt.com/"
+      ],
+      "pid": 99706,
+      "exit": 0,
+      "elapsed": 24.886034965515137,
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "8ca5235c3d40512decb83d426f4d089ae9e7711fb9ca0a7dbacb19d504157eab",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d75a844a9db43d21e6fabbad1f6fc101902d43db30e68fd3eb5510c7cc7311a3",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ebe5954e3995ff7be770534428ef6a6072f53225fe24541f807258f0e20e7505",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "796abeb8f57835bf8512c9546802cf62b8bbd8350c98de004d3e82264eb81ef6",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "8b12920c5d165a9654470e11bc8ce8f0737bd6e658155e8b8b31bff745cc1a80",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "6a7024d5810fda9e43cc28823dadcb9ffdbeae1b55d1b5b289945ba767b54852"
+      },
+      "stable": true
+    },
+    "audit": {
+      "url": "https://chatgpt.com/uc/6aed44b6-44c8-83ea-a29e-6348752f0c2d",
+      "title": "ChatGPT: Chat, Work, Create & Code with AI",
+      "ready": "complete",
+      "viewport": [
+        1024,
+        768
+      ],
+      "native_reported_error_count": 0,
+      "javascript_diagnostics": []
+    },
+    "query": "capital of italy",
+    "reply": [
+      "The capital of Italy is Rome (Roma). \ud83c\uddee\ud83c\uddf9"
+    ],
+    "author_input": "Injected AppKit mouse/key events through _sapp_macos_view; no fabricated server response or imported login",
+    "script_replacements": {
+      "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-Bx7D-YTR.js": {
+        "rule": "/^https:\\/\\/chatgpt\\.com\\/unauth-mweb\\/assets\\/analytics-ces-business-context-Bx7D-YTR\\.js(?:\\?[^#]*)?$/$script,match-case,from=chatgpt.com",
+        "replacement_sha256": "0dc09bedcbfb0f80f9ee169d14e8722b326346a03bdd3401dbab3aa084c93e34"
+      },
+      "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-_6lrVRz4.js": {
+        "rule": "/^https:\\/\\/chatgpt\\.com\\/unauth-mweb\\/assets\\/native-performance-bootstrap-_6lrVRz4\\.js(?:\\?[^#]*)?$/$script,match-case,from=chatgpt.com",
+        "replacement_sha256": "a6c4456dd9a9bb1d0b46bee23b5ae97685f9fcbef49f225a11803dc75297bd1b"
+      }
+    },
+    "performance_metrics_requested": false,
+    "event_endpoints": [
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/page-view",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/statsc/flush?lightweight_authenticated=0",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/business",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/business",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/page-view",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/business",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/business",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/business",
+        "blocked": true,
+        "rule": "||chatgpt.com/unauth-mweb/events/$xhr"
+      }
+    ],
+    "memory_guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-lightweight-20261106/capture.py",
+        "installed-query-r1",
+        "installed"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3270377472,
+      "elapsed_seconds": 25.109343084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "screenshot": {
+      "path": "docs/parity/raw/chatgpt-basic-query-20261106.vox.png",
+      "sha256": "754ebf6e89f9a8bd27f40003b41908f9793f08fb7f75e23e31eda8b2d29136c7",
+      "scope": "Published native layer cropped at measured chrome top 88px to 1024x768 document; no pixel reference or tolerance modified"
+    },
+    "inputs": {
+      "probe_sha256": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+      "probe_library_sha256": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+      "driver_sha256": "b87b9010db93b10bec8f7d3adf9dfb80fece36cde9bcf6f35c774a4fbc5dd13c"
+    }
+  },
+  "tests": {
+    "node": {
+      "command": [
+        "npm",
+        "--prefix",
+        "tools/adblock",
+        "test"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 677101568,
+      "elapsed_seconds": 1.611940625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "node_tests_passed": 48,
+    "native_v": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-enable-globals",
+        "test",
+        "adblock/engine_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 558661632,
+      "elapsed_seconds": 3.468009958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "limitations": [
+    "A longer observation of the first equivalent blocking policy received Rome, then hit the default 12 GiB guard after 50.3 seconds. Sustained browsing and the overall performance problem remain open; no causal attribution is established.",
+    "Only the reviewed versioned filenames are replaced. New site versions fall back to the original modules until reviewed.",
+    "This is a changed author-script policy, not an engine-optimization or cross-browser comparison."
+  ],
+  "attempts": [
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-home",
+      "classification": "Homepage capture succeeded; the live deployment used newer assets and was not filtered by the original reviewed filenames.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "candidate-home",
+          "candidate"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1304117248,
+        "elapsed_seconds": 11.948144040999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-home/window.png",
+          "https://chatgpt.com/"
+        ],
+        "pid": 75927,
+        "exit": 0,
+        "elapsed": 11.734928131103516,
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d75a844a9db43d21e6fabbad1f6fc101902d43db30e68fd3eb5510c7cc7311a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ebe5954e3995ff7be770534428ef6a6072f53225fe24541f807258f0e20e7505",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39"
+        },
+        "stable": true
+      }
+    },
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-query-r1",
+      "classification": "Invalid: optimized-site gate prevented document navigation in the private profile.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "candidate-query-r1",
+          "candidate"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 275202048,
+        "elapsed_seconds": 68.82147966699999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 79716,
+        "exit": 0,
+        "elapsed": 68.52912306785583,
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d75a844a9db43d21e6fabbad1f6fc101902d43db30e68fd3eb5510c7cc7311a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ebe5954e3995ff7be770534428ef6a6072f53225fe24541f807258f0e20e7505",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39"
+        },
+        "stable": true
+      }
+    },
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-query-r2",
+      "classification": "3 GiB focused-test cap was insufficient for the live browser; guard terminated the trial.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "candidate-query-r2",
+          "candidate"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3450585088,
+        "elapsed_seconds": 21.615599624999998,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": null
+    },
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-query-r3",
+      "classification": "Answer received with replacements active; longer observation exceeded the default 12 GiB cap.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "candidate-query-r3",
+          "candidate"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 12941606912,
+        "elapsed_seconds": 50.304417125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": null
+    },
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-query-r4",
+      "classification": "Answer rendered, but non-regex match-case rules did not match. Not candidate validation; corrected with case-sensitive regex rules.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "candidate-query-r4",
+          "candidate"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3376021504,
+        "elapsed_seconds": 25.260906792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 89738,
+        "exit": 0,
+        "elapsed": 25.043812036514282,
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d75a844a9db43d21e6fabbad1f6fc101902d43db30e68fd3eb5510c7cc7311a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ebe5954e3995ff7be770534428ef6a6072f53225fe24541f807258f0e20e7505",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39"
+        },
+        "stable": true
+      }
+    },
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-query-r5",
+      "classification": "Invalid: input probe clicked a zero-sized send-button rect before layout. Fixed probe waits for a visible enabled button.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "candidate-query-r5",
+          "candidate"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1606418432,
+        "elapsed_seconds": 68.508370583,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 93791,
+        "exit": 0,
+        "elapsed": 68.27637505531311,
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d75a844a9db43d21e6fabbad1f6fc101902d43db30e68fd3eb5510c7cc7311a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ebe5954e3995ff7be770534428ef6a6072f53225fe24541f807258f0e20e7505",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39"
+        },
+        "stable": true
+      }
+    },
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/candidate-query-r6",
+      "classification": "Corrected final rules active; Rome received, snapshot saved, browser and guard exited zero.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "candidate-query-r6",
+          "candidate"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3342368768,
+        "elapsed_seconds": 25.302195625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 95896,
+        "exit": 0,
+        "elapsed": 25.03236699104309,
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c8ecf46fa46f6e989cf1cbc5ce0d0b33c3e5214bb941e9bf9d27c56adebdaa4e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d75a844a9db43d21e6fabbad1f6fc101902d43db30e68fd3eb5510c7cc7311a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ebe5954e3995ff7be770534428ef6a6072f53225fe24541f807258f0e20e7505",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39"
+        },
+        "stable": true
+      }
+    },
+    {
+      "directory": "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/installed-query-r1",
+      "classification": "Installed package without an asset override: both rules active, Rome rendered, browser and guard exited zero.",
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-lightweight-20261106/capture.py",
+          "installed-query-r1",
+          "installed"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3270377472,
+        "elapsed_seconds": 25.109343084,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 99706,
+        "exit": 0,
+        "elapsed": 24.886034965515137,
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "8ca5235c3d40512decb83d426f4d089ae9e7711fb9ca0a7dbacb19d504157eab",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d75a844a9db43d21e6fabbad1f6fc101902d43db30e68fd3eb5510c7cc7311a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ebe5954e3995ff7be770534428ef6a6072f53225fe24541f807258f0e20e7505",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "796abeb8f57835bf8512c9546802cf62b8bbd8350c98de004d3e82264eb81ef6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "8b12920c5d165a9654470e11bc8ce8f0737bd6e658155e8b8b31bff745cc1a80",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "6a7024d5810fda9e43cc28823dadcb9ffdbeae1b55d1b5b289945ba767b54852"
+        },
+        "stable": true
+      }
+    }
+  ]
+}
