@@ -3,20 +3,13 @@
 // Native registration boundary for Platform::Timer's underlying Core::Timer.
 module platform
 
-import os
-
-const retain_native_timer_allocations = os.getenv('VOX_RETAIN_NATIVE_TIMER_ALLOCATIONS') != ''
-const native_timer_reuse_diagnostics = os.getenv('VOX_NATIVE_TIMER_REUSE_DIAGNOSTICS') != ''
-
-__global native_timer_reuse_reported bool
-
 #flag darwin -framework CoreFoundation
 $if linux {
 	#pkgconfig glib-2.0
 }
 #include "timer_host_bridge.h"
 
-fn C.libweb_v_register_timer(context voidptr, interval_ms int, timeout fn (voidptr), reuse bool, reused &bool) voidptr
+fn C.libweb_v_register_timer(context voidptr, interval_ms int, timeout fn (voidptr)) voidptr
 fn C.libweb_v_unregister_timer(timer voidptr)
 fn C.libweb_v_pump_native_events(wait_seconds f64)
 fn C.libweb_v_is_main_thread() bool
@@ -28,14 +21,7 @@ fn native_timer_timeout(context voidptr) {
 
 fn register_native_timer(timer &Timer, interval_ms int) voidptr {
 	$if macos || linux {
-		mut reused := false
-		registration := C.libweb_v_register_timer(voidptr(timer), interval_ms, native_timer_timeout,
-			!retain_native_timer_allocations, &reused)
-		if reused && native_timer_reuse_diagnostics && !native_timer_reuse_reported {
-			native_timer_reuse_reported = true
-			eprintln('Vox native timer: reused a receiver-free zero-delay registration')
-		}
-		return registration
+		return C.libweb_v_register_timer(voidptr(timer), interval_ms, native_timer_timeout)
 	} $else {
 		return unsafe { nil }
 	}
