@@ -1,6 +1,34 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 130**, literal V `-prod` / single-C-unit production
+Latest attempt — **cohort 131**, literal V `-prod` / single-C-unit production
+`fe2d2e8e8f79`, completes **seven alternating candidate/control/Brave triples**.
+All **21 capture audits pass**, with original references, content, identity,
+counters, ownership and normal exits. Launch-to-PNG medians are **26,179,125,789
+Vox**, **25,543,363,597 control** and **17,427,752,551 Brave lower bound**
+instructions. Positioned inline workspace construction shows an observed
+**635,762,192 (2.488953%) median regression**, two paired improvements and five
+regressions. Its conservative control ratio **1.14682** fails; the strict Brave
+gate also fails `269553763270 > 156397569156` (ratio **1.55116**).
+The workspace and control are removed (`cf93ae100`, `58adea3f4`) after **102
+restoration executions** and **347 tooling tests** pass. Native retirement
+confirmation on a subsequent completed bundle remains pending. No savings or
+catalog credit is claimed.
+
+Separate native captures prove candidate-only workspace entry before PNG, exact
+original pixels/content, all 72 external source byte evaluations, native-image/
+ownership audits and normal exits; the SVG guard is exact. Actual implementation
+bodies match focused C after generated string-ID normalization. The retired
+clamped-only guard and marker are absent from the complete producer; the generic
+workspace helper name is reused and is not claimed absent. The negative median
+triggers **no broad run**; the 777-case prospective plan remains unexecuted.
+Last actual broad coverage remains 771 unique cases per mode, 766 passes and
+five known baseline failures, without a full-suite pass or cadence reset.
+History through 131 is **125 measured cohorts / 2,692 acceptance attempts**;
+all prior failures and preflight-only IDs remain retained. The BBC homepage
+still fails the 10% target and remains outside the instruction catalog.
+[All attempts, native audits and verified removal](performance/bbc-positioned-inline-workspace-cohort131-20261106.json).
+
+Retained attempt — **cohort 130**, literal V `-prod` / single-C-unit production
 `dcc694637618`, tests committed same-pass grid reuse against its disabled control.
 All **21 attempts** are retained; **20 capture audits** pass, while Brave pair 6
 fails its unchanged pixel reference, invalidating acceptance. Launch-to-PNG
