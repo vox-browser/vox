@@ -27,17 +27,19 @@ def main():
     env = {k: v for k, v in os.environ.items() if not k.startswith('VOX_')}
     if reference:
         env['VOX_SKIA_REFERENCE_LIBRARY'] = str(reference)
-    flags = ['clang++', '-std=c++20', '-O2', '-x', 'objective-c++',
+    flags = ['clang++', '-std=c++20', '-O2', '-fno-rtti', '-x', 'objective-c++',
              '-I' + str(skia / 'include/skia'), '-I' + str(skia / 'include')]
     if args.sanitize:
         flags += ['-fsanitize=address,undefined', '-fno-omit-frame-pointer']
     libraries = ['-L' + str(skia / 'lib'), '-lskia', '-Wl,-rpath,' + str(skia / 'lib')]
-    for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
+    for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal',
+                      'IOSurface']:
         libraries += ['-framework', framework]
     attempts = []
     try:
         for name in ['native_glyph_text_blob_cache_test', 'native_skia_glyph_origin_test',
-                     'native_skia_glyph_cache_test']:
+                     'native_skia_glyph_cache_test', 'native_glyph_bitmap_copy_test',
+                     'native_glyph_bitmap_surface_test', 'native_skia_glyph_damage_clip_test']:
             binary = output / name
             for command in [flags + [str(repo / 'tools' / (name + '.cpp'))]
                             + libraries + ['-o', str(binary)], [str(binary)]]:

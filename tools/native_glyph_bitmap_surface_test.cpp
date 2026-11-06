@@ -31,6 +31,7 @@ static void swap_red_blue_pixels(uint8_t* output, uint8_t const* input, size_t c
         output[4*i+2] = r; output[4*i+3] = input[4*i+3];
     }
 }
+#include "../native_gg_text.h"
 #include "../native_glyph_bitmap_copy.h"
 #include "../native_glyph_bitmap_surface.h"
 

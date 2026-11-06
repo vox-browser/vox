@@ -202,6 +202,10 @@ std::unordered_map<CGContextRef, SharedClipState> s_shared_clips;
 
 bool glyph_bitmap_clip_is_rectangular(CGContextRef context)
 {
+    // Scroll reuse installs a union of damage rectangles directly in Quartz.
+    // Its bounding box can contain retained pixels: a raw bitmap write would
+    // bypass those holes and paint the retained glyph edges a second time.
+    if (context == s_scroll_damage_canvas) return false;
     auto found = s_shared_clips.find(context);
     return found == s_shared_clips.end()
         || (!found->second.unsupported && found->second.clips.empty());
@@ -212,6 +216,7 @@ bool glyph_bitmap_clip_is_rectangular(CGContextRef context)
 // intersection itself, provided Quartz's own clip is exactly that rectangle.
 bool glyph_bitmap_device_clip(CGContextRef context, float scale, float canvas_height, SkIRect& device)
 {
+    if (context == s_scroll_damage_canvas) return false;
     auto found = s_shared_clips.find(context);
     if (found == s_shared_clips.end() || found->second.unsupported || found->second.clips.empty()
         || !(scale > 0) || !std::isfinite(scale) || !std::isfinite(canvas_height)) return false;
