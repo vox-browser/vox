@@ -19,7 +19,7 @@ python3 - "$repo_dir" "$v_compiler" "$skia_root" "$output_dir/inputs.json" <<'PY
 import hashlib,json,sys
 from pathlib import Path
 root=Path(sys.argv[1]); compiler=Path(sys.argv[2]); skia=Path(sys.argv[3])
-files=[*sorted(root.glob('cpuraster/*.v')),root/'tools/gg_migration/cpu_raster_check.v',root/'tools/gg_migration/skia_cpu_oracle.cpp',root/'tools/gg_migration/test_cpu_raster.sh',compiler,skia/'lib/libskia.dylib']
+files=[*sorted(root.glob('cpuraster/*.v')),*sorted(root.glob('gfxfont/*.[vh]')),root/'tools/gg_migration/cpu_raster_check.v',root/'tools/gg_migration/skia_cpu_oracle.cpp',root/'tools/gg_migration/test_cpu_raster.sh',compiler,skia/'lib/libskia.dylib']
 Path(sys.argv[4]).write_text(json.dumps({str(p.resolve()):hashlib.sha256(p.read_bytes()).hexdigest() for p in files},indent=2)+'\n')
 PY
 clang++ -std=c++20 -O2 -fno-rtti -dynamiclib \

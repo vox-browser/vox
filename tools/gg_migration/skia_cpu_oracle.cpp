@@ -30,3 +30,21 @@ ORACLE int oracle_read_pixels(uint8_t const* source, uint8_t* destination, int c
     auto const* a = arguments;
     return read_pixels(source, a[0], a[1], a[2], a[3], destination, a[4], a[5], a[6], a[7], a[8]);
 }
+
+// skia/font_typeface.cpp: vox_skia_font_typeface_is_valid().
+#include "include/core/SkData.h"
+#include "include/core/SkFontArguments.h"
+#include "include/core/SkFontMgr.h"
+#include "include/core/SkStream.h"
+#include "include/core/SkTypeface.h"
+#include "include/ports/SkFontMgr_mac_ct.h"
+
+ORACLE int oracle_font_typeface_is_valid(uint8_t const* bytes, size_t size, int index)
+{
+    static auto manager = SkFontMgr_New_CoreText(nullptr);
+    auto data = SkData::MakeWithoutCopy(bytes, size);
+    SkFontArguments arguments;
+    arguments.setCollectionIndex(index);
+    auto stream = std::make_unique<SkMemoryStream>(data);
+    return manager->makeFromStream(std::move(stream), arguments) != nullptr;
+}

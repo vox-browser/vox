@@ -3,6 +3,7 @@
 module main
 
 import cpuraster
+import gfxfont
 import os
 import rand
 
@@ -11,8 +12,11 @@ fn C.dlsym(handle voidptr, symbol &char) voidptr
 
 type OracleReadPixels = fn (source &u8, destination &u8, values &i32) i32
 
+type OracleFontTypefaceIsValid = fn (data &u8, size uint, index i32) i32
+
 struct Oracle {
-	read_pixels OracleReadPixels = unsafe { nil }
+	read_pixels            OracleReadPixels          = unsafe { nil }
+	font_typeface_is_valid OracleFontTypefaceIsValid = unsafe { nil }
 }
 
 fn load_oracle(path string) Oracle {
@@ -21,7 +25,11 @@ fn load_oracle(path string) Oracle {
 		panic('could not load the Skia CPU oracle ${path}')
 	}
 	return Oracle{
-		read_pixels: unsafe { OracleReadPixels(oracle_symbol(library, 'oracle_read_pixels')) }
+		read_pixels:            unsafe { OracleReadPixels(oracle_symbol(library, 'oracle_read_pixels')) }
+		font_typeface_is_valid: unsafe {
+			OracleFontTypefaceIsValid(oracle_symbol(library,
+				'oracle_font_typeface_is_valid'))
+		}
 	}
 }
 
@@ -57,7 +65,11 @@ struct ReadCase {
 fn compare_read(oracle Oracle, source []u8, read ReadCase, label string) ! {
 	columns := if read.destination_width > 0 { read.destination_width } else { 1 }
 	rows := if read.destination_height > 0 { read.destination_height } else { 1 }
-	row_bytes := if read.destination_pitch > columns * 4 { read.destination_pitch } else { columns * 4 }
+	row_bytes := if read.destination_pitch > columns * 4 {
+		read.destination_pitch
+	} else {
+		columns * 4
+	}
 	initial := random_bytes(row_bytes * rows + 16)
 	mut expected := initial.clone()
 	mut actual := initial.clone()
@@ -157,6 +169,80 @@ fn check_read_pixels_random(oracle Oracle, count int) !int {
 	return count
 }
 
+fn compare_font(oracle Oracle, data []u8, index int, label string) ! {
+	expected := oracle.font_typeface_is_valid(data.data, uint(data.len), i32(index)) != 0
+	actual := gfxfont.typeface_data_is_valid(data, index)
+	if expected != actual {
+		return error('${label} index ${index}: Skia accepts ${expected}, gfxfont ${actual}')
+	}
+}
+
+fn font_files() []string {
+	mut files := []string{}
+	for directory in ['/System/Library/Fonts', '/System/Library/Fonts/Supplemental', '/Library/Fonts'] {
+		for name in os.ls(directory) or { []string{} } {
+			if name.to_lower().all_after_last('.') in ['ttf', 'otf', 'ttc', 'dfont'] {
+				files << os.join_path(directory, name)
+			}
+		}
+	}
+	files.sort()
+	return files
+}
+
+// Every installed font at collection indices 0 and 1, truncated and corrupted
+// copies, decoded WOFF/WOFF2 test fonts and non-font data.
+fn check_font_validation(oracle Oracle, repo string) !(int, int) {
+	mut comparisons := 0
+	mut accepted := 0
+	mut samples := map[string][]u8{}
+	for path in font_files() {
+		samples[path] = os.read_bytes(path) or { continue }
+	}
+	for name in os.ls(os.join_path(repo, 'gfxfont/testdata')) or { []string{} } {
+		bytes := os.read_bytes(os.join_path(repo, 'gfxfont/testdata', name)) or { continue }
+		decoded := if name.ends_with('.woff2') {
+			gfxfont.convert_woff2_to_sfnt(bytes) or { bytes }
+		} else {
+			gfxfont.convert_woff_to_sfnt(bytes) or { bytes }
+		}
+		samples[name] = decoded
+	}
+	samples['empty'] = []u8{}
+	samples['truetype magic'] = [u8(0), 1, 0, 0]
+	samples['OTTO magic'] = 'OTTO'.bytes()
+	samples['random'] = random_bytes(4096)
+	for label, data in samples {
+		for index in [0, 1] {
+			compare_font(oracle, data, index, label)!
+			comparisons++
+			if gfxfont.typeface_data_is_valid(data, index) {
+				accepted++
+			}
+		}
+		if data.len < 16 {
+			continue
+		}
+		for length in [12, data.len / 2, data.len - 1] {
+			compare_font(oracle, data[..length], 0, '${label} truncated to ${length}')!
+			comparisons++
+		}
+		for _ in 0 .. 3 {
+			mut corrupted := data.clone()
+			for _ in 0 .. 8 {
+				corrupted[rand.intn(math_min(data.len, 512)) or { 0 }] = u8(rand.u32() & 255)
+			}
+			compare_font(oracle, corrupted, 0, '${label} with corrupted tables')!
+			comparisons++
+		}
+	}
+	return comparisons, accepted
+}
+
+fn math_min(a int, b int) int {
+	return if a < b { a } else { b }
+}
+
 fn main() {
 	if os.args.len < 2 {
 		eprintln('usage: cpu_raster_check SKIA_CPU_ORACLE [COUNT]')
@@ -174,4 +260,10 @@ fn main() {
 		exit(1)
 	}
 	println('read_pixels: ${exhaustive} exhaustive and ${random} random comparisons exact')
+	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
+	fonts, accepted := check_font_validation(oracle, repo) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('typeface validation: ${fonts} comparisons equal (${accepted} accepted)')
 }

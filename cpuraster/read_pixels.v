@@ -68,7 +68,13 @@ pub fn read_pixels(source []u8, width int, height int, pitch int, alpha_type int
 
 fn saturating_add(a int, b int) int {
 	sum := i64(a) + i64(b)
-	return if sum > max_i32 { max_i32 } else if sum < min_i32 { min_i32 } else { int(sum) }
+	return if sum > max_i32 {
+		max_i32
+	} else if sum < min_i32 {
+		min_i32
+	} else {
+		int(sum)
+	}
 }
 
 // SkSwizzler_opts' rgbA_to_CCCA() with !kFastUnpremul. Its NEON block of eight
