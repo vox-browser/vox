@@ -7,14 +7,14 @@ const retain_font_size_unit_longhands = os.getenv('VOX_RETAIN_FONT_SIZE_UNIT_LON
 const font_size_unit_longhand_diagnostics = os.getenv('VOX_FONT_SIZE_UNIT_LONGHAND_DIAGNOSTICS') != ''
 __global font_size_unit_longhand_reported bool
 
-// Only direct em/rem longhands: their scalar font-size bases are guarded by
+// Direct em/rem lengths and the explicitly guarded rem radius pair: scalar bases are guarded by
 // the inherited/cascaded input snapshots and the root/font-policy key. Glyph
-// metrics, line-height units, calculations and composite values stay excluded.
+// metrics, line-height units, calculations and other composites stay excluded.
 fn font_size_unit_longhand_is_reusable(value &dom.StyleValue) bool {
 	if retain_font_size_unit_longhands || value.css_value_handle == unsafe { nil } { return false }
 	typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
 	if typed.value is LengthStyleValue { return typed.value.length_.unit_ in [.em, .rem] }
-	return false
+	return font_radius_longhand_is_reusable(&typed.value)
 }
 
 fn (s &StyleComputer) longhand_live_root_font_size() ?f64 {

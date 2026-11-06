@@ -64,7 +64,7 @@ fn longhand_shape_is_simple(value &StyleValue) bool {
 }
 
 fn longhand_shape_snapshot(value &StyleValue) ?ComputedLonghandReuseValue {
-	if !longhand_shape_is_simple(value) { return none }
+	if !longhand_shape_is_simple(value) && !font_radius_longhand_is_reusable(value) { return none }
 	return match value {
 		GridAutoFlowStyleValue {
 			ComputedLonghandReuseValue{kind: .grid_auto_flow, integer: (if value.row_ { i64(1) } else { i64(0) }) + (if value.dense_ { i64(2) } else { i64(0) })}
@@ -81,7 +81,7 @@ fn longhand_shape_snapshot(value &StyleValue) ?ComputedLonghandReuseValue {
 }
 
 fn longhand_shape_snapshot_matches(snapshot &ComputedLonghandReuseValue, value &StyleValue) bool {
-	if !longhand_shape_is_simple(value) { return false }
+	if !longhand_shape_is_simple(value) && !font_radius_longhand_is_reusable(value) { return false }
 	if value is BorderRadiusStyleValue {
 		return snapshot.kind == .border_radius && snapshot.integer == (if value.is_elliptical_ { 1 } else { 0 })
 			&& snapshot.children.len == 2
@@ -95,7 +95,7 @@ fn longhand_shape_snapshot_matches(snapshot &ComputedLonghandReuseValue, value &
 }
 
 fn longhand_shape_hash(value &StyleValue) ?u64 {
-	if !longhand_shape_is_simple(value) { return none }
+	if !longhand_shape_is_simple(value) && !font_radius_longhand_is_reusable(value) { return none }
 	if value is BorderRadiusStyleValue {
 		mut hash := u64(0xa471d2) ^ if value.is_elliptical_ { u64(1) } else { u64(0) }
 		hash = (hash ^ computed_longhand_reuse_typed_hash(&value.horizontal_radius[0])?) * u64(0x100000001b3)

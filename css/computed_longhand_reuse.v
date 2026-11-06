@@ -642,6 +642,7 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 	properties.font_input_depends_on_font_size_ = cached.font_input_depends_on_font_size_
 	report_longhand_shape_restore(entry.inputs)
 	report_font_size_unit_longhand_reuse(entry.inputs)
+	report_font_radius_longhand_reuse(entry.inputs)
 	report_explicit_parent_longhand_inputs(entry.parent_inputs)
 	if computed_longhand_constant_diagnostics && !computed_longhand_constant_reported
 		&& computed_longhand_constants_enabled() {

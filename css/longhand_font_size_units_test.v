@@ -104,7 +104,7 @@ fn test_font_size_longhands_keep_metric_units_calculations_and_composites_on_ful
 		value := parse_css_value(ParsingParams{}, text, .width) or { panic('value') }
 		assert !computed_longhand_reuse_property_is_simple(.width, value), text
 	}
-	value := parse_css_value(ParsingParams{}, '1.5rem', .border_top_left_radius) or { panic('radius') }
+	value := parse_css_value(ParsingParams{}, '1.5ch', .border_top_left_radius) or { panic('radius') }
 	assert !computed_longhand_reuse_property_is_simple(.border_top_left_radius, value)
 }
 
