@@ -1,0 +1,1621 @@
+{
+  "schema": 1,
+  "date": "2026-11-06",
+  "scope": "Discord archived guest viewport, full uBlock Origin, original-origin offline replay, cold cache,1024x768 logical pixels. Pending-image effect scope repair with focused planner regression and unchanged full rendering suite.",
+  "commit": "a313d793bb8094d1030da82281a36f6ad2d00adb",
+  "cause": "Zero-size undecoded images are deliberately retained to initiate requests even outside the geometric cull. The effect-visibility pass omitted their ancestors, so an offscreen CSS effect opener was culled while its pending image and closer survived. A later main-document image observed native transparency depth -1 and lost its readable opaque-backdrop flag. This changes223 alpha-edge pixels in the visible portion of Party Wumpus.",
+  "fix": "Mark effect ancestry visible for pending zero-size images as well as geometrically interested chunks. Keep matching effect scopes balanced; ordinary nonzero offscreen image effects still cull. No native counter clamp, image decoder or sampling changes.",
+  "focused": {
+    "functions_by_file": {
+      "layout/chromium_pending_image_scope_test.v": 1,
+      "layout/chromium_filter_raster_layer_test.v": 2,
+      "layout/chromium_paint_chunk_metadata_test.v": 10
+    },
+    "total_functions": 13,
+    "modes": [
+      "default GC",
+      "GC disabled",
+      "preallocation with arena poisoning"
+    ],
+    "results": [
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_paint_chunk_metadata_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_paint_chunk_metadata_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_paint_chunk_metadata_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_paint_chunk_metadata_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_paint_chunk_metadata_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_paint_chunk_metadata_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_filter_raster_layer_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_filter_raster_layer_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_filter_raster_layer_test.v",
+        "mode": "none",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_filter_raster_layer_test.v",
+        "mode": "none",
+        "phase": "run",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_filter_raster_layer_test.v",
+        "mode": "prealloc",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_filter_raster_layer_test.v",
+        "mode": "prealloc",
+        "phase": "run",
+        "exit": 0
+      }
+    ],
+    "inputs_unchanged": true,
+    "negative": [
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "default",
+        "phase": "compile",
+        "exit": 0
+      },
+      {
+        "test": "layout/chromium_pending_image_scope_test.v",
+        "mode": "default",
+        "phase": "run",
+        "exit": 1
+      }
+    ],
+    "negative_positive_common_input_changes": [
+      "/Users/alex/code/vox2/layout/chromium_paint_chunk_metadata.v"
+    ]
+  },
+  "production": {
+    "executable_sha256": "03bdf80d7cdd730a593b9a840cd086ddf35771bdf7a6cdd8f82a2f43ec44f41a",
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "03bdf80d7cdd730a593b9a840cd086ddf35771bdf7a6cdd8f82a2f43ec44f41a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "fb5f13debcd7625145d19e70707baa9193613052d9d6fbc238d51da24f74741a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a7f5b9903753e4d8ff1411ecd4b057d395ccc1b568ac910f56012f41990162b5",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "b512dea3cf57ab2289c49b45cbfeb0c70d8bc1c1e99addac828e608f7d331f23",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "brave": {
+      "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+    },
+    "compiler_proof": {
+      "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-043627-ecef90dc/frozen-compiler-inputs/0-Vox.c.i",
+      "sha256": "df36997a014ad7a500972a9ac3532be0e759b06ead374b97f1f368379ad55b24",
+      "fragment": "void layout__chromium_layerize_visible_paint_chunks(layout__DocumentLayoutResult* result, Array commands, __v_option_layout__LayoutRect cull, double scale, layout__ChromiumRasterPlanScratch* scratch, layout__ChromiumRasterLayerPlan* plan) {\n map__clear(&scratch->paint_visible_effects);\n {\n  i64 __for_idx_0 = 0;\n  for (; __for_idx_0 < scratch->chunks.len; __for_idx_0++) {\n   layout__ChromiumRasterChunk chunk = *(layout__ChromiumRasterChunk*)(array__get(scratch->chunks, __for_idx_0));\n   if ((chunk.state.effect_scope == 0) || (!layout__chromium_paint_chunk_is_interested(chunk, cull) && !layout__chromium_paint_chunk_has_pending_image(chunk, commands))) {\n    continue;\n   }\n   u64 scope = chunk.state.effect_scope;\n   while (scope > 0) {\n    u64 __map_key_1 = scope;\n    _Bool __map_val_2 = 1;\n    map__set(&scratch->paint_visible_effects, &__map_key_1, &__map_val_2);\n    if (scope >= (u64)(result->visual_context_tree.nodes.len)) {\n     break;\n    }\n    i64 parent = ((*(painting__AccumulatedVisualContextNode*)array__get(result->visual_context_tree.nodes, (i64)(scope)))).parent_index;\n    if ((parent <= 0) || ((u64)(parent) >= scope)) {\n     break;\n    }\n    scope = (u64)(parent);\n   }\n  }\n }\n {\n  i64 __for_idx_3 = 0;\n  for (; __for_idx_3 < scratch->chunks.len; __for_idx_3++) {\n   layout__ChromiumRasterChunk chunk = *(layout__ChromiumRasterChunk*)(array__get(scratch->chunks, __for_idx_3));\n   if (chunk.state.legacy_effect && layout__chromium_paint_chunk_is_interested(chunk, cull) && !chunk.state.atomic_opacity && !(string__eq(((*(layout__PaintCommand*)array__get(commands, chunk.command_index))).kind, _str_949) || string__eq(((*(layout__PaintCommand*)array__get(commands, chunk.command_index))).kind, _str_947))) {\n    layout__chromium_layerize_chunks_into(scratch->chunks, command"
+    },
+    "results": [
+      {
+        "name": "discord",
+        "exit": 1
+      },
+      {
+        "name": "controls",
+        "exit": 0
+      },
+      {
+        "name": "trace",
+        "exit": 0
+      },
+      {
+        "name": "broad",
+        "exit": 0
+      }
+    ],
+    "inputs_unchanged": true,
+    "sites": [
+      {
+        "site": "discord",
+        "result": {
+          "id": "discord",
+          "name": "Discord",
+          "url": "https://discord.com/",
+          "status": "live-to-frozen-mismatch",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 621,
+          "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/production/discord/discord",
+          "live_to_frozen_different_pixels": 598,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "ede02bfd8cb2c3587d1d0eb3810635baa5712fea91cb704f22e2dcddde1f732c"
+        },
+        "independent_rgba_counts": {
+          "source": 598,
+          "reference": 0,
+          "native": 621
+        }
+      },
+      {
+        "site": "hacker-news",
+        "result": {
+          "id": "hacker-news",
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/production/controls/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        },
+        "independent_rgba_counts": {
+          "source": 0,
+          "reference": 0,
+          "native": 0
+        }
+      },
+      {
+        "site": "techcrunch",
+        "result": {
+          "id": "techcrunch",
+          "name": "TechCrunch",
+          "url": "https://techcrunch.com/",
+          "status": "pass",
+          "image_animation_policy": "allowed",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/production/controls/techcrunch",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "e96b9b2571dd513f4294a479b2b4258bd6864769c0f623e1e3a6f0ddc95f0442"
+        },
+        "independent_rgba_counts": {
+          "source": 0,
+          "reference": 0,
+          "native": 0
+        }
+      },
+      {
+        "site": "wired",
+        "result": {
+          "id": "wired",
+          "name": "WIRED",
+          "url": "https://www.wired.com/",
+          "status": "pass",
+          "image_animation_policy": "none",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/production/controls/wired",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "c70c845521149c08f0243e4529b8510581e47f9d7a56d4f3d9bb9ae4f9f90f7b"
+        },
+        "independent_rgba_counts": {
+          "source": 0,
+          "reference": 0,
+          "native": 0
+        }
+      }
+    ],
+    "broad": {
+      "tests": 139,
+      "captures": 145,
+      "all_exact": true,
+      "inventory": [
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-07qtvjm9",
+          "reference": "Tests/Browser/Brave/expected/flex-baseline-cross-size.png",
+          "actual_sha256": "041fd557b668d540d0def8b99823b5133c2f74060685c8a6815cbff0966217da",
+          "reference_sha256": "cd40df4e9d40bfa882a9cf7a39735240c1693e919be81c1ea7710cfea96d3359",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-0bord6z9",
+          "reference": "Tests/Browser/Brave/expected/lobsters-empty-clip-antialiasing.png",
+          "actual_sha256": "142a46133eac21708cbf8dc999088708cc2e228587ff3b99dcf882e92481dff3",
+          "reference_sha256": "0f95b9af3fe932713d686ba3e7369b7828330191b42f20a7b4f495c2f59edfc1",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-0dn19ymh",
+          "reference": "Tests/Browser/Brave/expected/collapsed-table-fractional-shares.png",
+          "actual_sha256": "d7f930f13a23b8fe3fa77b43b765c1334da58bd9af5850898ba16626b449e8a7",
+          "reference_sha256": "eb0838dbab99ea005388d730a01f0961ceab6929802fd7c1f01f1a3edd34a570",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-0nnys1lo",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-sticky-overlap-text.png",
+          "actual_sha256": "f4a36cf8b971719223d755d5328f620fae6160a5ca35c94c655daee2a3fa7b4a",
+          "reference_sha256": "0b3c54448d8641faaae276d30fc918645961d25f44a111a137e48ee65fac5956",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-10v8js4c",
+          "reference": "Tests/Browser/Brave/expected/avif-yuv-sampling.png",
+          "actual_sha256": "a2e1359d13156d32e6cb70aeda1e0cd2d66fb8a770766bad8bae2d72642de392",
+          "reference_sha256": "6033a64bd3a16b86a2cec4a5da6729f8c35f128faac8e96459938e5ecbd47df9",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-13jz497e",
+          "reference": "Tests/Browser/Brave/expected/fractional-text-spacing.png",
+          "actual_sha256": "6c02ff107199530d5fac5c8ed18cb981dc3170f0170956b0effd91137b10e248",
+          "reference_sha256": "ab9d5b0ee396db421129d47488947c04379927785d3f8ac491a4333e10c4367d",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-1a9kajlx",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-programmatic-sticky-text.png",
+          "actual_sha256": "c3527813b23fa0ed47be71b52fa00a1b5750e56ac726894a13ded0a177b85703",
+          "reference_sha256": "3f675efefbeacd7eaaeb36b54d32a91153ff12273776da958581c6ecf1eb37c3",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-1czwxeb8",
+          "reference": "Tests/Browser/Brave/expected/cnn-fractional-svg-background.png",
+          "actual_sha256": "67209cfd67b1ee9ecbd7d46b75744f2a58836d40450fb86edcdb88716601fd3f",
+          "reference_sha256": "a653ca2c4185432ca6ea4f8e04d68c8ca9ab81bc98ecfb3e59c50fff10bba109",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-1kmb4814",
+          "reference": "Tests/Browser/Brave/expected/flat-perspective-image-picture.png",
+          "actual_sha256": "ca516f5a1b3bc6f20d659f75da4e3e31572586cedbb60d2538b0aea623de5d72",
+          "reference_sha256": "fd57be82ff4aa991c9ae488d39134f7b5a5e6eb907eeec9613cd26aece02e547",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-1v9a8_m7",
+          "reference": "Tests/Browser/Brave/expected/cnn-repeated-svg-background-header.png",
+          "actual_sha256": "f45dc51fd4f7e7c5647cead73844cb33fa7d6c20df18f55c3aeade7e5c7e3136",
+          "reference_sha256": "057ed5289a1a4b87942622981b3e02431c8fc041ece74237deb061e8962f84e9",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-1wo9hztz",
+          "reference": "Tests/Browser/Brave/expected/calc-flex-card-boundaries.png",
+          "actual_sha256": "d76d96c0642da759255a90c43c7adb74a2be212db3bfc01a3ad4ba662614d5eb",
+          "reference_sha256": "a0860ccda52ed07e9d527a6eaa07b650030dbf572e53a51eecd687655bc8832d",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-25obcq1m",
+          "reference": "Tests/Browser/Brave/expected/chromium-mozilla-selector-list.png",
+          "actual_sha256": "e2808f7b01589731c08594cca435c48b791ba49ca2465c25f85bc8b52a5c50ed",
+          "reference_sha256": "900721575b86519160a7a62998b22e35f788d009ec04d6264ab26af8bdb669c7",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-26p8bf_d",
+          "reference": "Tests/Browser/Brave/expected/engadget-category-borders.png",
+          "actual_sha256": "7200041018e4b1ea4585a2ae542694f94742ed07e56673c7f21cc05dd75738c3",
+          "reference_sha256": "8d98faf82957bba3e4ed83bec659a0b8fc48e2763d1e6f06055f036337e5b164",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-2mg0qgdv",
+          "reference": "Tests/Browser/Brave/expected/chromium-blurred-byte-text-shadow.png",
+          "actual_sha256": "2cb23c4e7175533a379ef90c8c1f1705f51744d75c6aecda925ab20966f705f2",
+          "reference_sha256": "a797fca8bba86547a0a2688b7444a0815b1100b6c06b40e201698f06c70e6102",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-2pk21l19",
+          "reference": "Tests/Browser/Brave/expected/cnn-ticker-offscreen-background.png",
+          "actual_sha256": "a8fda1abe0355d35fb926298fd1ff84c429a9bd74063b173a90231257cd4b6e5",
+          "reference_sha256": "07499e6c8d4390a81a7671da9cd3e7532ecc7247e4b75b29d880f5811ea07455",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-2scybqz8",
+          "reference": "Tests/Browser/Brave/expected/chromium-translated-solid-fill.png",
+          "actual_sha256": "28fe8d983296eff9cd0f29a1638bfdbb8fb8d8450ca306f4d3e4bca43ded84f5",
+          "reference_sha256": "7c60eab0ecfe4814a68efb1414900bddd7fec58aa77114125641f954c1f6cb62",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-2y4306rx",
+          "reference": "Tests/Browser/Brave/expected/pikabu-shadow-picture-tiles.png",
+          "actual_sha256": "6d7905a8d038d2325e6af94f9fb027c06ee3345c554b7177ea20c12c464d8388",
+          "reference_sha256": "579b0f44d0044f9ca7abf8e7c808beff3070b9d4dfb7d42d03a82a4af9cc67dc",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-3a73tyqe",
+          "reference": "Tests/Browser/Brave/expected/verge-svg-filter-space.png",
+          "actual_sha256": "c3c008865b222b8d3b200e38276258add628b8feb2a3b7b97862194e92f32b81",
+          "reference_sha256": "adafdd5574f394f92b0a43aa9f07e93cd35328b1eaf47915a1ef1002224327e1",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-3z45r8mx",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-fractional-flex-gap.png",
+          "actual_sha256": "a39f21123b992ac057b16dac3c329ec1e50078d738e26db93e4dbfa88323e05f",
+          "reference_sha256": "38818eef7bfdf31664913976500e3e0ef8da061bda5a6f13b7d1bf40acfd27a4",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-45yi1dbp",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-auto-hyphenation.png",
+          "actual_sha256": "4a7a666457da5a71216b1cbe07a8b6f43e3d447ddd1eab41722ee657543ca13f",
+          "reference_sha256": "b42fe59c725949210e26dc013c897ac3500c36ba1faaf86b2e27e4f6dc3821a3",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-4fuss84r",
+          "reference": "Tests/Browser/Brave/expected/chromium-inline-font-box.png",
+          "actual_sha256": "47f779ca2c9191cd5d64381bfd9a14d8584e3971fc696ae113d15a825abc8a70",
+          "reference_sha256": "587252c17dda5fbb28853d57da8ee5eecc6b849f092ec28e97c5f13796b8a49f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-4stgzn_z",
+          "reference": "Tests/Browser/Brave/expected/paragraph-final-hyphenation.png",
+          "actual_sha256": "8696040e8090f1434da991d9170a0e6571a932ea9137f26c57ac3a13ddca9c69",
+          "reference_sha256": "0425a00eae57d5ef01b3da2d06fbfa718b4bfb6b70bf55d6a0cb8da7aa15b64e",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-57jt2ig1",
+          "reference": "Tests/Browser/Brave/expected/cnn-opaque-header-mask.png",
+          "actual_sha256": "789bf4db12e4a2012b6e014132118c4fd32953a2abf10d3babee0730180300fd",
+          "reference_sha256": "4ff4619513f839c5257ea5a599d8cd86c65df22a3f7375d6462dc19206f42f5e",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-5o2aixav",
+          "reference": "Tests/Browser/Brave/expected/chromium-degenerate-border-arcs.png",
+          "actual_sha256": "5a1eb73d166def080296537c4542eef7866f52502a498cb114167c973da04cec",
+          "reference_sha256": "d05fdc574aa430a1889b29fc7eba0162b8aff495e70c68eee6935062ef2d1c6c",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-5p_ozx4s",
+          "reference": "Tests/Browser/Brave/expected/chromium-partial-rounded-border-msaa.png",
+          "actual_sha256": "f594469a23c7938b254ecc250eacfce284a0ef315f8919c9f64fd229a5463b13",
+          "reference_sha256": "70808e84618f962a523b110f0598dae57254ee0c025928bdeb21eee94554570d",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-6cgj7dlh",
+          "reference": "Tests/Browser/Brave/expected/techcrunch-gradient-solid.png",
+          "actual_sha256": "aef2295607710b1df684d52918e487cbdaaa1ff066a3325484c8a22191a5c360",
+          "reference_sha256": "3bd4cd9a2a10f6aced97df1c9748ac7603b0e9a9cf346e06161aa69253785302",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-6ww7n9zf",
+          "reference": "Tests/Browser/Brave/expected/chromium-unchecked-radio.png",
+          "actual_sha256": "db216dab3b4f6ad15f0e6d6966199e27acd9d5356f49a1fe5d82ed415cfaaadb",
+          "reference_sha256": "40ebf29a0e8a3de4ffa3f50e4f7c429bbaf2172d2e3b0901503d5dc0dfcc048f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-7a2_0zu4",
+          "reference": "Tests/Browser/Brave/expected/forum-disjoint-msaa-raster.png",
+          "actual_sha256": "783c9ff024a3b2a61f47811a2b1099273826ebe25116fe7934b3abbe2a27bc10",
+          "reference_sha256": "d570ab3a195910a53ac3910c056da58e40d605b0db7983feecd76e9182076808",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-7cid7rr4",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-svg-opacity-scroll-raster.png",
+          "actual_sha256": "415742d48eabb42aac07defae068b128807d2874eb857457dd8bd4133666c8b3",
+          "reference_sha256": "d1f3754a88ddd88f344eb8a19e6439820ad1041c423923f9587ec516fcfed2ad",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-7mxh0an_",
+          "reference": "Tests/Browser/Brave/expected/definite-flex-basis-cross-limit.png",
+          "actual_sha256": "a63e9597f0895d8dcf981c5ec1ad0e80cdef513dbd8b644a7130ed01f05ae40f",
+          "reference_sha256": "c470f5b60fb37086c691dda566aa1c4f0cc130eded7e4efcd6692aeab80d7202",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-80woys_s",
+          "reference": "Tests/Browser/Brave/expected/odd-image-picture-upload.png",
+          "actual_sha256": "540659127f7ed70083e2e03834b62f7ebbba4863be98ff27e0b8788a4cc8fe12",
+          "reference_sha256": "a3eeb7fc0eaa33fd805f657cd17199f76ff310975b1375615301699da2e4b651",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-8scfonzt",
+          "reference": "Tests/Browser/Brave/expected/forum-svg-mask-backdrop.png",
+          "actual_sha256": "fa4ff4bd4980c913524946302c31d96e520416a65b4daacbca70600ba2950a42",
+          "reference_sha256": "051a71549bf7121b824b07e4cc73ff9e0acad1038929340f45635cf650b6db8f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-96g1d0ls",
+          "reference": "Tests/Browser/Brave/expected/border-color-runs-zero-width.png",
+          "actual_sha256": "22f94c5500c2eebbe59affbe03fda9aee5e17a080e0b19c640b1e5e50b07b548",
+          "reference_sha256": "998cd98dfd1a034d5e618bea842df3152b6464d5bf80d605032917c6f0ef16ab",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-9_6zu7c4",
+          "reference": "Tests/Browser/Brave/expected/translated-svg-viewport-clip.png",
+          "actual_sha256": "a1b600da23a73ad3fd4830664f02884b86429f8486fa77d767aa6900e26fe78b",
+          "reference_sha256": "c615ae03b8e383d6b7bd8be08ac7ba2307daa837e41e091296129384851b5d5a",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-9n5gpm5n",
+          "reference": "Tests/Browser/Brave/expected/replaced-image-source-crops.png",
+          "actual_sha256": "d32ac7c3b32f7ac2f378bd57ad067d59877473df9dc50c6df64d902353284fbe",
+          "reference_sha256": "b1fb2e38de6e71b888c75c7611e6b615e35d904cbe4efdfe4cc9049c8a6a5311",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-9qzk7orc",
+          "reference": "Tests/Browser/Brave/expected/screen-opacity-composite.png",
+          "actual_sha256": "4cffde1cd3ac3165617f9b17e6818268bc4e823f9ead40b3b5039a1aaad263f2",
+          "reference_sha256": "8886c95517ba9b2216d824da1dfb36256681daccf614c5bbb085410c52ce2e46",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-_cmcbehe",
+          "reference": "Tests/Browser/Brave/expected/webp-yuv.png",
+          "actual_sha256": "adbc63767d11c9aa1ad347f1c99e7ce1c7000d4000a8cc3093854630f2b8c782",
+          "reference_sha256": "491fcb43ce6803241807907b550a6dc39a129fb4c12f1f89c49351befa3dac5f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-_qjjv7xo",
+          "reference": "Tests/Browser/Brave/expected/compositor-rounded-profiled-images.png",
+          "actual_sha256": "028d42677ec8d652cc2b2ea8954106da80b41a795db7e2f8fe9bb20011efea3d",
+          "reference_sha256": "1204190af868dc7779e84b182acbb23074a26ab3d65b7a86051332ed0b394a05",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-_xvkx2qq",
+          "reference": "Tests/Browser/Brave/expected/empty-pseudo-inline-end-edges.png",
+          "actual_sha256": "a60b30d01f7ef8f11deb3521294e6b1228c93a967f133434ae0e128db69e2f5b",
+          "reference_sha256": "9d9dc43880f285b8b14a40b3ed669aada86c1ae89f3bab3795786f675a1f4f5a",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-_xwxl81w",
+          "reference": "Tests/Browser/Brave/expected/culled-scroll-overlap-gradient.png",
+          "actual_sha256": "cab913b3ceb50e461b9ba13d51955d57325cdc20ae9fb2cd20a9319dfee6dd5c",
+          "reference_sha256": "bfd3f7430e9a3c6eff02650221327b52fda072c02a5d48fd9ab2d9c6e50ffc1a",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-a1c9paw5",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-masked-svg-scroll-raster.png",
+          "actual_sha256": "8e86724fb05788400081d7df3898612c4a451e51cfc0eac8c5725eb91c2044c9",
+          "reference_sha256": "53e9c9a5069fadaf486deca63f38beed6d9c696ac2b54ee21ab89bf4a40456cd",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-aj73t3mg",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-fractional-borders.png",
+          "actual_sha256": "2425599533c541831232a3bb2fffe13b5ce847e2d6e765f6b348cc058b3dffd5",
+          "reference_sha256": "a2f94841fd7215b2907103d6932c0e12841f3cfe2dad3a29ea01b2e23cb6e1dd",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ajv6cxi2",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-empty-accessibility-clip.png",
+          "actual_sha256": "4aba918933643012a8e508c988cf900f187b76feb7f5d20eda349645c803e4d0",
+          "reference_sha256": "f578ba6c673f31d6df2df54eff724dc848daf988451a76fffe36539dcb5dcb2c",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-aogj6zju",
+          "reference": "Tests/Browser/Brave/expected/forum-fractional-svg-rectangles.png",
+          "actual_sha256": "be69bacf46b656117026f884469f3c02b7d69fd1d8cc2870db8c44c71ca8f4e0",
+          "reference_sha256": "be0e03b6743192fa1cb4dc14c74d507ca974ecfbf31e87bc8b31a547b6773738",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-aqrd667a",
+          "reference": "Tests/Browser/Brave/expected/equal-image-overflow-clip.png",
+          "actual_sha256": "1e57ca8565b4a549ed7ecb7f9f35099f08af0b2eaa57d50ad32686fac3436246",
+          "reference_sha256": "46550bca24154c57d068a0cee458182cdf8050b1fec370a013129e7d37de968b",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ati_c546",
+          "reference": "Tests/Browser/Brave/expected/forum-single-svg-opacity.png",
+          "actual_sha256": "618a154bfa61e3922ca1cde404913bfc0fc105ad92985b7e2c9ef5187904d486",
+          "reference_sha256": "5c4ac178a6da521579f5890bf37ad26623beaf720b419b51575c4672cabf3d78",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-b1iplv2j",
+          "reference": "Tests/Browser/Brave/expected/gradient-obscured-border-destination.png",
+          "actual_sha256": "fa2e7de2a59df31129ea676fa7a118f5468c8746ce7922396a2321c66e2b032a",
+          "reference_sha256": "88ea8b3c6e1f4ffe77a797063383ad713f7e1d2a890cbefd70d9d82a6a823821",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-b5olomte",
+          "reference": "Tests/Browser/Brave/expected/inline-block-followed-by-full-float.png",
+          "actual_sha256": "c5845b87a7405a4b166cb3de5b8d906697f2d89cfafb7d22507a60c6d4085451",
+          "reference_sha256": "3638db0cebe3e4d4bd3dca75f2a5d9ab88b01b1398e5fbbd6bcc7358267ba4d2",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-bprqmmv0",
+          "reference": "Tests/Browser/Brave/expected/chromium-single-dashed-border.png",
+          "actual_sha256": "02a82ca791279dec6fe4dedbb1d1ad7d7ec91f28465a969cf279d457744cc719",
+          "reference_sha256": "d68f522f2ad7904b3512489d2b4710f0dd278f677cfa87dcbdc798e19bf5316b",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-bqnxidyq",
+          "reference": "Tests/Browser/Brave/expected/guardian-intrinsic-font-width.png",
+          "actual_sha256": "6c3f51243e7f06d22c0544df02bef5e44db37b92c076208b1cffe57328dfe837",
+          "reference_sha256": "683e5631e08c43c3f6de7e4c46081a130cfde3c29dc615398763cfc4bd49a39f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-chrsl1ol",
+          "reference": "Tests/Browser/Brave/expected/chromium-partial-rounded-border.png",
+          "actual_sha256": "c3da01f5d31bbe2ea3d06bef68eadff237f101f6c5185bd1cbf1c722bb4347e1",
+          "reference_sha256": "dea601551d29cc12ed910f7478551ebcc1f3d179c78e618a661c383004a18752",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ci0r7us5",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-clamped-excerpts.png",
+          "actual_sha256": "5a8b243968d97d24345f89af641c562d75c5f0008a2c93a6edf2d21bd1a16454",
+          "reference_sha256": "5c4d15f4d9ab391a2e1f08da5bbeaf97486c4a6680d12d92deba61a65216fb11",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-cvnrzkrk",
+          "reference": "Tests/Browser/Brave/expected/rounded-masked-replaced-image.png",
+          "actual_sha256": "de0d736c5118857d07d2cc6ab1bcb55fbd3ea5bc974437739eb788f005172781",
+          "reference_sha256": "4fba395d06db449c201ff6a41026f502ce095f58ebc9b4bc63331ffa9fd9cc03",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-dbjxvxk1",
+          "reference": "Tests/Browser/Brave/expected/engadget-fixed-header-mask.png",
+          "actual_sha256": "c7e4d7949e445535aade97dd516337a800a369643b5aecd6cc7e7377f298ccc1",
+          "reference_sha256": "8d1a4e8b0e4be8e329f347baa0c5d279f02167a84e1958f2fc4de01e0b1cd572",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ddyjw43w",
+          "reference": "Tests/Browser/Brave/expected/discord-background-paint-rect.png",
+          "actual_sha256": "8e321979a9f917a928ce0297b6014f91cd0fda849c159eb5ad9d75e6db17e960",
+          "reference_sha256": "14f8213fac005ad6542a3e45d165746ff44806810376badb9fc7b728fd7d6d82",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-dgteu_4h",
+          "reference": "Tests/Browser/Brave/expected/empty-inline-ending-edges.png",
+          "actual_sha256": "b7a426599c3859097bed3c1a43e72a10e274474c89ce696077a55b0f6b37f3fc",
+          "reference_sha256": "4eb9179b90510587d707145ce5de82581754c3cf5054634731c5a4c56f618610",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-e5u14v61",
+          "reference": "Tests/Browser/Brave/expected/chromium-transformed-solid-fill.png",
+          "actual_sha256": "8c72a79fefed14ca06981b8f6a82dcdd42d7a6cee243577b1faedfd0c74c8e39",
+          "reference_sha256": "3d6d956d028066101476639e1c69efe5ccab80d5d461a122523b1e1611848e83",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-e_6zsfp6",
+          "reference": "Tests/Browser/Brave/expected/translucent-underline-paint-order.png",
+          "actual_sha256": "0f9f630ce9b2c264407ffeff8c233aa31589d7022ecbaf486e9f74576aff612a",
+          "reference_sha256": "734e273fb03402d96628cda6cf51c24346a9ebd92a33b6703ee82a1957d2da0f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ea89a4wc",
+          "reference": "Tests/Browser/Brave/expected/forum-svg-fractional-paint.png",
+          "actual_sha256": "62c62abf43dda9f096be08e4c8c5ebebf6b4750b65699ed71936fa5b6d500513",
+          "reference_sha256": "ca3ddf0fc1b9cea6c65b52f55fef501c6b6227ada56775353f08752d6992fcf6",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ekt8nt2i",
+          "reference": "Tests/Browser/Brave/expected/fallback-space-intrinsic-button.png",
+          "actual_sha256": "1f86dc1e090a83067384def90d976eec0bcc2913ef86ace91491d6dac741a09a",
+          "reference_sha256": "e695dbe96686f6022eaba488e809cd4f93cb53b6ef060c22a4656b6553acc5a5",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-eqdf6afr",
+          "reference": "Tests/Browser/Brave/expected/chromium-positioned-header-image-gap.png",
+          "actual_sha256": "dffb3fe066069e5aff6f12554bb1e15663da146a7b2aeaa41df5a69747f934f5",
+          "reference_sha256": "dd052d343c1c6155be62825eee9160b76bf697097c030c2b20f8466acb981441",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ez11wq6l",
+          "reference": "Tests/Browser/Brave/expected/spaced-optional-ligatures.png",
+          "actual_sha256": "916efa033ea6710db993699d50d35d3821320fdac052b87a661454f0ec01f021",
+          "reference_sha256": "68bee1782e78b9b4dfec1504c679c9026f99746df08094b210cc666bc8a2b5fe",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-f7wvdndd",
+          "reference": "Tests/Browser/Brave/expected/forum-svg-single-paint-opacity.png",
+          "actual_sha256": "11a052870e6545285e80b6e7403a2a17750539f70d90ccda250d955a3b3ded9a",
+          "reference_sha256": "3c929d7426995c525bc120988ee844b6b19b10a61b7426d2a9156f9b47074210",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-fkwuqnqa",
+          "reference": "Tests/Browser/Brave/expected/translated-svg-background-viewport.png",
+          "actual_sha256": "9f0d6aef526bb6999d069c3b49d2caf12d42b5cdf3fd5084f51b89909ebea1b8",
+          "reference_sha256": "6a1014ae665ca072b5cea9e1ec75b5d72e3e5fd2edc35638e4baaa568bedf473",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-fptc1y51",
+          "reference": "Tests/Browser/Brave/expected/compositor-large-logical-layer.png",
+          "actual_sha256": "f62086787e39309543b9e97e2023bb0eaeb9ed57e600680bf6d65d3b2ae298b7",
+          "reference_sha256": "50f551e42019efd910b78d521800ba977f30282c280e6872c4cd967f707b1fd5",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-fzmcb6x4",
+          "reference": "Tests/Browser/Brave/expected/svg-fractional-background-container.png",
+          "actual_sha256": "8a1a4de93ec9e7d68014a90d715e0e4f8106321324320548812c2ad33aa86189",
+          "reference_sha256": "137e2dba7765a767807202f217d410d6c70287b15c55bc316bed91e1cff3b7c1",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-g4hsb06r",
+          "reference": "Tests/Browser/Brave/expected/chromium-percentage-border-radius.png",
+          "actual_sha256": "5c8ec69131fc4e0a38109c7011c024768a3955edad6392a90a31f3b1d7cf59ab",
+          "reference_sha256": "78f4f71a8b71385c4fc28b13e3ec80ed664a506b76f1d9328b18f0e214d59372",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-g8kd8jgt",
+          "reference": "Tests/Browser/Brave/expected/hidden-scroll-metadata.png",
+          "actual_sha256": "406a38750f8c81c1e7d239b36b83da3b8b2e8f5ce750fafe392b303f60b021e6",
+          "reference_sha256": "60791309e28da71e0d6868c57ac54eb007767dcc985851ba73420faeafee2911",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-g9gv8e0p",
+          "reference": "Tests/Browser/Brave/expected/image-decode-compositor-reuse.png",
+          "actual_sha256": "a95cbfc7eb3cd683e5eba69a53b09c17f521f89be7ecee70a73b891a1b3b8936",
+          "reference_sha256": "0ce1edc6358d539e6225ea0eaacffc60599c8d422c56e0d4d1e4292f8c412604",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ggd3czj0",
+          "reference": "Tests/Browser/Brave/expected/glyph-document-origin.png",
+          "actual_sha256": "5c96449b421a2e4a54e894544b35cc05989565e099714b948cb43d66a0c355c5",
+          "reference_sha256": "efbca668d38f34baab4e4aafc962e7395b41331d1f50051563e2dd9e9847ab20",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-gqcd2r01",
+          "reference": "Tests/Browser/Brave/expected/forum-svg-mask-group-opacity.png",
+          "actual_sha256": "7edd062fbc6f08540e450ea8e73c048a6ba24a4fd8150278e159133668e83eba",
+          "reference_sha256": "849453156a0b8aecaeac679c5e37e079d6a5d6b5cdf8616bace9f73bf8ef016d",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-h3h7n4v8",
+          "reference": "Tests/Browser/Brave/expected/webp-rgba-mip.png",
+          "actual_sha256": "0516c782be838e90a2378bcf697b5953c7e8f86cb3614a281da1c00bfd98d43e",
+          "reference_sha256": "0141bef15564a858f1812cd60f6680d31fc7cd3a070bc91191b118d1868e1294",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-hi5sjceg",
+          "reference": "Tests/Browser/Brave/expected/chromium-decorated-text-coverage.png",
+          "actual_sha256": "b9e45d24ffc7e8104234785a37d016edcbe217f7a20e7cdca2078cad119edf01",
+          "reference_sha256": "a93bb38e681d1a8e9a3edca879f3af68a014fbc50576ef9964f1a1e780e89511",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-hj3nmqce",
+          "reference": "Tests/Browser/Brave/expected/svg-pattern-image-blur.png",
+          "actual_sha256": "365ab8672e76b35f18c6345d1b8e28947384fdc1ff291731221a8a9561b2cc3e",
+          "reference_sha256": "eee611371544e33fce98a85323344320f785146f914dadb5e2f52b282a7f3213",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-hk0jkydo",
+          "reference": "Tests/Browser/Brave/expected/pikabu-svg-image-pattern.png",
+          "actual_sha256": "fb5446dda9b656c4cad13f75561a19e75687c82726064b39a8afaa6605cc9639",
+          "reference_sha256": "fbec81e2a0b9b408c2aa2e766518e53acab17a62d1d137a854084749fee122e6",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-hl51i_5m",
+          "reference": "Tests/Browser/Brave/expected/pikabu-direct-composited-image.png",
+          "actual_sha256": "cc202a58e9a26b807fb862f2a9fb1ed4086daa29ec0fb6f3e46c67bf99ce745f",
+          "reference_sha256": "137389c20a258085efcf111a74e67f2a419b37fa6550d97523797e9adef96e1e",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-htgbb8nq",
+          "reference": "Tests/Browser/Brave/expected/engadget-svg-auto-image.png",
+          "actual_sha256": "5780ba54aca99832fd0a6d26ec89cd67eb514bf97e6e20c2e47bc7e005388814",
+          "reference_sha256": "f522ef7679d0d8092b30f68eb2a1003ff7b14d32a912929787a4ce02ccd60a80",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-hu3v7zd7",
+          "reference": "Tests/Browser/Brave/expected/engadget-webp-icc.png",
+          "actual_sha256": "aa4fb28ff1838558f45146d68f2a65cdcdc45aecba9606b22ba5685a8b9aaa77",
+          "reference_sha256": "b858be9707f838943d092db928385edd3c3df69bc3dda900949380d00e853f4b",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-i80hv8is",
+          "reference": "Tests/Browser/Brave/expected/pending-generated-icon-font.png",
+          "actual_sha256": "dadf4cebf68dde503288b9498ae1468682af1aad0907533a0a0c5aeade698af2",
+          "reference_sha256": "c5c96a8bb9852f73fe53d59c9168e19a6ed1f1c3cbb5f31ea96e7847411805b0",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ib1uzcx_",
+          "reference": "Tests/Browser/Brave/expected/forum-fractional-rounded-underlay.png",
+          "actual_sha256": "4a67a4103dd4d393642a39f8015e100b59c74d8153849eb92a9413965fd109ca",
+          "reference_sha256": "174243f5f275ddc3a75809c38c853fa0e92c2171f97c2bbc08fc35dabf55908f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ict7je0u",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-promoted-sidebar-text.png",
+          "actual_sha256": "9c6788ca20549597c050eb3efd9396ecf9e4275abf8baabbc03d12cf141c1716",
+          "reference_sha256": "09b440a6714775dbeb8d2e1436c271d4030c6519c7f3c5bbba342b7c4a97c1ad",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-j7f_rw7c",
+          "reference": "Tests/Browser/Brave/expected/automatic-table-column-surplus.png",
+          "actual_sha256": "0965cd9562e1886bfffeddf62bacea284ca04ab5a90ff488c827bf5909d5d917",
+          "reference_sha256": "7aaa87342345e729fb2801b9f83e0aefe3d8e39b5c1b9d11284cbccd6342b8fd",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-jfijto55",
+          "reference": "Tests/Browser/Brave/expected/opaque-svg-mask-ellipse-resume.png",
+          "actual_sha256": "c365526c439ab01fd5dcf463e093461d48f5064a43ebd4b2c4061bb3ec9e0ff8",
+          "reference_sha256": "0965b9905a85ac7444070f3813b42d638e11bc09234f50f8f1e245891f293668",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-jg26wr_l",
+          "reference": "Tests/Browser/Brave/expected/flex-reverse-fractional-center.png",
+          "actual_sha256": "ebb5609bc942fbe225de9995c9a4ee99a6bd698918167aa409da9787c1974ca3",
+          "reference_sha256": "264c45175fb7af4a782f86e6dfaf8a9b99ed898f960eb466b1b491e33b161b8e",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-jrjc_azz",
+          "reference": "Tests/Browser/Brave/expected/svg-currentcolor-opacity-alpha.png",
+          "actual_sha256": "29cb16f745a1ee99ed34d9450701e47262f590c77c5091a21b1bf8827b7dcb9d",
+          "reference_sha256": "70cd8edb08f035da66c21de998b35e78a837193b861f82c7c0e0d1d4c81abb30",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-jx0a4qdt",
+          "reference": "Tests/Browser/Brave/expected/forum-fractional-underline-color.png",
+          "actual_sha256": "695711ac510b8715251fb2da2438a912bd04a689ad8ca416a386fc367610e166",
+          "reference_sha256": "4ccd63a2fa79eb251a202c2001d7927e26a3d154415e3108fd985ca6b9292ae1",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-jzh7tag3",
+          "reference": "Tests/Browser/Brave/expected/image-decode-resource-reuse.png",
+          "actual_sha256": "7b483246699b7cde9d834e3d4b675d7ab8fbcbcbe5cf90646ad250292dc983ff",
+          "reference_sha256": "d05a8aeac121e1eb9f73cf5009f8510333c6114d04bd5f2796856eaa6031bad3",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-k0dryoax",
+          "reference": "Tests/Browser/Brave/expected/svg-relative-path-precision.png",
+          "actual_sha256": "4e174a79a4d0a79df47d7b7801a64640a84ef8a3d9d1382962c3d1a9868a67ee",
+          "reference_sha256": "362b3027033d798a5a8357f2144dd8cea429f1159f285583fcdceb486f747471",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-k43pn21b",
+          "reference": "Tests/Browser/Brave/expected/pikabu-svg-pattern-image.png",
+          "actual_sha256": "a117d474626094518f3e2852272481b0224bb7bffb91d8c26e2382f4bc1aba97",
+          "reference_sha256": "d67829866410f7b695eac37c4826359c15441692138b2bacd11d4ad89347ecb3",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-kcxdhjga",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-independent-hyphen-shaping.png",
+          "actual_sha256": "0d59976a615b9c832794744754984f797bc6fe1fead1689db3633f89bb567a5c",
+          "reference_sha256": "411169a9fb2f14c12ed72635178cedd29ec0afd7c0db7e56910aa79e3028966c",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-kje8qh7e",
+          "reference": "Tests/Browser/Brave/expected/image-first-frame-policy.png",
+          "actual_sha256": "a6ef20f3b6cdd4e0c44077024afbc15a1ff8627922455eb60b89872ec33f52d6",
+          "reference_sha256": "9ca5218d30b63aa24345cf107aaf51d3221463ecdea14b967ca3f1a65af91c27",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-kp4a1koj",
+          "reference": "Tests/Browser/Brave/expected/jpegxl-image-paths.png",
+          "actual_sha256": "2337923ff164446ed451cec3bda679ba3c53e00515199d33a7c2ccfc2de7b42b",
+          "reference_sha256": "1b6ba88361486768bcab0335792dd03a489226c4ccc3278c5600fdb0016a25c7",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-kyxw_hrz",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-block-text-control-width.png",
+          "actual_sha256": "79838017d0fdd7a21ebc47cb66ca04181ef9adb314f41d0f5e1c1297d34844b0",
+          "reference_sha256": "341636e2038651baa266de24b41c018937b0230d6f73901845902f5aea7aca3b",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-l8qh91mn",
+          "reference": "Tests/Browser/Brave/expected/fractional-svg-symbol-clip.png",
+          "actual_sha256": "d419f4a74185fdd76799a88e5c3e6070896461e2deb6a4b3c6cf90acaa15702b",
+          "reference_sha256": "fab0957d525fea7e99c853281c583afaa62403d976c7d4620621ce35d927f20d",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-lqu_phm9",
+          "reference": "Tests/Browser/Brave/expected/cnn-svg-background-header.png",
+          "actual_sha256": "f45dc51fd4f7e7c5647cead73844cb33fa7d6c20df18f55c3aeade7e5c7e3136",
+          "reference_sha256": "057ed5289a1a4b87942622981b3e02431c8fc041ece74237deb061e8962f84e9",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-lz8dc5ta",
+          "reference": "Tests/Browser/Brave/expected/forum-analytic-rounded-underlay.png",
+          "actual_sha256": "b919afb3c6d54c3257a5dba119e3f86f6784aaedc74b4cd091f39281d135db47",
+          "reference_sha256": "3918b48a77bd2d14247e9da5d2957f0398da9ac4bdfb7c0539d9771575f1ce62",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-mkyvnj4u",
+          "reference": "Tests/Browser/Brave/expected/pikabu-picture-local-image-clip.png",
+          "actual_sha256": "30a219b51658de383be218b50545c2bf1b37ac9553c8542c6333135778c52807",
+          "reference_sha256": "7f32d24bfafc538db2ab78ee3fc5e9b8df47bd5c96e8664729ad051cbffbf232",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-mpnv475y",
+          "reference": "Tests/Browser/Brave/expected/hyphenation-closing-punctuation.png",
+          "actual_sha256": "7658b20ecf80adccb2da929fdf3a272b009ae2cb4bb7249cc12400850cdd9ef3",
+          "reference_sha256": "e080ba615d92337a930d48c15b0f6f5438fe2378fa7bb3b643e76567cab60dd3",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-nubqzflm",
+          "reference": "Tests/Browser/Brave/expected/fixed-scroll-paint-metadata.png",
+          "actual_sha256": "2817dff10dd6699d6e24586703494f25745238d49bd00e6b5dcf6234c7772683",
+          "reference_sha256": "dba9d750bc52b3f7a82b4daf02f76ab73ba6981f2b044dab74b82a9eb95b584f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ocejffoi",
+          "reference": "Tests/Browser/Brave/expected/cropped-image-inactive-decode-hints.png",
+          "actual_sha256": "034ffc4f9c424a8f2d3b2abe40232e5928c14dd766da9d9ed024fc42bd5f860d",
+          "reference_sha256": "3c636ee5ce6b95d06001464ced049a8bcc695bcdebcce3e81625064c9c1b9c53",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-odxppi6b",
+          "reference": "Tests/Browser/Brave/expected/lobsters-inline-msaa-compositing.png",
+          "actual_sha256": "99678fb619d1539ce1d9dc1379a295ebf34b45e544e12458c9b6bec3ed058958",
+          "reference_sha256": "1c3d2e55038f388a125ccc1cf14a1c3c808f5e55e74425dfe958c932caa19d99",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-omywou8i",
+          "reference": "Tests/Browser/Brave/expected/block-border-box-aspect-ratio.png",
+          "actual_sha256": "20df709e325c1a5fa2ca977737eb50cfdea24679c44bdac1616d91f75c92fba2",
+          "reference_sha256": "cd0359342372b6a08948e6ee6837832d4eba49d80a2309ed16e6642df54dfe8a",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-orvauik6",
+          "reference": "Tests/Browser/Brave/expected/webp-root-raster-tiles.png",
+          "actual_sha256": "1d25e4ab4a9dd060c0eaf7408127cf1d02a1e7cb5d06a7c4efdaaee1d769aa6a",
+          "reference_sha256": "3686925bad37bfedf28f8844eec43a4952ae6ae3e8aed260b1e7e1392e32d38a",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-phzwyh_s",
+          "reference": "Tests/Browser/Brave/expected/object-fit-fixed-point-svg.png",
+          "actual_sha256": "f0366c439f8b5e1b16cacb088048832cbfbfd95d3dde23bdf1f51c9a16181ce9",
+          "reference_sha256": "3de184c2093d10d132e1f02be996bbc29b9fb419a06930fb7ffdda0b048789bf",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-pic3fpnq",
+          "reference": "Tests/Browser/Brave/expected/svg-auto-ratio-rounding.png",
+          "actual_sha256": "6b760dc560fb9198863a294c34994ba78305e5c9ce00c604ebbc541619013e1d",
+          "reference_sha256": "80ae3c2982ed8bc573c23695400fc56a5a1c202d7fe27ef77c7336c3e29ec12f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-pm_81cpy",
+          "reference": "Tests/Browser/Brave/expected/relative-paint-client-chunks.png",
+          "actual_sha256": "efe0fbf30347286796d7d20c4704ffceef2a439134b42e1d6a394d4a8bf90c2d",
+          "reference_sha256": "e2755d761c2df86a6e91efee0a5592c5abbb962c6e17d44bb3940b35efd91ec0",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-q9wz3teg",
+          "reference": "Tests/Browser/Brave/expected/lobsters-tag-alignment.png",
+          "actual_sha256": "afe67dc967857782710c2aac8c3d56242a08d4ceb5038ec63374b0a19e1445dd",
+          "reference_sha256": "8ddad97e73c5da39de661438c5ef4f05808fad5fe51e17fe68e16a5a61f1164e",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-qmyga61f",
+          "reference": "Tests/Browser/Brave/expected/generated-pseudo-live-font.png",
+          "actual_sha256": "07d0beb10bfa06d369c8283bada000ac443b3394c9376329641ebd4462567b84",
+          "reference_sha256": "8eb923617f3975f06088e06f58f32c18c05d8be6f5bf7c52da91341caf9c4146",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-qt8buh_w",
+          "reference": "Tests/Browser/Brave/expected/verge-transformed-drop-shadow.png",
+          "actual_sha256": "00900015fd7897587a315241235ec7b9ece63b6125f4102f0a61273acefe369e",
+          "reference_sha256": "056943906752a953589aaf1d601705cdbdc965caaac8f860878df0558591bc9c",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-rkbgn648",
+          "reference": "Tests/Browser/Brave/expected/fractional-svg-viewport-fringe.png",
+          "actual_sha256": "2a4ce725bd0b3d7e6d906ca3812f8e278c9f2b97640fd4b2850523b5349b9cdd",
+          "reference_sha256": "197f9ed8ac8fc79c482a10a7ca579861eebc3d96650a4f3e3f1ce3b6c3b172f4",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-skaw8z0y",
+          "reference": "Tests/Browser/Brave/expected/compositor-image-only-picture.png",
+          "actual_sha256": "29c62bdd90e9594fc39e961111be899b05fc6019ef8cfb6ab7f679a40ca9baff",
+          "reference_sha256": "199d881b08193ceb78678d9d9a817213a165a13ada874e146cd52548f5342778",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-skeecovs",
+          "reference": "Tests/Browser/Brave/expected/image-decode-scrolling-reuse.png",
+          "actual_sha256": "5f4621246751350a011dc2f7bc92823ed2f15df9e41bb0d41a807916e276d6c9",
+          "reference_sha256": "f1928aa03228240d031fc2d6bc89ef43094e9ecc58cc5133e27194b156a5ffec",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-snuj8oa4",
+          "reference": "Tests/Browser/Brave/expected/register-svg-stroke-recording.png",
+          "actual_sha256": "b9f5d7d4f48281f825853e96733b9461316b265e2754d46910fb1bf0a44ff89c",
+          "reference_sha256": "ea45e4053576e6db32550a112d930240d55ad69c05c09a98ccb0cf1a8495272c",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-so3jwu41",
+          "reference": "Tests/Browser/Brave/expected/downloaded-font-metrics-policy.png",
+          "actual_sha256": "d0eb94c2fede90ff47f6e6ca170b8b94a67aedcf20b6e3196a2f3855492ea817",
+          "reference_sha256": "d18a5e851836a73131e3ef56dc962d0f0e5d9ce99a4f95c68aac50ba246a67f4",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-suhcjshz",
+          "reference": "Tests/Browser/Brave/expected/forum-resumed-scroll-raster.png",
+          "actual_sha256": "f95b39a41db7d91f7352841f310b879118fd320f24dbded679469f8940f0f2bd",
+          "reference_sha256": "ea539846871a837b3c53df7222f119af272d9555a2db72efcaa848d8de35a796",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-szwqfq0i",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-bordered-header.png",
+          "actual_sha256": "4a7741999730b5c4b3be33486f0dae870c1fe80a2eaff2841dd902e4501d6234",
+          "reference_sha256": "e79800134ac72fb42c3264cf92e57692edd744585cf9c9b90bdd4ca96949700b",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-to1amvgb",
+          "reference": "Tests/Browser/Brave/expected/completed-animation-parent-picture.png",
+          "actual_sha256": "a349fa4ac03c83afd412fec34bc5bed8779b0d95804c1a0c394819da297c6593",
+          "reference_sha256": "fd385ff28de47405858e4c4aac436b6b55dfbdb5f5d12a0d43d6b2ab4d012c70",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-tqiilv18",
+          "reference": "Tests/Browser/Brave/expected/compositor-disjoint-scroll-gap.png",
+          "actual_sha256": "8f167ce200ce8754421dd93c38b1bd074044702faa2571436493d538f6e8c0a2",
+          "reference_sha256": "77a554e331138627713a3acc2b5412009acfb6e588b57eb5328a0767033f8672",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-tqps9e36",
+          "reference": "Tests/Browser/Brave/expected/forum-modern-svg-color-alpha.png",
+          "actual_sha256": "6da1418352454fc7a5edd048df5e49e6380078dd3d993f94475875d8868f19d9",
+          "reference_sha256": "ff3961d645f6e41240831e3d0c4981c7d4889e31685ba0b3d51e796756b34040",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-twajm71v",
+          "reference": "Tests/Browser/Brave/expected/webp-rgba-mip-blend.png",
+          "actual_sha256": "6cf9072b605d09db63e64ded6de9ac4187ef3e81e6abfdfcbf3d5d4238ba30e8",
+          "reference_sha256": "f995b5d1e7c2792ab53245ceefb9370797af1c13112f1a9a75a7cfa74f5f25b0",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-tyfp3smt",
+          "reference": "Tests/Browser/Brave/expected/cropped-image-decoding-modes.png",
+          "actual_sha256": "034ffc4f9c424a8f2d3b2abe40232e5928c14dd766da9d9ed024fc42bd5f860d",
+          "reference_sha256": "3c636ee5ce6b95d06001464ced049a8bcc695bcdebcce3e81625064c9c1b9c53",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ud2b_q0z",
+          "reference": "Tests/Browser/Brave/expected/svg-ellipse-parent-msaa.png",
+          "actual_sha256": "275abbc4fa8bdbaa428a2667222429746ba49145b0c30ccec1fda6753bbe2e25",
+          "reference_sha256": "b890e658b88d9afc8e79a706f60c5728d58aedb91cdaad5ebf1a648d211e14c3",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ug0e040n",
+          "reference": "Tests/Browser/Brave/expected/block-content-alignment.png",
+          "actual_sha256": "480ac3b180e0c936cc2204cfa2e396cfbfc8139282474a054db3b9d433ae6ed2",
+          "reference_sha256": "759d00ef51fa57316319be25c5c45870b6b4838bda71509498451540d6a52779",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ug4sl048",
+          "reference": "Tests/Browser/Brave/expected/chromium-hsl-alpha.png",
+          "actual_sha256": "f4d772701da3235095b0afd2d231292112fd2ff68bdec424f07e339293385335",
+          "reference_sha256": "a92257aeb26c09deded2ae2ac5e6cdee06ea7eccb66472645ee1d090708612ee",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ugnjd2aw",
+          "reference": "Tests/Browser/Brave/expected/root-hit-test-sparse-image.png",
+          "actual_sha256": "89760cc532d21ce6e68fd5cd15c873b205276a05c923814bf8c183927bdf62e4",
+          "reference_sha256": "97ad70bbfaeaa2b9929c1b0d6862e9c18fd14b1d4a807eafee9d269277e50a3a",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-uk0__71z",
+          "reference": "Tests/Browser/Brave/expected/techcrunch-mask-sizing.png",
+          "actual_sha256": "370df869aea85ac1194bd0dc531c6c0ad962090d5b7aa7f5ce5c8b80c6702e3b",
+          "reference_sha256": "6ccfd98c29b57171373dcdb278002c82faaa6150f5a5f782faa32b8eafa31ed5",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-ulg08wie",
+          "reference": "Tests/Browser/Brave/expected/pikabu-clamped-svg-image.png",
+          "actual_sha256": "ed51078b67a13cd631921ca32e64040abca3c400ae8139b273b3dc409bea22f0",
+          "reference_sha256": "586ddd55152af150e3691b939663d4b739bebcd2b1f54553f9753314d961c98b",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-us0hfzmy",
+          "reference": "Tests/Browser/Brave/expected/forum-composited-svg-edges.png",
+          "actual_sha256": "a0c59863d62e77beaaa4a4f1f4fd927382bbc4f81a39f5064b380fdd902c89bc",
+          "reference_sha256": "37fac3f1abe33ebb6dc6f8de065369ef2463856f27d1d2fed387b0463f8cc285",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-uxpdpu1l",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-sticky-raster-bounds.png",
+          "actual_sha256": "51c396e2a5cc9a62bdfd5cdca8367afc981db5f6a06bf2010b135b6d39cd88bc",
+          "reference_sha256": "076b3c2c9f0e80d9646d6c2ff04bc69e587080fe53ffc9f552ac134b0548f08f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-v0kqwzlb",
+          "reference": "Tests/Browser/Brave/expected/fractional-font-line-height.png",
+          "actual_sha256": "e3bc2b7a8853a23a1e751e916d4190ce11eb319b550a92e34cfaddc5432af897",
+          "reference_sha256": "dc13d82f2b64b585c6dd56de729aae19d8c412f3269fab182ac3933bff38a67f",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-vfbh202f",
+          "reference": "Tests/Browser/Brave/expected/lobsters-rounded-inline-background.png",
+          "actual_sha256": "fe3d6c5e19992a438bdb419302c453e81b00985495998d5339e171f9c4ed7fa3",
+          "reference_sha256": "667eb4df2e3a70ecea6596f289ee79fd563e260f97c34260f68f3218ca65c059",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-vhyp5hq0",
+          "reference": "Tests/Browser/Brave/expected/forum-fractional-foreground.png",
+          "actual_sha256": "bd0a5b1a98f8fae2fae7df8222cdc6ad5488cbcbd491a9fb5de9c7fcbeea55cb",
+          "reference_sha256": "59f182064325bce1ab82072e4826764888969f719066f65dfea2f23fd8df9465",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-vukmeh3u",
+          "reference": "Tests/Browser/Brave/expected/intrinsic-button-baseline.png",
+          "actual_sha256": "c3d473befd22b3b025ad9acf45ec46122bc8e33848aed50ee5e7ec3096830244",
+          "reference_sha256": "0adda66a2cbd790c34b96db932e42c567c6473ab18e31b98095bdeecce49a085",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-vw8c5jhr",
+          "reference": "Tests/Browser/Brave/expected/avif-image-paths.png",
+          "actual_sha256": "c4b9e960dc884e978ec4e01f2e30804ca82d23a0e82f2a3b87c8e940a2bb1d15",
+          "reference_sha256": "32336eaec508fb6f254743ea6823e0f3e0211cd801559952ec4b84c26026027a",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-w6262vdp",
+          "reference": "Tests/Browser/Brave/expected/forum-svg-viewport-fringe.png",
+          "actual_sha256": "ea3e17a54754e7fd50614133a73baf89c4fb7c94d7eaf07401ed167c1e83aaed",
+          "reference_sha256": "7d3996b562954242555402e63230ff08c20a5aeb57539b59da5ed0d78e8b146c",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-w80rny_o",
+          "reference": "Tests/Browser/Brave/expected/contained-image-paint-origin.png",
+          "actual_sha256": "767fb0392ef6916ea67e0800ccc101755c20711f90c2c6b11176bea19401bf1a",
+          "reference_sha256": "e53d736619767cdde1ed68ac0c47bb84144b1a213d1e91fc2a25a25d1e21327b",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-wdd2nsaj",
+          "reference": "Tests/Browser/Brave/expected/svg-rounded-parent-msaa.png",
+          "actual_sha256": "cc7d2c88117b3081afb32d8cc1d826abebbfedeba579e8aed8be953b96a25832",
+          "reference_sha256": "f1f2902a7f44fb59bb5d9092476885f77709db13fa22a977bf041c0880fee687",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-wehfo0sh",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-variable-font-skip-ink.png",
+          "actual_sha256": "790d977e254b68bcc8b6212f2cfee6294258864f64ed7628f8d1321ee3092b72",
+          "reference_sha256": "0637a44409330b5c60128e3b33e87d0584f3f06fdaa2495f0ad131a89f665d00",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-wngn_7t7",
+          "reference": "Tests/Browser/Brave/expected/guardian-carousel-paint-clients.png",
+          "actual_sha256": "109c68d3160f342e6f106bf7c8730555e6c096c6df3b5ac41b01e339f496e3fd",
+          "reference_sha256": "9b64befc05f66ae8b3f20bfbc0a7c0ac53978075b692626268b6522125ab8eae",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-wscv7c93",
+          "reference": "Tests/Browser/Brave/expected/webp-yuv-scaled.png",
+          "actual_sha256": "9ee909868313e3f1f14046e1a98e8427b794140e0499db6cba96d62db6831d50",
+          "reference_sha256": "0678e8a0a147d8d30f2a5eaa103ebeada2e4da384288e3f545a64bdb18119fa7",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-wwqh7k2n",
+          "reference": "Tests/Browser/Brave/expected/webp-alpha-premultiplication.png",
+          "actual_sha256": "38248f52e20f84d9193d57663014248b52532ecb1b3151372d67771e9c52449a",
+          "reference_sha256": "a47815ea138d3a82a986e8cdc6249e9dca4b10db24e636c0f831c93c6b8fa53e",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-xcl6xb3j",
+          "reference": "Tests/Browser/Brave/expected/stackoverflow-inert-sticky-text.png",
+          "actual_sha256": "09417e53548718c4df6aefe48bb44ccdf14bf44bdbc4a187c6638131bb3ddd35",
+          "reference_sha256": "d4021f1139e579f431fd18547308ee7d38a8e1bb7866de8543e342ae573f5418",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-xk52acvu",
+          "reference": "Tests/Browser/Brave/expected/css-premultiplied-fades.png",
+          "actual_sha256": "2c8c58f42496f32c192813e5e223ea66d21bcff2d7864f3164849c36d3df069b",
+          "reference_sha256": "5dfb8aebdc272f4496625d343b3d06b5086368cc6ef79d6d63bcfb59606a5b13",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-xs5cwnlu",
+          "reference": "Tests/Browser/Brave/expected/lobsters-transparent-svg-background.png",
+          "actual_sha256": "691f0a18afcae0742413c9f32b3d7be79a0eee9c1e6bdf0924675afa3477896b",
+          "reference_sha256": "d0998fe6340ebc5bcbeed8d5f7cf05333e9338058fc6b55b97a95949055520ce",
+          "different_pixels": 0
+        },
+        {
+          "directory": "/Users/alex/code/vox2/Build/forum-news-inline-zlk8n9mn",
+          "reference": "Tests/Browser/Brave/expected/pikabu-hoisted-image-clip.png",
+          "actual_sha256": "cc202a58e9a26b807fb862f2a9fb1ed4086daa29ec0fb6f3e46c67bf99ce745f",
+          "reference_sha256": "137389c20a258085efcf111a74e67f2a419b37fa6550d97523797e9adef96e1e",
+          "different_pixels": 0
+        }
+      ]
+    }
+  },
+  "pixel_analysis": {
+    "scope": "Independent RGBA byte counts on unchanged archived inputs. Native before/after use both identical original reference and immediate prior selected reference. Forced backdrop and native trace are separate diagnostics.",
+    "counts": {
+      "original_reference_old": 844,
+      "original_reference_new": 621,
+      "previous_reference_old": 589,
+      "previous_reference_new": 366,
+      "old_native_vs_new": 223,
+      "source": 598,
+      "independent_reference": 0,
+      "native": 621,
+      "new_reference_vs_original": 0,
+      "trace_vs_production": 0,
+      "forced_diagnostic_vs_production": 0,
+      "saved_source_vs_new_vox": 65,
+      "lower_region_prior_native_vs_brave": 223,
+      "lower_region_native_vs_brave": 0,
+      "lower_region_changed": 223,
+      "lower_region_reduced_vs_full_brave": 0
+    },
+    "lower_region": [
+      666,
+      717,
+      807,
+      768
+    ],
+    "native_changed_bounds": [
+      666,
+      717,
+      782,
+      768
+    ],
+    "images": {
+      "source": {
+        "path": "Tests/Browser/Brave/sites/discord/live.png",
+        "png_sha256": "d35fdd8e492515c01681890f2d3b55d5b801934daa1a7862f7740d8406b57f68",
+        "rgba_sha256": "c96a1e90974c2c5eeaea9adb179f6f3aabf94645f3ffeee021fe3f1cddc5bff9",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "original_brave": {
+        "path": "Build/discord-image-pictures-20261106/production-complete/discord/discord/brave.png",
+        "png_sha256": "df7c24bbe330f8f873a0f7ee949fb8a7f3b89656c5ac980f7d7792b504a2c3ab",
+        "rgba_sha256": "19d2ebad1470a392799ea16373d13605d66b8239aefef5092f3e2c2b9c669c28",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "prior_brave": {
+        "path": "Build/discord-image-residuals-20261106/production-checks/discord/discord/brave.png",
+        "png_sha256": "cbc6a291d4153011f68095abbc7765fbfda4c1ccb4dc57e97daba6fcfb594c0a",
+        "rgba_sha256": "ebc4dfbe617e197fd9d5bfc60454ccb6b179a875d9ba38ecf1ab2e7671baa090",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "prior_vox": {
+        "path": "Build/discord-image-residuals-20261106/production-checks/discord/discord/vox.png",
+        "png_sha256": "36297272a3ae44459d1a6470432d6c6521751aac427665b286a9a42bb4e2c435",
+        "rgba_sha256": "fe1319d5529a09e74ef1409377b0bda5bb1f52378777e8ddbd51b1a0cb7c62b1",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "brave": {
+        "path": "Build/discord-lower-image-20261106/production/discord/discord/brave.png",
+        "png_sha256": "df7c24bbe330f8f873a0f7ee949fb8a7f3b89656c5ac980f7d7792b504a2c3ab",
+        "rgba_sha256": "19d2ebad1470a392799ea16373d13605d66b8239aefef5092f3e2c2b9c669c28",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "brave_repeat": {
+        "path": "Build/discord-lower-image-20261106/production/discord/discord/brave-repeat.png",
+        "png_sha256": "df7c24bbe330f8f873a0f7ee949fb8a7f3b89656c5ac980f7d7792b504a2c3ab",
+        "rgba_sha256": "19d2ebad1470a392799ea16373d13605d66b8239aefef5092f3e2c2b9c669c28",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "vox": {
+        "path": "Build/discord-lower-image-20261106/production/discord/discord/vox.png",
+        "png_sha256": "1382878aea3b2eb57977e0cea96f55705dcd311b83a978089a0883f41cc39d9b",
+        "rgba_sha256": "64badaf7f7324106cb9eb1c45dd5fc6d378873cd56c669318eb9190dd756674a",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "trace": {
+        "path": "Build/discord-lower-image-20261106/production-trace/vox.png",
+        "png_sha256": "1382878aea3b2eb57977e0cea96f55705dcd311b83a978089a0883f41cc39d9b",
+        "rgba_sha256": "64badaf7f7324106cb9eb1c45dd5fc6d378873cd56c669318eb9190dd756674a",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "forced_diagnostic": {
+        "path": "Build/discord-lower-image-20261106/full-trace-force/vox.png",
+        "png_sha256": "1382878aea3b2eb57977e0cea96f55705dcd311b83a978089a0883f41cc39d9b",
+        "rgba_sha256": "64badaf7f7324106cb9eb1c45dd5fc6d378873cd56c669318eb9190dd756674a",
+        "size": [
+          1024,
+          768
+        ]
+      },
+      "reduced_brave": {
+        "path": "Build/discord-lower-image-20261106/backdrop/comparison/clipped-webp/brave.png",
+        "png_sha256": "de0f0d0b58466ef845cddafc9b39e872d4ed8c94bec1dd7936354774e48192b2",
+        "rgba_sha256": "9697137c09c2302fc9acf764010da86572fcf33be004a3ee88b7cf6bf4c5a3ec",
+        "size": [
+          1024,
+          768
+        ]
+      }
+    },
+    "trace": "Production diagnostic uses flags=3, same_context=1, transparency_depth=0 without the forced-backdrop override; its RGBA bytes equal the uninstrumented production screenshot."
+  },
+  "isolation_attempts": [
+    {
+      "name": "plain",
+      "result": {
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/plain/comparison/clipped-webp",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "edbc3fc0038599b9c160a835454b70f5064afeaa4c101a12b48feee2b364fca4"
+      },
+      "qualification": "Passing before the fix; retained isolation/control attempt, no negative browser-regression credit."
+    },
+    {
+      "name": "grouped",
+      "result": {
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/grouped/comparison/clipped-webp",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "20e0eb3a5440563c45c2e4e248a334753023f1fec24670f52170cb22a47a289a"
+      },
+      "qualification": "Passing before the fix; retained isolation/control attempt, no negative browser-regression credit."
+    },
+    {
+      "name": "backdrop",
+      "result": {
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/backdrop/comparison/clipped-webp",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "4fb7172986cbec3790b0e4b7402c108135d618b36ec71a302a9911940a0067d7"
+      },
+      "qualification": "Passing before the fix; retained isolation/control attempt, no negative browser-regression credit."
+    },
+    {
+      "name": "filter-gap",
+      "result": {
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/filter-gap/comparison/clipped-webp",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "be86582369c3728d3572e432b78d12772a97ac63f2a9b511fd53717b24f58daf"
+      },
+      "qualification": "Passing before the fix; retained isolation/control attempt, no negative browser-regression credit."
+    },
+    {
+      "name": "nearby-vector",
+      "result": {
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/nearby-vector/comparison/clipped-webp",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "71fbd562884b8462418440eb83852321ed7d0a630e645504268864d77d0bc56e"
+      },
+      "qualification": "Passing before the fix; retained isolation/control attempt, no negative browser-regression credit."
+    },
+    {
+      "name": "pending-browser-negative",
+      "result": {
+        "status": "pass",
+        "image_animation_policy": "allowed",
+        "cache_policy": "cold",
+        "different_pixels": 0,
+        "artifacts": "/Users/alex/code/vox2/Build/discord-lower-image-20261106/pending-browser-negative/comparison/clipped-webp",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "a790ea8c5d230c4571408fda807c235849feb6dab5532e22b246fe2ded358476"
+      },
+      "qualification": "Passing before the fix; retained isolation/control attempt, no negative browser-regression credit."
+    }
+  ],
+  "diagnostics": {
+    "before": "full-trace-context: same_context=1 depth=-1 flags=1; unchanged geometry and image resource.",
+    "forced": "full-trace-force sets only opaque-backdrop flag2 for the258x168 target, changes223 pixels in the lower image and makes that region Brave-exact. Instrumented diagnostic only.",
+    "production": "production-trace without forced-backdrop override observes same_context=1 depth=0 flags=3; screenshot RGBA equals the uninstrumented production capture.",
+    "failures": [
+      "full-trace interrupted while waiting for another session shared bundle lease; no browser capture.",
+      "RTLD_NEXT and handle-based original-symbol lookups returned interposed functions; smoke probes abort safely with exit97. Mach-O symbol lookup resolves the real addresses.",
+      "full-trace-v2 fails dyld symbol resolution before capture; explicit linking fixes the diagnostic. All failed attempts and later unchanged-identity receipts remain retained."
+    ]
+  },
+  "qualifications": [
+    "Discord remains unqualified: native621/source598/independent reference0. Its selected Brave image is RGBA-identical to the earlier original reference. Same-reference native result improves844 to621; against the immediate preceding selected reference589 to366. All223 changed native pixels lie in the lower illustration, which is now exact. Hero-image and saved-source fidelity remain open.",
+    "The registered archive and source/reference PNGs are unchanged. Reduced scenes all pass before the fix; the pre-failed invalid-image scene does not reproduce an undecoded pending image. Only the planner test provides failing-before/passing-after regression credit. Its actual browser path is validated by the full registered Discord archive.",
+    "Hacker News, TechCrunch and WIRED cold-cache source, independent replay and native gates remain exact; WIRED uses its recorded first-frame image policy. The full139-test145-capture suite passes on one unchanged production identity under a canonical bundle lease.",
+    "No performance, motion, live-site scripting or whole-site parity claim. Stack Overflow and Pikabu site work remain deferred; their existing reduced screenshot controls are retained."
+  ],
+  "archive": {
+    "path": "docs/evidence/discord-pending-image-scopes-20261106.zip",
+    "bytes": 34075867,
+    "sha256": "46e5f56775d6bfc2c8c0482c7dbdf190bfd11bc5210fafb80f98b6b0a81c9079",
+    "files": 2436,
+    "validation": "ZIP CRC and every member SHA256 verified",
+    "exclusions": "Generated C, compiled binaries, dylibs, app bundles, canonical tool snapshots, disposable profiles/caches and TLS private keys. Full registered site responses remain in the canonical tracked archives, pinned by the before/after input maps."
+  },
+  "unused_isolation_files": {
+    "files": [
+      "Tests/Browser/Brave/input/viewport-clipped-webp.html",
+      "Tests/Browser/Brave/resources/discord-party-wumpus.webp",
+      "Tests/Browser/Brave/resources/discord-page-gradient.png",
+      "Tests/Browser/Brave/resources/undecodable-image.bin"
+    ],
+    "disposition": "Archived as unused-isolation; removed from the checkout after verified sealing. No unproven browser fixture or changed expected PNG was registered."
+  },
+  "sealing": {
+    "successful_guard": {
+      "command": [
+        "python3",
+        "Build/discord-lower-image-20261106/seal.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 61833216,
+      "elapsed_seconds": 10.151809042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "earlier_guard": {
+      "command": [
+        "python3",
+        "Build/discord-lower-image-20261106/seal.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3440640,
+      "elapsed_seconds": 0.16434395899999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "earlier_failure": "The evidence sealer initially expected30 phase rows instead of18 (three files times three GC modes times compile/run). Correcting its count assertion passed without rerunning or changing any test.",
+    "experimental_cleanup": "Each unused isolation file was byte-checked against its ZIP member, confirmed untracked, then removed. Registered tests, assets and expected PNGs are unchanged."
+  }
+}

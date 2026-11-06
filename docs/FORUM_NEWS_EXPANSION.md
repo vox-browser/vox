@@ -13,7 +13,7 @@ source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
 The latest rendering checkpoint passes **139 tests / 145 captures at zero
-pixels** on `e3659569…`, with unchanged inputs and references. The AVIF sampling
+pixels** on `03bdf80d…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -2644,6 +2644,62 @@ deferred. No performance or whole-site scripting acceptance is claimed.
 
 [Checks, independent byte counts and qualifications](evidence/image-data-urls-20261106.json),
 [sealed logs, commands, guards, captures and patch](evidence/image-data-urls-20261106.zip).
+
+## Pending image effect scopes (2026-11-06)
+
+`a313d793b` fixes the remaining **223 pixels in Discord's lower illustration**.
+An undecoded image with zero geometry is retained outside the viewport so its
+paint command can start the image request. The effect-visibility pass omitted
+that image's ancestors: its CSS effect opener was culled while the pending
+image and closer survived. Native replay subsequently reached the visible
+Party Wumpus image with transparency depth **−1**, disabling its readable
+opaque backdrop and changing alpha-edge pixels.
+
+The planner now retains the complete effect ancestry of pending zero-size
+images. The regression fails before the fix with an omitted opener and retained
+closer; after the fix both survive. Its nonzero offscreen-image control still
+culls the complete scope. This changes the visibility decision, without a
+native counter clamp or changes to image decoding or sampling. All **13 focused
+functions pass in default GC, GC disabled and preallocation with arena
+poisoning**, with unchanged inputs within each run.
+
+Production browser
+`03bdf80d7cdd730a593b9a840cd086ddf35771bdf7a6cdd8f82a2f43ec44f41a`
+contains the fix in its sealed compiler input. Fresh processes run under one
+canonical bundle lease, with unchanged executable, native libraries, tools,
+filters, extension and fixture hashes. The **139-test / 145-capture** rendering
+suite passes at zero pixels. Hacker News, TechCrunch and WIRED retain strict
+cold-cache source, independent replay and native zero; WIRED keeps its recorded
+first-frame image policy.
+
+Discord remains unqualified: its new cold run records **621 native / 598 source
+/ 0 independent replay pixels**. The selected Brave image is RGBA-identical
+to the earlier original reference, against which native improves **844 → 621**.
+Against the immediately preceding selected reference, the same change improves
+**589 → 366**. Exactly 223 native pixels change, all in the lower illustration;
+that region now matches Brave exactly. The hero-image difference and the
+saved-source gate remain open. The registered archive, source PNG and reference
+tolerances are unchanged.
+
+An instrumented diagnostic that enables opaque-backdrop reads only for the
+258×168 source image predicts the same 223-pixel correction. A later production
+trace, without that override, observes depth **0** and the correct backdrop
+flag; its screenshot bytes equal the uninstrumented production capture. These
+traces explain the path, while the ordinary production run supplies the pixel
+result. Reduced image scenes already passed before the fix, including a
+pre-failed invalid-image attempt that did not reproduce an undecoded pending
+image. Those attempts receive no negative browser-regression credit; their
+resources and HTML are sealed, and the unused experimental files are removed.
+The real failing-before regression is the planner test, exercised in the
+browser by the existing registered Discord archive.
+
+Failed diagnostic symbol lookups, the loader failure, the interrupted lease
+wait and the initial evidence-count assertion are retained. Stack Overflow and
+Pikabu site work remains deferred. No performance, animation, live scripting
+or whole-site parity claim follows from these archived viewport checks.
+
+[Independent byte checks and qualifications](evidence/discord-pending-image-scopes-20261106.json),
+[sealed captures, resources, commands, guards, failures and patch](evidence/discord-pending-image-scopes-20261106.zip).
 
 ## Run
 
