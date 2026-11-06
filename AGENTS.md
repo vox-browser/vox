@@ -16,6 +16,9 @@
 - Keep new history linear with focused commits; do not rewrite existing shared
   history. Remove an existing worktree only after its committed and uncommitted
   logic has been incorporated into `master` and verified.
+- The one exception is `/Users/alex/code/vox2-release`: `./deploy.vsh` checks
+  out the release commit there and builds it with its own `Build/`, so releases
+  contain only committed code. Do not edit, build, or test in that checkout.
 
 ## Commits
 
