@@ -7,6 +7,26 @@
 // supplies the fallback frame; complete supported pictures replace root SVG
 // tiles or one isolated CSS compositor surface before it is composited.
 namespace {
+VoxPictureRasterCache s_picture_raster_cache;
+void clear_picture_raster_cache() { s_picture_raster_cache.clear(); }
+
+static std::vector<uint8_t> picture_raster_key(SkData const* bytes, int width, int height,
+    long first_x, long first_y, VoxChromiumRasterGrid grid, float const* matrix, bool tiled)
+{
+    if (!bytes || !bytes->size() || bytes->size() > 1024 * 1024) return {};
+    std::vector<uint8_t> key;
+    auto append = [&](auto value) {
+        auto const* begin = reinterpret_cast<uint8_t const*>(&value);
+        key.insert(key.end(), begin, begin + sizeof(value));
+    };
+    append(width); append(height); append(first_x); append(first_y); append(tiled);
+    append(grid.width); append(grid.height); append(grid.columns); append(grid.rows);
+    for (int i = 0; i < 9; ++i) append(matrix[i]);
+    auto const* data = static_cast<uint8_t const*>(bytes->data());
+    key.insert(key.end(), data, data + bytes->size());
+    return key;
+}
+
 struct SharedRootRecording {
     std::unique_ptr<SkPictureRecorder> recorder;
     CGContextRef destination;
@@ -686,10 +706,24 @@ void finish_shared_recording()
             && std::abs(first_y - std::round(first_y)) < .001
             && first_x + width <= int64_t(grid.columns) * (grid.width - 2) + 2
             && first_y + height <= int64_t(grid.rows) * (grid.height - 2) + 2;
+        std::vector<uint8_t> cache_key;
+        bool cache_hit = false;
         if (draw_retained_layer_tiles(*group, picture.get(), pixels, width, height, left, top)) {
             // Retained transparent ink joins the same backdrop/publication path.
-        } else if ((bytes = picture->serialize(&procs)) && bytes->size() <= 64 * 1024 * 1024 && tiled) {
-            if (!draw_shared_picture_tile_batch(pixels, width, height,
+        } else {
+            bytes = picture->serialize(&procs);
+            if (!bytes || bytes->size() > 64 * 1024 * 1024) return;
+            // Shared image/typeface tokens denote immutable owned resources;
+            // they are never recycled. A changed token can only cause a miss.
+            auto* uncached = std::getenv("VOX_RETAIN_UNCACHED_PICTURE_RASTER");
+            if (!uncached || !*uncached) {
+                cache_key = picture_raster_key(bytes.get(), width, height,
+                    std::lround(first_x), std::lround(first_y), grid, matrix, tiled);
+                cache_hit = s_picture_raster_cache.restore(cache_key,
+                    reinterpret_cast<uint8_t*>(pixels.data()), size_t(width) * 4, size_t(width) * 4, height);
+            }
+            if (!cache_hit && tiled) {
+                if (!draw_shared_picture_tile_batch(pixels, width, height,
                     std::lround(first_x), std::lround(first_y), grid, bytes.get(), matrix)
                 && !vox_draw_chromium_raster_grid(pixels, width, height,
                     std::lround(first_x), std::lround(first_y), grid,
@@ -702,10 +736,15 @@ void finish_shared_recording()
                             grid.width, grid.height, grid.width * 4,
                             bytes->data(), bytes->size(), tile_matrix);
                     })) return;
-        } else {
-            if (!bytes || bytes->size() > 64 * 1024 * 1024
-                || !shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
+            } else if (!cache_hit) {
+                if (!shared_picture_draw()(reinterpret_cast<uint8_t*>(pixels.data()), width,
                     height, width * 4, bytes->data(), bytes->size(), matrix)) return;
+            }
+            if (!cache_hit) s_picture_raster_cache.store(cache_key,
+                reinterpret_cast<uint8_t const*>(pixels.data()), size_t(width) * 4, size_t(width) * 4, height);
+            if (!cache_key.empty() && std::getenv("VOX_PICTURE_RASTER_CACHE_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_PICTURE_RASTER_CACHE hit=%d width=%d height=%d entries=%zu bytes=%zu\n",
+                    int(cache_hit), width, height, s_picture_raster_cache.entries(), s_picture_raster_cache.bytes());
         }
         if (group->checks_prefix) {
             // The immutable RGBA prefix already supplies the byte-exact guard.

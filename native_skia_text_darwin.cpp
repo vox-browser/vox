@@ -7,6 +7,7 @@
 #include "native_raster_buffer_pool.h"
 #include "native_parallel_pixels.h"
 #include "native_raster_snapshot.h"
+#include "native_picture_raster_cache.h"
 #include "native_immutable_rgba_image.h"
 #include "native_rgba_alpha_bounds.h"
 #include "native_snapshot_deflate.h"
@@ -239,6 +240,7 @@ bool shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage cons
 void finish_shared_recording();
 void finish_shared_recording_before_isolated_input(CGContextRef);
 void clear_retained_layer_tiles();
+void clear_picture_raster_cache();
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw();
 sk_sp<SkData> serialize_shared_picture_image(SkImage*, void*);
 
@@ -1157,6 +1159,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
         dlclose(library);
     }
     clear_retained_layer_tiles();
+    clear_picture_raster_cache();
     clear_native_rounded_image_cache();
     s_sparse_raster_pool.clear();
     s_glyph_raster_cache.clear();
