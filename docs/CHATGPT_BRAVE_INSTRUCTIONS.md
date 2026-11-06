@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest module-normalization diagnostic observes a **26.59B** candidate median versus **26.60B** for its duplicate-normalization control. Observed ranges overlap; no new page instruction credit is assigned. All 20 completed diagnostic/matched captures pass content and exact pixels; 256 focused test executions pass. The [latest verification](performance/chatgpt-module-normalization-verification-20261106.json) retains every observation and earlier rejected attempts. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest matched inheritance-parent diagnostic observes a **24.42B** candidate median versus **24.50B** for its repeated-parent control. Observed ranges overlap; no whole-page savings credit is assigned. All 20 captures pass content and exact pixels; 752 focused test executions pass. The [latest verification](performance/chatgpt-inherited-parent-verification-20261106.json) retains every sample. Only this same-build comparison measures the change; differences against earlier builds receive no credit. Four pairs remain below seven-pair acceptance; the historical cohort below retains its earlier pinned build.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5529,3 +5529,41 @@ The module-completion and JS/bindings scopes together account for **6,847,976,63
 The native stack sample again observes active grid/flex/absolute layout, style, DOM query traversal and opacity scans. Recursive counts and unknown JIT symbols cannot be ranked as additive instruction costs; the requested 1ms statistical samples include waits, concurrent threads and attachment gaps. These are leads only. The previous opacity fast path still has no observed useful execution on this fixture.
 
 The [verification receipt](performance/chatgpt-current-budget-verification-20261106.json), [traced JSON](performance/chatgpt-load-stages-current-r1-traced-20261106.json), [CSV](performance/chatgpt-load-stages-current-r1-traced-20261106.csv) and [fresh native sample](performance/chatgpt-current-native-sample-20261106-r2.json) retain exact totals, every stage, raw logs, PNGs, counters, source witnesses, guards and authenticated archives. **No optimization credit is assigned; the 20B and original Brave targets remain unmet.**
+
+## One parent lookup per inherited-style refresh (2026-11-06)
+
+Commit `3d3682afb` resolves the inheritance parent once for a synchronous inherited-style refresh. Previously the base-value and animation helpers each resolved the same DOM inheritance source for every property. The new loop borrows that parent, then reads its live stores per property. The parent is resolved again on the next call. No pointer or match result is retained after returning.
+
+The ordinary setters, important/inherited/transition flags, animation removal, specified-value restoration, font-relative computation, invalidation and published property pages remain in place. Existing public helpers retain their behavior and supply the repeated-parent control through `VOX_RETAIN_REPEATED_INHERITED_PARENT=1`. The new path does not skip a cascade, suppress a mutation or change author scripts.
+
+**12 guarded jobs / 752 test-function executions pass**, in ordinary GC, no GC, poisoned preallocation and ASan/UBSan, with both variants. The 94-test selection covers live base/animation stores, transition flags, own animations, parent replacement, explicit inheritance overrides, orphan fallback, font-relative values, CSSOM/adoption, slots/shadow inheritance and rule deletion. Commit `a39e25cce` independently fixes two optional display assertions required for this test selection to compile. Initial optional-unwrapping errors, an initial fixture combining an override with a font-relative expectation that fails both controls, and the first component property-ID unwrap error remain retained. The final fixture tests font-relative reparenting and explicit overrides separately.
+
+The direct V component repeats each refresh 300 times. Setup and full-property checksums are outside each process-counter interval; refresh calls and changing-parent writes remain inside. Four alternating observations per variant retain every sample. All full-property output checksums match across both variants.
+
+| Inherited refresh component | Repeated-parent control median | Borrowed-parent median | Reduction |
+| --- | ---: | ---: | ---: |
+| Ordinary unchanged inheritance | 24,190,531.5 | 22,824,772.0 | 5.6458% |
+| Unchanged font-relative values | 205,955,576.0 | 204,722,646.5 | 0.5986% |
+| Inherited transition | 28,713,816.5 | 27,379,785.0 | 4.6460% |
+| Own animation preserved | 28,585,744.0 | 27,172,440.5 | 4.9441% |
+| Explicit inheritance override | 23,642,997.0 | 22,871,479.5 | 3.2632% |
+| Parentless fallback | 206,382,537.5 | 205,450,464.5 | 0.4516% |
+| Changing parent value | 201,846,204.0 | 200,497,717.5 | 0.6681% |
+| No inherited properties | 5,882,706.0 | 5,877,558.0 | 0.0875% |
+
+Component results are not extrapolated to the page. The small changes in the final cases remain subject to the raw ranges in the verification receipt.
+
+| Unprofiled frozen-page variant | Every retained launch-through-PNG instruction count | Median |
+| --- | --- | ---: |
+| Repeated-parent control | 24,760,307,522; 24,459,639,122; 24,545,935,262; 24,392,269,326 | 24,502,787,192.0 |
+| Borrowed-parent candidate | 24,107,759,625; 24,467,205,854; 24,370,337,505; 24,542,773,282 | 24,418,771,679.5 |
+
+The observed median falls **0.3429%**. Conservative observed separation is **-150,503,956 instructions**. Observed ranges overlap; no whole-page savings credit is assigned. No new 5M broad checkpoint is due. Page credit and broad carry remain zero.
+
+All **20** final diagnostic/matched captures pass bootstrap, full content/button identity, unchanged exact per-engine references and normal browser/kernel exits. Sealed production source proves the one-parent loop and its repeated-parent control; the candidate marker appears after the first native layer submission, and is absent in the control. The Wasm module lexer executes in both. Executable `f6b60a240c069e4b72543e5241375e88d7d242c7326e0c779ed76ca7f618a740` and native libraries stay pinned under one nonblocking shared publication lease. The latest completed single-C-unit V `-prod` bundle already contains the change; no app is copied and no separate manual build is queued.
+
+Both variants use one pinned current build. This build contains concurrent repository work, so only its candidate/control difference measures this slice. Earlier 26.59B or other-build totals receive no credit here. Original author scripts, single SOCKS fixture/references, 1024×768 scale two, five-second unfocused settle and fresh private profiles/caches remain fixed. Coalition creation through encoded document PNG includes startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded. Controller and guard exit zero with successful PID adoption; comparison drivers exit one for the unmet Brave gate.
+
+Frame-complete checkpoints are 455, 449, 477, 502 for controls and 463, 492, 446, 469 for candidates. No count is normalized to a fixed frame count, another build or host load.
+
+The candidate median remains **4,418,771,679.5 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-inherited-parent-verification-20261106.json) links all raw observations, components, focused checks, commands, source witnesses, counters, guards, PNGs and authenticated evidence archives. **The 20B target and original 5%-below-Brave target remain unmet.**

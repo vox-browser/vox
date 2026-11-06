@@ -1,0 +1,1557 @@
+{
+  "complete": true,
+  "implementation_commit": "3d3682afb799de20436bcc4793a6c10d2e7e9335",
+  "test_compatibility_fix_commit": "a39e25cce4eecef22e8f64b54f6ef8aa1b2e6bde",
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "acceptance": false,
+  "focused_jobs": 12,
+  "test_function_executions": 752,
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/style_computer.v": "a74f19cd0a4b76419ab85fe2a524aea6d18e84852e6332ab704ca42eb745bf1c",
+      "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+      "css/inherited_style_parent.v": "b9eef407030bee5ce6706ad74b830a16c8965ef7b25b388229b8494d24aa7022",
+      "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c"
+    },
+    "source_after": {
+      "css/style_computer.v": "a74f19cd0a4b76419ab85fe2a524aea6d18e84852e6332ab704ca42eb745bf1c",
+      "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+      "css/inherited_style_parent.v": "b9eef407030bee5ce6706ad74b830a16c8965ef7b25b388229b8494d24aa7022",
+      "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-native-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/style_computer_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/cssom_retained_no_box_test.v,/Users/alex/code/vox2/css/deleted_style_rule_invalidation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-prealloc",
+          "/Users/alex/code/vox2/css/inherited_style_parent_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793942587.658035,
+          "cpu_count": 18,
+          "load": [
+            8.8623046875,
+            11.431640625,
+            13.12744140625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942597.3232388,
+          "load": [
+            10.93896484375,
+            11.80810546875,
+            13.24169921875
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942597.3428879,
+          "cpu_count": 18,
+          "load": [
+            10.93896484375,
+            11.80810546875,
+            13.24169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942598.701598,
+          "load": [
+            10.93896484375,
+            11.80810546875,
+            13.24169921875
+          ]
+        }
+      },
+      {
+        "label": "run-native-prealloc-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-prealloc-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-prealloc-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942598.710896,
+          "cpu_count": 18,
+          "load": [
+            10.93896484375,
+            11.80810546875,
+            13.24169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942599.943062,
+          "load": [
+            10.93896484375,
+            11.80810546875,
+            13.24169921875
+          ]
+        }
+      },
+      {
+        "label": "compile-native-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/css/style_computer_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/cssom_retained_no_box_test.v,/Users/alex/code/vox2/css/deleted_style_rule_invalidation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-default",
+          "/Users/alex/code/vox2/css/inherited_style_parent_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793942599.952658,
+          "cpu_count": 18,
+          "load": [
+            10.93896484375,
+            11.80810546875,
+            13.24169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942609.249423,
+          "load": [
+            11.1884765625,
+            11.83056640625,
+            13.23291015625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942609.261489,
+          "cpu_count": 18,
+          "load": [
+            11.1884765625,
+            11.83056640625,
+            13.23291015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942609.908494,
+          "load": [
+            11.1884765625,
+            11.83056640625,
+            13.23291015625
+          ]
+        }
+      },
+      {
+        "label": "run-native-default-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-default-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-default-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942609.920115,
+          "cpu_count": 18,
+          "load": [
+            11.1884765625,
+            11.83056640625,
+            13.23291015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942610.300537,
+          "load": [
+            11.1884765625,
+            11.83056640625,
+            13.23291015625
+          ]
+        }
+      },
+      {
+        "label": "compile-native-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/style_computer_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/cssom_retained_no_box_test.v,/Users/alex/code/vox2/css/deleted_style_rule_invalidation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-none",
+          "/Users/alex/code/vox2/css/inherited_style_parent_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793942610.311483,
+          "cpu_count": 18,
+          "load": [
+            11.1884765625,
+            11.83056640625,
+            13.23291015625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942619.5425851,
+          "load": [
+            11.2392578125,
+            11.8193359375,
+            13.21240234375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942619.553472,
+          "cpu_count": 18,
+          "load": [
+            11.2392578125,
+            11.8193359375,
+            13.21240234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942620.185902,
+          "load": [
+            11.2392578125,
+            11.8193359375,
+            13.21240234375
+          ]
+        }
+      },
+      {
+        "label": "run-native-none-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-none-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-none-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942620.196029,
+          "cpu_count": 18,
+          "load": [
+            11.2392578125,
+            11.8193359375,
+            13.21240234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942620.4276,
+          "load": [
+            11.2392578125,
+            11.8193359375,
+            13.21240234375
+          ]
+        }
+      },
+      {
+        "label": "compile-native-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/compile-native-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/css/style_computer_test.v,/Users/alex/code/vox2/css/animated_inherit_lookup_test.v,/Users/alex/code/vox2/css/cssom_retained_no_box_test.v,/Users/alex/code/vox2/css/deleted_style_rule_invalidation_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-sanitized",
+          "/Users/alex/code/vox2/css/inherited_style_parent_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793942620.436859,
+          "cpu_count": 18,
+          "load": [
+            11.2392578125,
+            11.8193359375,
+            13.21240234375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942640.54096,
+          "load": [
+            11.0888671875,
+            11.77392578125,
+            13.1650390625
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942640.5620139,
+          "cpu_count": 18,
+          "load": [
+            11.0888671875,
+            11.77392578125,
+            13.1650390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942642.82784,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "run-native-sanitized-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-sanitized-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/run-native-sanitized-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-20261106-r3/native-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1",
+          "VOX_INHERITED_PARENT_DIAGNOSTICS": "1",
+          "VOX_MODULE_LEXER_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942642.8368971,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942644.584726,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "normal-noop": {
+      "control": [
+        24214938,
+        24108707,
+        24166125,
+        24259533
+      ],
+      "candidate": [
+        22806030,
+        22784587,
+        22843514,
+        22902331
+      ],
+      "control_median": 24190531.5,
+      "candidate_median": 22824772.0,
+      "reduction_percent": 5.645843292033492,
+      "conservative_separation": 1206376,
+      "calls": 300,
+      "checksum": "10177724008746989367"
+    },
+    "font-relative-noop": {
+      "control": [
+        206308482,
+        205880193,
+        205864887,
+        206030959
+      ],
+      "candidate": [
+        204845715,
+        204894294,
+        204599578,
+        204596076
+      ],
+      "control_median": 205955576.0,
+      "candidate_median": 204722646.5,
+      "reduction_percent": 0.5986385627160695,
+      "conservative_separation": 970593,
+      "calls": 300,
+      "checksum": "13840784437564605128"
+    },
+    "animated-inheritance": {
+      "control": [
+        28679785,
+        28723941,
+        28703692,
+        28727883
+      ],
+      "candidate": [
+        27353854,
+        27252287,
+        27405716,
+        27458541
+      ],
+      "control_median": 28713816.5,
+      "candidate_median": 27379785.0,
+      "reduction_percent": 4.645956764402948,
+      "conservative_separation": 1221244,
+      "calls": 300,
+      "checksum": "3763551890063123257"
+    },
+    "own-animation": {
+      "control": [
+        28537806,
+        28633682,
+        28493056,
+        28733081
+      ],
+      "candidate": [
+        27169588,
+        27175293,
+        27136793,
+        27242106
+      ],
+      "control_median": 28585744.0,
+      "candidate_median": 27172440.5,
+      "reduction_percent": 4.94408506561872,
+      "conservative_separation": 1250950,
+      "calls": 300,
+      "checksum": "15525452499156112086"
+    },
+    "override": {
+      "control": [
+        23589778,
+        23696216,
+        23580416,
+        23724921
+      ],
+      "candidate": [
+        22833441,
+        22872018,
+        22967491,
+        22870941
+      ],
+      "control_median": 23642997.0,
+      "candidate_median": 22871479.5,
+      "reduction_percent": 3.2631967089451486,
+      "conservative_separation": 612925,
+      "calls": 300,
+      "checksum": "4271986488235344779"
+    },
+    "orphan": {
+      "control": [
+        206467751,
+        206283182,
+        206297324,
+        206600582
+      ],
+      "candidate": [
+        205529474,
+        205455622,
+        205445307,
+        205443417
+      ],
+      "control_median": 206382537.5,
+      "candidate_median": 205450464.5,
+      "reduction_percent": 0.45162396552081985,
+      "conservative_separation": 753708,
+      "calls": 300,
+      "checksum": "9785547273541254521"
+    },
+    "changing-parent-value": {
+      "control": [
+        202102598,
+        201688226,
+        201965454,
+        201726954
+      ],
+      "candidate": [
+        200943170,
+        200522072,
+        200378071,
+        200473363
+      ],
+      "control_median": 201846204.0,
+      "candidate_median": 200497717.5,
+      "reduction_percent": 0.6680762250054539,
+      "conservative_separation": 745056,
+      "calls": 300,
+      "checksum": "6412954479344653595"
+    },
+    "no-inherited-properties": {
+      "control": [
+        5794856,
+        5883006,
+        5882406,
+        6065206
+      ],
+      "candidate": [
+        5898785,
+        5856331,
+        5778281,
+        5917806
+      ],
+      "control_median": 5882706.0,
+      "candidate_median": 5877558.0,
+      "reduction_percent": 0.08751074760492417,
+      "conservative_separation": -122950,
+      "calls": 300,
+      "checksum": "4003167023554207389"
+    }
+  },
+  "component_checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/style_computer.v": "a74f19cd0a4b76419ab85fe2a524aea6d18e84852e6332ab704ca42eb745bf1c",
+      "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+      "css/inherited_style_parent.v": "b9eef407030bee5ce6706ad74b830a16c8965ef7b25b388229b8494d24aa7022",
+      "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c",
+      "Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc": "0813c050b762f915a216bd4ed19306ed457a8dc27f80299ccdf1f508a9de4717",
+      "Build/chatgpt-inherited-parent-component-20261106-r2/driver_test.v": "8cf8af6cde99fbd21f99a76898bd09816e3d296001a6d32201843039290a6126",
+      "packaging/Vox.entitlements.plist": "958648f799e436860b51eaf55ec8f92d2c62da17001e23d96bc05ffc748f2a2a"
+    },
+    "source_after": {
+      "css/style_computer.v": "a74f19cd0a4b76419ab85fe2a524aea6d18e84852e6332ab704ca42eb745bf1c",
+      "css/computed_interpolation.v": "c8e085474e5a1c3b62a8bc780d397eb4f6519c83cdcc537325fa2e4d637005f2",
+      "css/inherited_style_parent.v": "b9eef407030bee5ce6706ad74b830a16c8965ef7b25b388229b8494d24aa7022",
+      "css/inherited_style_parent_test.v": "fcd36d50c5a2fde7d6357d8a9071d887bef17ff76601200c1e5dc4d20b358b6c",
+      "Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc": "0813c050b762f915a216bd4ed19306ed457a8dc27f80299ccdf1f508a9de4717",
+      "Build/chatgpt-inherited-parent-component-20261106-r2/driver_test.v": "8cf8af6cde99fbd21f99a76898bd09816e3d296001a6d32201843039290a6126",
+      "packaging/Vox.entitlements.plist": "958648f799e436860b51eaf55ec8f92d2c62da17001e23d96bc05ffc748f2a2a"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-component-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/compile-component-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/compile-component-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prod",
+          "-cflags",
+          "-O2",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/driver_test.v",
+          "-run-only",
+          "test_inherited_parent_component",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc",
+          "/Users/alex/code/vox2/css/inherited_style_parent_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793942588.788217,
+          "cpu_count": 18,
+          "load": [
+            8.8623046875,
+            11.431640625,
+            13.12744140625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942643.323359,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-0-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-0-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942643.432308,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942644.027203,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-1-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-1-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942644.067094,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942644.299173,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-2-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-2-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942644.3398552,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942644.574103,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-3-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-3-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942644.613803,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942644.837486,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-4-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-4-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-4-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942644.8773031,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942645.093824,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-5-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-5-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-5-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942645.1314602,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942645.351792,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-6-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-6-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-6-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": ""
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942645.3902469,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942645.615253,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      },
+      {
+        "label": "sample-7-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-7-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/sample-7-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-inherited-parent-component-20261106-r2/component-prealloc"
+        ],
+        "environment": {
+          "JSC_thresholdForJITAfterWarmUp": "10000",
+          "VOX_RETAIN_REPEATED_INHERITED_PARENT": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793942645.655383,
+          "cpu_count": 18,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793942645.884351,
+          "load": [
+            11.32177734375,
+            11.810546875,
+            13.169921875
+          ]
+        }
+      }
+    ]
+  },
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "f6b60a240c069e4b72543e5241375e88d7d242c7326e0c779ed76ca7f618a740",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-082230-aa4b29a8/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "da294d2efeca8aece2192754bd94151109833b995d03c5a707f0e875e15be622",
+      "dirty": true,
+      "head": "1640e6e9b9f50a43bc3de05db630c267ad7ad7e4",
+      "repository_sha256": "c4dfbb56374a0ee63cda1dc475d08574bd3a5728df4a42b925e51b95c5e19e11"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "fcf40d662de3d859aacb5baa2a9196388e7b48deb775a36d9c5fb77bbfc82513",
+      "dirty": true,
+      "head": "3d3682afb799de20436bcc4793a6c10d2e7e9335",
+      "repository_sha256": "a75de8dcc0d5c627cedbc5c04273a0acdf85694e03571dfa79f8ae92b34e8996"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "1640e6e9b9f50a43bc3de05db630c267ad7ad7e4",
+      "id": "35b6ab5007d7483dbabaec6399a7095f",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "da294d2efeca8aece2192754bd94151109833b995d03c5a707f0e875e15be622",
+      "dirty": true,
+      "head": "1640e6e9b9f50a43bc3de05db630c267ad7ad7e4",
+      "repository_sha256": "2769cf66cc064f23a06c92e1a1d5f64ba323b1439b7016e208185f128e239f3f"
+    }
+  },
+  "candidate_marker_after_first_native_layer_submission": true,
+  "control": [
+    24760307522,
+    24459639122,
+    24545935262,
+    24392269326
+  ],
+  "candidate": [
+    24107759625,
+    24467205854,
+    24370337505,
+    24542773282
+  ],
+  "control_median": 24502787192.0,
+  "candidate_median": 24418771679.5,
+  "observed_median_reduction_percent": 0.34288145198204667,
+  "observed_conservative_page_separation": -150503956,
+  "page_instruction_credit": 0,
+  "broad_required": false,
+  "broad": null,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "valid_captures": 20,
+  "remaining_from_candidate_median": 4418771679.5,
+  "frame_and_host_load_observations": [
+    {
+      "variant": "control",
+      "checkpoints": 455,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          10.72802734375,
+          11.05029296875,
+          12.46533203125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          10.53564453125,
+          10.99853515625,
+          12.43017578125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 463,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          11.1923828125,
+          11.11279296875,
+          12.4365234375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          11.0966796875,
+          11.09423828125,
+          12.421875
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 492,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          10.9287109375,
+          11.05908203125,
+          12.4013671875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          12.69580078125,
+          11.4228515625,
+          12.52197265625
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 449,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          10.86181640625,
+          11.0869140625,
+          12.375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          10.10107421875,
+          10.91845703125,
+          12.2998046875
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 477,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          10.10107421875,
+          10.91845703125,
+          12.2998046875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          9.56298828125,
+          10.77294921875,
+          12.2314453125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 446,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          9.015625,
+          10.54833984375,
+          12.115234375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          9.21435546875,
+          10.544921875,
+          12.095703125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "checkpoints": 469,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          9.21435546875,
+          10.544921875,
+          12.095703125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.79638671875,
+          10.43603515625,
+          12.0478515625
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "checkpoints": 502,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.99609375,
+          10.33837890625,
+          11.96484375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          9.63671875,
+          10.44873046875,
+          11.994140625
+        ]
+      }
+    }
+  ],
+  "controller_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-inherited-parent-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "20618": "Fri Nov  6 08:27:08 2026    ",
+      "20625": "Fri Nov  6 08:27:08 2026    ",
+      "21093": "Fri Nov  6 08:27:17 2026    ",
+      "21100": "Fri Nov  6 08:27:17 2026    ",
+      "21109": "Fri Nov  6 08:27:17 2026    ",
+      "21110": "Fri Nov  6 08:27:17 2026    ",
+      "21111": "Fri Nov  6 08:27:17 2026    ",
+      "21550": "Fri Nov  6 08:27:28 2026    ",
+      "21556": "Fri Nov  6 08:27:28 2026    ",
+      "21564": "Fri Nov  6 08:27:28 2026    ",
+      "21565": "Fri Nov  6 08:27:28 2026    ",
+      "21566": "Fri Nov  6 08:27:28 2026    ",
+      "22000": "Fri Nov  6 08:27:38 2026    ",
+      "22004": "Fri Nov  6 08:27:38 2026    ",
+      "23128": "Fri Nov  6 08:28:00 2026    ",
+      "23130": "Fri Nov  6 08:28:00 2026    ",
+      "23605": "Fri Nov  6 08:28:09 2026    ",
+      "23612": "Fri Nov  6 08:28:09 2026    ",
+      "23619": "Fri Nov  6 08:28:09 2026    ",
+      "23620": "Fri Nov  6 08:28:09 2026    ",
+      "23621": "Fri Nov  6 08:28:09 2026    ",
+      "24074": "Fri Nov  6 08:28:19 2026    ",
+      "24080": "Fri Nov  6 08:28:20 2026    ",
+      "24086": "Fri Nov  6 08:28:20 2026    ",
+      "24087": "Fri Nov  6 08:28:20 2026    ",
+      "24088": "Fri Nov  6 08:28:20 2026    ",
+      "24439": "Fri Nov  6 08:28:30 2026    ",
+      "24445": "Fri Nov  6 08:28:30 2026    ",
+      "24740": "Fri Nov  6 08:28:38 2026    ",
+      "24742": "Fri Nov  6 08:28:38 2026    ",
+      "25021": "Fri Nov  6 08:28:47 2026    ",
+      "25023": "Fri Nov  6 08:28:47 2026    ",
+      "25027": "Fri Nov  6 08:28:47 2026    ",
+      "25028": "Fri Nov  6 08:28:47 2026    ",
+      "25029": "Fri Nov  6 08:28:47 2026    ",
+      "25214": "Fri Nov  6 08:28:56 2026    ",
+      "25216": "Fri Nov  6 08:28:56 2026    ",
+      "25220": "Fri Nov  6 08:28:56 2026    ",
+      "25221": "Fri Nov  6 08:28:56 2026    ",
+      "25224": "Fri Nov  6 08:28:56 2026    ",
+      "25238": "Fri Nov  6 08:28:57 2026    ",
+      "25242": "Fri Nov  6 08:28:57 2026    ",
+      "25474": "Fri Nov  6 08:29:06 2026    ",
+      "25479": "Fri Nov  6 08:29:06 2026    ",
+      "25891": "Fri Nov  6 08:29:15 2026    ",
+      "25893": "Fri Nov  6 08:29:15 2026    ",
+      "26242": "Fri Nov  6 08:29:24 2026    ",
+      "26248": "Fri Nov  6 08:29:24 2026    ",
+      "26255": "Fri Nov  6 08:29:25 2026    ",
+      "26256": "Fri Nov  6 08:29:25 2026    ",
+      "26257": "Fri Nov  6 08:29:25 2026    ",
+      "26496": "Fri Nov  6 08:29:35 2026    ",
+      "26499": "Fri Nov  6 08:29:35 2026    ",
+      "26505": "Fri Nov  6 08:29:35 2026    ",
+      "26506": "Fri Nov  6 08:29:35 2026    ",
+      "26509": "Fri Nov  6 08:29:35 2026    ",
+      "26535": "Fri Nov  6 08:29:35 2026    ",
+      "26540": "Fri Nov  6 08:29:35 2026    ",
+      "26886": "Fri Nov  6 08:29:45 2026    ",
+      "26889": "Fri Nov  6 08:29:45 2026    ",
+      "27301": "Fri Nov  6 08:29:55 2026    ",
+      "27303": "Fri Nov  6 08:29:55 2026    ",
+      "27669": "Fri Nov  6 08:30:04 2026    ",
+      "27675": "Fri Nov  6 08:30:04 2026    ",
+      "27681": "Fri Nov  6 08:30:04 2026    ",
+      "27682": "Fri Nov  6 08:30:04 2026    ",
+      "27686": "Fri Nov  6 08:30:04 2026    ",
+      "27983": "Fri Nov  6 08:30:15 2026    ",
+      "27985": "Fri Nov  6 08:30:15 2026    ",
+      "27990": "Fri Nov  6 08:30:15 2026    ",
+      "27991": "Fri Nov  6 08:30:15 2026    ",
+      "27995": "Fri Nov  6 08:30:15 2026    ",
+      "28252": "Fri Nov  6 08:30:25 2026    ",
+      "28256": "Fri Nov  6 08:30:25 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2062778368,
+    "elapsed_seconds": 220.19048600000002,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-inherited-parent-focused-20261106-evidence.zip",
+      "sha256": "6ce57626edd9eb71c66bda33e4153d8b10eebf1d2d39d2c220f7bf219ca6c4f0",
+      "bytes": 9365269,
+      "verified_entries": 56
+    },
+    {
+      "path": "docs/performance/chatgpt-inherited-parent-component-20261106-evidence.zip",
+      "sha256": "b7ac6f2aa4aa77dba02109adcbd674b09875faf1b0184391f4615c3411a2693d",
+      "bytes": 19783516,
+      "verified_entries": 30
+    },
+    {
+      "path": "docs/performance/chatgpt-inherited-parent-controller-20261106-evidence.zip",
+      "sha256": "e8f36ea7bcb7360cfbe2989d75761d31c7b1c5f9bb8e976eddde149614a88aba",
+      "bytes": 16563,
+      "verified_entries": 7
+    },
+    {
+      "path": "docs/performance/chatgpt-inherited-parent-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "39c93b5eaedd37d4b754c53dea67bcd4a2b6e7ce9d39499106424c4d16988b5a",
+      "bytes": 1496373,
+      "verified_entries": 60
+    },
+    {
+      "path": "docs/performance/chatgpt-inherited-parent-production-r1-matched-20261106-evidence.zip",
+      "sha256": "520a12b00c33b01bac6a41b6d50da3d2119662ffda67957a4eaff3ec4c36c815",
+      "bytes": 8165823,
+      "verified_entries": 162
+    }
+  ],
+  "qualification": "One borrowed inheritance parent per synchronous inherited-style refresh, with live per-property base and animation reads. Setters, specified-value restoration, flags, font-relative computation and invalidation remain unchanged. Public wrappers keep per-property control, no retained pointer/result cache. Fresh parent lookup on each call handles reparenting, overrides, slots/shadow and orphan fallback. 752 focused executions across ordinary GC/no-GC/poisoned-prealloc/ASan+UBSan in both variants pass. Direct V components exclude setup and checksum oracle, include refresh and changing-parent writes; all output checksums match. Initial optional-test syntax, a mixed override/font-relative fixture that fails both modes, and a missing component property-ID unwrap are retained. Production source/branch/content/bootstrap/pixels/exits stable under one nonblocking shared publication lease with latest completed canonical single-C-unit V-prod bundle; no copied app or manual duplicate build. Candidate marker appears after first native layer submission. One-time SOCKS fixture/scripts/references, 1024x768 scale2, private profiles/caches and five-second unfocused settle fixed. Coalition creation through encoded PNG includes startup/window, Brave also CDP delivery; OS filesystem/shader caches retained and GPU/outside coalition excluded. Four pairs diagnostic below seven-pair acceptance. This build includes concurrent repository changes; only its matched same-build contrast measures this slice, and earlier-build differences receive no credit. Both 20B and original Brave goals remain unmet."
+}
