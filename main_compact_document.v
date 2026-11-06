@@ -197,7 +197,8 @@ Object.setPrototypeOf(document,HTMLDocument.prototype);
 delete document.createElement;delete document.createElementNS;
 for(const name of ["addEventListener","removeEventListener","dispatchEvent"])Object.defineProperty(Document.prototype,name,{value:EventTarget.prototype[name],writable:true,enumerable:true,configurable:true});
 const __compactDocumentLegacyAdd=document.addEventListener;
-function __compactDocumentNativeEvent(name){return name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="beforeinput"||name==="input"||name==="change"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
+const __compactDocumentPointerTypes=new Set(' + json2.encode(browserjs.native_pointer_event_names()) + r');
+function __compactDocumentNativeEvent(name){return __compactDocumentPointerTypes.has(name)||name==="keydown"||name==="keyup"||name==="keypress"||name==="beforeinput"||name==="input"||name==="change"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
 document.addEventListener=function(name,callback,options){
  name=String(name);if(__compactDocumentNativeEvent(name))return EventTarget.prototype.addEventListener.call(this,name,callback,options);
  return __compactDocumentLegacyAdd.call(this,name,callback,options);
