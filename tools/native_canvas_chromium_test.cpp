@@ -34,7 +34,9 @@ int main(int argc, char** argv)
     std::vector<uint8_t> pixels(192 * 144 * 4);
     auto save_readback = [&](char const* name) {
         std::vector<uint8_t> rgba(pixels.size());
-        assert(vox_skia_canvas_read_pixels(pixels.data(), 192, 144, 768, 2, rgba.data(), 192, 144, 768, 0, 0));
+        SkBitmap bitmap;
+        assert(bitmap.installPixels(SkImageInfo::Make(192, 144, kRGBA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB()), pixels.data(), 768));
+        assert(bitmap.readPixels(SkImageInfo::Make(192, 144, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB()), rgba.data(), 768, 0, 0));
         auto* output = std::fopen((directory + "/" + name + ".rgba").c_str(), "wb");
         assert(output && std::fwrite(rgba.data(), 1, rgba.size(), output) == rgba.size());
         std::fclose(output);

@@ -68,7 +68,3 @@ bool vox_skia_canvas_glyphs(uint8_t* pixels, int width, int height, int pitch, i
 #ifdef __cplusplus
 }
 #endif
-#ifdef __cplusplus
-extern "C"
-#endif
-bool vox_skia_canvas_read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y);

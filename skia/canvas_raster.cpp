@@ -344,16 +344,6 @@ extern "C" bool vox_skia_canvas_path(uint8_t* pixels, int width, int height, int
 
 #include "canvas_chromium_raster.h"
 
-extern "C" bool vox_skia_canvas_read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y)
-{
-    auto source_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, alpha_type == 2 ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto destination_info = SkImageInfo::Make(destination_width, destination_height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    SkBitmap bitmap;
-    if (!bitmap.installPixels(source_info, const_cast<uint8_t*>(source), pitch))
-        return false;
-    return bitmap.readPixels(destination_info, destination, destination_pitch, x, y);
-}
-
 // CanvasCommandPlayer::DrawGlyphRun -> PainterSkia::draw_text_blob(). The
 // resolver uses DisplayListResourceStorage's Unhinted text rasterization mode.
 extern "C" bool vox_skia_canvas_glyphs(uint8_t* pixels, int width, int height, int pitch, int alpha_type, VoxCanvasCommand const* command, VoxCanvasGlyphRun const* glyphs)

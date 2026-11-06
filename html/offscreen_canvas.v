@@ -8,9 +8,9 @@
 // implemented directly.
 module html
 
+import cpuraster
 import dom
 import math
-import skia
 
 pub enum OffscreenRenderingContextID {
 	canvas_2d
@@ -343,7 +343,7 @@ pub fn (context &OffscreenCanvasRenderingContext2D) get_image_data(x int, y int,
 	mut result_pixels := result.data()
 	// Canvas2DContextBase.cpp: ImageData receives unpremultiplied pixels.
 	if bitmap.alpha_type == 2 {
-		skia.read_pixels(bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), mut result_pixels, actual_width, actual_height, actual_width * 4, actual_x, actual_y)
+		cpuraster.read_pixels(bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), mut result_pixels, actual_width, actual_height, actual_width * 4, actual_x, actual_y)
 		return result
 	}
 	for row := 0; row < actual_height; row++ {
@@ -372,7 +372,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data_dirty(imag
 	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	if mutable_bitmap.alpha_type == 2 {
 		mut straight_pixels := []u8{len: mutable_bitmap.data.len}
-		if skia.read_pixels(mutable_bitmap.data, mutable_bitmap.width, mutable_bitmap.height, mutable_bitmap.pitch, 2, mut straight_pixels, mutable_bitmap.width, mutable_bitmap.height, mutable_bitmap.pitch, 0, 0) {
+		if cpuraster.read_pixels(mutable_bitmap.data, mutable_bitmap.width, mutable_bitmap.height, mutable_bitmap.pitch, 2, mut straight_pixels, mutable_bitmap.width, mutable_bitmap.height, mutable_bitmap.pitch, 0, 0) {
 			mutable_bitmap.data = straight_pixels
 			mutable_bitmap.alpha_type = 1
 		}

@@ -303,9 +303,3 @@ fn draw_canvas_command(mut pixels []u8, width int, height int, pitch int, alpha_
 	}
 	return C.vox_skia_canvas_path(pixels.data, width, height, pitch, alpha_type, &native_command)
 }
-
-fn C.vox_skia_canvas_read_pixels(source &u8, width int, height int, pitch int, alpha_type int, destination &u8, destination_width int, destination_height int, destination_pitch int, x int, y int) bool
-
-pub fn read_pixels(source []u8, width int, height int, pitch int, alpha_type int, mut destination []u8, destination_width int, destination_height int, destination_pitch int, x int, y int) bool {
-	return C.vox_skia_canvas_read_pixels(source.data, width, height, pitch, alpha_type, destination.data, destination_width, destination_height, destination_pitch, x, y)
-}
