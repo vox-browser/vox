@@ -263,3 +263,60 @@ fn test_styles_tab_lists_and_edits_matched_rules() {
 	assert standard == standard.sorted()
 	assert names[..standard.len] == standard
 }
+
+fn devtools_test_undo_key(shift bool) ui2.KeyEvent {
+	$if macos {
+		return ui2.KeyEvent{
+			code:  .z
+			cmd:   true
+			shift: shift
+		}
+	} $else {
+		return ui2.KeyEvent{
+			code:  .z
+			ctrl:  true
+			shift: shift
+		}
+	}
+}
+
+fn test_devtools_undo_restores_html_and_rule_edits() {
+	mut app := devtools_test_app_with('<!doctype html><style>body{margin:0} .card{padding:4px} div{width:200px}</style><body><div id="target" class="card" style="height:40px">Target</div><p id="after">After</p></body>')
+	defer { app.dispose_browser_tab() }
+	target := app.document.get_element_by_id('target') or { panic('missing target') }
+	after := app.document.get_element_by_id('after') or { panic('missing after') }
+	id := devtools.node_id(target.as_node())
+	app.inspect_devtools_node(target.as_node())
+	mut tools := devtools_test_panel(app)
+	assert target.get_bounding_client_rect().height == 48
+	assert tools.begin_edit(id, .html)
+	assert app.apply_devtools_editor('<section id="replaced">New</section><span id="extra">x</span>')
+	assert app.document.get_element_by_id('target') == none
+	// Cmd+Z in the tree puts the original element back in place.
+	app.devtools_action(devtools.action('select', tools.selected, ''))
+	assert app.handle_devtools_key(devtools_test_undo_key(false))
+	assert app.document.get_element_by_id('replaced') == none
+	assert app.document.get_element_by_id('extra') == none
+	restored := app.document.get_element_by_id('target') or { panic('target was not restored') }
+	assert voidptr(restored) == voidptr(target)
+	assert voidptr(target.as_node().next_sibling() or { panic('no sibling') }) == voidptr(after.as_node())
+	assert tools.selected == id
+	assert target.get_bounding_client_rect().height == 48
+	assert app.handle_devtools_key(devtools_test_undo_key(true))
+	assert app.document.get_element_by_id('replaced') != none
+	assert app.document.get_element_by_id('target') == none
+	assert app.undo_devtools(false)
+	assert app.document.get_element_by_id('target') != none
+	// Rule edits made through the Styles tab undo through the CSSOM.
+	_ = app.devtools_elements(800, 900)
+	assert app.set_devtools_style(id, devtools_test_rule(tools, '.card'), 'padding', '10px')
+	assert target.get_bounding_client_rect().height == 60
+	assert app.undo_devtools(false)
+	assert target.get_bounding_client_rect().height == 48
+	assert app.undo_devtools(true)
+	assert target.get_bounding_client_rect().height == 60
+	// Inline style edits undo as attribute changes.
+	assert app.set_devtools_style(id, 0, 'height', '20px')
+	assert app.undo_devtools(false)
+	assert target.get_attribute('style') or { '' } == 'height:40px'
+}

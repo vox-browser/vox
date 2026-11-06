@@ -411,3 +411,53 @@ fn test_computed_tab_shows_box_model_and_filtered_values() {
 	comment_pane := tools.elements(ui2.rect(0, 500, 1000, 400))
 	assert find_element(comment_pane, 'devtools-edit-text') != none
 }
+
+fn test_undo_and_redo_attribute_delete_and_text_edits() {
+	s := sample()
+	mut tools := opened(s)
+	main_id := node_id(s.main)
+	element := s.main.as_element() or { panic('main') }
+	assert !tools.undo() && !tools.redo()
+	assert tools.set_attribute(main_id, 'data-state', 'ready')
+	assert tools.set_attribute(main_id, 'class', 'card')
+	assert tools.remove_attribute(main_id, 'id')
+	assert tools.undo()
+	assert element.get_attribute('id') or { '' } == 'app'
+	assert tools.undo()
+	assert element.get_attribute('class') or { '' } == 'card wide'
+	assert tools.undo()
+	assert element.get_attribute('data-state') == none
+	assert !tools.undo()
+	assert tools.redo()
+	assert element.get_attribute('data-state') or { '' } == 'ready'
+	// A new edit discards what could be redone.
+	assert tools.set_attribute(main_id, 'title', 'Main')
+	assert !tools.redo()
+	// Deleted nodes return to their place, selected.
+	tools.rebuild(s.document)
+	assert tools.delete(node_id(s.comment))
+	assert s.comment.parent() == none
+	assert tools.undo()
+	assert voidptr(s.comment.parent() or { panic('detached') }) == voidptr(s.body)
+	assert voidptr(s.comment.next_sibling() or { panic('no sibling') }) == voidptr(s.empty)
+	assert tools.selected == node_id(s.comment)
+	assert tools.redo()
+	assert s.comment.parent() == none
+	assert tools.selected == node_id(s.empty)
+	// Text edits restore the previous data.
+	tools.rebuild(s.document)
+	tools.toggle(main_id)
+	tools.rebuild(s.document)
+	tools.toggle(node_id(s.para))
+	tools.rebuild(s.document)
+	text := s.para.first_child() or { panic('text') }
+	assert tools.begin_edit(node_id(text), .text)
+	assert tools.apply_edit('Edited')
+	assert tools.undo()
+	assert text.text_content() or { '' } == 'First line\nsecond   line'
+	assert tools.redo()
+	assert text.text_content() or { '' } == 'Edited'
+	// Navigation drops the history.
+	assert tools.sync(s.document, 99)
+	assert !tools.undo()
+}

@@ -102,6 +102,9 @@ pub mut:
 	sidebar         SidebarTab
 	styles          StyleSnapshot
 	computed_filter string
+	// Edit history for the current document.
+	undo_stack []UndoEntry
+	redo_stack []UndoEntry
 	// Host input state: the page element under the picker, whether the
 	// pointer is over the panel, and a picker press whose release the page
 	// must not see.
@@ -170,6 +173,8 @@ pub fn (mut tools DevTools) sync(document &dom.Document, generation int) bool {
 	tools.rows = []Row{}
 	tools.nodes = map[i64]&dom.Node{}
 	tools.styles = StyleSnapshot{}
+	tools.undo_stack = []UndoEntry{}
+	tools.redo_stack = []UndoEntry{}
 	tools.click_node = 0
 	tools.version++
 	if document == unsafe { nil } {

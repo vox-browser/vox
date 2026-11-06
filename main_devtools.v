@@ -522,13 +522,45 @@ fn (mut app BrowserApp) set_devtools_style(id i64, rule_index int, name string, 
 			tools.set_attribute(id, 'style', devtools.serialize_declarations(declarations))
 		}
 	} else if rule.editable() {
+		property := name.trim_space()
+		mut before := ''
+		for declaration in rule.declarations {
+			if declaration.name == property {
+				before = declaration.value_text()
+			}
+		}
 		changed = true
-		cssinspect.set_rule_property(rule.handle, name.trim_space(), value) or {
+		cssinspect.set_rule_property(rule.handle, property, value) or {
 			tools.error = err.msg()
 			tools.version++
 			changed = false
 		}
+		if changed {
+			handle := rule.handle
+			tools.record(devtools.UndoEntry{
+				label: 'style'
+				undo:  fn [handle, property, before, id] () !i64 {
+					cssinspect.set_rule_property(handle, property, before)!
+					return id
+				}
+				redo:  fn [handle, property, value, id] () !i64 {
+					cssinspect.set_rule_property(handle, property, value)!
+					return id
+				}
+			})
+		}
 	}
+	tools.styles.key = 0
+	app.finish_devtools_edit(changed)
+	return changed
+}
+
+// undo_devtools reverses (or with `redo`, repeats) the latest panel edit,
+// like Cmd+Z and Cmd+Shift+Z in Chrome's Elements panel.
+fn (mut app BrowserApp) undo_devtools(redo bool) bool {
+	mut tools := app.devtools_panel() or { return false }
+	app.sync_devtools()
+	changed := if redo { tools.redo() } else { tools.undo() }
 	tools.styles.key = 0
 	app.finish_devtools_edit(changed)
 	return changed
@@ -613,6 +645,10 @@ fn (mut app BrowserApp) handle_devtools_key(event ui2.KeyEvent) bool {
 			return true
 		}
 		return false
+	}
+	if tools.focused && focused == '' && command && !event.alt && event.code == .z {
+		app.undo_devtools(event.shift)
+		return true
 	}
 	if !tools.focused || focused != '' || event.cmd || event.ctrl || event.alt {
 		return false
