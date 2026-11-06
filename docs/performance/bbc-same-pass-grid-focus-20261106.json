@@ -1,0 +1,223 @@
+{
+  "status": "Focused correctness passed; native eligibility and unprofiled target pending.",
+  "implementation": "dcacc48e9",
+  "tooling": "4640982a6",
+  "focus": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_same_pass_grid_reuses_dirty_nested_geometry_and_preserves_caller_state",
+          "test_same_pass_grid_checks_every_incoming_basis_and_keeps_probe_entries_separate",
+          "test_same_pass_grid_rejects_live_text_membership_style_font_and_environment_changes",
+          "test_same_pass_grid_preserves_running_clamp_and_shifted_descendant_algorithms",
+          "test_same_pass_grid_owned_lines_survive_native_storage_and_pool_retirement",
+          "test_same_pass_grid_snapshot_budget_preserves_uncached_geometry",
+          "test_same_pass_grid_nested_reservations_cannot_overrun_the_shared_snapshot_budget",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_same_pass_grid_reuses_dirty_nested_geometry_and_preserves_caller_state",
+          "test_same_pass_grid_checks_every_incoming_basis_and_keeps_probe_entries_separate",
+          "test_same_pass_grid_rejects_live_text_membership_style_font_and_environment_changes",
+          "test_same_pass_grid_preserves_running_clamp_and_shifted_descendant_algorithms",
+          "test_same_pass_grid_owned_lines_survive_native_storage_and_pool_retirement",
+          "test_same_pass_grid_snapshot_budget_preserves_uncached_geometry",
+          "test_same_pass_grid_nested_reservations_cannot_overrun_the_shared_snapshot_budget",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_same_pass_grid_reuses_dirty_nested_geometry_and_preserves_caller_state",
+          "test_same_pass_grid_checks_every_incoming_basis_and_keeps_probe_entries_separate",
+          "test_same_pass_grid_rejects_live_text_membership_style_font_and_environment_changes",
+          "test_same_pass_grid_preserves_running_clamp_and_shifted_descendant_algorithms",
+          "test_same_pass_grid_owned_lines_survive_native_storage_and_pool_retirement",
+          "test_same_pass_grid_snapshot_budget_preserves_uncached_geometry",
+          "test_same_pass_grid_nested_reservations_cannot_overrun_the_shared_snapshot_budget",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/same_pass_grid_layout_test.v": "b89f6d3aa10d28343b1406739ac0ef32666661ed16b1b8d5d6b6d956f0735e03",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/retained_values_restore_test.v": "983a5049164afdaae93fb3ce532fe55a072a1514bbbe69cf7fba36877af9097c",
+      "/Users/alex/code/vox2/layout/same_pass_grid_layout.v": "eb507e985b1fa5a4b766e2bd207175d6b0daf225ad50c32ab650809f3faf9e37",
+      "/Users/alex/code/vox2/layout/layout_state.v": "d79a51f27f800827f1fcc87bfd05996392962a03839467d88b81fa8de770e0ce",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "2e0e476ff766fe2802db6eb00f13868a5660d4b32f482c90cb6d4e79b467d087",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "441119e110d9a288a4eac65d57506d238ee675222325ca42cf9622634da16539",
+      "/Users/alex/code/vox2/layout/retained_block_layout.v": "687ef3fe620b7d9727c51af510c41d669748251545d594d500c8138185a3c0bc",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a"
+    },
+    "unchanged": true,
+    "cases_per_run": 27,
+    "expected_cases": [
+      "test_same_pass_grid_reuses_dirty_nested_geometry_and_preserves_caller_state",
+      "test_same_pass_grid_checks_every_incoming_basis_and_keeps_probe_entries_separate",
+      "test_same_pass_grid_rejects_live_text_membership_style_font_and_environment_changes",
+      "test_same_pass_grid_preserves_running_clamp_and_shifted_descendant_algorithms",
+      "test_same_pass_grid_owned_lines_survive_native_storage_and_pool_retirement",
+      "test_same_pass_grid_snapshot_budget_preserves_uncached_geometry",
+      "test_same_pass_grid_nested_reservations_cannot_overrun_the_shared_snapshot_budget",
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_keeps_a_recently_reused_question_across_eviction",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+      "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_grid_measurement_revalidates_svg_attributes_before_replay",
+      "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+      "test_grid_measurement_preserves_unused_height_proof_rejections",
+      "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+      "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+      "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+      "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+      "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry"
+    ]
+  },
+  "focused_cases": 27,
+  "focused_executions": 162,
+  "memory_modes": [
+    "default",
+    "none",
+    "prealloc"
+  ],
+  "arms": [
+    "candidate",
+    "committed-grid-reuse-disabled"
+  ],
+  "instruction_tool_tests": 348,
+  "tool_audit": {
+    "exit": 0,
+    "unchanged": true,
+    "changed": []
+  },
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-same-pass-grid-focus-20261106.tar.gz",
+      "bytes": 35963811,
+      "sha256": "1d46134137f35dba4fd36babf38d18b9121f38eef8f3ee63d2762cba089badad",
+      "physical_members": 136,
+      "file_paths": 136,
+      "all_file_paths_verified": true
+    }
+  ],
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "qualification": "Separate same-pass committed-grid map in shared pass pool; exact GridMeasurementKey including indefinite numeric height and all ancestor bases,live closed-subtree DOM/style/text/image/SVG/font validation. At most one result pergrid and4096descendant snapshots shared across nested grids,with post-run reservation recheck. Disposable probe cache/rejection/eviction unchanged. Full owned descendant geometry/line/path arrays and tracks,root caller offset/bases preserved,COW andpoolretirement checked. Seven new tests plus existing grid/image/value-restore coverage;162executionspass. Initial compile/fixture failures retained in botharms; one code-input change during failed refinement retained without primary credit. No native hit or instruction saving claimed yet.",
+  "unix": 1793937599.3119428
+}
