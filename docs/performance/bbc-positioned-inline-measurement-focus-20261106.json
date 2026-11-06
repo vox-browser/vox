@@ -1,0 +1,250 @@
+{
+  "status": "Focused correctness passed; production eligibility and unprofiled saving/Brave target pending.",
+  "implementation": "5a5d29c36",
+  "tooling": "168ab1b97",
+  "focus": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_unshifted_relative_inline_measurements_survive_scratch_and_copy_on_write",
+          "test_relative_inline_committed_replay_preserves_root_geometry_and_owned_lines",
+          "test_relative_inline_rejects_shifted_out_of_flow_and_clamped_roots",
+          "test_relative_inline_revalidates_style_insets_direction_and_dom_text",
+          "test_relative_inline_revalidates_live_dom_text_without_manual_invalidation",
+          "test_relative_inline_keeps_width_font_environment_and_descendant_guards",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+          "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+          "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+          "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+          "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+          "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+          "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+          "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+          "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+          "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+          "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+          "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_unshifted_relative_inline_measurements_survive_scratch_and_copy_on_write",
+          "test_relative_inline_committed_replay_preserves_root_geometry_and_owned_lines",
+          "test_relative_inline_rejects_shifted_out_of_flow_and_clamped_roots",
+          "test_relative_inline_revalidates_style_insets_direction_and_dom_text",
+          "test_relative_inline_revalidates_live_dom_text_without_manual_invalidation",
+          "test_relative_inline_keeps_width_font_environment_and_descendant_guards",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+          "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+          "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+          "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+          "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+          "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+          "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+          "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+          "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+          "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+          "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+          "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_unshifted_relative_inline_measurements_survive_scratch_and_copy_on_write",
+          "test_relative_inline_committed_replay_preserves_root_geometry_and_owned_lines",
+          "test_relative_inline_rejects_shifted_out_of_flow_and_clamped_roots",
+          "test_relative_inline_revalidates_style_insets_direction_and_dom_text",
+          "test_relative_inline_revalidates_live_dom_text_without_manual_invalidation",
+          "test_relative_inline_keeps_width_font_environment_and_descendant_guards",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+          "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+          "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+          "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+          "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+          "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+          "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+          "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+          "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+          "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+          "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+          "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/positioned_inline_measurement_test.v": "9279a7e3c4543fd5d6f02cc15309d7ef2957abd3366b7052203c8a7d47f78eef",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "/Users/alex/code/vox2/layout/inline_measurement_height_test.v": "c4feae7067924a65758860b0a9465dcd3cc657d0ee2054ca7abd5490730b1dbd",
+      "/Users/alex/code/vox2/layout/uncached_inline_workspace_test.v": "2988100e80143124d5598af7ee9cb193885874ee95b49c163759a7aa76857154",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace_test.v": "59f7076900a967052ca44666db2f0d4b9e26ea262504302bb02f24934090bb3c",
+      "/Users/alex/code/vox2/layout/retained_inline_layout_test.v": "ea185ad863269897d42d9a57acbdd9bf1fef0c227370c740f6450655f19e7791",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "37c30043109d4eb13772e2d905a65d5911be3546a330c539f657078ae9459304",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6b893d9c1e6bda63b29a59c5fee5b9f35839b7009c65d65e29e7a4cd79a24b57",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "bb3b23783006b2d176559f2d7883102d95405986bfe990a3c46ccac88b5abd98",
+      "/Users/alex/code/vox2/layout/retained_relative_flow.v": "1a5a60600fcda1f9ba3a30cb0160b8c546b0a6f5636b26a580046397f2468b12",
+      "/Users/alex/code/vox2/layout/committed_inline_measurement.v": "6c7866debb5b6d31ebea7b03910984a10d25c662b6c90c2ac9b3ca3397aaed00"
+    },
+    "unchanged": true,
+    "cases_per_run": 34,
+    "expected_cases": [
+      "test_unshifted_relative_inline_measurements_survive_scratch_and_copy_on_write",
+      "test_relative_inline_committed_replay_preserves_root_geometry_and_owned_lines",
+      "test_relative_inline_rejects_shifted_out_of_flow_and_clamped_roots",
+      "test_relative_inline_revalidates_style_insets_direction_and_dom_text",
+      "test_relative_inline_revalidates_live_dom_text_without_manual_invalidation",
+      "test_relative_inline_keeps_width_font_environment_and_descendant_guards",
+      "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+      "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+      "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+      "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+      "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+      "test_inline_measurement_does_not_cache_discarded_whitespace",
+      "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+      "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+      "test_committed_inline_misses_never_populate_or_evict_measurements",
+      "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+      "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+      "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+      "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+      "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+      "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+      "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+      "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+      "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+      "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+      "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+      "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+      "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+      "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+      "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+      "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+      "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+      "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+      "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+    ]
+  },
+  "focused_cases": 34,
+  "focused_executions": 204,
+  "memory_modes": [
+    "default",
+    "none",
+    "prealloc"
+  ],
+  "arms": [
+    "candidate",
+    "original-positioned-root-exclusion"
+  ],
+  "instruction_tool_tests": 347,
+  "tool_audit": {
+    "exit": 0,
+    "unchanged": true,
+    "changed": []
+  },
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-positioned-inline-measurement-focus-20261106.tar.gz",
+      "bytes": 26129204,
+      "sha256": "66b40d552fb34eebc4276e6708b9c8d9db1189e0829b41fb571028cb189dd525",
+      "physical_members": 109,
+      "file_paths": 110,
+      "all_file_paths_verified": true
+    }
+  ],
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "qualification": "Only measurement-root eligibility extends to relative positioning with all four insets auto. Ordinary transient workspaces and positioned descendants keep their existing policy. Root offsets remain caller-owned; exact key/style/text/font/tree validation and retained line ownership/COW are unchanged. Six new cases compare real geometry/glyphs with uncached layout, include scratch release and pool retirement, live DOM text invalidation, inset/direction/style/width/font/environment/tree changes and rejected absolute/fixed/sticky/shifted/clamped/floating cases. Initial selected batch omitted two helper files and failed compilation in all modes; refined batch exposed manual-node fixture invalidation omission in candidate only, all failures retained. Final matrix includes all helper cases and an additional real DOM mutation case,204passes,verified actual test-main calls and unchanged checked sources. Original347tool tests pass but unrelated build_mac_graphite.py changed between outer pins; current347repeat has complete unchanged tool pins and zero actual exit. No performance/cadence/catalog credit.",
+  "unix": 1793932074.66672
+}

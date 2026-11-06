@@ -7430,3 +7430,35 @@ preserved. The corrected wrapper uses a sibling sampling directory. Author
 sources, workload and references are unchanged. The sampler and grid matrix use
 separate pinned builds and are not compared as performance results.
 [Sampler calibration, primary API sources and all attempts](performance/bbc-jsc-sampling-diagnostic-20261106.json).
+
+A second sealed-C diagnostic records the **cache exclusions actually reached**
+while retaining the original engine branches. Its capture and calibrated scope
+accounting pass all original audits with zero counter faults. Among 38,069
+uncached inline calls, **10,037 have a positioned root whose relative insets are
+all auto**, 48 have another positioned root, 11,527 satisfy the existing closed
+measurement predicate, and 16,457 are unpositioned but fail another closure
+condition. No observed root has an active clamp. Grid records include 10,423
+committed misses, 2,253 cache hits, 1,737 remembered rejections, and 1,527/203
+accepted/rejected input collections. These event counts identify opportunities;
+they are not causal instruction savings. The initial injection anchor assertion,
+guard-report collision and publication rejection all precede browser launch and
+are retained. For the final diagnostic, only the unlaunched canonical base
+executable had been replaced; the sealed diagnostic executable and every used
+compiler/native-library input remain pinned. No new engine behavior is tested
+by this coordination change.
+[Eligibility counters and all rejected preparations](performance/bbc-layout-eligibility-diagnostic-20261106.json).
+
+The resulting **unshifted relative-root inline measurement extension**
+(`5a5d29c36`, isolated control `168ab1b97`) passes **204 focused executions**:
+34 cases in both arms across default, no-GC and preallocation modes. Six new
+cases compare geometry and glyph payloads with uncached layout after scratch
+release, exercise committed replay/pool retirement/copy-on-write, retain caller
+root offsets, and cover live DOM text changes, style/inset/direction/width/font/
+environment/tree mutations. Shifted, absolute, fixed, sticky, floating and clamped
+roots keep their exclusions, as do positioned descendants and ordinary transient
+workspaces. All **347 instruction-tool tests** pass with current checked tool
+pins unchanged. Earlier missing-helper compilation failures, a manual-node
+fixture invalidation omission and the first unrelated tool-pin drift are retained.
+Production eligibility and unprofiled attribution remain pending; no instruction,
+broad-check checkpoint or catalog credit is claimed.
+[Focused checks and retained failures](performance/bbc-positioned-inline-measurement-focus-20261106.json).
