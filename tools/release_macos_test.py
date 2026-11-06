@@ -86,7 +86,8 @@ class ReleaseFlowTests(unittest.TestCase):
         self.failing = None
         self.commit = 'c0ffee'
         self.compiled = dict(head='c0ffee', build_inputs_sha256='committed tree')
-        for name in ('check_unreleased', 'check_website', 'publish_release', 'publish_website_version'):
+        for name in ('check_unreleased', 'check_website', 'publish_release', 'publish_website_version',
+                     'check_download'):
             patcher = patch.object(release, name, side_effect=self.recorder(name))
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -141,7 +142,7 @@ class ReleaseFlowTests(unittest.TestCase):
         dmg = self.release()
         self.assertEqual(self.names(), ['check_unreleased', 'check_website', 'commit_version',
                                         'prepare_checkout', 'deploy', 'publish_release',
-                                        'publish_website_version'])
+                                        'publish_website_version', 'check_download'])
         self.assertEqual(self.calls[0][1], (release.REPOSITORY, '0.1.1'))
         self.assertEqual(self.calls[3][1], (self.root, self.checkout, 'c0ffee'))
         # The release checkout builds the committed bump; the DMG lands in the canonical Build/.
@@ -149,6 +150,7 @@ class ReleaseFlowTests(unittest.TestCase):
         self.assertEqual(dmg, self.root / 'Build/deploy' / ('Vox-0.1.1-%s.dmg' % release.platform.machine()))
         self.assertEqual(self.calls[5][1], (release.REPOSITORY, '0.1.1', dmg, '26.0'))
         self.assertEqual(self.calls[6][1], ('0.1.1', release.WEBSITE_HOST))
+        self.assertEqual(self.calls[7][1], (release.REPOSITORY, '0.1.1', dmg.name))
 
     def test_failed_build_or_upload_publishes_nothing_further_and_a_rerun_keeps_the_version(self):
         for failure, published in [('deploy', []), ('publish_release', ['publish_release'])]:
@@ -311,6 +313,16 @@ class PublishingTests(unittest.TestCase):
                 self.assertIn('macOS 26.0 or later', commands[0][commands[0].index('--notes') + 1])
                 with self.assertRaisesRegex(RuntimeError, 'does not carry'):
                     release.publish_release('owner/repo', '0.1.1', dmg, '26.0')
+
+    def test_site_download_must_redirect_to_the_uploaded_dmg(self):
+        uploaded = 'https://github.com/owner/repo/releases/download/0.1.1/Vox-0.1.1-arm64.dmg'
+        with patch.object(release, 'download_location', return_value=uploaded):
+            release.check_download('owner/repo', '0.1.1', 'Vox-0.1.1-arm64.dmg')
+            with self.assertRaisesRegex(RuntimeError, 'instead of .*Vox-0.1.1-x86_64.dmg.*--website-only'):
+                release.check_download('owner/repo', '0.1.1', 'Vox-0.1.1-x86_64.dmg')
+        with patch.object(release, 'download_location', return_value=None):
+            with self.assertRaisesRegex(RuntimeError, 'redirects to None'):
+                release.check_download('owner/repo', '0.1.1', 'Vox-0.1.1-arm64.dmg')
 
     def test_website_version_is_replaced_atomically_and_checked_live(self):
         with patch.object(release.subprocess, 'run', return_value=self.completed()) as run, \

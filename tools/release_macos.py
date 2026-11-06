@@ -22,6 +22,7 @@ import re
 import shlex
 import subprocess
 import time
+import urllib.error
 import urllib.request
 
 from rebuild_browser import repository_state
@@ -31,6 +32,8 @@ WEBSITE_HOST = 'vpm'
 # vox-website serves this file at /version (VOX_VERSION_FILE in its service).
 WEBSITE_VERSION_FILE = '/var/www/vox-browser.org/version'
 VERSION_URL = 'https://vox-browser.org/version'
+# The site's download button; it redirects to the DMG of the version /version serves.
+DOWNLOAD_URL = 'https://vox-browser.org/download/macos'
 INFO_PLIST = 'packaging/Info.plist'
 VERSION = re.compile(r'\d{1,9}(\.\d{1,9}){0,2}')
 SSH_OPTIONS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15']
@@ -225,6 +228,32 @@ def release_lock(root):
         yield
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *arguments, **keywords):
+        return None
+
+
+def download_location(url=DOWNLOAD_URL):
+    request = urllib.request.Request(url, method='HEAD', headers={'Cache-Control': 'no-cache',
+                                                                  'User-Agent': 'Vox-release'})
+    try:
+        with urllib.request.build_opener(_NoRedirect).open(request, timeout=15):
+            return None
+    except urllib.error.HTTPError as error:
+        # A site without the route answers 404; report it like any wrong target.
+        return error.headers.get('Location') if error.code in (301, 302, 303, 307, 308) else None
+
+
+def check_download(repository, version, asset):
+    """The site derives the DMG name from the version; it must name the uploaded asset."""
+    expected = 'https://github.com/%s/releases/download/%s/%s' % (repository, version, asset)
+    location = download_location()
+    if location != expected:
+        raise RuntimeError('%s redirects to %s instead of %s. Deploy vox-website with '
+                           '/download/macos, then run: v run deploy.vsh --website-only'
+                           % (DOWNLOAD_URL, location, expected))
+
+
 def live_version(url=VERSION_URL):
     request = urllib.request.Request(url, headers={'Cache-Control': 'no-cache',
                                                    'User-Agent': 'Vox-release'})
@@ -282,13 +311,16 @@ def release(root, deploy, output=None, package_only=False, requested=None,
         minimum = plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
         publish_release(repository, version, dmg, minimum)
         publish_website_version(version, host)
+        check_download(repository, version, dmg.name)
     return dmg
 
 
 def publish_website_only(root, repository=REPOSITORY, host=WEBSITE_HOST):
     """Point /version at the version in Info.plist once its DMG is on GitHub."""
     version = bundle_version(root / INFO_PLIST)
-    if not any(name.endswith('.dmg') for name in release_assets(repository, version)):
+    dmgs = [name for name in release_assets(repository, version) if name.endswith('.dmg')]
+    if not dmgs:
         raise RuntimeError('The GitHub release %s has no DMG to download' % version)
     publish_website_version(version, host)
+    check_download(repository, version, dmgs[0])
     return version
