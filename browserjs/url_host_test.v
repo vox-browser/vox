@@ -23,6 +23,9 @@ fn test_native_url_constructor_exposes_actual_source_record() {
 	mut runtime := native_url_runtime()
 	defer { runtime.close() }
 	assert runtime.evaluate_host('typeof URL')! == 'function'
+	if !retain_href_url_objects {
+		assert runtime.evaluate_host('__ladybirdSerializeURLText("../value","https://native-url.example.test/a/")')! == 'https://native-url.example.test/value'
+	}
 	assert runtime.evaluate_host('globalThis.address=new URL("../target?x=1#part","https://user:pass@native-url.example.test:443/root/page");address.href==="https://user:pass@native-url.example.test/target?x=1#part"&&address.origin==="https://native-url.example.test"&&address.protocol==="https:"&&address.username==="user"&&address.password==="pass"&&address.host==="native-url.example.test"&&address.hostname===address.host&&address.port===""&&address.pathname==="/target"&&address.search==="?x=1"&&address.hash==="#part"')! == 'true'
 	actual := runtime.evaluate_host_value('address')!
 	mut native := runtime.native_url(actual)!

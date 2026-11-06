@@ -80,7 +80,14 @@ pub fn (mut host URLHost) install(mut runtime Runtime) ! {
 		host.close()
 		url_bindings_.delete(owner)
 	})
-	if !retain_href_url_objects { runtime.install_url_text_binding(accessors[0])! }
+	// The scalar helper belongs to the document bridge, which captures it for
+	// href serialization. A worker has no bridge and must not inherit its
+	// undeletable private global: sandboxed worker code removes host globals
+	// before freezing its realm and starting its MessagePort handshake.
+	if !retain_href_url_objects && (host.settings.fetch_request_client_is_window()
+		|| retain_worker_url_text_binding) {
+		runtime.install_url_text_binding(accessors[0])!
+	}
 }
 
 fn (host &URLHost) exception(reason IError) IError {

@@ -5,6 +5,9 @@ import platform
 import sync.stdatomic
 
 const retain_href_url_objects = os.getenv('VOX_RETAIN_HREF_URL_OBJECTS') != ''
+// Diagnostic control: reproduce the worker failure without changing the
+// document's URL serialization path in paired production-browser checks.
+const retain_worker_url_text_binding = os.getenv('VOX_RETAIN_WORKER_URL_TEXT_BINDING') != ''
 const href_text_cache_diagnostics = os.getenv('VOX_HREF_TEXT_CACHE_DIAGNOSTICS') != ''
 const href_url_text_diagnostics = os.getenv('VOX_HREF_URL_TEXT_DIAGNOSTICS') != ''
 
