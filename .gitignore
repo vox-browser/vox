@@ -1,6 +1,10 @@
 /Build/
 # Generated benchmark reports and raw measurements stay local.
 /docs/benchmark-results/
+# Evidence archives (.tar.gz, .zip, .gz) stay local; commit their reports and manifests.
+/docs/**/*.gz
+/docs/**/*.tgz
+/docs/**/*.zip
 *.v3cc.*/
 /tools/layout_corpus
 

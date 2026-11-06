@@ -26,6 +26,9 @@
 - Include the feature's focused tests in the same commit as its implementation.
 - Keep documentation-only and tooling-only changes in separate commits when
   they are independently reviewable.
+- Never commit evidence or measurement archives (`.tar.gz`, `.zip`, `.gz`) or
+  force-add ignored files under `docs/`; keep archives local and commit the
+  report or manifest that describes them.
 
 ## UI implementation
 
