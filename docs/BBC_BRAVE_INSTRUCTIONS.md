@@ -35,10 +35,35 @@ fallback in each arm; all 349 instruction-tool tests pass. The shared source
 delivers one main-thread zero-delay callback per invocation and immediately
 unlinks cancelled records. V Timer ownership, cooperative deferral and interval
 policy stay in the existing implementation. This changes the native run-loop
-primitive and phase; BBC path/pixel/content qualification and a matched
-unprofiled cohort remain required. No instruction saving or acceptance-history
-advance is credited by these focused checks.
+primitive and phase. BBC qualification and cohort 134 now exercise the path;
+the focused checks alone supply no instruction saving or acceptance credit.
 [Focused evidence](performance/bbc-zero-native-timer-focus-20261106.json).
+
+Latest attempt — **cohort 134**, literal V `-prod` / single-C production
+`dd40e76bc0f0`, completes seven alternating candidate/control/Brave triples.
+All **21 capture audits pass**. Launch-to-PNG medians are **23,139,919,605 Vox**,
+**23,832,500,504 control** and **17,499,131,643 Brave lower bound** instructions.
+The timer change's median point difference is **692,580,899 (2.906035%)**, with
+**five paired improvements and two regressions**. Its conservative control ratio
+**1.031316 fails**, so no robust instruction saving is credited. The strict
+Brave gate also fails `242856774800 > 155973337290` (ratio **1.401336**).
+
+The candidate-only delivery marker appears before PNG; all ten native timer
+bodies and complete handle layout match focused C. Both native arms retain
+original pixels/content, all 72 external source evaluations, mapped-image,
+ownership, normal-exit and private-PID adoption checks; SVG is exact. Fresh
+broader checks cover **814 unique cases per mode**, default and no-GC:
+**809 passes and the same five known failures**. All 28 platform and 14 HTTP
+cases pass in both arms/modes. The verified primary run has **2,120 executions /
+2,106 passes / 14 repeated baseline failures**. Two CSS helpers changed after
+the first CSS checks completed; a fresh CSS rerun supplies the final coverage.
+Those earlier 440 passes and the rejected post-run pin audit remain retained,
+bringing all recorded executions to **2,560 / 2,546 passes / 14 baseline
+failures**. This is no full-suite pass or cadence reset. History through 134 is
+**128 measured cohorts / 2,755 acceptance attempts**. The homepage remains
+outside the instruction catalog, with the existing frozen-fixture and rendering
+limitations. No cross-build difference is attributed to this change.
+[All attempts, native proof and broader checks](performance/bbc-zero-native-timer-cohort134-20261106.json).
 
 
 The verified TLS 1.2 session-cache change (`94f275b6c`; isolated comparison
@@ -55,7 +80,7 @@ original author scripts evaluated before PNG, with original pixel/content,
 Cohort 133 confirms a same-build reduction; its separate Brave target still fails.
 [Focused evidence](performance/bbc-tls12-session-focus-20261106.json).
 
-Latest attempt — **cohort 133**, literal V `-prod` / single-C-unit production
+Retained attempt — **cohort 133**, literal V `-prod` / single-C-unit production
 `cf225957fe7f`, completes **seven alternating candidate/control/Brave triples**.
 All **21 capture audits pass**, with unchanged original references, complete
 content, identities, counters, ownership and normal exits. Launch-to-PNG medians
