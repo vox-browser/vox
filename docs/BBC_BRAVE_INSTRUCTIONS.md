@@ -7652,3 +7652,12 @@ in those failed runs receive no all-attempt pass claim. Native preflight rejects
 the available marker-free bundle before launch. Native eligibility, instruction
 savings and cohort 131 remain pending; no acceptance history, broad cadence or
 catalog credit advances. [Focused workspace and allocation evidence](performance/bbc-clamped-inline-workspace-focus-20261106.json).
+
+The clamped-inline native start remains unmeasured. The available completed
+bundle lacks the marker, and sealed shared candidate `20261106-072120-0e1f91b4`
+contains the pre-final tree guard despite completing C compilation. It cannot
+validate the checked implementation. The shared publication/build guard remains
+busy; no separate production build is queued. Rejected preflight, actual body
+hashes, pending build identity and prepared cohort 131/776-case conditional broad
+protocol are preserved. No native browser, acceptance sample or cohort ID is
+consumed by this rejection. [Pending native validation](performance/bbc-clamped-inline-workspace-native-pending-20261106.json).

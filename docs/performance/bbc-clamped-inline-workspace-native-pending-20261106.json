@@ -1,0 +1,56 @@
+{
+  "status": "Native eligibility remains pending; available completed bundle lacks marker and newest shared compiled wrapper predates final tree guard.",
+  "browser_launched": false,
+  "acceptance_launched": false,
+  "shared_compiler_complete": true,
+  "shared_compiler_exit": 0,
+  "shared_frozen_receipt": "Build/production-build/receipts/20261106-072120-0e1f91b4/frozen-compile.json",
+  "shared_c_source": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-072120-0e1f91b4/generated/Vox.c",
+  "shared_c_sha256": "a145007ca4d44207d9dc046791b01a156fa3f9fe644758c822bb797d9ce24c05",
+  "function_checks": [
+    {
+      "function": "layout__clamped_inline_workspace_is_closed",
+      "matches": true,
+      "compiled_body_sha256": "0e90f49f97672b01481e66346c409c79ac1a47d0f87458a1c4534f421820d561",
+      "tested_body_sha256": "0e90f49f97672b01481e66346c409c79ac1a47d0f87458a1c4534f421820d561"
+    },
+    {
+      "function": "layout__clamped_inline_tree_has_owned_outputs",
+      "matches": false,
+      "compiled_body_sha256": "186d009d46f06a36db7d750f2b3e4b2387610f42b5187a5cdf640812ba23f680",
+      "tested_body_sha256": "74dde41653ac32b3bca59628f3c89f1d5f926ed6ea95bccfd9315b327d359c3f"
+    },
+    {
+      "function": "layout__run_owned_inline_layout_in_workspace",
+      "matches": true,
+      "compiled_body_sha256": "632feedac2441483994795e7060f9f146855e435a543028c3a03d3fb4950081f",
+      "tested_body_sha256": "632feedac2441483994795e7060f9f146855e435a543028c3a03d3fb4950081f"
+    }
+  ],
+  "production_request": {
+    "c_mode": "single",
+    "head": "4418b54de5cb88df89e5f21d4ba4d1b95ea04f52",
+    "id": "9fb87cf7b49f4550bc105ef326143db9",
+    "v_prod": true
+  },
+  "history": {
+    "last_cohort": 130,
+    "measured_cohorts": 124,
+    "acceptance_browser_attempts": 2671
+  },
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "qualification": "No separate production build queued. Current checked code and234focused/348toolchecks committed. Shared publication/build guard remains busy; compiled pre-final guard cannot validate final source. Existing marker-free native preflight rejects before anybrowser. Prepared cohort131 must recheck final actual bodies and candidate-only native marker/original audits/SVG first; no samples or cohorts consumed here.",
+  "unix": 1793939519.598235,
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-clamped-inline-workspace-native-preflight-20261106.tar.gz",
+      "bytes": 34154,
+      "sha256": "a5a388bd4f70666b855d2fe8cd9ce4fafa8f42c52f13c5ef5abffd9883edf556",
+      "physical_members": 14,
+      "file_paths": 13,
+      "all_file_paths_verified": true
+    }
+  ]
+}
