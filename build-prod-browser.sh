@@ -65,6 +65,13 @@ case "$(uname -s)" in
     Darwin) ;;
     *) echo "Vox supports macOS and Linux" >&2; exit 1 ;;
 esac
+# Target macOS 14 so a build on a newer SDK still launches on macOS 26 and
+# earlier; otherwise clang stamps the host OS as the minimum version. Export it
+# before any native helper is compiled: the bundled Skia text and AVIF bridges
+# are built ahead of the browser, and a build worker that is already running
+# does not see the deploy script's environment.
+MACOSX_DEPLOYMENT_TARGET=14.0
+export MACOSX_DEPLOYMENT_TARGET
 
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
@@ -261,12 +268,6 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # browser from a different frontend; fail instead.
 V_MACOS_V3_NO_FALLBACK=1
 export V_MACOS_V3_NO_FALLBACK
-# Target macOS 14 so a build on a newer SDK still launches on macOS 26 and
-# earlier; otherwise clang stamps the host OS as the minimum version.
-if [ "$(uname -s)" = Darwin ]; then
-    MACOSX_DEPLOYMENT_TARGET=14.0
-    export MACOSX_DEPLOYMENT_TARGET
-fi
 # The compatibility compiler's -prod mode snapshotted every pointer in live
 # aggregates around calls, turning CSS token parsing quadratic. Optimize the
 # generated C directly instead. Pointer-aware Boehm traces the live object
