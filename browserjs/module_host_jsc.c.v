@@ -60,8 +60,9 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 		})!
 		factory := runtime.evaluate_host_value(module_source_factory())!
 		defer { runtime.release_javascript_value(factory) }
+		copy_source := runtime.module_lexer_copy_function()!
 		functions := runtime.retain_javascript_value(runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context),
-			[resolver, runtime.binding_string(host.helper_name)])!)!
+			[resolver, runtime.binding_string(host.helper_name), copy_source])!)!
 		defer { runtime.release_javascript_value(functions) }
 		mut exception := unsafe { nil }
 		host.transform = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 0, &exception))!

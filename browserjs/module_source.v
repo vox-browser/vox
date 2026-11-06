@@ -15,6 +15,7 @@ fn module_specifier_lexer_factory(retain_asm bool) string {
 		.replace('export const init=WebAssembly.compile(E()).then(WebAssembly.instantiate).then((({exports:A})=>{C=A}));', 'const init=undefined;')
 		.replace('export const initSync', 'const initSync')
 		.replace('function k(A){try{return(0,eval)(A)}catch(A){}}', 'function k(A){return moduleStringLiteral(A)}')
+		.replace('(A?B:Q)(E,new Uint16Array(C.memory.buffer,K,I))', 'copyModuleSource(E,new Uint16Array(C.memory.buffer,K,I))')
 	// Use the same strict quoted-string decoder as the retained asm build.
 	// Its invalid-escape rejection must survive before native module parsing.
 	literal_decoder := asm_source.all_after('return[w,d,!!e.f(),!!e.ms()]}')
@@ -22,6 +23,7 @@ fn module_specifier_lexer_factory(retain_asm bool) string {
 	// Capture constructors before author code can replace them. Decode only the
 	// pinned private Wasm payload; no global Buffer/atob dependency is installed.
 	return r'
+const moduleArraySet=Uint16Array.prototype.set;
 const WasmIntrinsic=(()=>{
  try{
   if(typeof WebAssembly!=="object")return null;
@@ -52,7 +54,7 @@ let specifierLexer=null,lexerBackend="uninitialized";
 function parse(input,name){
  if(specifierLexer===null){
   if(' + if retain_asm { 'false' } else { 'true' } + r' && WasmIntrinsic){
-   try{specifierLexer=(function(WebAssembly,Buffer){' + wasm_source + r';initSync();return parse;})(WasmIntrinsic,lexerBuffer);lexerBackend="wasm";}catch(error){}
+   try{specifierLexer=(function(WebAssembly,Buffer){' + wasm_source + r';function copyModuleSource(input,output){if(typeof copySource==="function"){const copied=copySource(input);if(copied!==undefined){apply(moduleArraySet,output,[copied]);return}}(A?B:Q)(input,output)};initSync();return parse;})(WasmIntrinsic,lexerBuffer);lexerBackend="wasm";}catch(error){}
   }
   if(specifierLexer===null){specifierLexer=(function(){' + asm_source + r';return parse;})();lexerBackend=' + if retain_asm { '"asm-control"' } else { '"asm-fallback"' } + r';}
  }
@@ -68,7 +70,7 @@ fn module_source_factory() string {
 }
 
 fn module_source_factory_with_lexer(retain_asm bool) string {
-	return '(function(resolve,helperName){"use strict";const global=globalThis;const {ArrayBuffer,Uint8Array,Uint16Array,Int8Array,Int16Array,Int32Array,Object,String,Error,Math,parseInt}=globalThis;const self={Int8Array,Int16Array,Int32Array,Uint8Array,Uint16Array};' + module_specifier_lexer_factory(retain_asm) + r'
+	return '(function(resolve,helperName,copySource){"use strict";const global=globalThis;const {ArrayBuffer,Uint8Array,Uint16Array,Int8Array,Int16Array,Int32Array,Object,String,Error,Math,parseInt}=globalThis;const self={Int8Array,Int16Array,Int32Array,Uint8Array,Uint16Array};' + module_specifier_lexer_factory(retain_asm) + r'
 const stringify=JSON.stringify,apply=Reflect.apply,slice=Function.prototype.call.bind(String.prototype.slice),StringIntrinsic=String,TypeErrorIntrinsic=TypeError;
 const dynamic=function(base,key,value,options){return import({toString(){if(typeof value==="symbol")throw new TypeErrorIntrinsic("Cannot convert a Symbol to a string");return resolve(StringIntrinsic(value),base,key);}},options);};
 Object.defineProperty(dynamic,"resolve",{value:function(value,base,key){if(typeof value==="symbol")throw new TypeErrorIntrinsic("Cannot convert a Symbol to a string");return resolve(StringIntrinsic(value),base,key);}});

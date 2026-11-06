@@ -15,6 +15,14 @@ replace them. The Wasm build reuses the asm build's strict quoted-string decoder
 instead of eval, preserving its invalid-escape rejection. JSC still validates
 and executes the original module syntax.
 
+The private embedding can copy source UTF-16 through JavaScriptCore's native
+string/typed-array APIs, followed by a captured typed-array setter into Wasm
+memory. This avoids a JavaScript call and element write for every code unit.
+The temporary array owns its storage; JSC's movable Wasm backing pointer is
+never borrowed. NULs and lone surrogates are preserved. The original JavaScript
+copy loop remains the fallback and the `VOX_RETAIN_JS_MODULE_LEXER_COPY=1`
+control. Neither the author global nor the pinned distributions are changed.
+
 The original asm.js build remains the control and the fallback when WebAssembly
 is unavailable or initialization fails. Neither build needs Node or a network
 fetch at runtime. JavaScriptCore retains parsing, module linking, live bindings,
