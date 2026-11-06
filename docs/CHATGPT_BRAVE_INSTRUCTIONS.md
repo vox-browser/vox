@@ -5770,3 +5770,27 @@ The latest completed production bundle, executable `8fe7188244335c797d346b295b77
 Original author scripts, single SOCKS fixture/references, fresh private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. Both Vox variants confirm Wasm module lexer execution and JavaScriptCore bootstrap. Counts cover coalition creation through encoded document PNG, including startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded. These instrumented counts supply no performance credit.
 
 The latest complete matched result remains **24.226B versus 24.144B control** for leaf-query elision, with overlapping ranges. The [verification receipt](performance/chatgpt-opacity-measurements-verification-20261106.json) retains every focused/component attempt, prototype regression, source witness, command, counter, memory guard, PNG and rejected path audit. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Measurement-cache rejection diagnostics (2026-11-06)
+
+Commits `af4e779c7` and `a1f81a253` add default-off, bounded scalar logging at actual measurement-collector failures. This diagnostic changes no eligibility rule. It prints at most 256 events and never formats layout/style owner graphs. Final checks pass **30 guarded jobs / 960 test-function executions** across ordinary GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers; each selected test runs with both opacity policies. The position-kind refinement additionally passes poisoned preallocation and both sanitizers.
+
+Two fresh original-origin replay captures pass full content/button identity, JavaScriptCore bootstrap and exact unchanged reference pixels. Every executable/library/tool/fixture hash stays fixed during each capture, both browsers exit zero and the memory guards record successful PID adoption. The final capture authenticates executable `ef8e74bbedd96aa8828432a72ace6380c310aa669f7476d27f7d36252304888a`. The first position preflight expected the wrong generated getter name and exits before any browser launch; its corrected attempt is retained alongside the failure.
+
+| Bounded diagnostic | First capture events | Position-kind capture events |
+| --- | ---: | ---: |
+| All collector rejections | 139 | 154 |
+| Unshifted-position guard false | 116 | 128 |
+| Pseudo-element flag true | 40 | 44 |
+| Animated styles among reported inputs | 0 | 0 |
+
+| Position kind in final capture | Rejection events |
+| --- | ---: |
+| Absolute | 99 |
+| Relative | 26 |
+| Static | 26 |
+| Sticky | 3 |
+
+These are rejection **events**, not distinct DOM elements, elapsed-time shares or instruction counts. Multiple flags coexist, the combined guard does not isolate a single cause, and layout node addresses can be reused after a rebuild. Earlier subtree rejection can hide animated descendants; zero reported animations does not mean the page has no animations. The records motivate checking ordinary absolute descendants whose containing/static-position dependencies stay within a measured subtree. Persistent reuse, generated content, controls, shifted relative/sticky positioning and external dependencies still need their full algorithms.
+
+No unprofiled optimization cohort or broad checkpoint follows from logging. The [verification receipt](performance/chatgpt-measurement-rejections-verification-20261106.json) retains the test controllers, source witnesses, generated C, rejected preflight, both captures, PNGs and memory guards. **The 20B target remains unmet.**
