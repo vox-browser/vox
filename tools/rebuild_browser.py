@@ -20,8 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
 # Keep the memory guard's default aggregate RSS budget.
 PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
-BUILD_PROTOCOL = 'bundle-lease-v2'
-WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v2.lock'
+BUILD_PROTOCOL = 'bundle-lease-v3'
+WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v3.lock'
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
@@ -83,7 +83,9 @@ def pending_c_mode(state):
     """An explicit single-unit request survives later automatic requests until a build starts it."""
     pending = read_json(state / 'request.json') or {}
     started = read_json(state / 'started.json') or {}
-    if pending.get('c_mode') == 'single' and (pending.get('v_prod') or started.get('id') != pending.get('id')):
+    if pending.get('v_prod'):
+        return pending.get('c_mode') or 'single'
+    if pending.get('c_mode') == 'single' and started.get('id') != pending.get('id'):
         return 'single'
     return 'parallel'
 
@@ -96,7 +98,7 @@ def enqueue(root, background=True, c_mode=None, v_prod=None):
         prod = bool(prior.get('v_prod')) if v_prod is None else v_prod
         write_json(state / 'request.json', dict(id=uuid.uuid4().hex,
                    head=git(root, 'rev-parse', 'HEAD').decode().strip(),
-                   c_mode='single' if prod else c_mode or pending_c_mode(state), v_prod=prod))
+                   c_mode=c_mode or pending_c_mode(state), v_prod=prod))
         if background:
             with (state / 'worker.log').open('ab') as log:
                 subprocess.Popen([sys.executable, str(root / 'tools/rebuild_browser.py'), '--worker'],
@@ -350,13 +352,19 @@ def main():
     modes.add_argument('--worker-after-current', action='store_true')
     parser.add_argument('--no-parallel-cc', action='store_true',
                         help='with --build: compile one C unit for maximum binary performance')
+    parser.add_argument('--parallel-cc', action='store_true',
+                        help='with --build: split C units, also with literal --prod')
     parser.add_argument('--prod', action='store_true',
-                        help="with --build: V -prod in one C unit, without custom C optimization flags")
+                        help="with --build: literal V -prod, without custom C optimization flags")
     args = parser.parse_args()
     if args.no_parallel_cc and not args.build:
         parser.error('--no-parallel-cc requires --build')
     if args.prod and not args.build:
         parser.error('--prod requires --build')
+    if args.parallel_cc and not args.build:
+        parser.error('--parallel-cc requires --build')
+    if args.parallel_cc and args.no_parallel_cc:
+        parser.error('--parallel-cc and --no-parallel-cc are mutually exclusive')
     if args.install_hook:
         install_hook(ROOT)
         return 0
@@ -369,7 +377,8 @@ def main():
     if args.worker_after_current:
         return worker_after_current(ROOT)
     if args.build:
-        enqueue(ROOT, background=False, c_mode='single' if args.no_parallel_cc or args.prod else 'parallel',
+        enqueue(ROOT, background=False, c_mode='parallel' if args.parallel_cc else
+                'single' if args.no_parallel_cc or args.prod else 'parallel',
                 v_prod=args.prod)
     return build_pending(ROOT, foreground=args.build)
 

@@ -55,7 +55,7 @@ def main(argv):
         parser.error('expected -- V_COMPILER ... INPUT')
     compiler, options, source = command[0], command[1:-1], command[-1]
     output = Path(args.output)
-    record = dict(requested='parallel', compiler=compiler)
+    record = dict(requested='parallel', compiler=compiler, v_prod='-prod' in options)
     if not compiler_supports_split(compiler):
         record.update(mode='single', fallback=f'{compiler} cannot split programs with native '
                       f'project headers (no {REQUIRE_SPLIT} support)')

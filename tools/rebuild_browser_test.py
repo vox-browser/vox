@@ -24,6 +24,13 @@ class ProductionBuildTests(unittest.TestCase):
                 automatic=json.loads((state/'request.json').read_text())
                 self.assertTrue(automatic['v_prod'])
                 self.assertEqual(automatic['c_mode'],'single')
+                build.enqueue(root,background=False,c_mode='parallel',v_prod=True)
+                first=json.loads((state/'request.json').read_text())
+                build.write_json(state/'started.json',dict(id=first['id']))
+                build.enqueue(root,background=False)
+                automatic=json.loads((state/'request.json').read_text())
+                self.assertTrue(automatic['v_prod'])
+                self.assertEqual(automatic['c_mode'],'parallel')
                 build.enqueue(root,background=False,c_mode='parallel',v_prod=False)
                 reset=json.loads((state/'request.json').read_text())
                 self.assertFalse(reset['v_prod'])
@@ -54,6 +61,10 @@ class ProductionBuildTests(unittest.TestCase):
                 subprocess.run(['sh',str(script),*options],env=environment,check=True)
                 self.assertEqual(capture.read_text().splitlines(),
                                  [str(build.ROOT/'tools/rebuild_browser.py'),'--build','--no-parallel-cc','--prod'])
+            for options in [('--prod','--parallel-cc'),('--parallel-cc','--prod')]:
+                subprocess.run(['sh',str(script),*options],env=environment,check=True)
+                self.assertEqual(capture.read_text().splitlines(),
+                                 [str(build.ROOT/'tools/rebuild_browser.py'),'--build','--parallel-cc','--prod'])
 
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
     def test_verified_frozen_compile_can_publish_its_pinned_source_after_later_edits(self):
@@ -527,10 +538,11 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
         self.assertEqual(result.returncode, 2)
         self.assertIn('--prod requires --build', result.stderr)
         script = tool.parents[1] / 'build-prod-browser.sh'
-        for arguments in (['--parallel'], ['--no-parallel-cc', '--no-parallel-cc'], ['--prod', '--prod']):
+        for arguments in (['--parallel'], ['--no-parallel-cc', '--no-parallel-cc'], ['--prod', '--prod'],
+                          ['--parallel-cc','--parallel-cc'], ['--parallel-cc','--no-parallel-cc']):
             result = subprocess.run(['sh', str(script), *arguments], capture_output=True, text=True)
             self.assertEqual(result.returncode, 2)
-            self.assertIn('usage: build-prod-browser.sh [--no-parallel-cc]', result.stderr)
+            self.assertIn('usage: build-prod-browser.sh [--no-parallel-cc | --parallel-cc]', result.stderr)
 
 
 if __name__ == '__main__':

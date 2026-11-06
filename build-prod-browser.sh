@@ -3,14 +3,14 @@ set -eu
 
 # Build the optimized V-native browser for the current desktop platform.
 #
-# usage: build-prod-browser.sh [--no-parallel-cc] [--prod]
+# usage: build-prod-browser.sh [--no-parallel-cc | --parallel-cc] [--prod]
 #
 # By default V splits the generated C into units, compiles them concurrently
 # (-parallel-cc) and links them with ThinLTO, which keeps cross-unit inlining.
 # --no-parallel-cc compiles one sealed C unit instead: several times slower to
 # build, for maximum binary performance and comparisons with single-unit builds.
-# --prod selects V's literal -prod mode in one C unit, without the custom
-# C -O3/inlining options used by the default prealloc build.
+# --prod selects V's literal -prod mode without custom C tuning. It defaults
+# to one C unit; --parallel-cc selects V's literal -prod -parallel-cc defaults.
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
@@ -29,27 +29,34 @@ single_c_unit_flag=
 v_prod=${VOX_BUILD_V_PROD:-0}
 v_prod_flag=
 seen_single_option=0
+parallel_c_unit_flag=
 for argument in "$@"; do
     case "$argument" in
     --no-parallel-cc)
         if [ "$seen_single_option" = 1 ]; then
-            echo "usage: build-prod-browser.sh [--no-parallel-cc] [--prod]" >&2; exit 2
+            echo "usage: build-prod-browser.sh [--no-parallel-cc | --parallel-cc] [--prod]" >&2; exit 2
         fi
         seen_single_option=1; single_c_unit_flag=--no-parallel-cc ;;
+    --parallel-cc)
+        if [ "$seen_single_option" = 1 ]; then
+            echo "usage: build-prod-browser.sh [--no-parallel-cc | --parallel-cc] [--prod]" >&2; exit 2
+        fi
+        seen_single_option=1; parallel_c_unit_flag=--parallel-cc ;;
     --prod)
         if [ -n "$v_prod_flag" ]; then
-            echo "usage: build-prod-browser.sh [--no-parallel-cc] [--prod]" >&2; exit 2
+            echo "usage: build-prod-browser.sh [--no-parallel-cc | --parallel-cc] [--prod]" >&2; exit 2
         fi
-        v_prod=1; v_prod_flag=--prod; single_c_unit_flag=--no-parallel-cc ;;
+        v_prod=1; v_prod_flag=--prod ;;
     *)
-        echo "usage: build-prod-browser.sh [--no-parallel-cc] [--prod]" >&2
+        echo "usage: build-prod-browser.sh [--no-parallel-cc | --parallel-cc] [--prod]" >&2
         exit 2
         ;;
     esac
 done
+if [ -n "$v_prod_flag" ] && [ "$seen_single_option" = 0 ]; then single_c_unit_flag=--no-parallel-cc; fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build $single_c_unit_flag $v_prod_flag
+    exec python3 "$repo_dir/tools/rebuild_browser.py" --build $single_c_unit_flag $parallel_c_unit_flag $v_prod_flag
 fi
 
 case "$(uname -s)" in
@@ -61,7 +68,7 @@ esac
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v2 ]; then
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v3 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
@@ -71,7 +78,7 @@ c_mode=${VOX_BUILD_C_MODE:-parallel}
 if [ -n "$single_c_unit_flag" ]; then
     c_mode=single
 fi
-if [ "$v_prod" = 1 ]; then c_mode=single; fi
+if [ -n "$parallel_c_unit_flag" ]; then c_mode=parallel; fi
 case "$c_mode" in
     parallel|single) ;;
     *)
@@ -391,10 +398,16 @@ if [ "$c_mode" = parallel ]; then
     # V compiles the split units itself and links them. Without native-header
     # split support, or when native code would be duplicated in every unit, the
     # helper leaves no executable and the sealed single-unit compile below runs.
-    python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
-        --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
-        -cflags "$extra_cflags -flto=thin" \
-        -ldflags "$extra_ldflags -flto=thin${parallel_lto_ldflags:-}" "$repo_dir"
+    if [ "$v_prod" = 1 ]; then
+        python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+            --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
+            -cflags "$extra_cflags" -ldflags "$extra_ldflags" "$repo_dir"
+    else
+        python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+            --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
+            -cflags "$extra_cflags -flto=thin" \
+            -ldflags "$extra_ldflags -flto=thin${parallel_lto_ldflags:-}" "$repo_dir"
+    fi
 else
     v_prod_json=false
     if [ "$v_prod" = 1 ]; then v_prod_json=true; fi
