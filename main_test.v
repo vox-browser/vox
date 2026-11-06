@@ -25,6 +25,14 @@ fn test_launch_options_select_javascript_engine_in_both_flag_forms() {
 	}
 }
 
+fn test_launch_options_accept_short_window_size_flags() {
+	a := parse_launch_options(['-width', '900', '-height=700', 'page.html'])!
+	assert a.width == 900 && a.height == 700 && a.source == 'page.html'
+	b := parse_launch_options(['--width=640', '--height', '480'])!
+	assert b.width == 640 && b.height == 480
+	if _ := parse_launch_options(['-width', '0']) { assert false }
+}
+
 fn test_native_libjs_scripts_execute_without_the_javascriptcore_dom_bootstrap() {
 	document := html.parse_document('<div id="result">static</div>')
 	mut runtime := browserjs.Runtime.create_with_engine(.libjs)

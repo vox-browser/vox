@@ -822,21 +822,21 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 			if index + 1 >= arguments.len { return error('--restore-tab requires a session path') }
 			index++
 			options.restore_tab = arguments[index]
-		} else if argument == '--window-width' {
+		} else if argument in ['--window-width', '--width', '-width'] {
 			if index + 1 >= arguments.len {
 				return error('--window-width requires a value')
 			}
 			index++
 			options.width = positive_dimension(arguments[index], '--window-width')!
-		} else if argument.starts_with('--window-width=') {
+		} else if argument.starts_with('--window-width=') || argument.starts_with('--width=') || argument.starts_with('-width=') {
 			options.width = positive_dimension(argument.all_after('='), '--window-width')!
-		} else if argument == '--window-height' {
+		} else if argument in ['--window-height', '--height', '-height'] {
 			if index + 1 >= arguments.len {
 				return error('--window-height requires a value')
 			}
 			index++
 			options.height = positive_dimension(arguments[index], '--window-height')!
-		} else if argument.starts_with('--window-height=') {
+		} else if argument.starts_with('--window-height=') || argument.starts_with('--height=') || argument.starts_with('-height=') {
 			options.height = positive_dimension(argument.all_after('='), '--window-height')!
 		} else if argument.starts_with('-psn_') {
 			// Finder supplies this process serial number when opening an app bundle.
