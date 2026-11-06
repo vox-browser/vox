@@ -178,3 +178,42 @@ python3 tools/run_memory_bounded.py --timeout 7200 --lock Build/gg-ab.lock \
   --candidate-env VOX_GG_TEXT=1 --candidate-env VOX_GG_SHAPES=1 \
   --candidate-env VOX_GG_PATHS=1 --candidate-env VOX_GG_DIAGNOSTICS=1
 ```
+
+Hacker News rendering and precise scrolling comparison:
+
+```sh
+env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
+    -u all_proxy -u http_proxy -u https_proxy \
+  python3 tools/run_memory_bounded.py --timeout 1200 \
+    --lock Build/hn-gg-perf.lock --report Build/hn-gg-perf-guard.json \
+    --adopt-pids-from Build/hn-gg-perf-pids.json -- \
+  python3 tools/gg_migration/benchmark_hacker_news.py \
+    --output Build/hn-gg-perf --memory-guard-registry Build/hn-gg-perf-pids.json \
+    --diff-tool PATH_TO_EXISTING_PIXEL_DIFF
+```
+
+Use a new output directory and a completed GG-capable canonical bundle. The
+driver holds its publication lease, preserves all attempts and pins executable,
+native libraries, helpers, runtime resources, fixtures and measurement tools.
+It replays the complete 30-story homepage archive over loopback with original
+scripts, fresh profiles/caches, retained OS caches, a 1024x768 viewport and 2x
+backing scale. GG enables all three adapters; unsupported and unmigrated draws
+still use Skia.
+
+Seven alternating load pairs measure main-process instructions from process
+creation through encoded PNG, excluding helpers and GPU work. Native first-layer
+submission times include scripting, style/layout and native rendering. These
+are different scopes from the total-browser coalition comparison against Brave.
+Four alternating scroll pairs use 600 precise events at nominal 60 Hz, delta 3,
+reversing every 60 inputs to avoid holding at the page boundary. Startup and
+scroll eligibility logs, and one hardware-counter scroll per variant, run
+separately from the unprofiled FPS trials. `--scroll-only` omits the timed load
+pairs; `--reverse-every` records a different input schedule.
+
+The native probe's optional `VOX_PRECISE_FINAL_CAPTURE` writes final pixels
+after timing and counter endpoints. Every later scroll capture must match the
+first Skia reference outside the existing RAM-readout rectangle. This snapshot
+and its PNG encoding are outside the measured input window. Native layer
+publication FPS does not measure physical display scanout. Inspect per-trial
+input delivery, interval tails, deadline misses, leading/trailing gaps and host
+load alongside averages; reaching 60 on average alone does not prove smoothness.

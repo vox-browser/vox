@@ -509,6 +509,77 @@ and after). Fixtures using each Metal renderer:
 Text, images and most decorations of every fixture go through the CPU Skia
 bridge as well.
 
+## Hacker News performance (2026-11-06)
+
+GG's current adapters preserve pixels and sustain the same continuous-scroll
+publication throughput as Skia. Load/capture uses **2.80% more main-process
+instructions** with GG; every one of the seven alternating pairs increases.
+This compares all three adapters enabled versus disabled in one executable,
+`c05715c149c8a3f7b70644bb425bfdcd740e3cc0f37c59254bae74374b4dd6a5`,
+receipt `20261106-123237-a1883a12` (single C unit, literal `-prod`, preallocation).
+Unsupported and unmigrated draws still use Skia.
+
+The complete archived 30-story homepage retains its scripts and resources,
+replayed over loopback with no-store responses, fresh profiles/caches, retained
+OS caches, 1024x768 document pixels and 2x backing scale. Both modes use the
+same compiled inputs and native libraries under a publication lease.
+
+| Metric | Skia | GG |
+| --- | ---: | ---: |
+| Load/capture main-process instructions, median of 7 | 1,822,155,059 | 1,873,254,992 |
+| Document installation to native submission, median (range), ms | 174 (120–215) | 176 (127–203) |
+| Navigation to native submission, median (range), ms | 491 (294–747) | 566 (327–697) |
+| Continuous scroll: median of 4 full-window mean publication FPS | 59.8985 | 59.8983 |
+| Scroll interval median, median of trials, ms | 16.647 | 16.636 |
+| Scroll interval p95, median of trials, ms | 22.176 | 20.125 |
+| Worst observed scroll interval, ms | 32.188 | 37.423 |
+| Intervals over 16.667 ms, median of trials | 47.83% | 46.82% |
+
+Instruction counts run from main-process creation through encoded document PNG;
+filter helpers, GPU work and external services are excluded consistently. This
+is a different scope from the historical total-browser coalition comparison
+against Brave. The conservative maximum-GG/minimum-Skia instruction ratio is
+1.04846. Native submission includes scripting, style/layout and rendering.
+Other sessions and compilation overlapped on the 18-CPU host; the wide wall-time
+ranges prevent an isolated renderer wall-time conclusion.
+
+The continuous-scroll cohort delivers 600 precise events per trial at nominal
+60 Hz, delta 3 (observed 6.5 CSS pixels per event), reversing every 60 events,
+after four seconds of title-based settling. Four alternating pairs complete
+2,400 inputs per variant: 4,329 Skia and 4,135 GG total publications, including
+stationary publications, and 2,392 changing-scroll intervals each. Actual input
+delivery is 59.994–60.002 Hz. Leading counted-scroll delays are 20.30–31.01 ms
+for Skia and 20.65–22.66 ms for GG; trailing gaps are 4.37–13.34 ms and
+6.73–11.75 ms. Throughput uses the entire first-to-last-input period. The
+interval tails and deadline misses remain visible despite the near-60 average;
+these are native publications, not physical display scanout.
+
+All timed load PNGs and final scroll PNGs match the fixed Skia references. Final
+scroll captures exclude only the existing RAM status rectangle and run after
+the timing/counter endpoints. Separate diagnostics confirm 317 GG text draws
+on load and, during continuous scrolling plus final publication, 1,194 text
+draws and 20 SVG vector batches, with no callback declines. A separate live
+HTTPS check loads all 30 stories at the requested viewport, completes readiness
+without script/native errors, and scrolls through GG; it supplies no paired
+live performance result.
+
+The original 90-event reversal cohort remains retained: it reaches the 498.5px
+page boundary, measuring 52.0835 versus 51.5725 FPS while some inputs hold at
+the end. Those numbers do not establish continuous-motion throughput. The first
+coalition diagnostic was rejected when another session launched an independent
+Vox window during its ownership scan. The strict audit remains unchanged; the
+later main-process protocol declares its narrower scope. The rejected viewport
+preflight and source-change build failures also remain failures.
+
+The benchmark and post-endpoint pixel capture are committed in `890da6bb9`;
+`fa96f3caf` adds the continuous reversal schedule and scrolling-only mode.
+All 91 focused measurement-tool checks pass; both completed cohorts and the
+live check exit zero under their memory guards. See the
+[performance receipt](gg-migration/hacker-news-performance-20261106.json) for
+every trial, executable/resource hashes, CPU diagnostics, host loads, actual
+exits and the retained raw PNGs/logs. Reproduction commands are in the
+[tool instructions](../tools/gg_migration/README.md).
+
 ## Remaining work
 
 Stage22's GG-enabled browser comparison and drawn/declined summary are complete.
