@@ -2419,3 +2419,58 @@ retain all 26 attempts and 346 raw files. The
 [completed collection receipt](performance/vlang-gpu-scroll-video-transfer-20261106-collection.json)
 is separate from the archive, and active collector output files were excluded.
 Earlier evidence archives remain unchanged.
+
+### Literal V `-prod` without parallel C, November 6
+
+The user-requested plain `-prod` experiment is complete; smooth 60 fps remains
+open. `sh build-prod-browser.sh --prod` selects literal V `-prod` in one C
+unit. It retains the prealloc allocator and native rendering configuration,
+while using V's default C `-O2`, full LTO and inlining threshold 75. The earlier
+prealloc production builds used custom C `-O3`/inlining and did not pass V's
+literal `-prod` flag. This changes several compiler settings, so these results
+cannot isolate the cost of `-parallel-cc`.
+
+Both default-settings timing runs use executable `2108b479…`, start fresh
+processes and complete all 600 native precise inputs on live vlang.io. They
+retain the 1708×953 document viewport at 2×, nominal 120 Hz delta-8 schedule,
+150-input reversals, private empty profiles/caches, title readiness and ten
+seconds of settling. The endpoint remains scroll-changing native publication
+after `updateLayer`, divided by the entire first-to-last actual input period.
+
+| Trial | Scroll publications/s | Median / p95 / max interval, ms | Over 16.67 ms | Moving intervals / inputs |
+|---|---:|---:|---:|---:|
+| Default 1 | 66.44 | 11.666 / 34.283 / 124.987 | 151/456, 33.11% | 456 / 600 |
+| Default 2 | 76.09 | 8.725 / 31.766 / 123.822 | 111/540, 20.56% | 540 / 600 |
+
+Actual input delivery is 87.28 and 84.40 Hz. Leading scroll-publication gaps
+are 30.675 and 48.779 ms; trailing gaps are 7.385 and 0.114 ms. All browser and
+measurement guards exit zero. A separate GPU leaf diagnostic stays within the
+unchanged three-level pixel limit. Build and headless-smoke guards also exit
+zero; peak build process-tree RSS is 6.22 GB. Physical scanout is unmeasured.
+
+On that same executable, two alternating pairs with the three existing image
+and bounded-filter options remain mixed: 86.16→85.54 and 81.64→84.18
+publications/s. Candidate p95 intervals are 28.211 and 26.671 ms, so those
+options stay off. Their diagnostic records 58 bounded filters, six owned
+mascot-upload hits and one static-MSAA image, with maximum error three.
+The separate instrumented default-settings profile is diagnostic, not another
+unprofiled timing result; it still shows synchronous GPU waits, retained row
+copies, filters and image preparation.
+
+An uncommitted early-GPU-submission prototype was removed before any live
+timing. Its backend transport checks pass in optimized and sanitizer builds,
+but expanded mixed-MSAA gradient coverage reaches CPU-reference error four,
+above the existing limit. The explicit-grid follow-up also fails exact control
+preservation. The rejected patch and all failed checks are retained.
+
+The build option and its 25 passing supervisor checks are committed in
+`ae97a4d45`. The first test attempt exposed duplicate build-option acceptance;
+the corrected parser rejects duplicates and preserves the requested mode
+through automatic commit requests. All nine browser attempts, 112 raw files,
+actual command lines, identities, build receipts, intervals, host load and exits
+are in the [report](performance/vlang-literal-prod-20261106.json) and
+[verified archive](performance/raw/vlang-literal-prod-20261106.tar.gz).
+The [collection receipt](performance/vlang-literal-prod-20261106-collection.json)
+also records the correction of the two default timing runs' generated role
+labels; their raw evidence and archive are unchanged. Later shared bundles have
+separate identities and do not replace this measured cohort.

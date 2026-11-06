@@ -1,0 +1,33 @@
+{
+  "guard": {
+    "command": [
+      "python3",
+      "Build/vlang-finish-20261105/collector-literal-prod.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 44335104,
+    "elapsed_seconds": 1.120914666,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "collector_stdout": "9 attempts; 112 verified raw files; 990034 archive bytes\n{\"command\": [\"python3\", \"Build/vlang-finish-20261105/collector-literal-prod.py\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 44335104, \"elapsed_seconds\": 1.120914666, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n",
+  "active_collector_outputs_excluded_from_archive": true,
+  "post_collection_role_corrections": [
+    {
+      "name": "plain-prod-live-1",
+      "old_role": "diagnostic",
+      "new_role": "unprofiled",
+      "reason": "Default-setting timing names have no control/candidate suffix; run diagnostic_only is false and they contain no diagnostic environment flags."
+    },
+    {
+      "name": "plain-prod-live-2",
+      "old_role": "diagnostic",
+      "new_role": "unprofiled",
+      "reason": "Default-setting timing names have no control/candidate suffix; run diagnostic_only is false and they contain no diagnostic environment flags."
+    }
+  ],
+  "archive_unchanged": "Raw trial files, collector source and archive are unchanged. Only the generated report role labels for the two default-setting unprofiled runs are corrected."
+}
