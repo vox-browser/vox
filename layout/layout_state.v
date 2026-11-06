@@ -996,7 +996,6 @@ mut:
 	intrinsic_seed_epoch_ u32
 	inline_measurements_ map[u64][]&InlineMeasurementLayout
 	grid_measurements_ map[u64][]&GridMeasurementLayout
-	intrinsic_grid_measurements_ map[u64][]&GridMeasurementLayout
 	grid_measurement_rejections_ map[u64]bool
 	flex_measurements_ map[u64][]&FlexMeasurementLayout
 	flex_measurement_rejections_ map[u64]bool
@@ -1032,7 +1031,6 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.intrinsic_seed_order_ = unsafe { nil }
 	pool.inline_measurements_ = map[u64][]&InlineMeasurementLayout{}
 	pool.grid_measurements_ = map[u64][]&GridMeasurementLayout{}
-	pool.intrinsic_grid_measurements_ = map[u64][]&GridMeasurementLayout{}
 	pool.grid_measurement_rejections_ = map[u64]bool{}
 	pool.flex_measurements_ = map[u64][]&FlexMeasurementLayout{}
 	pool.flex_measurement_rejections_ = map[u64]bool{}

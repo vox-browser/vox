@@ -11,13 +11,10 @@ const disable_relative_measurement_reuse = os.getenv('VOX_DISABLE_RELATIVE_MEASU
 const relative_measurement_diagnostics = os.getenv('VOX_RELATIVE_MEASUREMENT_DIAGNOSTICS') != ''
 const disable_svg_measurement_reuse = os.getenv('VOX_DISABLE_SVG_MEASUREMENT_REUSE') != ''
 const svg_measurement_diagnostics = os.getenv('VOX_SVG_MEASUREMENT_DIAGNOSTICS') != ''
-const disable_intrinsic_grid_measurement_reuse = os.getenv('VOX_DISABLE_INTRINSIC_GRID_MEASUREMENT_REUSE') != ''
-const intrinsic_grid_measurement_diagnostics = os.getenv('VOX_INTRINSIC_GRID_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global grid_measurement_reuse_reported bool
 __global relative_measurement_reuse_reported bool
 __global svg_measurement_reuse_reported bool
-__global intrinsic_grid_measurement_reuse_reported bool
 
 fn report_svg_measurement_reuse(inputs []RetainedInlineInput) {
 	if !svg_measurement_diagnostics || svg_measurement_reuse_reported { return }
@@ -64,7 +61,6 @@ struct GridMeasurementBasis {
 @[heap]
 struct GridMeasurementLayout {
 	key GridMeasurementKey
-	intrinsic_height CSSPixels
 	external_heights_independent bool
 	inputs []RetainedInlineInput
 	values []RetainedBlockValues
@@ -176,16 +172,13 @@ fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 
 // Ordinary grid layout is repeated inside disposable intrinsic probes. Keep
 // completed local geometry in the shared pass owner, never in a producer's
-// scratch arena. Disposable intrinsic block probes use a separate index and
-// exact keys; final layout consumes only ordinary results. Width-only probes
-// retain their complete algorithms.
+// scratch arena. Final layout can consume an existing owned result; scalar and
+// width-only probes retain their complete algorithms.
 fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace, width_only bool) FormattingContextResult {
 	mut pool := state.measurement_chunk_pool_
 	committed := state.subtree_root == none
-	intrinsic_probe := mode == .intrinsic_sizing && !committed
-		&& !disable_intrinsic_grid_measurement_reuse && !space.height.is_definite()
-	if disable_grid_measurement_reuse || (mode != .normal && !intrinsic_probe) || width_only
+	if disable_grid_measurement_reuse || mode != .normal || width_only
 		|| !space.width.is_definite() || (committed && disable_committed_grid_measurement_reuse)
 		|| used.containing_block_used_values_ == none || pool == unsafe { nil } || pool.closed
 		|| !retained_context_allows_grid(container) || container.document().in_quirks_mode()
@@ -201,13 +194,11 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	key := grid_measurement_key(state, container, used, space)
 	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
 	style_environment := container.document().style_environment_version()
-	mut previous := if intrinsic_probe {
-		pool.intrinsic_grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
-	} else { pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} } }
+	mut previous := pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
 	for cache_index, cached in previous {
-		keys_match := cached.key == key || (!intrinsic_probe && committed && cached.external_heights_independent
+		keys_match := cached.key == key || (committed && cached.external_heights_independent
 			&& committed_grid_measurement_keys_match(&cached.key, &key))
-		unused_heights := !intrinsic_probe && !keys_match && !disable_unused_measurement_heights
+		unused_heights := !keys_match && !disable_unused_measurement_heights
 			&& cached.external_heights_independent
 			&& grid_measurement_keys_match_with_height_policy(&cached.key, &key, true)
 		if (!keys_match && !unused_heights)
@@ -217,17 +208,10 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			|| !grid_measurement_inputs_are_current(cached.inputs) { continue }
 		// The caller owns the root's size, offset and relative-position basis.
 		// The normal definite-width grid algorithm publishes only these tracks.
-		if intrinsic_probe {
-			// Intrinsic block sizing returns before publishing root tracks,
-			// line names, baselines or subgrid axes. Preserve the caller's
-			// existing metadata and reproduce only its automatic used height.
-			if !used.has_definite_height() { used.set_content_height(cached.intrinsic_height) }
-		} else {
-			used.set_grid_template_columns(cached.columns)
-			used.set_grid_template_rows(cached.rows)
-			used.set_grid_line_names(cached.column_names, cached.row_names)
-			used.set_grid_subgridded_axes(false, false)
-		}
+		used.set_grid_template_columns(cached.columns)
+		used.set_grid_template_rows(cached.rows)
+		used.set_grid_line_names(cached.column_names, cached.row_names)
+		used.set_grid_subgridded_axes(false, false)
 		for index in 0 .. cached.values.len {
 			entry := unsafe { &cached.values[index] }
 			containing := if parent := entry.containing { state.get(parent) } else { none }
@@ -238,10 +222,6 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			eprintln('Vox grid measurement: reused resolved within-pass geometry')
 		}
 		if committed { report_committed_grid_measurement_reuse() }
-		if intrinsic_probe && intrinsic_grid_measurement_diagnostics && !intrinsic_grid_measurement_reuse_reported {
-			intrinsic_grid_measurement_reuse_reported = true
-			eprintln('Vox intrinsic grid measurement: reused owned disposable block sizing')
-		}
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)
@@ -278,25 +258,21 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	}
 	cached := &GridMeasurementLayout{
 		key: GridMeasurementKey{ ...key, external_bases: key.external_bases.clone() }
-		intrinsic_height: used.content_height()
-		external_heights_independent: !intrinsic_probe && grid_measurement_external_heights_are_unused(owned_inputs)
+		external_heights_independent: grid_measurement_external_heights_are_unused(owned_inputs)
 		inputs: owned_inputs
 		values: snapshots
-		columns: if intrinsic_probe { []CSSPixels{} } else { used.grid_template_columns().clone() }
-		rows: if intrinsic_probe { []CSSPixels{} } else { used.grid_template_rows().clone() }
-		column_names: if intrinsic_probe { [][]string{} } else { own_grid_line_names(used.grid_column_line_names()) }
-		row_names: if intrinsic_probe { [][]string{} } else { own_grid_line_names(used.grid_row_line_names()) }
+		columns: used.grid_template_columns().clone()
+		rows: used.grid_template_rows().clone()
+		column_names: own_grid_line_names(used.grid_column_line_names())
+		row_names: own_grid_line_names(used.grid_row_line_names())
 		font_generation: font_generation
 		font_policy: container.document().font_rendering_policy()
 		style_environment: style_environment
 		result: result
 	}
-	mut entries := if intrinsic_probe {
-		pool.intrinsic_grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
-	} else { pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} } }
+	mut entries := pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
 	if entries.len == 4 { entries.delete(0) }
 	entries << cached
-	if intrinsic_probe { pool.intrinsic_grid_measurements_[node_key] = entries }
-	else { pool.grid_measurements_[node_key] = entries }
+	pool.grid_measurements_[node_key] = entries
 	return result
 }
