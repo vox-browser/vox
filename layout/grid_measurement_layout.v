@@ -174,7 +174,7 @@ fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 // completed local geometry in the shared pass owner, never in a producer's
 // scratch arena. Final layout can consume an existing owned result; scalar and
 // width-only probes retain their complete algorithms.
-fn run_grid_formatting_context_with_measurement_reuse(mut state LayoutState, container &Node,
+fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace, width_only bool) FormattingContextResult {
 	mut pool := state.measurement_chunk_pool_
 	committed := state.subtree_root == none
