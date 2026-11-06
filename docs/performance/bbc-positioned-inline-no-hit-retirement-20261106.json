@@ -1,0 +1,318 @@
+{
+  "status": "No BBC hit; experiment and isolated control retired. No unprofiled browser launched and no acceptance cohort ID consumed.",
+  "implementation": "5a5d29c36",
+  "retirement": "95f8a073b",
+  "control_retirement": "88e3ec24e",
+  "native": {
+    "passed": false,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": false,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "positioned_inline_cache_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "positioned_inline_cache_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "af70e02c48e408411b7961bf43e17dccf19408b8cbdc4f7c9433851c087c4c4c",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-052617-6ecf9a1d/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "adc22bb6f2273ecdc02c35920cdbfc8eecb6cd7be75153673cc739e6cfac38c6",
+        "dirty": true,
+        "head": "5a5d29c365ee94beea6cb9d994ef7bed76b4522b",
+        "repository_sha256": "b579646839718d9cf2588fadb0f082ba0c253a09e038b0910911e05ee38f5b69"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "197fdf5a90b502eb71ebcd03626c2ba3f7a3d8d1cc6fc3dafdfe2b54fd8d0b2b",
+        "dirty": true,
+        "head": "168ab1b97f0d75937e1ee82eb517bb3e88c99973",
+        "repository_sha256": "b6286bdce6e30bbf2f29efe0804ff6ef3fad371e098bbe0ac3331128e18a1431"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "5a5d29c365ee94beea6cb9d994ef7bed76b4522b",
+        "id": "7b9d83371fcd4ad3acdbe2e5722d3827",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "adc22bb6f2273ecdc02c35920cdbfc8eecb6cd7be75153673cc739e6cfac38c6",
+        "dirty": true,
+        "head": "168ab1b97f0d75937e1ee82eb517bb3e88c99973",
+        "repository_sha256": "b579646839718d9cf2588fadb0f082ba0c253a09e038b0910911e05ee38f5b69"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; unshifted relative-root inline measurement reuse disabled only in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793932204.3076649
+  },
+  "lease": {
+    "requested_unix": 1793932182.1904309,
+    "purpose": "Pin canonical executable/libraries through matched cohort129 with unshifted relative-root inline measurements versus original exclusion. Reuse only current-hash validated native/SVG diagnostics; no source, workload, reference, endpoint, counter or threshold changes.",
+    "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+    "helper_sha256": "5d532f6f5fb837ab5d31d335a45582f54cc4a394e50055a34062cbde088847c9",
+    "acquired_unix": 1793932182.1910222,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "af70e02c48e408411b7961bf43e17dccf19408b8cbdc4f7c9433851c087c4c4c",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-052617-6ecf9a1d/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "adc22bb6f2273ecdc02c35920cdbfc8eecb6cd7be75153673cc739e6cfac38c6",
+        "dirty": true,
+        "head": "5a5d29c365ee94beea6cb9d994ef7bed76b4522b",
+        "repository_sha256": "b579646839718d9cf2588fadb0f082ba0c253a09e038b0910911e05ee38f5b69"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "197fdf5a90b502eb71ebcd03626c2ba3f7a3d8d1cc6fc3dafdfe2b54fd8d0b2b",
+        "dirty": true,
+        "head": "168ab1b97f0d75937e1ee82eb517bb3e88c99973",
+        "repository_sha256": "b6286bdce6e30bbf2f29efe0804ff6ef3fad371e098bbe0ac3331128e18a1431"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "5a5d29c365ee94beea6cb9d994ef7bed76b4522b",
+        "id": "7b9d83371fcd4ad3acdbe2e5722d3827",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "adc22bb6f2273ecdc02c35920cdbfc8eecb6cd7be75153673cc739e6cfac38c6",
+        "dirty": true,
+        "head": "168ab1b97f0d75937e1ee82eb517bb3e88c99973",
+        "repository_sha256": "b579646839718d9cf2588fadb0f082ba0c253a09e038b0910911e05ee38f5b69"
+      }
+    },
+    "native_exit": 0,
+    "native-audit_exit": 1,
+    "released_unix": 1793932204.3874502
+  },
+  "restoration": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-restored",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-restored",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-restored",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+          "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+          "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+          "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+          "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+          "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+          "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+          "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+          "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+          "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+          "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+          "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+          "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+          "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+          "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+          "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+          "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+          "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+          "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+          "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+          "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+          "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+          "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+          "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+          "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+          "test_committed_inline_misses_never_populate_or_evict_measurements",
+          "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+          "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+          "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+          "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+          "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+          "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+          "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+          "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+          "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+          "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+          "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+          "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "/Users/alex/code/vox2/layout/inline_measurement_height_test.v": "c4feae7067924a65758860b0a9465dcd3cc657d0ee2054ca7abd5490730b1dbd",
+      "/Users/alex/code/vox2/layout/uncached_inline_workspace_test.v": "2988100e80143124d5598af7ee9cb193885874ee95b49c163759a7aa76857154",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace_test.v": "59f7076900a967052ca44666db2f0d4b9e26ea262504302bb02f24934090bb3c",
+      "/Users/alex/code/vox2/layout/retained_inline_layout_test.v": "ea185ad863269897d42d9a57acbdd9bf1fef0c227370c740f6450655f19e7791",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "cca616e21e2b1d96a2ace5b6dba54cfc0f5564e4398696db1df15010e794d205",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "bb3b23783006b2d176559f2d7883102d95405986bfe990a3c46ccac88b5abd98",
+      "/Users/alex/code/vox2/layout/retained_relative_flow.v": "1a5a60600fcda1f9ba3a30cb0160b8c546b0a6f5636b26a580046397f2468b12",
+      "/Users/alex/code/vox2/layout/committed_inline_measurement.v": "6c7866debb5b6d31ebea7b03910984a10d25c662b6c90c2ac9b3ca3397aaed00"
+    },
+    "unchanged": true,
+    "cases_per_run": 28,
+    "expected_cases": [
+      "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+      "test_inline_measurement_keeps_a_recently_reused_question_across_eviction",
+      "test_committed_inline_measurement_hit_preserves_probe_eviction_order",
+      "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+      "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+      "test_inline_measurement_does_not_cache_discarded_whitespace",
+      "test_inline_measurement_rejects_detached_text_before_reading_inherited_style",
+      "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+      "test_committed_inline_misses_never_populate_or_evict_measurements",
+      "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+      "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+      "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+      "test_uncached_inline_workspace_accepts_generated_shadow_text_and_plain_breaks_without_caching",
+      "test_uncached_inline_workspace_rejects_external_geometry_and_text_split_dependencies",
+      "test_uncached_inline_workspace_matches_generated_unicode_breaks_and_ellipsis_without_cache_entries",
+      "test_uncached_inline_workspace_publishes_text_caches_and_preserves_retired_lines",
+      "test_uncached_inline_workspace_retires_generated_text_builder_allocations",
+      "test_native_uncached_inline_workspace_refreshes_generated_content_and_break_paint",
+      "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+      "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+      "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+      "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+      "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+      "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+      "test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle",
+      "test_retained_inline_layout_rewraps_after_width_style_text_and_tree_changes",
+      "test_retained_inline_layout_keeps_float_clamp_positioned_and_first_letter_dependencies_live",
+      "test_retained_inline_layout_does_not_share_mutable_line_fragments_with_old_geometry"
+    ]
+  },
+  "restoration_executions": 84,
+  "tool_tests": 346,
+  "tool_audit": {
+    "exit": 0,
+    "unchanged": true,
+    "changed": []
+  },
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-positioned-inline-no-hit-retirement-20261106.tar.gz",
+      "bytes": 45570839,
+      "sha256": "f28015c35ac498150eee99f8d35e414103ed6b577348f461011de7a3bcff1f3a",
+      "physical_members": 87,
+      "file_paths": 92,
+      "all_file_paths_verified": true
+    }
+  ],
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "acceptance_browser_attempts": 0,
+  "history_advanced": false,
+  "qualification": "Both native arms on productionaf70e02c48e4 pass exact original pixels/content,72externalbytes,nativeimage/ownership/normalexits. Candidate marker remains absent beforePNG,so eligibility gate stops beforeSVG or acceptance launch. Planned129 remains unlaunched and will not be counted or combined with a future cohort129. Implementation/tests and control remain recorded in linear history,then removed after84passingrestoration cases inthreeGCmodes and346currenttoolchecks;unchanged checkedpins/actualcalls/exitsverified. Native rollback confirmation awaits a bundle containing retirement; its successor experiment must assert retiredmarkerabsence. No performance,cadence,Brave orcatalogcredit.",
+  "unix": 1793932653.5057821
+}

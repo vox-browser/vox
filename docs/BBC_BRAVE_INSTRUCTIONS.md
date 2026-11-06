@@ -7462,3 +7462,26 @@ fixture invalidation omission and the first unrelated tool-pin drift are retaine
 Production eligibility and unprofiled attribution remain pending; no instruction,
 broad-check checkpoint or catalog credit is claimed.
 [Focused checks and retained failures](performance/bbc-positioned-inline-measurement-focus-20261106.json).
+
+The relative-root-only experiment above has **no BBC hit** on production
+`af70e02c48e4`. Both arms pass original pixels/content, all 72 external source
+checks, native-image/ownership audits and normal exits, but the candidate-only
+marker is absent. Its implementation is retired (`95f8a073b`) and its control
+removed (`88e3ec24e`) after **84 restoration executions** and **346 tooling tests**
+pass. The planned cohort 129 never reaches its acceptance driver, consumes no
+acceptance ID and advances no history count. Native rollback confirmation remains
+required on a subsequent completed bundle. [No-hit launches and restoration](performance/bbc-positioned-inline-no-hit-retirement-20261106.json).
+
+The replacement **current-pass retained inline geometry reuse** (`79c0d9cf2`,
+control `700369d54`) passes **204 focused executions** and **347 tooling tests**
+with unchanged checked sources and actual test-main calls verified. It consults
+already retained geometry from the current pass using exact incoming root sizes,
+definiteness, constraints and available space, then validates live text, style,
+font and tree inputs. Dirty flags alone do not reject unchanged inputs. Active
+clamps retain their ordinary running-state algorithm; root offsets remain owned
+by the caller, and descendant geometry retains existing ownership/copy-on-write.
+The original previous-pass path uses the same restoration helper. Six new cases
+cover nested/relative text, unchanged dirty roots, live mutation/detachment,
+sizing/style/font/environment misses, clamp state and native storage retirement.
+No workload eligibility or unprofiled saving is claimed yet.
+[Current-pass focused verification](performance/bbc-same-pass-inline-focus-20261106.json).
