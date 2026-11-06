@@ -601,6 +601,16 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
 		mut segments := []f32{}
 		for op in random_path_ops(width, height) {
+			if op.kind != 0 && op.kind != 5 && rand.intn(3) or { 0 } == 0 {
+				// An SVG arc: radii (sometimes zero or too small), rotation in
+				// radians, and large-arc and sweep flags.
+				rx := if rand.intn(8) or { 0 } == 0 { f32(0) } else { f32(rand.f64() * f64(width)) }
+				ry := f32(rand.f64() * f64(height))
+				rotation := f32(rand.f64() * 12.566 - 6.283)
+				segments << [f32(4), op.v[0], op.v[1], 0, 0, 0, 0, rx, ry, rotation,
+					f32(rand.intn(2) or { 0 }), f32(rand.intn(2) or { 0 })]
+				continue
+			}
 			match op.kind {
 				0 { segments << [f32(0), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
 				1 { segments << [f32(1), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
@@ -636,7 +646,7 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 			return error('canvas ${i}: the Skia canvas path failed')
 		}
 		mut actual := initial.clone()
-		path := cpuraster.canvas_path(segments, even_odd) or { return error('canvas ${i}: path') }
+		path := cpuraster.canvas_path(segments, even_odd)
 		if !cpuraster.fill_canvas_path(mut actual, width, height, pitch, alpha_type, path,
 			transform, color) {
 			return error('canvas ${i}: cpuraster declined')
