@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import subprocess
+import re
 import sys
 import tempfile
 import unittest
@@ -59,11 +60,16 @@ int main(int argc, char **argv) {
         read_process_usage=dlsym(library,"proc_pid_rusage");
     }
     started=CACurrentMediaTime();
+    struct timespec cpu_start,cpu_end;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&cpu_start);
     read_counter(&counter_start);
     volatile unsigned long long work=0;
-    for(unsigned i=0;i<1000000;++i)work+=i;
+    for(unsigned i=0;i<10000000;++i)work+=i;
     read_counter(&counter_input_end);
     read_counter(&counter_publication_end);counter_complete=counter_publication_end;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&cpu_end);
+    fprintf(stderr,"REFERENCE_CPU_NS %llu\n",(unsigned long long)(
+        (cpu_end.tv_sec-cpu_start.tv_sec)*1000000000ll+cpu_end.tv_nsec-cpu_start.tv_nsec));
     print_counter("start",&counter_start);print_counter("input_end",&counter_input_end);
     print_counter("publication_end",&counter_publication_end);print_counter("complete",&counter_complete);
     return work==0;
@@ -76,6 +82,9 @@ int main(int argc, char **argv) {
             measured = instruction_counters(result.stderr, 10)
             self.assertGreater(measured['instructions'], 100000)
             self.assertGreater(measured['cpu_ms'], 0)
+            reference_ms = int(re.search(r'REFERENCE_CPU_NS (\d+)', result.stderr)[1]) / 1e6
+            self.assertGreater(measured['cpu_ms'] / reference_ms, .8)
+            self.assertLess(measured['cpu_ms'] / reference_ms, 1.2)
             failed = subprocess.run([str(binary),'missing-reader'],capture_output=True,text=True)
             self.assertEqual(failed.returncode, 2)
             self.assertIn('SCROLL_ERROR hardware instruction counter failed',failed.stderr)

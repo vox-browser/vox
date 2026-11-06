@@ -10,6 +10,7 @@
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
 #include <libproc.h>
+#include <mach/mach_time.h>
 #include <errno.h>
 #include <unistd.h>
 #include "precise_scroll_faults.h"
@@ -94,9 +95,17 @@ static void read_counter(CounterSample *sample) {
 
 static void print_counter(const char *phase, CounterSample const *sample) {
     if (!sample->present) return;
+    // proc_pid_rusage CPU times use Mach absolute ticks, including on Apple
+    // Silicon where one tick is 125/3 ns. Normalize before labeling them ns.
+    mach_timebase_info_data_t base;
+    if (mach_timebase_info(&base) || !base.denom) {
+        fprintf(stderr,"SCROLL_ERROR CPU timebase unavailable\n");exit(2);
+    }
+    uint64_t user_ns=(uint64_t)((__uint128_t)sample->usage.ri_user_time*base.numer/base.denom);
+    uint64_t system_ns=(uint64_t)((__uint128_t)sample->usage.ri_system_time*base.numer/base.denom);
     fprintf(stderr,"SCROLL_COUNTER %s pid=%d start_ticks=%llu instructions=%llu cycles=%llu user_ns=%llu system_ns=%llu t_us=%.3f\n",
         phase,getpid(),sample->usage.ri_proc_start_abstime,sample->usage.ri_instructions,
-        sample->usage.ri_cycles,sample->usage.ri_user_time,sample->usage.ri_system_time,sample->time*1e6);
+        sample->usage.ri_cycles,(unsigned long long)user_ns,(unsigned long long)system_ns,sample->time*1e6);
 }
 
 // Optional native diagnostics share the observer's input epoch. They can
