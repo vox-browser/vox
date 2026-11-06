@@ -1,0 +1,78 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "implementation_commit": "3e1be7006",
+  "focused_verification": "docs/performance/chatgpt-borrowed-rule-buckets-focused-verification-20261106.json",
+  "production_controller": "docs/performance/chatgpt-borrowed-rule-buckets-production-r1-controller-20261106.json",
+  "diagnostic": "docs/performance/chatgpt-borrowed-rule-buckets-production-r1-diagnostic-20261106.json",
+  "matched": "docs/performance/chatgpt-borrowed-rule-buckets-production-r1-matched-20261106.json",
+  "production_executable_sha256": "19df77569135e21e7cea672edef8ed913996776ba381c3d34a8de62865ce8a1d",
+  "c_compile": {
+    "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+    "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+    "mode": "single",
+    "requested": "parallel",
+    "v_prod": false
+  },
+  "control_median": 24094117450.0,
+  "candidate_median": 24208203522.5,
+  "observed_reduction_percent": -0.4735017696197108,
+  "conservative_page_reduction": -441665914,
+  "page_instruction_credit": 0,
+  "broad_checks": 0,
+  "broad_carry": 0,
+  "target_instructions": 20000000000,
+  "target_met": false,
+  "observed_median_under_target": false,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-borrowed-rule-buckets-checked-20261106-evidence.zip",
+      "sha256": "14ebb94b3db58b2060f7e3d82a352c2d969f742c44524615f1ebe71b7cfadfeb",
+      "bytes": 6566357,
+      "verified_entries": 46
+    },
+    {
+      "path": "docs/performance/chatgpt-borrowed-rule-buckets-component-20261106-evidence.zip",
+      "sha256": "42999650d07f85316d0acfedffc522cf9e2d4971269bfd90cb4345a7b9deee37",
+      "bytes": 19860167,
+      "verified_entries": 38
+    },
+    {
+      "path": "docs/performance/chatgpt-borrowed-rule-buckets-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "1cd2c8ea11b1ad05057c603a6cf903a127f8752ed6cceca513ba8870070b90d6",
+      "bytes": 1443998,
+      "verified_entries": 61
+    },
+    {
+      "path": "docs/performance/chatgpt-borrowed-rule-buckets-production-r1-matched-20261106-evidence.zip",
+      "sha256": "4f44c294a56ebe17011b7924c3dd090f17985535f2843091910aeb30c4ef578a",
+      "bytes": 8144621,
+      "verified_entries": 163
+    },
+    {
+      "path": "docs/performance/chatgpt-borrowed-rule-buckets-controller-20261106-evidence.zip",
+      "sha256": "7a7e025267b14c09d0d38b0165c2bb9dfdd0bfef284ac1fa2e17c5b0c840f92b",
+      "bytes": 18877,
+      "verified_entries": 11
+    }
+  ],
+  "qualification": "Four control/candidate pairs are diagnostic and below seven-pair Brave acceptance. Original SOCKS capture, author scripts, references and capture boundary stay fixed. Focused tests/generated C prove borrowed storage, missing/empty distinction, live changes and one map lookup; separate production diagnostics require actual candidate-only execution. Component gains are not extrapolated to page counts.",
+  "finalization_guard": {
+    "path": "Build/chatgpt-borrowed-rule-buckets-finalize-20261106-r1/finalize-guard.json",
+    "sha256": "23b271f3bbed7732efc9c7b508979e527b7002ea5d45a1ea11a1e7c9ac88c30c",
+    "receipt": {
+      "command": [
+        "python3",
+        "Build/chatgpt-borrowed-rule-buckets-finalize-20261106-r1/finalize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 55508992,
+      "elapsed_seconds": 0.552166459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}

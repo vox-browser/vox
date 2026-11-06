@@ -1,0 +1,1342 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "implementation_commit": "3e1be7006",
+  "final_guarded_jobs": 12,
+  "component_guarded_jobs": 9,
+  "final_test_functions": 26,
+  "final_test_function_executions": 208,
+  "generated_c_proof": {
+    "css__borrowed_string_rule_bucket": "inline __v_option_Array css__borrowed_string_rule_bucket(map buckets, string name) {\n\t{\n\t\tif (css__retain_rule_bucket_double_lookups) {\n\t\t\tstring __map_key_0 = name;\n\t\t\tif (map__exists(&buckets, &__map_key_0)) {\n\t\t\t\tstring __map_key_1 = name;\n\t\t\t\tArray __map_zero_2 = array_new(sizeof(css__MatchingRule*), 0, 0);\n\t\t\t\treturn (__v_option_Array){.ok = true, .value = *(Array*)(map__get(&buckets, &__map_key_1, &__map_zero_2))};\n\t\t\t}\n\t\t\treturn (__v_option_Array){.ok = false};\n\t\t}\n\t\tstring __map_key_3 = name;\n\t\tvoid* __map_ptr_4 = map__get_check(&buckets, &__map_key_3);\n\t\tif (__map_ptr_4 != NULL) {\n\t\t\tArray bucket = *(Array*)(__map_ptr_4);\n\t\t\tcss__report_borrowed_rule_bucket();\n\t\t\treturn (__v_option_Array){.ok = true, .value = bucket};\n\t\t}\n\t}\n\treturn (__v_option_Array){.ok = false};\n\treturn (__v_option_Array){.ok = true};\n}",
+    "css__borrowed_pseudo_rule_bucket": "inline __v_option_Array css__borrowed_pseudo_rule_bucket(map buckets, int pseudo) {\n\t{\n\t\tif (css__retain_rule_bucket_double_lookups) {\n\t\t\tint __map_key_0 = pseudo;\n\t\t\tif (map__exists(&buckets, &__map_key_0)) {\n\t\t\t\tint __map_key_1 = pseudo;\n\t\t\t\tArray __map_zero_2 = array_new(sizeof(css__MatchingRule*), 0, 0);\n\t\t\t\treturn (__v_option_Array){.ok = true, .value = *(Array*)(map__get(&buckets, &__map_key_1, &__map_zero_2))};\n\t\t\t}\n\t\t\treturn (__v_option_Array){.ok = false};\n\t\t}\n\t\tint __map_key_3 = pseudo;\n\t\tvoid* __map_ptr_4 = map__get_check(&buckets, &__map_key_3);\n\t\tif (__map_ptr_4 != NULL) {\n\t\t\tArray bucket = *(Array*)(__map_ptr_4);\n\t\t\tcss__report_borrowed_rule_bucket();\n\t\t\treturn (__v_option_Array){.ok = true, .value = bucket};\n\t\t}\n\t}\n\treturn (__v_option_Array){.ok = false};\n\treturn (__v_option_Array){.ok = true};\n}"
+  },
+  "fixture": {
+    "body_sha256": "446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808",
+    "source": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808",
+    "class_names": [
+      "x108lcm5",
+      "xzx5cyk",
+      "xojncy5",
+      "xy3g5xu",
+      "x1nktip0",
+      "xwbwmuu",
+      "x1it3fuk",
+      "xh8yej3",
+      "xuu8av0",
+      "xeuugli",
+      "xgs08xk",
+      "x1javzw2",
+      "xfqjyog",
+      "x1rob05q",
+      "xvmahel",
+      "xlh3980",
+      "x1f5fsc4",
+      "x15hbqbs",
+      "x129ryfp",
+      "x1j4k7t",
+      "xdil6ep",
+      "x1ew90b4",
+      "xf2lf2q",
+      "x1q4hrvh",
+      "xhzthhq",
+      "xtmahst",
+      "x19wwumo",
+      "xf5o8ab",
+      "xrs2rvu",
+      "xsqb0jk",
+      "x1h2x970",
+      "x18gmqe7",
+      "x1dj5c46",
+      "xuqn0r1",
+      "x1ckkleb",
+      "x14mtdvj",
+      "xjlr1r4",
+      "xb4n8m5",
+      "x1qulsx2",
+      "x80uccm",
+      "x113cnm9",
+      "xbs2zpe",
+      "xw2csxc",
+      "x1cz32y9",
+      "x1tgz2t7",
+      "xtdr75i",
+      "x1odjw0f",
+      "x17ld35r",
+      "x3mgoj2",
+      "x1jdgkl4",
+      "xkcv6ua",
+      "x1mofb07",
+      "xg83hb1",
+      "x1ira4s",
+      "xexsw6k",
+      "x1xuro6a",
+      "xqo8n92",
+      "x1jkmww0",
+      "x9fadvk",
+      "x7s33jz",
+      "x1njv9kd",
+      "x1rzbudj",
+      "x185mbhu",
+      "xosa0jh",
+      "x1l1chig",
+      "xikzxjy",
+      "x1yqm8si",
+      "x1b17es6",
+      "x725i56",
+      "x1kto299",
+      "x1d9l14f",
+      "x1ftd4sf",
+      "x1y1fc37",
+      "x9zpkr8",
+      "x1uz9dzm",
+      "x1kvar18",
+      "x13qp82k",
+      "xsajpkq",
+      "xbq413r",
+      "xv247kb",
+      "xph554m",
+      "x1vrop33",
+      "x1evy7pa",
+      "x1ghz6dp",
+      "x12knzco",
+      "xqvgpzw",
+      "xpqjby",
+      "xxqldzo",
+      "xbwtmyq",
+      "x1plvlek",
+      "xryxfnj",
+      "xqtp20y",
+      "xnalus7",
+      "xb3r6kr",
+      "x47corl",
+      "x10l6tqk",
+      "xjp7ctv",
+      "xrfaljq",
+      "xnpn0wm",
+      "x1mqjr8",
+      "x152kcnd",
+      "x1fs40au",
+      "x1c4igmt",
+      "x12bjfvb",
+      "x148yywu",
+      "x1jpzg1f",
+      "x8suto7",
+      "x1hhcqiw",
+      "x1cdrocz",
+      "x11aoy5q",
+      "x16vwvgv",
+      "x10ovasj",
+      "ximr1nb",
+      "xae64zy",
+      "x1n2onr6",
+      "x9f619",
+      "x1y06tjk",
+      "x742i91",
+      "x1j61zf2",
+      "x9l65sq",
+      "x1m34tb9",
+      "x3ns3hv",
+      "x1bwita1",
+      "x9ksc9q",
+      "x1aasc0r",
+      "x1alxkpn",
+      "x7gi5d4",
+      "xdvuw1n"
+    ],
+    "selection": "First 128 distinct CSS identifier class tokens in the frozen HTML, source order; no resource mutation or redownload."
+  },
+  "components": {
+    "hits": {
+      "raw": {
+        "control": [
+          17944020,
+          17944029,
+          17944003,
+          17944095
+        ],
+        "candidate": [
+          9370563,
+          9370538,
+          9370555,
+          9370655
+        ]
+      },
+      "control_median": 17944024.5,
+      "candidate_median": 9370559.0,
+      "reduction_percent": 47.77894446142782
+    },
+    "misses": {
+      "raw": {
+        "control": [
+          2238931,
+          2238969,
+          2238932,
+          2238932
+        ],
+        "candidate": [
+          2238866,
+          2238957,
+          2238907,
+          2238932
+        ]
+      },
+      "control_median": 2238932.0,
+      "candidate_median": 2238919.5,
+      "reduction_percent": 0.0005583019046628834
+    },
+    "mixed": {
+      "raw": {
+        "control": [
+          12466595,
+          12462506,
+          12462531,
+          12462574
+        ],
+        "candidate": [
+          8146883,
+          8148016,
+          8146858,
+          8146908
+        ]
+      },
+      "control_median": 12462552.5,
+      "candidate_median": 8146895.5,
+      "reduction_percent": 34.62899755086287
+    },
+    "empty": {
+      "raw": {
+        "control": [
+          17943978,
+          17943978,
+          17944040,
+          17944003
+        ],
+        "candidate": [
+          9370563,
+          9370538,
+          9370582,
+          9370538
+        ]
+      },
+      "control_median": 17943990.5,
+      "candidate_median": 9370550.5,
+      "reduction_percent": 47.77889288338623
+    },
+    "candidate-collection": {
+      "raw": {
+        "control": [
+          24841597,
+          24986784,
+          24935178,
+          24803577
+        ],
+        "candidate": [
+          23276581,
+          23314278,
+          23303336,
+          23298584
+        ]
+      },
+      "control_median": 24888387.5,
+      "candidate_median": 23300960.0,
+      "reduction_percent": 6.378185408757398
+    }
+  },
+  "attempts": [
+    {
+      "kind": "checked",
+      "result": {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "css/borrowed_rule_bucket.v": "889c8db235e0d620b474b650d569fdc1d3ec07de77cd9edf9377b2a68eccfae5",
+          "css/rule_bucket_iterator.v": "75660a299173d8f272473010f472e65fd2d969a8081b25c8677169ecacfccca9",
+          "css/style_scope_cache.v": "f811269f04f0dfe31faf74b62c2ad25f0b7352c30166611fdf9911b97524b697",
+          "css/borrowed_rule_bucket_test.v": "32294d83bb4c6365eb9085f095c468c27b0b22ae4c4ea67e2574c7fe587b57e2",
+          "css/cached_rule_bucket_lookup_test.v": "ca02c57afcdfb964d222c167f50129126d5cef6ea3ea639bf77cdf14ce96cfae",
+          "css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+          "css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+          "css/empty_rule_bucket_entry_test.v": "bb119766bb691b1324850e6403e65da2f70458c55e4f11722f4f03561bcf85ae",
+          "css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+          "css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+          "css/matching_rule_candidates_test.v": "e65fa419bb5da71a360501f987915d65b5942f9fdd215d53f3192f1bb9a0462e",
+          "css/matching_rule_set_workspace_test.v": "46231cf25e3f5938f192eaabf56c7e09b26a8eecec5822cf7be82694474ca949",
+          "css/lazy_rule_capacity_test.v": "7a9188f7dd01086e9485cdbdace7c81540710547bb8e7fd1ba3e7d6414d0706f"
+        },
+        "source_after": {
+          "css/borrowed_rule_bucket.v": "889c8db235e0d620b474b650d569fdc1d3ec07de77cd9edf9377b2a68eccfae5",
+          "css/rule_bucket_iterator.v": "75660a299173d8f272473010f472e65fd2d969a8081b25c8677169ecacfccca9",
+          "css/style_scope_cache.v": "f811269f04f0dfe31faf74b62c2ad25f0b7352c30166611fdf9911b97524b697",
+          "css/borrowed_rule_bucket_test.v": "32294d83bb4c6365eb9085f095c468c27b0b22ae4c4ea67e2574c7fe587b57e2",
+          "css/cached_rule_bucket_lookup_test.v": "ca02c57afcdfb964d222c167f50129126d5cef6ea3ea639bf77cdf14ce96cfae",
+          "css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+          "css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+          "css/empty_rule_bucket_entry_test.v": "bb119766bb691b1324850e6403e65da2f70458c55e4f11722f4f03561bcf85ae",
+          "css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+          "css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+          "css/matching_rule_candidates_test.v": "e65fa419bb5da71a360501f987915d65b5942f9fdd215d53f3192f1bb9a0462e",
+          "css/matching_rule_set_workspace_test.v": "46231cf25e3f5938f192eaabf56c7e09b26a8eecec5822cf7be82694474ca949",
+          "css/lazy_rule_capacity_test.v": "7a9188f7dd01086e9485cdbdace7c81540710547bb8e7fd1ba3e7d6414d0706f"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-css-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/css/cached_rule_bucket_lookup_test.v,/Users/alex/code/vox2/css/rule_bucket_iterator_test.v,/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v,/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v,/Users/alex/code/vox2/css/quirks_selector_buckets_test.v,/Users/alex/code/vox2/css/attribute_tag_bucket_test.v,/Users/alex/code/vox2/css/matching_rule_candidates_test.v,/Users/alex/code/vox2/css/matching_rule_set_workspace_test.v,/Users/alex/code/vox2/css/lazy_rule_capacity_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-prealloc",
+              "/Users/alex/code/vox2/css/borrowed_rule_bucket_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793958710.0403972,
+              "cpu_count": 18,
+              "load": [
+                6.16015625,
+                12.04345703125,
+                14.03076171875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958715.839798,
+              "load": [
+                6.46728515625,
+                12.00927734375,
+                14.0068359375
+              ]
+            }
+          },
+          {
+            "label": "run-css-prealloc-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-prealloc-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-prealloc-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958715.854746,
+              "cpu_count": 18,
+              "load": [
+                6.46728515625,
+                12.00927734375,
+                14.0068359375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958716.5323288,
+              "load": [
+                6.46728515625,
+                12.00927734375,
+                14.0068359375
+              ]
+            }
+          },
+          {
+            "label": "run-css-prealloc-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-prealloc-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-prealloc-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-prealloc"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958716.539145,
+              "cpu_count": 18,
+              "load": [
+                6.46728515625,
+                12.00927734375,
+                14.0068359375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958716.96892,
+              "load": [
+                6.46728515625,
+                12.00927734375,
+                14.0068359375
+              ]
+            }
+          },
+          {
+            "label": "compile-css-default",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-default.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-default-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-file-list",
+              "/Users/alex/code/vox2/css/cached_rule_bucket_lookup_test.v,/Users/alex/code/vox2/css/rule_bucket_iterator_test.v,/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v,/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v,/Users/alex/code/vox2/css/quirks_selector_buckets_test.v,/Users/alex/code/vox2/css/attribute_tag_bucket_test.v,/Users/alex/code/vox2/css/matching_rule_candidates_test.v,/Users/alex/code/vox2/css/matching_rule_set_workspace_test.v,/Users/alex/code/vox2/css/lazy_rule_capacity_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-default",
+              "/Users/alex/code/vox2/css/borrowed_rule_bucket_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793958716.977092,
+              "cpu_count": 18,
+              "load": [
+                6.46728515625,
+                12.00927734375,
+                14.0068359375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958722.515629,
+              "load": [
+                6.26953125,
+                11.8759765625,
+                13.94775390625
+              ]
+            }
+          },
+          {
+            "label": "run-css-default-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-default-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-default-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-default"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958722.522377,
+              "cpu_count": 18,
+              "load": [
+                5.92724609375,
+                11.7119140625,
+                13.87744140625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958722.959818,
+              "load": [
+                5.92724609375,
+                11.7119140625,
+                13.87744140625
+              ]
+            }
+          },
+          {
+            "label": "run-css-default-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-default-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-default-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-default"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958722.966847,
+              "cpu_count": 18,
+              "load": [
+                5.92724609375,
+                11.7119140625,
+                13.87744140625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958723.1631181,
+              "load": [
+                5.92724609375,
+                11.7119140625,
+                13.87744140625
+              ]
+            }
+          },
+          {
+            "label": "compile-css-none",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-none.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-none-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/css/cached_rule_bucket_lookup_test.v,/Users/alex/code/vox2/css/rule_bucket_iterator_test.v,/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v,/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v,/Users/alex/code/vox2/css/quirks_selector_buckets_test.v,/Users/alex/code/vox2/css/attribute_tag_bucket_test.v,/Users/alex/code/vox2/css/matching_rule_candidates_test.v,/Users/alex/code/vox2/css/matching_rule_set_workspace_test.v,/Users/alex/code/vox2/css/lazy_rule_capacity_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-none",
+              "/Users/alex/code/vox2/css/borrowed_rule_bucket_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793958723.169916,
+              "cpu_count": 18,
+              "load": [
+                5.92724609375,
+                11.7119140625,
+                13.87744140625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958728.713899,
+              "load": [
+                5.6923828125,
+                11.56689453125,
+                13.8134765625
+              ]
+            }
+          },
+          {
+            "label": "run-css-none-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-none-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-none-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-none"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958728.7211761,
+              "cpu_count": 18,
+              "load": [
+                5.6923828125,
+                11.56689453125,
+                13.8134765625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958729.170221,
+              "load": [
+                5.6923828125,
+                11.56689453125,
+                13.8134765625
+              ]
+            }
+          },
+          {
+            "label": "run-css-none-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-none-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-none-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-none"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958729.177511,
+              "cpu_count": 18,
+              "load": [
+                5.6923828125,
+                11.56689453125,
+                13.8134765625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958729.381736,
+              "load": [
+                5.6923828125,
+                11.56689453125,
+                13.8134765625
+              ]
+            }
+          },
+          {
+            "label": "compile-css-sanitized",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-sanitized.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/compile-css-sanitized-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-cflags",
+              "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+              "-ldflags",
+              "-fsanitize=address,undefined",
+              "-file-list",
+              "/Users/alex/code/vox2/css/cached_rule_bucket_lookup_test.v,/Users/alex/code/vox2/css/rule_bucket_iterator_test.v,/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v,/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v,/Users/alex/code/vox2/css/quirks_selector_buckets_test.v,/Users/alex/code/vox2/css/attribute_tag_bucket_test.v,/Users/alex/code/vox2/css/matching_rule_candidates_test.v,/Users/alex/code/vox2/css/matching_rule_set_workspace_test.v,/Users/alex/code/vox2/css/lazy_rule_capacity_test.v",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-sanitized",
+              "/Users/alex/code/vox2/css/borrowed_rule_bucket_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793958729.388988,
+              "cpu_count": 18,
+              "load": [
+                5.6923828125,
+                11.56689453125,
+                13.8134765625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958741.576412,
+              "load": [
+                6.03369140625,
+                11.4482421875,
+                13.7451171875
+              ]
+            }
+          },
+          {
+            "label": "run-css-sanitized-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-sanitized-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-sanitized-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-sanitized"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958741.592708,
+              "cpu_count": 18,
+              "load": [
+                6.03369140625,
+                11.4482421875,
+                13.7451171875
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958742.769822,
+              "load": [
+                6.27099609375,
+                11.4072265625,
+                13.71728515625
+              ]
+            }
+          },
+          {
+            "label": "run-css-sanitized-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-sanitized-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/run-css-sanitized-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-checked-20261106-r1/css-sanitized"
+            ],
+            "environment": {
+              "VOX_ARENA_POISON": "1",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1",
+              "VOX_BORROWED_RULE_BUCKET_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958742.777361,
+              "cpu_count": 18,
+              "load": [
+                6.27099609375,
+                11.4072265625,
+                13.71728515625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958743.462799,
+              "load": [
+                6.27099609375,
+                11.4072265625,
+                13.71728515625
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "component",
+      "result": {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "css/borrowed_rule_bucket.v": "889c8db235e0d620b474b650d569fdc1d3ec07de77cd9edf9377b2a68eccfae5",
+          "css/rule_bucket_iterator.v": "75660a299173d8f272473010f472e65fd2d969a8081b25c8677169ecacfccca9",
+          "css/style_scope_cache.v": "f811269f04f0dfe31faf74b62c2ad25f0b7352c30166611fdf9911b97524b697",
+          "css/borrowed_rule_bucket_test.v": "32294d83bb4c6365eb9085f095c468c27b0b22ae4c4ea67e2574c7fe587b57e2",
+          "css/cached_rule_bucket_lookup_test.v": "ca02c57afcdfb964d222c167f50129126d5cef6ea3ea639bf77cdf14ce96cfae",
+          "css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+          "css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+          "css/empty_rule_bucket_entry_test.v": "bb119766bb691b1324850e6403e65da2f70458c55e4f11722f4f03561bcf85ae",
+          "css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+          "css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+          "css/matching_rule_candidates_test.v": "e65fa419bb5da71a360501f987915d65b5942f9fdd215d53f3192f1bb9a0462e",
+          "css/matching_rule_set_workspace_test.v": "46231cf25e3f5938f192eaabf56c7e09b26a8eecec5822cf7be82694474ca949",
+          "css/lazy_rule_capacity_test.v": "7a9188f7dd01086e9485cdbdace7c81540710547bb8e7fd1ba3e7d6414d0706f",
+          "Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc": "d79f68651260ca2c1b74ab6680e107905ed66f6098855f1fe67ee76f61be3784",
+          "Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/driver_test.v": "302a47e65be508fd2c920d1d1afd9c95f42bedf0b8a31ef2eef75a7a22bccb72",
+          "Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/checks.py": "87694d5587b829e13095150bb5c733f2dc59e9ca8cb846f15b2ad956e8b39475",
+          "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "source_after": {
+          "css/borrowed_rule_bucket.v": "889c8db235e0d620b474b650d569fdc1d3ec07de77cd9edf9377b2a68eccfae5",
+          "css/rule_bucket_iterator.v": "75660a299173d8f272473010f472e65fd2d969a8081b25c8677169ecacfccca9",
+          "css/style_scope_cache.v": "f811269f04f0dfe31faf74b62c2ad25f0b7352c30166611fdf9911b97524b697",
+          "css/borrowed_rule_bucket_test.v": "32294d83bb4c6365eb9085f095c468c27b0b22ae4c4ea67e2574c7fe587b57e2",
+          "css/cached_rule_bucket_lookup_test.v": "ca02c57afcdfb964d222c167f50129126d5cef6ea3ea639bf77cdf14ce96cfae",
+          "css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+          "css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+          "css/empty_rule_bucket_entry_test.v": "bb119766bb691b1324850e6403e65da2f70458c55e4f11722f4f03561bcf85ae",
+          "css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+          "css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+          "css/matching_rule_candidates_test.v": "e65fa419bb5da71a360501f987915d65b5942f9fdd215d53f3192f1bb9a0462e",
+          "css/matching_rule_set_workspace_test.v": "46231cf25e3f5938f192eaabf56c7e09b26a8eecec5822cf7be82694474ca949",
+          "css/lazy_rule_capacity_test.v": "7a9188f7dd01086e9485cdbdace7c81540710547bb8e7fd1ba3e7d6414d0706f",
+          "Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc": "d79f68651260ca2c1b74ab6680e107905ed66f6098855f1fe67ee76f61be3784",
+          "Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/driver_test.v": "302a47e65be508fd2c920d1d1afd9c95f42bedf0b8a31ef2eef75a7a22bccb72",
+          "Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/checks.py": "87694d5587b829e13095150bb5c733f2dc59e9ca8cb846f15b2ad956e8b39475",
+          "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+        "rows": [
+          {
+            "label": "compile-component-prealloc",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/compile-component-prealloc.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/compile-component-prealloc-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+              "-path",
+              "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+              "-memory-limit",
+              "10G",
+              "-enable-globals",
+              "-b",
+              "c",
+              "-cc",
+              "clang",
+              "-nocache",
+              "-w",
+              "-keepc",
+              "-cflags",
+              "-O0",
+              "-skip-running",
+              "-prod",
+              "-cflags",
+              "-O2",
+              "-prealloc",
+              "-gc",
+              "none",
+              "-file-list",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/driver_test.v",
+              "-run-only",
+              "test_borrowed_rule_bucket_component",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc",
+              "/Users/alex/code/vox2/css/borrowed_rule_bucket_test.v"
+            ],
+            "environment": {},
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+            "host_before": {
+              "unix": 1793958775.577321,
+              "cpu_count": 18,
+              "load": [
+                14.08056640625,
+                12.8525390625,
+                14.16259765625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958814.2953331,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-0-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-0-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-0-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958814.3840792,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958814.951977,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-1-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-1-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-1-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958814.9869142,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958815.077408,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-2-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-2-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-2-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958815.113558,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958815.200209,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-3-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-3-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-3-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958815.234797,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958815.443615,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-4-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-4-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-4-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958815.47821,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958815.689195,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-5-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-5-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-5-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958815.723478,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958815.809119,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-6-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-6-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-6-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": ""
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958815.842827,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958815.926486,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          },
+          {
+            "label": "sample-7-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-7-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/sample-7-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-borrowed-rule-buckets-component-20261106-r1/component-prealloc"
+            ],
+            "environment": {
+              "JSC_thresholdForJITAfterWarmUp": "10000",
+              "VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS": "1"
+            },
+            "compiler_environment": {
+              "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+            },
+            "cwd": "/Users/alex/code/vox2",
+            "host_before": {
+              "unix": 1793958815.9601521,
+              "cpu_count": 18,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793958816.044523,
+              "load": [
+                21.62158203125,
+                14.9423828125,
+                14.86572265625
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-borrowed-rule-buckets-checked-20261106-evidence.zip",
+      "sha256": "14ebb94b3db58b2060f7e3d82a352c2d969f742c44524615f1ebe71b7cfadfeb",
+      "bytes": 6566357,
+      "verified_entries": 46
+    },
+    {
+      "path": "docs/performance/chatgpt-borrowed-rule-buckets-component-20261106-evidence.zip",
+      "sha256": "42999650d07f85316d0acfedffc522cf9e2d4971269bfd90cb4345a7b9deee37",
+      "bytes": 19860167,
+      "verified_entries": 38
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_carry": 0,
+  "qualification": "Two borrowed optional helpers distinguish present/empty/missing string and pseudo buckets with one get_check; pointers remain identical to map values and no array clone/allocation occurs. Collector and iterator preserve ordering, quirks, pseudo metadata, ownership and live replacement/removal. Twenty-six functions run under both double/single lookup policies in ordinary GC, no GC, poisoned preallocation and ASan/UBSan. O2 component retains four ABBA observations per variant; 65536 lookups per case and 100 full candidate collections use the first 128 distinct identifier classes from frozen HTML. Setup, parse and warm collection excluded; checksums/full ordering verified after counters. Component gains are not page instruction credit."
+}

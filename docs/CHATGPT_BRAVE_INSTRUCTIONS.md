@@ -6001,3 +6001,34 @@ The unprofiled comparison retains the original SOCKS bytes/scripts, original-ori
 Medians: **24,356,622,368 control → 24,135,221,872.5 candidate**, an observed **+0.909% reduction**. Conservative separation `min(control lower) − max(candidate upper)` is **-207,240,897** instructions. The ranges overlap; no whole-page saving is credited and no new 5M broad checkpoint is due. Carry remains zero.
 
 The candidate median remains **4,135,221,872.5 instructions above 20B**. Four pairs cannot establish seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-font-size-longhands-verification-20261106.json) retains focused checks, every component/prototype result, failed tests, source witnesses, commands, counters, memory guards, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Borrow selector buckets with one map lookup (2026-11-06)
+
+Implementation `3e1be7006` removes the presence check followed by a second fetch for matching selector buckets. String buckets (class, ID, tag and attribute) and pseudo-element buckets now use one optional lookup. The ordered collector and iterator borrow the same array header synchronously from the live RuleCache; a present empty vector remains distinct from an absent key. There is no retained result cache, new mutation epoch or array copy. `VOX_RETAIN_RULE_BUCKET_DOUBLE_LOOKUPS=1` selects the former two-lookup behavior inside the same helper envelope.
+
+All **208 focused test executions** pass: 26 functions under both lookup policies in ordinary GC, no GC, poisoned preallocation and AddressSanitizer/UndefinedBehaviorSanitizer. Tests cover borrow pointer identity, zero caller-arena allocation, empty/missing entries, replacement/removal, retained matching results, bucket order, quirks folding, pseudo metadata, shadow-host rules and candidate/workspace lifetimes. Generated C confirms exactly one `map__get_check()` per candidate helper, no array cloning, and use by both collector and iterator.
+
+The component uses the first 128 distinct identifier class tokens from the original frozen HTML (body SHA-256 `446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808`). Setup and parsing stay outside the counters; each lookup case performs 65,536 lookups and the full collector case performs 100 collections after one warm call. Four alternating observations per variant retain all raw counts. Checksums, full result order and borrow ownership are verified. These component results do not establish page savings.
+
+| Component | Control median | Candidate median | Observed reduction |
+|---|---:|---:|---:|
+| hits | 17,944,024.5 | 9,370,559 | +47.7789% |
+| misses | 2,238,932 | 2,238,919.5 | +0.0006% |
+| mixed | 12,462,552.5 | 8,146,895.5 | +34.6290% |
+| empty | 17,943,990.5 | 9,370,550.5 | +47.7789% |
+| candidate-collection | 24,888,387.5 | 23,300,960 | +6.3782% |
+
+The first available production bundle lacked the helper and was not used to validate the change. The shared build already running contained its final sealed source; no duplicate manual build was requested. The completed executable `19df77569135e21e7cea672edef8ed913996776ba381c3d34a8de62865ce8a1d` uses `single` C compilation with production source conditions. A nonblocking shared publication lease pins the canonical bundle across the diagnostic and matched captures. Both helpers and both consumers pass sealed-source proof. Only the candidate emits the executed-hit marker; both Vox captures also prove the Wasm module lexer executes without fallback. All four diagnostic captures pass content, bootstrap, button, exact reference pixels and browser/kernel exits.
+
+The unprofiled cohort retains the original SOCKS bytes/scripts, original-origin replay, empty private profiles/caches, 1024×768 viewport at scale 2, five-second unfocused settle and existing references. The boundary is exclusive coalition creation through encoded document PNG, including startup/window setup and Brave CDP delivery. GPU/outside-coalition work is excluded; OS filesystem/shader caches remain retained. All sixteen matched captures pass content, bootstrap, button, exact per-engine reference pixels and browser/kernel exits. Input hashes, host timestamps/load, owned helpers and memory-guard adoption remain in the raw reports.
+
+| Pair | Vox control instructions | Vox candidate instructions |
+|---|---:|---:|
+| 1 | 24,105,378,690 | 24,187,900,347 |
+| 2 | 24,082,856,210 | 24,076,164,649 |
+| 3 | 24,177,150,750 | 24,367,649,373 |
+| 4 | 23,925,983,459 | 24,228,506,698 |
+
+Medians: **24,094,117,450 control → 24,208,203,522.5 candidate**, an observed **0.474% increase**. Conservative separation `min(control lower) − max(candidate upper)` is **-441,665,914** instructions. The ranges overlap, so no whole-page saving is credited and no new 5M broad checkpoint is due. Carry remains zero.
+
+The candidate median remains **4,208,203,522.5 instructions above 20B**. Four pairs cannot establish seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-borrowed-rule-buckets-verification-20261106.json) retains source witnesses, all focused/component checks, every raw observation, commands, memory guards, counters, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
