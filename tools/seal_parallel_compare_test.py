@@ -33,6 +33,12 @@ class SealedSplitTest(unittest.TestCase):
             header.write_text('#error must never be read by optimizing compile\n')
             for index in range(2):
                 (root / f'unit_{index}.c').unlink()
+            # V removes its temporary compile directory when generation ends.
+            # Replaying sealed absolute inputs must survive that cleanup.
+            for record_path in captured.glob('*.json'):
+                record = json.loads(record_path.read_text())
+                record['cwd'] = str(root / 'removed-v-driver-directory')
+                record_path.write_text(json.dumps(record))
             compile_plan(captured, jobs=2)
             subprocess.run([str(captured / 'Vox')], check=True)
             self.assertTrue(json.loads((captured / 'compiled.json').read_text())['complete'])

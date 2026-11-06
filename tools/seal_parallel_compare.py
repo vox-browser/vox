@@ -95,7 +95,7 @@ def compile_plan(directory, jobs=4):
         check_fingerprints(record['live'])
     def compile_one(record):
         with (directory / (Path(record['output']).stem + '.log')).open('w') as stream:
-            subprocess.run(record['command'], cwd=record['cwd'], stdout=stream,
+            subprocess.run(record['command'], cwd=directory.resolve(), stdout=stream,
                            stderr=subprocess.STDOUT, check=True)
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         list(pool.map(compile_one, records))

@@ -1,5 +1,6 @@
 from pathlib import Path
 import fcntl
+import os
 import subprocess
 import sys
 import tempfile
@@ -91,6 +92,33 @@ with publication_lease(Path(sys.argv[1]), shared=True):
             with canonical_bundle_lease(Path('/historical/Vox.app')):
                 pass
             lease.assert_not_called()
+
+
+class InheritedPublicationLeaseTest(unittest.TestCase):
+    def test_inherited_exclusive_lease_stays_locked_after_child_finishes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with publication_lease(root) as fd:
+                env = dict(os.environ, VOX_BUNDLE_LEASE_FD=str(fd))
+                code = ('from pathlib import Path; from browser_bundle_lease import publication_lease; '
+                        'lease=publication_lease(Path(__import__("sys").argv[1]),shared=True); '
+                        'lease.__enter__(); lease.__exit__(None,None,None)')
+                subprocess.run([sys.executable, '-c', code, str(root)], env=env,
+                               cwd=Path(__file__).resolve().parent, pass_fds=(fd,), check=True)
+                with (root / 'Build/production-build/bundle.lock').open('a') as contender:
+                    with self.assertRaises(BlockingIOError):
+                        fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def test_wrong_inherited_descriptor_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with publication_lease(root):
+                pass
+            with (root / 'wrong-file').open('w') as file:
+                with patch.dict(os.environ, VOX_BUNDLE_LEASE_FD=str(file.fileno())):
+                    with self.assertRaisesRegex(RuntimeError, 'not the publication lock'):
+                        with publication_lease(root):
+                            self.fail('wrong lock accepted')
 
 
 if __name__ == '__main__':

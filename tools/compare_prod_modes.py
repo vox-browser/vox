@@ -24,11 +24,18 @@ from seal_parallel_compare import compile_plan
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--reference-receipt', type=Path, required=True)
-    parser.add_argument('--source-list', type=Path, required=True,
+    parser.add_argument('--resume-compile', action='store_true')
+    parser.add_argument('--reference-receipt', type=Path)
+    parser.add_argument('--source-list', type=Path,
                         help='Previously emitted -dump-files closure; both new generations must match it')
     args = parser.parse_args()
-    output, reference = args.output.resolve(), args.reference_receipt.resolve()
+    output = args.output.resolve()
+    if args.resume_compile:
+        finish(output)
+        return
+    if args.reference_receipt is None or args.source_list is None:
+        parser.error('--reference-receipt and --source-list are required for generation')
+    reference = args.reference_receipt.resolve()
     output.mkdir(parents=True, exist_ok=False)
     single, parallel = output / 'single', output / 'parallel'
     single.mkdir(); parallel.mkdir()
@@ -102,24 +109,78 @@ def main():
         write_json(output / 'sealed-generation.json', dict(
             source_inputs=after, compiler_sha256=digest(compiler), clang_sha256=digest(clang),
             source_closure=fingerprint(closures[0]), native_inputs=native_before, generation_complete=True))
-    # Compilation does not read repository C/V sources again.
+    finish(output)
+
+
+def finish(output):
+    # Compilation does not read repository C/V sources again. A failed optimizing
+    # compile can resume from the verified generation without reparsing sources.
+    sealed = json.loads((output / 'sealed-generation.json').read_text())
+    if not sealed['generation_complete']:
+        raise RuntimeError('Generation did not finish')
+    single, parallel = output / 'single', output / 'parallel'
+    frozen = json.loads((single / 'frozen-compile.json').read_text())
+    before = frozen['source_inputs']
     frozen = validate(single, before, require_complete=False)
     print('Compiling sealed single-unit -prod', flush=True)
     start = time.monotonic()
-    with (single / 'compile.log').open('w') as stream:
-        result = subprocess.run(frozen['compiler_command'], cwd=frozen['cwd'], stdout=stream, stderr=subprocess.STDOUT)
-    frozen.update(compiler_exit=result.returncode, complete=result.returncode == 0, wall_seconds=time.monotonic() - start)
-    write_json(single / 'frozen-compile.json', frozen)
-    if result.returncode:
-        raise RuntimeError('Single-unit C compilation failed')
+    if not frozen.get('complete'):
+        with (single / 'compile.log').open('w') as stream:
+            result = subprocess.run(frozen['compiler_command'], cwd=frozen['cwd'], stdout=stream, stderr=subprocess.STDOUT)
+        frozen.update(compiler_exit=result.returncode, complete=result.returncode == 0, wall_seconds=time.monotonic() - start)
+        write_json(single / 'frozen-compile.json', frozen)
+        if result.returncode:
+            raise RuntimeError('Single-unit C compilation failed')
     validate(single, before)
     print('Compiling sealed -prod -parallel-cc', flush=True)
     compile_plan(parallel)
-    check_fingerprints(native_before)
+    check_fingerprints(sealed['native_inputs'])
     write_json(output / 'built.json', dict(complete=True, executables={
         mode: dict(path=str(folder / 'Vox'), sha256=digest(folder / 'Vox'))
         for mode, folder in [('single', single), ('parallel', parallel)]}))
     print('Both matched literal-prod builds completed', flush=True)
+
+
+def refresh_native(output):
+    """Explicitly relink BOTH sealed variants against a newer common renderer.
+
+    Caller holds the publication lease throughout compilation and measurement.
+    Preserve the rejected manifests; no C, object, compiler, or system-library
+    input can be refreshed through this operation.
+    """
+    if (output / 'native-refresh.json').exists():
+        raise RuntimeError('Native refresh already attempted')
+    native = ROOT / 'Build/v/Vox.app/Contents/MacOS'
+    current = fingerprint(native.glob('*.dylib'))
+    paths = [output / 'single/frozen-compile.json', output / 'parallel/link.json',
+             *sorted((output / 'parallel').glob('unit_*.json'))]
+    changes = {}
+    for path in paths:
+        data = json.loads(path.read_text())
+        field = 'live_inputs' if path.name == 'frozen-compile.json' else 'live'
+        changed = {name: dict(before=value, after=current[name]) for name, value in data[field].items()
+                   if name in current and value != current[name]}
+        if changed:
+            backup = path.with_name(path.name + '.before-native-refresh')
+            if backup.exists():
+                raise RuntimeError('Native refresh already attempted')
+            shutil.copyfile(path, backup)
+            for name in changed:
+                data[field][name] = current[name]
+            changes[str(path)] = changed
+        if path.name == 'frozen-compile.json':
+            # Even when the dylib has no code link-time optimization, rerun the
+            # actual single-unit compile/link against the newly selected input.
+            data['complete'] = False
+        write_json(path, data)
+    generation = output / 'sealed-generation.json'
+    data = json.loads(generation.read_text())
+    shutil.copyfile(generation, generation.with_name('sealed-generation-before-native-refresh.json'))
+    data['native_inputs'] = current
+    write_json(generation, data)
+    write_json(output / 'native-refresh.json', dict(
+        reason='shared renderer publication after source sealing; relink both variants under one publication lease',
+        changed_manifests=changes, common_native_inputs=current))
 
 
 if __name__ == '__main__':
