@@ -180,6 +180,18 @@ static void finish(int status) {
     }
     fprintf(stderr, "SCROLL_DONE inputs=%u publications=%u duration_us=%.3f\n",
         inputs, publications, (finished-started)*1e6);
+    // Optional correctness evidence after every timing/counter endpoint. This
+    // must not add a publication or PNG encoding cost to the measured window.
+    const char *capture = getenv("VOX_PRECISE_FINAL_CAPTURE");
+    if (status == 0 && capture && *capture) {
+        NSBitmapImageRep *bitmap = [page_view bitmapImageRepForCachingDisplayInRect:page_view.bounds];
+        [page_view cacheDisplayInRect:page_view.bounds toBitmapImageRep:bitmap];
+        NSData *png = [bitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+        if (!png || ![png writeToFile:[NSString stringWithUTF8String:capture] atomically:YES]) {
+            fprintf(stderr, "SCROLL_ERROR final correctness capture failed\n");
+            status = 2;
+        }
+    }
     fflush(stderr);
     exit(status);
 }
