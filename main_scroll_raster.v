@@ -75,6 +75,8 @@ mut:
 fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 	stage := processmetrics.begin_instruction_stage('scroll_raster_probe')
 	defer { stage.finish() }
+	mut work := app.scroll_raster_keys.storage.begin_frame()
+	defer { work.finish() }
 	mut damage := ScrollRasterDamage{
 		width:       app.viewport_width
 		height:      app.viewport_height
@@ -175,6 +177,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		// a frame that paints without eligibility leaves no reusable pixels.
 		if ring_eligible {
 			app.scroll_raster_keys = ScrollRasterKeyFrame{
+				...app.scroll_raster_keys
 				valid:    true
 				document: document_id
 				paint_generation: app.paint_generation
@@ -185,6 +188,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			}
 		} else {
 			app.scroll_raster_keys.valid = false
+			app.scroll_raster_keys.keys = []ScrollRasterCommandKey{}
 		}
 	}
 	return damage

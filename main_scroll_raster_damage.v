@@ -77,6 +77,7 @@ const scroll_raster_key_part_names = ['geometry', 'paint', 'text', 'shape', 'pay
 
 struct ScrollRasterKeyFrame {
 mut:
+	storage  ScrollRasterFrameStorage
 	valid    bool
 	document u64
 	paint_generation u64
@@ -661,6 +662,10 @@ fn scroll_raster_frame_keys_with_scrollbars(commands []layout.PaintCommand, scro
 			kind:  command.kind
 			doc_x: command.x
 			doc_y: command.y
+		}
+		$if prealloc {
+			// Recording can recycle the command's scene before the next diff.
+			key.kind = command.kind.clone()
 		}
 		if scroll_raster_damage_diagnostics {
 			key.parts = scroll_raster_command_hash_parts(command, scroll)

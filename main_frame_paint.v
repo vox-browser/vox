@@ -202,6 +202,7 @@ fn (app &BrowserApp) javascript_tasks_have_unadopted_paint() bool {
 
 // Stop replaying the adopted commands and let their scene be reused.
 fn (mut app BrowserApp) release_paint_commands() {
+	app.scroll_raster_keys.release()
 	app.paint_commands = []layout.PaintCommand{}
 	app.paint_display_list = unsafe { nil }
 	layout.release_display_list_scene(app.paint_scene)
