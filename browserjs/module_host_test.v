@@ -48,6 +48,59 @@ fn module_test_until(host &ModuleHost, runtime &Runtime, expression string) {
 	assert runtime.evaluate_host(expression) or { 'false' } == 'true', expression
 }
 
+fn test_agent_module_cache_keeps_identical_source_and_uses_each_realms_import_map() {
+	$if !darwin { return }
+	address := dom.URL{value: 'https://module-cache.test/page'}
+	mut first_document := html.create_navigation_document(address, address.origin(), none)!
+	mut second_document := html.create_navigation_document(address, address.origin(), none)!
+	mut first := Runtime.create()
+	mut second := Runtime.create()
+	defer { first.close(); second.close(); first_document.finalize(); second_document.finalize() }
+	first_settings := unsafe { &html.EnvironmentSettingsObject(first_document.relevant_settings_object()) }
+	second_settings := unsafe { &html.EnvironmentSettingsObject(second_document.relevant_settings_object()) }
+	mut first_scope := first_settings.universal_global_scope()
+	mut second_scope := second_settings.universal_global_scope()
+	first_map := html.parse_import_map_string('{"imports":{"named":"/first.js"}}', address)!
+	second_map := html.parse_import_map_string('{"imports":{"named":"/second.js"}}', address)!
+	first_scope.set_import_map(&first_map)
+	second_scope.set_import_map(&second_map)
+	first_seen := &ModuleTestRequests{}
+	second_seen := &ModuleTestRequests{}
+	mut first_host := ModuleHost.create(first_settings, module_test_transport({
+		'https://module-cache.test/first.js': 'export const value=41;'
+	}, first_seen))
+	mut second_host := ModuleHost.create(second_settings, module_test_transport({
+		'https://module-cache.test/second.js': 'export const value=42;'
+	}, second_seen))
+	first_host.install(mut first)!
+	second_host.install(mut second)!
+	if !retain_realm_module_helper { assert first_host.helper_name == second_host.helper_name }
+	key := 'https://module-cache.test/entry.js'
+	code := 'globalThis.cacheRead=()=>import("named").then(ns=>ns.value);globalThis.cacheAnswer=(await import("named")).value;globalThis.cacheMeta=import.meta.resolve("named");'
+	first_source := first_host.rewrite(code, key, key, true)!
+	second_source := second_host.rewrite(code, key, key, true)!
+	if !retain_realm_module_helper { assert first_source == second_source }
+	// Static import-map resolutions are part of the actual source cache key.
+	static_code := 'import {value} from "named";export {value};'
+	assert first_host.rewrite(static_code, key, key, true)! != second_host.rewrite(static_code, key, key, true)!
+	assert first_host.rewrite(code, key + '?changed-base', key, true)! != first_source
+	first.evaluate_host('globalThis.firstRealmSecret=1')!
+	for runtime in [first, second] {
+		mut active := unsafe { &Runtime(runtime) }
+		assert active.run_document_scripts_collect_errors([ScriptSource{source_type: .module, url: key, code: code}]) == []
+	}
+	module_test_until(first_host, first, 'globalThis.cacheAnswer===41')
+	module_test_until(second_host, second, 'globalThis.cacheAnswer===42')
+	assert first.evaluate_host('cacheMeta==="https://module-cache.test/first.js"')! == 'true'
+	assert second.evaluate_host('cacheMeta==="https://module-cache.test/second.js"&&typeof firstRealmSecret==="undefined"')! == 'true'
+	first.close()
+	second.evaluate_host('globalThis.cacheAfterClose=0;cacheRead().then(value=>cacheAfterClose=value);')!
+	module_test_until(second_host, second, 'cacheAfterClose===42')
+	assert first_seen.urls == ['https://module-cache.test/first.js']
+	assert second_seen.urls == ['https://module-cache.test/second.js']
+	assert second_host.errors() == []string{}
+}
+
 fn test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await() {
 	$if !darwin {
 		return

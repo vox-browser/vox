@@ -21,11 +21,13 @@ fn C.vox_module_loader_evaluate(voidptr, &char, uint, &voidptr) voidptr
 fn C.vox_module_loader_supply(voidptr, voidptr, &char, uint, &char, uint, &voidptr) voidptr
 fn C.vox_module_loader_supply_value(voidptr, voidptr, voidptr, &char, uint, bool, &voidptr) voidptr
 fn C.JSObjectDeleteProperty(voidptr, voidptr, voidptr, &voidptr) bool
+fn C.JSContextGetGroup(voidptr) voidptr
 
 const retain_utf8_module_source = os.getenv('VOX_RETAIN_UTF8_MODULE_SOURCE') != ''
 const module_source_value_diagnostics = os.getenv('VOX_MODULE_SOURCE_VALUE_DIAGNOSTICS') != ''
 const retain_duplicate_module_normalization = os.getenv('VOX_RETAIN_DUPLICATE_MODULE_NORMALIZATION') != ''
 const module_normalization_diagnostics = os.getenv('VOX_MODULE_NORMALIZATION_DIAGNOSTICS') != ''
+const retain_realm_module_helper = os.getenv('VOX_RETAIN_REALM_MODULE_HELPER') != ''
 
 pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 	$if !darwin {
@@ -35,7 +37,12 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 		runtime.require_javascript_value_context()!
 		if runtime.module_host_ != none { return error('A module loader is already installed') }
 		host.runtime = &runtime
-		host.helper_name = '__voxModuleImport_${uint(voidptr(host))}'
+		// Each realm keeps its own lexical binding and resolver closure, while
+		// its agent's VM can reuse compiled module source across navigations.
+		// A per-host suffix made otherwise identical transformed source differ
+		// on every new document and defeated that VM's source/code cache.
+		identity := if retain_realm_module_helper { voidptr(host) } else { C.JSContextGetGroup(runtime.context) }
+		host.helper_name = '__voxModuleImport_${uint(identity)}'
 		owner := voidptr(host)
 		fetcher := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &ModuleHost(owner) }
