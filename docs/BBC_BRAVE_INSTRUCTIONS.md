@@ -90,6 +90,27 @@ The legacy test correction stays; TLS reuse and its verified saving stay.
 [Focused stages](performance/bbc-cssom-handle-index-focus-20261106.json),
 [no-hit diagnostics and verified removal](performance/bbc-cssom-retirement-20261106.json).
 
+A separate **current-thread instruction derivative of the fresh V profile**
+retains V's nesting/self accounting and the exact sealed C engine bodies. Only
+observer clocks, row formatting and probe scaffolding change; reversing them
+recovers the complete base source byte for byte. The refined 31 scopes all
+execute; **700,418 reads** reconcile with two per completed call, with **zero
+faults and worker reads**. Original pixel/content/72-source/image/exit/PID-memory
+checks pass. The leading selected self rows include receiver calls
+(9,898,086,482), grid (1,799,246,908), inline-iterator construction
+(1,274,339,835), style computation (1,093,397,424), matching-rule collection
+(1,012,034,563) and timer disposal (999,862,882) instructions.
+
+These are instrumented selected intervals, not production shares: unselected
+native/JSC work and observer costs remain included, recursive inclusive intervals
+overlap, and work after PNG can appear. Consecutive-read calibration has a
+**1,735-instruction median**; nothing is subtracted or credited as a saving.
+The retained first 129-scope attempt performs 338 unnecessary worker entry reads
+and 5,540,691 total reads; the refinement gates entry reads before querying and
+disables 98 finer scopes. Both attempts and exact reused compiler inputs remain
+accounted for. No acceptance history or Brave-target change follows.
+[Counter calibration, whole-source proof and captures](performance/bbc-main-thread-v-profile-20261106.json).
+
 Retained attempt — **cohort 132**, literal V `-prod` / single-C-unit production
 `ec6ef38e95bb`, completes **seven alternating candidate/control/Brave triples**.
 All **21 attempts** remain retained; **20 capture audits pass**, while Brave
