@@ -15,6 +15,7 @@ import tempfile
 import uuid
 
 from browser_bundle_lease import publication_lease
+from bundle_macos_libraries import bundle_libraries, macho_files, verify_self_contained
 from rebuild_browser import production_environment
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -116,6 +117,9 @@ def deploy(root=ROOT, output=None, package_only=False):
             if bundle_identity(source) != source_identity or bundle_identity(app) != source_identity:
                 raise RuntimeError('The source bundle changed while staging the release')
 
+        # The build links vcpkg and Homebrew libraries by absolute build-machine
+        # paths. Carry them inside the release and drop those search paths.
+        bundle_libraries(app)
         verify_deployment_target(app)
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
         version = info['CFBundleShortVersionString']
@@ -139,13 +143,18 @@ def deploy(root=ROOT, output=None, package_only=False):
             run(['/usr/bin/strip', '-x', binary], root)
             sizes[binary.name] = dict(before=before, stripped=binary.stat().st_size)
 
-        # Stripping invalidates signatures. Retain ad-hoc runtime signatures and
-        # the JIT entitlement, without claiming a Developer ID or notarization.
+        # Stripping and bundling invalidate signatures. Retain ad-hoc runtime
+        # signatures and the JIT entitlement, without claiming a Developer ID or
+        # notarization. Nested libraries must be signed before the app.
+        for library in macho_files(app):
+            if library not in binaries:
+                run(['/usr/bin/codesign', '--force', '--sign', '-', library], root)
         run(['/usr/bin/codesign', '--force', '--sign', '-', '--entitlements',
              entitlements, binaries[1]], root)
         run(['/usr/bin/codesign', '--force', '--sign', '-', '--entitlements',
              entitlements, app], root)
         run(['/usr/bin/codesign', '--verify', '--deep', '--strict', app], root)
+        verify_self_contained(app)
         (payload / README).write_bytes((root / 'packaging' / README).read_bytes())
         (payload / 'Applications').symlink_to('/Applications', target_is_directory=True)
 
@@ -166,6 +175,7 @@ def deploy(root=ROOT, output=None, package_only=False):
                             packaged_executable_sha256=sha256(binaries[0]),
                             dmg_sha256=sha256(image), version=version, architecture=platform.machine(),
                             sizes=sizes, memory_reports=str(reports),
+                            bundled_libraries=sorted(path.name for path in (app / 'Contents/Frameworks').glob('*')),
                             signing='ad-hoc; no Developer ID certificate or Apple notarization')
             manifest_path = Path(image_directory) / 'manifest.json'
             manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')

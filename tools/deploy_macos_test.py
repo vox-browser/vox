@@ -120,6 +120,19 @@ class MacOSDeployTests(unittest.TestCase):
             self.assertEqual(deploy.bundle_identity(self.app), before)
             self.assertFalse(self.output.with_suffix('.dmg.json').exists())
 
+    def test_release_loading_libraries_from_outside_the_app_is_rejected(self):
+        staged = []
+        with patch.object(deploy, 'bundle_libraries', side_effect=staged.append), \
+                patch.object(deploy, 'verify_self_contained', side_effect=RuntimeError('not self-contained')):
+            with self.assertRaisesRegex(RuntimeError, 'not self-contained'):
+                self.package()
+        # Libraries are copied into the staged release, never the shared app.
+        self.assertEqual(len(staged), 1)
+        self.assertEqual(staged[0].name, 'Vox.app')
+        self.assertFalse(staged[0].is_relative_to(self.root))
+        self.assertFalse(any('hdiutil' in part for command in self.commands for part in command))
+        self.assertFalse(self.output.exists())
+
     def test_bundle_requiring_newer_than_macos_26_is_rejected(self):
         with patch.object(deploy, 'minimum_macos', return_value=(27, 2)):
             with self.assertRaisesRegex(RuntimeError, 'macOS 26'):
