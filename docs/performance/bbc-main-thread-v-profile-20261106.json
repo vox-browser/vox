@@ -1207,5 +1207,10 @@
   "target_met": false,
   "catalog_added": false,
   "qualification": "Derived from complete sealed fresh post-TLS V-profile C with only observer edits. Whole-source reversal recovers exact base. LiteralV-prod/C-O2/LTO/singleC/boundedprealloc and exact sealed objects retained.31prospectively selected main-thread current-thread instruction scopes execute;700418reads in this capture reconcile2percompletedcall with0fault/workerreads. Thread-counter nested/main-wait-versus-worker calibration passes; median1735consecutive-read instructions reveals material probe overhead. Self includes unselectednative/JSC andobserver work; recursiveinclusive overlaps; possiblepostPNGwork andreal-timer scheduling changes induced by profiling remain. No production CPUshares, totalinstructions, Brave ratio or acceptance/unprofiled credit. First129scope diagnostic retains338unnecessaryworkercounterreads despite disabledaccumulation and5.54Mtotalreads; finegrainarena observercost is large. It is preserved without treating rows as shares. Refinedentryclocks explicitlygatebeforequeryand98finegrain scopes are disabled. Originalpixels/content/72exactexternalscripts/images/normalexit/privatePIDadoption andunchangedusedinputs pass. Librarylease timestamps andactualusedinputchecks qualified explicitly.",
-  "unix": 1793955799.9833012
+  "unix": 1793955799.9833012,
+  "runtime_scope_correction": {
+    "evidence": "docs/performance/bbc-profile-jit-signing-20261106.json",
+    "original_profile_jit_enabled": false,
+    "qualification": "Standalone diagnostic was signed without production allow-jit entitlement. Actual original-profile smoke confirms JIT, Baseline and DFG disabled. Preserve all original metrics as interpreter-configuration diagnostics; they cannot explain production JIT cost. Corrected signature-only variants have identical loadable code/data sections and production warmup 10000, with actual baseline/DFG compilation before PNG. Signing correction earns no optimization credit. Unprofiled production cohorts remain valid."
+  }
 }

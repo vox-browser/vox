@@ -4141,5 +4141,10 @@
   "target_met": false,
   "catalog_added": false,
   "qualification": "Actual fresh post-cohort133 V -profile -profile-no-inline with literal V-prod/C-O2/LTO/singleC/boundedprealloc and129prospective coarse main-thread wall scopes. Standard V profiler TLS gate; other scopes constantfalse. All generated engine bodies normalize unchanged after observer edits. Complete sealed compiler exit0, unchanged sources at codegen and unchanged used native libraries/inputs at launch; originalpixels/content/72exactexternalscripts, actual mappedimages,normalexit andprivatePIDmemoryadoption pass. Self includes unselected native/JSC/waits/postPNG work; recursiveinclusive overlaps. This diagnostic follows verified TLS cache saving but supplies no before/after instruction credit, CPUshares, Brave ratio, catalogcredit or live-site claim. Standalone inherited coalition markers are not acceptance counts",
-  "unix": 1793952247.246871
+  "unix": 1793952247.246871,
+  "runtime_scope_correction": {
+    "evidence": "docs/performance/bbc-profile-jit-signing-20261106.json",
+    "original_profile_jit_enabled": false,
+    "qualification": "Standalone diagnostic was signed without production allow-jit entitlement. Actual original-profile smoke confirms JIT, Baseline and DFG disabled. Preserve all original metrics as interpreter-configuration diagnostics; they cannot explain production JIT cost. Corrected signature-only variants have identical loadable code/data sections and production warmup 10000, with actual baseline/DFG compilation before PNG. Signing correction earns no optimization credit. Unprofiled production cohorts remain valid."
+  }
 }

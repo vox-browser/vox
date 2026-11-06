@@ -1,5 +1,32 @@
 # BBC homepage instruction comparison
 
+**Profiling scope correction:** the standalone wall and current-thread profile
+executables below were signed without production's existing `allow-jit`
+entitlement. An actual runtime option dump confirms JIT, baseline and DFG were
+disabled in the original profile. Preserve those numbers as interpreter
+diagnostics; they do not represent production JIT costs. Production has carried
+the entitlement since `bac46d73e`; unprofiled cohort 133 and its TLS saving remain
+valid. Corrected signature-only variants preserve every loadable code/data
+section, retain production's warmup threshold of 10,000, and pass the original
+pixel/content/72-source, mapped-image, exit and private-PID adoption checks.
+They show 737 and 749 compilation reports before PNG, including known browser
+host functions using baseline and DFG compilation. This correction earns no
+engine optimization credit.
+
+The corrected 31-scope current-thread profile records 677,660 reads, zero faults
+and zero worker reads. Leading selected self intervals include receiver calls
+(2,119,556,052), grid (1,763,178,908), timer disposal (1,121,808,330), inline-iterator
+construction (1,084,375,445), style computation (1,081,804,776) and matching rules
+(1,002,790,004) instructions. The corrected wall profile executes 123 scopes;
+receiver calls (212.696 ms), grid (134.923 ms) and inline-iterator construction
+(85.388 ms) lead its selected self rows. These include observer/unselected
+native/JSC work and potentially work after PNG, with overlapping recursive
+inclusive intervals; they establish neither production shares nor savings.
+A separate 400-case nonwindowed CF timer microdiagnostic finds identical median
+disposal counts (12,521) for repeat intervals of one microsecond and zero. It
+does not represent the native app's run-loop modes or BBC's whole cost.
+[Signing proof, corrected profiles and retained native probes](performance/bbc-profile-jit-signing-20261106.json).
+
 
 The verified TLS 1.2 session-cache change (`94f275b6c`; isolated comparison
 control `8d334abb2`) passes **84 explicit C-backend HTTP executions**, 14 cases
@@ -45,7 +72,7 @@ reduction, with existing rendering/script limitations and host contention
 recorded; it does not establish a live-site, rendering-time or scrolling result.
 [All attempts, native checks and broad verification](performance/bbc-tls12-session-cohort133-20261106.json).
 
-A fresh post-cohort-133 **`v -profile -profile-no-inline` diagnostic** uses
+A retained post-cohort-133 **interpreter-only `v -profile -profile-no-inline` diagnostic** uses
 literal V `-prod`, C-O2/LTO, one C unit and bounded preallocation. Of 129
 prospectively selected main-thread scopes, 123 execute. The leading selected
 wall-self rows are object-receiver calls (543.200 ms / 4,789 calls), uncached
@@ -90,7 +117,7 @@ The legacy test correction stays; TLS reuse and its verified saving stay.
 [Focused stages](performance/bbc-cssom-handle-index-focus-20261106.json),
 [no-hit diagnostics and verified removal](performance/bbc-cssom-retirement-20261106.json).
 
-A separate **current-thread instruction derivative of the fresh V profile**
+A retained **interpreter-only current-thread instruction derivative of that V profile**
 retains V's nesting/self accounting and the exact sealed C engine bodies. Only
 observer clocks, row formatting and probe scaffolding change; reversing them
 recovers the complete base source byte for byte. The refined 31 scopes all
