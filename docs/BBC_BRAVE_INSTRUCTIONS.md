@@ -76,6 +76,19 @@ the actual fresh `v -profile` run without changing cipher, trust, workload,
 references, counters or the acceptance history.
 [TLS diagnostic and complete compiler inputs](performance/bbc-tls-instruction-diagnostic-20261106.json).
 
+An isolated verified TLS 1.2 API fixture completes eight fresh connections in
+each arm. The server independently observes zero control resumptions and seven
+candidate resumptions; client body, trust, hostname and ALPN checks pass.
+After each arm's initial connection, median current-thread handshake deltas are
+**14,568,390 control** and **516,519 resumed** instructions. These include query
+overhead and establish no BBC saving or production cache correctness. The whole
+two-version driver exits 1: the Python server uses LibreSSL 2.8.3 without TLS
+1.3, and rejects TLS 1.3 context configuration before any corresponding client
+launch. An earlier ambiguous object-hash preparation also rejects before
+compilation. Both failures and all completed TLS 1.2 clients remain retained;
+TLS 1.3 is untested. No transport code, workload or acceptance history changes.
+[Isolated TLS 1.2 API evidence](performance/bbc-tls12-session-api-20261106.json).
+
 The fresh `v -profile` timer registration/removal lead now has a bounded native
 carrier experiment (`1eca8ed5d`, main-thread guard `ea62175ec`; tooling
 `5ee30c331`). At most 16 inactive zero-delay registrations retain native records

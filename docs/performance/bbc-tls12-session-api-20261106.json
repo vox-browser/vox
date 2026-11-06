@@ -1,0 +1,392 @@
+{
+  "status": "Verified isolated TLS1.2 API resumption; full two-version driver incomplete because server lacks TLS1.3. No engine change or performance credit.",
+  "summary": {
+    "tls12_api_checks_passed": true,
+    "full_requested_protocol_completed": false,
+    "tls13_status": "Unexecuted: this Python server uses LibreSSL2.8.3 without TLS1.3. Its TLS1.3 context configuration raises ValueError before any TLS1.3 client launches. Whole refined driver exits1; no whole-run pass claimed.",
+    "results": [
+      {
+        "name": "tls12-control",
+        "exit": 0,
+        "rows": [
+          {
+            "trial": 0,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 16378055
+          },
+          {
+            "trial": 1,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 15601754
+          },
+          {
+            "trial": 2,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 15217778
+          },
+          {
+            "trial": 3,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 14435278
+          },
+          {
+            "trial": 4,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 14568390
+          },
+          {
+            "trial": 5,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 14341103
+          },
+          {
+            "trial": 6,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 14314685
+          },
+          {
+            "trial": 7,
+            "reuse": 0,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 14580779
+          }
+        ],
+        "server": [
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          }
+        ]
+      },
+      {
+        "name": "tls12-reuse",
+        "exit": 0,
+        "rows": [
+          {
+            "trial": 0,
+            "reuse": 1,
+            "loaded": 0,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 16286859
+          },
+          {
+            "trial": 1,
+            "reuse": 1,
+            "loaded": 1,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 516519
+          },
+          {
+            "trial": 2,
+            "reuse": 1,
+            "loaded": 1,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 521536
+          },
+          {
+            "trial": 3,
+            "reuse": 1,
+            "loaded": 1,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 520696
+          },
+          {
+            "trial": 4,
+            "reuse": 1,
+            "loaded": 1,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 513049
+          },
+          {
+            "trial": 5,
+            "reuse": 1,
+            "loaded": 1,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 520394
+          },
+          {
+            "trial": 6,
+            "reuse": 1,
+            "loaded": 1,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 512295
+          },
+          {
+            "trial": 7,
+            "reuse": 1,
+            "loaded": 1,
+            "version": "TLSv1.2",
+            "cipher": "TLS-ECDHE-RSA-WITH-CHACHA20-POLY1305-SHA256",
+            "alpn": "http/1.1",
+            "verified": true,
+            "ticket_exports": 0,
+            "handshake_instructions": 512133
+          }
+        ],
+        "server": [
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": false
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": true
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": true
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": true
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": true
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": true
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": true
+          },
+          {
+            "path": "/same",
+            "host": "localhost",
+            "version": "TLSv1.2",
+            "session_reused": true
+          }
+        ]
+      }
+    ],
+    "inputs_unchanged": true,
+    "protocol": {
+      "diagnostic_only": true,
+      "performance_credit": 0,
+      "purpose": "Isolated verified TLS1.2/TLS1.3 session API feasibility, not a BBC workload or acceptance count. Eight fresh loopback TLS connections per arm with identical request/response, certificate/trust/ALPN and chosen protocol. Python server independently records session_reused; current-thread handshake counters include observer overhead. No production transport, fixture, counter endpoint, cipher preference, trust, cache or author-script policy changes.",
+      "production_link_objects": {
+        "c_compile": {
+          "mode": "single",
+          "requested": "single",
+          "v_prod": true
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "3c2d2fc893e3730527c7a4057f68ad791fa46a355db145be5e362d42e1d8adcc",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-080955-cdc5ca19/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "70ae3d8f536aaff0b91612e37c847d96c5070c7712dd1a850873ed4bf01ab5c7",
+          "dirty": true,
+          "head": "06f80835bbfa397defa3a75e1117322f6ca6b91c",
+          "repository_sha256": "ad65e0dc6858daa42dcd93946d24d244671998054d3b5d0a885ba20c91268464"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "b5a3bd8b107b482088dc3a7e99efe048f6c45d5b1b8faae4903d339bbe70a80d",
+          "dirty": true,
+          "head": "1a851c5cc60966baba042b7c0f09262cc305f9d4",
+          "repository_sha256": "747db1d06bef43c307ee0790cddcb067777de19e785e8b745f833134fd4c5fd3"
+        },
+        "request": {
+          "c_mode": "single",
+          "head": "06f80835bbfa397defa3a75e1117322f6ca6b91c",
+          "id": "7b9ae65532ec43768b51b4cdb3c69201",
+          "v_prod": true
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "70ae3d8f536aaff0b91612e37c847d96c5070c7712dd1a850873ed4bf01ab5c7",
+          "dirty": true,
+          "head": "06f80835bbfa397defa3a75e1117322f6ca6b91c",
+          "repository_sha256": "202bacd74d496d7d534613712dc6da1ad8a7355d5412b72ae1ba173d6be533b4"
+        }
+      },
+      "object_count": 112,
+      "openssl_server": "LibreSSL 2.8.3",
+      "host_before": {
+        "unix": 1793944662.369256,
+        "cpu_count": 18,
+        "load_average": [
+          8.416015625,
+          16.49267578125,
+          15.17822265625
+        ]
+      }
+    },
+    "medians_after_initial_connection": {
+      "tls12-control": 14568390,
+      "tls12-reuse": 516519
+    },
+    "performance_credit": 0,
+    "target_met": false,
+    "catalog_added": false,
+    "qualification": "Isolated verified TLS1.2 API feasibility: eight fresh connections per arm, identical requests/trust/certificate/protocol/ALPN/response. Independent server witnesses no resumption in control and seven resumptions in candidate; all client handshakes/body checks succeed and linked frozen objects/current headers stay pinned. Current-thread handshake deltas include query overhead, are microdiagnostic and establish no BBC saving/process share/Brave gate or production cache correctness/eligibility. No engine implementation is added. First object-selection preparation rejects ambiguous equal-hash objects before compile/client launch; refined selection uses exact source-object basenames and hashes. Both failures and every completed TLS1.2 client are retained. TLS1.3 is explicitly unsupported by this server, not treated as tested or failed client behavior. Acceptance history/broad cadence unchanged.",
+    "unix": 1793944921.505197
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-tls12-session-api-20261106.tar.gz",
+    "bytes": 67784,
+    "sha256": "9df33d43c79401aa8c5bbaf5e648e3db0f02dcb0b43d22acf8bbe5f79c756c8b",
+    "physical_members": 29,
+    "file_paths": 32,
+    "all_file_paths_verified": true
+  },
+  "link_object_archive": "docs/performance/raw/bbc-tls-instruction-compiler-inputs-20261106.tar.gz",
+  "performance_credit": 0,
+  "target_met": false,
+  "catalog_added": false,
+  "history": {
+    "last_cohort": 132,
+    "measured_cohorts": 126,
+    "acceptance_browser_attempts": 2713
+  },
+  "qualification": "Isolated verified TLS1.2 API feasibility: eight fresh connections per arm, identical requests/trust/certificate/protocol/ALPN/response. Independent server witnesses no resumption in control and seven resumptions in candidate; all client handshakes/body checks succeed and linked frozen objects/current headers stay pinned. Current-thread handshake deltas include query overhead, are microdiagnostic and establish no BBC saving/process share/Brave gate or production cache correctness/eligibility. No engine implementation is added. First object-selection preparation rejects ambiguous equal-hash objects before compile/client launch; refined selection uses exact source-object basenames and hashes. Both failures and every completed TLS1.2 client are retained. TLS1.3 is explicitly unsupported by this server, not treated as tested or failed client behavior. Acceptance history/broad cadence unchanged. Exact linked frozen objects are retained in the linked earlier compiler archive; this archive retains their pins and the complete preprocessed client compiler input. Generated fixture private key is excluded; public certificate and generation command remain.",
+  "unix": 1793945092.0506508,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-tls-session-api-20261106-2000/archive-evidence.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 3440640,
+    "elapsed_seconds": 0.17299874999999998,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
