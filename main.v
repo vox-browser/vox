@@ -441,6 +441,7 @@ mut:
 	paint_tree_storage                  voidptr = unsafe { nil }
 	paint_commands                      []layout.PaintCommand
 	chromium_raster_plan                layout.ChromiumRasterLayerPlan
+	chromium_background_uses_local_origin bool
 	// Content identities of the frame whose pixels the scroll raster retains.
 	scroll_raster_keys                  ScrollRasterKeyFrame
 	stationary_media_revision_owner     u64
@@ -7079,7 +7080,8 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				device_clip := pixel_snapped_background_bitmap_rect(original_clip.translated(offset))
 					.translated(painting.Point{-offset.x, -offset.y})
 				$if macos {
-					local := chromium_background_local_origin(destination, source, device_clip, matrix, image.width, image.height)
+					local := chromium_background_local_origin(destination, source, device_clip, matrix, image.width, image.height,
+						app.chromium_background_uses_local_origin)
 					C.native_draw_image_part_transformed_background(image, local.destination_x, local.destination_y,
 						f32(destination.width), f32(destination.height), f32(source.x), f32(source.y),
 						f32(source.width), f32(source.height), local.clip_x, local.clip_y,
@@ -7819,6 +7821,7 @@ fn (mut app BrowserApp) draw() {
 					}
 					C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, chromium_min_gpu_raster_tile_rows)
 					C.native_set_chromium_raster_layer(0, 0, 1)
+					app.chromium_background_uses_local_origin = false
 					C.native_end_font_compositing_layer()
 				} else if app.ctx.native_rendering
 					&& app.paint_commands_have_backdrop_filter {

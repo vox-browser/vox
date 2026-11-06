@@ -15,11 +15,12 @@ struct ChromiumBackgroundLocalOrigin {
 // the canvas. Keeping large destination coordinates in the image rectangle
 // instead changes the GPU's texture-coordinate rounding.
 fn chromium_background_local_origin(destination painting.Rect, source painting.Rect,
-	clip painting.Rect, matrix [6]f64, natural_width int, natural_height int) ChromiumBackgroundLocalOrigin {
+	clip painting.Rect, matrix [6]f64, natural_width int, natural_height int,
+	independent_raster bool) ChromiumBackgroundLocalOrigin {
 	x := f32(destination.x)
 	y := f32(destination.y)
-	if source.x == 0 && source.y == 0 && source.width == f64(natural_width)
-		&& source.height == f64(natural_height) {
+	if !independent_raster || (source.x == 0 && source.y == 0 && source.width == f64(natural_width)
+		&& source.height == f64(natural_height)) {
 		return ChromiumBackgroundLocalOrigin{x, y, f32(clip.x), f32(clip.y), f32(matrix[4]), f32(matrix[5])}
 	}
 	return ChromiumBackgroundLocalOrigin{

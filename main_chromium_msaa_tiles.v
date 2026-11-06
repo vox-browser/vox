@@ -495,6 +495,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	stage := processmetrics.begin_instruction_stage('raster_tile_setup')
 	defer { stage.finish() }
 	$if macos {
+		app.chromium_background_uses_local_origin = false
 		app.begin_chromium_image_decode_frame()
 		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
 			for index, command in app.paint_commands {
@@ -532,6 +533,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 			app.chromium_msaa_storage.raster_parents[index]
 		} else { index }
 		layer := app.chromium_raster_plan.layers[raster_index]
+		app.chromium_background_uses_local_origin = raster_index > 0 && !layer.legacy_raster
 		scale := C.native_display_device_pixel_ratio()
 		x := if raster_index == 0 || layer.legacy_raster {
 			0.0
