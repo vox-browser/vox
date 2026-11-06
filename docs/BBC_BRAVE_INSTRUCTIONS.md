@@ -11,7 +11,9 @@ improvements and four regressions. The conservative control ratio **1.08145**
 fails; the strict Brave gate also fails `274205269150 > 156672214677`
 (ratio **1.57517**). The experiment and control are removed (`f810ad903`,
 `7d04ac9cf`) after **63 restoration executions** and **347 tooling tests** pass.
-Native retirement confirmation on a subsequent completed bundle remains pending.
+Native retirement is confirmed on completed bundle `6a00ce4a40d2`: the complete
+producer lacks the pool, both original-reference captures pass, and the SVG
+guard is exact. [Rollback validation](performance/bbc-native-timer-retirement-native-20261106.json).
 No saving or catalog credit is claimed.
 
 Native candidate/control captures prove candidate-only reuse before encoded PNG,

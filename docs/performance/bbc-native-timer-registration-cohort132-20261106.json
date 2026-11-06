@@ -999,7 +999,7 @@
   "broad_run": false,
   "broad_qualification": "Negative full/partial matched median point triggers no broad run. The798case prospective set is unexecuted. Last actual771unique/mode,766passes/fiveknownfailures remain without full-suite pass or cadence reset.",
   "positioned_workspace_retirement_confirmed": true,
-  "native_timer_retirement_confirmation_pending": true,
+  "native_timer_retirement_confirmation_pending": false,
   "qualification": "Same pinned literalV-prod/singleC executable in both Vox arms; only native zero-delay registration allocation policy differs. Candidate-only actual marker beforePNG, exact original nativepixels/content/72external sourcebyte evaluations/mappedimages/ownership/exits plusSVGguard pass. All changed V/native bodies andnative context layout match final focused inputs. Initial bundle lacks final recycling guard and is rejected before browser launch. The complete producer also proves positioned-inline experiment absent and its restored wrapper exact to focused C; both native captures validate that retirement. All21 measured attempts retained; Brave pair6 differs from unchanged reference; three paired improvements andfourregressions, negative2968857medianpoint; no saving credited. Same609responses, originalauthorpolicy/frozenJSclock,1024x768CSS/DPR2,privateprofiles/caches,retainedOScaches,readiness/visibleimages/2secssettle andcommon3rasterpolicies/reference/counter/thresholds. Exclusivecoalitioncreation\u2192encodedPNG includesstartup/window/target/exitedownedaggregates/allowedservices,Voxbeforefilewriting/BraveCDPdeliveryincluded; audit/teardownafter; GPU/outsideexcluded. KnownpartialDOM/script/font/paintlimits,unsupportedperformance.measure and82.7154%crossbrowserpixel difference remain;72sourceevals do notprovefullasyncconformance. Hostload/buildcontention retained,no robustsaving/live-site/render-only/FPS/catalogcredit orcrossbuildattribution. Pool removed with63restorationexecutions and347tooltests; subsequent native retirement confirmation pending.",
   "unix": 1793944219.728191,
   "archive_guard": {
@@ -1015,5 +1015,10 @@
     "observed_peak_rss_bytes": 30326784,
     "elapsed_seconds": 6.429611041,
     "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "native_timer_retirement_confirmation": {
+    "passed": true,
+    "evidence": "docs/performance/bbc-native-timer-retirement-native-20261106.json",
+    "production_executable_sha256": "6a00ce4a40d25335909588384c0f839cee6d33ce0dfee33c7db2b03332ec405e"
   }
 }
