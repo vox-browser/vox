@@ -225,7 +225,7 @@ if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/includ
         -x none "$snapshot_deflate/snapshot-build/libdeflate.a" \
         "-Wl,-unexported_symbol,_libdeflate_*" \
         -L"$skia_root/lib" -lskia \
-        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal -framework IOSurface \
         -Wl,-rpath,"$skia_root/lib" \
         -Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib \
         -o "$bridge_library"
