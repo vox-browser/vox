@@ -7,7 +7,7 @@ from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
 from wpt_compare import (WARMUP, Limits, Runner, RunAborted, Server, Session, discover_tests,
-                         make_handler, substitute, summarize, upstream_testharness)
+                         group_rss, make_handler, substitute, summarize, upstream_testharness)
 
 HARNESS = ('var settings = { output: !(globalThis.internals && globalThis.internals.headless),\n'
            'harness_timeout:{ "normal":150000, "long":300000 } };\n'
@@ -126,6 +126,13 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(summary['browsers']['vox']['outcomes'], dict(COMPLETE=3, NO_HARNESS=1))
         self.assertEqual(summary['browsers']['brave']['subtest_pass_rate'], 1.0)
         self.assertEqual(summary['launches'], dict(vox=2, brave=1))
+
+
+class MemoryTests(unittest.TestCase):
+    def test_group_rss_sums_only_the_browser_process_group(self):
+        output = '  412  1000\n  412     24\n 4120  9999\n   41  7777\n'
+        self.assertEqual(group_rss(output, 412), 1024 * 1024)
+        self.assertEqual(group_rss(output, 9), 0)
 
 
 class ServerTests(unittest.TestCase):

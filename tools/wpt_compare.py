@@ -20,8 +20,10 @@ chunk after an unrecorded warm-up page. Chunks alternate the browser that runs
 first. A test whose document is never requested (NO_DOCUMENT), whose harness
 never starts (NO_HARNESS: no testharnessreport.js request and no alive ping
 from a test still running after 500 ms), that does not report by its harness
-timeout plus a grace period (HARD_TIMEOUT), or whose browser exits (CRASH) is
-recorded as such and the browser is relaunched at the next test. Per-test time
+timeout plus a grace period (HARD_TIMEOUT), whose browser exits (CRASH) or
+whose browser's process group exceeds --browser-memory-gib RSS (MEMORY_LIMIT,
+sampled every 250 ms) is recorded as such and the browser is relaunched at the
+next test. Per-test time
 is measured by the server from the test document request to its result post.
 The canonical Vox bundle is held under its shared publication lease.
 """
@@ -212,11 +214,12 @@ def substitute(body, host, port):
 
 
 class Limits:
-    def __init__(self, startup=30, navigation=10, harness_start=5, grace=10):
+    def __init__(self, startup=30, navigation=10, harness_start=5, grace=10, memory_bytes=4 << 30):
         self.startup = startup
         self.navigation = navigation
         self.harness_start = harness_start
         self.grace = grace
+        self.memory_bytes = memory_bytes
 
 
 class Session:
@@ -494,6 +497,21 @@ def brave_launch(executable, profile, url, width, height):
     return command, clean_environment()
 
 
+def group_rss(ps_output, group):
+    """Sum the RSS bytes of one process group from `ps -axo pgid=,rss=` output."""
+    total = 0
+    for line in ps_output.splitlines():
+        fields = line.split()
+        if len(fields) == 2 and fields[0] == str(group):
+            total += int(fields[1]) * 1024
+    return total
+
+
+def browser_rss(process):
+    output = subprocess.run(['ps', '-axo', 'pgid=,rss='], capture_output=True, text=True).stdout
+    return group_rss(output, process.pid)
+
+
 def stop_process_group(process, marker):
     if process.poll() is None:
         try:
@@ -536,10 +554,11 @@ def run_chunk(runner, browser, executable, digest, tests, records, base_url, out
         runner.begin(session)
         process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    stdin=subprocess.DEVNULL, start_new_session=True)
-        next_start = len(tests)
+        next_start = None
+        next_sample = time.monotonic()
         try:
-            with runner.condition:
-                while True:
+            while next_start is None:
+                with runner.condition:
                     if session.finished:
                         break
                     deadline, outcome = session.deadline(limits)
@@ -551,6 +570,15 @@ def run_chunk(runner, browser, executable, digest, tests, records, base_url, out
                             session, 'CRASH' if process.poll() is not None else outcome)
                         break
                     runner.condition.wait(min(remaining, 0.25))
+                # A runaway page must not reach the memory guard, which would
+                # stop the whole run. Sample outside the lock so that requests
+                # being timed never wait for ps.
+                if limits.memory_bytes and time.monotonic() >= next_sample:
+                    next_sample = time.monotonic() + 0.25
+                    if browser_rss(process) > limits.memory_bytes:
+                        next_start = runner.abandon(session, 'MEMORY_LIMIT')
+            if next_start is None:
+                next_start = len(tests)
         finally:
             stop_process_group(process, str(profile))
             log.close()
@@ -678,6 +706,7 @@ def format_report(summary, identity):
     row('Harness never started', lambda item: item.get('outcomes', {}).get('NO_HARNESS', 0))
     row('No report after harness timeout', lambda item: item.get('outcomes', {}).get('HARD_TIMEOUT', 0))
     row('Browser exited', lambda item: item.get('outcomes', {}).get('CRASH', 0))
+    row('Browser over memory limit', lambda item: item.get('outcomes', {}).get('MEMORY_LIMIT', 0))
     row('Tests with every subtest passing', lambda item: item.get('tests_all_pass', 0))
     row('Subtests passing', lambda item: f"{item.get('subtests', {}).get('PASS', 0)} / {item.get('subtest_total', 0)}")
     row('Subtest pass rate', lambda item: f"{100 * (item.get('subtest_pass_rate') or 0):.1f}%")
@@ -737,6 +766,8 @@ def main():
                         help='Wait for the harness to start after the document')
     parser.add_argument('--grace-seconds', type=float, default=10,
                         help='Wait beyond the harness timeout for its report')
+    parser.add_argument('--browser-memory-gib', type=float, default=4,
+                        help='Stop a browser whose process group exceeds this RSS')
     args = parser.parse_args()
     browsers = [name.strip() for name in args.browsers.split(',') if name.strip()]
     if not browsers or any(name not in ('vox', 'brave') for name in browsers):
@@ -785,9 +816,10 @@ def run(args, tests, browsers, executables):
         if 'vox' in browsers and (REPO / 'Build' / 'production-build' / 'latest.json').is_file() else None,
         pinned=pinned, width=args.width, height=args.height, chunk_size=args.chunk_size,
         limits=dict(startup=args.startup_seconds, navigation=args.navigation_seconds,
-                    harness_start=args.harness_start_seconds, grace=args.grace_seconds))
+                    harness_start=args.harness_start_seconds, grace=args.grace_seconds,
+                    browser_memory_gib=args.browser_memory_gib))
     limits = Limits(args.startup_seconds, args.navigation_seconds, args.harness_start_seconds,
-                    args.grace_seconds)
+                    args.grace_seconds, int(args.browser_memory_gib * (1 << 30)))
 
     request_log = open(args.output / 'requests.log', 'w', buffering=1)
     runner = Runner(request_log)
