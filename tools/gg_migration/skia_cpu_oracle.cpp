@@ -168,3 +168,21 @@ ORACLE void oracle_fill_path(uint8_t* pixels, int const* a, float const* f)
     paint.setColor(SkColor(uint32_t(a[4])));
     canvas->drawPath(builder.detach(), paint);
 }
+
+// The production Canvas2D raster path (skia/canvas_raster.cpp).
+#include "../../skia/canvas_raster.cpp"
+
+// arguments: width, height, pitch, alpha type, even-odd, segment count,
+// SkColor. floats: the transform, then 12 floats per segment.
+ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
+{
+    VoxCanvasCommand command {};
+    command.operation = 0;
+    command.path = { f + 6, a[5], a[4] };
+    command.style.kind = 0;
+    command.style.color = uint32_t(a[6]);
+    for (int i = 0; i < 6; ++i)
+        command.transform[i] = f[i];
+    command.global_alpha = 1;
+    return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
+}

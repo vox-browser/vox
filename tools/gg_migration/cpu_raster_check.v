@@ -19,11 +19,14 @@ type OracleBitmapExport = fn (pixels &u8, output &u8, values &i32) i32
 
 type OracleFillPath = fn (pixels &u8, values &i32, floats &f32)
 
+type OracleCanvasFill = fn (pixels &u8, values &i32, floats &f32) i32
+
 struct Oracle {
 	read_pixels            OracleReadPixels          = unsafe { nil }
 	font_typeface_is_valid OracleFontTypefaceIsValid = unsafe { nil }
 	bitmap_export          OracleBitmapExport        = unsafe { nil }
 	fill_path              OracleFillPath            = unsafe { nil }
+	canvas_fill            OracleCanvasFill          = unsafe { nil }
 }
 
 fn load_oracle(path string) Oracle {
@@ -41,6 +44,7 @@ fn load_oracle(path string) Oracle {
 			OracleBitmapExport(oracle_symbol(library, 'oracle_bitmap_export'))
 		}
 		fill_path:              unsafe { OracleFillPath(oracle_symbol(library, 'oracle_fill_path')) }
+		canvas_fill:            unsafe { OracleCanvasFill(oracle_symbol(library, 'oracle_canvas_fill')) }
 	}
 }
 
@@ -587,6 +591,65 @@ fn check_fill_paths(oracle Oracle, count int) !(int, int) {
 	return count, declined
 }
 
+// Canvas2D solid fills through the production vox_skia_canvas_path(),
+// premultiplied or unpremultiplied bitmaps with padded rows.
+fn check_canvas_fills(oracle Oracle, count int) !int {
+	for i in 0 .. count {
+		width := rand.intn(120) or { 0 } + 1
+		height := rand.intn(120) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		mut segments := []f32{}
+		for op in random_path_ops(width, height) {
+			match op.kind {
+				0 { segments << [f32(0), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+				1 { segments << [f32(1), op.v[0], op.v[1], 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+				2, 3 {
+					segments << [f32(2), op.v[2], op.v[3], op.v[0], op.v[1], 0, 0, 0, 0, 0, 0,
+						0]
+				}
+				4 {
+					segments << [f32(3), op.v[4], op.v[5], op.v[0], op.v[1], op.v[2], op.v[3],
+						0, 0, 0, 0, 0]
+				}
+				else { segments << [f32(5), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+			}
+		}
+		even_odd := rand.intn(2) or { 0 } == 0
+		m := random_matrix()
+		transform := [m.a, m.b, m.c, m.d, m.e, m.f]!
+		color := random_color()
+		mut initial := random_bytes(pitch * height)
+		if alpha_type == 2 {
+			premultiplied := random_premultiplied(width * height)
+			for y in 0 .. height {
+				for x in 0 .. width * 4 {
+					initial[y * pitch + x] = premultiplied[y * width * 4 + x]
+				}
+			}
+		}
+		mut expected := initial.clone()
+		mut floats := transform[..].clone()
+		floats << segments
+		values := [i32(width), height, pitch, alpha_type, int(even_odd), segments.len / 12, i32(color)]
+		if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
+			return error('canvas ${i}: the Skia canvas path failed')
+		}
+		mut actual := initial.clone()
+		path := cpuraster.canvas_path(segments, even_odd) or { return error('canvas ${i}: path') }
+		if !cpuraster.fill_canvas_path(mut actual, width, height, pitch, alpha_type, path,
+			transform, color) {
+			return error('canvas ${i}: cpuraster declined')
+		}
+		for j in 0 .. expected.len {
+			if expected[j] != actual[j] {
+				return error('canvas ${i}: byte ${j} is ${actual[j]}, Skia wrote ${expected[j]} (${width}x${height} pitch ${pitch} alpha ${alpha_type})')
+			}
+		}
+	}
+	return count
+}
+
 fn main() {
 	if os.args.len < 2 {
 		eprintln('usage: cpu_raster_check SKIA_CPU_ORACLE [COUNT] [SEED]')
@@ -625,4 +688,9 @@ fn main() {
 		exit(1)
 	}
 	println('path fills: ${fills - declined} exact, ${declined} declined')
+	canvas := check_canvas_fills(oracle, count / 4) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('canvas fills: ${canvas} exact')
 }
