@@ -7695,3 +7695,22 @@ Two exploratory `v -profile` intrinsic-width fixture compiles fail embedded-asse
 typechecking before execution. They establish no width-equivalence or profiling
 result and no instruction credit; the earlier successful full-browser profile
 remains independent. [Rejected profile attempts](performance/bbc-intrinsic-clamp-width-rejected-profile-20261106.json).
+
+A **positioned-inline allocation workspace** (`ddd9ea7d7`, control `8f9fb460a`)
+passes **240 focused executions**: 40 cases in both arms across all three memory
+modes, plus **348 instruction-tool tests**. Six new cases cover exact full-layout
+LTR/RTL geometry and static rectangles, removed empty-line markers, opaque
+absolute subtrees, nested all-auto relative metrics, old borrowed output after
+live text changes, exclusions and retained-allocation bounds. The full algorithm
+still runs, with unchanged geometry-cache eligibility. The new closure permits
+all-auto relative inlines and non-fixed absolute HTML boxes whose descendants
+the iterator skips, exporting only owned lines/static markers and retained
+UsedValues rectangles. Other shifted/floating/fixed/atomic/SVG/split dependencies
+stay on the ordinary path. The initial helper compile used a missing accessor;
+its correction and all failed receipts remain retained. Native production
+`fe2d2e8e8f79` matches the tested bodies and shows candidate-only entry before PNG;
+both captures pass original pixels/content, 72 external source evaluations,
+mapped-image/ownership audits and normal exits, and SVG source-switch is exact.
+Instruction cohort 131 is prepared but has not launched; the earlier clamped plan
+consumed no acceptance ID or sample. No saving or catalog credit is claimed.
+[Positioned workspace focused evidence](performance/bbc-positioned-inline-workspace-focus-20261106.json).
