@@ -48,6 +48,10 @@ def main():
         (output/'driver.log').write_bytes(captured)
         if process.returncode:
             raise RuntimeError('Precise scroll diagnostic failed')
+        evidence=json.loads((output/'run.json').read_text())
+        evidence['diagnostic_only']=True
+        evidence['external_sampling']=str(output/'sampling.json')
+        (output/'run.json').write_text(json.dumps(evidence,indent=2)+'\n')
         print('Completed native scroll sample:', output, flush=True)
     finally:
         if process.poll() is None:

@@ -70,6 +70,17 @@ class PreciseScrollTests(unittest.TestCase):
     def test_fault_capture_is_explicitly_marked_as_diagnostic(self):
         self.check_isolated_launch(False, capture_faults=True)
 
+    def test_native_pixel_checks_and_logging_are_marked_as_diagnostic(self):
+        for name in ['VOX_GPU_CANVAS_VERIFY', 'VOX_GPU_CANVAS_PRESENT_VERIFY',
+                     'VOX_GPU_CANVAS_COMMAND_TIMES', 'VOX_IMAGE_UPLOAD_DIAGNOSTICS']:
+            with self.subTest(name=name):
+                self.check_isolated_launch(False, diagnostic_environment={name: '1'})
+
+    def test_ordinary_gpu_options_remain_unprofiled(self):
+        self.assertEqual(measure_precise_scroll.native_diagnostic_environment({
+            'VOX_GPU_TILE_COMPOSITOR': '1', 'VOX_IMMUTABLE_IMAGE_UPLOADS': '1',
+            'VOX_PROFILE_DIR': '/private/profile', 'VOX_PRECISE_CAPTURE_FAULTS': ''}), [])
+
     def test_fixture_profile_cannot_silently_disable_replay_proxy(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "measurement"
@@ -102,7 +113,8 @@ class PreciseScrollTests(unittest.TestCase):
 
     def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False,
                               capture_faults=False, mutate_worker=False, mutate_packaged=False,
-                              image_bridge=False, mutate_image=False, disable_gpu_canvas=False):
+                              image_bridge=False, mutate_image=False, disable_gpu_canvas=False,
+                              diagnostic_environment=None):
         seeded = {}
         if allow_fixture_navigation:
             seeded["allow_any_site"] = True
@@ -190,6 +202,8 @@ class PreciseScrollTests(unittest.TestCase):
                 arguments.append("--capture-faults")
             if image_bridge:
                 arguments.extend(['--image-renderer-bridge', str(image_renderer)])
+            for name,value in (diagnostic_environment or {}).items():
+                arguments.extend(['--env',name+'='+value])
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
                     mock.patch.dict(measure_precise_scroll.os.environ,
@@ -223,7 +237,7 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertEqual(evidence['image_renderer_bridge'], str(image_renderer))
                 self.assertEqual(evidence['source_and_binary_sha256'][str(image_renderer)],
                                  hashlib.sha256(b'fixture image renderer').hexdigest())
-            self.assertEqual(evidence["diagnostic_only"], v_profile_reset or capture_faults)
+            self.assertEqual(evidence["diagnostic_only"], bool(v_profile_reset or capture_faults or diagnostic_environment))
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
             self.assertEqual(evidence["source_and_binary_sha256"][str(header)],
                              hashlib.sha256(header.read_bytes()).hexdigest())

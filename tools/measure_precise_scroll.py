@@ -26,6 +26,12 @@ import time
 REPO = Path(__file__).resolve().parents[1]
 ENDPOINT = "changed Cocoa layer contents after updateLayer; not physical scanout"
 
+
+def native_diagnostic_environment(environment):
+    return sorted(name for name, value in environment.items() if value and name.startswith('VOX_')
+                  and ('_DIAGNOSTICS' in name or name.endswith('_VERIFY')
+                       or name in {'VOX_GPU_CANVAS_VERIFY', 'VOX_GPU_CANVAS_COMMAND_TIMES'}))
+
 # Without V's -prod, $embed_file payloads can be read from these checkout
 # paths at runtime even when the executable itself stays unchanged.
 RUNTIME_ASSETS = (
@@ -428,7 +434,9 @@ def main():
     command = [str(binary), *script_flags, "--window-width", str(args.width),
                "--window-height", str(args.height + args.chrome_height), args.url]
     evidence = dict(command=command, compile_command=compile_command,
-                    diagnostic_only=args.v_profile_reset or args.capture_faults or args.instructions,
+                    diagnostic_only=bool(args.v_profile_reset or args.capture_faults or args.instructions
+                                         or native_diagnostic_environment(env)),
+                    native_diagnostic_environment=native_diagnostic_environment(env),
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
                     runtime_input_sha256={str(path): hashes[str(path)] for path in runtime_paths},
                     input_file_identity=file_identities,

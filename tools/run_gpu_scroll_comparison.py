@@ -30,7 +30,10 @@ def main():
     env['VOX_TEST_WINDOW']='1'
     rows=[]
     with publication_lease(ROOT,shared=True):
-        inputs=fingerprint([binary,*binary.parent.glob('*.dylib'),Path(__file__).resolve()])
+        driver=Path(__file__).resolve()
+        inputs=fingerprint([binary,*binary.parent.glob('*.dylib'),driver,
+                            *(driver.with_name(name) for name in ('measure_precise_scroll.py',
+                              'measure_precise_scroll_darwin.m','precise_scroll_faults.h'))])
         (output/'bundle.json').write_text((ROOT/'Build/production-build/latest.json').read_text())
         (output/'inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
         for pair in range(1,args.pairs+1):
@@ -48,6 +51,14 @@ def main():
                 check_fingerprints(inputs)
                 if result.returncode:raise RuntimeError('Invalid trial retained: '+name)
                 data=json.loads((output/name/'summary.json').read_text())
+                run=json.loads((output/name/'run.json').read_text())
+                if run['diagnostic_only']:raise RuntimeError('Instrumented trial cannot supply an unprofiled comparison: '+name)
+                # Pin explicit candidate bridges and runtime assets across all
+                # trials too. Per-trial observer dylibs have distinct paths.
+                common={path:sha for path,sha in run['source_and_binary_sha256'].items()
+                        if not Path(path).is_relative_to(output)}
+                if pair==1 and role=='control':trial_inputs=common
+                elif common!=trial_inputs:raise RuntimeError('Comparison inputs changed between trials: '+name)
                 print(name, 'fps',round(data['mean_scroll_fps'],2),
                       'p95_ms',round(data['scroll_interval_us']['p95']/1000,3),
                       'miss_fraction',round(data['fraction_over_budget'],4),flush=True)
