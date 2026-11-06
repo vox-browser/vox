@@ -5857,3 +5857,87 @@ Completed production executable `f8fa18eac7016b66459b67811bcf509141983f0948ac801
 The original one-time SOCKS capture/scripts/references, fresh private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. The latest completed single-C-unit V -prod bundle and libraries stay pinned under a nonblocking shared publication lease; no app is copied or build manually requested. Diagnostic counters supply no optimization credit. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded.
 
 Page credit and broad carry remain zero; no new 5M broad checkpoint is due. The latest complete matched result remains **24.237B candidate versus 24.223B control** for ordinary absolute descendants, with overlapping ranges. The [verification receipt](performance/chatgpt-absolute-root-measurements-verification-20261106.json) retains both failed harnesses, all final tests/components, source witnesses, commands, guards and four audited captures. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Main-thread instructions separated from concurrent work (2026-11-06)
+
+Commits `f30e39128` and `74cea9071` add a separate opt-in main-thread counter stream and reconciliation tool. [XNU defines the calling-thread counter ABI](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/resource_private.h). The adapter weak-imports the SPI, checks the 16-byte layout, and fails closed when unavailable or zero. Existing process/coalition readings remain independent. Native capture records matching main-thread PNG checkpoints; no thread count substitutes for a process count in performance acceptance.
+
+Validation passes **21 successful guarded jobs**, **144 V test-function executions**, native O2/ASan/UBSan separation/error tests and **28 parser tests**. Actual native worker probes record roughly 35M worker instructions while the waiting main thread records about 50K–93K. All four V storage/GC modes have matching and balanced process/thread scope IDs; disabled and process-only runs emit no thread scopes. Unavailable/missing/malformed/crossing/regressing traces are rejected. The initial reserved V variable and copied controller allocator-source check are retained, and the controller continuation executes the already-compiled sanitizer binary without repeating completed checks.
+
+The completed executable `9323ac1487ca70d40d7edf5c6f282a19faad57b74cab8d1201a1c5f078ed020d` passes source proof and all four fresh content/button/bootstrap/pixel/browser/kernel audits. The dual trace totals **27,755,338,707** coalition instructions, with **24,064,901,879** cumulative instructions on the main thread and **3,690,436,828** in the signed remainder. The separate untraced observation is **24,227,403,169**. One observation per mode cannot estimate tracing overhead or establish optimization acceptance. No value is scaled to the untraced run, historical 29B totals or the 20B target.
+
+The main-thread style scope records **4,335,621,050** instructions. Module-completion and JS/bindings scopes together record **5,443,528,378** on that thread; those phases also include native host/source/callback work and are not a pure JavaScript-engine total. The 3,690,436,828 remainder includes other threads, helpers and endpoint sampling differences; it cannot be assigned wholesale to JavaScript.
+
+| Exclusive main-thread stage / explicit residual | Calls | Instructions | Share of traced coalition total |
+| --- | ---: | ---: | ---: |
+| style_update | 1,009 | 4,335,621,050 | 15.6209% |
+| other_threads_helpers_and_endpoint_skew | 0 | 3,690,436,828 | 13.2963% |
+| javascript_module_completion | 264 | 3,351,384,879 | 12.0747% |
+| browser_main | 1 | 2,470,842,828 | 8.9022% |
+| javascript_execution_and_bindings | 1,931 | 2,092,143,499 | 7.5378% |
+| absolute_positioned_layout | 11 | 1,871,842,080 | 6.7441% |
+| paint_layer_transition | 103 | 1,787,885,705 | 6.4416% |
+| platform_timer_delivery | 2,454 | 644,056,641 | 2.3205% |
+| css_parsing | 11 | 555,771,161 | 2.0024% |
+| paint_leaf_text | 222 | 554,267,938 | 1.9970% |
+| gpu_frame_finalization | 17 | 399,689,762 | 1.4400% |
+| paint_leaf_fill | 160 | 362,083,574 | 1.3046% |
+| frame | 504 | 357,209,708 | 1.2870% |
+| frame_preparation | 504 | 353,453,794 | 1.2735% |
+| background_resource_completion | 504 | 348,340,399 | 1.2550% |
+| paint_leaf_shadow | 27 | 344,792,903 | 1.2423% |
+| paint_leaf_border | 89 | 324,552,038 | 1.1693% |
+| document_layout | 1,000 | 296,205,261 | 1.0672% |
+| html_networking_task | 533 | 253,287,930 | 0.9126% |
+| html_rendering_task | 489 | 238,196,503 | 0.8582% |
+| paint_leaf_svg | 166 | 232,959,498 | 0.8393% |
+| html_event_loop | 1,270 | 232,466,406 | 0.8376% |
+| native_raster_replay | 504 | 217,388,281 | 0.7832% |
+| native_document_replay | 504 | 199,842,597 | 0.7200% |
+| navigation_html_parsing | 1 | 182,892,953 | 0.6589% |
+| unscoped_main_thread | 0 | 164,761,884 | 0.5936% |
+| paint_command_dispatch | 17 | 152,427,005 | 0.5492% |
+| layout_tree_construction | 9 | 134,360,729 | 0.4841% |
+| viewport_relayout | 7 | 130,234,848 | 0.4692% |
+| flow_layout | 11 | 122,466,660 | 0.4412% |
+| stationary_raster_finish | 504 | 117,357,040 | 0.4228% |
+| paint_command_recording | 19 | 111,918,882 | 0.4032% |
+| script_runtime_setup | 1 | 107,364,826 | 0.3868% |
+| native_frame_bitmap | 504 | 101,333,461 | 0.3651% |
+| native_frame_presentation | 504 | 91,095,203 | 0.3282% |
+| stationary_raster_probe | 496 | 90,509,557 | 0.3261% |
+| browser_tab_frame | 504 | 87,111,269 | 0.3139% |
+| paint_leaf_effect_end | 26 | 86,564,803 | 0.3119% |
+| script_state_replay | 1,003 | 71,537,509 | 0.2577% |
+| native_window_initialization | 1 | 70,940,628 | 0.2556% |
+| document_install | 1 | 57,428,886 | 0.2069% |
+| html_other_task | 226 | 55,064,822 | 0.1984% |
+| browser_chrome | 511 | 43,793,841 | 0.1578% |
+| scroll_raster_probe | 17 | 43,625,406 | 0.1572% |
+| html_rendering_opportunity | 504 | 31,193,279 | 0.1124% |
+| layout_geometry | 11 | 30,804,685 | 0.1110% |
+| raster_frame_commit | 17 | 29,983,802 | 0.1080% |
+| animation_driver | 504 | 22,684,679 | 0.0817% |
+| png_encoding | 1 | 18,660,878 | 0.0672% |
+| stationary_raster_eligibility | 496 | 16,868,704 | 0.0608% |
+| native_frame_context | 504 | 15,472,635 | 0.0557% |
+| raster_frame_setup | 17 | 14,964,397 | 0.0539% |
+| initial_resource_preload | 1 | 8,728,282 | 0.0314% |
+| html_posted_message_task | 17 | 8,164,127 | 0.0294% |
+| style_computation | 29 | 6,923,862 | 0.0249% |
+| capture_snapshot | 1 | 5,875,085 | 0.0212% |
+| raster_tile_setup | 17 | 3,556,690 | 0.0128% |
+| paint_leaf_effect_begin | 26 | 1,332,976 | 0.0048% |
+| html_timer_task | 5 | 907,387 | 0.0033% |
+| relative_positioned_layout | 11 | 750,314 | 0.0027% |
+| viewport_raster_plan | 17 | 562,200 | 0.0020% |
+| stationary_blank_probe | 8 | 310,108 | 0.0011% |
+| capture_conversion | 1 | 83,142 | 0.0003% |
+
+| Total | | 27,755,338,707 | 100% |
+
+The [process table](performance/chatgpt-thread-load-stages-production-r1-traced-20261106.json) remains separately available. Each stream subtracts its own nested children and clips open scopes at its own PNG reading. Inclusive rows overlap. Per-stage process-minus-main differences are not additive worker counts: the counter reads are interleaved and instrumentation is charged differently between parent/child self intervals. The residual is explicitly qualified rather than labeled as measured JS or helper work.
+
+The traced and untraced runs complete **504** and **506** frame checkpoints. Neither result is normalized by frame count. The same original SOCKS fixture/scripts/references, 1024×768 scale two, five-second unfocused settle, fresh private profiles/caches and retained OS filesystem/shader caches apply. One current completed single-C-unit V -prod executable/libraries/tools/fixture stays fixed under a nonblocking shared publication lease. No app is copied or build manually requested. GPU/outside-coalition work remains excluded.
+
+The [verification receipt](performance/chatgpt-thread-load-stages-verification-20261106.json), [main-thread JSON](performance/chatgpt-thread-load-stages-production-r1-main-thread-20261106.json) and [CSV](performance/chatgpt-thread-load-stages-production-r1-main-thread-20261106.csv) retain every exact count, old/new table, command, source witness, counter, PNG, memory guard and failed attempt. Both additive 63-row tables sum exactly to the same captured total. No page savings or broad carry are credited. The latest complete unprofiled matched comparison remains 24.237B candidate versus 24.223B control with overlapping ranges. **The 20B target remains unmet.**

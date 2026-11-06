@@ -1,0 +1,520 @@
+{
+  "pid": 21053,
+  "process_instructions": 26861516263,
+  "coalition_instructions": 27755338707,
+  "coalition": {
+    "label": "capture_document_encoded",
+    "coalition_id": 68195,
+    "instructions": 27755338707,
+    "tasks_started": 3,
+    "tasks_exited": 1
+  },
+  "rows": [
+    {
+      "stage": "style_update",
+      "calls": 1009,
+      "partial_calls": 0,
+      "exclusive": 4602439657,
+      "inclusive": 4620543144,
+      "percent": 16.582177957133872
+    },
+    {
+      "stage": "javascript_module_completion",
+      "calls": 264,
+      "partial_calls": 0,
+      "exclusive": 3863858043,
+      "inclusive": 5890057713,
+      "percent": 13.921134538435737
+    },
+    {
+      "stage": "javascript_execution_and_bindings",
+      "calls": 1931,
+      "partial_calls": 0,
+      "exclusive": 2840658742,
+      "inclusive": 4183085636,
+      "percent": 10.23463907966497
+    },
+    {
+      "stage": "browser_main",
+      "calls": 1,
+      "partial_calls": 1,
+      "exclusive": 2677315745,
+      "inclusive": 26681009288,
+      "percent": 9.646128888078643
+    },
+    {
+      "stage": "paint_layer_transition",
+      "calls": 103,
+      "partial_calls": 0,
+      "exclusive": 2216933097,
+      "inclusive": 2216933097,
+      "percent": 7.9874114324567085
+    },
+    {
+      "stage": "absolute_positioned_layout",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 1902947205,
+      "inclusive": 1902947205,
+      "percent": 6.856148379555064
+    },
+    {
+      "stage": "coalition_endpoint_remainder",
+      "calls": 0,
+      "partial_calls": 0,
+      "exclusive": 893822444,
+      "inclusive": null,
+      "percent": 3.220362228094787
+    },
+    {
+      "stage": "platform_timer_delivery",
+      "calls": 2454,
+      "partial_calls": 0,
+      "exclusive": 757130302,
+      "inclusive": 10745003338,
+      "percent": 2.72787268061351
+    },
+    {
+      "stage": "paint_leaf_text",
+      "calls": 222,
+      "partial_calls": 0,
+      "exclusive": 589766850,
+      "inclusive": 589766850,
+      "percent": 2.124877149675203
+    },
+    {
+      "stage": "css_parsing",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 557600428,
+      "inclusive": 557600428,
+      "percent": 2.00898441156249
+    },
+    {
+      "stage": "gpu_frame_finalization",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 540979316,
+      "inclusive": 540979316,
+      "percent": 1.949100033369663
+    },
+    {
+      "stage": "paint_leaf_shadow",
+      "calls": 27,
+      "partial_calls": 0,
+      "exclusive": 470298157,
+      "inclusive": 470298157,
+      "percent": 1.6944421466612802
+    },
+    {
+      "stage": "paint_leaf_border",
+      "calls": 89,
+      "partial_calls": 0,
+      "exclusive": 432223927,
+      "inclusive": 432223927,
+      "percent": 1.5572641053412601
+    },
+    {
+      "stage": "paint_leaf_fill",
+      "calls": 160,
+      "partial_calls": 0,
+      "exclusive": 427668400,
+      "inclusive": 427668400,
+      "percent": 1.5408509494864873
+    },
+    {
+      "stage": "background_resource_completion",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 351336728,
+      "inclusive": 4655003999,
+      "percent": 1.2658347704162283
+    },
+    {
+      "stage": "document_layout",
+      "calls": 1000,
+      "partial_calls": 0,
+      "exclusive": 295382734,
+      "inclusive": 4996854151,
+      "percent": 1.064237540453806
+    },
+    {
+      "stage": "html_networking_task",
+      "calls": 533,
+      "partial_calls": 0,
+      "exclusive": 275930747,
+      "inclusive": 6225655578,
+      "percent": 0.9941537731276514
+    },
+    {
+      "stage": "frame",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 273679039,
+      "inclusive": 12876189247,
+      "percent": 0.9860410708336164
+    },
+    {
+      "stage": "paint_leaf_svg",
+      "calls": 166,
+      "partial_calls": 0,
+      "exclusive": 265720581,
+      "inclusive": 265720581,
+      "percent": 0.9573674593024667
+    },
+    {
+      "stage": "html_event_loop",
+      "calls": 1270,
+      "partial_calls": 0,
+      "exclusive": 237150265,
+      "inclusive": 9985713643,
+      "percent": 0.8544311690932088
+    },
+    {
+      "stage": "frame_preparation",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 229691820,
+      "inclusive": 6596716322,
+      "percent": 0.8275590596272236
+    },
+    {
+      "stage": "html_rendering_task",
+      "calls": 489,
+      "partial_calls": 0,
+      "exclusive": 188672777,
+      "inclusive": 3354110267,
+      "percent": 0.6797711207624932
+    },
+    {
+      "stage": "navigation_html_parsing",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 183279265,
+      "inclusive": 183279265,
+      "percent": 0.6603387799903746
+    },
+    {
+      "stage": "native_raster_replay",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 168617955,
+      "inclusive": 5698746835,
+      "percent": 0.6075153929124054
+    },
+    {
+      "stage": "script_state_replay",
+      "calls": 1003,
+      "partial_calls": 0,
+      "exclusive": 164248135,
+      "inclusive": 994862688,
+      "percent": 0.5917713227494357
+    },
+    {
+      "stage": "unscoped_process",
+      "calls": 0,
+      "partial_calls": 0,
+      "exclusive": 161445644,
+      "inclusive": null,
+      "percent": 0.5816741986264531
+    },
+    {
+      "stage": "stationary_raster_finish",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 161394052,
+      "inclusive": 161394052,
+      "percent": 0.5814883172702764
+    },
+    {
+      "stage": "native_document_replay",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 157681933,
+      "inclusive": 5916671951,
+      "percent": 0.568113884916245
+    },
+    {
+      "stage": "layout_tree_construction",
+      "calls": 9,
+      "partial_calls": 0,
+      "exclusive": 143648526,
+      "inclusive": 143648526,
+      "percent": 0.5175527761214865
+    },
+    {
+      "stage": "flow_layout",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 135382089,
+      "inclusive": 135382089,
+      "percent": 0.487769543831422
+    },
+    {
+      "stage": "viewport_relayout",
+      "calls": 7,
+      "partial_calls": 0,
+      "exclusive": 127936523,
+      "inclusive": 2774715567,
+      "percent": 0.46094383624918234
+    },
+    {
+      "stage": "paint_command_recording",
+      "calls": 19,
+      "partial_calls": 0,
+      "exclusive": 113597064,
+      "inclusive": 113597064,
+      "percent": 0.4092800495039551
+    },
+    {
+      "stage": "native_frame_bitmap",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 104128540,
+      "inclusive": 13141727522,
+      "percent": 0.3751658053941831
+    },
+    {
+      "stage": "native_frame_presentation",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 93555159,
+      "inclusive": 13235282681,
+      "percent": 0.33707086044821005
+    },
+    {
+      "stage": "stationary_raster_probe",
+      "calls": 496,
+      "partial_calls": 0,
+      "exclusive": 91144587,
+      "inclusive": 150731953,
+      "percent": 0.3283857853877063
+    },
+    {
+      "stage": "browser_chrome",
+      "calls": 511,
+      "partial_calls": 0,
+      "exclusive": 90069734,
+      "inclusive": 90069734,
+      "percent": 0.3245131862767867
+    },
+    {
+      "stage": "paint_leaf_effect_end",
+      "calls": 26,
+      "partial_calls": 0,
+      "exclusive": 88824136,
+      "inclusive": 88824136,
+      "percent": 0.32002540822028674
+    },
+    {
+      "stage": "browser_tab_frame",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 88206566,
+      "inclusive": 12964395813,
+      "percent": 0.3178003588108041
+    },
+    {
+      "stage": "paint_command_dispatch",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 87960394,
+      "inclusive": 4579033026,
+      "percent": 0.31691342313836024
+    },
+    {
+      "stage": "html_rendering_opportunity",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 75441155,
+      "inclusive": 75441155,
+      "percent": 0.27180772606090897
+    },
+    {
+      "stage": "native_window_initialization",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 73203169,
+      "inclusive": 73203169,
+      "percent": 0.2637444629041327
+    },
+    {
+      "stage": "animation_driver",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 72073016,
+      "inclusive": 72073016,
+      "percent": 0.2596726228450706
+    },
+    {
+      "stage": "script_runtime_setup",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 62896933,
+      "inclusive": 1157879003,
+      "percent": 0.22661201747156903
+    },
+    {
+      "stage": "native_frame_context",
+      "calls": 504,
+      "partial_calls": 0,
+      "exclusive": 60243183,
+      "inclusive": 60243183,
+      "percent": 0.21705079385252266
+    },
+    {
+      "stage": "stationary_raster_eligibility",
+      "calls": 496,
+      "partial_calls": 0,
+      "exclusive": 59587366,
+      "inclusive": 59587366,
+      "percent": 0.2146879439268808
+    },
+    {
+      "stage": "document_install",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 56653589,
+      "inclusive": 2964127991,
+      "percent": 0.20411780810194816
+    },
+    {
+      "stage": "html_other_task",
+      "calls": 226,
+      "partial_calls": 0,
+      "exclusive": 49132803,
+      "inclusive": 149580775,
+      "percent": 0.17702108959530918
+    },
+    {
+      "stage": "scroll_raster_probe",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 45121391,
+      "inclusive": 45121391,
+      "percent": 0.16256833136257212
+    },
+    {
+      "stage": "layout_geometry",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 28958674,
+      "inclusive": 2068961816,
+      "percent": 0.1043355093076076
+    },
+    {
+      "stage": "raster_frame_commit",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 28518127,
+      "inclusive": 32496450,
+      "percent": 0.10274825791553976
+    },
+    {
+      "stage": "initial_resource_preload",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 24552180,
+      "inclusive": 323656037,
+      "percent": 0.08845930600662369
+    },
+    {
+      "stage": "png_encoding",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 18660864,
+      "inclusive": null,
+      "percent": 0.06723342199853487
+    },
+    {
+      "stage": "raster_frame_setup",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 11976492,
+      "inclusive": 64160275,
+      "percent": 0.04315022823691748
+    },
+    {
+      "stage": "style_computation",
+      "calls": 29,
+      "partial_calls": 0,
+      "exclusive": 9385743,
+      "inclusive": 9385743,
+      "percent": 0.03381599157942497
+    },
+    {
+      "stage": "html_posted_message_task",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 6035672,
+      "inclusive": 16093754,
+      "percent": 0.021745985749681306
+    },
+    {
+      "stage": "capture_snapshot",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 5875142,
+      "inclusive": null,
+      "percent": 0.021167610534395198
+    },
+    {
+      "stage": "raster_tile_setup",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 5015764,
+      "inclusive": 5015764,
+      "percent": 0.018071348553692863
+    },
+    {
+      "stage": "paint_leaf_effect_begin",
+      "calls": 26,
+      "partial_calls": 0,
+      "exclusive": 3615807,
+      "inclusive": 3615807,
+      "percent": 0.013027428842322433
+    },
+    {
+      "stage": "viewport_raster_plan",
+      "calls": 17,
+      "partial_calls": 0,
+      "exclusive": 2046628,
+      "inclusive": 2046628,
+      "percent": 0.007373817417994012
+    },
+    {
+      "stage": "relative_positioned_layout",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 1673848,
+      "inclusive": 1673848,
+      "percent": 0.006030724458706927
+    },
+    {
+      "stage": "stationary_blank_probe",
+      "calls": 8,
+      "partial_calls": 0,
+      "exclusive": 1333808,
+      "inclusive": 1333808,
+      "percent": 0.004805590787705317
+    },
+    {
+      "stage": "html_timer_task",
+      "calls": 5,
+      "partial_calls": 0,
+      "exclusive": 926935,
+      "inclusive": 3422799,
+      "percent": 0.0033396638022876067
+    },
+    {
+      "stage": "capture_conversion",
+      "calls": 1,
+      "partial_calls": 0,
+      "exclusive": 83112,
+      "inclusive": null,
+      "percent": 0.00029944509370746336
+    }
+  ],
+  "complete": true,
+  "qualification": "Exclusive process-interval attribution with measured children subtracted; concurrent threads and tracing overhead remain included. Open scopes are clipped at encoded PNG and marked partial. Inclusive counts overlap and are non-additive. Existing native capture checkpoints split snapshot/conversion/encoding out of parent self work; child scopes entered during capture retain their own attribution. The coalition endpoint remainder includes owned helpers and process/coalition boundary differences; it is not a separately measured helper stage. No scaling to a different run."
+}

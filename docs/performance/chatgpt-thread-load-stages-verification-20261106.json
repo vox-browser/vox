@@ -1,0 +1,146 @@
+{
+  "complete": true,
+  "diagnostic": true,
+  "acceptance": false,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "9323ac1487ca70d40d7edf5c6f282a19faad57b74cab8d1201a1c5f078ed020d",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-115243-95e40397/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "a08edd986f7d932a611bd4cf8e0beedae01481d41bd9530d1a63b3dd481743e8",
+      "dirty": true,
+      "head": "74cea90718cfd2fc7dc1d8256a208ce76df3067a",
+      "repository_sha256": "cc4f94f2289e5b15917675e10de5c5ded3ad170a487f78cc96a08a8717745d5f"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "a08edd986f7d932a611bd4cf8e0beedae01481d41bd9530d1a63b3dd481743e8",
+      "dirty": true,
+      "head": "74cea90718cfd2fc7dc1d8256a208ce76df3067a",
+      "repository_sha256": "cc4f94f2289e5b15917675e10de5c5ded3ad170a487f78cc96a08a8717745d5f"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "f30e3912838057ccb623163287ce4406b7215f43",
+      "id": "a1da29cb682b4e2ca8653bb36316ddb5",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "a08edd986f7d932a611bd4cf8e0beedae01481d41bd9530d1a63b3dd481743e8",
+      "dirty": true,
+      "head": "74cea90718cfd2fc7dc1d8256a208ce76df3067a",
+      "repository_sha256": "cc4f94f2289e5b15917675e10de5c5ded3ad170a487f78cc96a08a8717745d5f"
+    }
+  },
+  "successful_focused_jobs": 21,
+  "v_test_function_executions": 144,
+  "python_parser_tests": 28,
+  "exact_traced_coalition_total": 27755338707,
+  "main_thread_cumulative": 24064901879,
+  "other_threads_helpers_and_endpoint_skew": 3690436828,
+  "single_untraced_coalition_total": 24227403169,
+  "process_stage_rows": 63,
+  "main_thread_stage_rows": 63,
+  "main_thread_style_update": 4335621050,
+  "main_thread_js_associated_scopes": 5443528378,
+  "frame_checkpoints": {
+    "traced": 504,
+    "untraced": 506
+  },
+  "controller_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-thread-load-stages-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "21053": "Fri Nov  6 11:56:02 2026    ",
+      "21055": "Fri Nov  6 11:56:02 2026    ",
+      "21324": "Fri Nov  6 11:56:10 2026    ",
+      "21328": "Fri Nov  6 11:56:10 2026    ",
+      "21331": "Fri Nov  6 11:56:11 2026    ",
+      "21332": "Fri Nov  6 11:56:11 2026    ",
+      "21333": "Fri Nov  6 11:56:11 2026    ",
+      "21426": "Fri Nov  6 11:56:20 2026    ",
+      "21428": "Fri Nov  6 11:56:20 2026    ",
+      "21431": "Fri Nov  6 11:56:20 2026    ",
+      "21432": "Fri Nov  6 11:56:20 2026    ",
+      "21433": "Fri Nov  6 11:56:20 2026    ",
+      "21446": "Fri Nov  6 11:56:20 2026    ",
+      "21448": "Fri Nov  6 11:56:20 2026    ",
+      "21609": "Fri Nov  6 11:56:29 2026    ",
+      "21611": "Fri Nov  6 11:56:29 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1985347584,
+    "elapsed_seconds": 42.756144334,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-thread-load-stages-checked-r1-20261106-evidence.zip",
+      "sha256": "a2680d8fc67842c7d44ca46a7f0340d33c999ce59b4c7b72bd3a14bdaacb638d",
+      "bytes": 94242,
+      "verified_entries": 22
+    },
+    {
+      "path": "docs/performance/chatgpt-thread-load-stages-checked-r2-20261106-evidence.zip",
+      "sha256": "ff79768e537a12d34b635e6fb9d17cbc2c0e2470bb711725941305a3cd39acb3",
+      "bytes": 800493,
+      "verified_entries": 64
+    },
+    {
+      "path": "docs/performance/chatgpt-thread-load-stages-checked-r3-20261106-evidence.zip",
+      "sha256": "045eb5e62cb518a7217cdcc25fca21d824665db544da5177d9bd557756bd4939",
+      "bytes": 93028,
+      "verified_entries": 24
+    },
+    {
+      "path": "docs/performance/chatgpt-thread-load-stages-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "0e7c6079b1b5c257263be6595209c92118d1e912f45a2e659ef4afb2c18b5698",
+      "bytes": 2245590,
+      "entries": 65,
+      "checkpoints": 6,
+      "verified_entries": 65
+    },
+    {
+      "path": "docs/performance/chatgpt-thread-load-stages-controller-20261106-evidence.zip",
+      "sha256": "b043e7acd201a9dc373cf612e202fb867905a3c94384309cfb61637298d8fd7b",
+      "bytes": 3344,
+      "verified_entries": 4
+    },
+    {
+      "path": "docs/performance/chatgpt-thread-load-stages-finalizer-20261106-evidence.zip",
+      "sha256": "27a08ca10e4865a6b51c55785f21f3ae174486e9694d198370c05f2ac7540c41",
+      "bytes": 8343,
+      "verified_entries": 4
+    }
+  ],
+  "primary_abi_source": "https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/resource_private.h",
+  "qualification": "Separate default-off THSC_CPI calling-thread samples supplement unchanged process/coalition counts. Each independent stage stream reconciles exactly to its encoded-PNG endpoint and the same coalition total. Main-thread scopes exclude concurrent work. The signed coalition-minus-main residual includes other threads/helpers and endpoint sampling skew, not pure JSC/JS. Process-minus-main per-stage self differences are not additive worker attribution: samples are interleaved and tracing costs move between parent/child self scopes. JS-associated module scopes also contain host/source/native callback work. Counters/logging instrumentation and frame/work variation remain included; a single traced/untraced pair is neither an overhead estimate nor optimization acceptance. Original one-time SOCKS bytes/scripts/references, 1024x768 scale2, five-second unfocused settle, private profiles/caches and retained OS filesystem/shader caches unchanged. One completed canonical single-C-unit V -prod executable/libs/tools/fixture pinned under a nonblocking publication lease; no copied app, manually queued build or input changes. All four full content/button/bootstrap/exact-pixel/browser/kernel audits pass and PID adoption succeeds. GPU/outside-coalition work excluded. No scaling to 24.227B, historical 29B or 20B. 20B and original Brave goals unmet.",
+  "finalizer_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-thread-load-stages-finalize-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 50446336,
+    "elapsed_seconds": 0.416049792,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
