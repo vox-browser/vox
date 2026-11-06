@@ -34,6 +34,20 @@ fn test_disjoint_parent_resumes_across_identity_scopes_around_a_culled_mask() {
 	assert chromium_compositor_gap_can_flush_parent(commands, plan, 1, 2, 7, viewport)
 }
 
+fn test_composited_mask_gap_uses_its_proved_contents_instead_of_legacy_layer_status() {
+	commands := identity_mask_gap_commands()
+	mut plan := identity_mask_gap_plan()
+	plan.layers[2] = layout.ChromiumRasterLayer{composited_contents: true, command_indices: [2, 3, 4, 5, 6]}
+	viewport := layout.LayoutRect{0, 0, 1024, 768}
+	assert chromium_compositor_gap_can_flush_parent(commands, plan, 1, 2, 7, viewport)
+	mut visible := commands.clone()
+	visible[4] = layout.PaintCommand{...commands[4], x: 946, y: 214}
+	assert !chromium_compositor_gap_can_flush_parent(visible, plan, 1, 2, 7, viewport)
+	mut foreign := layout.ChromiumRasterLayerPlan{...plan, command_layers: plan.command_layers.clone()}
+	foreign.command_layers[4] = 0
+	assert !chromium_compositor_gap_can_flush_parent(commands, foreign, 1, 2, 7, viewport)
+}
+
 fn test_identity_mask_gaps_retain_effect_ownership_and_balanced_scope_guards() {
 	commands := identity_mask_gap_commands()
 	plan := identity_mask_gap_plan()

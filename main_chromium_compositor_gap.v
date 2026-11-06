@@ -162,7 +162,10 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 			// backdrop filter inside the mask is entirely outside the viewport.
 			layer := command.visual_layer_data or { return false }
 			mask := command.kind in ['begin_svg_mask_layer', 'end_svg_mask_layer']
-			if (mask && (!child.legacy_raster || layer.kind != .svg_mask))
+			// Compositor ownership does not expand a mask's bounded output.
+			// Keep the same proof for both captured legacy masks and masks in
+			// composited children; their original replay order stays intact.
+			if (mask && layer.kind != .svg_mask)
 				|| (!mask && layer.kind != .css_effect) || layer.scope_id == 0
 				|| layer.opacity != 1 || layer.blend_mode != .normal || layer.filter != none {
 				return false
