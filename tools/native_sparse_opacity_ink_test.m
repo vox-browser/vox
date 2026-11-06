@@ -25,7 +25,59 @@ static uint64_t footprint(void) {
     return info.phys_footprint;
 }
 
+static void check_reference(VoxOpacityCanvas canvas, size_t pitch,
+    int left, int top, int right, int bottom) {
+    int expected[] = {right, bottom, left, top}, actual[] = {-1, -2, -3, -4};
+    int found = 0;
+    for (int y = top; y < bottom; ++y) {
+        const uint32_t *row = (const uint32_t *)(canvas.pixels + (size_t)y * pitch);
+        for (int x = left; x < right; ++x) {
+            if (!row[x]) continue;
+            found = 1;
+            if (x < expected[0]) expected[0] = x;
+            if (y < expected[1]) expected[1] = y;
+            if (x + 1 > expected[2]) expected[2] = x + 1;
+            if (y + 1 > expected[3]) expected[3] = y + 1;
+        }
+    }
+    assert(native_opacity_canvas_ink_bounds(canvas, pitch, left, top, right, bottom,
+        &actual[0], &actual[1], &actual[2], &actual[3]) == found);
+    if (found) assert(!memcmp(actual, expected, sizeof(actual)));
+    else assert(actual[0] == -1 && actual[1] == -2 && actual[2] == -3 && actual[3] == -4);
+}
+
+static void check_row_backing_classification(void) {
+    int dispositions[512];
+    size_t cases = 0;
+    const int widths[] = {1, 3, 4, 17, 65};
+    for (size_t page = 16; page <= 256; page *= 4)
+    for (int pattern = 0; pattern < 4; ++pattern) {
+        for (size_t i = 0; i < 512; ++i)
+            dispositions[i] = pattern == 0 ? 0 : pattern == 1 ? VM_PAGE_QUERY_PAGE_PAGED_OUT
+                : (i % (size_t)(pattern + 1) == 0 ? 1 << 30 : 0);
+        for (size_t wi = 0; wi < sizeof(widths) / sizeof(widths[0]); ++wi)
+        for (size_t padding = 0; padding < 4; ++padding)
+        for (int y = 0; y < 8; ++y) {
+            int width = widths[wi];
+            size_t pitch = ((size_t)width + padding) * 4;
+            for (int left = 0; left < width; ++left)
+            for (int right = left + 1; right <= width; ++right) {
+                int zero = 0, backed = 0;
+                for (int x = left; x < right; ++x) {
+                    if (dispositions[((size_t)y * pitch + (size_t)x * 4) / page]) backed = 1;
+                    else zero = 1;
+                }
+                assert(native_opacity_row_backing_kind(dispositions, page, pitch, left, right, y)
+                    == (backed && zero ? 2 : backed));
+                ++cases;
+            }
+        }
+    }
+    printf("%zu exact cropped row-backing classifications pass\n", cases);
+}
+
 int main(void) {
+    check_row_backing_classification();
     CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     VoxOpacityCanvas canvas = native_acquire_opacity_canvas(3456, 2106, space);
     assert(canvas.context);
@@ -72,6 +124,58 @@ int main(void) {
         native_discard_opacity_canvas_pool();
     }
     query_mode = 0;
+
+    // Force backing without adding ink, then search hollow and irregular bands.
+    // This oracle visits every requested pixel and does not use bounds helpers.
+    for (int width = 1023; width <= 1025; ++width) {
+        const int height = 257;
+        size_t pitch = (size_t)width * 4;
+        canvas = native_acquire_opacity_canvas(width, height, space);
+        assert(canvas.context);
+        for (int pattern = 0; pattern < 3; ++pattern) {
+            memset(canvas.pixels, 0, pitch * height);
+            for (int y = 0; y < height; ++y) {
+                uint32_t *row = (uint32_t *)(canvas.pixels + (size_t)y * pitch);
+                for (int x = 0; x < width; ++x)
+                    if ((pattern == 0 && (y == 2 || y == height - 3)
+                            && (x == width / 4 || x == width * 3 / 4))
+                        || (pattern == 1 && ((y == 1 && x == 1)
+                            || (y == height - 2 && x == width - 2)))
+                        || (pattern == 2 && y % 9 == 0
+                            && x >= width / 4 && x < width * 3 / 4))
+                        row[x] = 1u << ((x + y) % 32);
+            }
+            for (query_mode = 0; query_mode <= 4; ++query_mode)
+            for (int crop = 0; crop < 3; ++crop) {
+                check_reference(canvas, pitch, crop == 2 ? width / 4 : crop,
+                    crop, width - crop, height - crop); ++cases;
+            }
+        }
+        native_release_opacity_canvas(canvas, 0, 0, width, height);
+        native_discard_opacity_canvas_pool();
+    }
+    query_mode = 0;
+
+    // Only the middle page of each row is backed. A clipped backed band may
+    // be grouped without reading the untouched padding pages on either side.
+    int words = (int)(sysconf(_SC_PAGESIZE) / 4), wide = words * 3, tall = 512;
+    size_t pitch = (size_t)wide * 4;
+    canvas = native_acquire_opacity_canvas(wide, tall, space);
+    assert(canvas.context);
+    for (int y = 0; y < tall; ++y)
+        memset(canvas.pixels + (size_t)y * pitch + (size_t)words * 4, 0, (size_t)words * 4);
+    ((uint32_t *)(canvas.pixels + 17 * pitch))[words + 17] = 1;
+    ((uint32_t *)(canvas.pixels + (size_t)(tall - 19) * pitch))[words * 2 - 19] = 0x100u;
+    before = footprint();
+    assert(native_opacity_canvas_ink_bounds(canvas, pitch, words + 9, 0, words * 2 - 11, tall,
+        &left, &top, &right, &bottom));
+    after = footprint();
+    assert(left == words + 17 && top == 17 && right == words * 2 - 18 && bottom == tall - 18);
+    assert(after < before + 1024 * 1024);
+    check_reference(canvas, pitch, words + 9, 0, words * 2 - 11, tall); ++cases;
+    native_release_opacity_canvas(canvas, 0, 0, wide, tall);
+    native_discard_opacity_canvas_pool();
+
     // Small malloc-backed canvases keep the original byte scan.
     canvas = native_acquire_opacity_canvas(17, 13, space);
     canvas.pixels[3 * 17 * 4 + 9 * 4 + 2] = 19;
