@@ -133,6 +133,10 @@ fn browser_ui_event(event string) {
 	defer { platform.leave_persistent(persistent) }
 	if address_bar_owner.app == unsafe { nil } { return }
 	mut app := address_bar_owner.app.active_browser_tab()
+	if event.starts_with('update-') || event == 'panel-close:update' {
+		browser_update_event(event)
+		return
+	}
 	if event == 'host-reopen' {
 		app.request_browser_reopen()
 		return
@@ -199,6 +203,22 @@ fn browser_ui_key(event ui2.KeyEvent) {
 	defer { platform.leave_persistent(persistent) }
 	if address_bar_owner.app == unsafe { nil } { return }
 	mut app := address_bar_owner.app.active_browser_tab()
+	mut update_keys := browser_update_ui.notice.open
+	$if vox_ui2 ? {
+		update_keys = update_keys && ui2.embedded_key_panel() == 'update'
+	}
+	if update_keys {
+		action := browser_update_ui.notice.key_action(event.code.name(), event.cmd || event.ctrl)
+		if action != '' {
+			browser_update_event(action)
+			ui2.consume_key()
+		}
+		// Keep focus traversal and focused-button activation with UI2.
+		$if !vox_ui2 ? {
+			if event.code !in [.tab, .space] { ui2.consume_key() }
+		}
+		return
+	}
 	if app.browser_ui().tab_title_editor != none {
 		if event.code == .escape || (event.code == .w && (event.cmd || event.ctrl)) {
 			app.dismiss_browser_popup()

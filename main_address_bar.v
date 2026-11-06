@@ -29,6 +29,7 @@ fn (mut app BrowserApp) mount_address_bar() {
 }
 
 fn (mut app BrowserApp) unmount_address_bar() {
+	stop_browser_update_check()
 	app.stop_browser_tab_loading_animation()
 	app.stop_browser_memory_chrome()
 	if app.tabs != unsafe { nil } {

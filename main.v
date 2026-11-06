@@ -8512,6 +8512,7 @@ fn main() {
 		init_fn: fn (mut app BrowserApp) {
 			app.initialize_native_window()
 			app.schedule_native_observation()
+			app.start_browser_update_check()
 		}
 		cleanup_fn: fn (mut app BrowserApp) {
 			app.cleanup_browser_tabs()
