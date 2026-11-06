@@ -128,6 +128,34 @@ The [comparison receipt](performance/chatgpt-blocking-comparison-20261106.json)
 records every count, pair, scope and identity, with a verified durable archive of
 the raw logs, counters, memory samples, screenshots and replay requests.
 
+### Attempt to reach 3 MB
+
+The subsequent **3,000,000-byte target remains unmet**. The working policy still
+downloads **3,401,349 decoded JavaScript bytes** in the frozen homepage workload.
+No experimental rule from this attempt is retained.
+
+Suppressing JavaScript dependency preload hints, while retaining the loader's
+stylesheet and import/error contracts, passes 51 experimental tests and the
+unchanged frozen-page checks. However, the capture still requests 3,396,133 bytes:
+only the original 5,216-byte loader disappears from HTTP, while a 5,266-byte
+replacement runs locally. The application still imports the same dependencies,
+so this does not establish a useful reduction in the code loaded.
+
+Also blocking the main `application-presentation-runtime` reduces the frozen
+HTTP JavaScript count to 949,417 bytes, but fails the retained control-identity
+check. Live tests cannot complete “capital of italy”: preparation requests begin,
+but conversation updates and the assistant reply never arrive. A separate
+JavaScript-disabled live navigation leaves Send disabled. These cuts are rejected
+because they fail basic functionality, regardless of their download counts.
+
+The original working source and installed filter resources are restored. All 48
+original filter tests pass; a fresh installed process again receives **Rome**,
+and a repeated frozen capture passes the unchanged content and exact pixel checks
+at 3,401,349 bytes. The [attempt receipt](performance/chatgpt-3mb-attempt-20261106.json)
+preserves the failed candidates, source, tests, screenshots, asset identities and
+restoration checks. These experiments do not establish that further reduction is
+impossible, and they earn no performance credit or broad-check cadence reset.
+
 ## Startup snapshots
 
 The checked-in default snapshot contains **276,172 network filters from all ten
