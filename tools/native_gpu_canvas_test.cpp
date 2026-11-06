@@ -799,9 +799,74 @@ static void test_text_layer_barrier_eligibility()
     CGContextRelease(context);
 }
 
+static double s_resident_scroll;
+static void draw_resident_scene(CGContextRef context, bool canvas) {
+    CGContextSetRGBFillColor(context,1,1,1,1);
+    CGContextFillRect(context,CGRectMake(0,0,css_width,css_height));
+    for (int n=0; n<16; ++n) {
+        float y=n*77+12-s_resident_scroll;
+        if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+        assert(ladybird_v_skia_draw_rounded_rect(context,20,y,320,53,9,9,9,9,9,9,9,9,
+            1,0,0,1,0,0,0,0,0,css_width,css_height,
+            (n*47)%255,(n*83)%255,(n*103)%255,213,1,0,1,1));
+    }
+    // The fixed overlay participates in the root and repaints vacated ink.
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,4));
+    assert(ladybird_v_skia_draw_rounded_rect(context,380,71,9,67,4,4,4,4,4,4,4,4,
+        1,0,0,1,0,0,0,0,0,css_width,css_height,20,40,60,117,1,0,1,1));
+}
+static void resident_ring_draw(id self, SEL selector, NSRect bounds) {
+    vox_browser_frame_prepared();
+    auto context=NSGraphicsContext.currentContext.CGContext;
+    static double previous;
+    double movement=s_resident_scroll-previous, delta=0;
+    double first=floor(std::min(68.,68.-movement));
+    double last=ceil(std::max(141.,141.-movement));
+    double damage[]={377,first,15,last-first};
+    native_scroll_tile_compositor_enabled(1);
+    native_begin_scroll_raster(7,1,s_resident_scroll,0,css_width,css_height,1,
+        &delta,damage,1,1,1);
+    assert(native_scroll_raster.gpu_tiled);
+    bool canvas=native_gpu_canvas_begin();
+    assert(canvas && native_gpu_canvas_can_present());
+    draw_resident_scene(context,canvas);
+    native_gpu_canvas_end(); native_end_scroll_raster();
+    assert(native_scroll_raster.valid && !native_scroll_gpu_tile_frame_failed);
+    previous=s_resident_scroll;
+    vox_browser_frame_completed();
+}
+
 int main(int argc, char** argv)
 {
     test_bitmap_inspection_pending_inputs();
+    if (argc==2 && !std::strcmp(argv[1],"--resident-ring")) { @autoreleasepool {
+        [NSApplication sharedApplication];
+        assert(ladybird_v_skia_gpu_canvas_compositor_available());
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        s_backend_read=api->read; api->read=counted_read;
+        native_set_opaque_browser_frames(1);
+        setenv("VOX_GPU_TILE_COMPOSITOR","1",1); native_scroll_gpu_tile_capability=YES;
+        auto view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,css_width,css_height)];
+        view.wantsLayer=YES;
+        int error=0; unsigned reused=0;
+        for (double scroll : {0.,8.,16.,120.,128.,136.,128.,120.,16.,8.,0.}) { @autoreleasepool {
+            s_resident_scroll=scroll;
+            auto reference=render(true,false,draw_resident_scene,true);
+            native_layer_present_frame(view,scale,(IMP)resident_ring_draw);
+            reused += native_scroll_raster.reused;
+            auto image=native_layer_frame_image(view); assert(image);
+            auto data=CGDataProviderCopyData(CGImageGetDataProvider(image)); assert(data);
+            for (int y=0; y<height; ++y) for (int x=0; x<width*4; ++x)
+                error=std::max(error,std::abs(int(reference[size_t(y)*width*4+x])
+                    -int(CFDataGetBytePtr(data)[y*CGImageGetBytesPerRow(image)+x])));
+            CFRelease(data);
+            if (error>3) { std::cerr<<"Resident ring scroll="<<scroll<<" max error="<<error<<"\n"; return 1; }
+        } }
+        assert(reused>=8); native_discard_scroll_raster(); [view release];
+        std::cout<<"Resident native GPU ring: max error "<<error
+            <<"; actual bridge export, wrap/reverse, fixed alpha overlay, lazy capture, "<<reused<<" reused frames\n";
+        return 0;
+    } }
     if (argc==2 && !std::strcmp(argv[1],"--present-tiles")) {
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
         assert(ladybird_v_skia_gpu_canvas_compositor_available());

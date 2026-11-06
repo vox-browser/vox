@@ -640,6 +640,11 @@ fn scroll_raster_rect_valid(rect layout.LayoutRect) bool {
 // key. Unbounded leaves are marked so the diff can refuse to reuse around them.
 fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollbar_opacity f64,
 	width f64, height f64) []ScrollRasterCommandKey {
+	return scroll_raster_frame_keys_with_scrollbars(commands, scroll, scrollbar_opacity, width, height, false)
+}
+
+fn scroll_raster_frame_keys_with_scrollbars(commands []layout.PaintCommand, scroll f64, scrollbar_opacity f64,
+	width f64, height f64, inline_scrollbars bool) []ScrollRasterCommandKey {
 	scroll_raster_canvas_nonce++
 	mut keys := []ScrollRasterCommandKey{len: commands.len}
 	mut begins := []int{}
@@ -670,7 +675,7 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			scroll_raster_report_fill_flags(command)
 		}
 		if command.scrollbar_axis != '' {
-			if index >= trailing_start {
+			if index >= trailing_start && !inline_scrollbars {
 				key.skip_diff = true
 				keys[index] = key
 				continue

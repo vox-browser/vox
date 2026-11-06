@@ -236,11 +236,6 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				|| bfc.margin_state.current_collapsed_margin() == 0)
 	}
 	if !eligible {
-		if mode == .normal && state.subtree_root == none && space.width.is_definite()
-			&& clamped_inline_workspace_is_closed(root, context) {
-			return run_owned_inline_layout_in_workspace(mut state, containing_block, mut used,
-				mode, space, context, true)
-		}
 		return run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
 			space, context)
 	}

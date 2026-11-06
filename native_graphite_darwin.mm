@@ -117,6 +117,7 @@ size_t region_target_bytes = 0;
 constexpr size_t region_target_limit = 64 * 1024 * 1024;
 
 void canvas_reset();
+bool canvas_finish_submission(bool synchronous);
 void clear_region_targets()
 {
     canvas_reset();
@@ -235,9 +236,11 @@ void vox_graphite_finish_frame()
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
     if (!gpu_context || !gpu_frame_queue) return;
-    // All public draws synchronously return owned CPU pixels. Finish any work
-    // remaining after an early return before counting this completed frame.
-    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    // Resident exports stay asynchronous until the real queue retires. All
+    // other public paths preserve their synchronous CPU-pixel boundary.
+    bool synchronous = canvas_finish_submission([gpu_frame_queue willRetireAfterFrame]);
+    gpu_context->submit(skgpu::graphite::SubmitInfo(synchronous
+        ? skgpu::graphite::SyncToCpu::kYes : skgpu::graphite::SyncToCpu::kNo));
     gpu_context->checkAsyncWorkCompletion();
     if ([gpu_frame_queue finishCompletedFrame])
         gpu_context_last_use = std::chrono::steady_clock::now();

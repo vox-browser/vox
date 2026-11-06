@@ -67,7 +67,9 @@ int main()
             assert(![queue finishCompletedFrame]);
             assert(created == 1 && destroyed == 0 && last_queue);
         }
+        assert([queue willRetireAfterFrame]);
         assert([queue finishCompletedFrame] && destroyed == 1 && !last_queue);
+        assert(![queue willRetireAfterFrame]);
         assert(![queue finishCompletedFrame]);
         assert(![queue retireCompletedQueue] && created == 1);
         // Self-assignment must copy before releasing the preceding label.

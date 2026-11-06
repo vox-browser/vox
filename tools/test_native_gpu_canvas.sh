@@ -25,7 +25,8 @@ for signature in ('static void native_begin_tracked_transparency_layer(',
 functions.append(source[source.index('// A Chromium-profile opacity group'):
                         source.index('static CGColorRef native_srgb_color(')])
 for signature in ('void native_capture_video_backdrop(', 'int native_gpu_canvas_begin(',
-                  'int native_gpu_canvas_begin_rects(',
+                  'int native_gpu_canvas_begin_rects(', 'int native_gpu_canvas_can_present(',
+                  'void native_gpu_canvas_end(',
                   'static int native_try_gpu_css_filter_image(',
                   'int native_gpu_canvas_can_defer_layers(',
                   'static void native_prepare_image_cpu_fallback(',
@@ -60,4 +61,5 @@ VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-ve
 
 if [ "${NATIVE_GPU_CANVAS_PRESENT_TEST:-0}" = 1 ]; then
     "$output_dir/native_gpu_canvas_test" --present-tiles
+    "$output_dir/native_gpu_canvas_test" --resident-ring
 fi

@@ -842,3 +842,30 @@ fn test_scroll_raster_viewport_filling_background_ignores_its_offscreen_extent()
 	box := layout.PaintCommand{ kind: 'fill_rect', x: 10, y: 10, width: 100, height: 100 }
 	assert scroll_raster_frame_keys([box], 0, 1, 1024, 768)[0].hash != scroll_raster_frame_keys([layout.PaintCommand{ ...box, height: 90 }], 0, 1, 1024, 768)[0].hash
 }
+
+fn test_inline_scrollbar_keys_damage_vacated_and_current_pixels() {
+    bar := layout.PaintCommand{ kind: 'fill_rounded_rect', x: 185, y: 60,
+        width: 8, height: 40, scrollbar_axis: 'vertical', fixed_to_viewport: true }
+    old := scroll_raster_frame_keys_with_scrollbars([bar], 0, 1, 200, 200, true)
+    assert old[0].has_ink && !old[0].skip_diff
+    assert scroll_raster_frame_keys_with_scrollbars([bar], 0, 0.5, 200, 200, true)[0].hash != old[0].hash
+    previous := ScrollRasterKeyFrame{ valid: true, document: 7, width: 200, height: 200, keys: old }
+    mut stats := ScrollRasterDiffStats{}
+    moved := scroll_raster_frame_keys_with_scrollbars([bar], 10, 1, 200, 200, true)
+    rects := scroll_raster_content_damage(&previous, moved, 7, 10, 200, 200, mut stats) or {
+        panic('inline viewport bar must reconcile')
+    }
+    assert rects == [layout.LayoutRect{182, 47, 14, 56}]
+    faded := scroll_raster_frame_keys_with_scrollbars([bar], 0, 0.5, 200, 200, true)
+    assert (scroll_raster_content_damage(&previous, faded, 7, 0, 200, 200, mut stats) or {
+        panic('inline bar fade must reconcile')
+    }) == [layout.LayoutRect{182, 57, 14, 46}]
+    removed := scroll_raster_frame_keys_with_scrollbars([]layout.PaintCommand{}, 0, 1, 200, 200, true)
+    assert (scroll_raster_content_damage(&previous, removed, 7, 0, 200, 200, mut stats) or {
+        panic('inline bar removal must reconcile')
+    }) == [layout.LayoutRect{182, 57, 14, 46}]
+    empty := ScrollRasterKeyFrame{ ...previous, keys: removed }
+    assert (scroll_raster_content_damage(&empty, old, 7, 0, 200, 200, mut stats) or {
+        panic('inline bar insertion must reconcile')
+    }) == [layout.LayoutRect{182, 57, 14, 46}]
+}

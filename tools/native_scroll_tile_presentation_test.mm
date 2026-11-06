@@ -13,7 +13,47 @@
 @end
 static double test_scroll, previous_scroll, test_scale;
 static int content_revision, test_damage;
-static bool tiled_frame;
+static bool tiled_frame, resident_frame;
+static bool fail_export;
+static unsigned exports;
+
+static int cpu_present(CGContextRef context, const VoxGraphiteCanvasSurfaceRegion *regions, int count, void **completion) {
+    if (fail_export) return 0;
+    ++exports;
+    CGContextFlush(context);
+    auto pixels=(const uint8_t*)CGBitmapContextGetData(context);
+    size_t pitch=CGBitmapContextGetBytesPerRow(context);
+    std::vector<IOSurfaceRef> initialized;
+    for (int i=0; i<count; ++i) {
+        auto &r=regions[i]; auto surface=(IOSurfaceRef)r.surface; auto previous=(IOSurfaceRef)r.previous;
+        assert(!IOSurfaceLock(surface,0,nullptr));
+        auto output=(uint8_t*)IOSurfaceGetBaseAddress(surface);
+        size_t output_pitch=IOSurfaceGetBytesPerRow(surface);
+        if (std::find(initialized.begin(),initialized.end(),surface)==initialized.end()) {
+            if (previous) {
+                assert(!IOSurfaceLock(previous,kIOSurfaceLockReadOnly,nullptr));
+                for (size_t y=0; y<IOSurfaceGetHeight(surface); ++y)
+                    memcpy(output+y*output_pitch,(uint8_t*)IOSurfaceGetBaseAddress(previous)
+                        +y*IOSurfaceGetBytesPerRow(previous),IOSurfaceGetWidth(surface)*4);
+                IOSurfaceUnlock(previous,kIOSurfaceLockReadOnly,nullptr);
+            } else memset(output,0,IOSurfaceGetAllocSize(surface));
+            initialized.push_back(surface);
+        }
+        for (int y=0; y<r.height; ++y) for (int x=0; x<r.width; ++x) {
+            bool damaged=!native_scroll_raster.reused;
+            for (int n=0; n<native_scroll_repainted_count; ++n) {
+                auto rect=native_scroll_repainted[n];
+                int cy=r.canvas_y+y-int(native_scroll_raster.top), cx=r.canvas_x+x;
+                damaged |= cx>=rect[0] && cx<rect[2] && cy>=rect[1] && cy<rect[3];
+            }
+            if (damaged) memcpy(output+(r.surface_y+y)*output_pitch+(r.surface_x+x)*4,
+                pixels+(r.canvas_y+y)*pitch+(r.canvas_x+x)*4,4);
+        }
+        IOSurfaceUnlock(surface,0,nullptr);
+    }
+    *completion=malloc(1); return 1;
+}
+
 static int gpu_enabled = 1;
 static void document(CGContextRef context, NSRect bounds) {
     double height = bounds.size.height;
@@ -37,16 +77,34 @@ static void draw(id self, SEL selector, NSRect bounds) {
         double movement = test_scroll - previous_scroll;
         double first = std::min(118.5, 118.5 - movement);
         double last = std::max(214.5, 214.5 - movement);
-        double delta = 0, damage[] = {7.5, first, 46, last - first};
+        if (resident_frame) { first=floor(first); last=ceil(last); }
+        double delta = 0, damage[] = {resident_frame ? 7. : 7.5, first,
+            resident_frame ? 47. : 46., last - first};
+        double damages[12]; memcpy(damages,damage,sizeof(damage));
+        double bar_top=bounds.size.height-7-23.25-73.5;
+        double bar_first=floor(std::min(bar_top,bar_top-movement));
+        double bar_last=ceil(std::max(bar_top+73.5,bar_top+73.5-movement));
+        double bar[]={bounds.size.width-12,bar_first,12,bar_last-bar_first};
+        memcpy(damages+4,bar,sizeof(bar));
         native_begin_scroll_raster(7, content_revision, test_scroll, 7,
             bounds.size.width, bounds.size.height - 12, 1, &delta,
-            damage, test_damage ? 1 : 0, 1, 1);
+            damages, test_damage ? (resident_frame ? 2 : 1) : 0, 1, 1);
     }
     document(context, bounds);
-    if (tiled_frame) native_end_scroll_raster();
+    if (resident_frame) {
+        CGContextSetRGBFillColor(context, .1, .2, .3, .5);
+        CGContextFillRect(context, CGRectMake(bounds.size.width - 10.5, 23.25, 7.25, 73.5));
+    }
+    if (tiled_frame) {
+        if (resident_frame && native_scroll_raster.gpu_tiled)
+            native_scroll_raster_export(cpu_present, free);
+        native_end_scroll_raster();
+    }
     // V-owned viewport scrollbar and native-host chrome paint after the ring.
-    CGContextSetRGBFillColor(context, .1, .2, .3, .5);
-    CGContextFillRect(context, CGRectMake(bounds.size.width - 10.5, 23.25, 7.25, 73.5));
+    if (!resident_frame) {
+        CGContextSetRGBFillColor(context, .1, .2, .3, .5);
+        CGContextFillRect(context, CGRectMake(bounds.size.width - 10.5, 23.25, 7.25, 73.5));
+    }
     CGContextSetRGBFillColor(context, .7, .2, .3, 1);
     CGContextFillRect(context, CGRectMake(0, bounds.size.height - 7, bounds.size.width, 7));
     CGContextSetRGBFillColor(context, .2, .6, .3, 1);
@@ -229,5 +287,52 @@ int main() { @autoreleasepool {
         assert(packed(held_tile) == held_pixels);
         CGImageRelease(held_tile);
     }
+    unsetenv("VOX_SCROLL_TILE_COMPOSITOR");
+    setenv("VOX_GPU_TILE_COMPOSITOR","1",1);
+    native_scroll_gpu_tile_capability=YES;
+    native_discard_scroll_raster();
+    resident_frame=true; test_damage=1;
+    for (int scale : {1,2}) {
+        MyView2 *view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,97,629)];
+        view.wantsLayer=YES;
+        native_discard_scroll_raster();
+        native_scroll_gpu_tile_failed=native_scroll_gpu_tile_frame_failed=NO;
+        CGImageRef held=NULL; std::vector<uint8_t> old;
+        for (double scroll : {0.,17.,251.,512.,529.,512.,251.,0.,0.,.5,17.5,0.}) { @autoreleasepool {
+            previous_scroll=test_scroll; test_scroll=scroll; content_revision=0;
+            tiled_frame=false;
+            auto reference=native_layer_raster_frame(view,scale,(IMP)draw);
+            auto expected=packed(reference); CGImageRelease(reference);
+            tiled_frame=true;
+            native_layer_present_frame(view,scale,(IMP)draw);
+            auto frame=(VoxScrollTileFrame*)objc_getAssociatedObject(view,&native_scroll_tile_frame_key);
+            if (!frame || frame->overlay || frame->flattened)
+                fprintf(stderr,"resident scale=%d scroll=%g frame=%d mode=%d reused=%d valid=%d current=%d failed=%d/%d exports=%u pending=%d\n",
+                    scale,scroll,frame!=nil,native_scroll_raster.gpu_tiled,native_scroll_raster.reused,
+                    native_scroll_raster.valid,native_scroll_raster.tiles_current,
+                    native_scroll_gpu_tile_failed,native_scroll_gpu_tile_frame_failed,exports,native_scroll_tile_pending!=nil);
+            assert(frame && frame->overlay==0 && !frame->flattened);
+            assert(packed(native_layer_frame_image(view))==expected);
+            if (!held) { held=CGImageRetain((CGImageRef)CFArrayGetValueAtIndex(frame->images,0)); old=packed(held); }
+            assert(packed(held)==old);
+        } }
+        fail_export=true;
+        test_scroll=42;
+        native_layer_present_frame(view,scale,(IMP)draw);
+        assert(native_scroll_gpu_tile_failed && native_scroll_gpu_tile_frame_failed);
+        assert(!native_scroll_raster.valid && !native_scroll_raster.tiles_current);
+        fail_export=false; native_scroll_gpu_tile_frame_failed=NO;
+        // Failure retries in ordinary mode and rebuilds the stale CPU ring.
+        native_layer_present_frame(view,scale,(IMP)draw);
+        assert(!native_scroll_raster.gpu_tiled && !native_scroll_raster.reused);
+        tiled_frame=false;
+        auto reference=native_layer_raster_frame(view,scale,(IMP)draw);
+        assert(packed(reference)==packed(native_layer_frame_image(view)));
+        CGImageRelease(reference); CGImageRelease(held);
+        native_scroll_gpu_tile_failed=NO;
+        native_discard_scroll_raster();
+    }
+    assert(exports>=20);
+    puts("Resident tile mapping: exact wraps/reversals, lazy captures, immutable providers, allocation failure and mode recovery passed");
     puts("Retained scroll tiles: exact captures, wrap/reversal, fractional damage, resource lifetime and Core Animation pixels passed");
 } }

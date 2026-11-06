@@ -49,6 +49,26 @@ extern int ladybird_v_skia_gpu_canvas_filter_image(CGContextRef, CGImageRef,
 extern int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef,
     const uint8_t *, int, int, int, int, int) __attribute__((weak_import));
 #endif
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern int ladybird_v_skia_gpu_canvas_compositor_available(void) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_set_compositor(CGContextRef) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_can_present(CGContextRef) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_present(CGContextRef,
+    const VoxGraphiteCanvasSurfaceRegion *, int, void **) __attribute__((weak_import));
+extern void ladybird_v_skia_gpu_canvas_release_present(void *) __attribute__((weak_import));
+#endif
+int native_gpu_tile_compositor_enabled(void) {
+    if (!native_scroll_tile_setting || !getenv("VOX_GPU_TILE_COMPOSITOR")
+        || getenv("VOX_DISABLE_SCROLL_TILE_COMPOSITOR") || native_scroll_gpu_tile_failed) return 0;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    native_scroll_gpu_tile_capability = ladybird_v_skia_gpu_canvas_compositor_available
+        && ladybird_v_skia_gpu_canvas_set_compositor && ladybird_v_skia_gpu_canvas_can_present
+        && ladybird_v_skia_gpu_canvas_present && ladybird_v_skia_gpu_canvas_release_present
+        && ladybird_v_skia_gpu_canvas_compositor_available();
+#endif
+    return native_scroll_gpu_tiles_enabled()
+        && native_scroll_tile_destination == NSGraphicsContext.currentContext.CGContext;
+}
 #include "native_stationary_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
 #include "native_svg_mask_layer_darwin.h"
@@ -1086,14 +1106,16 @@ void native_begin_deferred_layer_frame(int enabled) {
 }
 
 int native_finish_deferred_layer_frame(void) {
+    int valid = !native_scroll_gpu_tile_frame_failed;
+    native_scroll_gpu_tile_frame_failed = NO;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     typedef int (*Finish)(void);
     static Finish finish;
     static dispatch_once_t once;
     dispatch_once(&once, ^{ finish = (Finish)dlsym(RTLD_DEFAULT, "ladybird_v_skia_finish_deferred_layer_frame"); });
-    if (finish) return finish();
+    if (finish) return finish() && valid;
 #endif
-    return 1;
+    return valid;
 }
 
 static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGContextRef parent,
@@ -2996,6 +3018,9 @@ int native_gpu_canvas_begin(void) {
 			|| cache->width * cache->height > 64 * 1024 * 1024 / 4) return 0;
 		int rect[] = {0, (int)cache->top, (int)cache->width, (int)cache->height};
 		int begun = ladybird_v_skia_gpu_canvas_begin(cache->context, rect, 1);
+        if (cache->gpu_tiled && (!begun || !ladybird_v_skia_gpu_canvas_set_compositor
+            || !ladybird_v_skia_gpu_canvas_set_compositor(cache->context)))
+            native_scroll_gpu_tile_failed = native_scroll_gpu_tile_frame_failed = YES;
 		if (begun && ladybird_v_skia_gpu_canvas_document_top)
 			ladybird_v_skia_gpu_canvas_document_top((int)cache->top);
 		if (begun && ladybird_v_skia_gpu_canvas_frame_surface)
@@ -3019,6 +3044,9 @@ int native_gpu_canvas_begin(void) {
 		count++;
 	}
 	int begun = count > 0 ? ladybird_v_skia_gpu_canvas_begin(cache->context, rects, count) : 0;
+    if (cache->gpu_tiled && (!begun || !ladybird_v_skia_gpu_canvas_set_compositor
+        || !ladybird_v_skia_gpu_canvas_set_compositor(cache->context)))
+        native_scroll_gpu_tile_failed = native_scroll_gpu_tile_frame_failed = YES;
 	if (begun && ladybird_v_skia_gpu_canvas_document_top)
 		ladybird_v_skia_gpu_canvas_document_top((int)cache->top);
 	if (begun && ladybird_v_skia_gpu_canvas_frame_surface)
@@ -3066,8 +3094,21 @@ int native_gpu_canvas_can_defer_layers(void) {
 #endif
 }
 
+int native_gpu_canvas_can_present(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    return native_scroll_raster.active && native_scroll_raster.gpu_tiled
+        && !native_scroll_gpu_tile_frame_failed && ladybird_v_skia_gpu_canvas_can_present
+        && ladybird_v_skia_gpu_canvas_can_present(native_scroll_raster.context);
+#else
+    return 0;
+#endif
+}
 void native_gpu_canvas_end(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    VoxScrollRaster *cache = &native_scroll_raster;
+    if (cache->active && cache->gpu_tiled && !native_scroll_gpu_tile_frame_failed)
+        native_scroll_raster_export(ladybird_v_skia_gpu_canvas_present,
+            ladybird_v_skia_gpu_canvas_release_present);
 	ladybird_v_skia_gpu_canvas_end();
 #endif
 }

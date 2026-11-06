@@ -95,13 +95,6 @@ fn own_inline_layout_lines(lines []LineBox) []LineBox {
 fn run_closed_inline_layout(mut state LayoutState, containing_block &BlockContainer,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace,
 	context ?&BlockFormattingContext) InlineFormattingResult {
-	return run_owned_inline_layout_in_workspace(mut state, containing_block, mut used,
-		mode, space, context, false)
-}
-
-fn run_owned_inline_layout_in_workspace(mut state LayoutState, containing_block &BlockContainer,
-	mut used UsedValues, mode LayoutMode, space AvailableSpace,
-	context ?&BlockFormattingContext, clamped bool) InlineFormattingResult {
 	document := unsafe { &Node(containing_block) }.document()
 	if geometry_measurement_depth != 0 || !cache_uses_entered_document_storage(document) {
 		return run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
@@ -124,6 +117,5 @@ fn run_owned_inline_layout_in_workspace(mut state LayoutState, containing_block 
 	if !used.line_boxes_are_shared_ {
 		used.line_boxes = own_inline_layout_lines(used.line_boxes)
 	}
-	if clamped { report_clamped_inline_workspace() }
 	return result
 }

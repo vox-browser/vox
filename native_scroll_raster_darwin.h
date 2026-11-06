@@ -24,7 +24,7 @@ typedef struct {
     uint64_t owner, revision;
     int valid, active, reused, independent_content, damage_optimized;
     CGContextRef context;
-    int tiled, tiles_current, damage_rect_count;
+    int tiled, tiles_current, damage_rect_count, gpu_tiled;
     size_t damage_rects[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1][4];
     BOOL tile_dirty[VOX_SCROLL_TILE_LIMIT];
 } VoxScrollRaster;
@@ -338,6 +338,15 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     if (damage_count < 0 || damage_count > VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS
         || (damage_count > 0 && !damage))
         allow_reuse = 0, damage_count = 0;
+    int gpu_tiled = opaque_clear && damage_optimized && native_scroll_gpu_tiles_enabled()
+        && native_scroll_tiles_accept(context);
+    // A sparse CPU canvas cannot seed GPU residency, or be used after leaving it.
+    if (cache->gpu_tiled != gpu_tiled || (gpu_tiled && !cache->tiles_current)) allow_reuse = 0;
+    if (gpu_tiled) {
+        if (damage_count > 7) allow_reuse = 0;
+        for (int index = 0; index < damage_count * 4; ++index)
+            if (!native_scroll_raster_integer(damage[index] * scale)) allow_reuse = 0;
+    }
     int reuse = cache->valid && allow_reuse && cache->owner == owner
         && cache->width == w && cache->height == h && cache->top == top
         && cache->canvas_width == canvas_width && cache->canvas_height == canvas_height
@@ -374,6 +383,11 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     cache->damage_row_count = 0;
     cache->damage_rect_count = 0;
     cache->tiled = damage_optimized && native_scroll_tiles_accept(context);
+    cache->gpu_tiled = gpu_tiled;
+    if (gpu_tiled) {
+        CGContextFlush(context);
+        for (size_t y = 0; y < canvas_height; ++y) memset(pixels + y * pitch, 255, canvas_width * 4);
+    }
     memset(cache->tile_dirty, 0, sizeof(cache->tile_dirty));
     if (cache->tiled && (!reuse || !cache->tiles_current)) native_scroll_tiles_clear();
     native_scroll_tile_sparse = cache->tiled && reuse;
@@ -459,7 +473,7 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
         if (repainted[2] > repainted[0] && repainted[3] > repainted[1])
             ++native_scroll_repainted_count;
     }
-    if (damage_optimized) {
+    if (damage_optimized && !gpu_tiled) {
         CGContextFlush(context);
         if (cache->tiled) {
             // GPU tiles widen the damage to their eight-pixel dither grid.
@@ -477,6 +491,22 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     return 1;
 }
 
+static BOOL native_scroll_raster_export(VoxScrollGpuPresent present, VoxScrollGpuRelease release) {
+    VoxScrollRaster *cache = &native_scroll_raster;
+    if (!cache->active || !cache->gpu_tiled || native_scroll_gpu_tile_frame_failed) return NO;
+    if (cache->reused) {
+        for (int index=0; index<cache->damage_rect_count; ++index) {
+            size_t *rect=cache->damage_rects[index];
+            for (size_t y=rect[1]; y<rect[3]; ++y)
+                cache->tile_dirty[((cache->row_origin+y)%cache->height)/VOX_SCROLL_TILE_ROWS]=YES;
+        }
+    } else memset(cache->tile_dirty,1,sizeof(cache->tile_dirty));
+    BOOL exported = native_scroll_tiles_export(cache->context,cache->width,cache->height,
+        cache->row_origin,cache->top,cache->scale,cache->tile_dirty,present,release);
+    if (!exported) native_scroll_gpu_tile_failed = native_scroll_gpu_tile_frame_failed = YES;
+    return exported;
+}
+
 // Finish before the document layer is published or chrome is painted. A new
 // invalidation, navigation, scale, resize or fractional device-pixel scroll
 // forces the ordinary complete replay on the next begin.
@@ -488,7 +518,17 @@ static void native_end_scroll_raster(void) {
     CGContextFlush(context);
     uint8_t *pixels = (uint8_t *)CGBitmapContextGetData(context);
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
-    if (pixels) {
+    if (cache->gpu_tiled) {
+        if (cache->reused && !cache->damage_rect_count && !native_scroll_tile_pending)
+            native_scroll_raster_export(NULL, NULL);
+        cache->valid = !cache->independent_content && native_scroll_tile_pending != nil
+            && !native_scroll_gpu_tile_frame_failed;
+        cache->tiles_current = cache->valid;
+        if (!cache->valid) {
+            native_scroll_gpu_tile_failed = native_scroll_gpu_tile_frame_failed = YES;
+            native_scroll_tiles_clear();
+        }
+    } else if (pixels) {
         if (cache->tiled && cache->reused) {
             for (int index = 0; index < cache->damage_rect_count; ++index) {
                 size_t *rect = cache->damage_rects[index];

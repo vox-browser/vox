@@ -4,6 +4,7 @@
 // them directly; a single read waits for the GPU once and returns them all,
 // as Chromium rasterizes every display item of a tile in one GPU pass.
 #import <IOSurface/IOSurface.h>
+#include <atomic>
 namespace {
 struct CanvasTile {
     int x, y, width, height;
@@ -17,6 +18,19 @@ std::vector<sk_sp<SkSurface>> canvas_surface_pool;
 id<MTLComputePipelineState> canvas_readback_pipeline;
 VoxGraphiteImageUploadCache<sk_sp<SkImage>> canvas_backdrop_uploads {16 * 1024 * 1024, 4};
 size_t canvas_backdrop_texture_hits;
+id<MTLCommandBuffer> canvas_last_present;
+bool canvas_exported_frame;
+std::atomic<bool> canvas_present_failed {false};
+bool canvas_finish_submission(bool synchronous) {
+    bool wait = synchronous || !canvas_exported_frame;
+    if (wait && canvas_last_present) {
+        [canvas_last_present waitUntilCompleted];
+        if (canvas_last_present.status == MTLCommandBufferStatusError) canvas_present_failed = true;
+        [canvas_last_present release]; canvas_last_present = nil;
+    }
+    canvas_exported_frame = false;
+    return wait;
+}
 
 SkImageInfo canvas_info(int width, int height)
 {
@@ -27,6 +41,7 @@ SkImageInfo canvas_info(int width, int height)
 // The owning Context is being destroyed: release every canvas resource first.
 void canvas_reset()
 {
+    canvas_finish_submission(true);
     canvas_tiles.clear();
     canvas_surface_pool.clear();
     canvas_backdrop_uploads.clear();
@@ -663,6 +678,7 @@ int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
 { @autoreleasepool {
     if (completion) *completion = nullptr;
     if (!completion || !regions || count <= 0 || count > 66) return 0;
+    if (canvas_present_failed.load()) return -1;
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu || !canvas_recorder || canvas_tiles.empty() || !gpu_frame_queue) return 0;
@@ -809,7 +825,8 @@ int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
     for (auto surface:targets) leases.push_back(surface);
     for (auto surface:previous) if (surface && !std::any_of(leases.begin(),leases.end(),[&](auto value){return same_surface(value,surface);})) leases.push_back(surface);
     for (auto surface:leases) { CFRetain(surface); IOSurfaceIncrementUseCount(surface); }
-    [commands addCompletedHandler:^(id<MTLCommandBuffer>) {
+    [commands addCompletedHandler:^(id<MTLCommandBuffer> completed) {
+        if (completed.status==MTLCommandBufferStatusError) canvas_present_failed.store(true);
         for (auto surface:leases) { IOSurfaceDecrementUseCount(surface); CFRelease(surface); }
     }];
 #ifdef VOX_TEST_CANVAS_PRESENT
@@ -823,6 +840,8 @@ int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
 #endif
         return -1;
     }
+    [canvas_last_present release]; canvas_last_present = [commands retain];
+    canvas_exported_frame = true;
     *completion=(__bridge void*)[commands retain];
     return 1;
 } }

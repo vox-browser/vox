@@ -7788,7 +7788,10 @@ fn (mut app BrowserApp) draw() {
 			gpu_instructions := processmetrics.begin_instruction_stage('gpu_frame_finalization')
 			$if macos {
 				if gpu_canvas && !(text_scroll_layer && gpu_text_layer_composites_enabled
-					&& C.native_gpu_canvas_can_defer_layers() != 0) { C.native_gpu_canvas_cpu_access() }
+					&& C.native_gpu_canvas_can_defer_layers() != 0)
+					&& !(!text_scroll_layer && C.native_gpu_canvas_can_present() != 0) {
+					C.native_gpu_canvas_cpu_access()
+				}
 			}
 			if text_scroll_layer { end_chromium_text_scroll_layer() }
 			app.flush_rounded_rect_underlay(0, page_y, window.height)

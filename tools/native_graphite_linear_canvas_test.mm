@@ -161,6 +161,34 @@ static void test_canvas_present() {
     }
     vox_graphite_canvas_release_present(nullptr); assert(!vox_graphite_canvas_wait_present(nullptr));
     vox_graphite_canvas_end();
+    // More than two real-queue windows: each next frame samples its immutable
+    // predecessor before any CPU wait, and finish only drains on retirement.
+    auto previous=create(height);
+    assert(previous && !IOSurfaceLock(previous,0,nullptr));
+    memset(data(previous),0,IOSurfaceGetAllocSize(previous)); IOSurfaceUnlock(previous,0,nullptr);
+    int one[]={0,0,1,1,0,0,1,1};
+    unsigned drains=0;
+    for (int frame=0; frame<520; ++frame) { @autoreleasepool {
+        auto next=create(height); assert(next);
+        assert(vox_graphite_canvas_begin(one,1));
+        auto const& tile=canvas_tiles[0];
+        std::vector<uint8_t> source(size_t(tile.width)*tile.height*4,0);
+        source[0]=uint8_t(frame); source[1]=uint8_t(frame>>8); source[2]=93; source[3]=255;
+        assert(vox_graphite_canvas_upload_queued(0,source.data(),tile.width*4));
+        VoxGraphiteCanvasSurfaceRegion region {next,previous,0,0,0,0,width,height};
+        assert(vox_graphite_canvas_present(&region,1,&ticket)==1);
+        vox_graphite_canvas_release_present(ticket); vox_graphite_canvas_end();
+        vox_graphite_finish_frame();
+        drains += canvas_last_present == nil;
+        CFRelease(previous); previous=next;
+    } }
+    assert(drains>=2);
+    assert(!IOSurfaceLock(previous,kIOSurfaceLockReadOnly,nullptr));
+    assert(data(previous)[0]==93 && data(previous)[1]==2 && data(previous)[2]==7 && data(previous)[3]==255);
+    for (int y=0; y<height; ++y) for (int x=0; x<width; ++x)
+        if (x || y) for (int c=0; c<4; ++c) assert(!data(previous)[y*IOSurfaceGetBytesPerRow(previous)+x*4+c]);
+    IOSurfaceUnlock(previous,kIOSurfaceLockReadOnly,nullptr); CFRelease(previous);
+    canvas_reset(); assert(!canvas_last_present && !canvas_exported_frame);
     std::puts("GPU compositor transport: exact ring/alpha/padding, queued writers, atomic declines, prefix lifetime and capture fences passed");
 }
 

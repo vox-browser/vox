@@ -43,6 +43,7 @@ static id<MTLCommandBuffer> vox_metal_time_command(id<MTLCommandBuffer> command)
 - (instancetype)initWithDevice:(id<MTLDevice>)device;
 - (BOOL)retireCompletedQueue;
 - (BOOL)finishCompletedFrame;
+- (BOOL)willRetireAfterFrame;
 @end
 
 @implementation VoxFrameMetalQueue
@@ -135,6 +136,9 @@ static id<MTLCommandBuffer> vox_metal_time_command(id<MTLCommandBuffer> command)
     }
 }
 #endif
+- (BOOL)willRetireAfterFrame {
+    @synchronized(self) { return queue_ && completed_frames_ + 1 >= VOX_METAL_QUEUE_FRAME_LIMIT; }
+}
 // Keep a bounded number of completed frames on one real queue. Explicit
 // retirement and destruction still release it immediately, including on idle.
 - (BOOL)finishCompletedFrame {

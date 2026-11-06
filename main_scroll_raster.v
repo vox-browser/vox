@@ -7,6 +7,8 @@ import os
 import processmetrics
 
 fn C.native_scroll_tile_compositor_enabled(i32)
+fn C.native_gpu_tile_compositor_enabled() int
+fn C.native_gpu_canvas_can_present() int
 fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64, &f64, int, int, i32) int
 fn C.native_end_scroll_raster()
 fn C.native_discard_scroll_raster()
@@ -88,7 +90,8 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			&& !chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)
 			&& layout.viewport_scroll_raster_reusable(app.document, app.paint_commands,
 				damage.width, damage.height)
-		damage.separate_scrollbars = eligible
+		inline_scrollbars := eligible && C.native_gpu_tile_compositor_enabled() != 0
+		damage.separate_scrollbars = eligible && !inline_scrollbars
 		damage.scrollbar_start = scroll_raster_scrollbar_start(app.paint_commands)
 		$if vox_scroll_raster_diagnostics ? {
 			marker := os.getenv('VOX_SCROLL_RASTER_INPUT_MARKER')
@@ -110,8 +113,8 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		mut allow_reuse := 0
 		mut stats := ScrollRasterDiffStats{}
 		if ring_eligible {
-			keys = scroll_raster_frame_keys(app.paint_commands, app.scroll_y,
-				app.overlay_scrollbars.paint_opacity, damage.width, damage.height)
+			keys = scroll_raster_frame_keys_with_scrollbars(app.paint_commands, app.scroll_y,
+				app.overlay_scrollbars.paint_opacity, damage.width, damage.height, inline_scrollbars)
 			app.mark_video_backdrop_keys(mut keys)
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'

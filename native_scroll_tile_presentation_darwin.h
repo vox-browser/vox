@@ -9,10 +9,12 @@
 #include <string.h>
 #include <math.h>
 #include "platform/native_state.h"
+#include "native_graphite_bridge.h"
 
 // The ring's physical rows are immutable compositor resources. Scrolling
 // changes their placement; only tiles touched by raster damage are replaced.
-// This is software raster / GPU composition, not compositor-thread input yet.
+// Raster may come from the CPU ring or a scheduled GPU export. Input and
+// paint planning still run on the main thread.
 #define VOX_SCROLL_TILE_ROWS 256
 #define VOX_SCROLL_TILE_LIMIT 65
 #define VOX_SCROLL_TILE_POOL_SLOTS 48
@@ -29,6 +31,9 @@ VOX_NATIVE_STATE CGImageRef native_scroll_tile_images[VOX_SCROLL_TILE_LIMIT];
 VOX_NATIVE_STATE CGContextRef native_scroll_tile_destination;
 VOX_NATIVE_STATE BOOL native_scroll_tile_setting;
 VOX_NATIVE_STATE BOOL native_scroll_tile_sparse;
+VOX_NATIVE_STATE BOOL native_scroll_gpu_tile_capability;
+VOX_NATIVE_STATE BOOL native_scroll_gpu_tile_failed;
+VOX_NATIVE_STATE BOOL native_scroll_gpu_tile_frame_failed;
 VOX_NATIVE_STATE char native_scroll_tile_frame_key;
 VOX_NATIVE_STATE char native_scroll_tile_layer_key;
 VOX_NATIVE_STATE char native_scroll_tile_container_key;
@@ -59,9 +64,15 @@ VOX_NATIVE_STATE VoxScrollTileFrame *native_scroll_tile_pending;
 static void native_scroll_tile_compositor_enabled(int enabled) {
     native_scroll_tile_setting = enabled != 0;
 }
+static BOOL native_scroll_gpu_tiles_enabled(void) {
+    return native_scroll_tile_setting && native_scroll_gpu_tile_capability
+        && !native_scroll_gpu_tile_failed && getenv("VOX_GPU_TILE_COMPOSITOR")
+        && !getenv("VOX_DISABLE_SCROLL_TILE_COMPOSITOR");
+}
 static BOOL native_scroll_tiles_accept(CGContextRef context) {
     return native_scroll_tile_setting && context && context == native_scroll_tile_destination
-        && getenv("VOX_SCROLL_TILE_COMPOSITOR") && !getenv("VOX_DISABLE_SCROLL_TILE_COMPOSITOR");
+        && (getenv("VOX_SCROLL_TILE_COMPOSITOR") || native_scroll_gpu_tiles_enabled())
+        && !getenv("VOX_DISABLE_SCROLL_TILE_COMPOSITOR");
 }
 static void native_scroll_tiles_drop_pending(void) {
 #if !__has_feature(objc_arc)
@@ -94,7 +105,7 @@ static void native_scroll_tile_release(void *info, const void *data, size_t size
 #ifdef VOX_TEST_SCROLL_TILES
 static BOOL native_scroll_tile_test_allocation_failure;
 #endif
-static CGImageRef native_scroll_tile_copy(const uint8_t *rows, size_t width, size_t height) {
+static VoxScrollTileStorage *native_scroll_tile_acquire(size_t width, size_t height) {
 #ifdef VOX_TEST_SCROLL_TILES
     if (native_scroll_tile_test_allocation_failure) return NULL;
 #endif
@@ -137,18 +148,55 @@ static CGImageRef native_scroll_tile_copy(const uint8_t *rows, size_t width, siz
         }
         native_scroll_tile_pool_bytes += slot->bytes;
     }
-    if (IOSurfaceLock(slot->surface, 0, NULL) != kIOReturnSuccess) return NULL;
+    __atomic_store_n(&slot->busy, 1, __ATOMIC_RELEASE);
+    return slot;
+}
+static CGImageRef native_scroll_tile_image(VoxScrollTileStorage *slot, BOOL gpu);
+static CGImageRef native_scroll_tile_copy(const uint8_t *rows, size_t width, size_t height) {
+    VoxScrollTileStorage *slot = native_scroll_tile_acquire(width, height);
+    if (!slot) return NULL;
+    if (IOSurfaceLock(slot->surface, 0, NULL) != kIOReturnSuccess) {
+        __atomic_store_n(&slot->busy, 0, __ATOMIC_RELEASE); return NULL;
+    }
     uint8_t *pixels = (uint8_t *)IOSurfaceGetBaseAddress(slot->surface);
     for (size_t y = 0; y < height; ++y)
         memcpy(pixels + y * slot->pitch, rows + y * width * 4, width * 4);
     IOSurfaceUnlock(slot->surface, 0, NULL);
-    CGDataProviderRef provider = CGDataProviderCreateWithData(slot, pixels,
-        slot->bytes, native_scroll_tile_release);
-    if (!provider) return NULL;
+    return native_scroll_tile_image(slot, NO);
+}
+// Core Animation consumes the scheduled IOSurface directly. CPU capture takes
+// the kernel's read fence lazily, only when a provider actually reads bytes.
+static const void *native_scroll_tile_get_bytes(void *info) {
+    VoxScrollTileStorage *slot = (VoxScrollTileStorage *)info;
+    return IOSurfaceLock(slot->surface, kIOSurfaceLockReadOnly, NULL) == kIOReturnSuccess
+        ? IOSurfaceGetBaseAddress(slot->surface) : NULL;
+}
+static void native_scroll_tile_put_bytes(void *info, const void *bytes) {
+    if (bytes) IOSurfaceUnlock(((VoxScrollTileStorage *)info)->surface, kIOSurfaceLockReadOnly, NULL);
+}
+static size_t native_scroll_tile_read_bytes(void *info, void *buffer, off_t offset, size_t count) {
+    VoxScrollTileStorage *slot = (VoxScrollTileStorage *)info;
+    if (offset < 0 || (uint64_t)offset >= slot->bytes) return 0;
+    if (count > slot->bytes - (size_t)offset) count = slot->bytes - (size_t)offset;
+    const uint8_t *bytes = (const uint8_t *)native_scroll_tile_get_bytes(info);
+    if (!bytes) return 0;
+    memcpy(buffer, bytes + offset, count); native_scroll_tile_put_bytes(info, bytes);
+    return count;
+}
+static void native_scroll_tile_release_direct(void *info) {
+    native_scroll_tile_release(info, NULL, 0);
+}
+static CGImageRef native_scroll_tile_image(VoxScrollTileStorage *slot, BOOL gpu) {
+    CGDataProviderDirectCallbacks callbacks = {0, native_scroll_tile_get_bytes,
+        native_scroll_tile_put_bytes, native_scroll_tile_read_bytes, native_scroll_tile_release_direct};
+    CGDataProviderRef provider = gpu ? CGDataProviderCreateDirect(slot, slot->bytes, &callbacks)
+        : CGDataProviderCreateWithData(slot, IOSurfaceGetBaseAddress(slot->surface),
+            slot->bytes, native_scroll_tile_release);
+    if (!provider) { __atomic_store_n(&slot->busy, 0, __ATOMIC_RELEASE); return NULL; }
     __atomic_store_n(&slot->provider, provider, __ATOMIC_RELEASE);
     __atomic_store_n(&slot->busy, 1, __ATOMIC_RELEASE);
     CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-    CGImageRef image = CGImageCreate(width, height, 8, 32, slot->pitch, color,
+    CGImageRef image = CGImageCreate(slot->width, slot->height, 8, 32, slot->pitch, color,
         kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big, provider, NULL, false,
         kCGRenderingIntentDefault);
     CGColorSpaceRelease(color); CGDataProviderRelease(provider);
@@ -162,6 +210,8 @@ static IOSurfaceRef native_scroll_tile_surface(CGImageRef image) {
     return NULL;
 }
 
+static BOOL native_scroll_tiles_adopt(CGImageRef *, size_t, size_t, size_t, size_t,
+    size_t, size_t, CGFloat, BOOL);
 // Called after CPU/GPU raster finishes and before viewport overlays paint.
 // dirty_rows are ring-storage row numbers, never viewport positions.
 static BOOL native_scroll_tiles_commit(const uint8_t *ring, size_t width, size_t height,
@@ -185,9 +235,13 @@ static BOOL native_scroll_tiles_commit(const uint8_t *ring, size_t width, size_t
             return NO;
         }
     }
+    return native_scroll_tiles_adopt(next, tiles, updated, width, height, row_origin, top, scale, NO);
+}
+static BOOL native_scroll_tiles_adopt(CGImageRef *next, size_t tiles, size_t updated,
+    size_t width, size_t height, size_t row_origin, size_t top, CGFloat scale, BOOL gpu) {
     VoxScrollTileFrame *frame = [[VoxScrollTileFrame alloc] init];
     frame->top = top; frame->document_width = width; frame->document_height = height;
-    frame->scale = scale; frame->overlay = (size_t)ceil(32 * scale);
+    frame->scale = scale; frame->overlay = gpu ? 0 : (size_t)ceil(32 * scale);
     NSMutableArray *images = [NSMutableArray array];
     for (size_t y = 0; y < height;) {
         size_t physical = (row_origin + y) % height;
@@ -211,6 +265,60 @@ static BOOL native_scroll_tiles_commit(const uint8_t *ring, size_t width, size_t
         fprintf(stderr, "VOX_SCROLL_TILES tiles=%zu updated=%zu quads=%zu pool_bytes=%zu sparse=%d\n",
             tiles, updated, frame->count, native_scroll_tile_pool_bytes, native_scroll_tile_sparse);
     return YES;
+}
+
+typedef int (*VoxScrollGpuPresent)(CGContextRef, const VoxGraphiteCanvasSurfaceRegion *, int, void **);
+typedef void (*VoxScrollGpuRelease)(void *);
+static BOOL native_scroll_tiles_export(CGContextRef context, size_t width, size_t height,
+    size_t row_origin, size_t top, CGFloat scale, const BOOL *dirty,
+    VoxScrollGpuPresent present, VoxScrollGpuRelease release) {
+    size_t tiles = (height + VOX_SCROLL_TILE_ROWS - 1) / VOX_SCROLL_TILE_ROWS, updated = 0;
+    if (!tiles || tiles > VOX_SCROLL_TILE_LIMIT) return NO;
+    CGImageRef next[VOX_SCROLL_TILE_LIMIT] = {0};
+    VoxScrollTileStorage *slots[VOX_SCROLL_TILE_LIMIT] = {0};
+    VoxGraphiteCanvasSurfaceRegion regions[VOX_SCROLL_TILE_LIMIT + 1];
+    int count = 0;
+    for (size_t index = 0; index < tiles; ++index) {
+        if (!dirty[index] && native_scroll_tile_images[index]) {
+            next[index] = CGImageRetain(native_scroll_tile_images[index]); continue;
+        }
+        size_t first = index * VOX_SCROLL_TILE_ROWS;
+        size_t rows = height - first < VOX_SCROLL_TILE_ROWS ? height - first : VOX_SCROLL_TILE_ROWS;
+        slots[index] = native_scroll_tile_acquire(width, rows);
+        if (!slots[index]) goto failed;
+        ++updated;
+    }
+    for (size_t y = 0; y < height;) {
+        size_t physical = (row_origin + y) % height, index = physical / VOX_SCROLL_TILE_ROWS;
+        size_t local = physical % VOX_SCROLL_TILE_ROWS;
+        size_t rows = (index * VOX_SCROLL_TILE_ROWS + VOX_SCROLL_TILE_ROWS < height
+            ? VOX_SCROLL_TILE_ROWS : height - index * VOX_SCROLL_TILE_ROWS) - local;
+        if (rows > height - y) rows = height - y;
+        if (slots[index]) {
+            regions[count++] = (VoxGraphiteCanvasSurfaceRegion){slots[index]->surface,
+                native_scroll_tile_images[index] ? native_scroll_tile_surface(native_scroll_tile_images[index]) : NULL,
+                0, (int)(top+y), 0, (int)local, (int)width, (int)rows};
+        }
+        y += rows;
+    }
+    if (count) {
+        if (!present || !release) goto failed;
+        void *completion = NULL;
+        if (present(context, regions, count, &completion) != 1 || !completion) goto failed;
+        release(completion);
+    }
+    for (size_t index = 0; index < tiles; ++index) if (slots[index]) {
+        next[index] = native_scroll_tile_image(slots[index], YES);
+        slots[index] = NULL; // Provider now owns the reservation, including failure.
+        if (!next[index]) goto failed;
+    }
+    return native_scroll_tiles_adopt(next, tiles, updated, width, height, row_origin, top, scale, YES);
+failed:
+    for (size_t index = 0; index < tiles; ++index) {
+        if (next[index]) CGImageRelease(next[index]);
+        if (slots[index]) __atomic_store_n(&slots[index]->busy, 0, __ATOMIC_RELEASE);
+    }
+    return NO;
 }
 
 static CGImageRef native_scroll_tiles_flatten(VoxScrollTileFrame *frame) {
