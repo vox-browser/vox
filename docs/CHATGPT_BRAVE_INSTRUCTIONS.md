@@ -6032,3 +6032,30 @@ The unprofiled cohort retains the original SOCKS bytes/scripts, original-origin 
 Medians: **24,094,117,450 control → 24,208,203,522.5 candidate**, an observed **0.474% increase**. Conservative separation `min(control lower) − max(candidate upper)` is **-441,665,914** instructions. The ranges overlap, so no whole-page saving is credited and no new 5M broad checkpoint is due. Carry remains zero.
 
 The candidate median remains **4,208,203,522.5 instructions above 20B**. Four pairs cannot establish seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-borrowed-rule-buckets-verification-20261106.json) retains source witnesses, all focused/component checks, every raw observation, commands, memory guards, counters, PNGs and authenticated archives. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Refreshed stage budget and GPU eligibility diagnostic (2026-11-06)
+
+The completed executable `dd40e76bc0f031a26601a9c435bd8ee229b8ad3f0c4f402cf194cecce695118f` uses a single C unit with V `-prod`. Four fresh captures pass content, bootstrap, button, exact reference pixels and browser/kernel exits. Both Vox captures execute the Wasm lexer without fallback. The main-thread THSC_CPI stream and existing process stream independently reconcile to the same coalition PNG endpoint. The job was prepared when a parallel bundle was current, but publication switched before its lease acquisition. The actual saved receipt identifies a single-unit build, whose frozen C source independently verifies all counter paths; binary/runtime stream proofs also pass. The historical artifact names retain the original job label. The first preflight mistakenly required a snapshot function absent as a standalone binary symbol; it launched no browser and remains retained.
+
+The traced total is **27,749,783,878 coalition instructions**, including **24,127,539,461 main-thread cumulative instructions** and a signed remainder of **3,622,244,417**. The separate untraced observation is **24,402,272,741**. The remainder includes other threads/helpers and endpoint skew, and is not isolated JavaScript. One observation per mode cannot estimate tracing overhead or establish acceptance. No mixed-C-mode delta earns optimization credit.
+
+| Exclusive main-thread stage / residual | Instructions | Share of traced total |
+|---|---:|---:|
+| style_update | 4,350,255,692 | 15.677% |
+| other_threads_helpers_and_endpoint_skew | 3,622,244,417 | 13.053% |
+| javascript_module_completion | 3,375,884,885 | 12.165% |
+| browser_main | 2,472,647,673 | 8.911% |
+| javascript_execution_and_bindings | 2,100,737,978 | 7.570% |
+| paint_layer_transition | 1,897,082,567 | 6.836% |
+| absolute_positioned_layout | 1,867,167,305 | 6.729% |
+| css_parsing | 561,319,011 | 2.023% |
+| paint_leaf_text | 559,529,600 | 2.016% |
+| platform_timer_delivery | 536,412,634 | 1.933% |
+| gpu_frame_finalization | 407,011,808 | 1.467% |
+| paint_leaf_fill | 361,109,632 | 1.301% |
+
+All 63 additive rows are retained in the [full table](performance/chatgpt-parallel-load-stages-production-r2-main-thread-20261106.csv) and [JSON](performance/chatgpt-parallel-load-stages-production-r2-main-thread-20261106.json); they sum exactly to the traced total. The original fixture/scripts/references, fresh profiles/caches, original-origin replay, 1024×768 scale two, five-second unfocused settle, retained OS caches and launch-through-encoded-PNG boundary stay fixed. GPU/outside-coalition work remains excluded.
+
+The separate optional nested-GPU/text-compositing probe also completes all four content/pixel/normal-exit audits, but emits no actual nested-layer marker in either variant. Its eligibility gate is therefore rejected and receives no performance credit. The selected single-unit executable’s frozen source explicitly disables non-reused full-frame GPU canvas while automatic screenshot delay is present. Its bounded batches report zero draws. Enabling those existing switches alone cannot validate nested GPU compositing on this capture workload; no production default or measurement boundary was changed.
+
+The [verification receipt](performance/chatgpt-parallel-load-stages-verification-20261106.json) retains the failed preflight, both diagnostics, raw counters/logs, source/binary proofs, PNGs, guards and authenticated archives. These are optimization leads only. Page credit and broad carry remain zero; the 20B target remains unmet.

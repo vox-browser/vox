@@ -1,0 +1,111 @@
+{
+  "complete": true,
+  "diagnostic": true,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_carry": 0,
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "dd40e76bc0f031a26601a9c435bd8ee229b8ad3f0c4f402cf194cecce695118f",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-130430-8e7500e5/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "3ca60c1bb244501bf5bd9d452e3b4d896f901c6a0c9f09d722378895ed338cb6",
+      "dirty": true,
+      "head": "41cdf27fc1d88749d1f358f353dc8be743231165",
+      "repository_sha256": "6ac017673b30233d9468642a3410bb0c4aeca497713ee3c6a4d5b2e3a9d3a040"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "3ca60c1bb244501bf5bd9d452e3b4d896f901c6a0c9f09d722378895ed338cb6",
+      "dirty": true,
+      "head": "b7e8dbab466036292af6569f55a5f5592c873e1e",
+      "repository_sha256": "ac8f106ce30f6d317205a2da084ab788c4daefd3b3dcd3ebd1d27a889a01883a"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "41cdf27fc1d88749d1f358f353dc8be743231165",
+      "id": "05a0bf5a36de417592d418f765b3592a",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "3ca60c1bb244501bf5bd9d452e3b4d896f901c6a0c9f09d722378895ed338cb6",
+      "dirty": true,
+      "head": "15fef9112d1743e112cbf62b7794cb718167d3ab",
+      "repository_sha256": "660d95609da705e22b9cff9b766f4fa0ee033e568bc1a8dab6281edbcb4f5427"
+    }
+  },
+  "traced_coalition_instructions": 27749783878,
+  "traced_main_thread_instructions": 24127539461,
+  "residual": 3622244417,
+  "untraced_instructions": 24402272741,
+  "main_table": "docs/performance/chatgpt-parallel-load-stages-production-r2-main-thread-20261106.json",
+  "main_csv": "docs/performance/chatgpt-parallel-load-stages-production-r2-main-thread-20261106.csv",
+  "gpu_probe": "docs/performance/chatgpt-gpu-nested-probe-r1-diagnostic-20261106.json",
+  "gpu_probe_path_executed": false,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-parallel-load-stages-production-r2-diagnostic-20261106-evidence.zip",
+      "sha256": "16f183ea283f28132ef770894dfc41ae04f618ef8395d0b98684dcda635e4ff5",
+      "bytes": 2290499,
+      "verified_entries": 63
+    },
+    {
+      "path": "docs/performance/chatgpt-gpu-nested-probe-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "3a7457c13392a24afd113aae37a768231915eb37ed55eea6d6d3039f4b821941",
+      "bytes": 1507174,
+      "verified_entries": 58
+    },
+    {
+      "path": "docs/performance/chatgpt-parallel-load-stages-controller-20261106-evidence.zip",
+      "sha256": "a0772af03544f953e01b6f9812dc73a7a7631e8401ccfd33a518ca5e6133f980",
+      "bytes": 67628,
+      "verified_entries": 21
+    }
+  ],
+  "qualification": "Actual selected single-unit V-prod build; job was named while a parallel bundle was current and publication changed before lease acquisition, original SOCKS bytes/scripts/references, 5s unfocused capture and explicit JSC warmup 10000. Runtime balanced dual streams reconcile to the coalition endpoint; the selected single-unit build has binary/symbol/runtime proof and an independently verified frozen-C proof retained in the controller archive. Initial preflight incorrectly required an inlined-away snapshot symbol and launched no browsers; the corrected preflight checks begin/finish plus imported thread_selfcounts. No instruction values are scaled to the earlier single-unit cohorts or 20B, and the separate untraced observation cannot estimate instrumentation overhead. GPU toggles are an independent diagnostic with no production/default changes or page credit; its inherited implementation_commits text labels an existing optional path and does not name a new commit.",
+  "finalization_attempts": [
+    {
+      "path": "Build/chatgpt-parallel-load-stages-finalize-20261106-r1/finalize-guard.json",
+      "sha256": "b4c32105636183cbf452b4be6b0aebf2f4488825a92fe07abc702e6f9ab570d9",
+      "receipt": {
+        "command": [
+          "python3",
+          "Build/chatgpt-parallel-load-stages-finalize-20261106-r1/finalize.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3440640,
+        "elapsed_seconds": 0.177301625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "outcome": "Rejected expected-parallel assertion before archiving; actual pinned receipt was single-unit"
+    },
+    {
+      "path": "Build/chatgpt-parallel-load-stages-finalize-20261106-r1/finalize-r2-guard.json",
+      "sha256": "8680ca767ca4de66dccb902bbc98ba563c70dc155fcb5c34b0561654116840d5",
+      "receipt": {
+        "command": [
+          "python3",
+          "Build/chatgpt-parallel-load-stages-finalize-20261106-r1/finalize.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1100382208,
+        "elapsed_seconds": 3.070258,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "outcome": "Corrected mode attribution and independently verified frozen counter source"
+    }
+  ]
+}
