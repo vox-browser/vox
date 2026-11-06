@@ -1140,7 +1140,12 @@ int main(int argc, char** argv)
             || !std::strcmp(argv[1], "--immutable-msaa-images")
             || !std::strcmp(argv[1], "--masked-images"))) {
         bool immutable=!std::strcmp(argv[1], "--immutable-msaa-images");
-        if (immutable) setenv("VOX_IMMUTABLE_IMAGE_UPLOADS","1",1);
+        if (immutable) {
+            Dl_info loaded {};assert(dladdr(reinterpret_cast<void*>(gpu_canvas_api()->begin),&loaded));
+            auto library=dlopen(loaded.dli_fname,RTLD_LAZY|RTLD_LOCAL);assert(library);
+            assert(dlsym(library,"vox_graphite_set_image_immutable_source"));
+            setenv("VOX_IMMUTABLE_IMAGE_UPLOADS","1",1);
+        }
         s_static_image_mask=!std::strcmp(argv[1], "--masked-images");
         setenv(s_static_image_mask ? "VOX_GPU_CANVAS_MASKED_IMAGES" : "VOX_GPU_CANVAS_MSAA_IMAGES", "1", 1);
         assert(gpu_canvas_api()->draw_image_msaa);

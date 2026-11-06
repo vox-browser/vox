@@ -214,6 +214,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_canvas_begin_native_grid",
         "-Wl,-exported_symbol,_vox_graphite_canvas_upload",
         "-Wl,-exported_symbol,_vox_graphite_canvas_upload_queued",
+        "-Wl,-exported_symbol,_vox_graphite_set_image_immutable_source",
         "-Wl,-exported_symbol,_vox_graphite_canvas_push_layer",
         "-Wl,-exported_symbol,_vox_graphite_canvas_pop_layer",
         "-Wl,-exported_symbol,_vox_graphite_canvas_draw_shadow",

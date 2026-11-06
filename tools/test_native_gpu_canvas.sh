@@ -64,7 +64,14 @@ if [ "$wrong_backend_status" -ne 1 ]; then
 fi
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
-"$output_dir/native_gpu_canvas_test" --immutable-msaa-images
+VOX_IMAGE_UPLOAD_DIAGNOSTICS=1 "$output_dir/native_gpu_canvas_test" --immutable-msaa-images > "$output_dir/immutable-uploads.log" 2>&1
+python3 - "$output_dir/immutable-uploads.log" <<'IDENTITY'
+import re,sys
+from pathlib import Path
+log=Path(sys.argv[1]).read_text()
+assert re.search(r'VOX_IMAGE_UPLOAD width=1426 height=1080 .*reused=1 .*immutable=1',log), 'No immutable texture reuse through the primary bridge'
+print('Immutable primary/backend bridge: exported API and keyed texture reuse observed')
+IDENTITY
 "$output_dir/native_gpu_canvas_test" --masked-images
 "$output_dir/native_gpu_canvas_test" --deferred-video-barriers
 "$output_dir/native_gpu_canvas_test" --failed-readback

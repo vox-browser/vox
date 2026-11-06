@@ -154,6 +154,10 @@ int vox_graphite_resize_rgba_pixels(const VoxGraphiteImage *image,
     uint8_t *pixels, int width, int height, int pitch);
 int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShape *shape);
+// Scope a trusted immutable decoded-resource generation around image draws.
+// The pointer/shape must match; clear with key zero. No source bytes are held.
+void vox_graphite_set_image_immutable_source(uint64_t key, const uint8_t *pixels,
+    int width, int height, int pitch);
 // CPU pixels for a subregion of an otherwise transparent GPU surface. The
 // shape matrix and raster dimensions remain in the original tile coordinates.
 typedef struct VoxGraphitePixelRegion {
