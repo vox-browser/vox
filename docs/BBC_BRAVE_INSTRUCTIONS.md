@@ -148,6 +148,29 @@ included. The initial 3,633-call overflow aggregate remains recorded. These are
 instrumented callback intervals, not production shares or unprofiled savings.
 [Query action diagnostic](performance/bbc-query-action-diagnostic-20261106.json).
 
+A fresh current-source **`v -profile`** diagnostic selects 64 main-thread wall
+time scopes; 61 execute, with unchanged normalized engine bodies and unchanged
+source inputs during generation. Standard rows record 14,231 uncached grid calls
+(907.717 ms inclusive / 107.972 self), 29,418 inline calls (206.912 / 41.408),
+and 29,418 iterator creations (72.545 / 69.395). Recursive inclusive timers
+overlap; self includes unselected/native/JSC work and clocks include overhead,
+waits and possible post-PNG work. These are not production instruction shares.
+The single-C-unit O3/ThinLTO diagnostic differs from 33-unit production. Its
+original full-seal validation fails because a publication changes Skia during
+compilation; that failure stays intact. The completed executable is separately
+adopted under a publication lease with newly pinned actual runtime libraries,
+all generated compiler inputs unchanged, and successful original pixels/content,
+72 external source evaluations, native image, exit and PID-adoption audits.
+It earns no acceptance or optimization credit. Initial generation/preparation
+failures are preserved. [Fresh profile](performance/bbc-fresh-v-profile-geometry-20261106.json).
+
+[Per-call diagnostics](performance/bbc-query-call-diagnostics-20261106.json)
+retain all geometry calls and identify three expensive reads before PNG. Separate
+facade/reply witnesses identify `bbc-header`, the horizontal grid and a popover
+trigger, all returning nonzero geometry. The metadata experiment adds private
+JavaScript work within its timer, so it supplies identity/reply evidence without
+cross-run numerical comparison or saving credit.
+
 The fresh [CPU sample](performance/bbc-current-production-sample-20261106.json)
 validates PID/start identity, executable UUID and Vox address ranges, with no
 instruction credit.
