@@ -1,0 +1,249 @@
+{
+  "recorded_utc": "2026-11-06T05:00:47.414753+00:00",
+  "fix_commit": "6f7a77893",
+  "finding": "Compact canvas/element mouse and pointer listeners were registered in a legacy list instead of the native DOM EventTarget list. Platform press, release and movement never reached them.",
+  "change": "Element and Document pointer/mouse listeners use the existing DOM dispatch path, including listener options, cancellation, native target identity and child viewport coordinates. Resource event adapters retain their earlier delivery paths.",
+  "sources_sha256": {
+    "browserjs/native_pointer_event_names.v": "3400de079e9beaa2c78dd4754e881c29dc0abb0b0167b24cfce4a7fa20d81af2",
+    "browserjs/element_wheel_host_jsc.c.v": "9ed8678a79ebab8d90b86a5b0f2478aa6ecb2cf3dc2e8cac735f19193b870fe0",
+    "main_compact_document.v": "27618df8724655e6217608c27187bdb9f28f2b096f883858c69b0fd722e83c26",
+    "main_child_canvas_pointer_test.v": "e1868f10125676e6831f9234c996dfc0cf0bf6481ccf03c513d11a9757819f80",
+    "browserjs/element_pointer_listeners_test.v": "b395c37a3cbf0a1b38e7fefea7eb20460fe9ec3a1e5d4949241bb462fac05a99"
+  },
+  "checks": {
+    "cases_per_mode": 14,
+    "modes": [
+      "default",
+      "-prealloc -gc none"
+    ],
+    "runs": {
+      "pointer-final-default-r1": {
+        "cases": 10,
+        "inputs_unchanged": true,
+        "raw": "Build/discord-retry-20261106/image-events/pointer-final-default-r1",
+        "compile": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 5521506304,
+          "guard_limit_bytes": 12884901888
+        },
+        "run": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 164937728,
+          "guard_limit_bytes": 3221225472
+        }
+      },
+      "pointer-final-prealloc-r1": {
+        "cases": 10,
+        "inputs_unchanged": true,
+        "raw": "Build/discord-retry-20261106/image-events/pointer-final-prealloc-r1",
+        "compile": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 5539004416,
+          "guard_limit_bytes": 12884901888
+        },
+        "run": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 188383232,
+          "guard_limit_bytes": 3221225472
+        }
+      },
+      "pointer-host-default-r2": {
+        "cases": 4,
+        "inputs_unchanged": true,
+        "raw": "Build/discord-retry-20261106/image-events/pointer-host-default-r2",
+        "compile": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 4912807936,
+          "guard_limit_bytes": 12884901888
+        },
+        "run": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 32768,
+          "guard_limit_bytes": 3221225472
+        }
+      },
+      "pointer-host-prealloc-r1": {
+        "cases": 4,
+        "inputs_unchanged": true,
+        "raw": "Build/discord-retry-20261106/image-events/pointer-host-prealloc-r1",
+        "compile": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 4877451264,
+          "guard_limit_bytes": 12884901888
+        },
+        "run": {
+          "exit": 0,
+          "sampled_peak_process_tree_rss_bytes": 32768,
+          "guard_limit_bytes": 3221225472
+        }
+      }
+    },
+    "coverage": [
+      "Dynamically created canvas inside iframe: exact client/page/offset coordinates, capture/target/bubble order, trusted event identity and exact pixel change on mouseup",
+      "No duplicate compact click replay, once/removal and compatibility mouse suppression after pointer cancellation",
+      "Native add/remove/dispatch behavior across 22 mouse/pointer event names, passive/once/abort options",
+      "Existing child navigation, transforms, event replay and input-driven hit-test mutation checks"
+    ]
+  },
+  "retained_baseline_failure": {
+    "raw": "Build/discord-retry-20261106/image-events/pointer-baseline-default-r1",
+    "compile_exit": 0,
+    "runtime_exit": 1
+  },
+  "production_fixture": {
+    "baseline-r2": {
+      "raw": "Build/discord-pointer-20261106/baseline-r2",
+      "result": {
+        "events": [
+          "pointermove:document",
+          "mousemove:document",
+          "pointermove:document",
+          "mousemove:document",
+          "pointerdown:document",
+          "mousedown:document",
+          "pointerup:document",
+          "mouseup:document",
+          "click:document",
+          "click:canvas"
+        ],
+        "checks": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "pixel": [
+          255,
+          0,
+          0,
+          255
+        ],
+        "rect": {
+          "x": 10,
+          "y": 10,
+          "width": 160,
+          "height": 80
+        },
+        "errors": [],
+        "executable_sha256": "7798f1e59bfe2d16c7349f1b128b63e804f0dea4952fca23dbb7cb554a400911",
+        "inputs_unchanged": true,
+        "fixture_sha256": "3d7b4445c9badd37817e09aae5fbbfb1299e53f94b62dcf97156c707bc15c820",
+        "native_input": [
+          70,
+          158.5
+        ],
+        "context": 0
+      },
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-074336-e5a4e1fa/frozen-compile.json",
+      "receipt_source_head": "022b370e5ade7e018cb4852a1e06443a38d3bff2",
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      }
+    },
+    "candidate-r1": {
+      "raw": "Build/discord-pointer-20261106/candidate-r1",
+      "result": {
+        "events": [
+          "pointermove:document",
+          "pointermove:canvas",
+          "mousemove:document",
+          "mousemove:canvas",
+          "pointermove:document",
+          "pointermove:canvas",
+          "mousemove:document",
+          "mousemove:canvas",
+          "pointerdown:document",
+          "pointerdown:canvas",
+          "mousedown:document",
+          "mousedown:canvas",
+          "pointerup:document",
+          "pointerup:canvas",
+          "mouseup:document",
+          "mouseup:canvas",
+          "click:document",
+          "click:canvas"
+        ],
+        "checks": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "pixel": [
+          17,
+          83,
+          29,
+          255
+        ],
+        "rect": {
+          "x": 10,
+          "y": 10,
+          "width": 160,
+          "height": 80
+        },
+        "errors": [],
+        "executable_sha256": "fe2d2e8e8f79669f9f63b519e849069936558d9d10777205211fc77c78c54396",
+        "inputs_unchanged": true,
+        "fixture_sha256": "3d7b4445c9badd37817e09aae5fbbfb1299e53f94b62dcf97156c707bc15c820",
+        "native_input": [
+          70,
+          158.5
+        ],
+        "context": 0
+      },
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-075531-0c7c1bb5/frozen-compile.json",
+      "receipt_source_head": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      }
+    }
+  },
+  "frozen_code_proof": {
+    "generated_c_sha256": "7fd35540bd665adab7dfe3947b12d8c777e6038f5839232b7b8d3ef4680bd991",
+    "element_native_pointer_filter_present": true,
+    "document_native_pointer_filter_present": true
+  },
+  "limitations": [
+    "The production click check used a neutral canvas fixture, with no CAPTCHA interaction or selection.",
+    "A real Discord verification selection must be checked by the user. Authentication remains unverified.",
+    "The earlier long-running memory growth is unresolved."
+  ],
+  "live_retry": {
+    "raw": "Build/discord-retry-20261106/auth-r4",
+    "fresh_process": true,
+    "executable_sha256": "fe2d2e8e8f79669f9f63b519e849069936558d9d10777205211fc77c78c54396",
+    "path": "/login",
+    "captcha_visible": true,
+    "authenticated": false,
+    "submitted_with_native_input": true,
+    "browser_running_at_handoff": true,
+    "guard_limit_gib": 12,
+    "guard_timeout_seconds": 7000,
+    "bundle_pins_unchanged_during_setup": true,
+    "bundle_lease_released_after_setup": true
+  }
+}
