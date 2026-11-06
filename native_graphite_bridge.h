@@ -273,6 +273,23 @@ int vox_graphite_canvas_read_direct(const VoxGraphitePixelRegion *views, int cou
 // completion. CPU access is unlocked and relocked within the call. Returns 0
 // before writing when unsupported, -1 on a failed GPU transfer, 1 on success.
 int vox_graphite_canvas_read_iosurface(void *surface, int width, int height);
+// Retained compositor tiles. Each unlocked, exclusively owned RGBA surface
+// starts as a GPU copy of `previous` (same dimensions), or transparent black.
+// The canvas rectangle maps to the specified surface rectangle; only canvas
+// damage is copied. Canvas rectangles and destination rectangles must be
+// disjoint. No CPU pixels cross this boundary.
+typedef struct {
+    void *surface, *previous;
+    int canvas_x, canvas_y, surface_x, surface_y, width, height;
+} VoxGraphiteCanvasSurfaceRegion;
+// 0: unsupported, no source recording consumed or destination changed;
+// -1: submission failed, reject the frame; 1: scheduled, owns *completion.
+int vox_graphite_canvas_present(const VoxGraphiteCanvasSurfaceRegion *regions,
+    int count, void **completion);
+// Consume a completion exactly once. Waiting is for capture/tests; ordinary
+// publication releases it after scheduling and relies on IOSurface fences.
+int vox_graphite_canvas_wait_present(void *completion);
+void vox_graphite_canvas_release_present(void *completion);
 void vox_graphite_canvas_end(void);
 #ifdef __cplusplus
 }

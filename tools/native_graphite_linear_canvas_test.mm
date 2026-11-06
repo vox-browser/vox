@@ -5,6 +5,7 @@
 #include "include/private/SkASAN.h"
 #undef SK_SANITIZE_ADDRESS
 #define VOX_TEST_ISOLATED_CANVAS_FAILURE
+#define VOX_TEST_CANVAS_PRESENT
 #include "../native_graphite_darwin.mm"
 #include <cassert>
 #include "../native_chromium_screen_blend.h"
@@ -32,6 +33,135 @@ static std::vector<uint8_t> read_surface(skgpu::graphite::Context* gpu,
             static_cast<uint8_t const*>(result->data(0)) + size_t(y) * result->rowBytes(0),
             size_t(surface->width()) * 4);
     return output;
+}
+
+static void test_canvas_present() {
+    canvas_reset();
+    constexpr int width=79,height=53;
+    IOSurfaceRef outputs[2],prefixes[2];
+    std::vector<std::vector<uint8_t>> expected(2);
+    auto create=[](int rows) {
+        return IOSurfaceCreate((__bridge CFDictionaryRef)@{
+            (__bridge id)kIOSurfaceWidth:@(width),(__bridge id)kIOSurfaceHeight:@(rows),
+            (__bridge id)kIOSurfaceBytesPerElement:@4,(__bridge id)kIOSurfacePixelFormat:@((uint32_t)'RGBA')});
+    };
+    auto data=[](IOSurfaceRef surface) { return static_cast<uint8_t*>(IOSurfaceGetBaseAddress(surface)); };
+    for(int index=0;index<2;++index) {
+        int rows=index?24:29;
+        outputs[index]=create(rows); prefixes[index]=create(rows);
+        assert(outputs[index] && prefixes[index]);
+        assert(IOSurfaceLock(outputs[index],0,nullptr)==kIOReturnSuccess);
+        assert(IOSurfaceLock(prefixes[index],0,nullptr)==kIOReturnSuccess);
+        size_t pitch=IOSurfaceGetBytesPerRow(outputs[index]);
+        assert(pitch==IOSurfaceGetBytesPerRow(prefixes[index]));
+        std::memset(data(outputs[index]),0xa5,pitch*rows);
+        expected[index].resize(pitch*rows,0xa5);
+        for(int y=0;y<rows;++y) for(int x=0;x<width;++x) {
+            uint8_t rgba[]={uint8_t(x+13),uint8_t(y+42),uint8_t(x+y),150};
+            std::memcpy(data(prefixes[index])+size_t(y)*pitch+x*4,rgba,4);
+            std::memcpy(expected[index].data()+size_t(y)*pitch+x*4,rgba,4);
+        }
+        IOSurfaceUnlock(prefixes[index],0,nullptr); IOSurfaceUnlock(outputs[index],0,nullptr);
+    }
+    int rects[]={3,7,37,29,5,9,31,23,30,20,39,25,32,23,33,19};
+    assert(vox_graphite_canvas_begin(rects,2));
+    for(int index=0;index<2;++index) {
+        auto const& tile=canvas_tiles[index];
+        std::vector<uint8_t> input(size_t(tile.width)*tile.height*4);
+        for(int y=0;y<tile.height;++y) for(int x=0;x<tile.width;++x) {
+            uint8_t bgra[]={uint8_t((x+y)%80),uint8_t((y*3)%100),uint8_t((x*5)%120),uint8_t(140+(x*y)%100)};
+            std::memcpy(input.data()+(size_t(y)*tile.width+x)*4,bgra,4);
+        }
+        assert(vox_graphite_canvas_upload(index,input.data(),tile.width*4));
+    }
+    for(auto const& tile:canvas_tiles) {
+        SkPaint marker; marker.setColor(0xff2080c0); marker.setBlendMode(SkBlendMode::kSrc);
+        tile.surface->getCanvas()->drawRect(SkRect::MakeXYWH(tile.clip.x()+3,tile.clip.y()+2,5,7),marker);
+    }
+    // Physical ring row 17 is the top: one target is sampled in two quads.
+    VoxGraphiteCanvasSurfaceRegion regions[]={
+        {outputs[0],prefixes[0],0,0,0,17,width,12},
+        {outputs[1],prefixes[1],0,12,0,0,width,24},
+        {outputs[0],prefixes[0],0,36,0,0,width,17}};
+    for(auto const& tile:canvas_tiles) {
+        auto area=tile.clip.makeOffset(tile.x,tile.y);
+        for(int y=area.top();y<area.bottom();++y) for(int x=area.left();x<area.right();++x) {
+            int physical=(17+y)%height, index=physical>=29, row=index?physical-29:physical;
+            int lx=x-tile.x,ly=y-tile.y;
+            uint8_t rgba[]={uint8_t((lx*5)%120),uint8_t((ly*3)%100),uint8_t((lx+ly)%80),uint8_t(140+(lx*ly)%100)};
+            if(lx>=tile.clip.x()+3 && lx<tile.clip.x()+8 && ly>=tile.clip.y()+2 && ly<tile.clip.y()+9)
+                { rgba[0]=0x20;rgba[1]=0x80;rgba[2]=0xc0;rgba[3]=255; }
+            std::memcpy(expected[index].data()+size_t(row)*IOSurfaceGetBytesPerRow(outputs[index])+x*4,rgba,4);
+        }
+    }
+    void* ticket=nullptr;
+    assert(!vox_graphite_canvas_present(regions,0,&ticket) && !ticket);
+    assert(!vox_graphite_canvas_present(regions,3,nullptr));
+    auto saved=regions[2];
+    auto alias=IOSurfaceLookup(IOSurfaceGetID(outputs[0])); assert(alias);
+    auto saved_prefix=regions[0].previous; regions[0].previous=alias;
+    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket);
+    regions[0].previous=saved_prefix; CFRelease(alias);
+    regions[2].surface_y=29;
+    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket);
+    regions[2]=saved;
+    assert(!vox_graphite_canvas_present(regions,2,&ticket) && !ticket); // Uncovered source damage.
+    regions[2].canvas_y=20;
+    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket); // Source overlap.
+    regions[2]=saved;
+    canvas_present_test_fail_target=1;
+    assert(!vox_graphite_canvas_present(regions,3,&ticket) && !ticket);
+    canvas_present_test_fail_target=-1;
+    for(auto surface:outputs) {
+        assert(IOSurfaceLock(surface,kIOSurfaceLockReadOnly,nullptr)==kIOReturnSuccess);
+        for(size_t byte=0;byte<IOSurfaceGetBytesPerRow(surface)*IOSurfaceGetHeight(surface);++byte)
+            assert(data(surface)[byte]==0xa5);
+        IOSurfaceUnlock(surface,kIOSurfaceLockReadOnly,nullptr);
+    }
+    struct LeaseProbe { IOSurfaceRef* outputs; IOSurfaceRef* prefixes; bool called; } lease {outputs,prefixes,false};
+    canvas_present_test_context=&lease;
+    canvas_present_test_before_commit=[](void* context) {
+        auto& probe=*static_cast<LeaseProbe*>(context);
+        // Before submission, both source and destination leases prevent pool
+        // reuse. Drop the caller's prefix references before the GPU reads them.
+        for(int index=0;index<2;++index) {
+            assert(IOSurfaceIsInUse(probe.outputs[index]) && IOSurfaceIsInUse(probe.prefixes[index]));
+            CFRelease(probe.prefixes[index]);
+        }
+        probe.called=true;
+    };
+    assert(vox_graphite_canvas_present(regions,3,&ticket)==1 && ticket && lease.called);
+    canvas_present_test_before_commit=nullptr; canvas_present_test_context=nullptr;
+    assert(vox_graphite_canvas_wait_present(ticket));
+    for(auto output:outputs) assert(!IOSurfaceIsInUse(output));
+    for(int index=0;index<2;++index) {
+        auto surface=outputs[index];
+        assert(IOSurfaceLock(surface,kIOSurfaceLockReadOnly,nullptr)==kIOReturnSuccess);
+        assert(!std::memcmp(data(surface),expected[index].data(),expected[index].size()));
+        IOSurfaceUnlock(surface,kIOSurfaceLockReadOnly,nullptr);
+    }
+    // Clearing a new target initializes every pixel without a CPU prefix.
+    for(auto& region:regions) region.previous=nullptr;
+    assert(vox_graphite_canvas_present(regions,3,&ticket)==1);
+    vox_graphite_canvas_release_present(ticket);
+    // Capture's CPU lock waits on the scheduled IOSurface writer.
+    for(int index=0;index<2;++index) {
+        auto surface=outputs[index]; auto rows=IOSurfaceGetHeight(surface);auto pitch=IOSurfaceGetBytesPerRow(surface);
+        assert(IOSurfaceLock(surface,kIOSurfaceLockReadOnly,nullptr)==kIOReturnSuccess);
+        for(size_t y=0;y<rows;++y) for(int x=0;x<width;++x) {
+            int physical=index?int(y)+29:int(y),screen=(physical+height-17)%height;
+            bool painted=false;
+            for(auto const& tile:canvas_tiles) painted|=tile.clip.makeOffset(tile.x,tile.y).contains(x,screen);
+            auto* pixel=data(surface)+y*pitch+x*4;
+            if(painted) assert(!std::memcmp(pixel,expected[index].data()+y*pitch+x*4,4));
+            else assert(!pixel[0] && !pixel[1] && !pixel[2] && !pixel[3]);
+        }
+        for(size_t y=0;y<rows;++y) for(size_t x=width*4;x<pitch;++x) assert(data(surface)[y*pitch+x]==0xa5);
+        IOSurfaceUnlock(surface,kIOSurfaceLockReadOnly,nullptr); CFRelease(surface);
+    }
+    vox_graphite_canvas_release_present(nullptr); assert(!vox_graphite_canvas_wait_present(nullptr));
+    vox_graphite_canvas_end();
+    std::puts("GPU compositor transport: exact ring/alpha/padding, queued writers, atomic declines, prefix lifetime and capture fences passed");
 }
 
 int main() { @autoreleasepool {
@@ -311,6 +441,7 @@ int main() { @autoreleasepool {
         canvas_reset(); // Retire cached textures before their recorder/context.
     }
     unsetenv("VOX_GPU_CANVAS_CACHE_BACKDROP");
+    test_canvas_present();
     canvas_reset(); recorder.reset(); gpu_context.reset();
     std::puts("Metal canvas: exact odd/large targets, alpha/AA/clips, pending GPU writes, immediate/staged uploads with dead sources, linear/ordinary textures, reuse, buffer lifetime, direct readback and row padding passed");
 } }

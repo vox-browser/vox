@@ -624,6 +624,219 @@ int vox_graphite_canvas_draw_picture(uint8_t const* bytes, size_t size, float co
     return 1;
 }
 
+static bool canvas_ensure_copy_pipeline(id<MTLDevice> device)
+{
+    if (!canvas_readback_pipeline) {
+        // Read integer texels from the exact storage used by the established
+        // reader. A Skia image draw can resample snapshot/resolve coverage.
+        NSString* source=@"#include <metal_stdlib>\nusing namespace metal;\n"
+            "kernel void canvas_readback(texture2d<float,access::read> source [[texture(0)]],"
+            "texture2d<float,access::write> target [[texture(1)]],"
+            "constant int4& offset [[buffer(0)]],uint2 p [[thread_position_in_grid]]) {"
+            "uint2 s=p+uint2(offset.xy);target.write(source.read(s),s+uint2(offset.zw));}";
+        id<MTLLibrary> library=[device newLibraryWithSource:source options:nil error:nil];
+        id<MTLFunction> function=[library newFunctionWithName:@"canvas_readback"];
+        canvas_readback_pipeline=function ? [device newComputePipelineStateWithFunction:function error:nil] : nil;
+        [function release]; [library release];
+        if (!canvas_readback_pipeline) return false;
+    }
+    return true;
+}
+
+#ifdef VOX_TEST_CANVAS_PRESENT
+static void (*canvas_present_test_before_commit)(void*);
+static void* canvas_present_test_context;
+static int canvas_present_test_fail_target = -1;
+#endif
+// The kernel tracks cross-process IOSurface hazards once Metal work has been
+// scheduled. Chromium uses the same boundary before Core Animation access;
+// CPU capture still waits for completion. Targets stay private until success.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_present(VoxGraphiteCanvasSurfaceRegion const* regions,
+    int count, void** completion)
+{ @autoreleasepool {
+    if (completion) *completion = nullptr;
+    if (!completion || !regions || count <= 0 || count > 66) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu || !canvas_recorder || canvas_tiles.empty() || !gpu_frame_queue) return 0;
+    auto device = vox_shared_metal_device(canvas_recorder.get());
+    if (!device || !canvas_ensure_copy_pipeline(device)) return 0;
+    auto valid_surface = [](IOSurfaceRef surface) {
+        return surface && !IOSurfaceGetPlaneCount(surface)
+            && IOSurfaceGetPixelFormat(surface) == uint32_t('RGBA')
+            && IOSurfaceGetBytesPerElement(surface) == 4
+            && IOSurfaceGetWidth(surface) > 0 && IOSurfaceGetWidth(surface) <= 16384
+            && IOSurfaceGetHeight(surface) > 0 && IOSurfaceGetHeight(surface) <= 16384
+            && IOSurfaceGetBytesPerRow(surface) >= IOSurfaceGetWidth(surface) * 4;
+    };
+    auto same_surface=[](IOSurfaceRef a, IOSurfaceRef b) {
+        return a && b && IOSurfaceGetID(a)==IOSurfaceGetID(b);
+    };
+    std::vector<IOSurfaceRef> targets, previous, leases;
+    std::vector<size_t> target_indices;
+    std::vector<SkIRect> sources, destinations;
+    size_t bytes = 0;
+    for (int index=0; index<count; ++index) {
+        auto const& region=regions[index];
+        auto target=static_cast<IOSurfaceRef>(region.surface);
+        auto prefix=static_cast<IOSurfaceRef>(region.previous);
+        if (!valid_surface(target) || same_surface(target,prefix)
+            || region.canvas_x < 0 || region.canvas_y < 0
+            || region.surface_x < 0 || region.surface_y < 0
+            || region.width <= 0 || region.height <= 0
+            || region.width > 16384 || region.height > 16384
+            || region.canvas_x > 32768-region.width || region.canvas_y > 32768-region.height
+            || size_t(region.width) > IOSurfaceGetWidth(target)
+            || size_t(region.surface_x) > IOSurfaceGetWidth(target)-size_t(region.width)
+            || size_t(region.height) > IOSurfaceGetHeight(target)
+            || size_t(region.surface_y) > IOSurfaceGetHeight(target)-size_t(region.height)
+            || (prefix && (!valid_surface(prefix)
+                || IOSurfaceGetWidth(prefix)!=IOSurfaceGetWidth(target)
+                || IOSurfaceGetHeight(prefix)!=IOSurfaceGetHeight(target)))) return 0;
+        auto source=SkIRect::MakeXYWH(region.canvas_x,region.canvas_y,region.width,region.height);
+        auto destination=SkIRect::MakeXYWH(region.surface_x,region.surface_y,region.width,region.height);
+        for (int earlier=0; earlier<index; ++earlier) {
+            if (SkIRect::Intersects(source,sources[earlier])
+                || (same_surface(static_cast<IOSurfaceRef>(regions[earlier].surface),target)
+                    && SkIRect::Intersects(destination,destinations[earlier]))) return 0;
+        }
+        auto found=std::find_if(targets.begin(),targets.end(),[&](auto value){return same_surface(value,target);});
+        size_t slot=found-targets.begin();
+        if (found==targets.end()) {
+            size_t allocation=IOSurfaceGetAllocSize(target);
+            if (allocation > 128*1024*1024 || bytes > 128*1024*1024-allocation) return 0;
+            bytes+=allocation;
+            targets.push_back(target); previous.push_back(prefix);
+        } else if (previous[slot]!=prefix && !same_surface(previous[slot],prefix)) return 0;
+        target_indices.push_back(slot); sources.push_back(source); destinations.push_back(destination);
+    }
+    for (auto prefix:previous)
+        if (prefix && std::any_of(targets.begin(),targets.end(),[&](auto value){return same_surface(value,prefix);})) return 0;
+    std::vector<id<MTLTexture>> inputs;
+    for (auto const& tile:canvas_tiles) {
+        auto texture=vox_shared_metal_texture(tile.surface.get());
+        if (!texture) return 0;
+        auto damage=tile.clip.makeOffset(tile.x,tile.y);
+        uint64_t covered=0;
+        for (auto region:sources) if (region.intersect(damage))
+            covered+=uint64_t(region.width())*region.height();
+        if (covered!=uint64_t(damage.width())*damage.height()) return 0;
+        inputs.push_back(texture);
+    }
+    std::vector<id<MTLTexture>> outputs, prefixes;
+    auto release_textures=[&] {
+        for (auto texture:outputs) [texture release];
+        for (auto texture:prefixes) [texture release];
+    };
+    for (size_t index=0; index<targets.size(); ++index) {
+        auto* descriptor=[MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+            width:IOSurfaceGetWidth(targets[index]) height:IOSurfaceGetHeight(targets[index]) mipmapped:NO];
+        descriptor.storageMode=MTLStorageModeShared;
+        descriptor.usage=MTLTextureUsageShaderWrite|MTLTextureUsageRenderTarget;
+#ifdef VOX_TEST_CANVAS_PRESENT
+        if (canvas_present_test_fail_target == int(index)) { release_textures(); return 0; }
+#endif
+        auto output=[device newTextureWithDescriptor:descriptor iosurface:targets[index] plane:0];
+        if (output) outputs.push_back(output);
+        if (!output) { release_textures(); return 0; }
+        id<MTLTexture> prefix=nil;
+        if (previous[index]) {
+            descriptor.usage=MTLTextureUsageShaderRead;
+            prefix=[device newTextureWithDescriptor:descriptor iosurface:previous[index] plane:0];
+            if (!prefix) { release_textures(); return 0; }
+        }
+        prefixes.push_back(prefix);
+    }
+    id<MTLCommandBuffer> commands=[gpu_frame_queue commandBuffer];
+    bool encoded=commands!=nil;
+    for (size_t index=0; encoded && index<targets.size(); ++index) {
+        if (prefixes[index]) {
+            auto encoder=[commands blitCommandEncoder];
+            encoded=encoder!=nil;
+            if (encoder) {
+                [encoder copyFromTexture:prefixes[index] sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0,0,0)
+                    sourceSize:MTLSizeMake(outputs[index].width,outputs[index].height,1)
+                    toTexture:outputs[index] destinationSlice:0 destinationLevel:0 destinationOrigin:MTLOriginMake(0,0,0)];
+                [encoder endEncoding];
+            }
+        } else {
+            auto* pass=[MTLRenderPassDescriptor renderPassDescriptor];
+            pass.colorAttachments[0].texture=outputs[index];
+            pass.colorAttachments[0].loadAction=MTLLoadActionClear;
+            pass.colorAttachments[0].storeAction=MTLStoreActionStore;
+            pass.colorAttachments[0].clearColor=MTLClearColorMake(0,0,0,0);
+            auto encoder=[commands renderCommandEncoderWithDescriptor:pass];
+            encoded=encoder!=nil;
+            [encoder endEncoding];
+        }
+    }
+    // Preserve the established order when the source canvas tiles overlap.
+    for (size_t tile_index=0; encoded && tile_index<canvas_tiles.size(); ++tile_index) {
+        auto const& tile=canvas_tiles[tile_index];
+        auto damage=tile.clip.makeOffset(tile.x,tile.y);
+        for (int index=0; encoded && index<count; ++index) {
+            auto area=sources[index];
+            if (!area.intersect(damage)) continue;
+            auto encoder=[commands computeCommandEncoder];
+            if (!encoder) { encoded=false; break; }
+            auto const& region=regions[index];
+            int offset[]={area.x()-tile.x,area.y()-tile.y,
+                tile.x-region.canvas_x+region.surface_x,tile.y-region.canvas_y+region.surface_y};
+            [encoder setComputePipelineState:canvas_readback_pipeline];
+            [encoder setTexture:inputs[tile_index] atIndex:0];
+            [encoder setTexture:outputs[target_indices[index]] atIndex:1];
+            [encoder setBytes:offset length:sizeof(offset) atIndex:0];
+            [encoder dispatchThreads:MTLSizeMake(area.width(),area.height(),1) threadsPerThreadgroup:MTLSizeMake(8,8,1)];
+            [encoder endEncoding];
+        }
+    }
+    release_textures();
+    if (!encoded) return 0;
+    auto recording=canvas_recorder->snap();
+    if (recording) {
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording=recording.get();
+        if (gpu->insertRecording(insertion)!=skgpu::graphite::InsertStatus::kSuccess) return -1;
+    }
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kNo))) return -1;
+    for (auto surface:targets) leases.push_back(surface);
+    for (auto surface:previous) if (surface && !std::any_of(leases.begin(),leases.end(),[&](auto value){return same_surface(value,surface);})) leases.push_back(surface);
+    for (auto surface:leases) { CFRetain(surface); IOSurfaceIncrementUseCount(surface); }
+    [commands addCompletedHandler:^(id<MTLCommandBuffer>) {
+        for (auto surface:leases) { IOSurfaceDecrementUseCount(surface); CFRelease(surface); }
+    }];
+#ifdef VOX_TEST_CANVAS_PRESENT
+    if (canvas_present_test_before_commit) canvas_present_test_before_commit(canvas_present_test_context);
+#endif
+    [commands commit];
+    [commands waitUntilScheduled];
+    if (commands.status==MTLCommandBufferStatusError) {
+#ifdef VOX_TEST_CANVAS_PRESENT
+        std::fprintf(stderr,"GPU present error: %s\n",commands.error.description.UTF8String);
+#endif
+        return -1;
+    }
+    *completion=(__bridge void*)[commands retain];
+    return 1;
+} }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_wait_present(void* completion)
+{
+    if (!completion) return 0;
+    auto commands=(__bridge id<MTLCommandBuffer>)completion;
+    [commands waitUntilCompleted];
+    bool ok=commands.status==MTLCommandBufferStatusCompleted;
+    [commands release];
+    return ok;
+}
+extern "C" __attribute__((visibility("default")))
+void vox_graphite_canvas_release_present(void* completion)
+{
+    [(__bridge id<MTLCommandBuffer>)completion release];
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_read_iosurface(void* handle, int width, int height)
 { @autoreleasepool {
@@ -640,20 +853,7 @@ int vox_graphite_canvas_read_iosurface(void* handle, int width, int height)
         || IOSurfaceGetBytesPerRow(surface) < size_t(width) * 4) return 0;
     auto device = vox_shared_metal_device(canvas_recorder.get());
     if (!device || !gpu_frame_queue) return 0;
-    if (!canvas_readback_pipeline) {
-        // Read integer texels from the exact storage used by the established
-        // reader. A Skia image draw can resample snapshot/resolve coverage.
-        NSString* source=@"#include <metal_stdlib>\nusing namespace metal;\n"
-            "kernel void canvas_readback(texture2d<float,access::read> source [[texture(0)]],"
-            "texture2d<float,access::write> target [[texture(1)]],"
-            "constant int4& offset [[buffer(0)]],uint2 p [[thread_position_in_grid]]) {"
-            "uint2 s=p+uint2(offset.xy);target.write(source.read(s),s+uint2(offset.zw));}";
-        id<MTLLibrary> library=[device newLibraryWithSource:source options:nil error:nil];
-        id<MTLFunction> function=[library newFunctionWithName:@"canvas_readback"];
-        canvas_readback_pipeline=function ? [device newComputePipelineStateWithFunction:function error:nil] : nil;
-        [function release]; [library release];
-        if (!canvas_readback_pipeline) return 0;
-    }
+    if (!canvas_ensure_copy_pipeline(device)) return 0;
     auto frame = SkIRect::MakeWH(width,height);
     std::vector<id<MTLTexture>> textures;
     for (auto const& tile : canvas_tiles) {
