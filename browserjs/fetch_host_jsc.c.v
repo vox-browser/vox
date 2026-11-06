@@ -13,6 +13,15 @@ import webidl
 
 __global fetch_bindings_ = map[voidptr]&FetchHost{}
 
+// A page's module loader can share the Fetch transport's connection pool.
+// The Fetch binding owns its lifetime; each consumer still creates its own
+// policy-bearing requests and cancels its own operations when it closes.
+pub fn (runtime &Runtime) installed_fetch_transport() ?&fetch.FetchHost {
+	host := fetch_bindings_[voidptr(runtime)] or { return none }
+	if host.closed { return none }
+	return host.transport
+}
+
 pub fn (mut host FetchHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
 	runtime.bind_scripting_environment(host.settings)!
