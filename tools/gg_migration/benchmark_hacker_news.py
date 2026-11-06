@@ -75,11 +75,15 @@ def main():
     parser.add_argument('--load-pairs', type=int, default=7)
     parser.add_argument('--scroll-pairs', type=int, default=4)
     parser.add_argument('--inputs', type=int, default=600)
+    parser.add_argument('--reverse-every', type=int, default=60,
+                        help='Reverse before reaching the frozen page boundary (60 at delta 3)')
+    parser.add_argument('--scroll-only', action='store_true',
+                        help='Keep diagnostic loads/pixels but omit the seven timed load pairs')
     parser.add_argument('--chrome-height', type=int, default=112)
     parser.add_argument('--load-chrome-height', type=int, default=84,
                         help='Screenshot mode chrome; audited document must still be 1024x768')
     args = parser.parse_args()
-    if args.load_pairs < 7 or args.scroll_pairs < 2 or args.inputs < 60:
+    if args.load_pairs < 7 or args.scroll_pairs < 2 or args.inputs < 60 or args.reverse_every < 1:
         parser.error('Need seven load pairs, two scroll pairs and at least 60 inputs')
     # Reject ambient controls instead of inheriting a different workload.
     ambient = sorted(os.environ.keys() - clean_environment().keys())
@@ -108,7 +112,8 @@ def main():
         comparison='Existing Skia versus opt-in GG text/shapes/paths; fallback and other Skia paths remain',
         load_scope=LOAD_SCOPE, scroll_scope='Changed Cocoa layer publications after updateLayer, '
         'over the full first-to-last precise-input period; not physical scanout',
-        load=rows, scrolling=scrolling, diagnostics=diagnostics)
+        load=rows, scrolling=scrolling, diagnostics=diagnostics,
+        scroll_reverse_every=args.reverse_every, timed_load_omitted=args.scroll_only)
     with canonical_bundle_lease(app):
         pinned_paths = {Path(__file__).resolve(), Path(hn.__file__), audit_config,
                         args.diff_tool.resolve(), *archive.rglob('*')}
@@ -205,7 +210,7 @@ def main():
                 '--url', config.url, '--output', str(output/folder), '--allow-fixture-navigation',
                 '--network-policy', 'Frozen HN archive, same loopback no-store server; no live access',
                 '--width', '1024', '--height', '768', '--chrome-height', str(args.chrome_height),
-                '--inputs', str(args.inputs), '--delta', '3', '--reverse-every', '90',
+                '--inputs', str(args.inputs), '--delta', '3', '--reverse-every', str(args.reverse_every),
                 '--input-hz', '60', '--settle-seconds', '4', '--require-title', 'Hacker News',
                 '--script-policy', 'enabled']
             env = dict(GG) if label == 'gg' else {}
@@ -267,7 +272,7 @@ def main():
                     diagnostics.append(row)
                     hn.require(row['exit'] == 0, 'Diagnostic scrolling failed')
                     if label == 'gg': summary['scroll_coverage'] = row['coverage']
-                for pair in range(args.load_pairs):
+                for pair in range(0 if args.scroll_only else args.load_pairs):
                     for label in (('skia','gg') if pair % 2 == 0 else ('gg','skia')):
                         row = load(label, f'load-{pair+1}-{label}')
                         rows.append(row)
@@ -289,17 +294,19 @@ def main():
                 loads = [r for r in rows if r['variant'] == label]
                 scrolls = [r['summary'] for r in scrolling if r['variant'] == label]
                 summary['statistics'][label] = dict(
-                    navigation_to_native_submission_ms=stats([r['native_submission_ms'][
-                        'navigation_to_first_native_layer_submission'] for r in loads]),
-                    document_install_to_native_submission_ms=stats([r['native_submission_ms'][
-                        'document_install_to_first_native_layer_submission'] for r in loads]),
-                    launch_instructions=stats([r['launch_instruction_interval']['upper'] for r in loads]),
                     scroll_fps=stats([r['mean_scroll_fps'] for r in scrolls]),
                     scroll_interval_median_ms=stats([r['scroll_interval_us']['median']/1000 for r in scrolls]),
                     scroll_interval_p95_ms=stats([r['scroll_interval_us']['p95']/1000 for r in scrolls]),
                     scroll_interval_max_ms=stats([r['scroll_interval_us']['max']/1000 for r in scrolls]),
                     over_budget_fraction=stats([r['fraction_over_budget'] for r in scrolls]),
                     update_layer_median_ms=stats([r['update_layer_us']['median']/1000 for r in scrolls]))
+                if loads:
+                    summary['statistics'][label].update(
+                        navigation_to_native_submission_ms=stats([r['native_submission_ms'][
+                            'navigation_to_first_native_layer_submission'] for r in loads]),
+                        document_install_to_native_submission_ms=stats([r['native_submission_ms'][
+                            'document_install_to_first_native_layer_submission'] for r in loads]),
+                        launch_instructions=stats([r['launch_instruction_interval']['upper'] for r in loads]))
             unchanged()
             summary['valid'] = True
         finally:
