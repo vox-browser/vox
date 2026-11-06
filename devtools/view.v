@@ -323,26 +323,28 @@ fn (tools &DevTools) editor_row(row Row, top f64, l PaneLayout) ui2.Element {
 	return ui2.view(row.key(), ui2.rect(0, top, x + width + 8, text_height + 34), ui2.BoxStyle{
 		transparent: true
 	}, [
-		ui2.Element{
-			...ui2.text_input(
-				id:           editor_id
-				text:         editor.text
-				multiline:    true
-				autocorrect:  false
-				padding_left: 4
-				frame:        ui2.rect(x, 2, width, text_height)
-				box:          ui2.BoxStyle{
-					bg:            0xffffff
-					border_left:   1
-					border_top:    1
-					border_right:  1
-					border_bottom: 1
-					border_color:  color_accent
-				}
-				text_style:   mono_style(color_text)
-			) or { panic(err) }
-			accessibility_label: label
-		},
+		// Native text areas draw no border of their own.
+		ui2.view('devtools-editor-frame', ui2.rect(x, 2, width, text_height), ui2.BoxStyle{
+			bg:            0xffffff
+			border_left:   1
+			border_top:    1
+			border_right:  1
+			border_bottom: 1
+			border_color:  color_accent
+		}, [
+			ui2.Element{
+				...ui2.text_input(
+					id:           editor_id
+					text:         editor.text
+					multiline:    true
+					autocorrect:  false
+					padding_left: 4
+					frame:        ui2.rect(1, 1, width - 2, text_height - 2)
+					text_style:   mono_style(color_text)
+				) or { panic(err) }
+				accessibility_label: label
+			},
+		]),
 		ui2.label('devtools-editor-hint', hint, ui2.rect(x, text_height + 8, math.max(0.0, width - 150),
 			22), ui2.TextStyle{ size: 11, color: color_muted }),
 		flat_button('devtools-editor-cancel', 'Cancel', ui2.rect(x + width - 140, text_height + 7,
@@ -421,8 +423,8 @@ fn (tools &DevTools) sidebar(l PaneLayout) ui2.Element {
 		y += 22
 		for index, attribute in attributes(element) {
 			children << ui2.Element{
-				...ui2.label('devtools-attr-label-${id}-${index}', attribute.name, ui2.rect(12, y + 2,
-					112, 18), mono_style(color_attribute_name))
+				...ui2.label('devtools-attr-label-${id}-${index}', attribute.name, ui2.rect(12, y,
+					112, 20), mono_style(color_attribute_name))
 				tooltip: attribute.name
 			}
 			children << ui2.Element{
