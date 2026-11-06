@@ -65,12 +65,11 @@ case "$(uname -s)" in
     Darwin) ;;
     *) echo "Vox supports macOS and Linux" >&2; exit 1 ;;
 esac
-# Target macOS 14 so a build on a newer SDK still launches on macOS 26 and
-# earlier; otherwise clang stamps the host OS as the minimum version. Export it
-# before any native helper is compiled: the bundled Skia text and AVIF bridges
-# are built ahead of the browser, and a build worker that is already running
-# does not see the deploy script's environment.
-MACOSX_DEPLOYMENT_TARGET=14.0
+# Target the app's declared minimum macOS; otherwise clang stamps the host OS
+# as the minimum version. Export it before any native helper is compiled: the
+# bundled Skia text and AVIF bridges are built ahead of the browser, and a
+# build worker that is already running does not see the deploy environment.
+MACOSX_DEPLOYMENT_TARGET=$(plutil -extract LSMinimumSystemVersion raw -o - "$repo_dir/packaging/Info.plist")
 export MACOSX_DEPLOYMENT_TARGET
 
 # A worker already running when the build protocol changes must finish its

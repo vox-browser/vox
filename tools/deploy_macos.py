@@ -62,9 +62,6 @@ def verified_build(root, bundle):
     return receipt
 
 
-MAX_MINIMUM_MACOS = (26, 0)
-
-
 def minimum_macos(binary):
     """Return the Mach-O minimum macOS version, or None for non-Mach-O files."""
     result = subprocess.run(['/usr/bin/vtool', '-show-build', str(binary)],
@@ -78,15 +75,23 @@ def minimum_macos(binary):
     return None
 
 
-def verify_deployment_target(app):
-    """Reject a bundle whose Mach-O files require a newer macOS than 26."""
+def macos_version(parts):
+    """Pad so 26 and 26.0 compare equal."""
+    return (tuple(parts) + (0, 0, 0))[:3]
+
+
+def verify_deployment_target(app, declared):
+    """Reject a bundle whose Mach-O files require a newer macOS than Info.plist declares."""
+    if not declared or not all(part.isdigit() for part in declared.split('.')):
+        raise RuntimeError('Info.plist must declare a numeric LSMinimumSystemVersion')
+    supported = macos_version(int(x) for x in declared.split('.'))
     for path in sorted((app / 'Contents').rglob('*')):
         if path.is_symlink() or not path.is_file() or path.suffix in ('.plist', '.json', '.txt'):
             continue
         minimum = minimum_macos(path)
-        if minimum is not None and minimum > MAX_MINIMUM_MACOS:
-            raise RuntimeError('%s requires macOS %s; the release must run on macOS 26'
-                               % (path.relative_to(app), '.'.join(map(str, minimum))))
+        if minimum is not None and macos_version(minimum) > supported:
+            raise RuntimeError('%s requires macOS %s; the release declares macOS %s'
+                               % (path.relative_to(app), '.'.join(map(str, minimum)), declared))
 
 
 def guarded(command, root, reports, name, limit_gib=12, **kwargs):
@@ -98,9 +103,10 @@ def guarded(command, root, reports, name, limit_gib=12, **kwargs):
 def deploy(root=ROOT, output=None, package_only=False):
     if not package_only:
         # The canonical supervisor supplies the memory guard and build receipts.
-        # Drop inherited supervision/profiling overrides before entering it.
+        # Drop inherited supervision/profiling overrides before entering it. The
+        # build targets Info.plist's LSMinimumSystemVersion itself.
         run(['sh', root / 'build-prod-browser.sh', '--prod', '--no-parallel-cc'],
-            root, env=dict(production_environment(os.environ), MACOSX_DEPLOYMENT_TARGET='14.0'))
+            root, env=production_environment(os.environ))
 
     source = root / 'Build/v/Vox.app'
     with tempfile.TemporaryDirectory(prefix='vox-dmg-') as directory:
@@ -120,8 +126,8 @@ def deploy(root=ROOT, output=None, package_only=False):
         # The build links vcpkg and Homebrew libraries by absolute build-machine
         # paths. Carry them inside the release and drop those search paths.
         bundle_libraries(app)
-        verify_deployment_target(app)
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+        verify_deployment_target(app, info.get('LSMinimumSystemVersion', ''))
         version = info['CFBundleShortVersionString']
         if not version or any(c not in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.-+' for c in version):
             raise RuntimeError('Invalid release version in Info.plist')

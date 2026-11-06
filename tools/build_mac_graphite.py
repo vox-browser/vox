@@ -6,6 +6,7 @@ import hashlib
 import os
 from pathlib import Path
 import platform
+import plistlib
 import posixpath
 import shutil
 import subprocess
@@ -82,6 +83,15 @@ def prepare_precision_patch(source, archive, patch):
                 raise SystemExit(f"Unexpected patched Skia source: {name}")
         for name in PATCH_INPUTS:
             (source / name).write_bytes((staged / name).read_bytes())
+
+
+def deployment_target(repo):
+    """The app's declared minimum macOS, unless the production build exported it."""
+    target = os.environ.get("MACOSX_DEPLOYMENT_TARGET")
+    if target:
+        return target
+    with (repo / "packaging/Info.plist").open("rb") as info:
+        return plistlib.load(info)["LSMinimumSystemVersion"]
 
 
 def executable(name, fallback=None):
@@ -178,7 +188,7 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run([
         "clang++", "-std=c++20", "-O2", "-fPIC", "-dynamiclib", "-fvisibility=hidden",
-        "-fvisibility-inlines-hidden", "-mmacosx-version-min=14.0", "-DSK_GRAPHITE",
+        "-fvisibility-inlines-hidden", "-mmacosx-version-min=" + deployment_target(repo), "-DSK_GRAPHITE",
         "-DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER", "-I" + str(source),
         str(repo / "native_graphite_darwin.mm"), "-L" + str(source / "out/Release"),
         "-Wl,-hidden-lskia", "-Wl,-hidden-lskcms", "-framework", "Metal",

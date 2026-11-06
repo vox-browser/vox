@@ -11,7 +11,7 @@ import sys
 import tarfile
 import tempfile
 
-from build_mac_graphite import REVISION, SHA512, executable, extract_skia_archive
+from build_mac_graphite import REVISION, SHA512, deployment_target, executable, extract_skia_archive
 
 DAWN_REVISION = '42d0e90fe3552a2a8e95ca8e506bc19bbda12729'
 SHARED_PIXELS_INPUTS = {
@@ -165,7 +165,7 @@ group("tint") {{ public_configs = [":dawn_api_config"] }}
     release = source / 'out/Release'
     args.output.parent.mkdir(parents=True, exist_ok=True)
     command = ['clang++', '-std=c++20', '-O2', '-DNDEBUG', '-fno-rtti', '-fPIC', '-dynamiclib',
-               '-fvisibility=hidden', '-fvisibility-inlines-hidden', '-mmacosx-version-min=14.0',
+               '-fvisibility=hidden', '-fvisibility-inlines-hidden', '-mmacosx-version-min=' + deployment_target(repo),
                '-DSK_GRAPHITE', '-DSK_DAWN', '-DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER',
                '-I' + str(repo), '-I' + str(source), '-I' + str(external / 'dawn/include'),
                '-I' + str(build / 'gen/include'), str(repo / 'native_graphite_dawn_darwin.mm'),
