@@ -105,6 +105,14 @@ pub mut:
 	// Edit history for the current document.
 	undo_stack []UndoEntry
 	redo_stack []UndoEntry
+	// The Console panel: messages for the current document, how many of the
+	// host's messages were imported, and the prompt's history.
+	panel                 Panel
+	console               []ConsoleEntry
+	console_seen          int
+	console_reveal        bool
+	console_history       []string
+	console_history_index int
 	// Host input state: the page element under the picker, whether the
 	// pointer is over the panel, and a picker press whose release the page
 	// must not see.
@@ -175,6 +183,8 @@ pub fn (mut tools DevTools) sync(document &dom.Document, generation int) bool {
 	tools.styles = StyleSnapshot{}
 	tools.undo_stack = []UndoEntry{}
 	tools.redo_stack = []UndoEntry{}
+	tools.console = []ConsoleEntry{}
+	tools.console_seen = 0
 	tools.click_node = 0
 	tools.version++
 	if document == unsafe { nil } {

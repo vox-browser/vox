@@ -1,5 +1,6 @@
 module main
 
+import browserjs
 import devtools
 import devtools.cssinspect
 import dom
@@ -71,6 +72,7 @@ fn (app &BrowserApp) sync_devtools() {
 	defer { platform.leave_persistent(persistent) }
 	tools.sync(app.document, app.navigation_generation)
 	tools.rebuild(app.document)
+	tools.import_console(app.js_messages)
 }
 
 fn (mut app BrowserApp) show_devtools(picking bool) {
@@ -80,6 +82,9 @@ fn (mut app BrowserApp) show_devtools(picking bool) {
 	opening := !tools.open
 	tools.open = true
 	tools.picking = picking
+	if picking {
+		tools.panel = .elements
+	}
 	tools.set_picked(none)
 	app.sync_devtools()
 	if opening {
@@ -145,8 +150,99 @@ fn (mut app BrowserApp) inspect_devtools_node(node &dom.Node) {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut tools := app.devtools_panel() or { return }
+	tools.panel = .elements
 	tools.reveal_node(node)
 	tools.focused = true
+	app.refresh_devtools()
+}
+
+// show_devtools_console opens the Console panel with the prompt focused,
+// like Chrome's Cmd+Option+J.
+fn (mut app BrowserApp) show_devtools_console() {
+	app.show_devtools(false)
+	mut tools := app.devtools_panel() or { return }
+	tools.panel = .console
+	tools.console_reveal = true
+	tools.version++
+	app.focus_devtools_control(devtools.console_input_id)
+	app.refresh_devtools()
+}
+
+// ensure_devtools_script_runtime gives a script-enabled page without scripts
+// the runtime page load would have created, so the console can evaluate.
+fn (mut app BrowserApp) ensure_devtools_script_runtime() bool {
+	if app.js_runtime != unsafe { nil } {
+		return true
+	}
+	if app.document == unsafe { nil } || !app.document.as_node().is_scripting_enabled() {
+		return false
+	}
+	app.js_runtime = create_browser_script_runtime(app.js_engine)
+	image_callback := if loader := app.image_request_loader {
+		?browserjs.ImageAsyncRequestFetchHook(loader.callback())
+	} else {
+		?browserjs.ImageAsyncRequestFetchHook(none)
+	}
+	run_document_script_sources_with_media_loader(app.document, app.document.url_string(),
+		[]browserjs.ScriptSource{}, app.js_runtime, browser_fetch_image_request, image_callback,
+		app.script_request_loader, fn [app] (element &dom.Element) {
+		mut owner := unsafe { &BrowserApp(app) }
+		owner.install_media_playback(element)
+	}, mut app.js_messages)
+	return app.js_runtime != unsafe { nil }
+}
+
+// run_devtools_console evaluates console input in the page, then applies its
+// DOM effects and collects what it logged as an asynchronous page task does.
+fn (mut app BrowserApp) run_devtools_console(source string) {
+	mut tools := app.devtools_panel() or { return }
+	text := source.trim_space()
+	if text == '' {
+		return
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	app.sync_devtools()
+	tools.remember_input(text.clone())
+	tools.add_console(.input, text.clone())
+	if !app.ensure_devtools_script_runtime() {
+		tools.add_console(.error, 'JavaScript is disabled for this page.')
+		app.refresh_devtools()
+		return
+	}
+	mut runtime := app.js_runtime
+	mut failure := ''
+	result := runtime.evaluate_host(devtools.console_expression(text)) or {
+		failure = devtools.clean_console_error('Uncaught ${err.msg()}')
+		''
+	}
+	mut navigation := ?string(none)
+	if state := runtime.evaluate_host('__ladybirdFinalize()') {
+		navigation = apply_javascript_runtime_state(app.document, state, runtime, mut app.js_messages)
+		runtime.evaluate_host('__ladybirdClearLogs()') or {}
+	}
+	app.synchronize_javascript_task_paint(runtime.take_document_replay_effects())
+	app.sync_devtools()
+	if failure != '' {
+		tools.add_console(.error, failure.clone())
+	} else {
+		tools.add_console(.result, result.clone())
+	}
+	app.refresh_devtools()
+	if destination := navigation {
+		if destination != '' {
+			app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true)
+		}
+	}
+}
+
+fn (mut app BrowserApp) clear_devtools_console() {
+	mut tools := app.devtools_panel() or { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	app.js_messages = []
+	tools.console_seen = 0
+	tools.clear_console()
 	app.refresh_devtools()
 }
 
@@ -178,7 +274,12 @@ fn (mut app BrowserApp) finish_devtools_render() {
 		return
 	}
 	app.sync_devtools()
-	if tools.reveal {
+	if tools.console_reveal && tools.panel == .console {
+		bottom := tools.console_content_height(f64(app.browser_chrome.width))
+		ui2.scroll_to_rect(devtools.console_list_id, 0, bottom - 1, 1, 1)
+		tools.console_reveal = false
+	}
+	if tools.reveal && tools.panel == .elements {
 		index := tools.row_index(tools.selected)
 		if index >= 0 {
 			row := tools.rows[index]
@@ -244,6 +345,9 @@ fn (app &BrowserApp) devtools_state_version() u64 {
 	if app.document != unsafe { nil } {
 		version += app.document.dom_tree_version() * 31 + app.document.attribute_version() * 17 +
 			app.document.character_data_version()
+		if tools.panel == .console {
+			version += u64(app.js_messages.len) * 1009
+		}
 		if tools.sidebar == .computed {
 			// Resolved values wait for layout; render again once it settles.
 			version += app.document.style_environment_version() * 7 + if app.devtools_layout_current() {
@@ -403,6 +507,28 @@ fn (mut app BrowserApp) devtools_action(value string) {
 		}
 		'attr-remove' {
 			app.remove_devtools_attribute(id, action.arg)
+			return
+		}
+		'panel' {
+			tools.panel = if action.arg == 'console' { devtools.Panel.console } else { devtools.Panel.elements }
+			tools.hovered = 0
+			tools.version++
+			if tools.panel == .console {
+				tools.console_reveal = true
+				app.focus_devtools_control(devtools.console_input_id)
+			}
+			app.update_devtools_highlight()
+		}
+		'console-run' {
+			source := ui2.text(devtools.console_input_id)
+			ui2.set_text(devtools.console_input_id, '')
+			app.run_devtools_console(source)
+			app.focus_devtools_control(devtools.console_input_id)
+			app.finish_devtools_render()
+			return
+		}
+		'console-clear' {
+			app.clear_devtools_console()
 			return
 		}
 		'sidebar' {
@@ -628,6 +754,22 @@ fn (mut app BrowserApp) handle_devtools_key(event ui2.KeyEvent) bool {
 		}
 		return false
 	}
+	if focused == devtools.console_input_id {
+		if event.code in [.up, .down] && !event.shift && !event.alt && !command {
+			if text := tools.history_step(event.code == .up) {
+				ui2.set_text(devtools.console_input_id, text)
+			}
+			return true
+		}
+		if event.code == .escape {
+			ui2.blur_embedded_textbox()
+			return true
+		}
+	}
+	if tools.panel == .console && command && !event.shift && !event.alt && event.code == .k {
+		app.clear_devtools_console()
+		return true
+	}
 	if event.code == .escape && tools.picking {
 		tools.picking = false
 		tools.set_picked(none)
@@ -774,7 +916,7 @@ fn (mut app BrowserApp) hover_devtools_tree(x f64, y f64) {
 	mut tools := app.devtools_panel() or { return }
 	l := devtools.layout(f64(app.browser_chrome.width), f64(app.devtools_height()))
 	mut hovered := i64(0)
-	if x >= 0 && x < l.tree_width && y >= devtools.toolbar_height
+	if tools.panel == .elements && x >= 0 && x < l.tree_width && y >= devtools.toolbar_height
 		&& y < devtools.toolbar_height + l.tree_height {
 		index := tools.row_at(y - devtools.toolbar_height + ui2.scroll_offset(devtools.tree_id))
 		if index >= 0 && tools.rows[index].kind != .editor {

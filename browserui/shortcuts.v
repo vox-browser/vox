@@ -44,8 +44,9 @@ pub fn shortcut(event ui2.KeyEvent, editing bool, macos bool) string {
 }
 
 // devtools_shortcut follows Chrome: Cmd+Option+I (Ctrl+Shift+I elsewhere) or
-// F12 toggles the panel, and Cmd+Shift+C or Cmd+Option+C (Ctrl+Shift+C)
-// starts picking an element in the page.
+// F12 toggles the panel, Cmd+Shift+C or Cmd+Option+C (Ctrl+Shift+C) starts
+// picking an element in the page, and Cmd+Option+J (Ctrl+Shift+J) opens the
+// console.
 pub fn devtools_shortcut(event ui2.KeyEvent, macos bool) string {
 	if event.code == .f12 && !event.cmd && !event.ctrl && !event.alt && !event.shift {
 		return 'devtools-toggle'
@@ -55,6 +56,7 @@ pub fn devtools_shortcut(event ui2.KeyEvent, macos bool) string {
 		if event.alt && !event.shift {
 			if event.code == .i { return 'devtools-toggle' }
 			if event.code == .c { return 'devtools-inspect' }
+			if event.code == .j { return 'devtools-console' }
 		}
 		if event.shift && !event.alt && event.code == .c { return 'devtools-inspect' }
 		return ''
@@ -62,5 +64,6 @@ pub fn devtools_shortcut(event ui2.KeyEvent, macos bool) string {
 	if !event.ctrl || !event.shift || event.cmd || event.alt { return '' }
 	if event.code == .i { return 'devtools-toggle' }
 	if event.code == .c { return 'devtools-inspect' }
+	if event.code == .j { return 'devtools-console' }
 	return ''
 }

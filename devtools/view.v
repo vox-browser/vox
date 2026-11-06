@@ -14,6 +14,8 @@ pub const char_width = font_size * 0.6021
 pub const editor_id = 'devtools-editor'
 pub const tree_id = 'devtools-tree'
 pub const computed_filter_id = 'devtools-computed-filter'
+pub const console_input_id = 'devtools-console-input'
+pub const console_list_id = 'devtools-console'
 pub const sidebar_tab_height = 26.0
 
 const color_border = u32(0xcacdd1)
@@ -144,8 +146,14 @@ fn point(x f64, y f64) ui2.VectorPoint {
 // elements is the docked panel. `frame` places it in the browser window.
 pub fn (tools &DevTools) elements(frame ui2.Rect) ui2.Element {
 	l := layout(frame.width, frame.height)
-	mut children := [tools.toolbar(l), tools.tree(l), tools.breadcrumb_bar(l)]
-	if l.sidebar_width > 0 {
+	mut children := [tools.toolbar(l)]
+	if tools.panel == .console {
+		children << tools.console_panel(l)
+	} else {
+		children << tools.tree(l)
+		children << tools.breadcrumb_bar(l)
+	}
+	if tools.panel == .elements && l.sidebar_width > 0 {
 		children << ui2.view('devtools-divider', ui2.rect(l.tree_width, toolbar_height, 1,
 			l.height - toolbar_height), ui2.BoxStyle{ bg: color_border }, [])
 		children << tools.sidebar(l)
@@ -204,15 +212,131 @@ fn (tools &DevTools) toolbar(l PaneLayout) ui2.Element {
 	}, [
 		picker,
 		ui2.view('devtools-toolbar-separator', ui2.rect(33, 6, 1, 16), ui2.BoxStyle{ bg: color_border }, []),
-		ui2.label('devtools-tab-elements', 'Elements', ui2.rect(38, 0, 68, toolbar_height - 1),
-			ui2.TextStyle{ size: 12, color: 0x1f1f1f, align: .center }),
-		ui2.view('devtools-tab-elements-underline', ui2.rect(38, toolbar_height - 3, 68, 2),
-			ui2.BoxStyle{ bg: color_accent }, []),
-		ui2.label('devtools-error', tools.error, ui2.rect(116, 0, math.max(0.0, l.width - 152),
+		tools.panel_tab(.elements, 'Elements', 38, 68),
+		tools.panel_tab(.console, 'Console', 106, 64),
+		ui2.label('devtools-error', tools.error, ui2.rect(180, 0, math.max(0.0, l.width - 312),
 			toolbar_height - 1), ui2.TextStyle{ size: 11, color: 0xb42318 }),
+		ui2.Element{
+			...flat_button('devtools-console-clear', 'Clear console', ui2.rect(l.width - 128, 4, 96,
+				20), action('console-clear', 0, ''))
+			hidden: tools.panel != .console
+		},
 		icon_button('devtools-close', '×', ui2.rect(l.width - 28, 3, 22, 22), action('close', 0, ''),
 			'Close Developer Tools'),
 	])
+}
+
+fn (tools &DevTools) panel_tab(panel Panel, title string, x f64, width f64) ui2.Element {
+	selected := tools.panel == panel
+	return ui2.Element{
+		...ui2.button_view('devtools-tab-${panel}', ui2.rect(x, 0, width, toolbar_height - 1), ui2.BoxStyle{
+			transparent: true
+		}, [
+			ui2.label('devtools-tab-${panel}-title', title, ui2.rect(0, 0, width, toolbar_height - 1),
+				ui2.TextStyle{
+				size:  12
+				color: if selected { u32(0x1f1f1f) } else { color_muted }
+				align: .center
+			}),
+			ui2.Element{
+				...ui2.view('devtools-tab-${panel}-underline', ui2.rect(0, toolbar_height - 3, width,
+					2), ui2.BoxStyle{ bg: color_accent }, [])
+				hidden: !selected
+			},
+		])
+		action_id:           action('panel', 0, panel.str())
+		accessibility_role:  'tab'
+		accessibility_label: title
+		accessibility_value: if selected { 'selected' } else { '' }
+	}
+}
+
+pub fn console_columns(width f64) int {
+	return math.max(20, int((width - 40) / char_width))
+}
+
+pub fn console_row_height(entry ConsoleEntry, columns int) f64 {
+	return f64(console_line_count(entry.text, columns)) * 15 + 6
+}
+
+// console_content_height is the scrolled height of the message list.
+pub fn (tools &DevTools) console_content_height(width f64) f64 {
+	columns := console_columns(width)
+	mut height := 2.0
+	for entry in tools.console {
+		height += console_row_height(entry, columns)
+	}
+	return height
+}
+
+// console_style is a message's prefix, prefix color, text color and background.
+fn console_style(kind ConsoleKind) (string, u32, u32, u32) {
+	match kind {
+		.input { return '›', color_accent, u32(0x1f1f1f), u32(0) }
+		.result { return '‹', color_muted, u32(0x1f1f1f), u32(0) }
+		.error { return '×', u32(0xd93025), u32(0xb42318), u32(0xfdeded) }
+		.log { return '', color_muted, color_text, u32(0) }
+	}
+}
+
+fn (tools &DevTools) console_panel(l PaneLayout) []ui2.Element {
+	input_height := 28.0
+	list_height := math.max(0.0, l.height - toolbar_height - input_height)
+	columns := console_columns(l.width)
+	mut rows := []ui2.Element{cap: tools.console.len}
+	mut y := 2.0
+	for index, entry in tools.console {
+		height := console_row_height(entry, columns)
+		prefix, prefix_color, text_color, background := console_style(entry.kind)
+		rows << ui2.view('devtools-console-row-${index}', ui2.rect(0, y, l.width, height),
+			ui2.BoxStyle{
+			bg:            background
+			transparent:   background == 0
+			border_bottom: 1
+			border_color:  0xeeeeee
+		}, [
+			ui2.label('devtools-console-prefix-${index}', prefix, ui2.rect(8, 3, 14, 15), mono_style(prefix_color)),
+			ui2.Element{
+				...ui2.label('devtools-console-text-${index}', entry.text, ui2.rect(24, 3, l.width - 32,
+					height - 6), ui2.TextStyle{
+					size:        font_size
+					color:       text_color
+					font_family: 'Menlo'
+					lines:       console_line_count(entry.text, columns)
+					valign:      .top
+				})
+				accessibility_label: entry.text
+			},
+		])
+		y += height
+	}
+	return [
+		ui2.Element{
+			...ui2.scroll(console_list_id, ui2.rect(0, toolbar_height, l.width, list_height), 0xffffff,
+				rows)
+			accessibility_label: 'Console messages'
+		},
+		ui2.view('devtools-console-prompt', ui2.rect(0, toolbar_height + list_height, l.width,
+			input_height), ui2.BoxStyle{
+			bg:           0xffffff
+			border_top:   1
+			border_color: color_border
+		}, [
+			ui2.label('devtools-console-prompt-mark', '›', ui2.rect(8, 6, 14, 16), mono_style(color_accent)),
+			ui2.Element{
+				...ui2.text_input(
+					id:          console_input_id
+					submit_id:   action('console-run', 0, '')
+					hint_text:   'Evaluate JavaScript in the page'
+					multiline:   false
+					autocorrect: false
+					frame:       ui2.rect(24, 3, l.width - 32, 22)
+					text_style:  mono_style(color_text)
+				) or { panic(err) }
+				accessibility_label: 'Console prompt'
+			},
+		]),
+	]
 }
 
 fn row_text_x(row Row) f64 {

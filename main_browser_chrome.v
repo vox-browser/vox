@@ -231,6 +231,7 @@ $if vox_ui2 ? {
 				ui2.menu_item_with_shortcut('history', 'History', 'cmd+y'),
 				ui2.menu_item_with_shortcut('devtools-toggle', 'Developer Tools', 'cmd+alt+i'),
 				ui2.menu_item_with_shortcut('devtools-inspect', 'Inspect Element', 'cmd+shift+c'),
+				ui2.menu_item_with_shortcut('devtools-console', 'JavaScript Console', 'cmd+alt+j'),
 			]
 		}])
 		app.start_browser_memory_chrome()
@@ -293,6 +294,7 @@ fn (mut app BrowserApp) activate_browser_chrome(action string) {
 		'history' { app.open_browser_history() }
 		'devtools-toggle' { app.toggle_devtools() }
 		'devtools-inspect' { app.start_devtools_picker() }
+		'devtools-console' { app.show_devtools_console() }
 		'back' {
 			app.blur_address_bar()
 			app.history_go(-1)

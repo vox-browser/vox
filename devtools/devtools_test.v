@@ -461,3 +461,31 @@ fn test_undo_and_redo_attribute_delete_and_text_edits() {
 	assert tools.sync(s.document, 99)
 	assert !tools.undo()
 }
+
+fn test_console_panel_lists_messages_and_prompt() {
+	s := sample()
+	mut tools := opened(s)
+	tools.panel = .console
+	tools.add_console(.input, '1 + 1')
+	tools.add_console(.result, '2')
+	tools.add_console(.error, 'Uncaught ReferenceError: nope')
+	pane := tools.elements(ui2.rect(0, 500, 1000, 300))
+	assert find_element(pane, tree_id) == none
+	assert find_element(pane, 'devtools-sidebar-pane') == none
+	list := find_element(pane, console_list_id) or { panic('console list') }
+	assert list.children.len == 3
+	error_text := find_element(pane, 'devtools-console-text-2') or { panic('error row') }
+	assert error_text.text == 'Uncaught ReferenceError: nope'
+	assert (find_element(pane, 'devtools-console-prefix-0') or { panic('prefix') }).text == '›'
+	prompt := find_element(pane, console_input_id) or { panic('prompt') }
+	assert prompt.submit_id == action('console-run', 0, '')
+	tab := find_element(pane, 'devtools-tab-console') or { panic('tab') }
+	assert tab.accessibility_value == 'selected' && tab.action_id == action('panel', 0, 'console')
+	clear := find_element(pane, 'devtools-console-clear') or { panic('clear') }
+	assert !clear.hidden
+	assert tools.console_content_height(1000) == 2 + 3 * 21
+	tools.panel = .elements
+	elements_pane := tools.elements(ui2.rect(0, 500, 1000, 300))
+	assert find_element(elements_pane, console_list_id) == none
+	assert (find_element(elements_pane, 'devtools-console-clear') or { panic('clear') }).hidden
+}

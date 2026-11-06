@@ -42,6 +42,8 @@ fn test_devtools_shortcuts_follow_chrome() {
 	assert shortcut(ui2.KeyEvent{ code: .i, ctrl: true, shift: true }, false, true) == ''
 	assert shortcut(ui2.KeyEvent{ code: .c, cmd: true }, true, true) == ''
 	assert shortcut(ui2.KeyEvent{ code: .f12, shift: true }, false, true) == ''
+	assert shortcut(ui2.KeyEvent{ code: .j, cmd: true, alt: true }, false, true) == 'devtools-console'
+	assert shortcut(ui2.KeyEvent{ code: .j, ctrl: true, shift: true }, false, false) == 'devtools-console'
 }
 
 fn vector_area(points []ui2.VectorPoint) f64 {

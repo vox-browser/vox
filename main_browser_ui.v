@@ -279,7 +279,7 @@ fn browser_ui_key(event ui2.KeyEvent) {
 	if action == '' { return }
 	$if vox_ui2 ? {
 		if ui2.embedded_key_repeat() && action in ['bookmarks-toggle', 'bookmark-add', 'debug-toggle',
-			'tab-new', 'tab-close', 'devtools-toggle', 'devtools-inspect'] {
+			'tab-new', 'tab-close', 'devtools-toggle', 'devtools-inspect', 'devtools-console'] {
 			ui2.consume_key()
 			return
 		}
@@ -293,6 +293,7 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		'find-open' { app.show_browser_find_bar() }
 		'devtools-toggle' { app.toggle_devtools() }
 		'devtools-inspect' { app.start_devtools_picker() }
+		'devtools-console' { app.show_devtools_console() }
 		'find-next', 'find-previous' { app.find_browser_step(action == 'find-next') }
 		else {
 			if action.starts_with('zoom-') {

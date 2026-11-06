@@ -11,10 +11,14 @@ fn devtools_test_app() &BrowserApp {
 }
 
 fn devtools_test_app_with(markup string) &BrowserApp {
+	return devtools_test_app_with_scripts(markup, .disabled)
+}
+
+fn devtools_test_app_with_scripts(markup string, policy BrowserScriptPolicy) &BrowserApp {
 	owner := page.Page.create(1) or { panic(err) }
 	mut app := &BrowserApp{
 		page_model:      owner
-		script_policy:   .disabled
+		script_policy:   policy
 		viewport_width:  800
 		viewport_height: 516
 	}
@@ -319,4 +323,50 @@ fn test_devtools_undo_restores_html_and_rule_edits() {
 	assert app.set_devtools_style(id, 0, 'height', '20px')
 	assert app.undo_devtools(false)
 	assert target.get_attribute('style') or { '' } == 'height:40px'
+}
+
+fn devtools_test_console(tools &devtools.DevTools) []string {
+	return tools.console.map('${it.kind}: ${it.text}')
+}
+
+fn test_console_evaluates_in_the_page_and_collects_its_logs() {
+	mut app := devtools_test_app_with_scripts('<!doctype html><body><p id="msg">Old</p></body>',
+		.enabled)
+	defer { app.dispose_browser_tab() }
+	app.show_devtools_console()
+	mut tools := devtools_test_panel(app)
+	assert tools.panel == .console
+	app.run_devtools_console('1 + 1')
+	assert devtools_test_console(tools) == ['input: 1 + 1', 'result: 2']
+	app.run_devtools_console('console.log("hi", 3); document.getElementById("msg").textContent = "New"; [1, "a", {b: 2}]')
+	assert devtools_test_console(tools)[2..] == [
+		'input: console.log("hi", 3); document.getElementById("msg").textContent = "New"; [1, "a", {b: 2}]',
+		'log: hi 3',
+		'result: (3) [1, "a", {b: 2}]',
+	]
+	message := app.document.get_element_by_id('msg') or { panic('missing msg') }
+	assert message.as_node().text_content() or { '' } == 'New'
+	app.run_devtools_console('nope')
+	assert tools.console.last().kind == .error
+	assert tools.console.last().text.starts_with('Uncaught ReferenceError')
+	app.run_devtools_console('document.getElementById("msg")')
+	assert tools.console.last().text == '<p id="msg">'
+	app.run_devtools_console('var answer = 42')
+	app.run_devtools_console('answer * 2')
+	assert tools.console.last().text == '84'
+	assert tools.console_history.last() == 'answer * 2'
+	app.devtools_action(devtools.action('console-clear', 0, ''))
+	assert tools.console.len == 0 && app.js_messages.len == 0
+	// The Elements panel takes over when an element is picked.
+	app.start_devtools_picker()
+	assert tools.panel == .elements
+}
+
+fn test_console_reports_disabled_javascript() {
+	mut app := devtools_test_app_with('<!doctype html><body><p>Static</p></body>')
+	defer { app.dispose_browser_tab() }
+	app.show_devtools_console()
+	tools := devtools_test_panel(app)
+	app.run_devtools_console('1')
+	assert devtools_test_console(tools) == ['input: 1', 'error: JavaScript is disabled for this page.']
 }
