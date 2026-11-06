@@ -1,0 +1,461 @@
+{
+  "scope": "Controlled GPU target-extent diagnostics; no production renderer change or new strict site acceptance",
+  "native": [
+    {
+      "name": "baseline",
+      "native_source": 0,
+      "native_previous": 0,
+      "native_597": 597,
+      "native_current_brave": 308,
+      "independent_rgba": {
+        "source": {
+          "pixels": 0,
+          "first_tile": 0,
+          "second_tile": 0,
+          "bbox": null
+        },
+        "brave_597": {
+          "pixels": 597,
+          "first_tile": 308,
+          "second_tile": 289,
+          "bbox": [
+            511,
+            156,
+            888,
+            510
+          ]
+        },
+        "brave_308": {
+          "pixels": 308,
+          "first_tile": 308,
+          "second_tile": 0,
+          "bbox": [
+            511,
+            156,
+            869,
+            388
+          ]
+        }
+      }
+    },
+    {
+      "name": "split-control",
+      "native_source": 0,
+      "native_previous": 0,
+      "native_597": 597,
+      "native_current_brave": 308,
+      "independent_rgba": {
+        "source": {
+          "pixels": 0,
+          "first_tile": 0,
+          "second_tile": 0,
+          "bbox": null
+        },
+        "brave_597": {
+          "pixels": 597,
+          "first_tile": 308,
+          "second_tile": 289,
+          "bbox": [
+            511,
+            156,
+            888,
+            510
+          ]
+        },
+        "brave_308": {
+          "pixels": 308,
+          "first_tile": 308,
+          "second_tile": 0,
+          "bbox": [
+            511,
+            156,
+            869,
+            388
+          ]
+        }
+      }
+    },
+    {
+      "name": "first-large",
+      "native_source": 308,
+      "native_previous": 308,
+      "native_597": 289,
+      "native_current_brave": 0,
+      "independent_rgba": {
+        "source": {
+          "pixels": 308,
+          "first_tile": 308,
+          "second_tile": 0,
+          "bbox": [
+            511,
+            156,
+            869,
+            388
+          ]
+        },
+        "brave_597": {
+          "pixels": 289,
+          "first_tile": 0,
+          "second_tile": 289,
+          "bbox": [
+            526,
+            389,
+            888,
+            510
+          ]
+        },
+        "brave_308": {
+          "pixels": 0,
+          "first_tile": 0,
+          "second_tile": 0,
+          "bbox": null
+        }
+      }
+    },
+    {
+      "name": "both-large",
+      "native_source": 597,
+      "native_previous": 597,
+      "native_597": 0,
+      "native_current_brave": 289,
+      "independent_rgba": {
+        "source": {
+          "pixels": 597,
+          "first_tile": 308,
+          "second_tile": 289,
+          "bbox": [
+            511,
+            156,
+            888,
+            510
+          ]
+        },
+        "brave_597": {
+          "pixels": 0,
+          "first_tile": 0,
+          "second_tile": 0,
+          "bbox": null
+        },
+        "brave_308": {
+          "pixels": 289,
+          "first_tile": 0,
+          "second_tile": 289,
+          "bbox": [
+            526,
+            389,
+            888,
+            510
+          ]
+        }
+      }
+    }
+  ],
+  "source_float": [
+    {
+      "name": "baseline",
+      "native_source": 0,
+      "native_previous": 0,
+      "native_current_brave": 308
+    },
+    {
+      "name": "identity-clear",
+      "native_source": 0,
+      "native_previous": 0,
+      "native_current_brave": 308
+    },
+    {
+      "name": "source-height",
+      "native_source": 52,
+      "native_previous": 52,
+      "native_current_brave": 358
+    }
+  ],
+  "tile_boundary_document_y": 388,
+  "reference_tile_differences": {
+    "source": {
+      "pixels": 0,
+      "first_tile": 0,
+      "second_tile": 0,
+      "bbox": null
+    },
+    "brave_597": {
+      "pixels": 597,
+      "first_tile": 308,
+      "second_tile": 289,
+      "bbox": [
+        511,
+        156,
+        888,
+        510
+      ]
+    },
+    "brave_308": {
+      "pixels": 308,
+      "first_tile": 308,
+      "second_tile": 0,
+      "bbox": [
+        511,
+        156,
+        869,
+        388
+      ]
+    }
+  },
+  "layer_snapshots": [
+    {
+      "index": 0,
+      "path": "/Users/alex/code/vox2/Build/discord-mipmap-20261106/post-trace-integration-v2/0/trace/layers.json",
+      "sha256": "3510d856661f171f12d8af80953fcd8c652c5c1b960dc761d90c28bab65f559a",
+      "tiles": [
+        {
+          "cat": "disabled-by-default-cc.debug",
+          "combined_priority": {
+            "distance_to_visible": 0,
+            "is_occluded": false,
+            "priority_bin": "NOW",
+            "resolution": "HIGH_RESOLUTION"
+          },
+          "content_rect": [
+            0,
+            0,
+            704,
+            256
+          ],
+          "contents_scale": 1,
+          "draw_info": {
+            "is_solid_color": false,
+            "is_transparent": false
+          },
+          "gpu_memory_usage": 1048576,
+          "has_resource": true,
+          "id": "cc::Tile/0x13402bc36c0",
+          "is_using_gpu_memory": true,
+          "layer_id": 10,
+          "picture_pile": {
+            "id_ref": "0x1340150a8c0"
+          },
+          "raster_transform": {
+            "scale": [
+              1,
+              1
+            ],
+            "translation": [
+              0,
+              0
+            ]
+          },
+          "resolution": "HIGH_RESOLUTION",
+          "scheduled_priority": 1,
+          "use_picture_analysis": true
+        },
+        {
+          "cat": "disabled-by-default-cc.debug",
+          "combined_priority": {
+            "distance_to_visible": 0,
+            "is_occluded": false,
+            "priority_bin": "NOW",
+            "resolution": "HIGH_RESOLUTION"
+          },
+          "content_rect": [
+            0,
+            254,
+            704,
+            256
+          ],
+          "contents_scale": 1,
+          "draw_info": {
+            "is_solid_color": false,
+            "is_transparent": false
+          },
+          "gpu_memory_usage": 720896,
+          "has_resource": true,
+          "id": "cc::Tile/0x13402bc2dc0",
+          "is_using_gpu_memory": true,
+          "layer_id": 10,
+          "picture_pile": {
+            "id_ref": "0x1340150a8c0"
+          },
+          "raster_transform": {
+            "scale": [
+              1,
+              1
+            ],
+            "translation": [
+              0,
+              0
+            ]
+          },
+          "resolution": "HIGH_RESOLUTION",
+          "scheduled_priority": 3,
+          "use_picture_analysis": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "path": "/Users/alex/code/vox2/Build/discord-mipmap-20261106/post-trace-integration-v2/1/trace/layers.json",
+      "sha256": "515ae9dd892f40fb281374aff48e4731f367d4e61e942c7397432db0db81a83e",
+      "tiles": [
+        {
+          "cat": "disabled-by-default-cc.debug",
+          "combined_priority": {
+            "distance_to_visible": 0,
+            "is_occluded": false,
+            "priority_bin": "NOW",
+            "resolution": "HIGH_RESOLUTION"
+          },
+          "content_rect": [
+            0,
+            0,
+            704,
+            256
+          ],
+          "contents_scale": 1,
+          "draw_info": {
+            "is_solid_color": false,
+            "is_transparent": false
+          },
+          "gpu_memory_usage": 1048576,
+          "has_resource": true,
+          "id": "cc::Tile/0x124031a6900",
+          "is_using_gpu_memory": true,
+          "layer_id": 10,
+          "picture_pile": {
+            "id_ref": "0x12402c4a500"
+          },
+          "raster_transform": {
+            "scale": [
+              1,
+              1
+            ],
+            "translation": [
+              0,
+              0
+            ]
+          },
+          "resolution": "HIGH_RESOLUTION",
+          "scheduled_priority": 17,
+          "use_picture_analysis": true
+        },
+        {
+          "cat": "disabled-by-default-cc.debug",
+          "combined_priority": {
+            "distance_to_visible": 0,
+            "is_occluded": false,
+            "priority_bin": "NOW",
+            "resolution": "HIGH_RESOLUTION"
+          },
+          "content_rect": [
+            0,
+            254,
+            704,
+            256
+          ],
+          "contents_scale": 1,
+          "draw_info": {
+            "is_solid_color": false,
+            "is_transparent": false
+          },
+          "gpu_memory_usage": 720896,
+          "has_resource": true,
+          "id": "cc::Tile/0x124031a6840",
+          "is_using_gpu_memory": true,
+          "layer_id": 10,
+          "picture_pile": {
+            "id_ref": "0x12402c4a500"
+          },
+          "raster_transform": {
+            "scale": [
+              1,
+              1
+            ],
+            "translation": [
+              0,
+              0
+            ]
+          },
+          "resolution": "HIGH_RESOLUTION",
+          "scheduled_priority": 22,
+          "use_picture_analysis": true
+        }
+      ]
+    }
+  ],
+  "identities": {
+    "native-source-float": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ba8233e5635e0bf558c7e508582d2ba8ffea867872a3322dcde7eb964319b7ef",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "87ee2102cccf1b948f9e3c6c6308196036a2756f6a97a168e35ec81dae75d73f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7fee204250020a097bfd9459c7dcb7d07a58405494d50db7120c09af0de78b93",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "e8f3452c8ecbdec1aef4299683a146e6615b25f384c8693367a02a70a89cb100",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "native-backing": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "68ad136146aac1119126a5643a19a73be03ab529cf915009022c7e14df2bf9da",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "87ee2102cccf1b948f9e3c6c6308196036a2756f6a97a168e35ec81dae75d73f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7fee204250020a097bfd9459c7dcb7d07a58405494d50db7120c09af0de78b93",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "e8f3452c8ecbdec1aef4299683a146e6615b25f384c8693367a02a70a89cb100",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    }
+  },
+  "qualification": [
+    "Logical tile dimensions remain 704x256, output views remain 672x256 and 672x153, and picture bytes, matrices, source crop, filtering, and clipping are unchanged.",
+    "The split control replays each tile separately at its original target dimensions and is exact to the uninstrumented native control.",
+    "Changing only the first backing target to 1024x256 reproduces the historical 308-pixel Brave reference exactly; changing both reproduces the historical 597-pixel reference exactly.",
+    "Brave resource byte totals independently agree with the mixed-size control. Actual resource dimensions/reuse history are inferred from those totals and pixel reproduction, not directly exposed in the snapshot.",
+    "The source-height perturbation is a failed lead: it changes 52 source pixels and leaves 358 current-reference differences. Clearing image identity alone changes zero.",
+    "The first native source-float cohort did not prospectively pin its current Brave reference; the backing cohort does pin all compared references and rechecks them after every process cohort.",
+    "All captures use fresh processes on the canonical bundle under a shared bundle lease and memory guards. Executable and native-library identities remain unchanged within each cohort.",
+    "No default renderer policy, fixture registration, source PNG, oracle launch flag or tolerance changed. The earlier strict source/reference failure remains open; a variable resource allocation has no unique default target size to hardcode.",
+    "No production rebuild, rendering-suite rerun, live behavior or performance credit is claimed."
+  ],
+  "archive": {
+    "path": "discord-raster-backing-20261106.zip",
+    "members": 98,
+    "bytes": 5681689,
+    "sha256": "1257561f563f7ca3d0c017876648253838ca325f2cb39cb32d1aed734f2ad5ec"
+  }
+}

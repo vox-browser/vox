@@ -3368,6 +3368,50 @@ The ZIP contains 449 members and 46,781,302 bytes, SHA-256
 `9517fafac7861bb6de73749194424af55c5decc6098d59ac8cff3e70a0e8137f`;
 every member passes CRC and SHA-256 readback.
 
+## Discord raster backing extents (2026-11-06)
+
+A controlled native diagnostic now reproduces both small Brave reference
+variants exactly. The logical hero tile remains **704×256**; its output views
+remain 672×256 and 672×153, with a 254-pixel row stride. Only the GPU target's
+backing width changes. Image bytes, picture commands, transforms, clips,
+source rectangle and output pixels outside those views remain unchanged.
+
+| Native diagnostic | Saved source | Brave 308-pixel variant | Brave 597-pixel variant |
+| --- | ---: | ---: | ---: |
+| Default browser | 0 | 308 | 597 |
+| Separate tile calls, original 704-wide targets | 0 | 308 | 597 |
+| First target 1024 wide, second 704 | 308 | **0** | 289 |
+| Both targets 1024 wide | 597 | 289 | **0** |
+
+All 308 pixels in the first variant are above document y=388, the second
+tile's origin. The 597-pixel variant adds exactly 289 pixels below it. The
+previous post-capture Brave snapshots independently report 1,048,576 bytes
+for the first tile and 720,896 for the second: the byte counts of 1024×256
+and 704×256 RGBA targets. Actual resource dimensions and reuse history are
+inferred from these totals and the exact pixel reproduction; the snapshot
+does not expose the allocation dimensions directly. The matched separate-call
+control rules out splitting the batch as the cause of the changed pixels.
+
+The native cohort pins executable `918f4c30…`, its native libraries, the
+canonical helpers, diagnostic source and all three reference PNGs before and
+after fresh-process captures under one bundle lease. Every native audit and
+memory guard succeeds, and independent RGBA comparisons reproduce the table.
+The earlier source-height probe is retained as a failed lead: clearing the
+resource identity changes zero pixels; moving the crop by one float step
+changes 52 source pixels and leaves 358 current-reference differences.
+
+**No renderer change or new strict Discord pass is claimed.** Hardcoding the
+larger targets would break the already exact saved-source rendering and
+select only one of Brave's varying allocation states. Registered archives,
+reference PNGs, launch policies and zero tolerance remain unchanged. No
+production build or broad rendering-suite rerun was needed for these probes.
+
+[Recomputed counts and qualifications](evidence/discord-raster-backing-20261106.json)
+and [fresh captures, probes, logs, identities and layer snapshots](evidence/discord-raster-backing-20261106.zip)
+retain both successful controls and the failed source-height lead. All 98
+members pass CRC and SHA-256 readback. The archive is 5,681,689 bytes, SHA-256
+`1257561f563f7ca3d0c017876648253838ca325f2cb39cb32d1aed734f2ad5ec`.
+
 ## Run
 
 ```sh
