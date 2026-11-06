@@ -245,3 +245,33 @@ fn test_mark_detail_reads_release_temporary_roots_and_keep_captured_clone_intrin
 	assert runtime.protected_values_.len == before
 	runtime.evaluate_host('Map.prototype.set=originalMapSet')!
 }
+
+fn test_javascript_measures_use_native_marks_options_and_detail() {
+	mut runtime, mut document, mut scope := native_performance_fixture()!
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	runtime.install_performance_binding()!
+	mut performance := scope.performance()
+	performance.mark('parse-start', usertiming.PerformanceMarkOptions{ start_time: 5 })!
+	performance.mark('parse-end', usertiming.PerformanceMarkOptions{ start_time: 12 })!
+	assert runtime.evaluate_host(r'
+ const detail={devtools:{track:"react"}};
+ const named=performance.measure("named","parse-start","parse-end");
+ const options=performance.measure("options",{start:"parse-start",end:15,detail});
+ const duration=performance.measure("duration",{start:2,duration:4});
+ const open=performance.measure("open");
+ let errors=[];
+ for(const action of [()=>performance.measure("bad",{start:1},"parse-end"),()=>performance.measure("bad",{detail:1}),()=>performance.measure("bad",{start:1,end:2,duration:1}),()=>performance.measure("bad","missing"),()=>performance.measure("bad",{start:NaN}),()=>performance.measure.call({},"bad")])
+  try{action()}catch(error){errors.push(error.name)}
+ const measures=performance.getEntriesByType("measure");
+ named instanceof PerformanceMeasure&&named instanceof PerformanceEntry&&named.entryType==="measure"&&named.startTime===5&&named.duration===7&&named.detail===null&&
+ options.startTime===5&&options.duration===10&&options.detail.devtools.track==="react"&&options.detail!==detail&&
+ duration.startTime===2&&duration.duration===4&&open.startTime===0&&open.duration>0&&
+ errors.join()==="TypeError,TypeError,TypeError,SyntaxError,TypeError,TypeError"&&
+ measures.length===4&&measures.includes(named)&&Object.prototype.toString.call(named)==="[object PerformanceMeasure]"&&
+ (()=>{try{new PerformanceMeasure();return false}catch(error){return error instanceof TypeError}})();
+ ')! == 'true'
+	assert performance.get_entries_by_type('measure').len == 4
+}

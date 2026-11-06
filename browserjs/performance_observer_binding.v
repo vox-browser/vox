@@ -8,8 +8,8 @@ fn performance_observer_binding_factory() string {
  const prototypes=[{}, {}, {}];
  function PerformanceObserverEntryList(){throw new T("Illegal constructor")}
  function PerformanceEntry(){throw new T("Illegal constructor")}
- const markPrototype=Object.create(prototypes[2]);
- prototypes[4]=markPrototype;
+ const markPrototype=Object.create(prototypes[2]),measurePrototype=Object.create(prototypes[2]);
+ prototypes[4]=markPrototype;prototypes[6]=measurePrototype;
  function markArguments(name,options){
   name=operate("string",null,name);
   if(options!=null&&!object(options))throw new T("markOptions must be a dictionary");
@@ -29,12 +29,29 @@ fn performance_observer_binding_factory() string {
   operate("performanceMarkBrand",this);if(arguments.length===0)throw new T("mark requires a name");
   return operate("mark",this,...markArguments(name,options));
  }}.mark;
+ function PerformanceMeasure(){throw new T("Illegal constructor")}
+ Object.setPrototypeOf(PerformanceMeasure,PerformanceEntry);
+ // (DOMString or DOMHighResTimeStamp): Numbers convert as finite doubles.
+ function measureTime(value){return value===undefined?undefined:typeof value==="number"?operate("markDouble",null,value):operate("string",null,value)}
+ const measureMethod={measure(measureName,startOrMeasureOptions={},endMark=undefined){
+  operate("performanceMarkBrand",this);if(arguments.length===0)throw new T("measure requires a name");
+  measureName=operate("string",null,measureName);
+  let startName,options=false,detail,duration,end,start;
+  if(startOrMeasureOptions==null||object(startOrMeasureOptions)){
+   const source=startOrMeasureOptions==null?{}:startOrMeasureOptions;
+   options=true;detail=source.detail;
+   const rawDuration=source.duration;duration=rawDuration===undefined?undefined:operate("markDouble",null,rawDuration);
+   end=measureTime(source.end);start=measureTime(source.start);
+  }else startName=operate("string",null,startOrMeasureOptions);
+  endMark=endMark===undefined?undefined:operate("string",null,endMark);
+  return operate("measure",this,measureName,startName,options,detail,duration,end,start,endMark);
+ }}.measure;
  const PerformanceObserver=new Proxy(function PerformanceObserver(callback){throw new T("PerformanceObserver constructor requires new")},{construct(target,args,newTarget){
   if(args.length===0||typeof args[0]!=="function")throw new T("PerformanceObserver requires a callback function");
   const requested=newTarget.prototype,receiver=create(object(requested)?requested:prototypes[0]);
   operate("construct",receiver,args[0]);return receiver;
  }});
- for(const [index,constructor,name] of [[0,PerformanceObserver,"PerformanceObserver"],[1,PerformanceObserverEntryList,"PerformanceObserverEntryList"],[2,PerformanceEntry,"PerformanceEntry"],[4,PerformanceMark,"PerformanceMark"]]){
+ for(const [index,constructor,name] of [[0,PerformanceObserver,"PerformanceObserver"],[1,PerformanceObserverEntryList,"PerformanceObserverEntryList"],[2,PerformanceEntry,"PerformanceEntry"],[4,PerformanceMark,"PerformanceMark"],[6,PerformanceMeasure,"PerformanceMeasure"]]){
   define(constructor,"prototype",{value:prototypes[index],writable:false});
   define(prototypes[index],"constructor",{value:constructor,writable:true,configurable:true});
   define(prototypes[index],Symbol.toStringTag,{value:name,configurable:true});
@@ -65,6 +82,7 @@ fn performance_observer_binding_factory() string {
   define(prototypes[2],name,{get,enumerable:true,configurable:true});
  }
  define(markPrototype,"detail",{get:descriptor({get detail(){return operate("markDetail",this)}},"detail").get,enumerable:true,configurable:true});
- return function make(index,dropped){return index===5?markMethod:index===3?(dropped===undefined?{}:{droppedEntriesCount:dropped}):create(prototypes[index])};
+ define(measurePrototype,"detail",{get:descriptor({get detail(){return operate("measureDetail",this)}},"detail").get,enumerable:true,configurable:true});
+ return function make(index,dropped){return index===7?measureMethod:index===5?markMethod:index===3?(dropped===undefined?{}:{droppedEntriesCount:dropped}):create(prototypes[index])};
 })'
 }

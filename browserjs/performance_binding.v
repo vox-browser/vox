@@ -12,6 +12,7 @@ fn performance_binding_factory() string {
  define(prototype,Symbol.toStringTag,{value:"Performance",configurable:true});
  const methods={now(){return operate("now",this)},toJSON(){return {timeOrigin:operate("timeOrigin",this)}},
   mark:makeTimeline(5),
+  measure:makeTimeline(7),
   getEntries(){return operate("getEntries",this)},
   getEntriesByType(type){operate("brand",this);if(arguments.length===0)throw new T("getEntriesByType requires a type");return operate("getEntriesByType",this,operate("string",this,type))},
   getEntriesByName(name,type){operate("brand",this);if(arguments.length===0)throw new T("getEntriesByName requires a name");return operate("getEntriesByName",this,operate("string",this,name),type===undefined?undefined:operate("string",this,type))},

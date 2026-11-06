@@ -1,6 +1,7 @@
 @[has_globals]
 module browserjs
 
+import highresolutiontime
 import html
 import math
 import performancetimeline
@@ -99,7 +100,11 @@ fn (mut runtime Runtime) performance_observer_entries(mut binding PerformanceObs
 
 fn (mut runtime Runtime) performance_observer_entry(mut binding PerformanceObserverBinding, entry &performancetimeline.PerformanceEntry) !voidptr {
 	if cached := binding.wrappers[voidptr(entry)] { return cached }
-	index := if entry.entry_type() == 'mark' { 4 } else { 2 }
+	index := match entry.entry_type() {
+		'mark' { 4 }
+		'measure' { 6 }
+		else { 2 }
+	}
 	value := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!)!
 	binding.entries[value] = entry
 	binding.wrappers[voidptr(entry)] = value
@@ -144,6 +149,52 @@ fn (mut runtime Runtime) performance_mark_operation(mut binding PerformanceObser
 	return value
 }
 
+fn (mut runtime Runtime) performance_measure_time(value voidptr) !usertiming.StringOrTimestamp {
+	if C.JSValueIsNumber(runtime.context, value) {
+		return usertiming.StringOrTimestamp(webidl.value_to_number(runtime.webidl_value(value)!)!)
+	}
+	return usertiming.StringOrTimestamp(runtime.binding_dom_string(value)!)
+}
+
+// https://w3c.github.io/user-timing/#dom-performance-measure
+// Arguments: measureName, start mark name, whether a PerformanceMeasureOptions
+// dictionary was supplied, its detail, duration, end and start, then endMark.
+fn (mut runtime Runtime) performance_measure_operation(mut binding PerformanceObserverBinding, args []voidptr) !voidptr {
+	mut scope := binding.scope
+	mut performance := scope.performance()
+	target := runtime.native_event_target(args[1])!
+	if voidptr(target) != voidptr(performance) {
+		return runtime.event_binding_type_error('Illegal Performance receiver')
+	}
+	name := runtime.binding_dom_string(args[2])!
+	detail_value := args[5]
+	detail_present := !C.JSValueIsUndefined(runtime.context, detail_value)
+	start_or_options := if C.JSValueToBoolean(runtime.context, args[4]) {
+		?highresolutiontime.StartOrMeasureOptions(usertiming.PerformanceMeasureOptions{
+			// The native model only needs the member's presence; the actual
+			// engine value is cloned below.
+			detail: if detail_present { ?string('') } else { none }
+			duration: if C.JSValueIsUndefined(runtime.context, args[6]) { none } else { ?f64(webidl.value_to_number(runtime.webidl_value(args[6])!)!) }
+			end: if C.JSValueIsUndefined(runtime.context, args[7]) { none } else { ?usertiming.StringOrTimestamp(runtime.performance_measure_time(args[7])!) }
+			start: if C.JSValueIsUndefined(runtime.context, args[8]) { none } else { ?usertiming.StringOrTimestamp(runtime.performance_measure_time(args[8])!) }
+		})
+	} else if C.JSValueIsUndefined(runtime.context, args[3]) {
+		?highresolutiontime.StartOrMeasureOptions(none)
+	} else {
+		?highresolutiontime.StartOrMeasureOptions(runtime.binding_dom_string(args[3])!)
+	}
+	end_mark := if C.JSValueIsUndefined(runtime.context, args[9]) { ?string(none) } else { ?string(runtime.binding_dom_string(args[9])!) }
+	measure := performance.measure(name, start_or_options, end_mark)!
+	detail := if !detail_present || C.JSValueIsNull(runtime.context, detail_value) {
+		C.vox_jsc_JSValueMakeNull(runtime.context)
+	} else {
+		binding.clone.clone(detail_value)!
+	}
+	value := runtime.performance_observer_entry(mut binding, measure.entry)!
+	binding.mark_details[voidptr(measure.entry)] = detail
+	return value
+}
+
 fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceObserverBinding, args []voidptr) !voidptr {
 	if args.len < 2 { return error('Missing PerformanceObserver operation') }
 	method := runtime.binding_dom_string(args[0])!
@@ -152,6 +203,9 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 	if method == 'string' { return runtime.binding_string(runtime.binding_dom_string(args[2])!) }
 	if method in ['performanceMarkBrand', 'mark', 'constructMark'] {
 		return runtime.performance_mark_operation(mut binding, method, args)
+	}
+	if method == 'measure' {
+		return runtime.performance_measure_operation(mut binding, args)
 	}
 	if method == 'markDouble' {
 		number := webidl.value_to_number(runtime.webidl_value(args[2])!)!
@@ -261,8 +315,11 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 		return runtime.performance_observer_entries(mut binding, entries)
 	}
 	entry := binding.entries[receiver] or { return runtime.event_binding_type_error('Illegal PerformanceEntry receiver') }
-	if method == 'markDetail' {
-		if entry.entry_type() != 'mark' { return runtime.event_binding_type_error('Illegal PerformanceMark receiver') }
+	if method in ['markDetail', 'measureDetail'] {
+		expected := if method == 'markDetail' { 'mark' } else { 'measure' }
+		if entry.entry_type() != expected {
+			return runtime.event_binding_type_error(if expected == 'mark' { 'Illegal PerformanceMark receiver' } else { 'Illegal PerformanceMeasure receiver' })
+		}
 		detail := binding.mark_details[voidptr(entry)] or { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 		copy := binding.clone.clone(detail)!
 		// The result transfers to the engine caller. Only the stored original
