@@ -1,6 +1,32 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 126**, parallel production `cecb4831bb22`, is
+Latest attempt — **cohort 127**, literal V `-prod` / single-C-unit production
+`86088fc0d932`, is invalid for acceptance. Brave pair 2 has a private helper
+outside its resource coalition; pair 3 differs from its unchanged pixel reference.
+All **21 attempts** remain recorded, with **19 passing capture audits**. All
+seven Vox/control pairs complete: medians are **26,478,738,485 Vox** and
+**26,715,711,020 original-bidi-scan control** instructions. The median point
+reduction is **236,972,535 (0.887016%)**, with four paired improvements and three
+regressions; the conservative control ratio **1.01864** fails. No robust saving
+is established. The full seven-trial Brave median and conservative ratio remain
+unset because one counter is unavailable. The observed lower bounds already
+rule out the strict gate: `270431960960 > 156445216155`; this is a failure witness
+using six observed Brave intervals, not a replacement for the missing trial.
+[All attempts, native checks and verification](performance/bbc-text-bidi-classification-cohort127-20261106.json).
+
+The point reduction triggers **759 freshly executed unique cases per default
+and no-GC mode: 754 passes and the same five baseline failures**. Layout 560,
+main 74, CSS 110 and browser-JS 15 cases include all five new bidi cases. Main
+and CSS repeat candidate/control, while browser-JS repeats its existing lexer
+arms. All **1,916 actual executions**, 1,902 passes and 14 repeated baseline
+failures are audited with unchanged checked inputs. No full-suite pass or cadence
+reset is claimed. History through 127 is **121 measured cohorts / 2,608 acceptance
+browser attempts**; preflight-only IDs remain 104, 110, 111, 113, 118 and 124.
+The 10% target remains unmet, and the BBC homepage remains outside the qualifying
+instruction catalog. Earlier parallel cohorts remain separate; changing C modes
+earns no engine optimization credit.
+
+Retained attempt — **cohort 126**, parallel production `cecb4831bb22`, is
 invalid for acceptance because Brave pair 7 differs from its unchanged pixel
 reference. All 21 attempts are retained; 20 capture audits pass with normal
 native exits and unchanged identities. Launch-to-PNG medians are
@@ -231,9 +257,11 @@ invalidation or recomputation; paragraph and inline direction checks remain live
 New cases cover Unicode directional controls, live DOM edits without layout,
 source-range changes, direction changes and paint comparisons with a fresh tree.
 All **346 instruction-tool tests** pass with unchanged checked inputs, including
-control isolation and required-control validation. Native BBC eligibility and
-matched instruction measurements remain pending on a production build containing
-the change. No saving or catalog credit is claimed.
+control isolation and required-control validation. Production `86088fc0d932`
+now proves candidate-only non-ASCII classification reuse before PNG, with
+original native capture/script/image/ownership/exit audits and exact SVG
+source-switch. Cohort 127 and its fresh 759-case broad check are recorded above;
+no robust saving or catalog credit is claimed.
 [Focused checks and control evidence](performance/bbc-text-bidi-classification-focus-20261106.json).
 
 The fresh [CPU sample](performance/bbc-current-production-sample-20261106.json)

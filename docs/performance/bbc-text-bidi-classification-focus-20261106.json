@@ -204,5 +204,6 @@
     "observed_peak_rss_bytes": 20201472,
     "elapsed_seconds": 3.190930792,
     "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
-  }
+  },
+  "current_status": "Native candidate-only non-ASCII cache reuse proved in86088fc0d932;cohort127 invalid, no robust saving/target/catalog credit. Fresh759-case broad verification complete with five known baseline failures. See bbc-text-bidi-classification-cohort127-20261106.json."
 }

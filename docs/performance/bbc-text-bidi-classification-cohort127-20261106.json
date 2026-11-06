@@ -1,0 +1,2093 @@
+{
+  "status": "Cohort127 invalid for acceptance: Brave pair2 helper ownership failure and pair3 unchanged-reference pixel mismatch. All21 attempts retained; point reduction triggers fresh broader checks, not optimization credit.",
+  "implementation": "fcf6a9a18",
+  "tooling": "ba13f4445",
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "86088fc0d93210cfdd8dcf4a60bed2a686d469fc1f68e4fd774a36867072c706",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-040120-b2e0bd84/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "dfd5b50a910ed2ce958fa4b57f713faed0b850007b531969d7eb9e142a3f2d4e",
+      "dirty": true,
+      "head": "ba13f4445410e4108c7650772c9d02327af5a13c",
+      "repository_sha256": "a796bb112d825d196cd0b289f40601a7843226af00341f3e544a453c56d1efa5"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "cdb08ddaefb4341b7e325dc482c9fd432eeaa7ab76d5de6bf0e4a671aa8ef041",
+      "dirty": true,
+      "head": "3a2f05b8c5cd4f825cd9745bf1b623adb9e67e50",
+      "repository_sha256": "f66f1903aae2d8320ecaa414843dd9c87267efb896e4634260cd0315bdb5558d"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "ba13f4445410e4108c7650772c9d02327af5a13c",
+      "id": "0b25dd21076a4e18b8601a3298ae5845",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "dfd5b50a910ed2ce958fa4b57f713faed0b850007b531969d7eb9e142a3f2d4e",
+      "dirty": true,
+      "head": "1e7ba8c7b83a3e45879413f0ca6942b6dd06d201",
+      "repository_sha256": "e6982d49561130205a7edc822a89e6b1fdb6c5a3b3ab798063d17cd8809df0e8"
+    }
+  },
+  "statistics": {
+    "valid_capture_cohort": false,
+    "full_comparison_available": false,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 26478738485,
+            "upper": 26478738485
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26740241466,
+            "upper": 26740241466
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17642538442,
+            "upper": 17660855714
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 25759098144,
+            "upper": 25759098144
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27806844718,
+            "upper": 27806844718
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": null,
+          "exit": 1,
+          "native_exit": null,
+          "cleanup_native_exit": 0,
+          "pixels": null,
+          "content": null,
+          "ownership": false,
+          "identity": true,
+          "error": "A private browser helper is outside its resource coalition",
+          "passed": false
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 27043196096,
+            "upper": 27043196096
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26715711020,
+            "upper": 26715711020
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17644691125,
+            "upper": 17647727194
+          },
+          "exit": 1,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": false,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "passed": false
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 26802516672,
+            "upper": 26802516672
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26622232038,
+            "upper": 26622232038
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17543016226,
+            "upper": 17546738080
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 26626753366,
+            "upper": 26626753366
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26548326600,
+            "upper": 26548326600
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17382801795,
+            "upper": 17391286577
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 25536150791,
+            "upper": 25536150791
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26608701969,
+            "upper": 26608701969
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17522607658,
+            "upper": 17529603406
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 26266084181,
+            "upper": 26266084181
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27060351760,
+            "upper": 27060351760
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17583783170,
+            "upper": 17602037364
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [
+      {
+        "pair": 2,
+        "arm": "brave",
+        "error": "A private browser helper is outside its resource coalition",
+        "native_exit": null,
+        "cleanup_native_exit": 0
+      },
+      {
+        "pair": 3,
+        "arm": "brave",
+        "error": "Captured document differs from its unchanged pixel reference",
+        "native_exit": 0,
+        "cleanup_native_exit": null
+      }
+    ],
+    "attempts_retained": 21,
+    "capture_audits_passed": 19,
+    "median_vox": 26478738485,
+    "median_control": 26715711020,
+    "median_brave_lower": null,
+    "point_reduction": 236972535,
+    "point_fraction": 0.008870156396833192,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": 236972535,
+    "paired_control_minus_vox": [
+      261502981,
+      2047746574,
+      -327485076,
+      -180284634,
+      -78426766,
+      1072551178,
+      794267579
+    ],
+    "improvements": 4,
+    "regressions": 3,
+    "worst_vox_over_best_control": 1.018640327258894,
+    "strict_left": 270431960960,
+    "strict_right": null,
+    "conservative_brave_ratio": null,
+    "target_met": false,
+    "broad_trigger": true,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 121,
+      "acceptance_browser_attempts": 2608,
+      "last_measured_id": 127,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113,
+        118,
+        124
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793927368.871897
+  },
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "bidi_cache_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "bidi_cache_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "86088fc0d93210cfdd8dcf4a60bed2a686d469fc1f68e4fd774a36867072c706",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-040120-b2e0bd84/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "dfd5b50a910ed2ce958fa4b57f713faed0b850007b531969d7eb9e142a3f2d4e",
+        "dirty": true,
+        "head": "ba13f4445410e4108c7650772c9d02327af5a13c",
+        "repository_sha256": "a796bb112d825d196cd0b289f40601a7843226af00341f3e544a453c56d1efa5"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "cdb08ddaefb4341b7e325dc482c9fd432eeaa7ab76d5de6bf0e4a671aa8ef041",
+        "dirty": true,
+        "head": "3a2f05b8c5cd4f825cd9745bf1b623adb9e67e50",
+        "repository_sha256": "f66f1903aae2d8320ecaa414843dd9c87267efb896e4634260cd0315bdb5558d"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "ba13f4445410e4108c7650772c9d02327af5a13c",
+        "id": "0b25dd21076a4e18b8601a3298ae5845",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "dfd5b50a910ed2ce958fa4b57f713faed0b850007b531969d7eb9e142a3f2d4e",
+        "dirty": true,
+        "head": "1e7ba8c7b83a3e45879413f0ca6942b6dd06d201",
+        "repository_sha256": "e6982d49561130205a7edc822a89e6b1fdb6c5a3b3ab798063d17cd8809df0e8"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; rendered-text bidi classification cache disabled only in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793927139.352416
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/original bidi scan control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793927152.864942
+  },
+  "incomplete_brave_gate_failure_witness": {
+    "available_pairs": [
+      [
+        1,
+        17642538442
+      ],
+      [
+        3,
+        17644691125
+      ],
+      [
+        4,
+        17543016226
+      ],
+      [
+        5,
+        17382801795
+      ],
+      [
+        6,
+        17522607658
+      ],
+      [
+        7,
+        17583783170
+      ]
+    ],
+    "missing_pairs": [
+      2
+    ],
+    "lowest_observed_brave_lower": 17382801795,
+    "strict_left": 270431960960,
+    "nine_times_lowest_observed_brave_lower": 156445216155,
+    "strict_gate_already_impossible": true,
+    "qualification": "The full seven-trial Brave median and conservative ratio remain null. The minimum across a complete set cannot exceed the minimum of these six observed lower bounds; this is only a failure witness, never a passing gate or a replacement value for the unavailable ownership-invalid attempt."
+  },
+  "broad": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "cadence_reset": false,
+    "inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "layout": {
+          "cases": 560,
+          "passes": 557,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "fresh_css": {
+          "cases": 110,
+          "passes": 110,
+          "arms": 2
+        },
+        "fresh_browser_js_cases": 15,
+        "browser_js_arms": 2,
+        "unique_cases": 759,
+        "unique_passes": 754,
+        "unique_known_failures": 5
+      },
+      {
+        "mode": "none",
+        "layout": {
+          "cases": 560,
+          "passes": 557,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "fresh_css": {
+          "cases": 110,
+          "passes": 110,
+          "arms": 2
+        },
+        "fresh_browser_js_cases": 15,
+        "browser_js_arms": 2,
+        "unique_cases": 759,
+        "unique_passes": 754,
+        "unique_known_failures": 5
+      }
+    ],
+    "current_pins": {
+      "/Users/alex/code/vox2/layout/block_layout_test.v": "1a2948c977fe7282033a5c4925970b21d2811d1563ca93bee96dc0014571891d",
+      "/Users/alex/code/vox2/layout/chromium_control_intrinsics_test.v": "5411bd3c4968972a2432c30bb91a17c0077affb304e6472f7425db081e35bc4c",
+      "/Users/alex/code/vox2/layout/chromium_definite_flex_basis_test.v": "c8af646fc803be3d5189466d3ca7923647570322b5ca81ef733b1fd272202c32",
+      "/Users/alex/code/vox2/layout/chromium_grid_flex_test.v": "3a60962eec6ab121b2dc641aa0115c0e33d1884bd03001df94b82d44136e750c",
+      "/Users/alex/code/vox2/layout/chromium_inline_block_baseline_test.v": "4f09c3aa2c0cfe0df5b49f7539a765fccb34ecea5001a6a88ef66338487bdaee",
+      "/Users/alex/code/vox2/layout/chromium_middle_atomic_baseline_test.v": "97e4b22aaf3ff687bbf18235a7e797d90899c19988eb6a89e51752d81a3c2c85",
+      "/Users/alex/code/vox2/layout/chromium_text_control_baseline_test.v": "b762eb48952a7089d479ccdc744d31936107eab7142c38250846e38229386571",
+      "/Users/alex/code/vox2/layout/definite_intrinsic_contribution_test.v": "4a5f47af1b9ce5c43afce99825313b86bccfccc172180d9f2626643055ab0354",
+      "/Users/alex/code/vox2/layout/document_geometry_scratch_test.v": "e2ae2ad82fc1fd115301cf561f4b7d29eb3ec5c229362207ab45662fea5b74e8",
+      "/Users/alex/code/vox2/layout/dom_grid_bridge_test.v": "4574c7a0c2be079c17b83eb4b207857bffefaccd88170fdb9f0d808923b504a4",
+      "/Users/alex/code/vox2/layout/dominant_baseline_test.v": "8f5c78bb6de70ecf3c517bdfa32858f09770ea0c1d607fd3c4f60b28823e34c8",
+      "/Users/alex/code/vox2/layout/flex_all_frozen_test.v": "dde38d4dba1e6fae97c655a180ddea0bbf8110cc4511cca9682ef8cf100b4246",
+      "/Users/alex/code/vox2/layout/flex_geometry_scratch_test.v": "dd8c81a45ed3746fc642443dd101ebe91c19c9010fbc523d179c93a01b663884",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+      "/Users/alex/code/vox2/layout/flex_relayout_test.v": "16a9d24178c55b4572976c9cd5b23ee5c4f8a75386ccf46820a3ed4191d5bc48",
+      "/Users/alex/code/vox2/layout/formatting_contexts_test.v": "58a75404a6e8a85eed14951d840c13f205d9c0f031148c9c89bb2b1b72264236",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed_test.v": "015df0f70d73b29ae6060816186ee4bb31aacd504876b808f2ab3ac8b74e7e45",
+      "/Users/alex/code/vox2/layout/grid_block_intrinsic_reuse_test.v": "05501b7861b55975585722784e2b07a63d7738c0a3a98d153e5d0e6c2eec5288",
+      "/Users/alex/code/vox2/layout/grid_flexible_contributions_test.v": "aa08ee40a7bad38a995d08f6a1404c6bf62cfc1b6d6d46fea3081afdbc23be0f",
+      "/Users/alex/code/vox2/layout/grid_item_relayout_test.v": "36b1220b9570c397609d37f2ae9f37a2eb72980f1334bcd24b7bd77b44f96814",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "/Users/alex/code/vox2/layout/image_contents_repaint_test.v": "c712647e4ad2bf36da6b087d73c2c46329d893e6f74e5885512415a031c89ac7",
+      "/Users/alex/code/vox2/layout/inline_chunk_font_owner_test.v": "dfda318cd70ac7be2476474b79b6c909984fc1bdf6c5499764e918107d506393",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace_test.v": "59f7076900a967052ca44666db2f0d4b9e26ea262504302bb02f24934090bb3c",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "/Users/alex/code/vox2/layout/intrinsic_border_box_constraints_test.v": "4862e201bd940e9d39e5e5c037423e539af9cd6626b9bb5d8dcc5ec272a725a6",
+      "/Users/alex/code/vox2/layout/intrinsic_column_geometry_reuse_test.v": "19a78e1e9ab4ece09fd5e7d9db309d826219ffb458513e4d5619c8d8e7794ec7",
+      "/Users/alex/code/vox2/layout/intrinsic_combined_seed_test.v": "76aa3d0c6c761ff1f542c3e58239381de163c6f81d401173e73e4c8156d902ec",
+      "/Users/alex/code/vox2/layout/intrinsic_containing_block_seed_test.v": "75e45eae6e47310ba94c126f1692317eaa49ebadd071c3b37d4f66611c29adec",
+      "/Users/alex/code/vox2/layout/intrinsic_font_reuse_test.v": "0df50f83a0e550082f05e8cb47c879f71c4880911085a3dad0360898caaa4344",
+      "/Users/alex/code/vox2/layout/intrinsic_glyph_borrow_test.v": "18880e78f0b3dad6d3e60278d8bc0ee0f6284da80114876bc638e388165cfa0c",
+      "/Users/alex/code/vox2/layout/intrinsic_height_cache_storage_test.v": "8cf149b82a118470e784cf7368da3601181efae64394b2a2256e151a43aa4be5",
+      "/Users/alex/code/vox2/layout/intrinsic_line_fit_test.v": "b8aca27456e748204a37e148bfd11ce73a7b5a8b346991b1cf53ea987a39f165",
+      "/Users/alex/code/vox2/layout/intrinsic_line_recycling_test.v": "bada23901664806b1fb26de241a2e8044c01f91c1eda000d15ea80404d64e1d3",
+      "/Users/alex/code/vox2/layout/intrinsic_seed_visits_test.v": "d70b720317888bf752e174b2a9aa1bbd0f6d98d4938794d133ab51c19b9c7c53",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_cache_owner_test.v": "7b63ff64911102753b1cacbdc9a58a6938dbdee53c60eb2ac102b923f20faf32",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_order_test.v": "ff38981adb2e58b2a46dc01ca99fd0a58e01bdd909f4c983e98271ddca93de01",
+      "/Users/alex/code/vox2/layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+      "/Users/alex/code/vox2/layout/measurement_chunk_pool_test.v": "ed890116c8c0f0d59b023f854a4711b61fad7efcad8a28370ae7a90dd8b63cf0",
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/measurement_scratch_test.v": "5f1215716e45b66ccf50baf0b7523e90d1baea869ec8ec087c8bde549a0790cc",
+      "/Users/alex/code/vox2/layout/nested_grid_block_size_test.v": "39a30a30aa87cd420e10270d50b3045fe6e65474c4a9947e39b325db8aa6b66c",
+      "/Users/alex/code/vox2/layout/positioned_definite_image_repaint_test.v": "4c0e2066eed47075f05334f4bee34cfefa926d95cdd81d52f816017296d2bcf2",
+      "/Users/alex/code/vox2/layout/retained_block_images_test.v": "62ca7a15cfa9267ac9ddf4c88c21cf7cc65845ba2b994a1e37024e195bc56a56",
+      "/Users/alex/code/vox2/layout/retained_block_layout_test.v": "b7cfee8178b6332a189a240222d8ce15e2f111b5620d00109b48fa1d2922c07d",
+      "/Users/alex/code/vox2/layout/retained_flex_layout_test.v": "f205d520e782fa2c81f8b2e24d5ed5225a997f441751d70d9a79b418d5a2da3d",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees_test.v": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8",
+      "/Users/alex/code/vox2/layout/retained_flow_items_test.v": "a23b3b3703dbbd24ab5e15dc398d5b927d736afa79afcd3a43063a2fef4d159c",
+      "/Users/alex/code/vox2/layout/retained_flow_pseudo_styles_test.v": "c15469c7efdbb983d293680967fc299f89bd79215c75f9ee184b27832bea00f0",
+      "/Users/alex/code/vox2/layout/retained_flow_styles_test.v": "4564892173e325e312ae0deecb94529c79a8a4148a886b3ebf4b0a26a4ae52be",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees_test.v": "ac473e6be0c278b80bd58a832a69e79ef2c74b872da17012e75e10049c3e6e0e",
+      "/Users/alex/code/vox2/layout/retained_formatting_trees_test.v": "cc311f682ae7101b9df1432e6f275813185e46ffd0639fdc51b003697baaaa05",
+      "/Users/alex/code/vox2/layout/retained_grid_layout_test.v": "4724f2e4614ee91c40b517115837526e0bef8f5946db956fadd696a48dd5e77b",
+      "/Users/alex/code/vox2/layout/retained_simple_svg_test.v": "02e21d9d47f78ac0c62a991194dfafab31e8601151efc7cad79b64b52ba86ab9",
+      "/Users/alex/code/vox2/layout/retained_values_restore_test.v": "983a5049164afdaae93fb3ce532fe55a072a1514bbbe69cf7fba36877af9097c",
+      "/Users/alex/code/vox2/layout/svg_intrinsic_metadata_lifetime_test.v": "6a5ae431b6d6414cceaf2ccb33f922c0636fbf4b83fd9e8fd5e3e4d43baf234f",
+      "/Users/alex/code/vox2/layout/svg_path_geometry_invalidation_test.v": "dcf260189775ad86d112ee3c3096d805137f216ac01b58a7064a47f1ad565a8a",
+      "/Users/alex/code/vox2/layout/table_grid_intrinsic_height_test.v": "d362db7703a7847b752e40161828b624edf93d946878af0826c148e02b4c2517",
+      "/Users/alex/code/vox2/layout/text_bidi_classification_test.v": "e226239c0bdadce076b754756515b258bc00472b0e4f04b4495aa2f0cfffcdf9",
+      "/Users/alex/code/vox2/layout/text_input_live_intrinsics_test.v": "021a83472a5edf8a7084f6c7a3e5dfe6605c9cb055b574b86516a71bee0be173",
+      "/Users/alex/code/vox2/css/computed_layout_cache.v": "04c7b01e0cb5282d960114001cb2eca7cf29fd01e10b890954fc8b0fa0d4ae4b",
+      "/Users/alex/code/vox2/css/computed_length.v": "5ea9b4c2284f32560cff12892b039251506d463cb7dc6655f714b6d0fbc64c3a",
+      "/Users/alex/code/vox2/css/computed_values.v": "e1dbaee3b5562dba21ee534a37c443a0b171fd8541ed0af718035b2ae1691f3d",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots.v": "c98d23dedf17fb0defdf0f64b1961e51b4e776937bb414b438019330236adfa2",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges.v": "0b75b2e1f3df9dfa2fbcad651141c74ac2e7b5e2e0b12a86320af06d3f8786f9",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges_test.v": "1b5cb3a18fb7ca0c4129b19f2fee88ca409b9d08fefd1cbc5b149f4184609454",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "3ad170bb840450b9f408a42013d743c8c61b70fc797e733c855624b7f7023a31",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/flex_formatting_context.v": "1b7f327d4da7794bcfd9db3df05fc5dd519c113346a6fd8f37d280f37fabf572",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+      "/Users/alex/code/vox2/layout/committed_inline_measurement.v": "6c7866debb5b6d31ebea7b03910984a10d25c662b6c90c2ac9b3ca3397aaed00",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "cca616e21e2b1d96a2ace5b6dba54cfc0f5564e4398696db1df15010e794d205",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164",
+      "/Users/alex/code/vox2/layout/inline_measurement_height.v": "ba913b52e02b93cca870490e12772c7ae3004d4ef16695dab05d48641a2ec5e5",
+      "/Users/alex/code/vox2/layout/retained_paint_test_helpers.v": "67f28405c54594b298f63e9c893e3f5fd6fadbe49beccdb6436dbf814a8aa9f1",
+      "/Users/alex/code/vox2/css/deleted_conditional_style_rules.v": "9ad30ba5dcf345915c60043f96b6a2b8edfb51ad8280325c27da4fdd9f8d4544",
+      "/Users/alex/code/vox2/css/empty_deleted_conditional_leaves.v": "36e75f6fa19830e07d7faa74704ee35e95c735fd9267b124d75e7b11799dff21",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal.v": "96ce59738435a07af1ff083101dee9095b0a35356cf5dd3dbe5e3ee25d2c30cb",
+      "/Users/alex/code/vox2/layout/typed_paint_adapter.v": "a2013370c2ac0bd38c49ee4cfe28ce6bc08dc8091a0e69212e72738e1cab97f0",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed.v": "08698eafc9e1252896f6a9cf6bf2f5a7754de6d847877bf0a85a973c9cb1bfcc",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "2bf523eb2bf9c62530e654df60edf57564b7ddf88d892d09a84b0e87646ccceb",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/main_compact_query_request.v": "60eb94c8ccdc0f26f6abe2e1bce8801363680721d7b009970b65fe8b912ce404",
+      "/Users/alex/code/vox2/browserjs/querywire/compact_envelope.v": "594671405412c490735628a5cd00730bc3d9dcc0a5abffa80338134728f4a23b",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v": "5b597e636b97678934e9c1760c1251086cc3b4c48aa020997619c3d9d91990b9",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation.v": "1957fee8dde8708d66daea80e354ac1c882e2983229e37f2d802f2bf568ce5a2",
+      "/Users/alex/code/vox2/layout/retained_flow_subtrees.v": "13864cb4bfe2c18c7ae21abe6618793212c6c75c31bb6c0b49a4f101f05a6875",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees.v": "e44b540b9596acd36cb3e506f92b4f0c93b31a7c8e67aa0e933e88f47af4aae4",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees.v": "613fce995e0e40e01cc84fa185ebe89cf16eaa76c4cd806c64cc7ace61814cda",
+      "/Users/alex/code/vox2/layout/retained_simple_svg.v": "a4a87c35166f9529a45843832b95a1f99fd09240242ec00ede807579040c70ad",
+      "/Users/alex/code/vox2/layout/measurement_cache_recency.v": "b5da8cd80c28e66c1a0800920976aacc111d6e6068abbf88b94d4c159a714414",
+      "/Users/alex/code/vox2/layout/dom_layout_bridge.v": "267ddd31d2bff051e981d718ddf150ad760a85e2fd5352543c1d77d413e5b30d",
+      "/Users/alex/code/vox2/layout/svg_boxes.v": "1218d12c4c62814f2f01bc14612f787b97c8f0a1fbd5fa6b32e0099ad94b9e40",
+      "/Users/alex/code/vox2/layout/svg_formatting_context.v": "a7062a364c6a46819e6f95529b13a6282db33733e6fc7ac13b3f3d4f341901d4",
+      "/Users/alex/code/vox2/css/retained_layout_style.v": "5a1b42840aa2bffb4dd01e19647c4746f27af13cd418338cd2be694e41341e2c",
+      "/Users/alex/code/vox2/layout/text_bidi_classification.v": "51d0acc73187bba72a4687a48917a8d35fb2f356881cc363b994ce50d3f92fe5",
+      "/Users/alex/code/vox2/layout/node.v": "11604d6da8ddfb2d5df5cc070fcbc5481fdcb116cf8fe83be8311057041af11b",
+      "/Users/alex/code/vox2/layout/inline_level_iterator.v": "399447a5fcf01ccc74c9c8b060ddba859caf76f121ea32a925f7f40e34280fdf",
+      "/Users/alex/code/vox2/css/style_scope_cache.v": "35a2a984430b30a7d774f7ecead685521da641ad8068f0fafcf2039d1833c0b4",
+      "/Users/alex/code/vox2/css/empty_pseudo_candidate_indexes.v": "8a179cd4f6928cb152c7a319e3529ea0af49af493e19e780f30ee2bc38459428",
+      "/Users/alex/code/vox2/css/attribute_bucket_byte_pairs.v": "ef9a1fb36f708770cea031c2ad4432ed92a48961703e6c95493ef61598fba6eb",
+      "/Users/alex/code/vox2/main_frame_task_layout_test.v": "95ed1f2ed168104272e940187e74b77fee13ea1294cc52fe507c000f1991cd5d",
+      "/Users/alex/code/vox2/main_frame_task_focus_test.v": "41e5034f5d88ee1d8da200f3fa774460996e156d5152fd78ef8375ef880b8262",
+      "/Users/alex/code/vox2/main_javascript_task_paint_test.v": "97e87510c442d8a98e8b4760c208a312268351eb39abe41f6da9052f2cf0359e",
+      "/Users/alex/code/vox2/main_frame_paint_test.v": "8192d5720da544a30b7854cc6c5f059602e1e8ae0eac69f00e9ae7809597055b",
+      "/Users/alex/code/vox2/main_initial_frame_layout_test.v": "b5d2a5c5e1f6efa61d0224da041362e60001ba735b74cd4d7c71432489c775a7",
+      "/Users/alex/code/vox2/main_relayout_autofocus_test.v": "aa0181e281ed29f5d9ba14a3ea7fe1d61d7af8baf6331205f5dcf0d5892a60a7",
+      "/Users/alex/code/vox2/main_archived_border_msaa_test.v": "22fd1f1184b24999229f88fff6e9e1eeb791fbc19df604a0b69963a64a12e976",
+      "/Users/alex/code/vox2/main_chromium_border_msaa_test.v": "a8b2c0b7e9b021db661b4720395b124cf7a2c2c95981d97631ba37272d768586",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles_test.v": "f398f4f3e26ee9ae3384fa19dfba185d1fc1d3c629c4438e12e2e813bb667aa9",
+      "/Users/alex/code/vox2/main_adblock_tokens_test.v": "58abe1f79179fd7bb23e15fc0fabcafd0510efc0682dd98b45defaec60cb5bb0",
+      "/Users/alex/code/vox2/main_adblock_token_survey_test.v": "1ae5edd40d86a9cecb5ae8a2a1dedaf0deb5775da9fc09e9f99251eb18dddab2",
+      "/Users/alex/code/vox2/main_frame_task_layout.v": "c403b9852f840d05ea83dc30641986f9751062671063adba83dace75c6624907",
+      "/Users/alex/code/vox2/main_frame_paint.v": "8f657e6cc03e07e6487068bbe40fbcc9010e51c4050199186234837ba37b864c",
+      "/Users/alex/code/vox2/main_adblock.v": "8b61d0d26204d181fe30f602496e151dabbbb9c402ab40b7ea6356bd8e44c585",
+      "/Users/alex/code/vox2/main_device_layout.v": "20391809cc59f6ccb67afd0a137403aa947163ac149e30a92fa6e94ca0cba385",
+      "/Users/alex/code/vox2/main_archived_border_msaa.v": "303e1d995d6f696cd5dfab338c152a7c275709ab646e495abd0ffd870bc99177",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles.v": "66493302c9ff99a5f84b45e35bba8f49d2c92f2ef32008133071bd396a58329c",
+      "/Users/alex/code/vox2/main_chromium_shared_recording.v": "3856d9e3ef9b1be02d73a558c54ce2b32cd1e887925e727a244679675bc73a70",
+      "/Users/alex/code/vox2/main_adblock_tokens.v": "c6a9b6c9d189e420352fe74d0db51a460b27d219148868e4a599efc2b15ed0c4",
+      "/Users/alex/code/vox2/main.v": "b8f787476e0d5187b0490dd7384c20af5699935af4ec83bbe137b1dd1aec6901",
+      "/Users/alex/code/vox2/main_browser_tabs.v": "a71418f23403a16a19698622cada85b934a8f70e381c32759e6ae9cea7d2de19",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer.v": "dcea06638ee3b6b31465f97a51bd05836b650bca33957cce0443f16dd547dab3",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer_jsc.c.v": "e20761afcc5e89d400adb359f5f4903491a138dffebf262ff3550712d3b62e18",
+      "/Users/alex/code/vox2/browserjs/module_host_jsc.c.v": "e5e21ceca15f51492a67ccbf5a6df57821f2fd6e9593c4d65c9fe62e58fc5399",
+      "/Users/alex/code/vox2/browserjs/module_source.v": "cfbb364a2eee4bf2a5238e494c0523862a5d317df8e3e60239a34a9fdc4791d6",
+      "/Users/alex/code/vox2/browserjs/url_host_jsc.c.v": "8bca7e8a2b01b544d43cf56087ac7924d88d9948e671e79a2687f07b5f647189",
+      "/Users/alex/code/vox2/browserjs/url_text_jsc.c.v": "9d3dde39cae28934c217f5a4fe184a91772139fd20f73fce18c6b332631f091e",
+      "/Users/alex/code/vox2/main_compact_document.v": "cab626b623f751253c2453ff921d9e3efa0485024067eccd9150f0de994dced6",
+      "/Users/alex/code/vox2/main_chromium_rect_prefetch_scratch.v": "3df8c16372e475d221bc83b23067ee2b1916c56b2f2ac1f8a93477b525922a35",
+      "/Users/alex/code/vox2/main_chromium_rounded_background_pair.v": "a181143589b17c1138b2ffb1862e8726dc698d99b3418ecb533c7542ba9a4332",
+      "/Users/alex/code/vox2/main_paint_resource_preload.v": "4b98a87ea63d7feb65a9a7f8545d01698044c22db5fb32ce693aa919fc9cb427",
+      "/Users/alex/code/vox2/main_chromium_text_scroll_layer.v": "76ac562603796edf2e7e95a434d18bbc9ce66f77057af7ea79068a6cd6c60670",
+      "/Users/alex/code/vox2/main_browser_zoom.v": "913d0ad2d358a801bfe02a5b1462588227aa94a05de343133b400935fbcd88b4",
+      "/Users/alex/code/vox2/main_scroll_raster_damage.v": "3882b1e787f3718b153234c6075ef87bf6ffc85ba308206f862cb460d1125dfb",
+      "/Users/alex/code/vox2/main_compact_geometry.v": "2c68d4674d7683f8395b3d72ad291ee6b5a9ed6e5408cd1625e6b36f6c6fd444",
+      "/Users/alex/code/vox2/main_chromium_deferred_layers.v": "7ee3f8a72223dad51f538c05f95c7f45b60ccd562a0b06b05b3172c3d4b5e2e3",
+      "/Users/alex/code/vox2/main_compact_template.v": "eefd29e3fac168621dfe78061e761ec3f5766d67146b1a47ba3ae8515424634a",
+      "/Users/alex/code/vox2/main_compact_computed_style.v": "283ac6930fcf1241bf87df8fefbaf1416ec1a8b0729a4e571b2d13d614d5ef10",
+      "/Users/alex/code/vox2/main_navigation_preload.v": "53e6f4a63ed324c8d2c280c80759b342c7899c40b81d6320809c16560907ae88",
+      "/Users/alex/code/vox2/main_chromium_direct_image.v": "44add95b10aaaadd0ae2a5e6e451af7be9829edd6c9f317e5c886f1e9a4517c7",
+      "/Users/alex/code/vox2/main_compact_shared_properties.v": "b59eb4adbd4a9c4c57c4319cb89930d495789cd77b4a2a8b28d278e4117b4a99",
+      "/Users/alex/code/vox2/main_style_preloads.v": "642a82dc71a8e0b01dba8fddfe38853caa0f2442785e0acc45925bc217afae8b",
+      "/Users/alex/code/vox2/main_resource_accept.v": "8cb20cb8be134930329525fc755a6ccd756cca4a7200249fd27676d340fcf50e",
+      "/Users/alex/code/vox2/main_compact_iframe_window.v": "0e89c27e5b95d791cd80ab9b651dcc3bbbd32dc82ff5ac40c7ce0834fa276767",
+      "/Users/alex/code/vox2/main_response_document.v": "7edb6e9418f36ce84cec335b5d5323baf569a8cf7d0936164ba050df6001a770",
+      "/Users/alex/code/vox2/main_compact_node_position.v": "3b5be46b45f6b4b8e6e4d00bc400d5c75dbddc4e36c17997a8add1ee4e0b1d86",
+      "/Users/alex/code/vox2/main_native_snapshot_png.v": "976e1ce20b98a1499d3c803555b62448172f246e36df9a776ff9f4669259b6d3",
+      "/Users/alex/code/vox2/main_paint_viewport.v": "72ed7a9ebefbe475c13415bc7a08dd90a9782cf2b7c17e8b29ba4000890bc75d",
+      "/Users/alex/code/vox2/main_url_resolution_workspace.v": "08a238f13804239410b28e37d4d307779281824d9fc72f6ef12095dfe8df8154",
+      "/Users/alex/code/vox2/main_browser_chrome.v": "d698b7e54c3ad22b8f4e58f6b000e81ea313d825b23153e25f12f02b37ff9a4a",
+      "/Users/alex/code/vox2/main_chromium_partial_decorations.v": "5d7b06a14b864dd2111271475717769eebc8b9d6b6b8fdd3b6927a2ef8016298",
+      "/Users/alex/code/vox2/main_browser_settings.v": "69c93bef24f1e1a0c1bf5cc369ff0a3624b796b27ab70e9d008580204031dd76",
+      "/Users/alex/code/vox2/main_favicon.v": "3471a24420cb226f59c364313084cc5e8d94d199f59c3724f212ba01729eb0f7",
+      "/Users/alex/code/vox2/cookie_blocker.v": "948933dad44653576e2d804e8946c3270235cca332d96b28d625c616ba4f60e7",
+      "/Users/alex/code/vox2/main_compact_initial_serialization.v": "87e4e2bdfeec35b2965b3e2ac61a613553b064098266d75e744bc0601db8597e",
+      "/Users/alex/code/vox2/main_chromium_image_decode_policy.v": "1f6ea05a6daf2520783af018106cb57d132c70ebd373f7dcc3068791acdfffd8",
+      "/Users/alex/code/vox2/main_document_render_retirement.v": "946417844ed54cf5451d66b4717bc7ff5756e729cd6b1b5092e190146c4bbd8c",
+      "/Users/alex/code/vox2/main_optimized_sites.v": "948c8df2609b9db65b75ae9c086f9157ff09e347206e1359b7151348fefbc99b",
+      "/Users/alex/code/vox2/main_browser_tab_titles.v": "43741aa89489c1483e12419e07eb662f27c04aabb7cac927c51e75aab086994e",
+      "/Users/alex/code/vox2/main_compact_node_connected.v": "b5a793d4bc09a4334a8347250ca9581ab09eb5f24f32c91016b611a05da3f1f3",
+      "/Users/alex/code/vox2/main_compact_mutation_observer.v": "e8c4315c333da97c20d15e3e0a8902c5d54d0437b0f70ed588be4284ee5ad3cf",
+      "/Users/alex/code/vox2/main_browser_bookmarks_ui.v": "a0ce5429f6a3b758475b42f007e31882a088669301445be2ee42bd5443a7acba",
+      "/Users/alex/code/vox2/main_compact_create_event.v": "69aca5d7eb4a92c478d2afaa7e6ad6df006afb32db3a8d517c787ffe60f1c06e",
+      "/Users/alex/code/vox2/main_browser_window_state.v": "d3c2a4c83f5d99005a36dbd6c3b7919fcd7a82f902ddce5d65c59af8c3f424d9",
+      "/Users/alex/code/vox2/main_modules.v": "9c8a93a06c083ac7e93ace04cddc27c9b01e472b6ba67e8590b9b8f6e745da33",
+      "/Users/alex/code/vox2/main_chromium_paint_color.v": "848883f35d771eab1f1ad6a44565cb44ff7dfdf361b0e89c5180423f20c424b7",
+      "/Users/alex/code/vox2/main_compact_parent_cache.v": "fa7f85ed96fd24ac54f4d5395f4d2dfcb96b52bf3bb57705bee0fca9c6b8eb9c",
+      "/Users/alex/code/vox2/main_compact_select.v": "35d3e2a50a206cfefb95a68df5ef4d6b18fcba28d7acd2fa5b278cabd062a03f",
+      "/Users/alex/code/vox2/main_png_icc.v": "2871c082adc0c9114c328c3f0f901f7b92aa0ccaa01da4b1720b93f26c57ba13",
+      "/Users/alex/code/vox2/main_select_picker.v": "1d0973a4b2f11c12e4ac6e8d895bac9a0c49f43aab0c58fd230a0db4cf88506c",
+      "/Users/alex/code/vox2/main_chromium_msaa_clips.v": "24e2411eda9ae8a4755ad5a7377c24915271ec258c8ae526cf487a33032bd280",
+      "/Users/alex/code/vox2/main_native_runtime_bounds.c.v": "1b2cb4e4663399be27cf4bb2d2e0b91f320efba79cc6fc0220974ab2fa269312",
+      "/Users/alex/code/vox2/main_compact_html_language.v": "99f8761e5279826f189e48f8a8c5198ba1f1af9f6a381df2607e01adad9c99a1",
+      "/Users/alex/code/vox2/main_stationary_raster.v": "a50bc9b3340b7633c1d22453c9fdd16683f69c06dfeb7643c28367970a90fb28",
+      "/Users/alex/code/vox2/main_compact_insert_adjacent_html.v": "ce0e49a2c4cf44b7fd5a8976873fef9958c2e4ece37d43c31f1040607ba7735a",
+      "/Users/alex/code/vox2/main_compact_dataset.v": "7ff845ab9d0855f0969d053bc16772e9c506e1e4a937cbc199b60ef2f66f1c4e",
+      "/Users/alex/code/vox2/main_leaf_timing.v": "3960274798f826ee1884c9d282a1ddbd99723ed903076b60d41b94d0338333f1",
+      "/Users/alex/code/vox2/main_browser_history.v": "021fe1232177bb74d69589065b86d07cd1f256f3be11097baa7f586bc7b33a96",
+      "/Users/alex/code/vox2/main_javascript_startup.v": "692eca5d6a763a447444487daa1394519e8174e1ab39fb575e4a80a40bdeb2d4",
+      "/Users/alex/code/vox2/main_compact_last_child.v": "3452736d5597966fa908082eab8ba7959a0719c36312f89fa4edf555407dab3a",
+      "/Users/alex/code/vox2/main_browser_bookmarks.v": "1d0d0c4abb207a7b94b5aa5773d5f439929d0a40f401f06d95dc4bccedc244a2",
+      "/Users/alex/code/vox2/main_compact_input_value.v": "bbf6fa0ebdf201240a0752935e16fdd917b1d393b19785b29a62a0855e42dc37",
+      "/Users/alex/code/vox2/main_font_resources.v": "914e04bf8f04b3c2c5c3a2ed15046c0fbe95329e1e844dfb556853a953edb6ff",
+      "/Users/alex/code/vox2/main_navigation_fetch_state.v": "882ef7836133cc5edec17d560fa570dc077162c12fba79a569734129b9f60c32",
+      "/Users/alex/code/vox2/main_capture_focus.v": "2f0fc4a57eb13aa343eae932747eb3642bb5a33860f5ac00db03c88425b03317",
+      "/Users/alex/code/vox2/main_tokenized_preloads.v": "daa84c4cbd0200f6e4c5a449292ae1540ffcba2ff2b2a0e10c5ad2d7b95ae55e",
+      "/Users/alex/code/vox2/main_chromium_replaced_image.v": "6ff3ffcca6745779bd5638b783ec0b812754b68c8e056059c21ad93262046e06",
+      "/Users/alex/code/vox2/main_native_replay_scratch.v": "01e287126bb4a3abb73fc2a49e0a0abe146a759ae0a1064a4233ead5c2496752",
+      "/Users/alex/code/vox2/main_navigation_work.v": "4cdbc2abfcf83acd4d5992e9ad48aadea53d2a2f372621d5f580c85f6114575b",
+      "/Users/alex/code/vox2/main_compact_shared_node_properties.v": "ce17dadc6eb9bb6a68aab7d195ccfe574a2483e6b1bf5bc6e7eb40a69c0c83e0",
+      "/Users/alex/code/vox2/main_wheel_input.v": "7b467a992d850483d63255927d80200075958c183b69200925ff9a07a35e38f3",
+      "/Users/alex/code/vox2/main_avif.v": "a10f95c29836ff56537ec71cd1925cbff03076a9b628647f50e2c8ea9f4d4cbc",
+      "/Users/alex/code/vox2/main_chromium_caret_paint.v": "12542de71ee197cb33f00419193de4468162f09707402bb96bdf35ef38aef49e",
+      "/Users/alex/code/vox2/main_child_pointer.v": "d35f703fe8b68cab9521623d94653dd048019fc301c08560fb00e76b386454b6",
+      "/Users/alex/code/vox2/main_chromium_inset_decorations.v": "0438203d165b6d27cec8d434a54602ab1bd5bdfd0112875a58725959333e63c9",
+      "/Users/alex/code/vox2/main_adblock_storage.v": "0433a627c024f7455bce26786df3c0b55525b20388127494ca8d0f6305df0dc8",
+      "/Users/alex/code/vox2/main_initial_resources.v": "eaeb3194e9ca376070636684e726edfb39850dafd5b6c86f74c66409effab0a5",
+      "/Users/alex/code/vox2/main_ui_intelligence.v": "c7c3b62ee353a2637e3f988cff57ed2eed22ca8ebb9e60517c124b0638945216",
+      "/Users/alex/code/vox2/main_chromium_msaa_svg_backgrounds.v": "e0186eb3d7f9943935115049cb1130f7efb462f57a094f1edf6107f0d6598b3b",
+      "/Users/alex/code/vox2/main_paint_color_cache.v": "cc954d32075c144d404895f4bddd51a0265634fcab0abfe3ddd1a78d91657019",
+      "/Users/alex/code/vox2/main_font_rendering.v": "a12efdfc90da8f5d6fb3401386430d99d29d09f71ad427c1a6af4e96689a2a27",
+      "/Users/alex/code/vox2/main_compact_contains.v": "d2f8bf6acc065243f6f796701975675f208e6a4d7e3fab07fe8bd28ad9ffec19",
+      "/Users/alex/code/vox2/main_compact_tree_walker.v": "e7258397b7ef360a419bfa6b6e5c5eb3d294b363cfe3e9dbbcca2a3504dec642",
+      "/Users/alex/code/vox2/main_gpu_canvas.v": "b36d97cdcc996c8f831634221dc43cbd3ed3018a4151630509be79f290e7428f",
+      "/Users/alex/code/vox2/main_jpegxl.v": "fb99298cba2110242a3b20b194c3e7e7a520f96bcc43c5014897573b869cc9c9",
+      "/Users/alex/code/vox2/main_chromium_svg_gradient_group.v": "d6ce8b0defa0590b906297731fa3de6538e05ed1bf8b4466af5df70be3e645ba",
+      "/Users/alex/code/vox2/main_browser_worker_process.v": "34f52995048a2e8f911df899e87861e153acad73f5493b8583d37d3e407922df",
+      "/Users/alex/code/vox2/main_overlay_scrollbars.v": "cd107715b7b04363c996bd57aa5c2609a5802462b3fbf6920ef9e5fadd4a57bc",
+      "/Users/alex/code/vox2/main_raster_workspace.v": "4a6bf6520b9e65b8f7cdbc7dad451384f3bc354d1b619d5b8aa7be0022f2b36f",
+      "/Users/alex/code/vox2/main_arena_cache_cleanup.v": "6748ceb26396485f89919df7cce005fb6a9928480534e5a826e056e43644c2f1",
+      "/Users/alex/code/vox2/main_css_svg_filter.v": "a05d9a4724c9b3ce207c561603f4548fa274b02cffdaab162e4f83ab1b417eff",
+      "/Users/alex/code/vox2/main_native_document_submission.v": "c150d990a9f3211018c4bb0cbba92d4a2aa060dc143a47fc9bbbbed96e09f690",
+      "/Users/alex/code/vox2/main_svg_image_pattern.v": "a1d38092c5638d84f3a8c5343a00b2c4966e739ba084dab5592b89b535df4943",
+      "/Users/alex/code/vox2/main_address_bar.v": "0dbe4c9af345376e7600a8887b54bd560617354b93e0710d24d51241adeb5808",
+      "/Users/alex/code/vox2/main_initial_viewport.v": "e2ad238ea1820d589b7637211a2c41b9b36620d4287658fa42bc7ae4ee741f0e",
+      "/Users/alex/code/vox2/main_scroll_profile.v": "87a36127b170cbb0809f0ac404582cfe4507973f14785bc14d35a579dde03308",
+      "/Users/alex/code/vox2/main_resource_headers.v": "dccd83ab69e2e2da8483cb8a09d56a063997d446a65412bec5838ed73fd3f06d",
+      "/Users/alex/code/vox2/main_compact_toggle_attribute.v": "5cb056d476fc93d6f00912e3f49a1aa255d037ea613b7673a66e810f4cab2f37",
+      "/Users/alex/code/vox2/main_compact_node_interface.v": "7481a3978d3e53d94141b2537047a3930d4349c9cf651543371f294c54fedc50",
+      "/Users/alex/code/vox2/main_chromium_svg_rectangular_mask.v": "af1dca35a33f7904ddc9d87840a3fd38a5f627f63bacdc9329f174d47a8be086",
+      "/Users/alex/code/vox2/main_compact_named_elements.v": "6a8cd1601824960068060d0fe337da0c9a2f5cff642d7854da4010719399f21f",
+      "/Users/alex/code/vox2/main_initial_resource_viewport.v": "d686abe012b45f33e7e0145fa2856cf06dabfccb8f768b286efd8d7d4ac37f63",
+      "/Users/alex/code/vox2/main_linux.v": "e3bee98fbf11832f6267ff37d200b1b845de73f1e12a5be9d38d6db6a62c8c4f",
+      "/Users/alex/code/vox2/main_chromium_svg_image_group.v": "2ffa93aff7f1483c351165ca1c8557885ad53bf2478652264f67e499ad98af02",
+      "/Users/alex/code/vox2/main_resource_fetch_pool.v": "dc5fbd2ee1faa91b39383501b8cd512338913e7f9f68b4c2274b5b1aa3a2fbfc",
+      "/Users/alex/code/vox2/main_compact_replay_lookup.v": "f04b950157a74a477a9fc7679c9702111e8ee181654a22e1b2d7396c0be9c83a",
+      "/Users/alex/code/vox2/main_chromium_image_decode.v": "c791bf7d05d18f9e8e4c20ca5d5afba88e23c47d881b634cabbbeff6e7eee2f2",
+      "/Users/alex/code/vox2/main_compact_shadow_root.v": "e9d7dd58647395c6eb079ebc0d7df8d6f5c90b3e424b4cf11ee5fcf5854f46a8",
+      "/Users/alex/code/vox2/main_memory_maintenance.v": "615b9a28f2e74041c3e2f8ea7d58082d76abe340230da77c9537f1f1908c05d9",
+      "/Users/alex/code/vox2/main_rounded_underlay_space.v": "be078deb9e2534be488e372f4fb4af9ac8712d668a26815d0b5b08741971d4cc",
+      "/Users/alex/code/vox2/main_native_window.v": "80962d0872af95f93c6c6d97e0ce30ce8c089e121de145b63da9d3d5b13c4aa0",
+      "/Users/alex/code/vox2/main_gg_canvas_d_vox_gg_canvas.v": "6ffb33b4d1cd464dc6666501fccaaee2d74efb4d20a3d1b10c41ca7f8eccc843",
+      "/Users/alex/code/vox2/main_script_images.v": "eeb25d0a892dfcf77e5774e96765cde052bc8734127c97e5d7ca5fa75b1fec0d",
+      "/Users/alex/code/vox2/main_paint_culling.v": "8dc4dcb932cac561f452e2b49e9e1f8cf7bffc5880df721f131914cd9f4b06c4",
+      "/Users/alex/code/vox2/main_async_images.v": "bae0fe8646203daa0434310852c263d8fa318dc2780d39cf0e795ba6c7451c09",
+      "/Users/alex/code/vox2/main_chromium_rounded_svg_background.v": "f09c82fc5296b80e69b3d88c4c1c805a2294e04c02d923dc2f4e33654b55a6a2",
+      "/Users/alex/code/vox2/main_chromium_svg_compositor_layer.v": "e6b14ddb43dfef38e183788935417784266d2cae1618b4f09e6acd07a11bcf3c",
+      "/Users/alex/code/vox2/main_compact_hit_testing.v": "2bf64bcadc393c8b4043c509ffe40b05d97ce4f37718ec59c3b3167255798912",
+      "/Users/alex/code/vox2/main_compact_child_node.v": "f0725ce1607756b873b84e64ab835d4795ed8f26634bafc3f2d8f6b03ef45df0",
+      "/Users/alex/code/vox2/main_javascript_task_paint_helpers.v": "5aeed479ba9c65f34487060eb0506427115d1257e7e61e42149097aec41eba4e",
+      "/Users/alex/code/vox2/main_script_resource_cache.v": "88d512e59247fb1d5707473bff881b76f65f3752014eaa89dbcab8621163f345",
+      "/Users/alex/code/vox2/main_memory_status.v": "b0b586aa040b55d0dc203f65b701d9e158b83e5c50037db94b9fc2963c0ab4fb",
+      "/Users/alex/code/vox2/main_compact_replace_child.v": "938d96ac3bf2cdb66e58325124dce7ee90dc0c7666ab72caf1e808ede0fd5365",
+      "/Users/alex/code/vox2/main_compact_document_name_collection.v": "10ed32f5e2da0ede12b6d80a6b122aa7f837f9326c6649a33f908c2dbf3d78ab",
+      "/Users/alex/code/vox2/main_capture_audit_storage.v": "4848b8dc6b9fe8aba6e57ed1907f95788ca46743d59078db8c0feac06715ad59",
+      "/Users/alex/code/vox2/main_compact_link_sheet.v": "bd4bd89ccfcecee7a35ef348d2707686ee58b81e983a8bc2df71bc6cc23052d6",
+      "/Users/alex/code/vox2/main_compact_form_controls.v": "d1c5f50542dee6d7c075e201a9eb2335438d8aa2fe5176cda27e4b7bcac4d303",
+      "/Users/alex/code/vox2/main_element_wheel_smoke.v": "a49f0b86ccbb8e1db8567859834260be92e4a5822bb9e3bdfc907f01ba4ceb2f",
+      "/Users/alex/code/vox2/main_chromium_leaf_compositor_layer.v": "4ecf5103589825d17a7a2db42a0e26624979c10530474b157f1891a9ff9c6e2a",
+      "/Users/alex/code/vox2/main_compact_identity_reply.v": "d1e5e30b26e496d61b57414eeab90e88b8d044cc077d80e637c675374d757814",
+      "/Users/alex/code/vox2/main_document_cookies.v": "3cab950f9e48439a4312a5143856342a0a6bdf68191f5c91555bada203780608",
+      "/Users/alex/code/vox2/main_compact_parent_node.v": "042340655c546ec86b8ea4986f5b64d35f1cc8fcde666f1d60136e96fe17e8ed",
+      "/Users/alex/code/vox2/main_wheel_input_smoke.v": "308c7c02e2ca7e1d440e6dd794a3ba96794d162c4e2924d1dd5ec30870267f50",
+      "/Users/alex/code/vox2/main_browser_chrome_portable.v": "91892cad300e3ec51bc72cf29b1f0ae13349a27728eed175808779920a459efb",
+      "/Users/alex/code/vox2/main_compact_node_children.v": "264ec0e0bb435e88d5be2040d518f5dcdef1fc0747247c0a341056c72c53dda6",
+      "/Users/alex/code/vox2/main_compact_href_text.v": "5bb900b3a02e9c1949ce04c9af6e4db9be238c99cfc82ef3e7d82d07e0643404",
+      "/Users/alex/code/vox2/main_document_state.v": "cb1e347d5119db7365f55f02eea558afd46f2899801b8bb160d917dfd8798fe5",
+      "/Users/alex/code/vox2/main_navigation_document.v": "018a17aa71344919a29b0817ddd064e0f1b82ad19a30f1558a08337b3ca86012",
+      "/Users/alex/code/vox2/main_browser_tab_detach_darwin.v": "6bce851deac05d6d4cb635dd37ee0763ed3a5fdf5751e139b1d5a12f540e7940",
+      "/Users/alex/code/vox2/main_scroll_raster.v": "7bfeb170474bb424c88b7cb60b81dbcd99de9a35ec4ea6efd9f817801065f61c",
+      "/Users/alex/code/vox2/main_compact_query_decode.v": "6b87b34d0aafc4812b3fd244a14e501bb3548c39ef9a7d0cf4114be1548d990f",
+      "/Users/alex/code/vox2/main_compact_events.v": "0027a63f1f690bba6277fde5bbfe88a58de78cc6e72a2d898abab1e4bdad2bc0",
+      "/Users/alex/code/vox2/main_browser_ui.v": "9a39615d7e7c42c139b829b3dd89613125817be9cf9a9d1cb07a96ebfedf93e5",
+      "/Users/alex/code/vox2/main_browser_bookmark_favicon.v": "c701c9d54efdc613a7b3071693af69207e520917cf9972cd92a7beedab20f5d9",
+      "/Users/alex/code/vox2/main_browser_tab_drag.v": "15cfe568cef325e8cf92310f7719e5595209b7d0a93b40935f096242bf88c916",
+      "/Users/alex/code/vox2/main_script_video_sources.v": "40d088bb579a67e9df397975306c0d6f0d19a49b354ff8dc3183342f192e7d2f",
+      "/Users/alex/code/vox2/main_chromium_uniform_border.v": "f9aa3758622b09edb3d0fbbab5fcb70203173200a484a2335a09269dd92788a7",
+      "/Users/alex/code/vox2/main_webp_premultiplication.v": "e851787dba8116cedf56fb90ff6e25838942716a341c249cacb35235ecd7afae",
+      "/Users/alex/code/vox2/main_chromium_radial_gradient.v": "4fe341d3451bbd96e5949967a43f451ac58b9628537b8954b42806b73c3dab91",
+      "/Users/alex/code/vox2/main_navigation_content_profile.v": "64d68f313d84d77c1e533c98d0066f7d6d776e53775aeae9f50cf081fee6aceb",
+      "/Users/alex/code/vox2/main_external_scripts.v": "69e50bffeae69c5b8acd9b6471d7b558e1e5ca44976157130882bc7e8198521e",
+      "/Users/alex/code/vox2/main_document_submission.v": "f67f0874288b8323d325ed0c30f9a6dbaf64610145c8ab5ee06662e708cc7e1e",
+      "/Users/alex/code/vox2/main_animation_frame.v": "1fd0edc9746dd5856d7d57847803e2d0ffbd862b80e1693d1526ae18bcc5cbf6",
+      "/Users/alex/code/vox2/main_initial_filter_worker.v": "8fc4fa1dd4abd196976b88c862cc493caa36f58913a9e15f3fe71c8d866db111",
+      "/Users/alex/code/vox2/main_compact_html_interfaces.v": "73615692822f9a969420c0de33b5e1ec4574c37ca207bd8c2042385a2f499721",
+      "/Users/alex/code/vox2/main_adblock_response.v": "dc799d255da45d0334cb97fc47a39c1fce321ee4f512f94e3c0f5a217dcdfbda",
+      "/Users/alex/code/vox2/main_compact_element_names.v": "0ca4f7408c1fb99971203b766ccaffb05dee5a28b2b7247eeaead782d2cef3a8",
+      "/Users/alex/code/vox2/main_resource_images.v": "dfd97c14cb15bd5a28e166a5c9e97057cf628a17671e3d43b04afb79a65e8af8",
+      "/Users/alex/code/vox2/main_external_styles.v": "b5d87ed7db62f039070c1a5604812046fbf00c5dbe0cf20cb58d92849c2b094d",
+      "/Users/alex/code/vox2/main_browser_tab_favicon.v": "beaf7380e07dd04ea7ab826840445f73b8a7fa34ec816836f33916e7e2a408c5",
+      "/Users/alex/code/vox2/main_browser_tab_loading.v": "050d5b9c7bad403d966e4413cb6c373bb50e835c24a9b7564dbae9269fab6f13",
+      "/Users/alex/code/vox2/main_browser_tab_process.v": "0e77c4f87b827bab28fc6f6bc247bc79fa72fbf95e6b1a86282aaf37311585db",
+      "/Users/alex/code/vox2/main_chromium_svg_fractional_background.v": "db851ad94d3f889b1d14354128ff757eb7d62ecee0bf7c050151983cfd3cb505",
+      "/Users/alex/code/vox2/main_compact_element_serialization.v": "d74e254b2d8ef3cf0860b7a60d5548f7376c8a68e3692c8a9841d125571ac0c7",
+      "/Users/alex/code/vox2/main_chromium_opacity_raster_parent.v": "db3cec2d6720aae33d3b64a7953a3b664e91640bdf856003879117aca3e60bbd",
+      "/Users/alex/code/vox2/main_chromium_gradient.v": "4ee0e5aa29894b8d0390ca8c8bdfe08b64d32173ad5814b176c5874e27909dc4",
+      "/Users/alex/code/vox2/main_blob_images.v": "868dc5cceb690afac27eab014f83ee7594c8b2a8febcaf0435c1923162a4bed4",
+      "/Users/alex/code/vox2/main_native_memory.v": "6afa2c79294c5c521ba1098c9a1d9d95b1495a3d03036c6c545496c95429b579",
+      "/Users/alex/code/vox2/main_compact_fragment_elements.v": "8683654e08603e48091edde7372ca102e9aa3c141e7922efc6c915287fae3944",
+      "/Users/alex/code/vox2/main_capture_audit_layout.v": "b85b0222189f56908305d4754c16929321ed473dd188c1c2404c2ade2fb10aad",
+      "/Users/alex/code/vox2/main_compact_initial_state.v": "94b9ce917e25dbb5acae10f13d4c3ee700b74aecd535075e78d6c5b28b3dc0a8",
+      "/Users/alex/code/vox2/main_chromium_save_layer_image.v": "53cb49a61c8998054c22f40c0eba82be7fbba9070f7de91c8b6440842259eadc",
+      "/Users/alex/code/vox2/main_background_bitmap_geometry.v": "4adb337ef4f529791e55415ee6b4b72439b1bb47296601bf70cf6c0df3011999",
+      "/Users/alex/code/vox2/main_compact_shared_geometry.v": "91376faf41159bc25b8c61c874dbb66e4db62231fca7775438a5920de3abb3b8",
+      "/Users/alex/code/vox2/main_pointer_cursor.v": "d42e96bac732747831a0c1c2d95181e7c17a18adde427eafb6a5fcdf2113c169",
+      "/Users/alex/code/vox2/main_replaced_image_clip.v": "ebb517f3dce282ddc6381cd030c9fc086ccb9047c8fb1aeda24f0b5f6ced1ab9",
+      "/Users/alex/code/vox2/main_chromium_root_raster.v": "3b5845265c130a390ef9e6c9ec988ae494b3c92e68243dde8a6283c1511c6557",
+      "/Users/alex/code/vox2/main_compact_inline_style.v": "e8e3a74abf3a3c0073b2a0b6553c85c80e9655be0b35b55e1e968785a1d91a14",
+      "/Users/alex/code/vox2/main_webp_paint_policy.v": "f6cf209c1dbf5b69e69eb29ba22679317e5a59740c9eb32b47dac40cefc46947",
+      "/Users/alex/code/vox2/main_lazy_images.v": "0eaaa47b7d03c105c4fd1b9e0b02f6a8de78addcca8de3391c3afa51b7a0c6af",
+      "/Users/alex/code/vox2/main_compact_remove_child.v": "b4173c501b5d5770455ce438d9fee046f232577412ca46bf7500a6b441f8feea",
+      "/Users/alex/code/vox2/main_resource_storage.v": "76e0b027a02bd4a637bbe81c8d04a462b78822144efa524ceaddb2b1463f82c6",
+      "/Users/alex/code/vox2/main_chromium_svg_background.v": "5d2445e7a744ba9ef1665316ed760a1d9ebc55c2f5b82ae9a717f4bb0eaf8c5e",
+      "/Users/alex/code/vox2/main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550",
+      "/Users/alex/code/vox2/main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5",
+      "/Users/alex/code/vox2/main_native_paint.v": "de3cc93c6d9db749a13de3bdc61c71da86a6f22530e385f5b367d2e4a22c11c8",
+      "/Users/alex/code/vox2/main_native_paint_size.v": "6dfeb9c6a7b21d63a81c35542eea0d8916a5242083067a5d04d468cb32313da4",
+      "/Users/alex/code/vox2/main_writing_tools.v": "c92fa9bfe287aed04a544f08f24c2e724284189fc8fe44b23af66529cb932da8",
+      "/Users/alex/code/vox2/main_link_context_menu.v": "a50a017aa2318ca58cf2bc673a82643688670fa23bef784198fe867d51f858b0",
+      "/Users/alex/code/vox2/main_chromium_gradient_blur.v": "3ad2f56c8f5822726b04e31f60b4a717287525f9614ba69c6fe934f282db33fe",
+      "/Users/alex/code/vox2/main_capture_audit.v": "96b5fc49dc779e8d25ec1a543608c9cc82f4504f1b2720e89c6db3ead74672d1",
+      "/Users/alex/code/vox2/main_archived_svg_layout.v": "4365275d021f09a7a9b290e6e55b13d21c2afecd886b0cf5e2ff40225d993a85",
+      "/Users/alex/code/vox2/main_chromium_compositor_gap.v": "571683cba2ac98e91d8c72f6ae2b9b68b9a26c38a807fccf18b0c0dd329740ec",
+      "/Users/alex/code/vox2/main_chromium_opaque_compositor_gap.v": "cb09b0b571dabed7c048ef8085addfd8fce71a32b3bb7c104a892a63cc5d3d03",
+      "/Users/alex/code/vox2/main_initial_frame_layout.v": "f3f4bfb2481084a793a3784a9ad0f82e68f13407b440ca383da1c73653771fef",
+      "/Users/alex/code/vox2/main_chromium_rect_prefetch.v": "99c82bc18eaa78219eb2abdb76b9171db9988e337a302195865af3dfa609fd62",
+      "/Users/alex/code/vox2/main_history_swipe.v": "df6ace7ea18d6e0247ce59ca1882bd630d16674924224b0584cc3550294d505d",
+      "/Users/alex/code/vox2/main_svg_use_resources.v": "ee337080397991305cd1f07ea7ef30ed34f77d864ce79b44690ce3a909284bb4",
+      "/Users/alex/code/vox2/main_preload_resource_types.v": "221f6fc4235d9d30a177ef26c584d2cf56828b5db8582df0307f736132d99bb2",
+      "/Users/alex/code/vox2/main_chromium_msaa_grid.v": "7b9da89db190a1a1b6dccb54333ad1608abd16eddb3863e14f1045590ecf5d2e",
+      "/Users/alex/code/vox2/main_window_title.v": "421c09cfe0bddf5f4452c70baeb3021d7514172d4655af05fd0e6c671b532bad",
+      "/Users/alex/code/vox2/main_compact_native_selectors.v": "d25de608e4fc93a6aa42ab57937990075901ecbc3fdc110042f706413bc1948a",
+      "/Users/alex/code/vox2/main_javascript_navigation.v": "0a7c27169193d87e4ef5b6e9125566408d99ba8971512c91c5c206d0f46281fd",
+      "/Users/alex/code/vox2/main_chromium_opaque_effect_gap.v": "f000529d617758dfbd5c837e936edad87345b97771f1a6fd01c76ece40973ffe",
+      "/Users/alex/code/vox2/main_chromium_corner_shapes.v": "078e518a3e2c098466bc09b9cd91c6bcce9bd01c60d866374c527e7d03f688cb",
+      "/Users/alex/code/vox2/main_capture_scroll.v": "fb5cd9a2139f0bf98aa8ea0d65bae0d2cfe534c23bd7fb4627d53b067629f18d",
+      "/Users/alex/code/vox2/main_media_playback.v": "6e81ec2d85c582a8334540c670f3824be0add5fcd9fcbbc1fb8bc9fe8787f571",
+      "/Users/alex/code/vox2/main_chromium_compositor_culling.v": "2b504a65483174e2da6ea37b8419c19353ae0a8be355040808302967bd2a91b3",
+      "/Users/alex/code/vox2/main_compact_character_data.v": "de172806ba6454df1a5ebf28f4334207356589411eaed8f548539bc57275beaf",
+      "/Users/alex/code/vox2/main_compact_adopted_style_sheets.v": "8514bf51b61c030e67c484913bfe62b6e52489b06ffb55d4eb6d86bd80a8538d",
+      "/Users/alex/code/vox2/main_media_preferences.v": "eab3c01c2815aa85bd2d4e884c97c3a8a8e2b701d1bf0e5785d049c610739986",
+      "/Users/alex/code/vox2/main_chromium_gradient_text.v": "83eb0f17a8f622880e5957c86d1a6e24e8e764877814633c95d75b2bf633abd1",
+      "/Users/alex/code/vox2/main_compact_document_owner.v": "077942c4cfda945e93756d0d252a0441cd309158303b8c2260fdab5a6e40788a",
+      "/Users/alex/code/vox2/main_paint_timing.v": "d91a23a5e6864d2b9bd30f9d74305655c1d8e1d04f9de9ccc0b317032bc7874f",
+      "/Users/alex/code/vox2/main_browser_new_tab.v": "78bdb3e9b31f1ed96f0b5467f22b0a7d87344db393f2e7657c08e7d48800822a",
+      "/Users/alex/code/vox2/main_browser_tabs_ui.v": "fedced9c3031d6f808ec3fdb5fb73b897231f21b6d739e7b595e3fcf48e5c92a",
+      "/Users/alex/code/vox2/main_browser_tab_detach.v": "9e759b4cf800fa3a4a0d2f3120e530309c35238a15056d928c4fcb5b92533c0e",
+      "/Users/alex/code/vox2/main_background_border_group.v": "0ed5f309e0bac1ca10c821d36604adcc801cd9e810595ec818c5d193995bc39c",
+      "/Users/alex/code/vox2/main_chromium_shadow_recording.v": "749daa3df9a0cc14119845344cab84536da8c5d7ffd172cfdc6970e5c89cff92",
+      "/Users/alex/code/vox2/main_preload_plan.v": "43b1c75b31bfff55e6c57d88dd5f6539077e87cfa727d49dadcf3538cc64fb1e",
+      "/Users/alex/code/vox2/main_compact_scroll.v": "10f41de983beaae08d78ad9b445ae6474d3760118870338bd6b02a0dc7158aa9",
+      "/Users/alex/code/vox2/main_chromium_masked_image.v": "82f9d967c8f728aa6f5173469a881c1383b0500ba42cd49e366b1fc9cd16d216",
+      "/Users/alex/code/vox2/main_chromium_rounded_image_pair.v": "2e6ba77e551a7cd239d16c56fdd7e5c3277047263bba78411393486d007183de",
+      "/Users/alex/code/vox2/main_keyboard_input.v": "3985185437b0091b9623631231aced6e76747e684bee24080afd2d3b95a31f46",
+      "/Users/alex/code/vox2/main_chromium_text_coverage.v": "82a892ad1bed62b9cf996a62d16ef0de52eb7c0b8c6010539e5b883dedcdfc46",
+      "/Users/alex/code/vox2/main_browser_text_cache.v": "d64959a646db64e84a005cf4ceb97489ad63bb277230446b722d6f79734084e5",
+      "/Users/alex/code/vox2/main_svg_solid_color.v": "3176a3fb1097b5de87403153191efd9cec5479ccbd42557f8cc825528de0f097",
+      "/Users/alex/code/vox2/main_compact_node_equality.v": "a66e0af23bdc95932f3744c709d193e096d88ca812abb45c0909c3b4a2f96997",
+      "/Users/alex/code/vox2/main_compact_create_comment.v": "71565d3f0619acd405a636d1c8b842712d40dfef87636fec87137ba9c8298114",
+      "/Users/alex/code/vox2/main_browser_bookmarks_portable.v": "38b1cc305ee5ac09cb95ce7831348bf44bfbd9a4ce2a525a93df5127a8b43ef9",
+      "/Users/alex/code/vox2/main_chromium_outer_decorations.v": "e964089c491e5a607c9f2a73eaba29bf6becbbaf1540da251770181eac605913",
+      "/Users/alex/code/vox2/main_background_clip.v": "85fac939f01a076541975c267c51931210f1452dca206ce76298cc57cf8d8b5a",
+      "/Users/alex/code/vox2/main_initial_image_completions.v": "05e9799133947c96d0006ad9a4414096eb70813e5fd795730ccee132ef6dfd77",
+      "/Users/alex/code/vox2/main_chromium_svg_solid_group.v": "ad5856abc4d9ba76dccae93aa43877ade08ef7d289fcf8d7306c851f5de597e1",
+      "/Users/alex/code/vox2/main_compact_pending.v": "7a4ba9c1128017e28670791da732138252431e71ace88aff20428b2f5b6a25eb",
+      "/Users/alex/code/vox2/main_browser_tab_colors.v": "4a31d91dcf4e9141908e5d1be1cc72f2edcdb50b4bfffb2dcff728c21760d977",
+      "/Users/alex/code/vox2/main_document_frame_request.v": "0568c73db64ea99601ec3c922d389a5144c4336735ade53708b9bd5fb19e2847",
+      "/Users/alex/code/vox2/main_compact_tag_collection.v": "32a121ce2d7f6fb804e30691350b0e14a5cac3e25b15dc08c2620cc6aa8eada2",
+      "/Users/alex/code/vox2/main_document_heap.v": "ab579589dfa1689af5cc7dcf5290d5e1abfa27aba8f53c01f9b95ea388652efb",
+      "/Users/alex/code/vox2/main_script_policy.v": "2a88b562f08e3e71de6fd2a28c98674d0fb5e486e9ba539140f72f449057da52",
+      "/Users/alex/code/vox2/main_window_activity.v": "22d64056095e159b7b2c60f6788ba8f05891678a882081ad4fa5cd72316ec350",
+      "/Users/alex/code/vox2/main_native_jpeg.v": "c95a2418a36f22a80b2ea6169c1201e2f7926e8a2b1743f319577e10dc82c25b",
+      "/Users/alex/code/vox2/main_text_selection.v": "6039992a153bdd29d7e6e784ba5f25230dba3e91edd50b3f39d2fd4b08fdd489",
+      "/Users/alex/code/vox2/browserjs/webidl_sequence_intrinsics.v": "69bed0abaf774211750dadaa945c381dea25255209e32ea193d185b6818f6226",
+      "/Users/alex/code/vox2/browserjs/wheel_event_binding_jsc.c.v": "9c631d47b9d0694011c507a90467ec8e9d57e773b7a8ddc2da82eb6872fefe32",
+      "/Users/alex/code/vox2/browserjs/queuing_strategy_host.v": "3b13c97b9f98fa9f0e94f134a9e104e4935b3b8b63b33fb11744b14499e2b9d5",
+      "/Users/alex/code/vox2/browserjs/view_transition_bootstrap.v": "9a63786f535a059710b9ada4a482bb45e716a0cc2fbfdbabca67e07e8cd8bfc4",
+      "/Users/alex/code/vox2/browserjs/pointer_event_binding_jsc.c.v": "f0c03f7834f7d521efa614e726e982bc79b1f1a7f3aff59f72f46ee28606ae33",
+      "/Users/alex/code/vox2/browserjs/microtask_binding.v": "ef1e78a5a92d3399eafcc339686abfea731a6e74afaccfc94811fee3b6f9b886",
+      "/Users/alex/code/vox2/browserjs/canvas_elements.v": "40d1da3b25799847484337a707b853a4f604885133f5c7715f9f04d39c443350",
+      "/Users/alex/code/vox2/browserjs/animation_frame_host_jsc.c.v": "4004b5d196f112ba521af2f5a3569be5bd52bc6cf529d046af7c7f4317099f3d",
+      "/Users/alex/code/vox2/browserjs/canvas_bootstrap.v": "d988297d64691bbd0c4690bfe017e637da13b794b840ba316a0e973d35a7eb74",
+      "/Users/alex/code/vox2/browserjs/structured_clone_error_jsc.c.v": "d8f40e0cc927c7ae903cb1f988e9b52d31ae2fbfa18408eb5e6bae13d11bd52f",
+      "/Users/alex/code/vox2/browserjs/indexed_db_binding.v": "bd6d7f204d463ed846ed78fe205a2a4d632e14fd1b82dd692e09198eb7cb4c87",
+      "/Users/alex/code/vox2/browserjs/websocket_host.v": "33527857189fe3511e64e2898411416f63df9652c1e311dc1321ed7a1862ecff",
+      "/Users/alex/code/vox2/browserjs/error_event_binding_jsc.c.v": "60e805449e8a2189d2850928c27bd957b05e0c0daff80fb8fae18cdc5ce15730",
+      "/Users/alex/code/vox2/browserjs/base64_binding.v": "7572e8ef58b76b6a4ff5e0e0ed8043150592cf222f7b305d15fce784f3d60cf1",
+      "/Users/alex/code/vox2/browserjs/structured_clone_platform_jsc.c.v": "c17c484066076d5ade6a37254b9b4dcfebc0c47196aa253d25eb06d7f30b457e",
+      "/Users/alex/code/vox2/browserjs/crypto_host.v": "3a183e9594dddc088cb38f53a2648f5e58b410d6ba3d58b8148b99a141849976",
+      "/Users/alex/code/vox2/browserjs/file_host_jsc.c.v": "a0141e6e58143245813aa95ed31cfbd427b4c988ffcdcf7dfa0eb17ded90b821",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_default.v": "0ef0852772239e9f230ffafe2d79c4dc89978fdc43dc4b2a8bffd8d574bf11d3",
+      "/Users/alex/code/vox2/browserjs/document_window_event_binding_jsc.c.v": "50b11e75325c91c1b52fe4d6d092a3767f4b097fce1ef5626ae57b8d8c13f7dc",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "b7888e20fee32dd3c2fe1d00af6656a89ed51ff87177e37447308895a256a5d8",
+      "/Users/alex/code/vox2/browserjs/text_encoder_binding_jsc.c.v": "31f05fd942ecfbd6c2f402808a3c8fe8f8919ae63db5bb297422c9b8687b2718",
+      "/Users/alex/code/vox2/browserjs/worker_environment_host.v": "2018664b9491d63201503ed4d5a3b8c5181489604ed11b1fd3060dbbc414dbb3",
+      "/Users/alex/code/vox2/browserjs/structured_clone_crypto_key_jsc.c.v": "a79ff51d28aa0deb9ea607cd596fc6e63a77218d2b0c4a7bf8ce181390a3daba",
+      "/Users/alex/code/vox2/browserjs/data_transfer_binding.v": "671454301e6d59ec62ac8be6ff61e2dd8f3acd05fb601f16e731dd4c1fdbac0b",
+      "/Users/alex/code/vox2/browserjs/crypto_generate_host_jsc.c.v": "30b687a32e064af675b1073414f8ac17ad9262ba5d2b53e2656394d39d4552b5",
+      "/Users/alex/code/vox2/browserjs/structured_clone_dom_exception_jsc.c.v": "0218c5eed31a01705ec98e0e46f7cc315b8ce2363e3373003a16bcd942039f12",
+      "/Users/alex/code/vox2/browserjs/media_source_host_jsc.c.v": "da1355c3ece2e7491babebfe15f358b2ccba404c45ea431e2023c1939a01ef1a",
+      "/Users/alex/code/vox2/browserjs/crypto_cipher_host_jsc.c.v": "5782c87b0bc05858847addd93a1e4a187324b381213317212ae9744bb4405ac7",
+      "/Users/alex/code/vox2/browserjs/timer_host.v": "415fde32f38590818edc253bbd76b0a4ce4a996823721cf0188e96b8f0f23f76",
+      "/Users/alex/code/vox2/browserjs/document_owner_query.v": "40c646cfcdb6f7fccffc51b0ca3464a6a8ade74aee515d77fb55e2950f67d01b",
+      "/Users/alex/code/vox2/browserjs/document_name_collection_binding_jsc.c.v": "d3e75bdfa7ddf69d8436e34f85d36b7a69b8d828321369f045b81befb5a0b316",
+      "/Users/alex/code/vox2/browserjs/window_current_event_binding.v": "e60fca69b20b15d9c11816da3cc62412860e0f101dd75a98b099fc779c175066",
+      "/Users/alex/code/vox2/browserjs/url_search_params_host.v": "7a3a84bd876e3e917b5409ac0b6ae5a13d273cac829a58ff60768ed1360a1fac",
+      "/Users/alex/code/vox2/browserjs/webidl_binding_jsc.c.v": "082c27a26fcaa25c50b9f09766c1dc6efebed22b0238a135812c2f2afb9d0635",
+      "/Users/alex/code/vox2/browserjs/pointer_event_binding.v": "0ffb2eb77cf5f0dd4c86f7e27aa1d591f9385d7a2547726f554828cb1b5a30b5",
+      "/Users/alex/code/vox2/browserjs/window_message_binding.v": "aac2c43eabc832eb14530266d3cd4a18126650a5cb4720d2fa545711144beb13",
+      "/Users/alex/code/vox2/browserjs/mouse_event_binding.v": "cbbc2c2536f247bd8f2b1337cc2e9c7e146eae56e24f1c60b8780c39bf11f87b",
+      "/Users/alex/code/vox2/browserjs/view_transition_host.v": "5c4f62ceb834a183b860f598b4ebc87f8af76711eee2e36a811573d7de9c375d",
+      "/Users/alex/code/vox2/browserjs/jsc_string_buffer.v": "80bfc3f07bda5691a91c1575e2be6d6d8e16fd48e19398b8b87b878b7946eb0a",
+      "/Users/alex/code/vox2/browserjs/worker_process.c.v": "ccff8a9a653f2962dbf5e5c7d41e3f38b57e1b8b3099162a0579ee8ac0f6ffef",
+      "/Users/alex/code/vox2/browserjs/event_target_binding_jsc.c.v": "8345321b8f9057a3e8962487c1c212349b7779a0827ff5646de13c76b41c1c6d",
+      "/Users/alex/code/vox2/browserjs/window_viewport_binding_default.v": "7aad6fbf473611dd98dbaf500e2067f44b58f11c2db46a73e7d5eb8ff79d2679",
+      "/Users/alex/code/vox2/browserjs/crypto_derivation_host_jsc.c.v": "7870e3d688a9df722d506ecf86c7af5048e5a1f9785df9aa13ebe3f4212bed75",
+      "/Users/alex/code/vox2/browserjs/worker_module_entry_jsc.c.v": "afd683c0542c6cadf82ff753a4189807d64dd60ab0d8e1e8b94d170c191b15a4",
+      "/Users/alex/code/vox2/browserjs/xhr_bootstrap.v": "afd497887ebf61cb325995bc540ab47d1750ec22a83b08def43be9e2b5939dcb",
+      "/Users/alex/code/vox2/browserjs/window_screen_binding_jsc.c.v": "3b04fefd4c5c7075a60e43802df8af438a00689e719841ae9739777b704c760e",
+      "/Users/alex/code/vox2/browserjs/base64_binding_jsc.c.v": "7640b8f41dd52fe032e0ce57e22ef195a66a94bc69ca68fc26f6a89e8c26d3e8",
+      "/Users/alex/code/vox2/browserjs/message_channel_binding_default.v": "b4f9b2200f4871bea6ea1b823afa93f610d557c66c300b692c9928aa99269ff3",
+      "/Users/alex/code/vox2/browserjs/document_bridge.v": "003e31f16ff5c62dba072c9ec0c40073cbd4d2e43fba5b99d645eb92a5013850",
+      "/Users/alex/code/vox2/browserjs/document_window_event_binding_default.v": "09539b046353d85c3f34761b9fdc10e8e168819908bbaabd2e3f77769c61cb37",
+      "/Users/alex/code/vox2/browserjs/structured_clone_view_slots_jsc.c.v": "ffd1e2a634e1aad7097680fb7a1f33f7a3f0737db206631d66657d2cc59720b2",
+      "/Users/alex/code/vox2/browserjs/css_namespace_binding_jsc.c.v": "30b4b2a37fa3a355b87f86b6a16b4c5d2030b9e7023880e3c5239310caaf3674",
+      "/Users/alex/code/vox2/browserjs/crypto_kem_host_jsc.c.v": "44f4cc4b3592e06e2c378a9b970975e2b21525986988b55fd382d4a4d6eb5dde",
+      "/Users/alex/code/vox2/browserjs/document_domain_binding_jsc.c.v": "eedc9493242f61d14ecd64d896cfa05cadb1039ba42dc7b50017cd8dd164bafc",
+      "/Users/alex/code/vox2/browserjs/drag_event_binding_jsc.c.v": "cd1b47d3512ffbf301d9b08704c8728ec2e5a188a1e8682ec0a15b9ed9599a60",
+      "/Users/alex/code/vox2/browserjs/structured_clone_view_jsc.c.v": "6821d8ba01ab9b1f96f6f50912a2ad44b601a5c4c434bba43f1acdae6157ae98",
+      "/Users/alex/code/vox2/browserjs/worker_host_jsc.c.v": "04fdc4d341e5ca99b170f69bf5f7b1c0ce2a3b297de4f7045f7952ccc2bcf1e4",
+      "/Users/alex/code/vox2/browserjs/fetch_host.v": "e074bb6908fb2f5cb3a1be0aca9756cf2b73273edfedd3476ff4aacce8eb8cce",
+      "/Users/alex/code/vox2/browserjs/window_current_event_binding_jsc.c.v": "8b2e35c770663800573acc0447bd95f4b70be6887c3a3ec78ca8673c27d04c50",
+      "/Users/alex/code/vox2/browserjs/cache_storage_binding.v": "6c1868d42506aa300db7d3b45cda34b00826cc30b662b780ef482afac6c0f2d4",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_host.v": "289e5d7846b56e0c573b770284069045040ae04591b3ee2cbcf64c83fc893391",
+      "/Users/alex/code/vox2/browserjs/runtime_json_jsc.c.v": "303ba14c726d9c48e6132ad45b01ff43a874bd9200e8ada6677338c3aee0fee7",
+      "/Users/alex/code/vox2/browserjs/file_system_entry_binding.v": "2b7df996da8cbfeb89a6136acf1c8f6f52151f3b679267cb0e669a90fbbd6907",
+      "/Users/alex/code/vox2/browserjs/media_element_host_default.v": "9e3ef41f3d6fa682c8da97a6be6f0cfe0c6e2cf8cf649e66d779af115af99668",
+      "/Users/alex/code/vox2/browserjs/queuing_strategy_host_jsc.c.v": "1a8b90206f6ba8fe243a36c97b615576d79536f8871daee4318b8b188de5588c",
+      "/Users/alex/code/vox2/browserjs/readable_stream_host.v": "072b1350585cd17e850aa911d06cac7f15b7e41c084e4a039f8149fce1778a2d",
+      "/Users/alex/code/vox2/browserjs/compact_attribute_state.v": "62945dd64a9eeb5bef983cad60398db95c4eeaa2326ceeb564818cc9acb10cbf",
+      "/Users/alex/code/vox2/browserjs/performance_binding.v": "f9e96f79fda37fbc1f391cbd21898850eb0c135541432c7d81d42a69eaa29f85",
+      "/Users/alex/code/vox2/browserjs/file_reader_sync_array_buffer_jsc.c.v": "b3ce7daeb684e3b3ce690ca1ff83a6347285840e915cf705adc79fe9019e611c",
+      "/Users/alex/code/vox2/browserjs/structured_clone_file_list_jsc.c.v": "d7386789639fd830fd7241a85cd843cab9f720b6c9999fe9b202e799f7287076",
+      "/Users/alex/code/vox2/browserjs/file_list_host.v": "7b947837a85f0d8dfe933548a7b4cdcb0b0c673446baae780691325408d38ff8",
+      "/Users/alex/code/vox2/browserjs/webidl_value_jsc.c.v": "91e16e5cd9f613c25d5c909e32f9bd1c0b3b5ae1f1f58c72df00b9898cda5e02",
+      "/Users/alex/code/vox2/browserjs/file_host.v": "5e84d0f80d7c62a0d19f0db0f748476afbc43d7da2599efd24af719adadf704d",
+      "/Users/alex/code/vox2/browserjs/crypto_import_host_jsc.c.v": "c6dd9258e1b77f279a5a043d40cc7653da1e8c364c975f2f906900885501819f",
+      "/Users/alex/code/vox2/browserjs/structured_clone_transfer_jsc.c.v": "2664c84bb0fa86314b5f8e5f6aa4b082ad377c0253896825e765a430b584b754",
+      "/Users/alex/code/vox2/browserjs/font_face_host.v": "2052c44069c4e677c2215ae02c6160360393a37bdef7eb851218411f2654c013",
+      "/Users/alex/code/vox2/browserjs/intersection_observer_binding_jsc.c.v": "44ef8a4ff83b23e9447a1e7e41f3566d4e38a66dae9610098196cad59d2e5850",
+      "/Users/alex/code/vox2/browserjs/xhr_host.v": "445572aa92243f5dc53df050d56cdea66f1ba1f1d6e3e0a61ab2222c4bad0e4c",
+      "/Users/alex/code/vox2/browserjs/window_find_binding.v": "c688cf418d3f9cbba923fe1eb069d0861a3f25a87a67304db2e5b8d940868f7d",
+      "/Users/alex/code/vox2/browserjs/script_element_event_binding_jsc.c.v": "60ba0c19bdbe75b0c8cf03cbb9797c764cf668ec65117f82e3c2047150c7dc6e",
+      "/Users/alex/code/vox2/browserjs/text_encoder_binding_default.v": "5af96d782204ba9b50f684d32dcb54d222f551aa006c6612694d43e965a3cbcb",
+      "/Users/alex/code/vox2/browserjs/crypto_signature_host_jsc.c.v": "66995828467ea00b91179ebaa8e4cf539c8d60b5a804eb6825c15fcb968ce0c6",
+      "/Users/alex/code/vox2/browserjs/webidl_binding.v": "32c304f90c8dbb4b7f14dce1de77c55d9263af274169f3bdd79448535a7a9290",
+      "/Users/alex/code/vox2/browserjs/performance_binding_default.v": "ba8369e26cd996b64229613035cebea01fa6b7990ce1fb1f018c917991423d29",
+      "/Users/alex/code/vox2/browserjs/history_binding_default.v": "cc67e18f0ce98f959ef47d947f9316f4e96143e718f2d9b376539fc0914f25b2",
+      "/Users/alex/code/vox2/browserjs/media_element_host.v": "5cae513163c0eae7fd884b219c1c8fec48c028799c4ed63748e1897ee76b7000",
+      "/Users/alex/code/vox2/browserjs/form_data_host.v": "e3cbb28891d3db3a9607be61410665b412d34b268e5688183838511c1b6a0aaa",
+      "/Users/alex/code/vox2/browserjs/url_string_conversion_jsc.c.v": "c3279b7bcd38672a8934538e1b6209b57874535c0f00ccf511a67e2df879519d",
+      "/Users/alex/code/vox2/browserjs/text_encoder_binding.v": "bcabd5e564aa5a2501dcf05c806a565b8ee19a1707c68310b308787fbf065694",
+      "/Users/alex/code/vox2/browserjs/font_face_host_jsc.c.v": "134a0eb20a1ed05c3eb729fd1beee6ddbd10013548bd2366cff64ea176ee2c9a",
+      "/Users/alex/code/vox2/browserjs/intersection_observer_binding_default.v": "4a64416b428ba029bd4191c2b54f11e21a42d2d360933d11936e794520f123f9",
+      "/Users/alex/code/vox2/browserjs/document_scrollend_binding_jsc.c.v": "2b87f8a72e194b7ad6442bf6471acd5bb0a4786d6c3e3604c5518e04c2e7e1eb",
+      "/Users/alex/code/vox2/browserjs/media_error_host_jsc.c.v": "8e32ed01b3f28cc189af0914d4a956aa3851395f8e46f2d0aaa89f7d371937fb",
+      "/Users/alex/code/vox2/browserjs/intersection_observer_binding.v": "e4f4106f8852d0958054b3d8a9fcac1ade646cc9db911540b4610a78dd48a327",
+      "/Users/alex/code/vox2/browserjs/indexed_db_binding_default.v": "0d040c9b5e14c5d4a811029d643e196cc90547be8b8ea03449b8b082d80e167d",
+      "/Users/alex/code/vox2/browserjs/file_system_entry_binding_jsc.c.v": "73ddb6e815da67277b6290e6beba5c077159d6198dedb579e2d35ef343fbe97b",
+      "/Users/alex/code/vox2/browserjs/scroll_promise_binding_jsc.c.v": "348036e7b782224715731a892304bc83928f2813a9c04fd404956a86cc501bc9",
+      "/Users/alex/code/vox2/browserjs/file_list_input_jsc.c.v": "1cc5378f38669c7653f12b9869f8bc632a6176ea93f1ba6480981c64b8089e95",
+      "/Users/alex/code/vox2/browserjs/readable_stream_host_jsc.c.v": "934e9b5f93bb67459a06a80b17c1a431477d112195cae3771b6a8dacfbb75ea5",
+      "/Users/alex/code/vox2/browserjs/data_transfer_identity_jsc.c.v": "6b7e0a65148e7003127c7873eb5a659e56a6da65f2aa54ee1496d1b2fdceeaa3",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_reflection_records.v": "6190041fc21f4c982f10c387770db0b3dad5f74f00d30f27947fb99f478a33cd",
+      "/Users/alex/code/vox2/browserjs/image_host_jsc.c.v": "6e1bdb3a2cec9e9b81df1c81355d26e878021080245844e5f9902e96ed06e5a0",
+      "/Users/alex/code/vox2/browserjs/worker_agent_process_jsc.c.v": "b9653d23e3f9f3391c8d812c0823592354155ba38a616e6144bef9fbdd446d34",
+      "/Users/alex/code/vox2/browserjs/transform_stream_host_jsc.c.v": "fce4a9b8fa8193021768465fc0eb05ecfdfedcee62d9912c79d0363fb3c0bb61",
+      "/Users/alex/code/vox2/browserjs/history_binding_jsc.c.v": "e9092d715dfdbf9a8107ceeed42619de0143911db3418f5e814e61635aad8917",
+      "/Users/alex/code/vox2/browserjs/message_channel_binding.v": "4a44677cc06d009fe26aa27ad863bcf6935bcd648a522bc91bf726eb88fb48fc",
+      "/Users/alex/code/vox2/browserjs/window_viewport_binding_jsc.c.v": "3892bd44d46579b99a6cb8beb0d2e4c05b0ecf0a899821528caf856f390c8522",
+      "/Users/alex/code/vox2/browserjs/scroll_promise_binding_default.v": "bbfb6c8b9c3815b424f4a1fe495e00de365effe437db3978ca0bb5937fb21e49",
+      "/Users/alex/code/vox2/browserjs/performance_observer_binding.v": "9b10d7d8cd2417c308ce438313b06a56638dada555396843983efcc2e3be8c06",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_xr_host_jsc.c.v": "3bc0675f254d7e4aefeb74f6fec4ed79b20c79e588b1d5d591b2d91cbcdb18b5",
+      "/Users/alex/code/vox2/browserjs/navigator_host.v": "0b170daeb8869f264353294bb7cdc27ef194130d3cf94b27bc9363115ecca02f",
+      "/Users/alex/code/vox2/browserjs/crypto_algorithm_host_jsc.c.v": "9c85d8cddca36a7b2af06d7caba93cdaced51408032bce299c3eb9a445712498",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_resource_labels.v": "bd935513d2e22c9b526523e508281dc9b7093a330163abd150b2fc34944a7f6f",
+      "/Users/alex/code/vox2/browserjs/crypto_wrapping_host_jsc.c.v": "29806ec69415173188337239712f3fcf4ca3057142ba33748c251aa1c10e48c5",
+      "/Users/alex/code/vox2/browserjs/css_namespace_binding.v": "95e1a8f2370930d306d489bb360ea512517df94eb081b15d6352a9430afc27d4",
+      "/Users/alex/code/vox2/browserjs/performance_observer_binding_jsc.c.v": "1bc727ebe6694cf1229bb5394d34999160428ea7d412e3d52a1c4a8bb498c40e",
+      "/Users/alex/code/vox2/browserjs/crypto_key_host_jsc.c.v": "a326107334eea488a17ef4e4527320f5b080a760c24b5cf375f2ef80278fb1bf",
+      "/Users/alex/code/vox2/browserjs/host_function.v": "263022571948a555b7303d6d31ead0ea4543c63bb3c4ddf4f52affce5150f26d",
+      "/Users/alex/code/vox2/browserjs/window_find_binding_default.v": "38d29a3dabb72b21d5be6d5fdbdf14d1de1622ac5c4e9fee89307d0623ebb8c5",
+      "/Users/alex/code/vox2/browserjs/data_transfer_items_binding.v": "5a41776ba4c8c9cc0ebc17c2b4ef6ccb754b6320c00f482c2ece75056bf09ca5",
+      "/Users/alex/code/vox2/browserjs/media_source_host.v": "eb02cdb4363c1885fafa211abb516026090cd74f33802aee20211ed3cb784776",
+      "/Users/alex/code/vox2/browserjs/timer_host_jsc.c.v": "47bade6ec24c72262633ebb86932935a4ec740ef30fd42a8d5b77065c4db430d",
+      "/Users/alex/code/vox2/browserjs/form_data_event_binding_jsc.c.v": "77c3a3ff80be49a2f218085a41d412bee4838de97770b075033274dac71e923d",
+      "/Users/alex/code/vox2/browserjs/window_event_handler_binding.v": "f498e62b22194094d823c60d49dde637e5a00de5a7f4f5411732e0df74d3a65a",
+      "/Users/alex/code/vox2/browserjs/structured_clone_buffer_jsc.c.v": "f5e24201bb4dab7f61d4a146af8f69abb53eac61e3c2378e65a68ad1e3c7dd8b",
+      "/Users/alex/code/vox2/browserjs/worker_script_host_jsc.c.v": "4e7b933ceb33807b69a68bb4a198b444dd2b3b7bfc6c16e58a518966e96c7892",
+      "/Users/alex/code/vox2/browserjs/mutation_observer_binding_jsc.c.v": "baa18d82a998f343a52d71b3449df019e85e54b27883c0f2434a8885a19679fd",
+      "/Users/alex/code/vox2/browserjs/history_binding.v": "6abce9aeb7d83b2fba7cb8de8f179bfcab430052e9e5f2c44606187d1b0c54d6",
+      "/Users/alex/code/vox2/browserjs/window_viewport_binding.v": "aae6ce5fb2a7976c6d1c9d804103e2738fdf0c8e61d786486c8b58f50d38befd",
+      "/Users/alex/code/vox2/browserjs/quota_exceeded_binding_jsc.c.v": "cbe9ea419a494d0b7bcd524cdf34f58be7641cb158bbdbe50050cefecfad42bd",
+      "/Users/alex/code/vox2/browserjs/media_element_host_jsc.c.v": "fb94a7f647c6ff9a8ef91d7af939bd5d3d7a9fed2c1849d15d588f12ca5504a4",
+      "/Users/alex/code/vox2/browserjs/text_decoder_binding.v": "68ba07a4665a7fa651b28a18e292cb227e38a74cf87d8c2ad8813402b1d66cc4",
+      "/Users/alex/code/vox2/browserjs/keyboard_event_binding.v": "a87871436e3f80aad1f31f483a961bfbba6c523b1d0103e2fd7aa992de0a0828",
+      "/Users/alex/code/vox2/browserjs/websocket_host_jsc.c.v": "5910829a361500b1b6a5226b3dc7e3ffddbf7cf2cd70f938f9ad3532f70e0c60",
+      "/Users/alex/code/vox2/browserjs/source_array_buffer_jsc.c.v": "e564fb81c042ee85cfe00f3a24c894fd08ffec913cd4086fe8e3bf791b0c6813",
+      "/Users/alex/code/vox2/browserjs/resize_observer_binding_default.v": "66d9ad1261559c925f852da224a86c50f51ec3683103e75fe492fd0b7ff4cc9e",
+      "/Users/alex/code/vox2/browserjs/wheel_event_binding.v": "e9f811e319c8942fb9a3a296f888f66f5a79bf5946323ea3265d91b5a1ee9fd9",
+      "/Users/alex/code/vox2/browserjs/window_proxy_binding_jsc.c.v": "27791b552b253e18c13c605b649e297590cf0bed89a7f7cd3dd4d6ebe05e0ff5",
+      "/Users/alex/code/vox2/browserjs/element_wheel_host_default.v": "8dff375d754cb519f73cba56a758e9e417ee5e4de17d813dfac4e0dfea52a731",
+      "/Users/alex/code/vox2/browserjs/document_window_event_binding.v": "3a8d1895626809aafe8d451e4021bd61947921dc335cd0e8707ddc4a04ae4f45",
+      "/Users/alex/code/vox2/browserjs/file_list_host_jsc.c.v": "efe2e29b1c228480871d67cbadb182ac0ea61d6486ad273f0ab8f2b9efaa205f",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605",
+      "/Users/alex/code/vox2/browserjs/host_function_jsc.c.v": "1d9001e7e64647e7b5ced3d0aeb07e9dfad341b286cc1921db955f5bc07287d9",
+      "/Users/alex/code/vox2/browserjs/data_transfer_binding_jsc.c.v": "17403a44faa69f5fcb04201194cb1c9185a2add1d664d79cd4f18867501bb8b1",
+      "/Users/alex/code/vox2/browserjs/resize_observer_binding.v": "8770ff3172adbd573d334a1ce35dae1da84019324e22d71c3f3f74d97f19ecb3",
+      "/Users/alex/code/vox2/browserjs/canvas_host.v": "89a5806385f9d17120297ce4c770eb3136837f4ed56a29872bdebfc077a7fa53",
+      "/Users/alex/code/vox2/browserjs/structured_clone_bridge.v": "4284beaa342542a5b4665f081f3df3ee3e3de7db0a237644e52a0ee64cc4f327",
+      "/Users/alex/code/vox2/browserjs/custom_element_registry_binding_jsc.c.v": "7da19e977e119181c7d8b2ae285edf9ab3d9e84622b9ee2a4bda2e63f0bc110c",
+      "/Users/alex/code/vox2/browserjs/worker_startup_codec.v": "8140dd8756dadc2dd03f12ab45025a63a8bf29d5b48aeb7ee1a450135ad1cb30",
+      "/Users/alex/code/vox2/browserjs/structured_clone_bridge_jsc.c.v": "6e79d3e309e45ae5850a0606c9dd9af74779a36b17fa9cfaec92814ee7a77d13",
+      "/Users/alex/code/vox2/browserjs/dom_rect_read_only_binding_jsc.c.v": "35bd62d740aa455bd16f4717c0a9994c5c7faae5a1caf0f04691ffe569067c52",
+      "/Users/alex/code/vox2/browserjs/element_wheel_host.v": "06f211b26338b2e53c70293d51d5f30ec05326003cb75b5acf3f03e96b87ff96",
+      "/Users/alex/code/vox2/browserjs/dom_rect_read_only_binding.v": "d2543a2a10c974c2b32ca3c061b2ef2e20aa308b93f862f2c36f1d5367c37796",
+      "/Users/alex/code/vox2/browserjs/mouse_event_binding_jsc.c.v": "efcc0533d7c8ad048162ff4a27143719a8ec4d0e8c2017c62b7756a041de1bf6",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_extension_interfaces.v": "feb6c7cddbff2897d5356ed98a90f5f8d485599ffd4a84e76c7bd02aafa6b76b",
+      "/Users/alex/code/vox2/browserjs/writable_stream_host_jsc.c.v": "b0f222513c49248bff69ecdea66f8592de36bd0e91e9700fb21bc151d22cd7f7",
+      "/Users/alex/code/vox2/browserjs/structured_clone_string_jsc.c.v": "34fa8689a684ea0f3a477972c1a8bafe91de977a3b69416aa98fbb86f07c68c7",
+      "/Users/alex/code/vox2/browserjs/html_element_constructor_binding_jsc.c.v": "2d4a61d1575f1f58fe5ee157490577a7b3a3dc589daefbfb9913a52a23304d3f",
+      "/Users/alex/code/vox2/browserjs/media_element_wheel_handler_compiler_jsc.c.v": "3d79dbe0285f200930faba6cc40b6ee15e167430307ccdceca3eae5d5e9edbed",
+      "/Users/alex/code/vox2/browserjs/file_constructor_jsc.c.v": "3d735d6f1961d6cedb31d66c0bd4bf9c303ea3bd6329cc340c6aa500c1a9d5ca",
+      "/Users/alex/code/vox2/browserjs/time_ranges_host_default.v": "e8a2a411aecce5e910182d63f89b995a396e0f02906bb86d39e6d8da55a0c6b4",
+      "/Users/alex/code/vox2/browserjs/data_transfer_items_binding_jsc.c.v": "59472c8bbc24cc51002a13a59e1d3a5f0a6b022473afe2334919787cd70f7e0c",
+      "/Users/alex/code/vox2/browserjs/text_decoder_binding_default.v": "4024b7ca4159831f96df8f13fece6dcbd0ce61a4129f5ac18b6669b522fc9fb4",
+      "/Users/alex/code/vox2/browserjs/runtime_jsc.c.v": "46f828484163f7cf9bc44a205d92286cbd57ff6fde58c6880dd295934d1786ff",
+      "/Users/alex/code/vox2/browserjs/window_media_query_binding_default.v": "b35ec37d66d1a20b3e52045a337b439fac8ab702771a43bf2aaa1d86242f161c",
+      "/Users/alex/code/vox2/browserjs/ui_event_binding.v": "d33ba7de340fc221f2b60b4bbeb04641441138a552bc9584c55e8c885500d544",
+      "/Users/alex/code/vox2/browserjs/input_event_binding_jsc.c.v": "e50b7e2574b050a7944bff022cbdf520e46551bdbdbcc413c59ee47eec42c592",
+      "/Users/alex/code/vox2/browserjs/navigator_host_default.v": "df372a2b3a295f58e337c242d9f27e7b8a60ecb06f5500beb69d98646ac8ab83",
+      "/Users/alex/code/vox2/browserjs/worker_port_router_jsc.c.v": "b540e1c56a3c6293c29a2afeb38c51da2b83a08bb31b76f0c9333c1f88b2f8c8",
+      "/Users/alex/code/vox2/browserjs/window_media_query_binding_jsc.c.v": "a271c0dbb55af98b70b0c7d84717870c23b3d329261ca20ddc4869f2b209201f",
+      "/Users/alex/code/vox2/browserjs/writable_stream_host.v": "73d7fc2d508f822538c60ec2b80c03a8ac7e924a140b0df6ab68e5b8567b5c0c",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_resource_interfaces.v": "819cb88fee1a6d2cfb0068144d81707bd2bea08dc11f2338a3f514340b25cc11",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_source_spans.v": "1ce5b34e11b06a21962d02ed4e6c16f6f858bbdbb0ff95f0c370f19830ed487e",
+      "/Users/alex/code/vox2/browserjs/track_element_host_jsc.c.v": "5adba85cde5ca99fa17ace2d23cd3c16a8f56983e0a1c369d245e4ae75241f82",
+      "/Users/alex/code/vox2/browserjs/url_search_params_host_jsc.c.v": "12c856b390c4d4dac722b6d733c16aac225d2037c6a0531a04da3c59dce7551e",
+      "/Users/alex/code/vox2/browserjs/worker_global_host_jsc.c.v": "216b0fc6760cbdb99fdc37884f9521ec7fafc2b74272f2e4b742f78aa039f89d",
+      "/Users/alex/code/vox2/browserjs/window_event_handler_binding_jsc.c.v": "d29e3dbd785c7e3e3e4d796703bb4e705a7dd1416bea135f053007cf234abede",
+      "/Users/alex/code/vox2/browserjs/media_source_buffer_host_jsc.c.v": "76821277d775b6324c4cdd0e878e061d243611b1569656771be2e165be7fe1b7",
+      "/Users/alex/code/vox2/browserjs/data_transfer_fileapi_jsc.c.v": "88dd966e8c18da085d6966c1d93f111206df53ab672a1be3dcf7acb201966323",
+      "/Users/alex/code/vox2/browserjs/performance_binding_jsc.c.v": "720e4ce8559f6c2b84ce19ada52f50b4aaae5d9cb8c6f998dbed430c54b0c3e3",
+      "/Users/alex/code/vox2/browserjs/window_find_binding_jsc.c.v": "08532d842f911f09ef098840713ec387b2e9951a1771b98dcf2f7af519454e00",
+      "/Users/alex/code/vox2/browserjs/abort_signal_host.v": "5942058d83a8ee1a363ca7a70e685596512dfad426b56b0a52aabc09882934fe",
+      "/Users/alex/code/vox2/browserjs/window_event_handler_binding_default.v": "e50df1a242867e3fea17c9fb2476ae5537c67deee9af18bb51ba6a97dc904b44",
+      "/Users/alex/code/vox2/browserjs/runtime_json.v": "25abc3d4d3533a3ef2a461b877188186c368a61500c48a8bfa6db3020273fbae",
+      "/Users/alex/code/vox2/browserjs/ui_event_binding_jsc.c.v": "6227106342b435b65c4bc1a5eabe8b5a61139fc0ee13891a75c9e232d33052d2",
+      "/Users/alex/code/vox2/browserjs/window_proxy_binding.v": "32b50634a671fb756dbe61f1d28c27927bb29810ff9587e46a0481737fc1edb7",
+      "/Users/alex/code/vox2/browserjs/structured_clone_blob_jsc.c.v": "f72e18f0f944a16a5f3d746fcf0db5715e774bb8afed3249b562e6ae940d9c1e",
+      "/Users/alex/code/vox2/browserjs/media_error_host_default.v": "a1a484da950cc84c3cb17b9147b767c59ac4e52522c795ebdd1245cf838afbbd",
+      "/Users/alex/code/vox2/browserjs/crypto_host_jsc.c.v": "a9bd1bf848938c7ae8b0d6697c5cf007d6f9c20f5480eda70a1830d1c25abefd",
+      "/Users/alex/code/vox2/browserjs/blob_host.v": "d373d2f09fcd489a8f04403559aae7762b178e894814420aed793751a201ecf6",
+      "/Users/alex/code/vox2/browserjs/xhr_blob_host_jsc.c.v": "821e76d9ee96ac4b998933d7b21a74785b34a07fde76e2b9c8166ea2c7d381ad",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_context_interfaces.v": "b6aa45ffaa68c4438b763f44e380ddefb3495e7872039349816c16b509b067cf",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "40aef13deadd1d69155f904b0ed282bc31cb06e93a4ea50d83c4afb5ab2219e0",
+      "/Users/alex/code/vox2/browserjs/simple_exception_native_jsc.c.v": "7d4bff9663bc623b264cdc3858cca93dae6c710e2f6132dd117da8895e1f372f",
+      "/Users/alex/code/vox2/browserjs/protected_value_links.v": "73833eb44639368b5bce99b87a384c2f5340db00263fae3144e6439ce36219b5",
+      "/Users/alex/code/vox2/browserjs/script_element_event_binding.v": "ecbab8c1b0269c51b7e2cfa6a24774cf5ef1b2732751a6a7525b9f006d058a36",
+      "/Users/alex/code/vox2/browserjs/form_data_host_jsc.c.v": "465d14a49a693078259765bf214a72bfb83ffc74ad9fafe86aaf0dd6d17dfe6c",
+      "/Users/alex/code/vox2/browserjs/worker_agent_runtime_jsc.c.v": "4b77cd3b37b1999dc1a9b4e8976e451c92ed500c4f6a3b9a8ed8077887b35acc",
+      "/Users/alex/code/vox2/browserjs/dom_exception_native_jsc.c.v": "7ae35c8a808ed2cbd11f1237438eca6f1e6b0e8e2e55fdc786555e68b299e2b2",
+      "/Users/alex/code/vox2/browserjs/module_host.v": "2720b6ff0d1cee680969319aae439b88513f3912ff229be26e92b694402c8ae7",
+      "/Users/alex/code/vox2/browserjs/media_element_reflection_bootstrap.v": "f0dfc0bcc1c18d9383e6efe1ba90dd69ac15c3f69094e8da1164367fab094add",
+      "/Users/alex/code/vox2/browserjs/blob_constructor_jsc.c.v": "254fc023114bf77dd1e3ee465332ebe36bdb1a1357755e5465f996212ce959d7",
+      "/Users/alex/code/vox2/browserjs/window_media_query_binding.v": "94728026d175dd8f44c2981d81ce989c4b12775976fad6343eafdbebb03fd364",
+      "/Users/alex/code/vox2/browserjs/transform_stream_host.v": "adda3df259c7995e3e65bfd7ec8ca3f8ce0ca6c3918d3470067eba18bfbf038f",
+      "/Users/alex/code/vox2/browserjs/text_decoder_binding_jsc.c.v": "bcaaf79a860e2331527ba512ea8556b591ddf87a7003768087874634f8be71ae",
+      "/Users/alex/code/vox2/browserjs/dom_rect_read_only_binding_default.v": "b7c6d2a34739eed98026068409ca05d9db641b9be19ed1c447e4c6e2b99eb9c4",
+      "/Users/alex/code/vox2/browserjs/custom_element_registry_binding.v": "1bde12377cef4984be9738a43a3c7e7bfef2c7b73cc04b1059d3d0732c8c14e9",
+      "/Users/alex/code/vox2/browserjs/window_self_binding_jsc.c.v": "532cc6e9e6560003180eaba13049db514afb863e0b07e45bfbcfb6eb9d37ffc5",
+      "/Users/alex/code/vox2/browserjs/worker_environment_host_jsc.c.v": "48791328bd06af2b4e2885a4adf128c6f3aada9abee0993bd0bc89dfe8e2e279",
+      "/Users/alex/code/vox2/browserjs/window_event_handler_compiler_jsc.c.v": "4eab5499c12b9ffa10a1eea2589683a2305a875e5d3f8f0dfc824a2155bd2c9c",
+      "/Users/alex/code/vox2/browserjs/worker_script_fetcher.v": "b05e6b3a42bdf4b08a156568100ad26c8dd77c951ce448a18f8215e387536634",
+      "/Users/alex/code/vox2/browserjs/time_ranges_host_jsc.c.v": "27a97e8b36a262e180ec709364317976eced11d0df33e60caa8655005c96a764",
+      "/Users/alex/code/vox2/browserjs/indexed_db_binding_jsc.c.v": "b23d6939481e51fbff0420e32a0b099d6059a94e2de4ad928a1c952e7239f688",
+      "/Users/alex/code/vox2/browserjs/message_channel_binding_jsc.c.v": "9ab1c4b0cce1b84517b09af08b6ef20dd4cea790398650baf710e93d327ce31b",
+      "/Users/alex/code/vox2/browserjs/custom_element_registry_binding_default.v": "7d407ab8684c27dcf12e2452530daa6f56a35c2e20ec8946aaaff699bd7cd667",
+      "/Users/alex/code/vox2/browserjs/idle_callback_host.v": "ffc96968b793df154703c04576d592550ac70dac1004cb4b5041b6f7cb8b2e1b",
+      "/Users/alex/code/vox2/browserjs/dom_exception_binding.v": "5a221fc4676f938a7fcec67d2cb295360037e11707dcdeec61c03f53d79f7343",
+      "/Users/alex/code/vox2/browserjs/abort_signal_host_jsc.c.v": "0912b3f99830b5a7328cc80254e3912ee9ad5ee9751d780b1cbf1490b2cd82ac",
+      "/Users/alex/code/vox2/browserjs/element_wheel_host_jsc.c.v": "eac2e1ada180b6147ca49130a7859ff1061e61e6a27688e389ae6f02a03ed07b",
+      "/Users/alex/code/vox2/browserjs/resize_observer_binding_jsc.c.v": "1827678b7d0b6302172777966d5dc2c58d41cf2a3b143c13c228127683945c26",
+      "/Users/alex/code/vox2/browserjs/native_stream_wrapper_jsc.c.v": "08c737220449948f4516326ad8d2d9bcaea1255f19231673c5749766d8bc9a72",
+      "/Users/alex/code/vox2/browserjs/window_event_handler_names.v": "a347b67437b0359a13af7ac981f51870eb117147f3d1dc188bc61c73ebd7c70c",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_bootstrap.v": "c87e9ef493c824b13a2ea33dc8698399486816f10d8ed91fbb212c633c53b52c",
+      "/Users/alex/code/vox2/browserjs/read_loop_bytes_jsc.c.v": "be44af4d5be9105d93327e955e3958b4ce1aa597a16c7134ee210da678f47e92",
+      "/Users/alex/code/vox2/browserjs/indexed_db_value_jsc.c.v": "c97951fa661d725fb5cb2d82109f3aee707a4126a9d5c81c1886d9ee7ac79b06",
+      "/Users/alex/code/vox2/browserjs/fetch_host_jsc.c.v": "4fec1c85e5dc5363ca2d670ca61a3a36ae87a0aae953ca25ba5ddb1b76877839",
+      "/Users/alex/code/vox2/browserjs/url_host.v": "8baa9dbedeb262463d9182bc3037c694fa58cfdd0516a58507c3fdd1d76de325",
+      "/Users/alex/code/vox2/browserjs/worker_message_codec.v": "bef2a23fe19feb77a57f7943d9fd6c71ff5a928fb313f31e0e6771c73e1fbcc8",
+      "/Users/alex/code/vox2/browserjs/blob_host_jsc.c.v": "3e8e2d861e81ef8a95a7aca12d9c63ad12264e3eb22bb2b440705ea5448be8ce",
+      "/Users/alex/code/vox2/browserjs/window_self_binding.v": "25370e8945a899859b9979e8c5098fb62010d77a7f0c6056582354bd9fb5f85e",
+      "/Users/alex/code/vox2/browserjs/window_message_binding_default.v": "b1bc19a690803fcabbe7a557aabba5717660b0e905314fde6208fb31de34a4e7",
+      "/Users/alex/code/vox2/browserjs/keyboard_event_binding_jsc.c.v": "8198f6b7eeeb27ddfbdbbe67acdeebb707fbd7dd55fdc5b79bea99e1a1d0bfdc",
+      "/Users/alex/code/vox2/browserjs/navigator_host_jsc.c.v": "b6c17bf99b4f4956bad37675c42934ab93967a9cbb452ca0d71c507db76c08e3",
+      "/Users/alex/code/vox2/browserjs/window_screen_binding_default.v": "6a93bea9d7d2589f7f87786b5decb5e2d4c3c6c3bc8563569cb1957223c8ca7a",
+      "/Users/alex/code/vox2/browserjs/readable_stream_pipe_jsc.c.v": "9af85417a4ca7c8d5acec8448e43fff112be931d9048b9bb3b6c1b3fb0e858bd",
+      "/Users/alex/code/vox2/browserjs/base64_binding_default.v": "ef029157841373f6ec9b2b008120ab4c639a36714e27dd5df04923cd41926327",
+      "/Users/alex/code/vox2/browserjs/animation_frame_host.v": "32ae54c1b8dd6999a0128f89acb5aa4fbdf2c0a9d1fb392e67f71d719678598f",
+      "/Users/alex/code/vox2/browserjs/event_target_binding.v": "e70521207365a04793e9e6bdb64889225d73859f301447c47ade3149e7eca03c",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_buffer_slots.v": "989b444b033c87f0ac7906d7413c0ff2c20c5889f0b7760c9689287427dc6f14",
+      "/Users/alex/code/vox2/browserjs/crypto_export_host_jsc.c.v": "3a2bfc140b72b50c223107969727720358f50f13a3d712675e4b88940149fa75",
+      "/Users/alex/code/vox2/browserjs/canvas_webgl_texture_source.v": "3cc48c15aad60f415a28eafdd4f4e712ab74ba963a5468fca205fe0a1d29e928",
+      "/Users/alex/code/vox2/browserjs/crypto_digest_host_jsc.c.v": "9021708b11af29f3d526c5461b14b11a2bc64a9cc4f77c797a258890811d83fa",
+      "/Users/alex/code/vox2/browserjs/document_event_handler_binding_jsc.c.v": "e2a2e58db7966266e46f5267f9d61242b8a31fa14943516926f5885609d64f76",
+      "/Users/alex/code/vox2/browserjs/window_self_binding_default.v": "7c8e484afaf47c29d06425d8d30b779b937db6140b9fccd75f3ebbb67804581f",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+      "/Users/alex/code/vox2/browserjs/image_host.v": "13667b83f37691bdd107cc29aba3d2bd821f2e275b91151c2278f45896b0477f",
+      "/Users/alex/code/vox2/browserjs/host_value_function.v": "9c848b7e3226b065b26e32b80d68f32289b7829e8f5ab0bce9f91c473684fd2f",
+      "/Users/alex/code/vox2/browserjs/drag_event_binding.v": "cad9392f80f79de99ad154f0ca7fe1b0e32dfa04bb7b6f9d4b00f7415ba117d5",
+      "/Users/alex/code/vox2/browserjs/element_wheel_handler_compiler_jsc.c.v": "40607224e1254e5b4c28bd92fe900905f28e1b182ddec1d23e3dd48785189019",
+      "/Users/alex/code/vox2/browserjs/idle_callback_host_jsc.c.v": "74811d17b24e945798f787b5bb9fde3445dcb39750f002e419d22ebec6e5c611",
+      "/Users/alex/code/vox2/browserjs/object_receiver_call_jsc.c.v": "3ac915957615543a7471fa615597d2a4981ccdc7ba5b7fdc7ae7a91139b0215d",
+      "/Users/alex/code/vox2/browserjs/performance_observer_binding_default.v": "800d2d435e04d37abc51b0d79a4de390e630bc3a90bdd9f4f7aa21ddad28be45",
+      "/Users/alex/code/vox2/browserjs/window_current_event_binding_default.v": "8c53fa27fe97b377c7f36354073069a2921b9de362097459048a53248d39b960",
+      "/Users/alex/code/vox2/browserjs/window_message_binding_jsc.c.v": "7b745922e91e0b3dd995b5ef86565fc25c199360077e6fb77badf84d28e5d5dc",
+      "/Users/alex/code/vox2/browserjs/window_screen_binding.v": "3a2cfa38d0304d19e0966e3840b8b9ad42f188b61c3850edc78b122fb07a7e82",
+      "/Users/alex/code/vox2/browserjs/structured_clone_file_jsc.c.v": "c381071a13dba10963a2ad5bcc6f86a1621fb12f5b2c82632b11e17c0daf7668",
+      "/Users/alex/code/vox2/browserjs/engine_async_completion_binding_jsc.c.v": "3d70f8d15fad03ef5dc7ebcc6d31b8c062be6aaa553a9df49b527e548658c3ee",
+      "/Users/alex/code/vox2/browserjs/mutation_observer_binding.v": "5124696531e21fcfc9d74c8957cf37747561a35969b7b03435565809bfc756b7",
+      "/Users/alex/code/vox2/browserjs/protected_value_index.v": "d76a0c66cdbce2f69a278ce9a079832e2d7ff0327e1f180e3f9618efecc9e69e",
+      "/Users/alex/code/vox2/browserjs/script_element_event_binding_default.v": "e4c2c8b73651f875479fd8070aefa8f6b3161f9ed86a240b9675a90a0195f2cf",
+      "/Users/alex/code/vox2/browserjs/number_host_function.v": "954df50dbb8566c3e0c40d9b33a3828d0d608d70e5ad83647a239abad1873a9a",
+      "/Users/alex/code/vox2/browserjs/temporary_text.v": "cb7754ac7a6f6e57ea3157cf43004714740c31647b8cf2146ccfa2e857a035fa",
+      "/Users/alex/code/vox2/browserjs/track_event_binding_jsc.c.v": "a89e36bb57b14a4465fa5391175fd937c3c3d596477c852f5f6e715b0a612e53",
+      "/Users/alex/code/vox2/browserjs/scroll_promise_binding.v": "813a044e4c9c8c0bde638c92d632ec02a7c12b11315209102ce47089527f6423",
+      "/Users/alex/code/vox2/browserjs/file_list_constructor_jsc.c.v": "6da71694da9c80a69765c2b5b40b9678340e648b5b7f1690a1b362e54846e134",
+      "/Users/alex/code/vox2/css/attribute_bucket_byte_pairs_test.v": "eddb19ebd61753a93202a601e4fdf692caa694ee15904457f7d3694f90e2b3e2",
+      "/Users/alex/code/vox2/css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+      "/Users/alex/code/vox2/css/selector_substring_search_test.v": "7aea744182c43d56d37d48c3167a7690878cc9facb507bf209298dc1fcfd323b",
+      "/Users/alex/code/vox2/css/selector_borrowed_fast_test.v": "ab9d3dac802eff322b0edacfeea0c95aa496ae770c1dc98ac8a84aa904196597",
+      "/Users/alex/code/vox2/css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+      "/Users/alex/code/vox2/css/matching_rule_candidates_test.v": "e65fa419bb5da71a360501f987915d65b5942f9fdd215d53f3192f1bb9a0462e",
+      "/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation_test.v": "2eefca1f02662d39d5d8407454310771cbd705ae4f6e13732af23444ebe66906",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation_test.v": "e5e0aa965fecd5d9d3311d3c81f9b3b63653e45baf69175d3129767a63fe25f2",
+      "/Users/alex/code/vox2/css/style_sheet_list_invalidation_test.v": "0391b903b00359f85d2f360e9b5d4bd9579fafe0589adc6475125f803eb53525",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal_test.v": "0f1056db9ad088b659f47eee39a56ff1c11e4a244bffcdf422440da06ddb1cbb",
+      "/Users/alex/code/vox2/css/pseudo_candidate_direct_test.v": "8f73089f5ffcc339715112982ce75d98f8be2a67f9cb0b7257ad8558c766aa11",
+      "/Users/alex/code/vox2/css/sparse_rule_bucket_test.v": "e7ce165cd3638f84462cc957a86cd6bee9e83bcd4dbd0fa7ab7ac92c34c61348",
+      "/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v": "bb119766bb691b1324850e6403e65da2f70458c55e4f11722f4f03561bcf85ae",
+      "/Users/alex/code/vox2/css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+      "/Users/alex/code/vox2/css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+      "/Users/alex/code/vox2/css/computed_property_store.v": "bc0a4f81b805a571559c126d74e9a5cfb97b921f1653e0fe903d898474bb8bae",
+      "/Users/alex/code/vox2/css/style_computer.v": "fc5ddf809b9bb71351ce048085d03c9ba36a5a93e679f470277c9085218e5f7a",
+      "/Users/alex/code/vox2/css/affine_rounding.c.v": "c95d48c2e09fe1a653a77d8b29970cb86d908eb985728a026ee86f73b3c12e8c",
+      "/Users/alex/code/vox2/css/size_query_result_reuse.v": "a67212a3c9ca2d6b2283eb693a635f577735b2db58265c1c0172e108a7e0cc07",
+      "/Users/alex/code/vox2/css/style_values_core.v": "44fbd2e5e6bf2dc31e9133c969f2dbbd015767e079a8b2c9d92d41400a766f5c",
+      "/Users/alex/code/vox2/css/independent_dom_query.v": "0aae0c9e33142464b3b9544c71bb66a0dafe8cf5cb5c453364d189974f7206d4",
+      "/Users/alex/code/vox2/css/deleted_style_rule_invalidation.v": "9b95ca887669453339645e9c29db9cd23f187fca5f7b3782612b0678b1bdd313",
+      "/Users/alex/code/vox2/css/matching_rule_set_workspace.v": "8fba0d7c0c73ada93c7a613b05c06293a564435f94a634cf03671f2e92ca2a94",
+      "/Users/alex/code/vox2/css/empty_media_query_lists.v": "3f4ffd5ecf7a6cb5647c67811861a1104c35eee6b3ef7863466631c2ceefdbb8",
+      "/Users/alex/code/vox2/css/computed_geometry_provenance.v": "4ae5c8bf532d44928709b995628ad4ee5675f057f35c91f1e6d0f9f298b72e7d",
+      "/Users/alex/code/vox2/css/transformation_value_export.v": "ea6c17b30f12dbb0c62ff098e52a61f23b4c35d2c714b371b6f816f22bee0cdf",
+      "/Users/alex/code/vox2/css/substitution_workspace.v": "fcb212da8f2f6c22036ca48882e1b61a6a9f1e9be8baa1aeabb5962ebe6cce33",
+      "/Users/alex/code/vox2/css/cascade_entry_updates.v": "b95cbf886692c45098f9f2af479c282bb3e50c7e995f3a48784aeeae3bc381fa",
+      "/Users/alex/code/vox2/css/rule_selector_reuse.v": "bafd56a9c5d38bb3f0493e1137894228d2ca06d9b75dd65eba6ecaf1e4058d50",
+      "/Users/alex/code/vox2/css/numeric_dimension_diagnostics.v": "408873fb689ca99738f263bc4c84a24d300160246f59b9c596fd13d4b27f5ced",
+      "/Users/alex/code/vox2/css/font_input_refresh.v": "d908e3a6b1bc7af38e80e6a3b5a6ceba4ab6a1efd8373341a32f36ba2d1adf57",
+      "/Users/alex/code/vox2/css/coordinating_value_queries.v": "ca2640becb9dcc7a0a0d99a30c36241e6ac5322966a1c390af379a5196694bde",
+      "/Users/alex/code/vox2/css/animation_samples.v": "6e186a4396b292b5443754d4fb1db05cfea04d045318891dc098161cd8d6a749",
+      "/Users/alex/code/vox2/css/custom_property_environment_equivalence.v": "ca3e1b8d342fef3f9a3ba47eef31f4744ed6e78cb8d3ec559b08a377fc4cac03",
+      "/Users/alex/code/vox2/css/chromium_input_placeholder.v": "61fd021351aebb08b724236bea0f5403798d643ba55723689a23441a08cd74f8",
+      "/Users/alex/code/vox2/css/function_rules.v": "e72f054058876fe074a52c3e55f57134ebc46976dff11139cb36e51b516d0958",
+      "/Users/alex/code/vox2/css/media_feature.v": "b2e037bc896ac5f72b2f47c763098fbf850a01469ec088e8e843d7d818364a17",
+      "/Users/alex/code/vox2/css/computed_property_invalidation.v": "026728dd35fb45712ab4339e176a7980abe1713b86213e76b86d138054ea2d6a",
+      "/Users/alex/code/vox2/css/property_shorthand_metadata.v": "4f258dae29c441413d73bb1dfbf965d34dd960b185789754690d7dae438dfc59",
+      "/Users/alex/code/vox2/css/ancestor_hash_cache.v": "9b9f534645e69b32638cd056cdb601a0174cd676437b6587e1672e87780d4c78",
+      "/Users/alex/code/vox2/css/url_system.v": "edcf6e5261c9f50ff454818ce22b1479b6845a6d4541ca3e72ac6568e0398f22",
+      "/Users/alex/code/vox2/css/dom_query.v": "58299552cbf5266fdf7185d6bad29d436225368820f5296715c72600f9b6baf6",
+      "/Users/alex/code/vox2/css/arena_diagnostics.v": "7e0e58b8c18d11797f50434eaf81780d619c56fbac20e560f802ceefbffc0453",
+      "/Users/alex/code/vox2/css/property_calculation_metadata.v": "27944ee2c06a3d4744327c73856441f625f6d8bf6025fef748be2380829bb5ba",
+      "/Users/alex/code/vox2/css/missing_style_query.v": "0cfa57a10903cf1368401d44fc04c28566b317f3c8505b6ed93c136541e8966f",
+      "/Users/alex/code/vox2/css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523",
+      "/Users/alex/code/vox2/css/length_percentage_storage.v": "b066c8292122074091e9bf140a6e868c958d39e38c179114766d0911febd6f11",
+      "/Users/alex/code/vox2/css/adopted_style_sheets.v": "7e4f0f0b49eb7965b5486995806dd7945ab0c05d99e0edfd33f835c9dad1c162",
+      "/Users/alex/code/vox2/css/deferred_declarations.v": "1327c1ad6528b8ee480f75265876022e1dc72b7275692dfe97a37a04e8942d38",
+      "/Users/alex/code/vox2/css/font_key_scratch.v": "1424dcaf14bb14864eb911945fd998df2294fb2008fe10e00e09020d54f445fd",
+      "/Users/alex/code/vox2/css/cssom_rules.v": "94ba4849d80c370ec09cece8e7fa10247a366875943e64296293959da423605f",
+      "/Users/alex/code/vox2/css/browser_font_rendering.v": "d4f39d91bbf3d95a267dde9ccc31833c7ec7afdad4956829c05aa8d7540b37ba",
+      "/Users/alex/code/vox2/css/computed_interpolation.v": "9874305ebbe56c574710a4e9d3eba4315799f47dc6bee115dad1239cd823e016",
+      "/Users/alex/code/vox2/css/inline_style.v": "fae64354571f4a3ad93cfb9721177c139a120a024a8fb5d493cc6ebeba47a504",
+      "/Users/alex/code/vox2/css/matrix_multiply.v": "ad1989c96cc18ceafe7bdb42e376f880e92910eed6372e284675ece7e4443456",
+      "/Users/alex/code/vox2/css/user_style_change_invalidation.v": "24a031fd2510a2e915a6baed079e3b1cb7c678543151047e58c20ee4f9e70447",
+      "/Users/alex/code/vox2/css/simple_selector_storage.v": "44b17b204230281bcb09586f80a6c5140fb53aad8ec60aadb27b1865a0a5edc8",
+      "/Users/alex/code/vox2/css/font_input_scratch.v": "d2a7972fd54cc2fe25d3e7a047fb86ef37c9b642673ad336d493e758ce9f4161",
+      "/Users/alex/code/vox2/css/recursive_value_storage.v": "067562dcddff196825872f846db12c91ecc52cc1758e04e370949c21cca0387d",
+      "/Users/alex/code/vox2/css/keyframe_scalar_values.v": "245a0d9e8e0746021ebadfd0b59a6cbebaac4a8efe7f5d3d284188c4bd31b6d5",
+      "/Users/alex/code/vox2/css/idle_computation_pages.v": "3beb015d230ca46d330830c456eb12ec8bec62f74686dfd90fa5277e3aabcc8b",
+      "/Users/alex/code/vox2/css/native_font_variations.v": "80280abaf49bb9048df71bb8ce0d2adc04431f8f411fb45803c0558da952d225",
+      "/Users/alex/code/vox2/css/attribute_tag_bucket.v": "fa6c6862a7908676dbd583d8a43fce55653b8cdb5397d64977627503b9956e35",
+      "/Users/alex/code/vox2/css/invalidation_plan_union.v": "b3d5f9226ffc572a1b8daff30b92d8ec9f5e6e748054ef51f0e43060f674ccbc",
+      "/Users/alex/code/vox2/css/computed_layout_rare_data.v": "784a18d9fdb73a9bec4425c1fbf87bf8b3c32187966a617faa4e2f3725f5e787",
+      "/Users/alex/code/vox2/css/resolved_scalar_computation.v": "b1ec3f5f4ad3e4249d1dfeb8726dbad76388f7469ef5661adae096daf5bb2222",
+      "/Users/alex/code/vox2/css/font_variation_axis_storage.v": "4d9d65efc81bddd1431d4beecba4462201cc926079ab25b5d37f4e679ff594ab",
+      "/Users/alex/code/vox2/css/animation_sample_batch.v": "f81a87cefb3cb6046b00f2e41aef275f2861d4879984e745cf23c42a84ece380",
+      "/Users/alex/code/vox2/css/font_loading.v": "94ca8832aabd7875f10060f66e0394874a3f83ecd8799cb4ec181683e9118e46",
+      "/Users/alex/code/vox2/css/container_query_invalidator.v": "eb05f492def53a30ff2b725c14cac81accdf5aeaa17836cf3bae8d10626ff889",
+      "/Users/alex/code/vox2/css/component_input_lookahead.v": "0e8ac87f6073473c8072b27f80ae73509eb1aa91a4e31cc59dbdd1c4c6d230b4",
+      "/Users/alex/code/vox2/css/dom_css_bridge.v": "b0e266268d98ea7d8be4dec091f38bff9a91411ad0116d9a2ccd5abd190cfd21",
+      "/Users/alex/code/vox2/css/parser_value_logic.v": "d6d90e70a26b52d0cccd5971bec24898ef728c1281f1b0bb9325cf9436eae275",
+      "/Users/alex/code/vox2/css/user_agent_style_cache_templates.v": "8193a74b610e3c5588ca4b4b8b4ef6374a411a2e2465011e432bb719aaf95c0c",
+      "/Users/alex/code/vox2/css/css.v": "e43b5bb623dc8213bb142e9f2ad10a7f697be0126541c1367b36fe285112fd28",
+      "/Users/alex/code/vox2/css/css_rule_kind_storage.v": "12fad56f2add1fee8daf8f30324b8801bba02c6fab01637b75203ceb44e58451",
+      "/Users/alex/code/vox2/css/conditional_style_sheet_invalidation.v": "760925f9164addd299cacf1b8e8d3a121151a5d9691ff898413cef34b3493bf1",
+      "/Users/alex/code/vox2/css/identical_layout_inputs.v": "4acb8867892740700cee2956e25df612db5cf7adc482e88cd65d22b8790d6984",
+      "/Users/alex/code/vox2/css/custom_function_scope.v": "231d04c3971163146d49136debe0012a615cfee30dd20c9b61a00907ccfbadeb",
+      "/Users/alex/code/vox2/css/parser_helpers.v": "0fe38041b586b11c954d0c9fc375868d5ef8629ddcde7d3aa4098f9561077a1d",
+      "/Users/alex/code/vox2/css/unparsed_values.v": "51c47c7981134aef6fbb95802037e2a056923a333e7dbd409daa9cad890c12ef",
+      "/Users/alex/code/vox2/css/browser_line_height.v": "fb49588993de3f750a99cb9e4800b72790a644f7600f010cb4e98114484cb0cb",
+      "/Users/alex/code/vox2/css/device_layout_scale_only.v": "f874712305df80d65ff140b3144e7182ab8e268a7685497d53b4ed6a7a6e6f60",
+      "/Users/alex/code/vox2/css/animated_property_change_scan.v": "6942c792d8618d2a1d9fb0b8224c2ce48ed78089a28b6bf64074b04279bc6b19",
+      "/Users/alex/code/vox2/css/hyphens.v": "78c4405662b9d803c2160933016168ed4eb596b22aa89f1d92353cf93ce384d9",
+      "/Users/alex/code/vox2/css/events_misc.v": "4035028042354c5968dae946ff953002e5997fa91a6e432e5523c81408896eee",
+      "/Users/alex/code/vox2/css/longhand_parent_hash_hints.v": "987f86a979059595b4fb525b20e6b871026832390776ad85d8cefd0676011eba",
+      "/Users/alex/code/vox2/css/grid_values.v": "c20661491b8b943ef1bd8636000f21d02baac553aba2e89f4b91bdbe623436c9",
+      "/Users/alex/code/vox2/css/gradient_color_interpolation.v": "705d728a6c63816c0daeaa718fb3cfd32e77af4758656a5c347eed4c7bb7a8fd",
+      "/Users/alex/code/vox2/css/layout_inheritance_proof.v": "dcae154829c47f77025c10bc568fba3edc65d9822d7ffcd8bc16c95973d0725f",
+      "/Users/alex/code/vox2/css/scalar_style_value_equality.v": "891a9dca6c35be58140d2cc078e05ad1c2f69b7e64edfa0c0fec2123506520ad",
+      "/Users/alex/code/vox2/css/computed_font_inputs.v": "696578c596fc407b0e78e44f3536eafd41fc34618f3a3dc659c80088a05188e8",
+      "/Users/alex/code/vox2/css/typed_om_math.v": "760b63683f74ac3c7a61d7a0b2f6ca0ff602757308c219d36ef5c7a373a7d01d",
+      "/Users/alex/code/vox2/css/stylesheet_token_scratch.v": "3c13695b9dc761784004b2d1fbf9bc5a340e845650ca85aed0183d5ce528422a",
+      "/Users/alex/code/vox2/css/resource_url_candidates.v": "3a8d07ac6b7a227e2fe0264e1a3f2b353c46d585f0e12fbb3979778e0e50e0da",
+      "/Users/alex/code/vox2/css/selector_parse_workspace.v": "28393f9fcc5f7901e513994eb5c11dc71befbb6116308b714787c7c1156cbb33",
+      "/Users/alex/code/vox2/css/layout_input_diagnostics.v": "6fc89a5df59a17c8467cbbdd6fe6d4ee817042e473e8d7c73b6fc7bda38a5b25",
+      "/Users/alex/code/vox2/css/color_interpolation.v": "449089f181bbb7744a1b71fc2d5110ee4fb58b7fb8c951074b47bf0f78031a8b",
+      "/Users/alex/code/vox2/css/user_agent_stylesheet.v": "42e12fad481abf83c87b898ef95ba2a3db7cdd0d18c8e7127c45e8acf3dfb3b3",
+      "/Users/alex/code/vox2/css/content_counter_styles.v": "1102db7dd2e2548259ecfa4873d0a6c5faded94cd84e929adc8bef2b0322a683",
+      "/Users/alex/code/vox2/css/view_transition_style_sheet.v": "ee0c8da402c420d1bedb4b896fbf4ec73a37effd8e318f750c74562dc2a3d0b1",
+      "/Users/alex/code/vox2/css/media_feature_lookup.v": "81f14a54aed960dafdda9707858439d78b4d183a7b08493dd9be0a6216cd7433",
+      "/Users/alex/code/vox2/css/transforms.v": "d13cfcaf743debbbc52fab664f4bb0f458b62e7dcb5a9b27b53a63d380671e00",
+      "/Users/alex/code/vox2/css/ancestor_filter.v": "0af52b3e60ae956bd6031322af42c13ae094dd30f80439187f2e6e5af7bb7d0d",
+      "/Users/alex/code/vox2/css/animation_sample_page_scan.v": "df27e12b9e4d9582df4c66a97331ec8de14b8c635c12fc0f984539d4dcbab3fc",
+      "/Users/alex/code/vox2/css/text_box.v": "3f7b97398dbad7a397916d85124f976449f90a6ee81e39a015109cc69e909529",
+      "/Users/alex/code/vox2/css/repeated_rule_matching.v": "85c930f99a0366a239d745509111f9fa53537da99165955b3c4af2e4d561a8d8",
+      "/Users/alex/code/vox2/css/more_style_values.v": "faea166b244204a8c424ed2274be4995e15962c8b3e3528f8d9357170112a915",
+      "/Users/alex/code/vox2/css/style_declarations.v": "f4324f466e991babac1d86235a6fdac8ace62167172622224faa6870c09f3d54",
+      "/Users/alex/code/vox2/css/internal_font_settings.v": "5d535af68b03c754d8ade02d5b8fa5dc4c37b9f499a5e84eaa215208e224868d",
+      "/Users/alex/code/vox2/css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "/Users/alex/code/vox2/css/parser_stream_eof.v": "8da778d576b60050944709586f1da264cb536e2b5f52cb15fcdee266555adf5e",
+      "/Users/alex/code/vox2/css/calculated_or.v": "a801028e399b52e18feae452989e61b3add3ed5503cae9ac0e5a19139e825f5a",
+      "/Users/alex/code/vox2/css/initial_layout_snapshots.v": "cb4778edfe9ec29fe877f610cd8cff53a62cbf8135a743b415f0ff4162f3241c",
+      "/Users/alex/code/vox2/css/corner_shape_parameters.v": "a8131978022bbda5bf42bf16e8583d65c9a2cbb45060f189b2ab47d1d7e32de2",
+      "/Users/alex/code/vox2/css/chromium_paint_color.v": "5d9981a03716618171a5d675ebcbb76a48dc0f144ba2df5ba7077b788e914b87",
+      "/Users/alex/code/vox2/css/animation_range.v": "b09de0eefbe84ab41fed0c1706ba5a642d520ecf73d801967f6a46882693948a",
+      "/Users/alex/code/vox2/css/calc_term_fold.v": "66ffda85ab278f4cd7bc0bee63361ee62d67db5ef2b2e36fb35fc34733f5cf49",
+      "/Users/alex/code/vox2/css/value_type_color.v": "625bb639b2a7b8e1562c1ed2c195980df531fbd28a11ec61879a8b51adef2885",
+      "/Users/alex/code/vox2/css/calculated_value_export.v": "55df95aa546e92552afb188a1d0d951f321877f681c75b88c67957647723c96d",
+      "/Users/alex/code/vox2/css/stylesheet_conversion_workspace.v": "e83dafef36464154ea461bef5933f28f48a3acaa6068e1df184f1f5626f66c40",
+      "/Users/alex/code/vox2/css/compositor_animation.v": "aadbbd822fb0ee4a43a04ff9b310dd8b19ef8865d3f247af8bdd7a841148ac3a",
+      "/Users/alex/code/vox2/css/scroll_animation_source.v": "fe9ed61e5f2deb4fd4dcd61b1cc277022dd138630c233be2f23d8ad327ac1d03",
+      "/Users/alex/code/vox2/css/browser_font_size_keywords.v": "61e293b1f3405028f05359451f7514fa2f751e4b7d9e4476ada19f36ed523b34",
+      "/Users/alex/code/vox2/css/exact_layout_lengths.v": "3c67405207fefe8b1cd51e56b8d2fd0b54f04df0d741fdefdd3be21bf51737a7",
+      "/Users/alex/code/vox2/css/fetch_css_api.v": "76a8cd31930f14d6214d28602a15ec8ecfbdb25fbdec3a0312dfd8d72c7b29bd",
+      "/Users/alex/code/vox2/css/properties_data.v": "c9d12f73e4f74454620de69c73e986f260142afd91e2d78205c0286b59844c08",
+      "/Users/alex/code/vox2/css/media_query_compatibility.v": "b638091a97037bdeeb8c591782c0f30ef310a09110cb7e139fdf042ab57a94f8",
+      "/Users/alex/code/vox2/css/media_evaluation_candidates.v": "8f36a1169059a41c4dfa92796a56e8c9125b7504e6f0f80089ef12e844abc359",
+      "/Users/alex/code/vox2/css/ancestor_filter_visits.v": "90b71cd3a267b60cee3e608dfe165a365828cf4507537ef16a46b73afea723d6",
+      "/Users/alex/code/vox2/css/custom_function_evaluation.v": "ea8c1e18871493f1deda999ca5fecea50a39e29891cf7f43fce0af847d25b7e4",
+      "/Users/alex/code/vox2/css/syntax_highlighter.v": "ff8e74b099a08e67c6adf571e0d8dab4a6ffb4541f6e4cd8cf5f6c8ad92638b5",
+      "/Users/alex/code/vox2/css/value_parse_export.v": "50fd3b41dce0d9731500139eb3a954c5f9eb9f4fec7070998790b4a26f25b89e",
+      "/Users/alex/code/vox2/css/cssom_declaration_builder.v": "cd278d46a170b006bc4974d9cae415df5e64d310a87e5f036963145fa3c6eb7e",
+      "/Users/alex/code/vox2/css/font_synthesis.v": "998c3052bb68b96a6366f283932100400fed3e7eb50506639fdfdb1deecb5396",
+      "/Users/alex/code/vox2/css/cascade_value_borrow.v": "ca381fb7b495910b37110e61b8b4a305e375ed1a987929fca298509339a918dc",
+      "/Users/alex/code/vox2/css/calc_parsing.v": "c5292941f3099c7b29adb3f93dece2cf1fe6cd1092253b010ec6d7b960892b50",
+      "/Users/alex/code/vox2/css/computed_longhand_shapes.v": "e1abe5fb18a6e49b7d71ce8205bd03bfeed00dd5cf1e25ba31940be222c7eae1",
+      "/Users/alex/code/vox2/css/primitives_extra.v": "d12e9357c40102b2eca8cf3aa65104dfdea8f93484a970e8d1bea9f7505c4a29",
+      "/Users/alex/code/vox2/css/cssom_events_extra.v": "6e7b5da676a7960b892e03dfe6c4004372de1d9743f7e289daf96b169b156939",
+      "/Users/alex/code/vox2/css/container_rule.v": "3ae93396d07d3bb106b3221a391f45d21fe04bcb6882dbef4ea0bdbc82ef8760",
+      "/Users/alex/code/vox2/css/computed_property_page_semantics.v": "29b317dff7ee0d1daa12a256013d34b34299da5e61b307f07a104a026b0083ec",
+      "/Users/alex/code/vox2/css/computed_color.v": "92da812fe066e9847884078eb3e0d90e810ef8cf2e71351a6ac7481d4e2423f8",
+      "/Users/alex/code/vox2/css/deferred_hidden_styles.v": "d7eb75ff09f307078c2c73451b4801cbf60a87226aaeca1873dde547458e6b1a",
+      "/Users/alex/code/vox2/css/image_color_values.v": "9aca3162653ee6fca102f021cfb51581102548a0169faf61b0598889fb8f9c3c",
+      "/Users/alex/code/vox2/css/boolean_expressions.v": "44aadf051714c84cc7c1362168095474a9c5993e79aad22b72609cb258bb1a9a",
+      "/Users/alex/code/vox2/css/legacy_font_size.v": "21f8c063c003dbc29356af48ae9ca4793d0e96090cf9ced05453cf6bd4cc82d4",
+      "/Users/alex/code/vox2/css/keyframe_property_union.v": "6966cfa9fc755e23d4786a4483e5e21a7a932e96f7185086748c17903545c571",
+      "/Users/alex/code/vox2/css/screen_animation.v": "078e551dbc718f95b99b00b971f2f5f5f90da140ef0eb146d0c5a2c4e6a6973e",
+      "/Users/alex/code/vox2/css/parser_core.v": "0bdedd5cc0f0919f6a87328b359194b2ea4006cf7738f364b95a77c63ada8cb6",
+      "/Users/alex/code/vox2/css/static_user_style_filter.v": "3bfe579bd6c322e08e27248491cd7e5c3bf072d6e2aa52a5b0e6e7a603f930f3",
+      "/Users/alex/code/vox2/css/chromium_selector_alias.v": "c515039fa6aa6751a888c894a1fcac23eefc646f9b436b944d17fd74bcb76fd4",
+      "/Users/alex/code/vox2/css/pixel_units.v": "9206202a55f9f62a7d5386693ac8114581b7d8c46939ff2e1c21b13aa3a17033",
+      "/Users/alex/code/vox2/css/anonymous_computed_geometry.v": "e05b7c3ca1ebae4276487a8da1b19f8a0c47077f4a51324425f92450506eab92",
+      "/Users/alex/code/vox2/css/device_layout_property_pages.v": "a376fd0151646f614258bdf4882cd22e3aced3dca64ef8ff8aa325703cce5a38",
+      "/Users/alex/code/vox2/css/length_unit_lookup.v": "c18c31fd26948c949f60e4520bd028ac1469397bce58719f4e878f55b98b912d",
+      "/Users/alex/code/vox2/css/background_resource_urls.v": "0e4728e874d635df2ac754fc20b54988986ed6aa75307ae5c4d1c427e8dcf631",
+      "/Users/alex/code/vox2/css/matching_rule_candidates.v": "20e8b4c3e7c8916f98d1ebf8c30e78e908641396d6c1055a1eca9dd2537f4fd2",
+      "/Users/alex/code/vox2/css/font_face_values.v": "b73958563c204f70811d90c7bc412ca35c4c04d4b5010f1c975b10c33a2a17d0",
+      "/Users/alex/code/vox2/css/explicit_parent_longhand_inputs.v": "506ee9fbf0e22dfa208c458b0e7f3561fdb0b0ff4bb8103fd74561832f5363b3",
+      "/Users/alex/code/vox2/css/selector_input_workspace.v": "c542c08636aef57f80dbcc568963ecd042a82672c32190d028da6253e826a455",
+      "/Users/alex/code/vox2/css/device_layout_style.v": "99b4d8c3c2c20368c9d8f160218f5ce43c56d332d41663067bcc1abbc8500824",
+      "/Users/alex/code/vox2/css/animation_rendering_demand.v": "f2462c23322625b47278bf8c8b0a0f62a7ce8ca462844acbb24f2b0879edb677",
+      "/Users/alex/code/vox2/css/font_loading_tasks.v": "29df8a2fac19c2c8640020fa5653cef5fe1fadefaa4605c434ddbef42aab84f9",
+      "/Users/alex/code/vox2/css/unchanged_has_invalidation.v": "e2e3ae74d39b00db0c6fc4b4a75c7d01790530db217d897ee6da1d8067287923",
+      "/Users/alex/code/vox2/css/style_values_extra.v": "bc32692db401ccb6a8c75081562748371b8c77fe1147e7939f51a4b9b62ca7ce",
+      "/Users/alex/code/vox2/css/pixel_rounding.c.v": "daca593bfef469ad067c8f635868605094185f0936c0f427b036545923ecbe42",
+      "/Users/alex/code/vox2/css/descriptors.v": "623ed5b51b1d3ee288ca330b5b6c283586e43d60f8ef9da301498d3d29e6469a",
+      "/Users/alex/code/vox2/css/selector_substring_scan.v": "daef59b7bd615b0b608848790e3b8d4d5e8353865e73ea4bf69d14a17f36419f",
+      "/Users/alex/code/vox2/css/layout_viewport_overrides.v": "ec82701fab489ca9f1d27108684a9c6e0d6ee301228d5d1cc2028dc4e44c3aae",
+      "/Users/alex/code/vox2/css/marker_counter_styles.v": "fa7d17263884493e9b75dc92212913200265f389995e2f647c4d1da87b6098c1",
+      "/Users/alex/code/vox2/css/generated_content_storage.v": "b89f05488b8f6449d84e6724a53cfdeeacf9b9b7034eef03622dfa0cda91563d",
+      "/Users/alex/code/vox2/css/media_unconditional_groups.v": "bd9948012e657fb84f41a56336a9c76ee70784a2c82051146d494133e90a92ad",
+      "/Users/alex/code/vox2/css/instruction_diagnostics.v": "e0ca2aceb34e48f3d96e14a901f60f35f97ab943da3c496c8f534455e05b3bee",
+      "/Users/alex/code/vox2/css/ua_only_shadow_style_cache.v": "f00280a7ca2fe246fd4120dc3e50f3a276fce280af5879e44a1d133454ab307a",
+      "/Users/alex/code/vox2/css/counter_values.v": "4feb8cdb8c2b3efd1d32894fa7d2c74d010036a272e337fb3729b7e31ff39ed9",
+      "/Users/alex/code/vox2/css/computed_longhand_reuse.v": "1493e570fc53d8503ddeb1e2ba1aab7729682cac5130001478fb94873523df26",
+      "/Users/alex/code/vox2/css/selector_invalidation_workspace.v": "64a417ad32b327258a1b286f5ca0b92124e170a3d8589a9814e772d23af80fd2",
+      "/Users/alex/code/vox2/css/animation_ancestor_filter.v": "84cb7f26ea754169b75283e21265f6b18e2f4a47ea1894ef18bf06f9114391a8",
+      "/Users/alex/code/vox2/css/inherited_property_iterator.v": "3f7ed2647f2c92d112c5bf3376aec42d815906098d9f5bd9fe5ea47fe3a911ae",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator.v": "5dacf8b57cdac2696e8fbf130430987c435d16a388f0948607ed8db01181b672",
+      "/Users/alex/code/vox2/css/value_token_workspace.v": "b17c069d194fa5a66d1ef797a6337c923aace954d9f562949a5a52f5fea2f226",
+      "/Users/alex/code/vox2/css/svg_presentation_path.v": "3e65965953d2c773bbe551130e91de5c0ae2d871567944fcefcadfe0eafea826",
+      "/Users/alex/code/vox2/css/computed_property_storage.v": "8e9cb931cc700f35a6aebe902c4f017d2da34a9a728badee4946b6ce563588e9",
+      "/Users/alex/code/vox2/css/parser_syntax_helpers.v": "546fcfe17ebfde86cdb9d338c304e7706fd14dedcbd11c2debac02f24da38dbc",
+      "/Users/alex/code/vox2/css/native_document_retirement.v": "d6439ff9583b9e765acc23b1684195d4f753e36e6a5b1cb7f3b64e2a65719f43",
+      "/Users/alex/code/vox2/css/static_animation_names.v": "9c891a17511678dcad1ab2c59c9c85efc01eee230bdf64b67b0a278ff013ea82",
+      "/Users/alex/code/vox2/css/stylesheet_rule_scratch.v": "51d087fb84d56498fe1b5a65cc9865f7a7a02936f646af8e6ecbe6db251104a7",
+      "/Users/alex/code/vox2/css/calc_resolve.v": "6064b9d880048b6aaf2c2c797d56e924c8973a6605e07af5419f3ecb1ab333b8",
+      "/Users/alex/code/vox2/css/counter_resolution_workspace.v": "bdc307270a7d9eacd6ed1543d95d2369b7de37387e53f82586dfc50ace192c07",
+      "/Users/alex/code/vox2/css/calc_simplify.v": "59dcd6e52cd81fd2631b186fa0a03f4a7990f2687d19c1dc3b8d3187aa5eacd1",
+      "/Users/alex/code/vox2/css/borrowed_invalidation_values.v": "daf5c2fcf5481fd873269574538e0c33d4b7e9221979bcc16bb4b40b32d6f7e6",
+      "/Users/alex/code/vox2/css/selector_rule_font_sync.v": "d4347ecbe5562503f6151a21c78807cb9b946f3ceefb3f1bc0f461d2f5dafe0f",
+      "/Users/alex/code/vox2/css/parser_rules_selectors.v": "e050312f1cb57f16f4b451a3f037ec7745ce8cb1ca812c288c4e030aca181592",
+      "/Users/alex/code/vox2/css/computed_longhand_eligibility.v": "6d51d024f1bd90dc576c228fcb494fa8ba4cb26dce26e446607fe800d2c76cd8",
+      "/Users/alex/code/vox2/css/misc_values.v": "90a903522e5918d58d7a1cbd310df218686df1c103a2dc7dd3955a2d5c60d964",
+      "/Users/alex/code/vox2/css/substitution_leaf_validation.v": "3da7ca7229b722d85fe522f06f7be8ba4a37debdd33297a44767bae91c57ac70",
+      "/Users/alex/code/vox2/css/cascade_scratch.v": "bb5bc0222c50a8a256f7e215d58d53d797bfdc61077f63d6474e9759629c52a3",
+      "/Users/alex/code/vox2/css/scalar_font_computation.v": "e45db69e60d3e236d23c6cd5ac9bf05c67390e1694b22991ab26cd933177e27f",
+      "/Users/alex/code/vox2/css/stylesheet_syntax_cache.v": "c6631527ae7be3d58e38ff6310ce3b4456615810fde8cf85822b9f0673970334",
+      "/Users/alex/code/vox2/css/media_queries.v": "eae99a032cbb1da56f3dbf05689dba54dad7eeb8ad760093cb19525925fbe04c",
+      "/Users/alex/code/vox2/css/font_fetch_transport.v": "b20afc40150442aa8f9a4956df2f08c9ebaf7d1dbca9947567261c99a49c0440",
+      "/Users/alex/code/vox2/css/absolute_font_size_computation.v": "d8f221d71759f923793ab3c7616a01c32fb5648ff6a4b6d7f7e8ea3b1c3b5dbf",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer_test.v": "2cc6ec91c0a81b5823054f563b5043507996b2d4f9afe934b424c16b72b448f6",
+      "/Users/alex/code/vox2/browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7"
+    },
+    "fresh_case_executions": 1916,
+    "fresh_passes": 1902,
+    "fresh_baseline_failures": 14,
+    "carried_browser_js_executions": 0,
+    "total_case_executions": 1916,
+    "total_passes": 1902,
+    "total_baseline_failures": 14,
+    "qualification": "Fresh layout560/main74/CSS110/browserJS15 cases in default and no-GC modes. Main/CSS repeat candidate and original bidi scan control arms;browserJS repeats existing keyword-free lexer arms.Five new bidi cases extend the previous754-case set; all source pins current,actual test-main calls/enteredcase bodies verified. No carry of older executions/full-suite pass/cadence reset. Every baseline failure retained.",
+    "unix": 1793927703.915614,
+    "all_actual_guard_exits_verified": [
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/default-all.guard.json",
+        "exit": 1
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-95.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-111.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-23.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-14.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-41.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-76.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-89.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-98.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-67.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-50.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-32.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-6.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-100.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-84.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-19.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-55.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-62.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-37.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-49.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-3.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-81.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-105.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-90.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-58.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-108.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-11.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-26.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-73.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-44.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-16.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-21.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-74.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-43.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-9.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-68.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-97.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-4.guard.json",
+        "exit": 1
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-102.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-86.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-79.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-52.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-65.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-30.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-29.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-1.guard.json",
+        "exit": 1
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-83.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-107.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/default-compile.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-60.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-57.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-35.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-24.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-13.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-46.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-71.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-92.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-38.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-54.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-63.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-36.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-2.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-104.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-80.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-48.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-59.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-91.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-10.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-27.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-72.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-45.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-109.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-110.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-94.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-88.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-22.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-15.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-40.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-77.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-66.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-51.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-33.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-99.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-18.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-7.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-85.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-101.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-0.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-106.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-82.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-28.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-61.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-56.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-34.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-25.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-12.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-47.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-70.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-39.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-93.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-compile.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-8.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-17.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-20.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-75.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-42.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-96.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-69.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-78.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-5.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-87.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-103.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-53.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-64.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-layout/none-31.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-main/default-control.guard.json",
+        "exit": 1
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-main/default-compile.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-main/none-candidate.guard.json",
+        "exit": 1
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-main/none-control.guard.json",
+        "exit": 1
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-main/default-candidate.guard.json",
+        "exit": 1
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-main/none-compile.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-css/default-control.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-css/default-compile.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-css/none-candidate.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-css/none-control.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-css/default-candidate.guard.json",
+        "exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-text-bidi-cache-20261106-0700/broad-css/none-compile.guard.json",
+        "exit": 0
+      }
+    ]
+  },
+  "archives": [
+    {
+      "path": "docs/performance/raw/bbc-text-bidi-classification-cohort127-20261106.tar.gz",
+      "bytes": 39087963,
+      "sha256": "339f38414247625fb987d058ea1466e164723c8dea99f8e3e347b7fd5d5e087c",
+      "physical_members": 265,
+      "file_paths": 338,
+      "all_file_paths_verified": true
+    },
+    {
+      "path": "docs/performance/raw/bbc-text-bidi-classification-broad-20261106.tar.gz",
+      "bytes": 37804460,
+      "sha256": "eda3591ce25ec278b9a2022afeb2cb7394c019cb269db329849a46c18c065264",
+      "physical_members": 447,
+      "file_paths": 447,
+      "all_file_paths_verified": true
+    }
+  ],
+  "qualifications": "Same literal V-prod single-C executable in Vox/control, only original rendered-text bidi scanner restored in control. Candidate-only actual non-ASCII reuse before PNG is proved separately. Normal native exits and all original audits pass in both native arms; all14 unprofiled Vox/control captures pass. No robust saving: conservative control ratio1.018640327 fails. Full seven-trial Brave statistics remain null; no unavailable counter is replaced or discarded. Known measured Brave bounds alone make the strict gate impossible, without supplying a passing/complete comparison. Earlier parallel-build cohorts are retained separately with no cross-mode gain attribution. Original frozen609responses/scripts/clock, viewport1024x768/DPR2, fresh profiles/caches, retained OS caches, readiness/visible-image/two-second settlement, encoded-PNG endpoints, ownership policy and references unchanged. GPU/outside work excluded; Vox ends before file writing and Brave includes CDP delivery, audits/teardown follow. Known DOM/script/font/paint limitations, unsupported performance.measure and82.7154% cross-browser pixel difference remain. No live-site/render-only/FPS/catalog credit. All759 unique selected cases/mode freshly run;754pass/fiveknown baseline failures,1916actualexecutions/1902passes/14repeatedbaseline failures. No full-suite pass or cadence reset. Recipe-preparation mapping error launched no tests and is retained.",
+  "target_met": false,
+  "catalog_added": false,
+  "history": {
+    "measured_cohorts": 121,
+    "acceptance_browser_attempts": 2608,
+    "last_measured_id": 127,
+    "preflight_only_ids": [
+      104,
+      110,
+      111,
+      113,
+      118,
+      124
+    ]
+  },
+  "performance_credit": 0,
+  "unix": 1793927819.617955,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-text-bidi-cache-20261106-0700/archive-cohort127.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 29605888,
+    "elapsed_seconds": 12.666093875000001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
