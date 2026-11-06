@@ -1,0 +1,139 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "instruction_credit": 0,
+  "implementation_commit": "cef3b54624dc8b79716817ecd836e14643e2c942",
+  "focused_verification": "docs/performance/chatgpt-style-substages-focused-verification-20261106.json",
+  "production_controller": "docs/performance/chatgpt-style-substages-production-r1-controller-20261106.json",
+  "diagnostic": "docs/performance/chatgpt-style-substages-production-r1-diagnostic-20261106.json",
+  "production_executable_sha256": "1b27da92a1cefb0d288458465161727ff1c1d63e86025c4bf52af21e0ba17265",
+  "c_compile": {
+    "mode": "single",
+    "requested": "single",
+    "v_prod": true
+  },
+  "traced_coalition_instructions": 43736684010,
+  "untraced_stage_coalition_instructions": {
+    "lower": 24842892451,
+    "upper": 24842892451
+  },
+  "css_substages": [
+    {
+      "stage": "style_construction",
+      "calls": 18538,
+      "partial_calls": 0,
+      "exclusive": 10087635716,
+      "inclusive": 15574213687,
+      "percent": 23.064473094699068
+    },
+    {
+      "stage": "style_rule_matching",
+      "calls": 18509,
+      "partial_calls": 0,
+      "exclusive": 1450960562,
+      "inclusive": 1450960562,
+      "percent": 3.3174910143353595
+    },
+    {
+      "stage": "style_logical_mapping",
+      "calls": 14133,
+      "partial_calls": 0,
+      "exclusive": 1293664067,
+      "inclusive": 1535784801,
+      "percent": 2.9578467053062716
+    },
+    {
+      "stage": "style_cascade",
+      "calls": 19892,
+      "partial_calls": 0,
+      "exclusive": 1151504782,
+      "inclusive": 1151504782,
+      "percent": 2.6328122674702974
+    },
+    {
+      "stage": "style_computed_properties",
+      "calls": 5551,
+      "partial_calls": 0,
+      "exclusive": 1033536616,
+      "inclusive": 1033536616,
+      "percent": 2.3630886506249333
+    },
+    {
+      "stage": "style_custom_properties",
+      "calls": 14133,
+      "partial_calls": 0,
+      "exclusive": 510949887,
+      "inclusive": 510949887,
+      "percent": 1.168241028247994
+    },
+    {
+      "stage": "style_invalidation",
+      "calls": 4191,
+      "partial_calls": 0,
+      "exclusive": 226381474,
+      "inclusive": 226381474,
+      "percent": 0.5176009089949295
+    },
+    {
+      "stage": "style_value_conversion",
+      "calls": 11,
+      "partial_calls": 0,
+      "exclusive": 7056712,
+      "inclusive": 7056712,
+      "percent": 0.0161345382251351
+    },
+    {
+      "stage": "style_inherited_refresh",
+      "calls": 4,
+      "partial_calls": 0,
+      "exclusive": 811454,
+      "inclusive": 2179081,
+      "percent": 0.0018553166943668347
+    }
+  ],
+  "main_thread_rows": 72,
+  "process_rows": 72,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-style-substages-checked-20261106-evidence.zip",
+      "sha256": "17ccc2ec5ed9a7b0b127cd25b01f4ce4fd0d1e7a947b6f0c401a1d5f64772fed",
+      "bytes": 258325,
+      "verified_entries": 26
+    },
+    {
+      "path": "docs/performance/chatgpt-style-substages-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "8b9c8e75785ebce6cb6e38e0b34ef83b6ebd8e30ffcd8cb1336cc2fc8a1ee728",
+      "bytes": 5566686,
+      "verified_entries": 67
+    },
+    {
+      "path": "docs/performance/chatgpt-style-substages-controller-20261106-evidence.zip",
+      "sha256": "af7cb14859dac3ed9bd4800ef2bf9146152efceba78da3f9ebaa573e420a427d",
+      "bytes": 11843,
+      "verified_entries": 8
+    }
+  ],
+  "page_instruction_credit": 0,
+  "broad_checks": 0,
+  "broad_carry": 0,
+  "target_met": false,
+  "qualification": "Nine style substage boundaries refine the retained additive budget. Every exclusive row reconciles to its own traced PNG endpoint in independent main-thread and process streams. The separate stage-disabled observation retains lexer execution diagnostics and cannot estimate tracing overhead from one sample. The remainder contains other threads/helpers and endpoint skew, not isolated JavaScript. Inclusive rows overlap and must not be added. All original frozen bytes/scripts/references, startup/capture boundaries and exact page audits remain. The fine process-counter polling is intrusive: the 43.74B traced total is retained as diagnostic evidence and is not the untraced workload budget. A later thread-only refinement will avoid those per-substage process reads. No unprofiled optimization or acceptance credit.",
+  "finalizer_guard": {
+    "path": "Build/chatgpt-style-substages-finalize-20261106-r1/finalize-guard.json",
+    "sha256": "71de36d15a9d968376673ca840348453f64053159a82f6c851029951a654e098",
+    "receipt": {
+      "command": [
+        "python3",
+        "Build/chatgpt-style-substages-finalize-20261106-r1/finalize.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3112960,
+      "elapsed_seconds": 0.166089834,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}

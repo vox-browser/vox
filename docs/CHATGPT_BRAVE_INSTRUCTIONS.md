@@ -6157,3 +6157,31 @@ The latest completed canonical executable `54133db57b84c2867269eee27fe3da8e50581
 The frozen one-time SOCKS bytes, original scripts/references, original-origin replay, empty private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. The boundary is exclusive coalition creation through encoded document PNG, including startup/window setup and Brave CDP delivery; OS filesystem/shader caches remain retained and GPU/outside-coalition work is excluded. No duplicate manual production build was requested.
 
 The [verification receipt](performance/chatgpt-font-guard-parent-verification-20261106.json) authenticates all focused/component attempts, the ineligible page diagnostic, source proof, guards, commands, counters, PNGs and archives. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Detailed CSS instruction substages toward 20B (2026-11-06)
+
+Implementation `cef3b5462` adds nine opt-in nested CSS stages to the existing counter streams. Diagnostics remain disabled by default. The 81 selected CSS functions pass in ordinary GC and no GC with tracing off/on (**324 executions**); both traced streams contain balanced scopes for all nine labels, disabled runs emit none, and all **28 existing parser tests** pass. The first Python parser-test invocation lacked the tools import path and failed before executing tests; its nonzero guard and the corrected successful invocation are retained.
+
+Executable `1b27da92a1cefb0d288458465161727ff1c1d63e86025c4bf52af21e0ba17265` uses `single` C compilation with V production source conditions. Sealed-source proof and runtime records verify the new boundaries. All four fresh Vox/Brave captures pass complete bootstrap/content/button audits, exact unchanged per-engine reference pixels and normal browser/kernel exits. The Wasm lexer executes without fallback in both Vox captures. Executable/native-library/tool/fixture identities stay pinned under one nonblocking shared publication lease; no duplicate manual build is requested.
+
+The traced coalition total is **43,736,684,010 instructions**. The separate stage-disabled observation is **24,842,892,451** and still enables lexer execution diagnostics. One observation per mode cannot estimate tracing overhead or establish an optimization. These rows are **exclusive main-thread instructions from the traced run**; child work is subtracted from its parent and no values are scaled to another sample.
+
+| CSS substage | Main-thread instructions | Calls | Share of traced coalition |
+|---|---:|---:|---:|
+| style_construction | 10,087,635,716 | 18,538 | 23.064% |
+| style_rule_matching | 1,450,960,562 | 18,509 | 3.317% |
+| style_logical_mapping | 1,293,664,067 | 14,133 | 2.958% |
+| style_cascade | 1,151,504,782 | 19,892 | 2.633% |
+| style_computed_properties | 1,033,536,616 | 5,551 | 2.363% |
+| style_custom_properties | 510,949,887 | 14,133 | 1.168% |
+| style_invalidation | 226,381,474 | 4,191 | 0.518% |
+| style_value_conversion | 7,056,712 | 11 | 0.016% |
+| style_inherited_refresh | 811,454 | 4 | 0.002% |
+
+The complete [72-row main-thread table](performance/chatgpt-style-substages-production-r1-main-thread-20261106.csv) and [JSON](performance/chatgpt-style-substages-production-r1-main-thread-20261106.json) sum exactly to the traced coalition total. The independent [process table](performance/chatgpt-style-substages-production-r1-traced-20261106.csv) reconciles separately. Inclusive rows overlap and cannot be added. The signed remainder includes other threads, helpers and endpoint sampling skew; it is not a pure JavaScript bucket.
+
+This trace includes expensive process-counter polling at each fine boundary. Its 43.74B total is retained as an intrusive diagnostic, not an attribution of the untraced 20B target. The larger parent self rows include counter/logging work. A subsequent thread-only refinement will avoid those per-substage process reads; neither cohort may be scaled into the other.
+
+The workload retains the original one-time SOCKS capture, author scripts/references, original-origin replay, empty private profiles/caches, 1024×768 at scale two, five-second unfocused settle and retained OS filesystem/shader caches. The scope remains exclusive coalition creation through encoded document PNG, including startup/window setup and Brave CDP delivery; GPU/outside-coalition work is excluded.
+
+The [verification receipt](performance/chatgpt-style-substages-verification-20261106.json) authenticates focused checks, source proofs, commands, counters, memory guards, raw logs, PNGs and all archives. This diagnostic chooses subsequent CPU targets; it earns no page saving or broad checkpoint, and carry stays zero. **The 20B target and original 5%-below-Brave target remain unmet.**

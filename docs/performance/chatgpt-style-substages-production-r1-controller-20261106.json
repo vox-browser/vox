@@ -1,0 +1,113 @@
+{
+  "status": "complete",
+  "started_unix": 1793964099.5544379,
+  "rows": [
+    {
+      "phase": "diagnostic",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-style-substages-production-20261106-r1/diagnostic/page.py"
+      ],
+      "exit": 0
+    }
+  ],
+  "production_before": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "1b27da92a1cefb0d288458465161727ff1c1d63e86025c4bf52af21e0ba17265",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-141741-4e9bceb6/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "75494ab64fc6aa4b48f127fa188a85f89c499d4be008e93edfbda27659dc9010",
+      "dirty": true,
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "repository_sha256": "b8049df284224cd11877a6c64114e17c27c9dfc752b3dfdb4bee38100252d3f9"
+    },
+    "renderer": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "default": "gg",
+      "gg_adapters": true,
+      "skia_free": false,
+      "skia_required_for": [
+        "text preparation and fallback",
+        "canvas",
+        "shadows",
+        "bitmap export",
+        "recording and picture playback"
+      ]
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "3e8ca587fe2c3ff7c115594ea574280165b69aa181c40dbb3a51a5e08a20f572",
+      "dirty": true,
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "repository_sha256": "82031acb6aac621f5a85884e19620ff8e93c09f458525cf0731bca7fc6961ad9"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "id": "8105c92a37af4359a60d605f2cd0251f",
+      "renderer": "gg",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "75494ab64fc6aa4b48f127fa188a85f89c499d4be008e93edfbda27659dc9010",
+      "dirty": true,
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "repository_sha256": "b8049df284224cd11877a6c64114e17c27c9dfc752b3dfdb4bee38100252d3f9"
+    }
+  },
+  "finished_unix": 1793964151.5172071,
+  "production_after": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "1b27da92a1cefb0d288458465161727ff1c1d63e86025c4bf52af21e0ba17265",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-141741-4e9bceb6/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "75494ab64fc6aa4b48f127fa188a85f89c499d4be008e93edfbda27659dc9010",
+      "dirty": true,
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "repository_sha256": "b8049df284224cd11877a6c64114e17c27c9dfc752b3dfdb4bee38100252d3f9"
+    },
+    "renderer": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "default": "gg",
+      "gg_adapters": true,
+      "skia_free": false,
+      "skia_required_for": [
+        "text preparation and fallback",
+        "canvas",
+        "shadows",
+        "bitmap export",
+        "recording and picture playback"
+      ]
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "3e8ca587fe2c3ff7c115594ea574280165b69aa181c40dbb3a51a5e08a20f572",
+      "dirty": true,
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "repository_sha256": "82031acb6aac621f5a85884e19620ff8e93c09f458525cf0731bca7fc6961ad9"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "id": "8105c92a37af4359a60d605f2cd0251f",
+      "renderer": "gg",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "75494ab64fc6aa4b48f127fa188a85f89c499d4be008e93edfbda27659dc9010",
+      "dirty": true,
+      "head": "cef3b54624dc8b79716817ecd836e14643e2c942",
+      "repository_sha256": "b8049df284224cd11877a6c64114e17c27c9dfc752b3dfdb4bee38100252d3f9"
+    }
+  }
+}
