@@ -5,6 +5,7 @@
 // as Chromium rasterizes every display item of a tile in one GPU pass.
 #import <IOSurface/IOSurface.h>
 #include <atomic>
+#include "src/gpu/graphite/Image_Graphite.h"
 namespace {
 struct CanvasTile {
     int x, y, width, height;
@@ -253,7 +254,11 @@ int vox_graphite_canvas_pop_layer(VoxGraphiteCanvasClip const* clips, int clip_c
         paint.setBlendMode(blend_mode==3 ? SkBlendMode::kScreen : SkBlendMode::kSrcOver);
         for (size_t index=0; valid && index<source.size(); ++index) {
             auto const& tile=source[index];
-            auto image=tile.surface->makeImageSnapshot();
+            // An owned Graphite copy avoids SkSurface's legacy snapshot cache:
+            // pooled targets also serve direct Metal readback and later writes.
+            auto area=tile.clip;
+            auto image=static_cast<skgpu::graphite::Surface*>(tile.surface.get())
+                ->makeImageCopy(&area,skgpu::Mipmapped::kNo);
             if (!image) { valid=false; break; }
             auto bounds=tile.clip.makeOffset(tile.x,tile.y);
             for (auto& target:canvas_tiles) {
@@ -269,7 +274,7 @@ int vox_graphite_canvas_pop_layer(VoxGraphiteCanvasClip const* clips, int clip_c
                         source[later].x-target.x,source[later].y-target.y)),SkClipOp::kDifference,false);
                 apply_canvas_clips(canvas,target,clips,clip_count);
                 canvas->resetMatrix();
-                canvas->drawImage(image,tile.x-target.x,tile.y-target.y,SkSamplingOptions(),&paint);
+                canvas->drawImage(image,tile.x+tile.clip.x()-target.x,tile.y+tile.clip.y()-target.y,SkSamplingOptions(),&paint);
                 canvas->restore();
             }
         }

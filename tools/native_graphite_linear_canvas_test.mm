@@ -175,6 +175,9 @@ static void test_canvas_present() {
         std::vector<uint8_t> source(size_t(tile.width)*tile.height*4,0);
         source[0]=uint8_t(frame); source[1]=uint8_t(frame>>8); source[2]=93; source[3]=255;
         assert(vox_graphite_canvas_upload_queued(0,source.data(),tile.width*4));
+        assert(vox_graphite_canvas_push_layer());assert(vox_graphite_canvas_begin(one,1));
+        assert(vox_graphite_canvas_upload_queued(0,source.data(),tile.width*4));
+        assert(vox_graphite_canvas_pop_layer(nullptr,0,1,0,1)==1);
         VoxGraphiteCanvasSurfaceRegion region {next,previous,0,0,0,0,width,height};
         assert(vox_graphite_canvas_present(&region,1,&ticket)==1);
         vox_graphite_canvas_release_present(ticket); vox_graphite_canvas_end();
