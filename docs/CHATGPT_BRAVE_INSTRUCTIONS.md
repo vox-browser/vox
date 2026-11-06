@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest adopted optimization, measured in the unprofiled href-cache diagnostic, observes a **26.46B** candidate median versus **27.73B** for its uncached control. The observed four-pair reduction is separated across the retained ranges. All 20 captures pass content and exact pixels; 232 focused test executions pass. The [latest verification](performance/chatgpt-href-cache-verification-20261106.json) preserves the full result. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest native-source-transfer diagnostic observes a **26.41B** candidate median versus **26.59B** for its UTF-8 control. Observed ranges overlap; no new page instruction credit is assigned. All 20 captures pass content and exact pixels; 232 focused test executions pass. The [latest verification](performance/chatgpt-module-source-value-verification-20261106.json) retains every observation. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5339,3 +5339,34 @@ The longer-warm-up cold 100,000-iteration components also regress **9.23% numeri
 All **40** diagnostic/matched browser captures pass full content, JavaScriptCore bootstrap, unchanged per-engine pixels and normal browser/kernel exits. Capture/controller guards exit zero; comparison drivers return one for the unmet Brave threshold. Host contention and frame checkpoints remain in the raw evidence. The two experiments use different completed executable identities (`065088847096502fc917a23c0d8231e9344e1edb7baa2bfbb2a38185fa99d97d` and `af59afe1347543bc6ba3db97a9c19e17fda817c629f7fa416597c3d4b6762a9a`); their absolute counts are never pooled or attributed across builds. OS filesystem/shader caches remain retained, and GPU work/outside-coalition services remain excluded.
 
 The [verification receipt](performance/chatgpt-jit-policy-verification-20261106.json) links the sample, option probes, all raw counts, complete reports, source/identity proofs, guard exits, rejected probe and authenticated evidence archives. Neither experiment changes engine defaults or earns page instruction credit. The last adopted href-cache comparison remains 26.46B on its own pinned build. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Rooted native module source strings toward 20B (2026-11-06)
+
+Commit `c0d43ac78` supplies transformed JavaScript strings directly to native module construction. The old path copies a JSC UTF-16 result into V UTF-8, then Foundation decodes those bytes back into a native string. The new path roots the primitive result, copies its UTF-16 code units into owned NSString storage, and retains that ownership through script construction and a possibly reentrant resolve call. No borrowed pointer survives `JSStringRelease`. Empty strings, NULs, BMP/supplementary characters and separated lone surrogates remain exact. Non-strings fail without author conversion hooks.
+
+The existing HTML import-map resolution, fetch metadata, module lexer/rewrite, import.meta handling, native grammar, cycles/live bindings and top-level await remain in place. The native delegate receives already-resolved identifiers ([WebKit's delegate contract](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/API/JSContextPrivate.h)); HTML resolution remains owned by ModuleHost. Classic-source and diagnostic callers still receive their copied V string. `VOX_RETAIN_UTF8_MODULE_SOURCE=1` retains the old transport for comparisons. No author-script bytes or pinned lexer distribution change.
+
+Final validation passes **24 guarded jobs / 232 test-function executions** in ordinary GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers, with direct and UTF-8 transports. Coverage includes explicit source roots after caller-arena retirement/GC, diagnostic exceptions, native execution of actual NUL/Unicode/lone UTF-16 units, non-string hook rejection, large concurrent transport, module/classic workers, independent realms, imports/maps/cycles/TLA and shutdown. The first fixture accidentally paired its two intended lone surrogates; it is retained and corrected with an intervening character. The first component driver has a V assertion-spacing error and launches no component runtime; that attempt is retained too.
+
+The signed component creates native module scripts and invokes a fake resolver 100 times per case, with source/runtime setup outside the process-instruction interval. It does not execute author module bodies or perform networking. Four observations per variant preserve all results. The native option diagnostic confirms JIT/baseline/DFG/FTL availability under the canonical `allow-jit` entitlement. All tiers stay enabled; warm-up remains 10,000.
+
+| Native transfer / construction component | UTF-8 control median instructions | Rooted UTF-16 median | Reduction |
+| --- | ---: | ---: | ---: |
+| 1 KiB ASCII payload × 100 | 6,869,191.5 | 6,655,788.5 | 3.1067% |
+| 256 KiB ASCII payload × 100 | 438,664,045.0 | 350,182,622.5 | 20.1707% |
+| 65,536 repetitions of éĀ😀 × 100 | 2,178,825,423.0 | 67,487,637.0 | 96.9026% |
+
+These component totals are not a page attribution. Separate production diagnostics prove Wasm lexer consumption in both variants and native UTF-16 transfer only in the candidate. Source preflight authenticates both the sealed V caller/root handling and the separate preprocessed Objective-C helper; passing source checks alone receives no performance credit.
+
+| Unprofiled frozen-page variant | Every retained launch-through-PNG instruction count | Median |
+| --- | --- | ---: |
+| UTF-8 transport control | 26,604,548,336; 26,699,430,434; 26,393,835,089; 26,565,586,312 | 26,585,067,324.0 |
+| Rooted UTF-16 candidate | 26,421,156,099; 26,158,905,929; 26,404,280,264; 26,892,286,933 | 26,412,718,181.5 |
+
+The observed median falls **0.6483%**; conservative observed separation is **-498,451,844 instructions**. Observed ranges overlap; no new page instruction credit is assigned. No new 5M broad checkpoint is due. Whole-page credit and carry remain zero.
+
+All **20** diagnostic/matched captures pass full content/button identity, JavaScriptCore bootstrap, unchanged exact per-engine references and normal browser/kernel exits. Executable `a98fec324fbb4ab4da6bebe090dcef8dc517d5a552b606ed6cf5a472c0c12941` and libraries remain pinned under one nonblocking shared publication lease using the latest completed single-C-unit V `-prod` bundle. The bundle already contains the final implementation; no app is copied and no separate build is queued. The original one-time SOCKS capture/scripts, fresh private profiles/caches, 1024×768 scale two and five-second unfocused settle remain unchanged. Exclusive-coalition counts include startup, window setup and completed PNG encoding; OS filesystem/shader caches remain retained. GPU execution/outside-coalition services remain excluded. Capture/controller guards exit zero; comparison drivers return one for the unmet Brave threshold.
+
+Frame-complete checkpoints are 439, 422, 391, 391 for controls and 430, 430, 401, 272 for candidates. Raw counters, identities, host contention and endpoints remain preserved; no result is normalized to a fixed frame count or another build.
+
+The candidate median remains **6,412,718,181.5 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-module-source-value-verification-20261106.json) links source witnesses, focused/component checks, commands, memory guards, counters, PNGs, failures and every authenticated archive. **The 20B target and original 5%-below-Brave target remain unmet.**
