@@ -1,5 +1,5 @@
 {
-  "recorded_utc": "2026-11-06T04:34:16.811182+00:00",
+  "recorded_utc": "2026-11-06T04:41:32.170327+00:00",
   "site": "Discord login / embedded challenge images",
   "fix_commit": "6cd573249",
   "finding": "Challenge images set crossOrigin=anonymous. The browser image loader rejected every cross-origin CORS request before fetching; ordinary no-CORS icons could load.",
@@ -128,8 +128,38 @@
     "status": "Growth remains unresolved. The old owned test process was closed after capturing evidence."
   },
   "production_validation": {
-    "status": "pending shared production publication",
-    "note": "The latest available canonical executable still contains an earlier CORS implementation. It cannot validate the completed fix. No extra production build has been queued."
+    "status": "passed same-asset anonymous CORS image load in a fresh production process",
+    "raw": "Build/discord-retry-20261106/auth-r3",
+    "receipt": "Build/production-build/receipts/20261106-073724-a38d38af/frozen-compile.json",
+    "executable_sha256": "d237a1d842ba9a56c4feb5890cde56132ef97a4eeb5b85f4164b6644a0a86877",
+    "source_head": "0ad611852cac323a708907a6f796985d0d8e3fd5",
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "frozen_code_contains_completed_fix": true,
+    "checks": [
+      "Retained policy container, policy length in deduplication identity and coalesced completions verified in frozen C",
+      "Fresh guarded process; native login form entry and submission",
+      "Previously failing JPEG loaded from the embedded hCaptcha document with crossOrigin=anonymous",
+      "Executable and native-library hashes unchanged during setup and probe"
+    ],
+    "same_asset_probe": {
+      "pending": false,
+      "loaded": true,
+      "error": false,
+      "width": 480,
+      "height": 320,
+      "crossOrigin": "anonymous"
+    },
+    "process_at_validation": "11341 01:02 3164320  83.3",
+    "limitations": [
+      "No CAPTCHA answer was selected or verification performed. Actual challenge canvas rendering awaits user opening the challenge.",
+      "Authentication has not completed.",
+      "Earlier long-running memory growth remains unresolved."
+    ],
+    "publication_note": "The coalesced shared build completed with the fix; no duplicate build was requested."
   },
   "authentication": {
     "authenticated": false,
