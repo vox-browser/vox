@@ -64,6 +64,7 @@ if [ "$wrong_backend_status" -ne 1 ]; then
 fi
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
+"$output_dir/native_gpu_canvas_test" --masked-images
 "$output_dir/native_gpu_canvas_test" --deferred-video-barriers
 "$output_dir/native_gpu_canvas_test" --failed-readback
 "$output_dir/native_gpu_canvas_test" --failed-readonly

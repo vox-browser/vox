@@ -642,17 +642,26 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
 {
     if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return 0;
     bool msaa = gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y);
-    char const* leaf = descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME ? "video" : "image";
+    char const* leaf = descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME ? "video"
+        : rounded_mask ? "masked-image" : "image";
     static bool const disable_video = std::getenv("VOX_GPU_CANVAS_DISABLE_VIDEO") != nullptr;
     bool video = (descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME) && !disable_video
         && gpu_canvas_api()->draw_image_msaa;
     // Explicit clip coverage and nearest sampling retain their isolated path.
     // The mixed-MSAA pass can batch ordinary filtered images like video.
+    bool masked_images = rounded_mask && std::getenv("VOX_GPU_CANVAS_MASKED_IMAGES");
     bool static_msaa = !(descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME)
         && !(descriptor.flags & VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP)
-        && !descriptor.nearest && std::getenv("VOX_GPU_CANVAS_MSAA_IMAGES") && gpu_canvas_api()->draw_image_msaa;
-    if (rounded_mask || (msaa && !video && !static_msaa)) {
+        && !descriptor.nearest && (masked_images || std::getenv("VOX_GPU_CANVAS_MSAA_IMAGES"))
+        && gpu_canvas_api()->draw_image_msaa;
+    if ((rounded_mask && (!masked_images || descriptor.nearest)) || (msaa && !video && !static_msaa)) {
         gpu_canvas_note_miss(destination, leaf, msaa);
+        if (gpu_canvas_diagnostics())
+            std::fprintf(stderr, "VOX_GPU_IMAGE_FALLBACK kind=%s flags=%d nearest=%d root=%d msaa=%d source=%dx%d clip=%g,%g,%g,%g bounds=%g,%g,%g,%g\n",
+                leaf, descriptor.flags, descriptor.nearest, int(s_raster_layer_is_root), msaa,
+                descriptor.width, descriptor.height, descriptor.clip[0], descriptor.clip[1],
+                descriptor.clip[2], descriptor.clip[3], device_bounds.left(), device_bounds.top(),
+                device_bounds.width(), device_bounds.height());
         gpu_canvas_decline(destination);
         return 0;
     }
@@ -682,7 +691,8 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
         gpu_canvas_flush();
         return 0;
     }
-    gpu_canvas_name_leaf(*frame, video ? (msaa ? "video-msaa" : "video") : (msaa ? "image-msaa" : "image"),
+    gpu_canvas_name_leaf(*frame, video ? (msaa ? "video-msaa" : "video")
+        : rounded_mask ? (msaa ? "masked-image-msaa" : "masked-image") : (msaa ? "image-msaa" : "image"),
         bounds, descriptor.flags, clips.size());
     frame->cpu_stale = true;
     ++frame->draws;
