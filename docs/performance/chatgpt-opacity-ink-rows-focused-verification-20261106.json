@@ -1,0 +1,1428 @@
+{
+  "status": "focused_checks_complete_browser_pending",
+  "implementation_commit": "dcd2d0b539394da18773be37ae7c07cb5319b12e",
+  "initial_implementation_commit": "27a879435e8e2fe05f95fcae18a16f8b1578dbf8",
+  "build_fix_commit": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+      "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+      "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+      "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+    },
+    "source_after": {
+      "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+      "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+      "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+      "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+    },
+    "passed_jobs": 20,
+    "checks": [
+      {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+          "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+          "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+          "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+        },
+        "source_after": {
+          "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+          "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+          "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+          "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+        },
+        "rows": [
+          {
+            "label": "compile-bounds-optimized",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/compile-bounds-optimized.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/compile-bounds-optimized-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "clang",
+              "-std=c11",
+              "-O2",
+              "/Users/alex/code/vox2/tools/native_opacity_ink_bounds_test.c",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-optimized"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941061.743839,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941062.1777868,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-bounds-optimized-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-optimized-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-optimized-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-optimized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+              "VOX_OPACITY_INK_ROWS_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941062.178914,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941062.622515,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-bounds-optimized-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-optimized-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-optimized-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-optimized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+              "VOX_OPACITY_INK_ROWS_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941062.623536,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941062.9284868,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "compile-bounds-scalar",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/compile-bounds-scalar.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/compile-bounds-scalar-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "clang",
+              "-std=c11",
+              "-O2",
+              "-DVOX_OPACITY_DISABLE_NEON",
+              "/Users/alex/code/vox2/tools/native_opacity_ink_bounds_test.c",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-scalar"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941062.929605,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941063.2410738,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-bounds-scalar-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-scalar-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-scalar-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-scalar"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+              "VOX_OPACITY_INK_ROWS_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941063.242093,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941063.696507,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-bounds-scalar-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-scalar-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-scalar-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-scalar"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+              "VOX_OPACITY_INK_ROWS_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941063.6980999,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941064.0223382,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "compile-bounds-sanitized",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/compile-bounds-sanitized.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/compile-bounds-sanitized-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "clang",
+              "-std=c11",
+              "-O2",
+              "-O1",
+              "-fsanitize=address,undefined",
+              "-fno-omit-frame-pointer",
+              "/Users/alex/code/vox2/tools/native_opacity_ink_bounds_test.c",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-sanitized"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941064.023679,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941064.494965,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-bounds-sanitized-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-sanitized-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-sanitized-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-sanitized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+              "VOX_OPACITY_INK_ROWS_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941064.4962718,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941064.9571252,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-bounds-sanitized-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-sanitized-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/run-bounds-sanitized-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r3/bounds-sanitized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+              "VOX_OPACITY_INK_ROWS_DIAGNOSTICS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941064.958512,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941065.28977,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+          "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+          "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+          "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+        },
+        "source_after": {
+          "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+          "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+          "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+          "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+        },
+        "rows": [
+          {
+            "label": "compile-sparse-optimized",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/compile-sparse-optimized.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/compile-sparse-optimized-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "clang++",
+              "-std=c++20",
+              "-fno-rtti",
+              "-O2",
+              "-framework",
+              "CoreGraphics",
+              "-framework",
+              "CoreFoundation",
+              "/Users/alex/code/vox2/tools/native_sparse_bitmap_context_test.cpp",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/sparse-optimized"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941062.8460002,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941063.986648,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-sparse-optimized-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-optimized-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-optimized-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/sparse-optimized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941063.9876192,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941064.455151,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-sparse-optimized-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-optimized-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-optimized-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/sparse-optimized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941064.4562938,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941064.640001,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "compile-sparse-sanitized",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/compile-sparse-sanitized.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/compile-sparse-sanitized-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "clang++",
+              "-std=c++20",
+              "-fno-rtti",
+              "-O2",
+              "-O1",
+              "-fsanitize=address,undefined",
+              "-fno-omit-frame-pointer",
+              "-framework",
+              "CoreGraphics",
+              "-framework",
+              "CoreFoundation",
+              "/Users/alex/code/vox2/tools/native_sparse_bitmap_context_test.cpp",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/sparse-sanitized"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941064.6413682,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941065.963476,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-sparse-sanitized-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-sanitized-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-sanitized-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/sparse-sanitized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941065.965413,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941066.46351,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            }
+          },
+          {
+            "label": "run-sparse-sanitized-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-sanitized-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-sparse-sanitized-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/sparse-sanitized"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1",
+              "ASAN_OPTIONS": "detect_leaks=0",
+              "UBSAN_OPTIONS": "halt_on_error=1"
+            },
+            "host_before": {
+              "unix": 1793941066.464695,
+              "cpu_count": 18,
+              "load": [
+                31.64501953125,
+                22.54248046875,
+                19.08447265625
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941066.6856582,
+              "load": [
+                30.47216796875,
+                22.4501953125,
+                19.07177734375
+              ]
+            }
+          },
+          {
+            "label": "compile-parallel-state",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/compile-parallel-state.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/compile-parallel-state-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "clang",
+              "-std=c11",
+              "-O2",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/parallel-primary.c",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/parallel-secondary.c",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/parallel-state"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941066.687656,
+              "cpu_count": 18,
+              "load": [
+                30.47216796875,
+                22.4501953125,
+                19.07177734375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941067.310216,
+              "load": [
+                30.47216796875,
+                22.4501953125,
+                19.07177734375
+              ]
+            }
+          },
+          {
+            "label": "run-parallel-state",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-parallel-state.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/run-parallel-state-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r4/parallel-state"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941067.312323,
+              "cpu_count": 18,
+              "load": [
+                30.47216796875,
+                22.4501953125,
+                19.07177734375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941067.780211,
+              "load": [
+                30.47216796875,
+                22.4501953125,
+                19.07177734375
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "complete": true,
+        "passed": true,
+        "source_before": {
+          "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+          "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+          "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+          "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+        },
+        "source_after": {
+          "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+          "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+          "tools/native_opacity_group_test.c": "792acbce62a9b5c98d0132d6547cc011aa4b0d82aa31193fbe92084f92234da0",
+          "tools/native_sparse_bitmap_context_test.cpp": "266a071ffd8965a7df1139c493c13e34eaabc9fb5a951e20e5e7d1c0aa5e113a"
+        },
+        "rows": [
+          {
+            "label": "compile-group",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/compile-group.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/compile-group-guard.json",
+              "--limit-gib",
+              "12",
+              "--",
+              "clang",
+              "-std=c11",
+              "-O2",
+              "/Users/alex/code/vox2/tools/native_opacity_group_test.c",
+              "-o",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/group"
+            ],
+            "environment": {},
+            "host_before": {
+              "unix": 1793941095.0162392,
+              "cpu_count": 18,
+              "load": [
+                29.1640625,
+                22.69287109375,
+                19.25146484375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941095.578488,
+              "load": [
+                29.1640625,
+                22.69287109375,
+                19.25146484375
+              ]
+            }
+          },
+          {
+            "label": "run-group-candidate",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/run-group-candidate.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/run-group-candidate-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/group"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": ""
+            },
+            "host_before": {
+              "unix": 1793941095.5797088,
+              "cpu_count": 18,
+              "load": [
+                29.1640625,
+                22.69287109375,
+                19.25146484375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941096.811282,
+              "load": [
+                29.23095703125,
+                22.81396484375,
+                19.31396484375
+              ]
+            }
+          },
+          {
+            "label": "run-group-control",
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--lock",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/run-group-control.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/run-group-control-guard.json",
+              "--limit-gib",
+              "3",
+              "--",
+              "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-20261106-r5/group"
+            ],
+            "environment": {
+              "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1"
+            },
+            "host_before": {
+              "unix": 1793941096.812423,
+              "cpu_count": 18,
+              "load": [
+                29.23095703125,
+                22.81396484375,
+                19.31396484375
+              ]
+            },
+            "exit": 0,
+            "host_after": {
+              "unix": 1793941097.7465012,
+              "load": [
+                29.23095703125,
+                22.81396484375,
+                19.31396484375
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "component_checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+      "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+      "Build/chatgpt-opacity-ink-rows-component-20261106-r2/driver.c": "5a413a76ca0b04a39c0200021b2b0ffd74de95590556e9bac70230e7af5c9139",
+      "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8"
+    },
+    "source_after": {
+      "native_opacity_group_darwin.h": "0f604c13100d6a2eb02178f4ed3d881f21ce004fefb62618995b1e40ac4390de",
+      "tools/native_opacity_ink_bounds_test.c": "8a0febca733cab9e92c175d51e10eb840ba5ef5771e9a6a92810273b8737561b",
+      "Build/chatgpt-opacity-ink-rows-component-20261106-r2/driver.c": "5a413a76ca0b04a39c0200021b2b0ffd74de95590556e9bac70230e7af5c9139",
+      "processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8"
+    },
+    "rows": [
+      {
+        "label": "compile",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/compile-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "clang",
+          "-std=c11",
+          "-O2",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/driver.c",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793941064.01142,
+          "cpu_count": 18,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941064.4921129,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        }
+      },
+      {
+        "label": "sample-0-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-0-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1"
+        },
+        "host_before": {
+          "unix": 1793941064.4942951,
+          "cpu_count": 18,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941064.9571252,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        }
+      },
+      {
+        "label": "sample-1-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-1-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": ""
+        },
+        "host_before": {
+          "unix": 1793941064.9583201,
+          "cpu_count": 18,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941065.289741,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        }
+      },
+      {
+        "label": "sample-2-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-2-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": ""
+        },
+        "host_before": {
+          "unix": 1793941065.29132,
+          "cpu_count": 18,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941065.620341,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        }
+      },
+      {
+        "label": "sample-3-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-3-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1"
+        },
+        "host_before": {
+          "unix": 1793941065.6221702,
+          "cpu_count": 18,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941065.963583,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        }
+      },
+      {
+        "label": "sample-4-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-4-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-4-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1"
+        },
+        "host_before": {
+          "unix": 1793941065.965078,
+          "cpu_count": 18,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941066.3061361,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        }
+      },
+      {
+        "label": "sample-5-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-5-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-5-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": ""
+        },
+        "host_before": {
+          "unix": 1793941066.307829,
+          "cpu_count": 18,
+          "load": [
+            31.64501953125,
+            22.54248046875,
+            19.08447265625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941066.6856132,
+          "load": [
+            30.47216796875,
+            22.4501953125,
+            19.07177734375
+          ]
+        }
+      },
+      {
+        "label": "sample-6-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-6-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-6-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": ""
+        },
+        "host_before": {
+          "unix": 1793941066.687405,
+          "cpu_count": 18,
+          "load": [
+            30.47216796875,
+            22.4501953125,
+            19.07177734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941067.029687,
+          "load": [
+            30.47216796875,
+            22.4501953125,
+            19.07177734375
+          ]
+        }
+      },
+      {
+        "label": "sample-7-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-7-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/sample-7-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-opacity-ink-rows-component-20261106-r2/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_FULL_OPACITY_INK_ROWS": "1"
+        },
+        "host_before": {
+          "unix": 1793941067.030934,
+          "cpu_count": 18,
+          "load": [
+            30.47216796875,
+            22.4501953125,
+            19.07177734375
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793941067.373912,
+          "load": [
+            30.47216796875,
+            22.4501953125,
+            19.07177734375
+          ]
+        }
+      }
+    ]
+  },
+  "component": {
+    "dense": {
+      "control": [
+        4422425,
+        4423469,
+        4423194,
+        4426934
+      ],
+      "candidate": [
+        27464,
+        26669,
+        31106,
+        26639
+      ],
+      "control_median": 4423331.5,
+      "candidate_median": 27066.5,
+      "reduction_percent": 99.38809695814118
+    },
+    "separated-extremes": {
+      "control": [
+        146983628,
+        147162978,
+        147423504,
+        147313484
+      ],
+      "candidate": [
+        392912,
+        392962,
+        393137,
+        392936
+      ],
+      "control_median": 147238231.0,
+      "candidate_median": 392949.0,
+      "reduction_percent": 99.73312026548322
+    },
+    "trailing-empty": {
+      "control": [
+        75705374,
+        75734055,
+        75785553,
+        75762954
+      ],
+      "candidate": [
+        74008200,
+        72741323,
+        72737712,
+        73254478
+      ],
+      "control_median": 75748504.5,
+      "candidate_median": 72997900.5,
+      "reduction_percent": 3.631232085908709
+    },
+    "central-stripe": {
+      "control": [
+        161503047,
+        161425468,
+        160651498,
+        160698959
+      ],
+      "candidate": [
+        161370139,
+        160739575,
+        161003724,
+        161198870
+      ],
+      "control_median": 161062213.5,
+      "candidate_median": 161101297.0,
+      "reduction_percent": -0.024266088954494336
+    },
+    "empty": {
+      "control": [
+        146915371,
+        146936432,
+        147027295,
+        147428069
+      ],
+      "candidate": [
+        147637569,
+        147807549,
+        146909172,
+        147683164
+      ],
+      "control_median": 146981863.5,
+      "candidate_median": 147660366.5,
+      "reduction_percent": -0.46162362065846896
+    },
+    "first-row-only": {
+      "control": [
+        146720890,
+        146971083,
+        147015365,
+        146912563
+      ],
+      "candidate": [
+        145627942,
+        146319860,
+        145573822,
+        146083353
+      ],
+      "control_median": 146941823.0,
+      "candidate_median": 145855647.5,
+      "reduction_percent": 0.7391874401884935
+    }
+  },
+  "link_check": {
+    "complete": true,
+    "exit": 0,
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+      "--lock",
+      "/Users/alex/code/vox2/Build/chatgpt-iosurface-link-20261106-r2/link.lock",
+      "--report",
+      "/Users/alex/code/vox2/Build/chatgpt-iosurface-link-20261106-r2/link-guard.json",
+      "--",
+      "clang++",
+      "-std=c++20",
+      "-O3",
+      "-fno-rtti",
+      "-fPIC",
+      "-dynamiclib",
+      "-x",
+      "objective-c++",
+      "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+      "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+      "-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE",
+      "-I/Users/alex/code/vox2/Build/deps/libdeflate-1.24/libdeflate-1.24",
+      "/Users/alex/code/vox2/native_skia_text_darwin.cpp",
+      "-x",
+      "none",
+      "/Users/alex/code/vox2/Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+      "-Wl,-unexported_symbol,_libdeflate_*",
+      "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+      "-lskia",
+      "-framework",
+      "CoreFoundation",
+      "-framework",
+      "CoreGraphics",
+      "-framework",
+      "CoreText",
+      "-framework",
+      "Foundation",
+      "-framework",
+      "Metal",
+      "-framework",
+      "IOSurface",
+      "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+      "-Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib",
+      "-o",
+      "/Users/alex/code/vox2/Build/chatgpt-iosurface-link-20261106-r2/libLinkProbe.dylib"
+    ],
+    "source": {
+      "build-prod-browser.sh": "7283f8b664a26e97b4a1608678b5bf87563cb276f3306c9a81656531b073095d",
+      "native_skia_text_darwin.cpp": "82826d8f8a13c9dff8acf228888f1707b69536c5fce286f3f2c50ffcb0345bd5",
+      "native_skia_gpu_canvas.h": "7b6628687c165d64f293027e2cc87864d8d21be262b3f7cbb5e1b5551be1060f"
+    },
+    "library_sha256": "14bb1312f8920d4e02f30eeb38832e01e80838df99471a3e4471491e8a630b9a",
+    "iosurface_linked": true
+  },
+  "latest_completed": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "fe2d2e8e8f79669f9f63b519e849069936558d9d10777205211fc77c78c54396",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-075531-0c7c1bb5/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "3105d663f2a83593dfbd2f2c1b6caf2e6b120d8b8d54acc6153dbc64438adb73",
+      "dirty": true,
+      "head": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+      "repository_sha256": "f8693dac02f8a7e9def9e5246a8572f2571f21dc2bba0e93ee2b455cfad3dc48"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "da0067a91e32505832dd188e39e4263c5c8273c13172447dc2275060cb96b914",
+      "dirty": true,
+      "head": "dcd2d0b539394da18773be37ae7c07cb5319b12e",
+      "repository_sha256": "73bea07ec11d02ba8f11207ccdeef4be27750c2e8e33815ac789572b85d11dfd"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+      "id": "0bbc59347db742fbad47b83d9f75ac23",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "3105d663f2a83593dfbd2f2c1b6caf2e6b120d8b8d54acc6153dbc64438adb73",
+      "dirty": true,
+      "head": "992b82c7a2d5c127773fbceca0c3ab70f7ad98a0",
+      "repository_sha256": "5fc6160781ec70db4f68d795c3bb50c0ed18cdabcd1f3a261af88c24eea05f49"
+    }
+  },
+  "latest_contains_final_source": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-opacity-ink-rows-focused-only-20261106-evidence.zip",
+      "sha256": "d6ed9aab3e948ffb9efd211728dacb61a8455d5421be080068443d4dd38cca35",
+      "bytes": 87177,
+      "verified_entries": 103
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-ink-rows-component-only-20261106-evidence.zip",
+      "sha256": "45fabce8c1c4fbb20ab2de986e83fb0334d98fb45ce71f932f92f074648905bc",
+      "bytes": 26730,
+      "verified_entries": 42
+    },
+    {
+      "path": "docs/performance/chatgpt-opacity-ink-rows-build-readiness-20261106-evidence.zip",
+      "sha256": "c912690c4a2d1a9b1144cb85dd08c607fcda223364d31ae6c0ef1810750744f5",
+      "bytes": 44527,
+      "verified_entries": 34
+    }
+  ],
+  "qualification": "Exact read-only ink bounds with one policy read per scan. Horizontal limits seal first, then a reverse row search determines the last painted row. No persistence/cache or pixel change. Final 20 focused jobs pass optimized/scalar/ASan+UBSan/protected memory/sparse ownership/parallel state; component setup/oracle excluded, calls/assertions included. Prototype controls polled policy per row; final controls read once. Both components and failures retained, no page attribution. Shared IOSurface link failure fixed and verified by actual bridge link. Latest completed production contains initial prototype, not final hoist; a newer canonical shared build is running. No duplicate manual build or app copy. Frozen SOCKS fixture/scripts/references remain unchanged and no browser validation or performance credit assigned to this slice yet."
+}

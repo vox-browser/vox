@@ -5406,3 +5406,28 @@ Executable `f981e667dca81d3c4c665d70f1943cda1dee5b946f0f23825e5d3a0049e38869` an
 Frame-complete checkpoints are 426, 386, 397, 432 for controls and 441, 429, 431, 393 for candidates. Counts are not rescaled for frames, host load or a different build.
 
 The candidate median remains **6,585,612,939.5 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-module-normalization-verification-20261106.json) links every raw observation, command, memory guard, source witness, PNG and verified evidence archive. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Opacity interior rows: focused verification; browser pending (2026-11-06)
+
+Commits `27a879435` and `dcd2d0b53` stop reading opacity-layer interior rows after the painted pixels establish both horizontal crop limits. The remaining unknown is the last painted row, found by a reverse search. Any nonzero channel still counts as ink; clipping, empty output sentinels and row tails stay exact. The ordinary scan remains for unresolved horizontal limits. The final code reads the retained-control policy once per scan. Its initial per-row-policy prototype is preserved separately and earns no page credit.
+
+**20 final guarded check jobs pass.** Six optimized/scalar/ASan+UBSan candidate/control runs each pass 32,252 comparisons against the independent full-pixel oracle. Protected tail pages verify bounded vector loads; protected interior pages prove omitted rows are unread. Existing exhaustive compositing/bounds checks pass in both modes. Optimized and sanitized sparse bitmap integration preserves exact geometry, alpha, image/data/worker lifetime and release behavior. A two-unit C build verifies shared `VOX_NATIVE_STATE`. The initial sparse test omitted CoreFoundation and failed to link; its corrected command and the original failure remain retained.
+
+Four alternating direct-C component observations per variant use a 2048×1024 raster and 100 calls per scene. Input generation and the independent oracle are outside the counter interval; calls, assertions and checksums remain inside.
+
+| Bounds component | Complete-row control median | Reverse last-row search median | Reduction |
+| --- | ---: | ---: | ---: |
+| Dense full-width ink | 4,423,331.5 | 27,066.5 | 99.3881% |
+| Horizontal limits reached on different rows | 147,238,231.0 | 392,949.0 | 99.7331% |
+| Dense first half / empty tail | 75,748,504.5 | 72,997,900.5 | 3.6312% |
+| Central stripe / unresolved horizontal limits | 161,062,213.5 | 161,101,297.0 | -0.0243% |
+| Empty raster | 146,981,863.5 | 147,660,366.5 | -0.4616% |
+| Only first row painted | 146,941,823.0 | 145,855,647.5 | 0.7392% |
+
+The stripe and empty-raster regressions are retained. These component counts are not page attribution.
+
+Shared production builds failed to link IOSurface functions used by GPU canvas presentation. Commit `992b82c7a` adds the missing framework. Shell syntax and a real production-flags Skia bridge link pass; `otool -L` confirms IOSurface. The first standalone command used the wrong nested libdeflate include path and failed before linking; both attempts are retained. A subsequent shared build completed with the initial scan prototype. The next build failed its source seal because repository inputs changed before preprocessing; a newer shared build is running.
+
+The latest completed executable `fe2d2e8e8f79669f9f63b519e849069936558d9d10777205211fc77c78c54396` lacks the final once-per-scan policy placement. It cannot validate the final change. Browser content/pixel/path checks and an unprofiled matched comparison remain pending. No separate manual production build is queued, no app is copied and the original SOCKS capture/scripts/references remain fixed. **Page credit and broad carry stay zero; the 20B and original Brave goals remain unmet.**
+
+The [focused verification receipt](performance/chatgpt-opacity-ink-rows-focused-verification-20261106.json) links committed source, both component generations, exact test results, memory guards, commands, link failures and authenticated evidence archives.
