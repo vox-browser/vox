@@ -2607,7 +2607,8 @@ using one recorder. Opacity and screen composition can preserve the parent's
 pending GPU prefix. Legacy hosts, unsupported sources, failed composition and
 unclosed groups retain rejection/fallback behavior. The live page's nested
 sources are CPU text uploads: the fast diagnostic observes 126 parent GPU
-composites, with zero source GPU draws. Root video command barriers are also
+composites over its active diagnostic period, including its trailing work,
+with zero source GPU draws. Root video command barriers are also
 deferred through the capable host. This is not a claim that all offscreen
 content rasterizes on the GPU.
 
@@ -2618,7 +2619,8 @@ experiment passes its 128 native comparisons within two levels but fails the
 live header image at five, above the unchanged limit three. Its code was removed
 and its patch retained. Ordinary filtered images can use the existing
 `VOX_GPU_CANVAS_MSAA_IMAGES=1` path. A separate fast diagnostic sees 21 such
-leaves during input. Earlier verified runs' zero counts did **not** establish
+leaves over its active diagnostic period. Earlier verified runs' zero counts
+did **not** establish
 ineligibility: per-leaf verification delayed input enough to skip those image
 positions. Verified timings never supply performance credit.
 
@@ -2629,16 +2631,20 @@ mutable images still compare bytes or their digest. The upload cache retains
 its texture budget without retaining another 37 MB mascot source. The first
 live diagnostic found the backend setter missing from its explicit export list,
 so keys did not reach it. `4f9fc4129` fixes the export and makes the integration
-test require actual keyed texture reuse. The corrected live run observes 46
-keyed uploads and 39 reuses during input. `VOX_IMMUTABLE_IMAGE_UPLOADS=1` remains
+test require actual keyed texture reuse. Timestamp filtering of the corrected
+live run observes 45 keyed uploads and 38 reuses within the first-to-last-input
+window. The previously reported 46/39 also included one trailing reuse.
+`VOX_IMMUTABLE_IMAGE_UPLOADS=1` remains
 opt-in.
 
 `c113bb684` adds `VOX_GPU_TILE_SPARSE_CLEAR=1`: reused GPU tile frames initialize
 the current CPU damage and chrome, with a sampling fringe, while retained GPU
 tiles cover the rest of the document. Fresh frames and mode changes keep the
-complete clear. The live eligibility run uses it for 587 of 593 input-window
-clears and writes 15.04% of the full-clear byte volume. That byte reduction is a
-diagnostic, not an FPS result.
+complete clear. The live eligibility run uses it for 587 of 593 clears over
+the active diagnostic period, including trailing work, and writes 15.04% of
+the full-clear byte volume. Those logs lack a clock and do not establish exact
+input-window counts. Later diagnostics add timestamps. That byte reduction is
+a diagnostic, not an FPS result.
 
 The following cohorts each alternate two complete unprofiled control/candidate
 pairs on one pinned literal `-prod`, single-C-unit executable and native-library
@@ -2702,3 +2708,100 @@ cached responses, source patches, checks and failures. They extend the earlier
 foundation collection. `022b370e5` also accidentally included concurrently staged
 unrelated changes; shared linear history is preserved and those changes receive
 no optimization attribution.
+
+### Video identities and retained filter textures, November 6
+
+Smooth 60 fps remains open. `47210938e` gives each video source a lifetime ID,
+replacement revision and visual generation. Repeated draws can reuse an uploaded
+texture by that identity. `90fec5361` preserves byte comparison when a new
+video generation repeats the preceding pixels, so adding an identity does not
+force another upload. The separate live diagnostic records 78 video requests
+within the actual input window: 30 reuse a texture, including 16 direct identity
+hits and 14 equal-byte matches across generations. The first keyed version's
+87 requests/14 reuses are retained separately. Video upload keys remain opt-in.
+
+`3256aba41` skips rewriting a video bitmap when every decoded byte matches,
+keeping its visual generation stable. Playback clocks, timeline updates,
+callbacks, document invalidation and polling retain their existing paths.
+`271586bfa` enables this behavior by default after focused checks and live
+comparisons. `VOX_DISABLE_EQUAL_NATIVE_VIDEO_REUSE=1` supplies the original
+behavior for comparisons. Earlier builds instead used the positive opt-in
+`VOX_SKIP_EQUAL_NATIVE_VIDEO_WRITES=1`; those historical commands apply to their
+pinned executables. The installed default's separate diagnostic observes nine
+skipped writes during its first-to-last-input window.
+
+`076e785a7` optionally composites the cached transparent gradient-blur output
+over an opaque GPU canvas. It proves opacity from uploaded tiles, revokes that
+proof after replacement copies, and preserves synchronization and ordinary
+replay for unsupported, translucent or failed draws. A helper capability query
+keeps older renderer libraries safe. `f6c358a5d` adds optional texture reuse for
+that immutable output: a separate 32 MiB, 32-entry cache, never-recycled producer
+IDs, context invalidation and fallback when the helper lacks the API. Live
+input diagnostics observe 31 GPU blur composites in the first version and
+40 texture requests/40 reuses in the cached version. Both blur options remain
+off by default following the timing results below.
+
+Each row is a separate pinned literal `-prod`, single-C-unit cohort with two
+alternating unprofiled pairs and the same live workload as above. Every trial
+completes all 600 inputs, exits normally and passes identity checks. Different
+rows have different build identities; cross-row differences are not matched
+optimization evidence.
+
+| Candidate / common options | Pair 1 publications/s | Pair 2 publications/s | Candidate p95 intervals, ms |
+|---|---:|---:|---:|
+| Video keys / previous five GPU options | 94.84→92.54 | 94.13→94.98 | 20.440 / 20.697 |
+| Equal video pixels / those options plus video keys | 91.92→97.41 | 94.87→97.09 | 20.725 / 19.188 |
+| GPU cached blur composition / those options plus equal pixels | 90.71→87.19 | 92.96→93.41 | 24.950 / 22.667 |
+| Blur texture reuse / those options plus GPU blur composition | 93.58→83.80 | 93.66→90.65 | 22.818 / 21.190 |
+| Equal video pixels / ordinary GPU-enabled defaults, before default change | 79.79→89.06 | 77.25→88.98 | 22.302 / 26.986 |
+| Installed equal-pixel default / same executable with reuse disabled | 90.46→91.00 | 80.50→78.86 | 21.949 / 24.472 |
+
+The installed cohort uses build `20261106-105946-284e4277`, executable SHA-256
+`ef8e74bbedd96aa8828432a72ace6380c310aa669f7476d27f7d36252304888a`.
+Its default candidates have median intervals 8.635/9.939 ms, maxima
+77.638/81.736 ms, and 11.65%/23.97% over the 16.67 ms budget. They publish
+575/484 moving frames, with leading gaps 35.689/26.302 ms and trailing gaps
+0.119/5.893 ms. Throughput is mixed even though p95 improves in both installed
+pairs. On the 18-CPU host, one-minute loads span approximately 15.3–16.5 in
+that cohort; other sessions and retained OS/shader caches remain active.
+Controls also vary substantially. These measurements establish neither a
+reliable FPS gain across builds nor smooth 60 Hz scrolling.
+
+Optimized and ASan/UBSan checks pass. The primary blur checks include 96 ordinary
+and 97 texture-cache scenes with failed draws, older helpers and exhausted
+identities; these fixtures observe no channel error, within the unchanged limit
+three. Backend texture checks cover premultiplied bytes, padding, new identities,
+eviction and cache clearing. The live leaf limit stays three and transport
+stays exact. The final screenshot smoke and same-size SVG image source-switch
+check pass unchanged Darwin tolerances; the smoke set as a whole is not
+pixel-exact. The installed default also passes focused V checks with reuse both
+enabled and disabled, and a separate live check verifies 1,326 GPU leaves
+within three channel levels.
+
+A separate 2,400-input sampled candidate run finds 2,635 inclusive samples under
+native layer update, 638 under its GPU-present helper and 420 under Metal's
+`waitUntilScheduled`; 370 appear in GPU flush and 275 in GPU upload. These
+inclusive counts overlap and are diagnostic only. Scheduling must register the
+IOSurface fences before CA or a CPU consumer reads the output. Removing that
+wait without changing publication ownership would risk incorrect pixels.
+Vox still performs input, paint planning and publication on the main thread;
+Chromium's independent compositor and raster scheduling remain the larger
+unfinished part of the user's requested architecture.
+
+The follow-up also corrects diagnostic boundaries in the preceding section:
+45/38 ICC requests/reuses fall within input, while the older 46/39 included a
+tail reuse. Untimestamped sparse-clear, nested-composite and MSAA-leaf counts
+cover the active diagnostic period including trailing work. FPS denominators
+were already the entire input window and do not change. The new timestamped
+clear diagnostic records 581 sparse clears out of 586 during input, writing
+15.102% of full-clear bytes. No performance credit comes from these corrections.
+
+The [video/filter report](performance/vlang-video-blur-20261106.json),
+[verified raw archive](performance/raw/vlang-video-blur-20261106.tar.gz) and
+[collection receipt](performance/vlang-video-blur-20261106-collection.json)
+retain all six cohorts, actual timestamps, hosts, identities, commands, checks,
+patches, diagnostics and failures. They preserve the malformed initial native
+fixtures and the verification wrapper's wrong transport switch; a corrected
+separate run supplies 1,219 exact transport checks. Earlier raw collections
+remain unchanged. GPU experiment switches remain off; only exact identical
+video-pixel reuse is enabled by default.
