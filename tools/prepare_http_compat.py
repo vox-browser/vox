@@ -240,7 +240,8 @@ def staged_modules(work, vlib):
 def remove_obsolete_entries(target, original):
     names = {entry.name for entry in original.iterdir()} | {
         "vox_h2_wake.h", "vox_receive_buffer.h", "vox_receive_buffer.v",
-        "vox_receive_buffer_test.v"}
+        "vox_receive_buffer_test.v", "vox_tls_sessions.h", "vox_tls_sessions.v",
+        "vox_native_state.h"}
     for entry in target.iterdir():
         if entry.name not in names:
             if entry.is_symlink() or entry.is_file():
@@ -280,6 +281,12 @@ def main():
     receive_header = (repo / 'tools/httpcompat/receive_buffer.h').read_text()
     write_if_changed(target / 'vox_receive_buffer.h', receive_header)
     write_if_changed(target / 'vox_receive_buffer.v', receive_buffer_helper())
+    tls_sessions_header = (repo / 'tools/httpcompat/tls_sessions.h').read_text()
+    tls_sessions_helper = (repo / 'tools/http_tls_sessions.v.inc').read_text()
+    native_state_header = (repo / 'platform/native_state.h').read_text()
+    write_if_changed(target / 'vox_tls_sessions.h', tls_sessions_header)
+    write_if_changed(target / 'vox_tls_sessions.v', tls_sessions_helper)
+    write_if_changed(target / 'vox_native_state.h', native_state_header)
     for entry in original.iterdir():
         output = target / entry.name
         if entry.name == "header.v":
@@ -308,6 +315,9 @@ def main():
         "staged_request_sha256": hashlib.sha256(patched_request.encode()).hexdigest(),
         "receive_buffer_header_sha256": hashlib.sha256(receive_header.encode()).hexdigest(),
         "receive_buffer_helper_sha256": hashlib.sha256(receive_buffer_helper().encode()).hexdigest(),
+        "tls_sessions_header_sha256": hashlib.sha256(tls_sessions_header.encode()).hexdigest(),
+        "tls_sessions_helper_sha256": hashlib.sha256(tls_sessions_helper.encode()).hexdigest(),
+        "native_state_header_sha256": hashlib.sha256(native_state_header.encode()).hexdigest(),
         "source_proxy_sha256": hashlib.sha256(proxy_text.encode()).hexdigest(),
         "staged_proxy_sha256": hashlib.sha256(patched_proxy.encode()).hexdigest(),
         "source_transport_sha256": hashlib.sha256(transport_text.encode()).hexdigest(),
