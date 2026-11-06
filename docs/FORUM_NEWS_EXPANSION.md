@@ -3036,6 +3036,48 @@ failed attempts, input identities, native checks and memory receipts. The ZIP
 is 42,831,248 bytes, SHA-256
 `301bd468cf9c27733defa0b6005608bdf9a4a366906f9ed8f8635e412bee3551`; every member passed hash readback and CRC verification.
 
+## Slate source capture and AVIF response delivery (2026-11-06)
+
+Slate remains **unqualified**, with its registered archive and reference PNG
+unchanged. Two fresh candidates preserve the current guest page and original
+response bytes under full uBlock Origin, 1024×768 and scale 1. Neither candidate
+is registered or counted as a site pass.
+
+The cold-source candidate has **116,088 source/frozen pixels** with both cold
+and complete replay caches. Vox and the two independent frozen Brave references
+match at **0** under each cache policy. Every source difference falls inside
+the first two photographs; URLs, intrinsic dimensions and CSS geometry agree.
+Their encoded bodies are AVIF despite their `.jpeg` URLs.
+
+A separate acquisition from a prepared, closed cache also fails qualification.
+Its cold frozen Brave pair differs by **98,364 pixels**; native matches the
+second reference and differs by 98,364 from the first. Its complete-cache pair
+and native match at **0**, but still differ from that candidate's live source
+by **15,242 pixels**. These acquisitions contain different response/DOM bytes
+and are not a matched experiment measuring the effect of cache preparation.
+Both failed comparison exits and all before/after identities remain recorded.
+
+A separate delivery diagnostic replays the **same first-candidate bytes and
+headers** without browser feature flags or DOM edits. Canonical buffered
+responses differ from the live source at **118,500 pixels** in each of two
+fresh processes. Sending each AVIF in pieces (1024-byte prefix, 150ms pause,
+then 4096-byte pieces with 30ms pauses) yields **11,106 source pixels** in each
+of two fresh processes. Within each delivery mode the PNGs are identical;
+between modes **114,696 pixels** change. Body hashes and the delivered schedule
+are retained. This shows that delivery changes Brave's image pixels under
+these conditions. An incremental RGB versus completed YUV generator difference
+is a hypothesis; this diagnostic does not measure the internal decoder identity.
+The instrumented delivery supplies no native acceptance or optimization credit.
+
+The [machine-readable evidence](evidence/slate-avif-source-delivery-20261106.json)
+and [466-member archive](evidence/slate-avif-source-delivery-20261106.zip)
+preserve both failed candidates, all encoded bodies, source/replay/native PNGs,
+filter reports, prepared-cache provenance, delivery controls, input identities
+and actual memory-guard exits. The ZIP is 17,597,912 bytes, SHA-256
+`66abd439cf1c44fa1328f91635ef73adb5425e118766938623cd78347b6f6aee`; every member passes CRC and hash readback.
+The completed Verge correction and its 142-test / 148-capture exact checkpoint
+remain `fc14cc2e2` and `29e460bae`.
+
 ## Run
 
 ```sh

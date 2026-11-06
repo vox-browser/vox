@@ -1,0 +1,207 @@
+{
+  "scope": "Fresh unregistered Slate guest candidates; full MV2 uBlock Origin, 1024x768, scale1, ordinary animation policy; no new rendering acceptance",
+  "status": "Source/replay qualification remains open",
+  "registered_manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227",
+  "registered_archive_unchanged": true,
+  "candidates": [
+    {
+      "name": "candidate",
+      "acquisition_cache_policy": "cold",
+      "manifest_sha256": "d8df850a044b022d69ecbf8db67335dbfa33a9a7e850d5e0cc8cbdb698bcd2a8",
+      "responses": 72,
+      "results": [
+        {
+          "policy": "cold",
+          "status": "live-to-frozen-mismatch",
+          "source": 116088,
+          "replay": 0,
+          "native_first": 0,
+          "native_second": 0,
+          "native_source": 116088
+        },
+        {
+          "policy": "complete",
+          "status": "live-to-frozen-mismatch",
+          "source": 116088,
+          "replay": 0,
+          "native_first": 0,
+          "native_second": 0,
+          "native_source": 116088
+        }
+      ],
+      "identities": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "74a75d7c9c23e47502e30bcfbf1ebcb275776701f6b7a27a6132fc1ab017ef40",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7afb0222dcc1024a792576f759d75fcdc47be527e8a8c911dbd06e35f5f21237",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3bb3a5bac04b42a9cf516313776857017ce9b27e1d1b4975c9ed4d0ca9c0b1c2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "source_inputs_unchanged": true
+    },
+    {
+      "name": "candidate-complete",
+      "acquisition_cache_policy": "complete",
+      "manifest_sha256": "d67b1871acc3028d1590efff99d29373f4f4835e3163cac76a13feaf3b244f84",
+      "responses": 68,
+      "results": [
+        {
+          "policy": "cold",
+          "status": "reference-replay-mismatch",
+          "source": 113606,
+          "replay": 98364,
+          "native_first": 98364,
+          "native_second": 0,
+          "native_source": 15242
+        },
+        {
+          "policy": "complete",
+          "status": "live-to-frozen-mismatch",
+          "source": 15242,
+          "replay": 0,
+          "native_first": 0,
+          "native_second": 0,
+          "native_source": 15242
+        }
+      ],
+      "identities": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "50642bb5699c6331b22268ba2ebe387f94b183a2013b4896d712667ce0089a0b",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7afb0222dcc1024a792576f759d75fcdc47be527e8a8c911dbd06e35f5f21237",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3bb3a5bac04b42a9cf516313776857017ce9b27e1d1b4975c9ed4d0ca9c0b1c2",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "source_inputs_unchanged": true
+    }
+  ],
+  "first_candidate_gap": {
+    "different_pixels": 116088,
+    "pixels_outside_first_two_photo_rectangles": 0,
+    "images": [
+      {
+        "url": "https://compote.slate.com/images/21db86ec-5939-4955-82cf-538b0d877999.jpeg?crop=7694%2C5130%2Cx0%2Cy1&s=image-585",
+        "complete": true,
+        "naturalWidth": 559,
+        "x": 232.28125,
+        "y": 263.4375,
+        "width": 559.421875,
+        "height": 372.9375
+      },
+      {
+        "url": "https://compote.slate.com/images/d7f86c4d-a8eb-44aa-a0e0-a1d14269cae5.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390",
+        "complete": true,
+        "naturalWidth": 197,
+        "x": 15,
+        "y": 263.4375,
+        "width": 197.28125,
+        "height": 131.515625
+      }
+    ],
+    "format": "Original AVIF response bodies at .jpeg URLs"
+  },
+  "delivery_diagnostic": {
+    "results": [
+      {
+        "name": "delivery-buffered",
+        "exit": 0,
+        "source_pixels": 118500,
+        "previous_frozen_pixels": 2412
+      },
+      {
+        "name": "delivery-split",
+        "exit": 0,
+        "source_pixels": 11106,
+        "previous_frozen_pixels": 117108
+      },
+      {
+        "name": "delivery-repeat-buffered",
+        "exit": 0,
+        "source_pixels": 118500,
+        "previous_frozen_pixels": 2412
+      },
+      {
+        "name": "delivery-repeat-split",
+        "exit": 0,
+        "source_pixels": 11106,
+        "previous_frozen_pixels": 117108
+      }
+    ],
+    "within_mode_fresh_process_pixels": {
+      "buffered": 0,
+      "split": 0
+    },
+    "between_modes_pixels": 114696,
+    "protocol": "Same first-candidate encoded bodies and headers. Buffered uses the canonical whole response send; split sends headers plus 1024 body bytes, pauses 150ms, then sends 4096-byte pieces with 30ms pauses. Every body hash is retained. No browser feature flags or DOM edits.",
+    "interpretation": "Delivery changes the selected image pixels; an incremental RGB versus completed YUV image-generator difference is a hypothesis, not a measured internal decoder identity."
+  },
+  "limits": [
+    "Neither candidate qualifies; both remain outside the registered fixtures",
+    "The two live acquisition attempts have different response/DOM bytes and are not a matched cache-policy experiment",
+    "The split-delivery run is deliberately instrumented; no native acceptance or rendering optimization is credited",
+    "Two identical fresh processes per delivery mode establish only these diagnostic observations, not all timing or network conditions",
+    "The Verge production correction and its strict checks are already committed separately as fc14cc2e2 and 29e460bae"
+  ],
+  "archive": {
+    "path": "slate-avif-source-delivery-20261106.zip",
+    "members": 466,
+    "bytes": 17597912,
+    "sha256": "66abd439cf1c44fa1328f91635ef73adb5425e118766938623cd78347b6f6aee"
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/slate-source-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 42991616,
+    "elapsed_seconds": 2.482591958,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
