@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import vm from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import crypto from 'node:crypto';
+import { parseArgs } from 'node:util';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { encodeSnapshot, encodeNativeSnapshot } from './snapshot.mjs';
 import { parserStub } from './lazy_parser.mjs';
@@ -15,6 +16,21 @@ import { base64Stub } from './lazy_base64.mjs';
 import * as parserExports from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
+const { values } = parseArgs({ options: {
+    output: { type: 'string' },
+    'site-policy': { type: 'string' },
+} });
+const outputDir = values.output ? path.resolve(values.output) : path.join(root, 'adblock');
+const auxiliaryDir = values.output ? outputDir : here;
+const extraPolicy = values['site-policy']
+    ? JSON.parse(await fs.readFile(values['site-policy'], 'utf8')) : null;
+if (extraPolicy && (typeof extraPolicy.filters !== 'string' ||
+    !extraPolicy.resources || Array.isArray(extraPolicy.resources) ||
+    Object.values(extraPolicy.resources).some(source => typeof source !== 'string'))) {
+    throw new Error('Site policy requires filters and a resource-name/source object');
+}
+if (extraPolicy && !values.output) throw new Error('--site-policy requires an isolated --output directory');
+await fs.mkdir(outputDir, { recursive: true });
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'adblock/lists/manifest.json'), 'utf8'));
 const lists = await Promise.all(manifest.lists.map(async list => {
     const raw = await fs.readFile(path.join(root, 'adblock', list.file), 'utf8');
@@ -22,13 +38,24 @@ const lists = await Promise.all(manifest.lists.map(async list => {
     return { name: list.name, raw };
 }));
 const publicSuffixText = await fs.readFile(path.join(root, 'adblock/lists/public_suffix_list.dat'), 'utf8');
-await fs.writeFile(path.join(here, 'generated-defaults.js'), `export default {lists:${JSON.stringify(lists)},publicSuffixText(){return ${JSON.stringify(publicSuffixText)}}};\n`);
+let defaultsSource = `export default {lists:${JSON.stringify(lists)},publicSuffixText(){return ${JSON.stringify(publicSuffixText)}}};\n`;
 let lazyParser = false;
 const options = {
-    entryPoints: [path.join(here, 'runtime.js')], outfile: path.join(root, 'adblock/engine.js'),
+    entryPoints: [path.join(here, 'runtime.js')], outfile: path.join(outputDir, 'engine.js'),
     bundle: true, platform: 'browser', format: 'iife', target: 'safari16.4',
     define: { global: 'globalThis' }, minify: true, legalComments: 'eof', loader: { '.dat': 'text' }, metafile: true,
     plugins: [{ name: 'standalone-ublock-background', setup(b) {
+        b.onResolve({filter: /^\.\/generated-defaults\.js$/}, () => ({path:'defaults', namespace:'vox-build'}));
+        b.onLoad({filter: /.*/, namespace:'vox-build'}, () => ({contents:defaultsSource, loader:'js', resolveDir:here}));
+        b.onLoad({filter: /\/tools\/adblock\/site_resources\.js$/}, async args => {
+            if (!extraPolicy) return;
+            const source = await fs.readFile(args.path, 'utf8');
+            return {contents:source.replace('export const siteFilters =', 'const baseSiteFilters =') +
+                `\nexport const siteFilters = baseSiteFilters + ${JSON.stringify('\n' + extraPolicy.filters)};\n` +
+                Object.entries(extraPolicy.resources).map(([name, code]) =>
+                    `siteResources.set(${JSON.stringify(name)}, ${JSON.stringify(code)});`).join('\n'),
+                loader:'js', resolveDir:here};
+        });
         b.onLoad({filter: /\/tools\/adblock\/base64\.js$/}, () => lazyParser ? {
             contents: base64Stub(), loader:'js', resolveDir:here,
         } : undefined);
@@ -146,13 +173,14 @@ const base64Bundle = await build({entryPoints:[path.join(here,'base64.js')],
     minify:true,legalComments:'eof',write:false});
 const base64Source = base64Bundle.outputFiles[0].text;
 const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, lazyNetworkReferences: true, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog, urlSource, regexSource, base64Source });
-await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
-await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
-await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));
-await fs.writeFile(path.join(here, 'snapshot-layout.json'), JSON.stringify(snapshot.layout, null, 2) + '\n');
+defaultsSource = snapshot.source;
+await fs.writeFile(path.join(auxiliaryDir, 'generated-defaults.js'), defaultsSource);
+await fs.writeFile(path.join(outputDir, 'engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
+await fs.writeFile(path.join(outputDir, 'engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));
+await fs.writeFile(path.join(auxiliaryDir, 'snapshot-layout.json'), JSON.stringify(snapshot.layout, null, 2) + '\n');
 lazyParser = true;
 const output = await build(options);
-await fs.writeFile(path.join(here, 'bundle-inputs.json'), JSON.stringify(Object.keys(output.metafile.inputs).sort(), null, 2) + '\n');
-const code = await fs.readFile(path.join(root, 'adblock/engine.js'));
-await fs.writeFile(path.join(root, 'adblock/engine.js.gz'), gzipSync(code, {level: 9, mtime: 0}));
-console.log(`Built adblock/engine.js using full uBlock Origin ${manifest.engine.version} and ${lists.length} lists.`);
+await fs.writeFile(path.join(auxiliaryDir, 'bundle-inputs.json'), JSON.stringify(Object.keys(output.metafile.inputs).sort(), null, 2) + '\n');
+const code = await fs.readFile(path.join(outputDir, 'engine.js'));
+await fs.writeFile(path.join(outputDir, 'engine.js.gz'), gzipSync(code, {level: 9, mtime: 0}));
+console.log(`Built ${outputDir}/engine.js using full uBlock Origin ${manifest.engine.version} and ${lists.length} lists.`);
