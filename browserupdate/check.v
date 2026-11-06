@@ -1,6 +1,7 @@
 module browserupdate
 
 import net.http
+import os
 import semver
 import time
 
@@ -59,9 +60,28 @@ fn fetch_version(endpoint string, current string) string {
 	return if is_newer(current, latest) { latest } else { '' }
 }
 
+// A machine opts out of update checks with this file. It stays outside the
+// profile: development machines launch Vox constantly with temporary profiles
+// (VOX_PROFILE_DIR), and none of those launches should query /version.
+pub fn opt_out_path() string {
+	$if macos {
+		return os.join_path(os.home_dir(), 'Library', 'Application Support', 'Vox', 'no-update-check')
+	} $else {
+		return os.join_path(os.user_config_dir() or { os.join_path(os.home_dir(), '.config') }, 'vox', 'no-update-check')
+	}
+}
+
+pub fn disabled_on_this_machine() bool {
+	return os.exists(opt_out_path())
+}
+
 // A buffered result lets the worker finish even if the browser closes first.
 // Only the GUI thread consumes this result and creates UI2 controls.
 pub fn check(results chan string) {
+	if disabled_on_this_machine() {
+		results <- ''
+		return
+	}
 	results <- fetch_version(version_url, current_version())
 }
 

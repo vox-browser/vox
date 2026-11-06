@@ -22,6 +22,8 @@ fn (mut app BrowserApp) start_browser_update_check() {
 	// Process-tab children share the launch's notification instead of checking
 	// again for every new tab.
 	if app.screenshot_path != '' || os.getenv('VOX_TAB_GROUP') != '' { return }
+	// Development machines opt out entirely; no timer or worker starts.
+	if browserupdate.disabled_on_this_machine() { return }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut state := unsafe { browser_update_ui }

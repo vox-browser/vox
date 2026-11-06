@@ -1,6 +1,7 @@
 module browserupdate
 
 import net
+import os
 import time
 
 fn test_release_version_comparison_is_numeric_and_ignores_equal_or_older_versions() {
@@ -82,4 +83,32 @@ fn test_failed_browser_launch_does_not_quit_vox() {
 	}) or { failed = true }
 	assert failed
 	assert log.events.len == 0
+}
+
+fn test_machine_opt_out_file_disables_checks_for_every_profile() {
+	home := os.join_path(os.vtmp_dir(), 'vox-update-opt-out-${os.getpid()}')
+	previous_home := os.getenv('HOME')
+	previous_profile := os.getenv_opt('VOX_PROFILE_DIR')
+	os.setenv('HOME', home, true)
+	// Temporary profiles live elsewhere; the opt-out still applies to them.
+	os.setenv('VOX_PROFILE_DIR', os.join_path(home, 'temporary-profile'), true)
+	defer {
+		os.setenv('HOME', previous_home, true)
+		if profile := previous_profile {
+			os.setenv('VOX_PROFILE_DIR', profile, true)
+		} else {
+			os.unsetenv('VOX_PROFILE_DIR')
+		}
+		os.rmdir_all(home) or {}
+	}
+	assert !disabled_on_this_machine()
+	$if macos {
+		assert opt_out_path() == os.join_path(home, 'Library', 'Application Support', 'Vox', 'no-update-check')
+	}
+	os.mkdir_all(os.dir(opt_out_path()))!
+	os.write_file(opt_out_path(), '')!
+	assert disabled_on_this_machine()
+	results := chan string{cap: 1}
+	check(results)
+	assert <-results == ''
 }
