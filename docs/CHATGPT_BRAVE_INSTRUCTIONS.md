@@ -4760,3 +4760,149 @@ See the [verification receipt](performance/chatgpt-load-stages-verification-2026
 and [final production diagnostic](performance/chatgpt-load-stages-production-r2-diagnostic-20261106.json).
 **Instruction optimization credit is zero; broad-check carry remains zero.** This
 is diagnostic tooling and a CPU budget table; the overall Brave target remains unmet.
+
+
+## Refined native and HTML stage budget (2026-11-06)
+
+Implementation `3339c9466` adds opt-in boundaries around native frame bitmap
+setup/finalization, native layer publication, HTML event-loop processing and
+individual networking/rendering/timer/posted-message/other tasks. It also splits
+graphics-context setup from raster replay and instruments the compact navigation
+parser and initial resource path actually used by this page. Native callbacks
+share V identities and carry the previous JavaScript nesting state in a scalar
+token; Objective-C `@finally` closes them on early return and exceptions.
+Callbacks use `VOX_NATIVE_STATE` and install only when both diagnostics and
+instruction counters are enabled.
+
+The fresh diagnostic totals **30,368,705,509 instructions**. **JavaScript-related
+scopes total 9,130,285,975 (30.0648%)**. The largest native scope is **document
+raster replay: 6,843,019,533 (22.5331%)**. Native bitmap/presentation self work
+outside the V frame totals **206,869,453**, and HTML task/loop self work totals
+**716,847,402**, with measured children subtracted. The browser-main residual is
+still **3,171,913,355 (10.4447%)**; it remains unattributed to a specific subsystem.
+
+| Stage (measured children subtracted) | Instructions | Share | Calls |
+| --- | ---: | ---: | ---: |
+| Document raster replay, caches, filters and compositing | 6,843,019,533 | 22.5331% | 381 |
+| Async JavaScript module compilation, execution and bindings | 5,331,851,467 | 17.5571% | 288 |
+| Document style updates | 4,139,431,519 | 13.6306% | 741 |
+| Other JavaScript evaluation, callbacks and bindings | 3,798,434,508 | 12.5077% | 1,850 |
+| Other browser startup / native event-loop work (residual) | 3,171,913,355 | 10.4447% | 1 |
+| Absolutely positioned descendants | 2,249,604,394 | 7.4076% | 13 |
+| Owned helpers + process/coalition endpoint remainder | 712,069,331 | 2.3447% | — |
+| CSS parsing / stylesheet conversion | 578,580,082 | 1.9052% | 11 |
+| Background resource completion, excluding measured children | 326,932,343 | 1.0765% | 381 |
+| HTML networking task, excluding measured children | 318,087,630 | 1.0474% | 581 |
+| Document layout coordination | 255,705,586 | 0.8420% | 730 |
+| Frame setup / completion, excluding measured children | 214,158,477 | 0.7052% | 381 |
+| HTML event-loop coordination, excluding tasks | 206,883,370 | 0.6812% | 1,133 |
+| Frame preparation, excluding measured children | 196,606,469 | 0.6474% | 381 |
+| HTML response decoding and navigation parsing | 183,705,630 | 0.6049% | 1 |
+| Viewport relayout coordination | 179,713,859 | 0.5918% | 10 |
+| Normal flow layout | 168,403,145 | 0.5545% | 13 |
+| Process startup before/between instrumented roots | 163,553,915 | 0.5386% | — |
+| Layout tree construction | 154,406,446 | 0.5084% | 11 |
+| HTML rendering task, excluding measured children | 151,188,189 | 0.4978% | 353 |
+| Native bitmap setup/finalization outside V frame | 143,846,137 | 0.4737% | 381 |
+| Native replay wrapper/checkpoints, remaining work | 118,680,476 | 0.3908% | 381 |
+| Paint command recording | 117,351,047 | 0.3864% | 18 |
+| Apply JavaScript document state | 100,531,279 | 0.3310% | 758 |
+| JavaScript runtime setup, excluding measured children | 81,032,450 | 0.2668% | 1 |
+| Initial resource preload planning/installation | 67,292,367 | 0.2216% | 1 |
+| Native layer publication and transactions | 63,023,316 | 0.2075% | 381 |
+| Browser chrome | 58,914,959 | 0.1940% | 388 |
+| Document installation, including HTML/navigation work | 58,025,428 | 0.1911% | 1 |
+| HTML rendering opportunity scheduling | 39,824,274 | 0.1311% | 381 |
+| Animation driver | 36,247,412 | 0.1194% | 381 |
+| Other layout geometry | 34,921,258 | 0.1150% | 13 |
+| Other HTML tasks | 33,812,375 | 0.1113% | 178 |
+| Native frame graphics-context setup | 29,400,838 | 0.0968% | 381 |
+| PNG encoding | 18,223,797 | 0.0600% | 1 |
+| Separately traced style computation / interpolation | 8,244,181 | 0.0271% | 29 |
+| HTML posted-message tasks | 6,072,584 | 0.0200% | 17 |
+| Document snapshot | 5,882,975 | 0.0194% | 1 |
+| Relative-position offsets | 2,277,575 | 0.0075% | 13 |
+| HTML timer tasks | 803,254 | 0.0026% | 5 |
+| Snapshot pixel conversion | 48,279 | 0.0002% | 1 |
+| **Total** | **30,368,705,509** | **100%** | |
+
+All 41 rows sum exactly: **29,656,636,178 root-process instructions plus
+712,069,331 coalition/endpoint remainder equals 30,368,705,509**. Native bitmap
+and presentation rows exclude V frame children; they do not duplicate the 6.84B
+raster count. Inclusive counts overlap and must not be added. See the
+[full CSV](performance/chatgpt-load-stages-refined-traced-20261106.csv) and
+[JSON](performance/chatgpt-load-stages-refined-traced-20261106.json).
+
+Scope remains exclusive-coalition creation through encoded document PNG, using
+the original SOCKS fixture and scripts, private profiles/caches, 1024×768 viewport,
+scale two and unfocused five-second settle. No new live download is made.
+OS filesystem/shader caches are retained; GPU execution and outside-coalition
+services are excluded. Process scopes include concurrent threads and tracer
+work. The residual includes startup, native platform/event-loop and concurrent
+activity outside measured scopes. These are CPU instructions, not network wait
+or isolated navigation/rendering time.
+
+The canonical executable SHA-256 is
+`2108b479b0b4af86534077ae60bb8e7851ec19c4c1c8f76c58432d07d827d452`.
+The shared worker publishes a **single C unit with explicit V `-prod`**, with
+**C O2, full LTO and inline threshold 75** in its sealed compiler command.
+This differs from the previous parallel build/source conditions. These counts
+are not an optimization comparison or a rescaling of the prior 29.915B table.
+The untraced reference is **28,957,081,479 instructions**; traced/untraced frame
+checkpoints are **381/425**. No normalization or calibrated tracer-overhead claim
+is made.
+
+The receipt begins at `ae97a4d456afa662af57b87005d7192d5ba2d0d6`, verifies at
+`aac02463bfd1d01227cbddf0c00831e1789639dd` and records after-build head
+`bc97e794141d0df8d2769992db2b2fc0bb9ba18d`. All three aggregate build-input hashes
+are identical. The source commit occurs after the verified-head metadata read;
+all 17 focused source/test blobs match the after-build head exactly. SHA-verified
+sealed preprocessed compiler input supplies excerpts of the native finally
+wrappers, scalar ABI and HTML task/loop functions. Actual events prove all new
+required paths execute. The latest completed matching bundle is reused under a
+nonblocking shared publication lease, released after capture. No extra build
+request or app/source-tree copy is made.
+
+All four captures (traced Vox, two Brave references, untraced Vox) pass bootstrap,
+complete content/button identity, unchanged per-engine pixels and normal exits.
+Executable/native-library/resource/tool identities remain stable. Per-engine
+stability does not imply cross-browser pixel equality. The generic driver mixes
+traced/untraced variants and exits one for the unmet Brave threshold; its summary
+is retained without acceptance interpretation. The diagnostic controller and
+guard exit zero over **47.38 seconds**, peaking at **2,057,682,944 sampled RSS
+bytes** under 12 GiB and adopting 14 process identities without error. One-minute
+host load spans **7.10–8.92 on 18 CPUs**.
+
+All **36 final focused jobs** pass: twelve compilations and twenty-four executions,
+with **336 authenticated test-function calls**, across ordinary GC, no GC,
+poisoned preallocation and address/undefined-behavior sanitizers, with tracing
+both on and off. Tests cover native token/JavaScript restoration, worker
+exclusion, callback nesting, early returns, Objective-C exceptions, callback
+unregistration during a live scope, existing frame/capture/scale ownership,
+navigation origin/readiness, initial image preload and HTML task ordering,
+pausing, step-one callbacks and VM generation. Every final trace is balanced,
+PID-owned and monotonic. The focused controller and guard exit zero over
+**299.07 seconds**, peaking at **9,083,551,744 sampled RSS bytes** under 12 GiB;
+runtime guards use 3 GiB.
+
+The first focused attempt crashes in PNG decoding under the harness's unbounded
+preallocation `v_realloc`. Starting the staged compiler from the repository root
+selects the wrong builtin runtime. The corrected harness compiles from the
+staged compiler directory, sets `VEXE` explicitly and verifies bounded copy code
+in generated C before each preallocation/sanitizer execution. No engine allocator
+change is made. The original failed source, C, stack, preceding successful jobs
+and exit 139 are retained without whole-run pass credit. Final checks use the
+bounded production-compatible allocator. Earlier results retain their original
+compiler setup and are not silently relabeled.
+
+The first finalizer expects an unparenthesized shift; V emits casts/parentheses.
+That failure is retained, the predicate is corrected against sealed C, and the
+finalizer succeeds without rerunning any browser capture. Independent parsing
+reproduces every row and the exact endpoint; every published LF CSV row matches
+JSON, while raw archived exports keep their original bytes. The
+[focused receipt](performance/chatgpt-load-stages-refined-focused-20261106.json),
+[production diagnostic](performance/chatgpt-load-stages-refined-production-r1-diagnostic-20261106.json)
+and [verification receipt](performance/chatgpt-load-stages-refined-verification-20261106.json)
+link raw commands, logs, counters, original PNGs, guards, actual exits, compiled
+runners and failures. **Optimization credit and broad-check carry remain zero;
+the Brave target remains unmet.**

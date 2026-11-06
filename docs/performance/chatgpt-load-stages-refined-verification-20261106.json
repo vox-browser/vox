@@ -1,0 +1,157 @@
+{
+  "complete": true,
+  "implementation_commit": "3339c94662e4a49506ddb655d14b1c804c70a777",
+  "focused_jobs": 36,
+  "focused_test_calls": 336,
+  "captures": 4,
+  "all_content_pixels_bootstrap_and_exits_valid": true,
+  "identity_stable": true,
+  "exact_coalition_total": 30368705509,
+  "exact_process_total": 29656636178,
+  "native_stages_verified": [
+    "native_frame_bitmap",
+    "native_frame_presentation",
+    "native_raster_replay"
+  ],
+  "rows": 41,
+  "indexed_payloads_verified": 232,
+  "archives": [
+    {
+      "path": "docs/performance/chatgpt-load-stages-refined-focused-20261106-evidence.zip",
+      "bytes": 42719392,
+      "sha256": "94d12c55ca989f41350aa93f5b2d1511793ef8f0be540728823411e3c288cb76"
+    },
+    {
+      "path": "docs/performance/chatgpt-load-stages-refined-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "c538d69630b37042a2ac4d206ba0b651144b79532cbf4cbfb6b17ae3a342ce7b",
+      "bytes": 2008879,
+      "entries": 80,
+      "checkpoints": 6
+    },
+    {
+      "path": "docs/performance/chatgpt-load-stages-refined-finalization-20261106-evidence.zip",
+      "bytes": 185512,
+      "sha256": "0caaee81d2cf3723692b5f7d905280f7c1461d48333b5b40e92b8158afe9ec6d"
+    }
+  ],
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-load-stages-refined-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "63147": "Fri Nov  6 02:58:23 2026    ",
+      "63150": "Fri Nov  6 02:58:23 2026    ",
+      "63810": "Fri Nov  6 02:58:33 2026    ",
+      "63814": "Fri Nov  6 02:58:33 2026    ",
+      "63822": "Fri Nov  6 02:58:33 2026    ",
+      "63823": "Fri Nov  6 02:58:33 2026    ",
+      "63826": "Fri Nov  6 02:58:33 2026    ",
+      "64395": "Fri Nov  6 02:58:44 2026    ",
+      "64398": "Fri Nov  6 02:58:44 2026    ",
+      "64404": "Fri Nov  6 02:58:44 2026    ",
+      "64405": "Fri Nov  6 02:58:44 2026    ",
+      "64407": "Fri Nov  6 02:58:44 2026    ",
+      "64793": "Fri Nov  6 02:58:54 2026    ",
+      "64795": "Fri Nov  6 02:58:54 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 2057682944,
+    "elapsed_seconds": 47.384153166000004,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "2108b479b0b4af86534077ae60bb8e7851ec19c4c1c8f76c58432d07d827d452",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-025446-80203d80/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "cff7440c7ea661d0cbd183d6e34017bb8699e6b36ac6091f4ca0c9c33a81c63a",
+      "dirty": true,
+      "head": "ae97a4d456afa662af57b87005d7192d5ba2d0d6",
+      "repository_sha256": "d81530a3a0812ab3c88ca6609419df367d4d83f3b8200a03082a699f5cc54cfa"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "cff7440c7ea661d0cbd183d6e34017bb8699e6b36ac6091f4ca0c9c33a81c63a",
+      "dirty": true,
+      "head": "bc97e794141d0df8d2769992db2b2fc0bb9ba18d",
+      "repository_sha256": "a962bf02f7ff7b6a9f92b9800d87e8cf18f06464807010a6a9de376e5e84dcb1"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "ae97a4d456afa662af57b87005d7192d5ba2d0d6",
+      "id": "e5aa16718c88422ba4eaf816af838c71",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "cff7440c7ea661d0cbd183d6e34017bb8699e6b36ac6091f4ca0c9c33a81c63a",
+      "dirty": true,
+      "head": "aac02463bfd1d01227cbddf0c00831e1789639dd",
+      "repository_sha256": "2bbce60291981928c0d85d124f212227f9d8318752db77d3fb05754602e13006"
+    }
+  },
+  "instruction_credit": 0,
+  "broad_cadence": 0,
+  "compiled_stage_proof": {
+    "preprocessed_source": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-025446-80203d80/frozen-compiler-inputs/0-Vox.c.i",
+    "sha256": "bf7f6cc31972384a0a2308b53cd31d179c90e127dae90093fe9fa22809f797af",
+    "excerpts": {
+      "path": "Build/chatgpt-load-stages-refined-production-20261106-r1/compiled-refined-stage-proof.txt",
+      "bytes": 14107,
+      "sha256": "38877754890475f8db2b6a649eda172583e1b7ad740a85db99b4310ccc60359f"
+    },
+    "qualification": "SHA-verified sealed compiler input contains the native @finally wrappers, scalar token ABI and HTML task/event-loop boundaries. Capture events independently prove execution. Full compiler command/mode retained in frozen receipt."
+  },
+  "retained_finalization_failure": {
+    "exit": 1,
+    "cause": "Proof substring expected unparenthesized shift; sealed compiler emits casts and parentheses. Predicate corrected against actual generated C; no browser capture rerun or performance credit."
+  },
+  "qualification": "Fresh diagnostic with refined native/HTML boundaries. Exclusive rows reconcile to this capture only; no scaling to the older 29.915B run. Process counters include concurrent threads and logging overhead. Compiler mode/source conditions differ from the previous parallel capture if recorded as single/prod; no optimization comparison or Brave acceptance claim. Published CSV line endings use LF; raw archived exports remain unchanged.",
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-load-stages-refined-production-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 956579840,
+    "elapsed_seconds": 7.087781458,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "focused_source_blobs_at_build_head": {
+    "head": "bc97e794141d0df8d2769992db2b2fc0bb9ba18d",
+    "field": "repository_after_build",
+    "files": 17,
+    "exact": true,
+    "qualification": "Before, verified and after-build aggregate input hashes are identical. Source commit occurs after the verified-head metadata reading; the after-build receipt head contains the exact owned blobs. Sealed preprocessed source and actual execution independently authenticate the compiled paths."
+  },
+  "independent_verification": true,
+  "verified_payloads": 238,
+  "documented_rows_verified": 41,
+  "verification_source_sha256": "b0ba9a14868d1d1dc4b9c77920024d98ec3570053d2d4818c85696c9f9da1150",
+  "independent_verification_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-load-stages-refined-production-20261106-r1/verify.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 390348800,
+    "elapsed_seconds": 0.6907982079999999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
