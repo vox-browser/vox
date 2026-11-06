@@ -49,7 +49,7 @@ fn test_fresh_forum_news_defaults_keep_the_original_bookmark_order() {
 	assert store.items.map(it.url) == optimizedsites.bookmarked_sites.map(it.address)
 	assert store.items.filter(it.url == 'https://news.ycombinator.com/').len == 1
 	assert store.items.any(it.url == 'https://old.reddit.com/r/programming/')
-	assert store.items.any(it.url == 'https://www.reddit.com/')
+	assert store.items.any(it.url == 'https://chatgpt.com/')
 }
 
 fn test_failed_forum_news_default_save_rolls_back_the_migration_flag_and_items() {

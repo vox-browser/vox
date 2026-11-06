@@ -2,7 +2,7 @@
   "description": "Sixteen representative forum, social, social news, and news sites. This is a coverage set, not a traffic ranking.",
   "sites": [
     {"id": "hacker-news", "name": "Hacker News", "url": "https://news.ycombinator.com/"},
-    {"id": "reddit", "name": "Reddit", "url": "https://www.reddit.com/"},
+    {"id": "chatgpt", "name": "ChatGPT", "url": "https://chatgpt.com/"},
     {"id": "lobsters", "name": "Lobsters", "url": "https://lobste.rs/"},
     {"id": "slashdot", "name": "Slashdot", "url": "https://slashdot.org/"},
     {"id": "stackoverflow", "name": "Stack Overflow", "url": "https://stackoverflow.com/questions"},

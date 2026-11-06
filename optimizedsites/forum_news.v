@@ -5,7 +5,7 @@ module optimizedsites
 // Keep the addresses aligned with Tests/Browser/Brave/forum-news.json.
 pub const forum_news_sites = [
 	Site{'Hacker News', 'https://news.ycombinator.com/', 'news.ycombinator.com'},
-	Site{'Reddit', 'https://www.reddit.com/', 'reddit.com'},
+	Site{'ChatGPT', 'https://chatgpt.com/', 'chatgpt.com'},
 	Site{'Lobsters', 'https://lobste.rs/', 'lobste.rs'},
 	Site{'Slashdot', 'https://slashdot.org/', 'slashdot.org'},
 	Site{'Stack Overflow', 'https://stackoverflow.com/questions', 'stackoverflow.com'},
