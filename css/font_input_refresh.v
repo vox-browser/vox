@@ -130,9 +130,13 @@ fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractEleme
 	}
 	// A font-metric-relative font size on an ancestor can change after loading
 	// its face. Keep em/rem results only while both size inputs stay identical.
-	if computed.root_font_size_px_ != s.root_element_font_metrics.font_size.to_double()
-		|| style_value_option_changed(computed.font_input_parent_font_size_,
-			StyleComputer.get_non_animated_inherit_value(.font_size, abstract_element)) {
+	if computed.root_font_size_px_ != s.root_element_font_metrics.font_size.to_double() {
+		return diagnostic_font_guard_reject(3)
+	}
+	parent := if retain_font_refresh_parent_lookups { ?&ComputedProperties(none) }
+		else { parent_computed_properties(abstract_element) }
+	if style_value_option_changed(computed.font_input_parent_font_size_,
+		font_refresh_parent_value(.font_size, abstract_element, parent)) {
 		return diagnostic_font_guard_reject(3)
 	}
 	if abstract_element.pseudo_element() == none {
@@ -172,7 +176,7 @@ fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractEleme
 	// therefore retains the normal cascade/transition publication path.
 	for id in computed.inherited_property_iterator() {
 		if style_value_option_changed(computed.property(id, .no),
-				StyleComputer.get_non_animated_inherit_value(id, abstract_element)) {
+				font_refresh_parent_value(id, abstract_element, parent)) {
 			return diagnostic_font_guard_reject(10)
 		}
 	}
