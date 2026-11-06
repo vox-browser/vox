@@ -1,0 +1,194 @@
+{
+  "recorded_utc": "2026-11-06T03:25:44.276809+00:00",
+  "site": "Discord login / embedded image challenge",
+  "fix_commit": "ea74234a9",
+  "problem": "HTMLImageElement onload/onerror properties were plain JavaScript properties, detached from native request completion. An asynchronously loaded image could never resolve its page loader or reach canvas drawing.",
+  "change": "Bind HTMLImageElement prototype load/error IDL properties to the existing native EventTarget handlers, with the owning image receiver, listener ordering, replacement and nullable conversion.",
+  "baseline": {
+    "raw": "Build/discord-retry-20261106/image-events/baseline-default-r1",
+    "compile_exit": 0,
+    "runtime_exit": 1,
+    "failed_regressions": [
+      "test_native_image_load_property_handler_receives_the_actual_request_event_in_listener_order",
+      "test_native_image_error_property_handler_replacement_null_conversion_and_receiver_checks"
+    ]
+  },
+  "focused_checks": {
+    "cases_per_mode": 20,
+    "modes": [
+      "default",
+      "-prealloc -gc none"
+    ],
+    "compile_memory_limit": "10G",
+    "compile_guard_limit_gib": 12,
+    "runtime_guard_limit_gib": 3,
+    "runs": {
+      "candidate-default-r1": {
+        "cases": 7,
+        "compile_exit": 0,
+        "runtime_exit": 0,
+        "focused_sources_unchanged": true,
+        "sources_sha256": {
+          "browserjs/image_host_test.v": "ef059264ff0bf0296841a3408c64aa2a67a7c369b6e0d6e513a7c7996923e038",
+          "browserjs/image_host_jsc.c.v": "e4c60e7b253aade6f0e168766962cfb47bb1af1398ab5083acba6f43b576021a",
+          "browserjs/image_host.v": "13667b83f37691bdd107cc29aba3d2bd821f2e275b91151c2278f45896b0477f",
+          "browserjs/canvas_host.v": "89a5806385f9d17120297ce4c770eb3136837f4ed56a29872bdebfc077a7fa53",
+          "main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5"
+        },
+        "compile_peak_sampled_rss_bytes": 4902862848,
+        "runtime_peak_sampled_rss_bytes": 32768,
+        "raw": "Build/discord-retry-20261106/image-events/candidate-default-r1"
+      },
+      "unit-prealloc-r2": {
+        "cases": 7,
+        "compile_exit": 0,
+        "runtime_exit": 0,
+        "focused_sources_unchanged": true,
+        "sources_sha256": {
+          "browserjs/image_host_test.v": "ef059264ff0bf0296841a3408c64aa2a67a7c369b6e0d6e513a7c7996923e038",
+          "browserjs/image_host_jsc.c.v": "e4c60e7b253aade6f0e168766962cfb47bb1af1398ab5083acba6f43b576021a",
+          "browserjs/image_host.v": "13667b83f37691bdd107cc29aba3d2bd821f2e275b91151c2278f45896b0477f",
+          "browserjs/canvas_host.v": "89a5806385f9d17120297ce4c770eb3136837f4ed56a29872bdebfc077a7fa53",
+          "main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5"
+        },
+        "compile_peak_sampled_rss_bytes": 4922163200,
+        "runtime_peak_sampled_rss_bytes": 32768,
+        "raw": "Build/discord-retry-20261106/image-events/unit-prealloc-r2"
+      },
+      "integration-default-r4": {
+        "cases": 13,
+        "compile_exit": 0,
+        "runtime_exit": 0,
+        "focused_sources_unchanged": true,
+        "sources_sha256": {
+          "main_child_documents_test.v": "6cea9dbe4720ff897c8c5bb94b7056e90de727684f59db7275f95b645afbb98b",
+          "main_async_images_test.v": "c18bb18c17ceff14e0cdc82d77547b1d4a33e4ce7d05e1d0a515ab8b2e9e495f",
+          "main_image_decode_test.v": "9afa75ccc0d56d0448e802eec5bc106a8eeb4c3d0db68b8fa130bc83c770ee30",
+          "main_compact_image_dimensions_test.v": "c45b2cba8ab03fc5dfbc7e86a1fa1fe2f38874186ea102d7a157be16e1b93036",
+          "browserjs/image_host_jsc.c.v": "e4c60e7b253aade6f0e168766962cfb47bb1af1398ab5083acba6f43b576021a",
+          "browserjs/image_host.v": "13667b83f37691bdd107cc29aba3d2bd821f2e275b91151c2278f45896b0477f",
+          "browserjs/canvas_host.v": "89a5806385f9d17120297ce4c770eb3136837f4ed56a29872bdebfc077a7fa53",
+          "main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5",
+          "main.v": "c2cb6949a790e4b9daa90a1a62be5b72481004a63f1fdc9645708423488a6b14",
+          "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550"
+        },
+        "compile_peak_sampled_rss_bytes": 5482741760,
+        "runtime_peak_sampled_rss_bytes": 179978240,
+        "raw": "Build/discord-retry-20261106/image-events/integration-default-r4"
+      },
+      "integration-prealloc-r5": {
+        "cases": 13,
+        "compile_exit": 0,
+        "runtime_exit": 0,
+        "focused_sources_unchanged": true,
+        "sources_sha256": {
+          "main_child_documents_test.v": "6cea9dbe4720ff897c8c5bb94b7056e90de727684f59db7275f95b645afbb98b",
+          "main_async_images_test.v": "c18bb18c17ceff14e0cdc82d77547b1d4a33e4ce7d05e1d0a515ab8b2e9e495f",
+          "main_image_decode_test.v": "9afa75ccc0d56d0448e802eec5bc106a8eeb4c3d0db68b8fa130bc83c770ee30",
+          "main_compact_image_dimensions_test.v": "c45b2cba8ab03fc5dfbc7e86a1fa1fe2f38874186ea102d7a157be16e1b93036",
+          "browserjs/image_host_jsc.c.v": "e4c60e7b253aade6f0e168766962cfb47bb1af1398ab5083acba6f43b576021a",
+          "browserjs/image_host.v": "13667b83f37691bdd107cc29aba3d2bd821f2e275b91151c2278f45896b0477f",
+          "browserjs/canvas_host.v": "89a5806385f9d17120297ce4c770eb3136837f4ed56a29872bdebfc077a7fa53",
+          "main_child_documents.v": "411c497b4526eeba1dee7521295fbae9ead6f56ac152eab947fba8c3e92518a5",
+          "main.v": "c2cb6949a790e4b9daa90a1a62be5b72481004a63f1fdc9645708423488a6b14",
+          "main_compact_content.v": "0f87f019f89595b0efe07bae0cde2ec6136b3dbfb11926522a8bf1dc8ef4f550"
+        },
+        "compile_peak_sampled_rss_bytes": 5542084608,
+        "runtime_peak_sampled_rss_bytes": 193167360,
+        "raw": "Build/discord-retry-20261106/image-events/integration-prealloc-r5"
+      }
+    },
+    "iframe_regression": "An explicitly delayed loopback PNG response invokes a detached image onload inside the real child document. That callback draws to the native child canvas, whose surface contains the exact expected opaque pixel."
+  },
+  "test_harness_correction": {
+    "invalid_run": "Build/discord-retry-20261106/image-events/integration-prealloc-r4",
+    "runtime_exit": 139,
+    "failure": "STB PNG reallocation reached V unbounded v_realloc and crashed. Running a staged compiler from the repository did not select its staged builtin library.",
+    "correction": "Compile prealloc tests from the staged compiler directory, as build-prod-browser.sh does, while using canonical repository sources and running tests from the repository.",
+    "verification": "Disassembly of integration-prealloc-r5 v_realloc calls prealloc_realloc_copy_size and guards the copy; all 13 integration cases then pass.",
+    "prior_evidence_note": "Earlier Discord offline prealloc commands also ran their compiler from the repository. Their flag-based results are retained, but should not be treated as validation of the production staged allocator."
+  },
+  "expanded_checks_not_counted_as_passing": [
+    {
+      "raw": "Build/discord-retry-20261106/image-events/cssom-isolated-default-r1",
+      "runtime_exit": 1,
+      "failure": "main_canvas_cssom_test.v expects CSSOM rule mutation to rewrite the style element textContent.",
+      "production_diagnostic": {
+        "text": "#cssomProbe{background-color:red}",
+        "rule": "blue",
+        "computed": "rgb(0, 0, 255)"
+      },
+      "diagnostic_note": "In the production blank frame the text remains the original red source while the actual CSS rule and computed style are blue. This test file is unchanged."
+    },
+    {
+      "raw": "Build/discord-retry-20261106/image-events/integration-default-r3",
+      "runtime_exit": 1,
+      "failure": "main_compact_finalize_delta_test.v invokes parent.moveBefore, but parent resolves to Window.parent rather than the element with id=parent. This test file is unchanged."
+    }
+  ],
+  "production": {
+    "raw": "Build/discord-retry-20261106/auth-r2",
+    "executable_sha256": "4b1ce3741d725cd0947002d089a3a553b4df5ba7937903609a649d183b28d842",
+    "source_receipt": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "4b1ce3741d725cd0947002d089a3a553b4df5ba7937903609a649d183b28d842",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-061609-9d373f1d/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "b8b27ef99348e7ddf32e13ce92d0f74e67c3009cb17cfb15260849e0e99538be",
+        "dirty": true,
+        "head": "110538aa4d5a2728675637918dea264ac00dc370",
+        "repository_sha256": "824110c1bafb9cc15e003baa76c0f78c78669b817b886f0508fe513f0aefb99d"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "6bf20a27cbfb3965efb9f0501ed810811105620a0549002e128926ecbe66da94",
+        "dirty": true,
+        "head": "110538aa4d5a2728675637918dea264ac00dc370",
+        "repository_sha256": "d5c87ae6b284162dcb07cb2c39367923deaeee335d544687726de55a6492ac40"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "110538aa4d5a2728675637918dea264ac00dc370",
+        "id": "b8345b76a60b4dc4b9c34f4a48039783",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "b8b27ef99348e7ddf32e13ce92d0f74e67c3009cb17cfb15260849e0e99538be",
+        "dirty": true,
+        "head": "110538aa4d5a2728675637918dea264ac00dc370",
+        "repository_sha256": "824110c1bafb9cc15e003baa76c0f78c78669b817b886f0508fe513f0aefb99d"
+      }
+    },
+    "bundle_pins_unchanged_through_setup": true,
+    "frozen_source_checks": {
+      "new_image_handler_factory_in_frozen_source": true,
+      "native_image_event_handler_in_frozen_source": true,
+      "frozen_source_sha256": "843aee20152e4165c38966235ffb3897cc2350b7f97560395085aceb8657c059"
+    },
+    "image_event_probe": {
+      "loaded": 1,
+      "error": 0,
+      "owner": true,
+      "size": [
+        1,
+        1
+      ]
+    },
+    "probe_scope": "A test-authored data PNG and canvas in the existing about:blank frame. This checks the installed native event binding without manipulating CAPTCHA responses."
+  },
+  "live_authentication": {
+    "path": "/login",
+    "captcha": true,
+    "authenticated": false,
+    "form": true,
+    "recorded_utc": "2026-11-06T03:23:36.817309+00:00",
+    "executable_sha256": "4b1ce3741d725cd0947002d089a3a553b4df5ba7937903609a649d183b28d842",
+    "submitted_with_native_input": true
+  },
+  "remaining": "The new process reaches the verification prompt. Opening the challenge and confirming its live tiles, then completing verification, require the user. Authenticated Discord is not yet verified."
+}
