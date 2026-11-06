@@ -30,6 +30,8 @@ mut:
 	queued []BrowserImageFetchJob
 	active_fetches int
 	cancelled bool
+	cors_requests map[string]&BrowserCORSImageRequest
+	cors_queued []&BrowserCORSImageRequest
 	deferred_lazy_images []DeferredBrowserLazyImage
 	lazy_image_queue_revision u64
 	lazy_image_probe DeferredLazyImageProbe
@@ -58,6 +60,9 @@ fn (mut loader BrowserImageRequestLoader) finish_initialization(has_runtime bool
 
 fn (mut loader BrowserImageRequestLoader) cancel() {
 	loader.cancelled = true
+	for _, request in loader.cors_requests { request.cancel() }
+	loader.cors_requests = map[string]&BrowserCORSImageRequest{}
+	loader.cors_queued = []&BrowserCORSImageRequest{}
 	for request in loader.deferred_lazy_images {
 		platform.release_closure(voidptr(request.complete))
 	}
@@ -79,7 +84,14 @@ fn finish_browser_image_request(complete html.HTMLImageFetchCompletion, decoded 
 }
 
 fn (mut loader BrowserImageRequestLoader) start_queued_fetches() {
-	for !loader.cancelled && loader.active_fetches < max_browser_image_fetches && loader.queued.len > 0 {
+	for !loader.cancelled && loader.active_fetches < max_browser_image_fetches
+		&& (loader.queued.len > 0 || loader.cors_queued.len > 0) {
+		if loader.cors_queued.len > 0 {
+			mut request := loader.cors_queued[0]
+			loader.cors_queued.delete(0)
+			request.start()
+			continue
+		}
 		job := loader.queued[0]
 		loader.queued.delete(0)
 		loader.active_fetches++
@@ -133,6 +145,9 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 	if address.scheme() !in ['http', 'https'] {
 		decoded := browser_fetch_image_request(image, model, address) or { finish_browser_image_request(complete, none); return }
 		finish_browser_image_request(complete, decoded)
+		return
+	}
+	if model.crossorigin() != .no_cors && loader.start_cors_image_request(image, model, address, complete) {
 		return
 	}
 	if !browser_image_request_allows_cached_bytes(image, model, address) {
