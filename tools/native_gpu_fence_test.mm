@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cstdio>
 static unsigned waits,releases;
-static bool succeeds=true;
+static bool succeeds=true, submit_error;
 static int schedule(void*) { ++waits; return succeeds; }
 static void release_ticket(void* ticket) { ++releases; free(ticket); }
 static int submit(CGContextRef,const VoxGraphiteCanvasSurfaceRegion* regions,int count,void** ticket) {
@@ -16,7 +16,7 @@ static int submit(CGContextRef,const VoxGraphiteCanvasSurfaceRegion* regions,int
         }
         IOSurfaceUnlock(surface,0,nullptr);
     }
-    *ticket=malloc(1); return *ticket!=nullptr;
+    *ticket=malloc(1); return submit_error ? -1 : int(*ticket!=nullptr);
 }
 static CGContextRef context() {
     auto color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -61,10 +61,22 @@ int main() { @autoreleasepool {
     waits=releases=0;
     @autoreleasepool { frame(bitmap);native_scroll_tiles_clear(); }
     assert(!waits && releases==1);
+    // A producer can reject after returning an owned ticket (verification
+    // failure). The export drops that ticket and never attaches a provider.
+    waits=releases=0;submit_error=true;
+    @autoreleasepool {
+        BOOL dirty[]={YES};native_scroll_tile_destination=bitmap;
+        assert(!native_scroll_tiles_export_with_schedule(bitmap,32,16,0,0,1,dirty,submit,release_ticket,schedule));
+        assert(!native_scroll_tile_pending && !waits && releases==1);
+    }
+    submit_error=false;
     // Failed scheduling cannot expose captured pixels or a new CA frame.
     waits=releases=0;succeeds=false;
     @autoreleasepool { auto failed=frame(bitmap);
     assert(!native_scroll_tiles_ready(failed,"publication"));assert(!native_scroll_tiles_flatten(failed));
+    auto unreadable=CGDataProviderCopyData(CGImageGetDataProvider(native_scroll_tile_images[0]));
+    assert(!unreadable || CFDataGetLength(unreadable)==0);
+    if (unreadable) CFRelease(unreadable);
     assert(waits==1);native_scroll_tiles_clear(); }
     assert(releases==1);succeeds=true;
     // Independent consumers resolve the same token safely.
