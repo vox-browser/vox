@@ -50,7 +50,7 @@ The default snapshot also compiles Vox's local
 same uBO parser and network engine. The ten subscription identities stay intact;
 independent custom-filter engines do not inherit the supplement.
 
-For two reviewed ChatGPT web-client deployments, the business-event serializer
+For reviewed ChatGPT web-client deployments, the business-event serializer
 and performance bootstrap receive local ES module replacements before transport
 or cache access. The business replacement preserves `reportCesBusinessEvent()`.
 The performance replacement preserves its asynchronous result, drains initial
@@ -159,7 +159,7 @@ impossible, and they earn no performance credit or broad-check cadence reset.
 ### Basic-site startup below 3 MB
 
 The follow-up policy reaches the startup target while keeping the native text
-composer and conversation runtime. Its 23 exact module URLs cover the archived
+composer and conversation runtime. The measured version's 23 exact module URLs cover the archived
 and November 6 anonymous mobile-web deployments. Unknown versions load normally.
 It suppresses optional install banners, trending suggestions, product popovers,
 recurring login banners, one-tap login, bottom-sheet dialogs, follow-up CTA
@@ -213,6 +213,54 @@ with `npm --prefix tools/adblock run build`; source hashes, export contracts,
 locale messages, fallback behavior and scope-cache behavior are tested. Isolated
 experiments can use `node tools/adblock/build.mjs --output Build/NAME
 --site-policy POLICY.json` without rewriting the shared production assets.
+
+### Attempt to reach 2.5 MB
+
+The **2,500,000-byte startup target remains unmet** when local replacement
+payloads are counted alongside decoded HTTP JavaScript. No renderer-pruning,
+rebundling, sidebar, preload or warm-up experiment from this attempt is shipped.
+
+| Frozen homepage diagnostic | HTTP bytes | Local replacement bytes | Total bytes | Original content/pixels |
+| --- | ---: | ---: | ---: | --- |
+| Working 3 MB policy | 2,959,483 | 31,391 | **2,990,874** | Exact |
+| Split module graph, preserved original signal bootstrap | 118,364 | 3,014,577 | 3,132,941 | Exact |
+| Split only the two application entries | 1,456,163 | 2,393,815 | 3,849,978 | Exact |
+| Prototype removing unexercised UI renderers | 1,990,209 | 668,480 | **2,658,689** | Exact |
+
+An earlier split-graph candidate fails document-signal initialization and never
+finishes author bootstrap; its smaller partial-load count is invalid. Preserving
+the original signal-bootstrap module restores the homepage, but the resulting
+split and facade overhead increases the total payload. The renderer-pruning
+prototype passes the retained frozen-page checks, but misses 2.5 MB and does not
+establish live conversation or general UI preservation. Its live deployment had
+already changed asset versions. Coverage and warm-up diagnostics subsequently
+obtain live replies, but those runs execute instrumented full renderer bodies;
+they do not validate the smaller prototype. Removing more control code based
+only on that coverage would not establish basic functionality across states.
+
+These are isolated diagnostics, with actual local script payloads included.
+They are not a CPU or load-time acceptance cohort and earn no engine optimization
+credit. One early coalition-instrumented launch is invalidated by a concurrent
+unrelated screenshot process. Later diagnostics use direct fresh processes
+under the memory guard, with matching capture settings and input identities.
+A separate two-turn live diagnostic with stale version-specific rules hits the
+12 GiB guard after its first answer; it supplies no completed follow-up result
+and does not resolve the known conversation-memory issue.
+
+The retained change refreshes the existing basic policy for the newly deployed
+anonymous client: 34 reviewed basic module URLs and six collector-module URLs
+across three releases. The same export, URL-scope, locale and lifecycle checks
+pass in all **55 tests**. The signed installed bundle blocks all fourteen expected
+scripts in a fresh live query and receives **Rome** for “capital of italy”. The
+original frozen homepage remains pixel-exact at 2,990,874 total bytes. A separate
+cold live homepage estimates 2,987,776 bytes across 255 unique original script
+responses, plus 32,028 local replacement bytes. This live estimate is based on
+observed URLs and hashed immutable sources, not a compressed wire counter.
+
+The [attempt receipt](performance/chatgpt-25mb-attempt-20261106.json) retains the
+failures, candidate payloads, guards, source identities and installed validation.
+The newly deployed asset refresh is committed independently of this diagnostic
+report; the 2.5 MB target remains open.
 
 ## Startup snapshots
 

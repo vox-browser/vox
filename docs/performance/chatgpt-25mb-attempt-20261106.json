@@ -1,0 +1,4245 @@
+{
+  "requested_budget_bytes": 2500000,
+  "budget_scope": "Cold homepage startup: decoded original HTTP script bodies plus local replacement JavaScript payloads. Wire compression is not the metric. Extra conversation code after submission is outside the startup budget.",
+  "target_achieved": false,
+  "feature_commit": "3e1adf6c0",
+  "retained_change": "Refresh the existing reviewed basic-site and collector policy for the anonymous deployment observed in this attempt; no renderer pruning, rebundling, preloader filtering, sidebar removal, warm-up change or extra minifier dependency is retained.",
+  "frozen_diagnostics": [
+    {
+      "name": "control-check",
+      "label": "Working basic policy",
+      "output": "Build/chatgpt-js-25mb-20261106/control-check",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 2959483,
+      "local_payload_bytes": 31391,
+      "total_payload_bytes": 2990874,
+      "http_script_requests": 250,
+      "local_script_requests": 14,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/control-check/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793944595.17201,
+      "finished": 1793944602.0662131,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.51708984375,
+          19.0712890625,
+          15.9169921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          12.7548828125,
+          18.82080078125,
+          15.8466796875
+        ]
+      }
+    },
+    {
+      "name": "scout-r4",
+      "label": "Full split graph, invalid bootstrap",
+      "output": "Build/chatgpt-js-25mb-20261106/scout-r4",
+      "complete": false,
+      "error": "Rendered homepage button identity differs from its retained Brave reference",
+      "http_script_bytes": 116764,
+      "local_payload_bytes": 490248,
+      "total_payload_bytes": 607012,
+      "http_script_requests": 3,
+      "local_script_requests": 32,
+      "content_exact": false,
+      "pixels_exact": false,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/scout-r4/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793944275.111978,
+      "finished": 1793944281.498053,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          22.39599609375,
+          17.08837890625,
+          13.70166015625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          21.7236328125,
+          17.03662109375,
+          13.703125
+        ]
+      }
+    },
+    {
+      "name": "scout-debug",
+      "label": "Split graph with error diagnostic",
+      "output": "Build/chatgpt-js-25mb-20261106/scout-debug",
+      "complete": false,
+      "error": "Rendered homepage button identity differs from its retained Brave reference",
+      "http_script_bytes": 116764,
+      "local_payload_bytes": 490444,
+      "total_payload_bytes": 607208,
+      "http_script_requests": 3,
+      "local_script_requests": 32,
+      "content_exact": false,
+      "pixels_exact": false,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/scout-debug/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793944420.269887,
+      "finished": 1793944426.2935839,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          25.236328125,
+          19.30419921875,
+          15.02099609375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          24.09619140625,
+          19.166015625,
+          14.9970703125
+        ]
+      }
+    },
+    {
+      "name": "scout-r6",
+      "label": "Full split graph, original signal bootstrap",
+      "output": "Build/chatgpt-js-25mb-20261106/scout-r6",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 118364,
+      "local_payload_bytes": 3014577,
+      "total_payload_bytes": 3132941,
+      "http_script_requests": 4,
+      "local_script_requests": 271,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/scout-r6/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793944596.359725,
+      "finished": 1793944603.118457,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.51708984375,
+          19.0712890625,
+          15.9169921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          11.9736328125,
+          18.55810546875,
+          15.77099609375
+        ]
+      }
+    },
+    {
+      "name": "scout-lean2",
+      "label": "Two split application entries",
+      "output": "Build/chatgpt-js-25mb-20261106/scout-lean2",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 1456163,
+      "local_payload_bytes": 2393815,
+      "total_payload_bytes": 3849978,
+      "http_script_requests": 131,
+      "local_script_requests": 91,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/scout-lean2/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793944820.253102,
+      "finished": 1793944827.2118359,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          15.94482421875,
+          17.3525390625,
+          15.7861328125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          15.228515625,
+          17.1806640625,
+          15.734375
+        ]
+      }
+    },
+    {
+      "name": "coverage-home",
+      "label": "Instrumented original UI renderers",
+      "output": "Build/chatgpt-js-25mb-20261106/coverage-home",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 2027586,
+      "local_payload_bytes": 1030412,
+      "total_payload_bytes": 3057998,
+      "http_script_requests": 243,
+      "local_script_requests": 21,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/coverage-home/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793945180.735874,
+      "finished": 1793945187.648808,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          30.2392578125,
+          21.5029296875,
+          17.65234375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          32.7822265625,
+          22.1748046875,
+          17.912109375
+        ]
+      }
+    },
+    {
+      "name": "scout-trim",
+      "label": "Unexercised UI renderer pruning prototype",
+      "output": "Build/chatgpt-js-25mb-20261106/scout-trim",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 1990209,
+      "local_payload_bytes": 668480,
+      "total_payload_bytes": 2658689,
+      "http_script_requests": 233,
+      "local_script_requests": 21,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/scout-trim/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793945430.5726101,
+      "finished": 1793945437.268126,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          14.34326171875,
+          21.5361328125,
+          18.99853515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          14.3154296875,
+          21.41064453125,
+          18.96923828125
+        ]
+      }
+    },
+    {
+      "name": "sidebar-home",
+      "label": "Instrumented sidebar experiment",
+      "output": "Build/chatgpt-js-25mb-20261106/sidebar-home",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 2027586,
+      "local_payload_bytes": 1020798,
+      "total_payload_bytes": 3048384,
+      "http_script_requests": 243,
+      "local_script_requests": 21,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/sidebar-home/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793946316.245331,
+      "finished": 1793946323.267693,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          24.20849609375,
+          23.70703125,
+          21.587890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          27.22509765625,
+          24.37353515625,
+          21.84912109375
+        ]
+      }
+    },
+    {
+      "name": "warmoff-home",
+      "label": "Instrumented warm-up experiment",
+      "output": "Build/chatgpt-js-25mb-20261106/warmoff-home",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 2027586,
+      "local_payload_bytes": 1019864,
+      "total_payload_bytes": 3047450,
+      "http_script_requests": 243,
+      "local_script_requests": 21,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/warmoff-home/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793946519.70403,
+      "finished": 1793946526.448044,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          30.205078125,
+          26.9765625,
+          23.44482421875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          29.9482421875,
+          26.9765625,
+          23.46533203125
+        ]
+      }
+    },
+    {
+      "name": "refresh-home",
+      "label": "Retained refreshed policy",
+      "output": "Build/chatgpt-js-25mb-20261106/refresh-home",
+      "complete": true,
+      "error": null,
+      "http_script_bytes": 2959483,
+      "local_payload_bytes": 31391,
+      "total_payload_bytes": 2990874,
+      "http_script_requests": 250,
+      "local_script_requests": 14,
+      "content_exact": true,
+      "pixels_exact": true,
+      "identity_stable": true,
+      "browser_exit": 0,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--screenshot-viewport-height",
+        "768",
+        "--js-engine=javascriptcore",
+        "--enable-javascript",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "852",
+        "--screenshot",
+        "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/refresh-home/document.png",
+        "https://chatgpt.com/"
+      ],
+      "started": 1793947327.731086,
+      "finished": 1793947334.273232,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          16.92333984375,
+          25.34521484375,
+          24.1611328125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          17.34765625,
+          25.15380859375,
+          24.1064453125
+        ]
+      }
+    },
+    {
+      "name": "early-coalition-launch",
+      "complete": false,
+      "error": "A private browser helper is outside its resource coalition",
+      "output": "Build/chatgpt-js-3mb-20261106-r1/split-25mb-r3",
+      "disposition": "Invalid diagnostic: a concurrent unrelated screenshot root was classified as private. No resource or CPU acceptance claim."
+    }
+  ],
+  "live_observations": {
+    "coverage-query": {
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 88458,
+        "exit": 0,
+        "elapsed": 26.763110160827637,
+        "identity": {
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/live.py": "5131040a57b291faeedb2836d97878ee262d80788b7b2fb451f430f3cf641953",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/coverage-query/config.json": "e5c25f02e13f2e7de6f988208df3fcb94f9a9b929d45298fb27463d3d4e5f410",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.dylib": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.m": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "dece7e71f67587cc0fb0c5ab73af36283b28b78e84cadc50bf27f4df668d605a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "4b249a3fee243e6bc62ce87e3e1c09f284bb6262437763ca563ccc2159578eb5",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "4089a8ba74cdd09b6e17e77bf0c9f8050a9e341ce629405ce92529f13e9e4294",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "8224f54963c67fff4b33f5250b612cd2bb88c7ddbd584a3ffc8decf043d5f401",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/coverage-assets/engine.js.gz": "9ec8f6232cda5cbd80c6e6c0913789ab04c32a86aea71d313440931383059792",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/coverage-assets/engine.snapshot.bin": "16a1c4b37dbf82a8ecddd1f6895805711e3ea1529c0f10142da5a4f615727037",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/coverage-assets/engine.snapshot.json.gz": "001e4c84c87e7ede984845f562dd2d24762e15803b90d8b169b1827b3287421a"
+        },
+        "stable": true,
+        "query_passed": true,
+        "assets": "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/coverage-assets"
+      },
+      "assistant_text": [
+        "The capital of Italy is Rome (Italian: Roma). \ud83c\uddee\ud83c\uddf9"
+      ],
+      "native_reported_errors": [],
+      "bootstrap_ready": true,
+      "unique_original_script_payload_bytes": 7091697,
+      "local_payload_bytes": 0,
+      "unique_original_script_responses": 388,
+      "unknown_source_urls": [],
+      "blocked_script_urls": [
+        "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js"
+      ]
+    },
+    "current-coverage-query": {
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 5583,
+        "exit": 0,
+        "elapsed": 26.733730792999268,
+        "identity": {
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/live.py": "491d3b4110658e17658cef7b6926141fa086c03155b030c40e675aa3acd1a3d8",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/current-coverage-query/config.json": "e5c25f02e13f2e7de6f988208df3fcb94f9a9b929d45298fb27463d3d4e5f410",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.dylib": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.m": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "1bb40b8ebcf176ec0d6d5e2ce6bf0a9bd79f3767d60921b9713ab63ccc833325",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "9677d21207d826ed2ec8731c5acce57d95bb00034203ab55722ed7dbcccbe2cd",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "531faa99ba084d808d7633ef2c654b65945e8d7e6cc0fcc8690e5c22132cb50c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "c8107a52eac82d76a49f6d026c91a456786c55add3ea00cbcf83c901d15d2f7f",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/current-coverage-assets/engine.js.gz": "99d73977533667b0a697203b5f30fc7bee432931033389f5d4d72b9b6d4680b6",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/current-coverage-assets/engine.snapshot.bin": "06f58c44bf07bc87c87c8a305497e8ef091ea64c399600b482a3e4daca15b302",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/current-coverage-assets/engine.snapshot.json.gz": "15e0d3fdb7559d6b42333724432e586e58d458e5771ed0654d2d8ac158e22ead"
+        },
+        "stable": true,
+        "query_passed": true,
+        "assets": "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/current-coverage-assets"
+      },
+      "assistant_text": [
+        "The capital of Italy is Rome (Roma in Italian). \ud83c\uddee\ud83c\uddf9"
+      ],
+      "native_reported_errors": [],
+      "bootstrap_ready": true,
+      "unique_original_script_payload_bytes": 5604560,
+      "local_payload_bytes": 1037254,
+      "unique_original_script_responses": 345,
+      "unknown_source_urls": [],
+      "blocked_script_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-BSxPbGlL.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-BdDgRi6Z.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CSHJDoCM.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-Cyb9GpPS.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CyhUo82i.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CzMcBpBn.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-DycfBUsB.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-Dzd3_voJ.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-KVRi81E0.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-BID1u_Jt.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-DAkvOubI.js",
+        "https://chatgpt.com/unauth-mweb/assets/app.startup-9cP5YJYz.js",
+        "https://chatgpt.com/unauth-mweb/assets/application-presentation-runtime-QersiXrg.js",
+        "https://chatgpt.com/unauth-mweb/assets/client-loader-C_X9Vvjg.js",
+        "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-YduVCvuA.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-bottom-sheet-B_WneyJe.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-CMQ7Y0Yg.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-vLAyyR-4.js",
+        "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-d48Zkzar.js",
+        "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-C3njnEC7.js",
+        "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js"
+      ]
+    },
+    "sidebar-query": {
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 12633,
+        "exit": 0,
+        "elapsed": 24.59120798110962,
+        "identity": {
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/live.py": "491d3b4110658e17658cef7b6926141fa086c03155b030c40e675aa3acd1a3d8",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/sidebar-query/config.json": "e5c25f02e13f2e7de6f988208df3fcb94f9a9b929d45298fb27463d3d4e5f410",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.dylib": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.m": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "a1f7b3339a6778139c03f53a1bccc4007e022434284988ff0478cd892faee078",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "e92fe944f299f1a3ec1aa295c6d7a6025abee8dbbd780c237a378c7c79df02a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3bb3a5bac04b42a9cf516313776857017ce9b27e1d1b4975c9ed4d0ca9c0b1c2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "e74980057d0acf7bb70de2d737c88351882961113e56be576a20752201f5a41e",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/sidebar-coverage-assets/engine.js.gz": "cc22e89041734220891a4299d9cd5302509cc41f6dcee46a47aca231c49c176f",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/sidebar-coverage-assets/engine.snapshot.bin": "541d06e36021c27bdbf83a289c502864e62a43b540dc64210aace7a22ab616aa",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/sidebar-coverage-assets/engine.snapshot.json.gz": "15e0d3fdb7559d6b42333724432e586e58d458e5771ed0654d2d8ac158e22ead"
+        },
+        "stable": true,
+        "query_passed": true,
+        "assets": "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/sidebar-coverage-assets"
+      },
+      "assistant_text": [
+        "The capital of Italy is Rome Italian:\u2217Roma\u2217Italian: *Roma*. \ud83c\uddee\ud83c\uddf9"
+      ],
+      "native_reported_errors": [],
+      "bootstrap_ready": true,
+      "unique_original_script_payload_bytes": null,
+      "local_payload_bytes": 1027670,
+      "unique_original_script_responses": 347,
+      "unknown_source_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-D29EhZxF.js",
+        "https://chatgpt.com/unauth-mweb/assets/conversation-source-math-GSpEnFga.js"
+      ],
+      "blocked_script_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-BSxPbGlL.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-BdDgRi6Z.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CSHJDoCM.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-Cyb9GpPS.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CyhUo82i.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CzMcBpBn.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-DycfBUsB.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-Dzd3_voJ.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-KVRi81E0.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-BID1u_Jt.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-DAkvOubI.js",
+        "https://chatgpt.com/unauth-mweb/assets/app.startup-9cP5YJYz.js",
+        "https://chatgpt.com/unauth-mweb/assets/application-presentation-runtime-QersiXrg.js",
+        "https://chatgpt.com/unauth-mweb/assets/client-loader-C_X9Vvjg.js",
+        "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-YduVCvuA.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-bottom-sheet-B_WneyJe.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-CMQ7Y0Yg.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-vLAyyR-4.js",
+        "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-d48Zkzar.js",
+        "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-C3njnEC7.js",
+        "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js"
+      ]
+    },
+    "warmoff-query": {
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 23188,
+        "exit": 0,
+        "elapsed": 26.270779132843018,
+        "identity": {
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/live.py": "491d3b4110658e17658cef7b6926141fa086c03155b030c40e675aa3acd1a3d8",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/warmoff-query/config.json": "e5c25f02e13f2e7de6f988208df3fcb94f9a9b929d45298fb27463d3d4e5f410",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.dylib": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.m": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "a1f7b3339a6778139c03f53a1bccc4007e022434284988ff0478cd892faee078",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "e92fe944f299f1a3ec1aa295c6d7a6025abee8dbbd780c237a378c7c79df02a3",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3bb3a5bac04b42a9cf516313776857017ce9b27e1d1b4975c9ed4d0ca9c0b1c2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "e74980057d0acf7bb70de2d737c88351882961113e56be576a20752201f5a41e",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/warmoff-coverage-assets/engine.js.gz": "4564f3bb34bc584a6e0d27b379894034af300defee5cac4ea64eebcfa6b8d8ac",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/warmoff-coverage-assets/engine.snapshot.bin": "090caf885459bccf492ca54ec76d90dbafc4de2c07b5e4e7929be7cd95545aa4",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/warmoff-coverage-assets/engine.snapshot.json.gz": "15e0d3fdb7559d6b42333724432e586e58d458e5771ed0654d2d8ac158e22ead"
+        },
+        "stable": true,
+        "query_passed": true,
+        "assets": "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/warmoff-coverage-assets"
+      },
+      "assistant_text": [
+        "The capital of Italy is Rome (Roma in Italian). \ud83c\uddee\ud83c\uddf9"
+      ],
+      "native_reported_errors": [],
+      "bootstrap_ready": true,
+      "unique_original_script_payload_bytes": 5584937,
+      "local_payload_bytes": 1026639,
+      "unique_original_script_responses": 344,
+      "unknown_source_urls": [],
+      "blocked_script_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-BSxPbGlL.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-BdDgRi6Z.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CSHJDoCM.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-Cyb9GpPS.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CyhUo82i.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CzMcBpBn.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-DycfBUsB.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-Dzd3_voJ.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-KVRi81E0.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-BID1u_Jt.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-DAkvOubI.js",
+        "https://chatgpt.com/unauth-mweb/assets/app.startup-9cP5YJYz.js",
+        "https://chatgpt.com/unauth-mweb/assets/application-presentation-runtime-QersiXrg.js",
+        "https://chatgpt.com/unauth-mweb/assets/client-loader-C_X9Vvjg.js",
+        "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-YduVCvuA.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-bottom-sheet-B_WneyJe.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-CMQ7Y0Yg.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-vLAyyR-4.js",
+        "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-d48Zkzar.js",
+        "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-C3njnEC7.js",
+        "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js"
+      ]
+    },
+    "refresh-query": {
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 52580,
+        "exit": 0,
+        "elapsed": 24.617716073989868,
+        "identity": {
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/live.py": "491d3b4110658e17658cef7b6926141fa086c03155b030c40e675aa3acd1a3d8",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/refresh-query/config.json": "e5c25f02e13f2e7de6f988208df3fcb94f9a9b929d45298fb27463d3d4e5f410",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.dylib": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.m": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "50642bb5699c6331b22268ba2ebe387f94b183a2013b4896d712667ce0089a0b",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7afb0222dcc1024a792576f759d75fcdc47be527e8a8c911dbd06e35f5f21237",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3bb3a5bac04b42a9cf516313776857017ce9b27e1d1b4975c9ed4d0ca9c0b1c2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "e5e4a92604d9531dc32fe17693787b2ed4da0d6445b597795cb99023ef95feb9",
+          "/Users/alex/code/vox2/adblock/engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+          "/Users/alex/code/vox2/adblock/engine.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+          "/Users/alex/code/vox2/adblock/engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6"
+        },
+        "stable": true,
+        "query_passed": true,
+        "assets": "/Users/alex/code/vox2/adblock"
+      },
+      "assistant_text": [
+        "The capital of Italy is Rome (Roma). \ud83c\uddee\ud83c\uddf9"
+      ],
+      "native_reported_errors": [],
+      "bootstrap_ready": true,
+      "unique_original_script_payload_bytes": 6542190,
+      "local_payload_bytes": 32028,
+      "unique_original_script_responses": 352,
+      "unknown_source_urls": [],
+      "blocked_script_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-BdDgRi6Z.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CzMcBpBn.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-KVRi81E0.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-BID1u_Jt.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-DAkvOubI.js",
+        "https://chatgpt.com/unauth-mweb/assets/app.startup-9cP5YJYz.js",
+        "https://chatgpt.com/unauth-mweb/assets/client-loader-C_X9Vvjg.js",
+        "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-YduVCvuA.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-bottom-sheet-B_WneyJe.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-CMQ7Y0Yg.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-vLAyyR-4.js",
+        "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-d48Zkzar.js",
+        "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-C3njnEC7.js",
+        "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js"
+      ]
+    },
+    "installed-query": {
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 58371,
+        "exit": 0,
+        "elapsed": 25.02806282043457,
+        "identity": {
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/live.py": "491d3b4110658e17658cef7b6926141fa086c03155b030c40e675aa3acd1a3d8",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/installed-query/config.json": "e5c25f02e13f2e7de6f988208df3fcb94f9a9b929d45298fb27463d3d4e5f410",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.dylib": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.m": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "6120b4e2ce25b5b534041d4b2e01a11e13eb05cb67cafede7d29248be7cffd38",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7afb0222dcc1024a792576f759d75fcdc47be527e8a8c911dbd06e35f5f21237",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3bb3a5bac04b42a9cf516313776857017ce9b27e1d1b4975c9ed4d0ca9c0b1c2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "724f413304c11d0ef54dc85d93186107cc4574a8840d7d0399c69d0d609e4430",
+          "/Users/alex/code/vox2/adblock/engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+          "/Users/alex/code/vox2/adblock/engine.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+          "/Users/alex/code/vox2/adblock/engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6"
+        },
+        "stable": true,
+        "query_passed": true,
+        "assets": "/Users/alex/code/vox2/adblock"
+      },
+      "assistant_text": [
+        "The capital of Italy is Rome Italian:\u2217Roma\u2217Italian: *Roma*. \ud83c\uddee\ud83c\uddf9"
+      ],
+      "native_reported_errors": [],
+      "bootstrap_ready": true,
+      "unique_original_script_payload_bytes": null,
+      "local_payload_bytes": 32028,
+      "unique_original_script_responses": 355,
+      "unknown_source_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-D29EhZxF.js",
+        "https://chatgpt.com/unauth-mweb/assets/conversation-source-math-GSpEnFga.js",
+        "https://chatgpt.com/unauth-mweb/assets/voice-coachmark-boundary-Czu0sDUe.js"
+      ],
+      "blocked_script_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-BdDgRi6Z.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CzMcBpBn.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-KVRi81E0.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-BID1u_Jt.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-DAkvOubI.js",
+        "https://chatgpt.com/unauth-mweb/assets/app.startup-9cP5YJYz.js",
+        "https://chatgpt.com/unauth-mweb/assets/client-loader-C_X9Vvjg.js",
+        "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-YduVCvuA.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-bottom-sheet-B_WneyJe.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-CMQ7Y0Yg.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-vLAyyR-4.js",
+        "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-d48Zkzar.js",
+        "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-C3njnEC7.js",
+        "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js"
+      ]
+    },
+    "installed-home": {
+      "receipt": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/installed-home/window.png",
+          "--window-width=1024",
+          "--window-height=880",
+          "https://chatgpt.com/"
+        ],
+        "pid": 58446,
+        "exit": 0,
+        "elapsed": 16.99326491355896,
+        "identity": {
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/live.py": "491d3b4110658e17658cef7b6926141fa086c03155b030c40e675aa3acd1a3d8",
+          "/Users/alex/code/vox2/Build/chatgpt-js-25mb-20261106/installed-home/config.json": "e5c25f02e13f2e7de6f988208df3fcb94f9a9b929d45298fb27463d3d4e5f410",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.dylib": "0e81bc497b37c4cbcb80aa8303ef9a0ca411214446d1edcbdb53723a21cf3501",
+          "/Users/alex/code/vox2/Build/chatgpt-lightweight-20261106/query_probe.m": "8bbfb7367ddb8fe9d93b22771683462593c5cdf3a1e74b9d99fd1e23f8f94996",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "6120b4e2ce25b5b534041d4b2e01a11e13eb05cb67cafede7d29248be7cffd38",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "3ab206900216857bf74cca7abcd55b8b8b52887f9e53745ae03053d93addd59e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7afb0222dcc1024a792576f759d75fcdc47be527e8a8c911dbd06e35f5f21237",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3bb3a5bac04b42a9cf516313776857017ce9b27e1d1b4975c9ed4d0ca9c0b1c2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/Vox.icns": "83a8ce06f7355ac1f6bee9e7208dcde2ec31dbe1971579d0112ae623e3fd2745",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/libdeflate-LICENSE.txt": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources": "724f413304c11d0ef54dc85d93186107cc4574a8840d7d0399c69d0d609e4430",
+          "/Users/alex/code/vox2/adblock/engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+          "/Users/alex/code/vox2/adblock/engine.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+          "/Users/alex/code/vox2/adblock/engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6"
+        },
+        "stable": true,
+        "query_passed": true,
+        "assets": "/Users/alex/code/vox2/adblock"
+      },
+      "assistant_text": [],
+      "native_reported_errors": [],
+      "bootstrap_ready": true,
+      "unique_original_script_payload_bytes": 2987776,
+      "local_payload_bytes": 32028,
+      "unique_original_script_responses": 255,
+      "unknown_source_urls": [],
+      "blocked_script_urls": [
+        "https://chatgpt.com/unauth-mweb/assets/a-BdDgRi6Z.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-CzMcBpBn.js",
+        "https://chatgpt.com/unauth-mweb/assets/a-KVRi81E0.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-BID1u_Jt.js",
+        "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-DAkvOubI.js",
+        "https://chatgpt.com/unauth-mweb/assets/app.startup-9cP5YJYz.js",
+        "https://chatgpt.com/unauth-mweb/assets/client-loader-C_X9Vvjg.js",
+        "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-YduVCvuA.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-bottom-sheet-B_WneyJe.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-CMQ7Y0Yg.js",
+        "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-vLAyyR-4.js",
+        "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-d48Zkzar.js",
+        "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-C3njnEC7.js",
+        "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js"
+      ]
+    }
+  },
+  "live_source_catalog": [
+    {
+      "url": "https://chatgpt.com/backend-api/sentinel/sdk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1474,
+      "sha256": "39a899a29a9b7cc981d280566943f2566df318349eb2ea458e440232133ef97f",
+      "etag": null
+    },
+    {
+      "url": "https://chatgpt.com/sentinel/20260810913b/sdk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 33820,
+      "sha256": "49d0284bf3eea8a59ebcad0e6b5dd8a53edd4c72606f15bbf51ebe5610a88efd",
+      "etag": null
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a--tOLhrKL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 648,
+      "sha256": "ea6ac21b50beb2c736dd50e81fa28478754e05c2e4d685dfd94bb95ca7002112",
+      "etag": "etag: W/\"a8be3eb4cf0ec82b92820015f9449b91\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-1ZGi3SBZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13650,
+      "sha256": "531eb42e24a8cce6e077adcd180f79cafd54be23ee11894dbee76994d00e24a0",
+      "etag": "etag: W/\"5d2a3871099dda31d1aa9776ed78e8c1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-1x93nN0Y.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1937,
+      "sha256": "920504b095ba5f5cbff6ac429dbe2d84d5e20d44d808ca8956a3864479482941",
+      "etag": "etag: W/\"85a042029e65ef55899ba3e68a3a5052\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-3DcSNdtZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 295827,
+      "sha256": "96ed3dba7e387e3f3ab7096ed8d56dd8ea290484675ec0e895baa5eff0535a82",
+      "etag": "etag: W/\"f2e67b8f200971cc61ac92839892e83f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-3oAKa9VE.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 241,
+      "sha256": "f2d3b11fd31126034953ef7290e7b90408920144ea9a2f163107e95888d3126a",
+      "etag": "etag: W/\"85a309d8f4249d6660fc54736c8048a9\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-4EPbdvKX.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 54,
+      "sha256": "12ab2cb13b70e1cc190cc8dd5ac865d894bf4d38d5cba8121217083974a652d9",
+      "etag": "etag: W/\"43b3e5c8e5c010cc0ee3366bf348dea8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-4JY5QwmM.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2619,
+      "sha256": "80f0ed92dd97eb2f4f37026784e529b7acf66dd9d07f2eb4eef556ddc4c116cd",
+      "etag": "etag: W/\"a86c1f3c0863a0df6491cbef6cc39e56\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-4SQCUZCL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 770,
+      "sha256": "a7d519d73bdf98d7878586bc4e9048c6dbc7587363e1ac21a0326e4416c9a3c1",
+      "etag": "etag: W/\"2bbad264b807aa892efe55ef32297073\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-4wWXtvpa.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3203,
+      "sha256": "57211c92b744858d7cbdfdd2191d2a9b87982034fca107f7150f971d9a434162",
+      "etag": "etag: W/\"096ada18970a2d89b19a6b4a86f01efe\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-51cLWtrZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8571,
+      "sha256": "f6e7b2a7d33376aecdccaa62d594feca797a03e65599335bd195ffab175ad86c",
+      "etag": "etag: W/\"202cf0191bd2af6d65157665145e93ca\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-6cLJUVh7.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 170,
+      "sha256": "108ad88ba1f58dfec4545c1c5bccea8ee89d8bd05f0bad06db62f0ea73ee175d",
+      "etag": "etag: W/\"286956fd7f671ac4606d9150bf4e2a68\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-8gdBBvFp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 968,
+      "sha256": "819267ee2b6e12664d33003b933baa87807856b745944d0184b283ce23494176",
+      "etag": "etag: W/\"0d9157f311ec0536a02c732bcdb30ef4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-9K5BsTgq.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 125,
+      "sha256": "a87317c64fb989b2b5dff00879a26eb7cef9ef46c3c8be505498e075442f87ad",
+      "etag": "etag: W/\"8fa1fa0450265182cbcac8b930a8e314\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-AFfVf4n2.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 694,
+      "sha256": "9a043018289e778d994d320bbcc4425278334cbc397283788b834cfb910a014e",
+      "etag": "etag: W/\"c8c1d3f86a60893457826eb8d84828f6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B0wVbtpy.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4170,
+      "sha256": "6d8072c4c9ff1ed3109e8bd6de24817cc00f25667927136d016808992c173347",
+      "etag": "etag: W/\"f0a988e0010c7d7ea25967393af7390c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B2eFCoZo.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1047,
+      "sha256": "1236125089687f7be09b3692625f8ec179c6e73be19a39f68dc270c27e82fa73",
+      "etag": "etag: W/\"bd2cbfb11705c217c44d8d6db54c8bcd\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B2eFbOz0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 259,
+      "sha256": "4399a6607a4e55cba46f84c8ca36789bb1157d33631085dbb4ae66fe5d15440f",
+      "etag": "etag: W/\"6a8756aad330a1d3ce593715aa19fa2b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B4KJ7hz3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 6433,
+      "sha256": "19e75609e5913dc915c06c2785e16d41938091f9bf355286fa2e14a711e21b7d",
+      "etag": "etag: W/\"bf038fc9dd8848af25e41a321ae14ed7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B4OCNJRz.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 63,
+      "sha256": "6496a2096a393ff032ae0276ea5cd567374c752fa9b7f6baec382a0622717de0",
+      "etag": "etag: W/\"fbd9abb2c38ac7dbb8c4424fd11b0949\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B71WvKNj.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2329,
+      "sha256": "b15a0f1c10bde34ea2699b0dfbbfecc6d17a31f0261bd031bacf19836c1e7e02",
+      "etag": "etag: W/\"a885ea7c293b897a227a6635b6ac6473\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B7OBNAJU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13424,
+      "sha256": "a369a1a672d9e9da66aca1cf81eae16836a4d691d00b357e9f8f1bd4af809284",
+      "etag": "etag: W/\"087b4ab695b9a69f35033671b1e6dc30\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B8883LSx.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 10257,
+      "sha256": "adaa6b11857cbd28944b4c5c9a2832fa3c060c9bc3b68c3eaa12b0533686b6c2",
+      "etag": "etag: W/\"ba034e517f6d600f291d2e2d834577b6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B8doc-Ub.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 154,
+      "sha256": "0dd665a77bf5464cc0d665a9fc3761e80dcaaff62a138139f3962c7fc7adff56",
+      "etag": "etag: W/\"b0eea75a18dce082c87e97146a37bbbe\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B9ouMREp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 502,
+      "sha256": "ee0c26c924064c203c8c58f53a85c5b72607c9b5be622882a6d6891fa052dc45",
+      "etag": "etag: W/\"f096e5b00f216d5a6bc1d3bd83490ef4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BAkKHmDp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 23530,
+      "sha256": "89bfc1e967486cf9146673a6970b0478dcb8c0d742f34e64eb4dc02281db195a",
+      "etag": "etag: W/\"a96dc5b40aa79d86eb8ce44a4b646dc0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BB7FX5pg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 65,
+      "sha256": "d80314469e01e41d6f2105fc683ac4a12724e84c69a9defcfc76b66364076967",
+      "etag": "etag: W/\"7c8361220b8b972c5c4ccaa0237e4925\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BBXxmPy9.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2439,
+      "sha256": "d2dce34f1627eab632e6798d0def897b6dc7776187aedbeb025759923e0b5efd",
+      "etag": "etag: W/\"0ab0f744fb596be52547123a8f5c281b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BC7_QoNj.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 41,
+      "sha256": "6019c784db03d4103af41ff7eb4a0501c24ad81534815d2260705f04a70c713d",
+      "etag": "etag: \"155e8b3803f71331392e57dcaf22ff21\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BCNh2XEB.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2627,
+      "sha256": "53acecdaaa8c7955a29377032e9a6475befa157207633e6ed3d42215577de2df",
+      "etag": "etag: W/\"6157f7a959e1f21eac44440efd862e41\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BCumLYMg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7075,
+      "sha256": "c597540f3b96755aa0c2ecbd884d8ba8cdbdc9aafb6f13d53c17579e6e7972f6",
+      "etag": "etag: W/\"86ba682b26f9f78c37d49a1cc34a559c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BDdVGM1D.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5564,
+      "sha256": "bc7566104e70d43c927576ba91de208b5bf2e7e68808056be50261585ad15c62",
+      "etag": "etag: W/\"62a872da1cae4ecdbfa3960b3de70a6d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BDjpeezs.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1195,
+      "sha256": "e51d13c442ef4ebaf56a39a0d75c2bf2d900239a0906d5c06975f4c2fa9d2981",
+      "etag": "etag: W/\"023a6fa340e2a34ba40b0b80436931ed\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BDmPQWRn.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2812,
+      "sha256": "179494ae5786abbc9aeea61528e7a3bdbaa1770b8d26d94f1f219faca0f93690",
+      "etag": "etag: W/\"1f7c1e4a18d2e29fb8096d7733c53400\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BFH5HeuZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 998,
+      "sha256": "c56e910f57880f3c47a9d7c0684b3e4164f42256b710e011813152ebe5efa4bf",
+      "etag": "etag: W/\"0458971dc1a6433b7102c66fb52ba812\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BFo5G0hz.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 9343,
+      "sha256": "98461d66120ad382e5b11b2d76cd6abcb957fa77029b0cbce84f948260cd1ef0",
+      "etag": "etag: W/\"cedc7cb18cdf1d505333c2fe32e570ea\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BITdayAv.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1413,
+      "sha256": "41636ccdd53a93ad73cfb0dd0fcc87cec285c874d677ed5bbd37e9d735f65909",
+      "etag": "etag: W/\"5d5c11be5415b48242f475997eab2ada\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BIeU7vZJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 16753,
+      "sha256": "8e13f94944135bae94efdfe370f99a840dcfda100e19c238009b39a620bc14a7",
+      "etag": "etag: W/\"7c5e1446d0ae0b983cee8d6879fc43f0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BJAEWgh8.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2350,
+      "sha256": "669ccabb7011532585f384a65e32c4d266bef82232ee2d551a7ebf312afde0c4",
+      "etag": "etag: W/\"2e76ae2e7f759003c1aab0a89d09b1e1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BJr45e1c.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13507,
+      "sha256": "ce6ec524d5ec0668ada4d5a8c16b064f0633a561ff186c0057a539e88871d4b0",
+      "etag": "etag: W/\"0dfbe6ac759ee2fd9e6f8372a17856f2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BPkC3ffz.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 12762,
+      "sha256": "f0bf63a7ae18df7fae4145960a512b0ba0582665180f4e51879858772573c902",
+      "etag": "etag: W/\"c93d75896c4bd377bf03928bcf8203f5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BQ5bUYq7.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1164,
+      "sha256": "2ee515f80cb5f8e03c47728cb7e7390f1cf3e8773e41ece08506977523c1f219",
+      "etag": "etag: W/\"ad6710536df5d5dd68e210eff8f485a6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BSxPbGlL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 15493,
+      "sha256": "ada321263f60e167c7f69de61c54929c5855968d9c09ed95a60cf829a986b0e2",
+      "etag": "etag: W/\"204894b2395c23f88e4b4177e0bb287b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BTG6bknJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8407,
+      "sha256": "2222bd967f0db0cce2447c85385559083629897a77c169fcdabdafcb9060f0c6",
+      "etag": "etag: W/\"20c326277f43347f50b329b0e9a229e0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BV9hliCU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 380,
+      "sha256": "8a45c254e4c5210e56dfe9adf5f242370039449a6dc1b358d49eb14c1339272b",
+      "etag": "etag: W/\"46271fdf0ac8c114ffd13fad2a772388\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BVDqcBci.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1994,
+      "sha256": "fa7e11aaf872a4ebe46d0beaacd5f8a7fc227d52130c663671e2e669fe2c17c1",
+      "etag": "etag: W/\"443c17362bb2ed9e76e1bb0832deb1a6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BXlOFTeE.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 170,
+      "sha256": "b8d2a2bab31fe4fbdf19f1852b85a8cbf71570326081d14a2f2b3abd085eb882",
+      "etag": "etag: W/\"027a8af76e89b0c343db930ab5ceaded\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BXs25tiD.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 63,
+      "sha256": "6496a2096a393ff032ae0276ea5cd567374c752fa9b7f6baec382a0622717de0",
+      "etag": "etag: W/\"fbd9abb2c38ac7dbb8c4424fd11b0949\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BY3bUpwo.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1494,
+      "sha256": "2c3a961554b10dea91ef7b4eb85dae91558f407179a9ddd530c706a501382046",
+      "etag": "etag: W/\"b8f52da714e27767d805d6d5b426e5a1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BYr5hFFk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2587,
+      "sha256": "9e4025b0f337d5244d0157639f66b4cc9bf8628eacb234570b645b75508142b9",
+      "etag": "etag: W/\"d1209b1330c959e5db4071aedc934907\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BYsjDFhj.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1165,
+      "sha256": "d87b7a1e84367c2883af1b42df9b196930ed57c06b8fd6e8e0619767f69c8680",
+      "etag": "etag: W/\"0f392299faf187fc64ec2f6e7fc43a4e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BZ1UQTqi.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 631,
+      "sha256": "a6232bc0d721762a5d198de446495ad6a0421c074f09eed1b7aa5f4e452b19cd",
+      "etag": "etag: W/\"f4cbcbbad901ee4c119a9e25f51d43de\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BZF6-zKV.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 15146,
+      "sha256": "eefefc647e7b6272982e4ececa4d73eb91bf93f6bc551e8c9c5d2efd5d8ab934",
+      "etag": "etag: W/\"3a59ea8fa33de02643aac239bfadee45\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BZTIDVUD.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 576,
+      "sha256": "552c3e2ef973df8c31375416283541a4ca60b4b57c1784ef689b0f9da74f41bc",
+      "etag": "etag: W/\"ad012fbf76870d625e681346327102a8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-B_PpgTiQ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 633,
+      "sha256": "ef2056bfc32bb9d06f93635d4a181e319d67c0f9a2994941ac1041dc90155d8f",
+      "etag": "etag: W/\"f3c51967aac8d312e055fbcf0798fc6f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Ba4U5rAK.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1336,
+      "sha256": "35a41d72263d3ea9d6714d6ab9708466b8740ba9b8b1623eeda061b068040752",
+      "etag": "etag: W/\"ab3edc9fc8f70407e1cb6cc9ee7fd919\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BaeBx2PQ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 56336,
+      "sha256": "4c27b17678dc1efa5c3c7983b51c5b882e660f00da70baa86e0118b84e1b3585",
+      "etag": "etag: W/\"906d7f2085c99317e56b9a6aebf8b854\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BalXqa4Y.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 387957,
+      "sha256": "f731a1c2a7263940f4a6a96a58cb6dfa97523ad9dae5a5d1b1da3539c6d2a870",
+      "etag": "etag: W/\"1cf80f2678e34e584d8c20d7f3279b8e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BbbQpFH0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 428,
+      "sha256": "9c9ba88b1abb547ecb09c7d88443edfe2f38394be3b3ff0dc456dc2ca6b94ce6",
+      "etag": "etag: W/\"044fe9b5f3784aef1d7a2c53b0eb84c6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BbrUJAJp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2487,
+      "sha256": "34a366d0ab12d09d6e33b529c5636d4ba72aa6794f9639aee99d114d310f0097",
+      "etag": "etag: W/\"408e6600ed671dcc1f277fb3bbc3b9aa\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BdDgRi6Z.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13725,
+      "sha256": "08046247f82a5806e678d31ff37aeb822d9273b19b8e186beb1986cb18929175",
+      "etag": "etag: W/\"774d7a820ce32423a26dc617b8689b9d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BdFD8G17.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5966,
+      "sha256": "1f30d2606f96f8fbf73e45d3ed83ea64ebed6d36bd8cf05c39653ecf73b77673",
+      "etag": "etag: W/\"fc48c47972260705d92d13d300fa74dc\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BfF6jiHf.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 388,
+      "sha256": "25e98956a39609aae46ac31d9ef8e1cb60c7b58ebe960e685968d21b47ad69cb",
+      "etag": "etag: W/\"35e6c772bd4121a776821ef6ef37381c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BfmkIeh5.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 132,
+      "sha256": "60dc4f2889253c9b4ff16c16474e6f87fe9d77fa8881f14e9412b76a37c9d750",
+      "etag": "etag: W/\"a45f1619f82e93e482c8c95b214271b0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Bg8RIMw-.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 77752,
+      "sha256": "49a07bc400bb31d6e36382c5d2336be72dbcdc54331de965244da2496054c730",
+      "etag": "etag: W/\"aad7b2398877df250ff706e93353daca\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BhTgObil.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 523,
+      "sha256": "cbdbc9fb34cd3ca2da89b6ee8ed2ec0333463aae9a241cafde34460745d9f427",
+      "etag": "etag: W/\"b1a4508d05d41ab53157b5c22a728538\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Bi_ZWTPI.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 388,
+      "sha256": "43f4b34fbb0d24662cb37043c9c25c20f789d9e7a09fd0d123a78c0bc37a556b",
+      "etag": "etag: W/\"c71b58b2597b232240742c50b6354e71\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Bj_MYTRu.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 430,
+      "sha256": "6cb0b593c39021937eaac1e2b76e6df30bd0a0948085d733722d4004f000282d",
+      "etag": "etag: W/\"73d8527eea13c55ff0451223906c309f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BkTnB2oU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5501,
+      "sha256": "88ce361a96963a10041e45634b4becf7ceb52b8587d496adfa91ee6355947fac",
+      "etag": "etag: W/\"5812572b4eb6e50ec3c881e58a62a91f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BkucYqFE.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3592,
+      "sha256": "daad127270fdc96ca56b1393e55cb73fc8f7ae4778b644c1d146920f7150d63f",
+      "etag": "etag: W/\"d9e501de2dc54779fbe29cf7cb501032\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BlGdcWr9.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1334,
+      "sha256": "b1816cc54b05a0f3136c70ceaef7629134cb5328d3ec11fc43e5fd6a855ed46a",
+      "etag": "etag: W/\"fa0e6ba62c2e3354876a6856bd9eb3d9\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BlYX6z_f.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 63,
+      "sha256": "6496a2096a393ff032ae0276ea5cd567374c752fa9b7f6baec382a0622717de0",
+      "etag": "etag: W/\"fbd9abb2c38ac7dbb8c4424fd11b0949\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Bm0HtvzR.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 409,
+      "sha256": "82a23c76242be576049dbaf357e68c81af2f86165809888728aa109d16a6f6d6",
+      "etag": "etag: W/\"00744254112c9243df549e8d63d5293e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BmAWLdZU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2371,
+      "sha256": "0b0a7e5c34ddea77e388c16a9a73fb8c07c098937b388730b43c24d3ed13a79a",
+      "etag": "etag: W/\"972b3d26ea9d37b3bdabdc9a51d20f5c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BmIMs12R.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 610,
+      "sha256": "1049683a758bef8602462937a4d066248f604a433850298a5c6f97c96fbbae19",
+      "etag": "etag: W/\"8c20bb48e965c03bf9730e77e22838df\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Boe482Nx.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 192,
+      "sha256": "eef9f6cc751148f47d98b772d02dd4d21c5df5f7b1e84d2c6b1b05949d01afc3",
+      "etag": "etag: W/\"76486d874c375bd606770a7c9cf6f76d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Bp1nVVfX.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 398,
+      "sha256": "2a36d84e8bcf266b0c932e773c18ff1cbf6df495d521b8bb354b4b69edb556f7",
+      "etag": "etag: W/\"0e502d3040ef2133bc58090c88ba4959\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Bq7cHS3Z.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 14132,
+      "sha256": "0e0d4ebd848737f8d5acea0c77a3e7c1f58cfcf36795673a43fbb5b86cddf939",
+      "etag": "etag: W/\"0255a0f4d06221b96974b473ec8861d8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BrviHxLX.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 987,
+      "sha256": "3dc36a0e50f17c24553746f8068320c77c9a674abcf624e3676793b27b2b4e95",
+      "etag": "etag: W/\"9b0fcf84e0b6b2b64c6f7025bb02f134\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Brw4_cZu.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4261,
+      "sha256": "cc8a6c8f32bdb1765ac043ee2fb13d27dae014bceddb0310a96b16dae54fbe8e",
+      "etag": "etag: W/\"834a0414cca97a492aee3a566f05d5d5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BsfpWxW3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 577,
+      "sha256": "75fd1fa4511eabff3a1bd91fa4bb5ae4b4689243bc27f74ed744a7b77a38b7be",
+      "etag": "etag: W/\"0ef6c40615c19b016176bb7638882545\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-BtxvrXT-.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3118,
+      "sha256": "283f4fa1b4145c690839ac1acb3b2a820ef4c6e72ac3b30f63b0e0f89d136294",
+      "etag": "etag: W/\"53999c6dcdee8d2b489eea98fec9da54\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Bxpas_4m.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 801,
+      "sha256": "0dca3c02aa58027bf424370bc664061d85dda8b0588f04c78892b2ab9fcdc5a2",
+      "etag": "etag: W/\"833523f813d32597bad9f6a186cb35d2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C-EPd9ZX.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3408,
+      "sha256": "9cc37645fe0c9698a8c0ab8de5f4e0ebc47a121fea0bc07afe0b49edf6e20084",
+      "etag": "etag: W/\"e6d91e11a0667353b7455db07e0b2fcf\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C-qCBBM5.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1590,
+      "sha256": "0a39a71afa96c9fcfd8dc96657bfe25c3c84dbd4a3a60c65a3f3eb54697721f0",
+      "etag": "etag: W/\"18fc7d7bda96c380104a48d6e61933f1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C0BirHPb.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2625,
+      "sha256": "a58239097a02df4a9d3c21ae9b9f9879125fe8948a67829bd886a78aea4849c8",
+      "etag": "etag: W/\"6427a301e8ae7103d0b3b71d4dc4c5eb\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C1GBHB6v.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 36731,
+      "sha256": "30dd6d834d2f9021294873f5901be9af2cdda96813fa547c20ebfc8df012eb19",
+      "etag": "etag: W/\"5504576d15533c264bd14490f23cb840\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C25W-AlS.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 141,
+      "sha256": "5ba2b5951ae35f02ec76f8f259b401e6a64294e2e8b403f2246669612153689e",
+      "etag": "etag: W/\"33fc127abcf53f78f24d86d5aeeadcc7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C29wnxvu.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 827,
+      "sha256": "62972b90614223c2969d10618183d3334b67e04f1d0671efd96bcf95905481c2",
+      "etag": "etag: W/\"fb61c53c8673055da4e0c89193d7cabd\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C39760rJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 11171,
+      "sha256": "ce50864441559fa478b65f21ab0b3f59ff53f3c29123964e979c9f6e45f12593",
+      "etag": "etag: W/\"ec8a539d0699bc230e10b77083fd5c60\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C43NwMQp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 794,
+      "sha256": "56c0b5cd456ebc8c25ba7ea6da2354dcb648e53d80839cfd0bc8709cfbea66f3",
+      "etag": "etag: W/\"d1ca8f42ea2c795159d04d1c7fcad876\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C43mzrjw.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1828,
+      "sha256": "89098575bc7bbe3b7c46af97b290b69468380613ee7ed80d9793023bed035755",
+      "etag": "etag: W/\"310cd080328d71adc2c49196d8f9dfc8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C4zeIYjo.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 643,
+      "sha256": "8f85b3e00ef8729efb52300c2acd944cd1606baeb80438230f1088ecfd313c79",
+      "etag": "etag: W/\"ac280e7f8fc46f0a7f69a15841c61bdf\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C530cno6.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7881,
+      "sha256": "ce5933be49205703da93f138f84ce45e2b349a15d1999cfec354d2bf6956bc11",
+      "etag": "etag: W/\"6b18db17ed2505b45af4dca12ab604a3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C5hqKl6L.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8179,
+      "sha256": "652046433017d6383a64a2552ce984f663a20c920e624d8c00d9eaa06bf3efba",
+      "etag": "etag: W/\"18310fe9c2b78034a602bb2cb47f6962\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C8CVvxUC.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1369,
+      "sha256": "9141bc32f2a104268bcf2058c0d422653caf1be70dba698a669d1b917a45d771",
+      "etag": "etag: W/\"5a830df8a2262587e63f10f0b6d29202\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C9QoSkGs.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 887,
+      "sha256": "a810725c3c0281505d5b6956a3d264182e3b15bcbfbc9b296a1d1aae23fb419e",
+      "etag": "etag: W/\"3884b028a18b1543caff5eb1242d0bb4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CAshjmbI.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1600,
+      "sha256": "4629740158c077e4b8cd07e626ce547f9525c23fd9a7ad045da9fb0d4d71fb36",
+      "etag": "etag: W/\"82a0994be20271f8edf98f920eddddba\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CB8PDyqf.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8643,
+      "sha256": "19b06a8793a6d84c5bd30382acecd44eef76b3cae566452928f7461815be94e4",
+      "etag": "etag: W/\"1bf1ada61b06b83ae140366735c1d869\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CCqbhbfr.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2538,
+      "sha256": "0cd6d966def8c351e6657aabd8e9b44542e9821df5b93bd357fa6d402760e598",
+      "etag": "etag: W/\"4e961fb29e5942438261b188d1678b0c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CE4UxjKL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 346,
+      "sha256": "80a0ac4fd22f8561eca8a63833d182cb5fe5ddb388ba3907944469507bbbe922",
+      "etag": "etag: W/\"e89db27bc4f06fdfd36bba0e89a503d9\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CEvJVXy1.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 479,
+      "sha256": "409f0db9695bcaa9270735f07c9a85f8174c23423a1cc82ff0f4b31c7fca3ef0",
+      "etag": "etag: W/\"fdcdee66edea5e50a79f3911f98c4f31\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CHdHD6_3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 324,
+      "sha256": "09a0bf3afae29a7505225228716f98397842d16ca9fc8ac342d7411f947423f3",
+      "etag": "etag: W/\"fc029f53b3892f497e17a22cebc2b40f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CHv7rlJP.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1250,
+      "sha256": "27567c9de2e445e8b357c2c76baa438c2e8cabaa566afd0a294f97e42681aa7b",
+      "etag": "etag: W/\"6a10df3393a2d8bb9e4016ec83b82903\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CI4K2K25.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1903,
+      "sha256": "c24c66cbef416033b481f0ff83b7383f97d9de4927177eba162e11945b7d5742",
+      "etag": "etag: W/\"ccd087aa9e20b01890bbe89f1efe5680\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CJUG9MAs.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 9814,
+      "sha256": "6b7d9e5c6ab2b1251097526eef87418248f3b863b4e569fb444a536f10103622",
+      "etag": "etag: W/\"417a34450a25037d1c8ff5419893f640\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CJYw3Ddx.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1033,
+      "sha256": "f2049d0a94b5fa0aa80b87cdc007314a2e6d78fe50c4ed0672b0d30601043ad8",
+      "etag": "etag: W/\"e9eef3f85d867d1631c5f9165444f02a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CL2q-G_O.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2229,
+      "sha256": "dbca5343f2c56b21df89a795a55f560bf7f950aa24f1b4bc1ce3ec18ced2ef3d",
+      "etag": "etag: W/\"683188154ea543f37f941b6442cccd78\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CLUo2Tlp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 35576,
+      "sha256": "4a75f53d09e6568964cfc59e9026901abc4aa4c9959b3e880d26cefc1e91e875",
+      "etag": "etag: W/\"39c52613ee712204d0b2db4f52e985ae\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CMC8VrzE.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 756,
+      "sha256": "ef86e54070608cb6216a364f9e695b8e82fec72321011315c033c24d4ec7c9ae",
+      "etag": "etag: W/\"6cb255b249e94acdadfed846f008250b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CMr46wgX.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 61,
+      "sha256": "ea90766decd4a9bad0ce2ee4de3d61039b059417a5cdf1f0ab19d0c57eb41167",
+      "etag": "etag: W/\"dfbb59cbf136889a207aac9ac8ec81c1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CN5wsG2F.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 6167,
+      "sha256": "e4a4293b04c3d98c43af5504962b4d2d283457d17ff7bf9dbfb8782ff258a904",
+      "etag": "etag: W/\"9c466fb78b82f72578148e8f8333a00d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CNoZO9OT.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 837,
+      "sha256": "4ccfaabe67bc834d9c817c698de9dcc45d4180b4c2bb82899bf54152da11865d",
+      "etag": "etag: W/\"32f90d2f6f3523b85c1870015045370f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-COC68CDI.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8218,
+      "sha256": "43dbac5e0e31d26077b70ba95ce26fe111e4253ebdc3a907173f96ed4b0067ee",
+      "etag": "etag: W/\"9e33b40800492281c7b4bbd2c38ffd15\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CRLd9XWz.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 744,
+      "sha256": "bdeeaa62ef0bc4a410538145bfe422f1de201d6913491dce239fc38363fdc2d0",
+      "etag": "etag: W/\"40b407dc2b0cb606808b591610128483\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CSHJDoCM.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 28223,
+      "sha256": "4593278b8502825bc6f6b9051a323b750ede254823224f31db1ea50a9e310d19",
+      "etag": "etag: W/\"1b4f9fb17825e00403bcaf27be16617f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CSlPCylp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 593,
+      "sha256": "893390cd4c64a5c44d8ea7099fdbd5dc6c4bb767b6d4b8e4db735a2137c6ac52",
+      "etag": "etag: W/\"7751292b236a45be708300040029526a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CTtbGTBw.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2654,
+      "sha256": "bffd8860a4ef5fd7ab68f88a066f115c93016c4ace129e8ccfa0d35aa901fb63",
+      "etag": "etag: W/\"e80406272c655221f459ff66d71a8843\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CUwrbDEG.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2166,
+      "sha256": "8fc6803cc1d0a29c87fa365f6b3533bd92788aa3734b3b4dd9c708b898496971",
+      "etag": "etag: W/\"9071a892ef4e057e682014cc42a4429e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CVV-nwdQ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 24,
+      "sha256": "c664361f11cd873803f13ce6241ffc3c852405bd50e094217e02007a047e5eb1",
+      "etag": "etag: \"93f5ec4cf0fada36c41b7aabc71c1f75\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CW2n4Efr.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3469,
+      "sha256": "61bd1b88e3ab8c33eef59f446fe90cfc12bbf3973b7637f3f0497f0cd92ebc59",
+      "etag": "etag: W/\"bee81160c98663f981926813597d2b4b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CWJkzqKC.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2003,
+      "sha256": "cbefbfaf77bb877ba8bef59a4ca738231ce59b985bdc955c9054aa8c6e63648e",
+      "etag": "etag: W/\"f19aa343493b7bd31b5586d80c748dde\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CWXk-EpL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 128,
+      "sha256": "4844395287b8976d012636ef149e91acbe0a20224a3bc7d9c1a36f961c260b2e",
+      "etag": "etag: W/\"2435769af911ff7064fc77265f03a63e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CX0f2Xmn.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1691,
+      "sha256": "3cab1d1f9150bc9345df6800a405aec19880d914edf93d306e8161f93a66a95f",
+      "etag": "etag: W/\"163fd11f7648139f057f91f07c195c61\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CX8ilU0G.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2341,
+      "sha256": "712293a26341babe1584de045cb87bb91211dc57f25a5f5957c57273dfd9aba6",
+      "etag": "etag: W/\"4fe469c3c8d5b67b03a1008ede1a9b31\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CYB5kgJJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 77,
+      "sha256": "02ee895a2ac7f6146a6a5cc990e20f12a9753fd9d9fd75712f736a81db9afa9a",
+      "etag": "etag: W/\"ac69124c9861f7c5baefe19bdc86f080\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C_FwyL62.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1490,
+      "sha256": "5b22c631c4f48a5fda3915512ec1ac6a49dc5506ab273fb228dececbc471724e",
+      "etag": "etag: W/\"e20c71d8d7b1c979bb34d563c3de7cc3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-C_ZP2Z23.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 418,
+      "sha256": "a26eaae75d6647d2e0ca2ebcb10cd9780cdd6eda7c3b9a217b4cf12334479015",
+      "etag": "etag: W/\"3226db21cf74bf14f0542911c084d2c6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Caewg-nS.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 12628,
+      "sha256": "ab75f05fee09e47df3dbb86e8bc91e48fc7b5be0990122eae9f24525aeeeb81d",
+      "etag": "etag: W/\"7cd08c2039c103772d27263a166dbea8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cah55RlT.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8190,
+      "sha256": "17d6316001e9ccd9c09cff269aa8ca73e5b67336bb974e0b1cc94c8bbf728961",
+      "etag": "etag: W/\"4b3895464d0ac371d0dccf34a99a9a6c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CbBcoKbI.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2961,
+      "sha256": "ffac614f504e0bfe1ad5e3910c79169c8ae4b3f9b2e49f0948e92b91108aa0fe",
+      "etag": "etag: W/\"ad3cc0a2ac6af94dbe6dfa4d7d2b4d4e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cbk0ni66.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 63,
+      "sha256": "6496a2096a393ff032ae0276ea5cd567374c752fa9b7f6baec382a0622717de0",
+      "etag": "etag: W/\"fbd9abb2c38ac7dbb8c4424fd11b0949\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CcBH2GNp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2863,
+      "sha256": "c87a047e5739b00db49d0ae45fba95b0467b626204787825128ac0602b1d015f",
+      "etag": "etag: W/\"80caeb2849195841bcdc761a58985485\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CcdZ5RdW.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 371,
+      "sha256": "34426e99c00cf3a80bd321631954d0caff8b317477df07f159fde23c91501299",
+      "etag": "etag: W/\"e1998c92561c9bd39f522ea8c5fc2351\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CdqormS_.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 22572,
+      "sha256": "6b99d315f6bd4c1cc6226dd67eae38d1c19e7cb41cb997aeeeba4b78a58d80a4",
+      "etag": "etag: W/\"87c8802da53362ce060a447023b6c049\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CeomoJl9.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1460,
+      "sha256": "f22fe1ce68f1249782c418c8427b4b874a7a90599c6cdb716b55c21c9d29ef39",
+      "etag": "etag: W/\"b8ed9ae72baf6ad08ecbddefaac64139\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CgeqC86R.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3637,
+      "sha256": "7fa777081fa94b94b4e8406713c84afcb8ef47602dc8eb23ac2e4a3e37f987a5",
+      "etag": "etag: W/\"7811d24a383161b4a98e55ad63c3806f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Ci8km2dB.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 981,
+      "sha256": "1c81746bfcb5b30e3e122ec40d370f6399f5e884b92acac378c0e7d493a81977",
+      "etag": "etag: W/\"2e5450ade77dc77c5c0bb57058115cff\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CiCNk0lj.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 752,
+      "sha256": "ca1a2785d7c648572c36a705de07104f4b6043be3af4485aed2a8c040dd68320",
+      "etag": "etag: W/\"87c862897e56eae85cf205377fff831a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cjtqu_x0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1483,
+      "sha256": "d1ba2fe7734c3f52cd7df0de16482f5aaaf97790e4c4d08667598278dbda9ecb",
+      "etag": "etag: W/\"dc6a8babb63526fd8c1d69a4ddb5bdbd\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CkyqxLOM.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2210,
+      "sha256": "6873b67b928d81b23660976be589cadec90ad90cc198aaf1f11557475899ab3a",
+      "etag": "etag: W/\"e29860ea4284c68980457a8809cef013\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CmnZk6VB.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1860,
+      "sha256": "190873e0e9251d0c871409364d5402761a878eb671befb078be2ef36c50062c7",
+      "etag": "etag: W/\"22a21ab301c555eea67cc8cfb0f91449\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CnFewHly.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1321,
+      "sha256": "83a0f08abb4062961a0ff56c3e87aa36f8440f0f0c625c7ef34824eeeba59296",
+      "etag": "etag: W/\"b6f7b367809027c139a774c4bae88762\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CnkixQ95.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 63,
+      "sha256": "6496a2096a393ff032ae0276ea5cd567374c752fa9b7f6baec382a0622717de0",
+      "etag": "etag: W/\"fbd9abb2c38ac7dbb8c4424fd11b0949\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Co-xT6F0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4544,
+      "sha256": "e203b18f9b3f07fb110e3dc8e8a3624de0d177fea5348a4647b1965a03eb9775",
+      "etag": "etag: W/\"9ef89046d2a8e03e058c6b5b367b544f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cog848_8.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 357,
+      "sha256": "c789f09313317a90f2938bc84db9606dd00e9529d238427bb6971c4e6d8b7ca2",
+      "etag": "etag: W/\"fbedd43cf7484852e3ab4856678188a4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CpgPu7tm.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1330,
+      "sha256": "08edd1cc6418f4036521779ea993aa63652586a95dc3ec3e7662f19662bc2e92",
+      "etag": "etag: W/\"ceccba5fbee31c26cfbc327354ae9026\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cq5xAPzR.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2431,
+      "sha256": "87c8d94645a9865f77b44f72516768a923756f277e97e3781de1236777d6aefd",
+      "etag": "etag: W/\"5a7f548f1c22eb6ff807d5f029990be6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cqp3yqEy.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 17750,
+      "sha256": "d64f9e6f467cec3ec4a1a713caef5a1601c28ced5d5f7f3f1df39f7ad70a46f0",
+      "etag": "etag: W/\"749aca1de83cb10b4782ad9fb603b8e2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CsD9fAbU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 441,
+      "sha256": "4fe1f33e9058500858c61c5c4ea044ba7dc722170c4dad5389bda0b65ad4b162",
+      "etag": "etag: W/\"12bc559fd50d11945d106ec22c5f2a68\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CskZs4tm.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 107,
+      "sha256": "9e27e1b43897d8e0e5ad28c628eb45f6b67b3fd27a62d4e92e5316e072b1e6d2",
+      "etag": "etag: W/\"f4e2a8cc89586a9b5ad7df299d99b78f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CvPrgmtw.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 86,
+      "sha256": "7ee60f319d41879b23a068a8bcb7aab547425734a912fa43cc6112e98ae0bc04",
+      "etag": "etag: W/\"3f72e24a228f98a1608cec4216797442\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CveFmXg_.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 360,
+      "sha256": "20448f2b4a34a91ebe34c4f17d7715eb4d079b4ca6fbfe9f4cc2b9c5a18d5473",
+      "etag": "etag: W/\"f1ab88d3a722bbc8e775ab0f056b188c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CxiQ9aJq.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5216,
+      "sha256": "a541db0bcb9b3dfb8192f070804e511ff3f44195a3cd32641d55454a24b5a8d0",
+      "etag": "etag: W/\"e40abe6532cea11f341b571114ea77ba\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cy0Yypti.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3100,
+      "sha256": "466bfe968e61554e83e23992fd45ed176868d93d6ced4071c70f14032ed4c109",
+      "etag": "etag: W/\"144166dea3387cfbadfccdf049104854\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Cyb9GpPS.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 16322,
+      "sha256": "25ea0b0896575bc316789db2e8b623fe910a23905b85eea723ca63dd7920aa6b",
+      "etag": "etag: W/\"a637bbda2c39b1108621670bfd3afe24\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CyhUo82i.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 14888,
+      "sha256": "e014669ea2f8bdde56be5e90c891409d3eb167caf836d0a973324c391c098b1c",
+      "etag": "etag: W/\"09f382c0975749fd19e86716d62278d8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CzMcBpBn.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 25613,
+      "sha256": "2c715f6777997790c5ee2ae3635b2db433b65a67e29293db7292fe0cee2dbd58",
+      "etag": "etag: W/\"f43cc1b609b416c93dc028232e2481de\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-CzkROQ8J.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 204,
+      "sha256": "fcbfd26073bdf477e75cc8d9121de7750d4cb45149e5e1a35688df4ecd005e82",
+      "etag": "etag: W/\"eb9d6c8994bde726d8128108bc918fbe\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D15aFp9E.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 49,
+      "sha256": "1c5eb8e266a9b8f1d5955998de1d5d0c7a406a56cb43cdf73ce20c76ccf6d5b0",
+      "etag": "etag: \"c9465f85c089d1756767fae78ede0381\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D1JBUF6N.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 622,
+      "sha256": "dcc7bead6abd61bcf4a687181457c64e9a802a2e25379e8138470c1f7322631b",
+      "etag": "etag: W/\"f821cf8c434d88e8320c5e117829aa69\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D1_e8lrT.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 227150,
+      "sha256": "a2e9d30862af9a19823c747cb60e503923bf7cff5268d1987a795302de2de56e",
+      "etag": "etag: W/\"d5da838de897a9bc11ee555fcaa9cb59\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D1bthEye.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1589,
+      "sha256": "0ce49667311a8dc4abea227164d86ea601407d7f8226bacbad9d06076c4d0d22",
+      "etag": "etag: W/\"9cc7ac7fc4af0d556a80dcdc3fbd3101\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D1nGNlgA.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4144,
+      "sha256": "61ff1550acf66d0c18d5f4f0176e6be1dde94d7efafa81eb0b6b4b63d3645e23",
+      "etag": "etag: W/\"df54f61450eb533e2cadc4a24a6caed5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D2Hb1aoK.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 642,
+      "sha256": "0512f7209eb52afe34859ebc32df73488ee7985ad8dac2138403105d7c64eaa3",
+      "etag": "etag: W/\"08767a013824c1ad664bc426a5ee71c7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D2V09_uO.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 678,
+      "sha256": "f11b0d39d3d051b239fd0b799f44c1d0228e7ed7b330bf806bf51acbc388a2c5",
+      "etag": "etag: W/\"b959bea5c1d2acfd3cc3075aecfc9102\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D3OUKp8U.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 6053,
+      "sha256": "0a0ab9287f94e90a3b55f3af160831cf8d40c3900cc741a87c3a7b4b34762bcb",
+      "etag": "etag: W/\"a44bbabe213118b3927dbae8cddd146c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D3WM405G.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 174,
+      "sha256": "0fddf55ea3305a526793a4fe6d90d2a25b7f58327ae9ce539207d8261418cc6e",
+      "etag": "etag: W/\"54a1467227ff7365957395bc082a131b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D3q7N0YS.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 10969,
+      "sha256": "4fd485085771a86c50c36ad7f0f620701534ff0a561715a2226178599bd3f10d",
+      "etag": "etag: W/\"eb1cd06149a3a3aa343d927786b6c8e5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D4210PhU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4808,
+      "sha256": "61ede42bec6f8b62c76bf6cd562271493e058ca246499b403e874052d87b8be3",
+      "etag": "etag: W/\"da5bb0882fbd7232436f17273dc9c0dd\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D4eI92sR.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3026,
+      "sha256": "f243c5e4ae023cfaf02587da92b283f6625e42d115eadae6467e47d0ce360cca",
+      "etag": "etag: W/\"b97f5bab7650fe40c53099a2243e3d22\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D5ZWjuIF.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 19834,
+      "sha256": "f9ba30f7bd99bb624e28bdc66765d64261d8edf02aadd045bfe88512c4d2e8ca",
+      "etag": "etag: W/\"fcd5f36c5ad48c6902e72c9159aaa3fb\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D6q2plxC.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 425,
+      "sha256": "76f4978b4a9e40a8cb1e9137353b9fe834f1ce90c9287d66d4a261bd50de467c",
+      "etag": "etag: W/\"27bac557dac7d85932f626fe0c82dccb\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D7ahmADB.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 182,
+      "sha256": "47470f22db1bce3602f43ac1742383a6af443ed4edef2e4f7cbdda9786fe5197",
+      "etag": "etag: W/\"2144522065ea74933eeb83a44881d8af\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D87NwnjR.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 636,
+      "sha256": "f889913dc73aa5340620e26dcdf35f0faf136176f1e77d1983a4acc06853810a",
+      "etag": "etag: W/\"45392bba19bf178a5606ee754da4b907\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D8E4K-rk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13051,
+      "sha256": "cd5e24cee6bdb19f68c29ca5d1c0d801581c07a5d10457a4e7333a1dd9e77a1c",
+      "etag": "etag: W/\"0e294644837ab4ed46e3a20aa4908e00\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D8K6ZvW1.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 57157,
+      "sha256": "901a8feab6f35ebd643b07436c98e7b75cab31d37a49d7c0f2724a8a1433d233",
+      "etag": "etag: W/\"3a00844c8822315b59c5beda3779ecf4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DBW7qPfl.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1081,
+      "sha256": "a143d524823c2b5346c7dc388af78769e84934da21d7acc7bcf67277045cd481",
+      "etag": "etag: W/\"a0a74f69be6f9239998d37699e6058bb\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DBoXWuVS.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 863,
+      "sha256": "fa460efcbe9836cdba5b58620e557803b02542a6bb6a3bf7cafc14faf3532b65",
+      "etag": "etag: W/\"599ccab10e6fe1523dcffbd3ec199920\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DC2WiJU7.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 529,
+      "sha256": "74c33b4e91b2aead9c0440d2a496abd3e6f09f6b859f78b022a436ff447e3559",
+      "etag": "etag: W/\"41f780219deb75c816af3f5f3bc895ea\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DCJkvktz.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 433,
+      "sha256": "a7d3db743d73823803860612e5e268c8db544432f9d1baee6681f83a85ecf0e7",
+      "etag": "etag: W/\"cbdab68470f7bef87fef603ef07e1611\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DCqxomdH.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1948,
+      "sha256": "8d85fafc935d451e71748338b21c2876296da4d3c9075d1c9a06a2b15b9f0d1d",
+      "etag": "etag: W/\"485e8ac81425ec03ccf6ac5285199a92\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DDM0gDsw.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 989,
+      "sha256": "8baca45a00b5f758fe47b8f6a03aec30846dfbea983f488ceca561b9110367c8",
+      "etag": "etag: W/\"a22942a1412787f25ed861cbdd9eaab4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DFbojFkD.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1079,
+      "sha256": "8094a1978532708e5a8be0fb262230a9bf6c27ff52d51c24cd38fccc8b04ba00",
+      "etag": "etag: W/\"e3a8e6b8cef1e5eb269537d203540567\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DGfNPVvT.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8554,
+      "sha256": "61dbf4c78451a5313d0d71b0d4fdf367b619d3413f6f72f3ae0d00f65368d806",
+      "etag": "etag: W/\"440c223bf725f3d44350557f61a3d466\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DIf4RNPN.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 468,
+      "sha256": "400b97d2e3ba051c92c857ba2148b587ae5bed1cff0ec40a2cfb9f1a8af83a38",
+      "etag": "etag: W/\"46748d48eca2fadfb42ddcd135825e4c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DJ_sGnlb.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3144,
+      "sha256": "6318328d2f8cdc8b8f64781a155107ed4094712b54e8438dc26b8170c1ce2afb",
+      "etag": "etag: W/\"bfbf078ea92916c2d2077489a027820b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DKUG5K_0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2676,
+      "sha256": "cabecfc87e17601b0a82d366008062775c00723ea5e94f6d49f4365962a3cf00",
+      "etag": "etag: W/\"20d6bd292f0f1fc950ec73ef8cf9aa09\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DL9CIHK0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1712,
+      "sha256": "e13ad0ba972162a17cb17024345781647e660a22d5789a134c54c8e9c736feba",
+      "etag": "etag: W/\"651ada66067cd147968b624789af5803\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DLdhhik8.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1189,
+      "sha256": "ca2ca57972345718bb394ae0b317424d79f2d387afc74a71637e28a6b795f3ab",
+      "etag": "etag: W/\"3b18ebb31df1a35727ef94151e11a643\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DM6e3LO3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2111,
+      "sha256": "b096b2857041057cdce154766f25ec0ec54eeb301c8a7bc669340e052074fc43",
+      "etag": "etag: W/\"b40d44c0612c837def2b4a83a2fbc5a2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DMbWVdFR.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 30840,
+      "sha256": "7074c4cbf837b3891c83a4fce43b937ee5b1740818f5575d19d0ddf0def1085e",
+      "etag": "etag: W/\"05702318b1d95da6825d196d6c61471b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DNFhUBX5.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 19810,
+      "sha256": "238a20d2ca07fccb190aa11d4a9bdd14a44505a4d3d4f6b0d791925808263742",
+      "etag": "etag: W/\"832a67ff4ef7b0dce7fc7e21250d7218\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DPeboKgj.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 268,
+      "sha256": "a8801bcd301780c710407044e10d16b1eae109555a25f1c8b81293e2a0ae6a06",
+      "etag": "etag: W/\"3dd922ce11ead18d1a7dfb68fba4698f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DPlyUiPa.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1102,
+      "sha256": "b2daa30e9cc6e9450b49d4323bcbb93920edfdbde5e183662579b6a9f8fb2b37",
+      "etag": "etag: W/\"0d15ed361742c5bd079dc72b0d0bfb93\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DQ13jM7R.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 50,
+      "sha256": "02f389edbd8284a9abaaa40c11280936d208eb312c71d1abfa026eb962298ee4",
+      "etag": "etag: W/\"801e0a840b7059cd8de5f29caf848a55\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DQ2iDtuS.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7262,
+      "sha256": "d96ab9eb90e69a1bce0c1dd0ad661741875a7053926abc865c776633b83ebf92",
+      "etag": "etag: W/\"106628b12c2104896d63422501ac5a8f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DR0fjQMJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1254,
+      "sha256": "ccf7c7c5e220ccb392374394534fe56be05f342dff3eac10be7fa1bb3fc72008",
+      "etag": "etag: W/\"f96ce9874d37d66f266160df555df7f2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DS38mRsS.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 19690,
+      "sha256": "a44f1c6355b8e4c4cad44a3510bb09f3797b36a9e825488f1847e5342a900c63",
+      "etag": "etag: W/\"3a660ffb6d1802efb01ebe15d1ca80a1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DUd9NSn1.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1430,
+      "sha256": "0175ce020147c36155f7cd87d4d6a06cc7a62a61d9b3eef69b7083599d55b85d",
+      "etag": "etag: W/\"b3c38530a7de89f45f43fe2ff1e9405e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DXLqQCkD.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 17791,
+      "sha256": "253f68d7fbd1b3fa9dcb11265fa4bbdef2860b28d12e2d279a22ca8bf962a854",
+      "etag": "etag: W/\"8cec5723fd45213ae4d267a0fd8a6f28\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DXR9hO5M.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 974,
+      "sha256": "855205f38c7dc6fbb7684b2dab4a8af4835d4f01a758cabd3c0144f0021ca4be",
+      "etag": "etag: W/\"1ba4160aaef3fb1d255e0f3fb52fbf09\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DZXeJwpc.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1496,
+      "sha256": "ed5c162b6469febad529f792fa1a95b64e9631b09c7966238274d580dc7162ca",
+      "etag": "etag: W/\"c1b53635c7c40322e0c78a27c4d5f08b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-D_EwmsDj.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 9783,
+      "sha256": "43654d4322cec3d6cd01925c8fb41e6542cf434d698e9f9ba5e49aee691df7b4",
+      "etag": "etag: W/\"91a708742d7a1e55a350177adfb67786\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Da8iXDMi.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13128,
+      "sha256": "1d43df0895898df79101f8690645453f69f50ea3f99f47c01f3dce54f43aad34",
+      "etag": "etag: W/\"146df5fb378b74ed00840170484a707c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DabVuteA.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2239,
+      "sha256": "b56463ce1c03d3faa80d87a7fe1b63129e53fec55d35676073f3e071fe34b180",
+      "etag": "etag: W/\"adb0af49aca7edab48d377649d7faeda\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Ddk7egR2.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1216,
+      "sha256": "433714db8608b742137494d2a84b712ed28ac97fff6447b9b0a7bc3d746f1ca3",
+      "etag": "etag: W/\"36f1ce58d8c70d371fc9c972c4256073\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DelM6KW3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2071,
+      "sha256": "e316dfcb9c7b2e7d2b59ba30f0b46e2a1437f0eccbdb217d73ce84eeea94d8c5",
+      "etag": "etag: W/\"67fef57ec5429279b5a440e57eb05b30\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DfUrv8oO.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 63,
+      "sha256": "6496a2096a393ff032ae0276ea5cd567374c752fa9b7f6baec382a0622717de0",
+      "etag": "etag: W/\"fbd9abb2c38ac7dbb8c4424fd11b0949\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dgq-b-np.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2891,
+      "sha256": "ede4ff71326bc442224c6101f509e0f2c5f9f27b2992a0f6beedd86275336267",
+      "etag": "etag: W/\"71e7a9cde7539896c30062d969f35c4c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dgt8AZqD.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 363,
+      "sha256": "3d830fb254c4cd9c768c9ab32a652ac65aeed070fac11a13ba1d8ec4abd788a4",
+      "etag": "etag: W/\"cc4816e52dd4438dd65ec9ba3f3ac0f4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DhEHlXn8.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3843,
+      "sha256": "85d897a961441fc0053bfb4d873d0aa60212c76a43de2646551efc95b31ec5f9",
+      "etag": "etag: W/\"d989193f699ca2c88caf947a337220e0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DhScj3yr.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1137,
+      "sha256": "550a83dcdf74f2ab65caef6b4cde00610086289776e78f0ee7ef3ea001b82bcc",
+      "etag": "etag: W/\"746c180c29492cfab095519c53cd60de\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DkKx5HJH.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13232,
+      "sha256": "2b9cca855503dd617e7b94f3b4b174c4add5748478d20e2c2d1e261c77e70ec6",
+      "etag": "etag: W/\"b9b84cc206daffc93904f684b52de3dd\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dky7FMZy.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2097,
+      "sha256": "c211288bdac1f9682a505e0305c913f8066a5855fc360ead9b3e28874614478b",
+      "etag": "etag: W/\"893f9a3bfcb8e1bd093db4927d390fd4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dmcn9CW3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2483,
+      "sha256": "f7b96b125116b0cfff4bab4ed7a582500c489ae92a355af5b2aa685655a6b186",
+      "etag": "etag: W/\"0120e406478b482212d72000c4be23c3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dn9E5SGa.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4280,
+      "sha256": "76767d1784f7f028d66d92ea4bef92f94cd4974f0f79f8befcd026d3b8b45cad",
+      "etag": "etag: W/\"66e3587d76f6d72472d4ffbc224c8824\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DnrWTgAH.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8195,
+      "sha256": "562d7604710704e44901bd1e3bebf2a0fbc4abad1ec88ce77e92051ae435857e",
+      "etag": "etag: W/\"9157e116877465cd0dcd952c45f4cb25\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DntDW4zv.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2378,
+      "sha256": "40d7d8ad845f29e77f0ccc26c116b91e49a6ff6a4218fef53a4a10d2be7c88ff",
+      "etag": "etag: W/\"be089eb4e060482a30bb57a4752050a3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Do0DeTCk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2124,
+      "sha256": "54fc8199ebdea1a14d8cb2a517a93a7e22a62b1d5a924ca67920db3993ce270e",
+      "etag": "etag: W/\"cff6446141cbdecbe47c749311e6ffdd\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DoEDC6Ag.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1809,
+      "sha256": "ef26331983109b2648c9ef5eb6952de94c378a0b0214763d325d24f5675bb6af",
+      "etag": "etag: W/\"2de2474bb05fbac6a13814bc52cfeea3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dp0JpEMO.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 409,
+      "sha256": "3904c8572b9a7438509eeb1b681f7064726b7adec161691fbfee55236ead0fac",
+      "etag": "etag: W/\"af7134184706e2c252852123ce9eacc7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DpMj7rs2.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7518,
+      "sha256": "99b9e0249036e30417fe2b3ae93e8404a4b14eb0571f9ed178d462dd80311d60",
+      "etag": "etag: W/\"9dd305c44a944651ae11d15df6b87c78\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DqVAtgxg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 656,
+      "sha256": "bfd2b8939c25d622f5251f64cf9640aa0fb14d08b202a5e868b7b082271bfdf5",
+      "etag": "etag: W/\"85ff00d5adf24b2490cefd1a33d8c540\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DquLENUe.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 54309,
+      "sha256": "beac8e984929fe3f47441a6a15e9f8bab85c9c732a0c9a2df54154ed9894fa84",
+      "etag": "etag: W/\"e873a97b18dce0b8fa9c9cef42e2b9b7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DrNUmT8R.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 389,
+      "sha256": "51060e358266c6052b96cc85638ba1d6596a0d9a2859d88d5291f5068edc3100",
+      "etag": "etag: W/\"1db3126e94be38d5d28fcfb6ae250495\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DtGg7GUp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 457,
+      "sha256": "cf9287fc4095dd15b95c4f442bbdbb05b4230b027ffbdca8ae8aa7f8764184bd",
+      "etag": "etag: W/\"43e3c3df4613833317ffe5b1cf528d49\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DtPdRK2w.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 38009,
+      "sha256": "97e7cd709453e14c93df82bec6d6afa275ec18930e91a29e659e5c16bf1990fd",
+      "etag": "etag: W/\"4c869281b31bad09713e96ed6aed7beb\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DvhqZkVw.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 63,
+      "sha256": "6496a2096a393ff032ae0276ea5cd567374c752fa9b7f6baec382a0622717de0",
+      "etag": "etag: W/\"fbd9abb2c38ac7dbb8c4424fd11b0949\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DwErjWqL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1739,
+      "sha256": "12070c1af3dffec2f8db8fc399a1c18ec100cf7b615066cab0698a1b80b3cd5a",
+      "etag": "etag: W/\"2f88ae435a9ea39634c047229b2da200\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DwyWfVa-.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 20495,
+      "sha256": "363861c55ece917462004cb255e016ee8e429872bd44e9876a62c4a0fd22a4ec",
+      "etag": "etag: W/\"759c789f4a899576e4be640846858f13\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DxYi5HIB.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2203,
+      "sha256": "a881874e283effa0a59f360b99a17a2a5f616a9ec274194d6e7969c4f01eb295",
+      "etag": "etag: W/\"3b169b2f1a196545446f407dcc9bcfe3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DxxfPGW5.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 92,
+      "sha256": "9289b7980c0d6b3efc952feb9f11684a9ab85325638092706be9a203a61bf457",
+      "etag": "etag: W/\"444d1f313d168a72f7994aca56592555\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DyEVWLH3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 385,
+      "sha256": "217f9d0ec38016fb9a87eddc7115a3cdd2664b5143af85027980c6cdebce9b02",
+      "etag": "etag: W/\"d9870b24b6e2d70fb04adc7bee1fb546\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dya7XuSr.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1636,
+      "sha256": "a968970668470a46616a0c1e4351beafbc80121d332154470b212572d65793ae",
+      "etag": "etag: W/\"a42563f24d7160a5e3ee3d58b8442d04\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DycfBUsB.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 124464,
+      "sha256": "04ca7e7fb417e2f0f8fbf44c5f62670ee0ba4a79b1ad822260e657c34c810816",
+      "etag": "etag: W/\"bf3d3414668d0a0a4eb3d38eda603fc2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-DzblMKsW.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3087,
+      "sha256": "f2ba34c97cff82b3e559939f75322304353dfb7fab274641a0d9ec9f7f39acf1",
+      "etag": "etag: W/\"83061dabe31428e88f2a389f6b4ef5d8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Dzd3_voJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 112459,
+      "sha256": "58b1cc53b2697fcd0534780973569572e91beadbf5ff57f08599032fcd1a77d6",
+      "etag": "etag: W/\"ea5fcfde52b1c0960787d2734e198927\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Gu0noK97.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7413,
+      "sha256": "4e1a3102c0b52c55177f927e64ff1b87522e68a3eae09c5ad6e6e3f198872ea1",
+      "etag": "etag: W/\"9c586fe825907d959b1e1205658fd5d0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-HQItjzz6.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 156,
+      "sha256": "c8dfd4ddf5371761e06e249846f4eb535a0e3e79b97828b38669a5fa141849a1",
+      "etag": "etag: W/\"046be9cf870508b555b82a9f4c15b62f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-KVRi81E0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 15213,
+      "sha256": "326aa34044dffadada3ba3180759479f929c47dfd684cd86f6d276f2dbe3c7fd",
+      "etag": "etag: W/\"27e1bd1a4c09f40dbe5d9a210f8fa246\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-LefadkX3.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 338,
+      "sha256": "49d45bccf884651b4e7662e4906376fa33abb52f14bc4fb822daf523b3e1f08f",
+      "etag": "etag: W/\"34d2963a386f0129db4bf3ce633aa062\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-N6KNJ8ty.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 249,
+      "sha256": "735d6225dfb31f15cbe5db4944b53e712db3862b68800fb960d0c0eb8f14bbe5",
+      "etag": "etag: W/\"df775a3d7ee249180c29fb98707315a7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-OT3UjrJR.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 109,
+      "sha256": "14708b0870e069fd18b05bd4818800189668cf6d490f32721fd12408e4cc7e0a",
+      "etag": "etag: W/\"82162dc8eb6ffab4368ee24beb8e18f7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-P4ja00QF.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 551,
+      "sha256": "b3b765b71ff5d5e85b04e1b2d4d9342a85d1771f216273de1a40c065e1e86023",
+      "etag": "etag: W/\"ae6b6b8943044a206b5a62f679379a29\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-PGm_m9Xx.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 198,
+      "sha256": "790ac5c759edc62f03c842bd2798eb4d8d4733a96b63b25e0a188424ba0b4ce1",
+      "etag": "etag: W/\"116a17368f29861d9a3c22219fd7cdf2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-PNB9R7BG.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1735,
+      "sha256": "4e2876c5af615fc65990443506f6bc2b1725cca42c3f7ec7351d6a4f71764ef5",
+      "etag": "etag: W/\"f781f059caa0414e3d328f8491b13c5f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-PXf05nOy.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 309,
+      "sha256": "764f541b5f111690cf6560364057ca6d71e9254f1872110078a7f90803ed8831",
+      "etag": "etag: W/\"dd449dd40ebcde4452725f33551c4d0d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-S74zuuIJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4470,
+      "sha256": "3b473a42c555255e4e0da8609dfb54e97b2a4df026dfbae3cda493a4f3b134f7",
+      "etag": "etag: W/\"13920eefa9d3967e752a553561a555c1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Sx1NV1WL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2186,
+      "sha256": "53ff5b26d121ac0c9a5d06dd3067e1afec37915624c8e04c3fbb1d8c1be19868",
+      "etag": "etag: W/\"da78643143a619b4cb4b89bf796f8550\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-U-WrDz5r.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 184,
+      "sha256": "c18ca88e80ef7308ac9af1313b620b5b1e489e6c7080f25719910e2f53450d67",
+      "etag": "etag: W/\"c864b66f3e794848ca5af8c443dd41d2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-UBuTNoeb.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 920,
+      "sha256": "36ec72b09ed35163b3ca2055b22537ce5abcb91d1106fc5028babd9d189ef075",
+      "etag": "etag: W/\"ca63dd3d8cd9526fb031b619971e162b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-UmPihtSK.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 612,
+      "sha256": "ed900c8b801aca9d26f9faae246966df677ab5e4e96bc7d6d3b4f2c67277e869",
+      "etag": "etag: W/\"b1bffe29ba3f2f77d84e4f86ec8a7dbe\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-WodG-DXr.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2520,
+      "sha256": "f8f52207ab4ede7237e9ba14d11457ed734527281b3bd808921345045eef5032",
+      "etag": "etag: W/\"671ece5ce6472b5748508ac5e8aaca96\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-XBgPiQm8.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 300,
+      "sha256": "5f8c10d0295e78d11f058f7780014bb202725c36d03cd9a3c8d6926661632895",
+      "etag": "etag: W/\"a343362f1f8b54114bc76e4b16d11b6e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-YM4mCsi-.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7652,
+      "sha256": "5b362a471a09823e646a53a3316936ab4471aa74067aeb45915a6bfaae311ec4",
+      "etag": "etag: W/\"d96955e3365680293a3d1f005011c29e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-Z8Vs_94W.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 628,
+      "sha256": "f6c96e60f54c5c2fe1838e435d53e34eb355f36db563feb0ff3b1f1b923c53e5",
+      "etag": "etag: W/\"49415f19387bb3a9c576a2528f6cc766\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-afwB85Pt.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2460,
+      "sha256": "391b18cfc5bc22877b1c1c2bcf909ca0082675c8f10cfbf415faa973f99c6b75",
+      "etag": "etag: W/\"5120768ac5ad1331039c58d197a7da81\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-bOsoSqGH.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 157,
+      "sha256": "6f625d9134cfc413077cd97d8528326345808ee184a4a25467aa5ade3f0ff5a1",
+      "etag": "etag: W/\"95110933faa9dbce53e79c102d84e35c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-cM5g2M5Q.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 10887,
+      "sha256": "e32d68930cee1a8ff76bcb644426b51ef2857f6fcf163f88bef798525f374226",
+      "etag": "etag: W/\"22efa9f9cf26c3236d0ea37564fd2063\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-ccgvoB6J.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2872,
+      "sha256": "bd6fbc77eca359f4aaad699dcb24fd895b5f37a3682897793e8675a942000eaa",
+      "etag": "etag: W/\"110355770df9980f568a8e5d580fd14b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-dvf4IkeR.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 9094,
+      "sha256": "48c27a9c9f3ca667e7f7060d2589498ef0fecedccc451d37cccbea8e985ca1f1",
+      "etag": "etag: W/\"8e3194563273d0dd6362ca17af378bca\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-e-1Rr1QV.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 473,
+      "sha256": "ee50c638d431494119dfb1a548cf6c588db75d178cfb07890e7336425cff32b6",
+      "etag": "etag: W/\"183416bfb00518cb71b3d9e39d8caa6b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-e1q-H1fm.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 281,
+      "sha256": "8bc49bf41e686210e77e8c20a7b2540392970278970d47373e63327c507eed9a",
+      "etag": "etag: W/\"b6207b0ee903c74a777d4b7b56784d7a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-eDofxQzu.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5731,
+      "sha256": "a6bc8f0332683b1d595224b67d852fd34b0e78302e29f63379028cf92e491000",
+      "etag": "etag: W/\"f2f847d71f5380289df051062773cd3b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-fELJuoSc.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1093,
+      "sha256": "ebdff1299890983b9ae299a8ba14354e763c5cab2bcf37d42e5d9006e159eb69",
+      "etag": "etag: W/\"10d0dc9fd5efee9009f2d235b9d2f9e3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-ftyBoQXj.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1185,
+      "sha256": "08aaed7587cefaa4e2b9ddfa1ac5232956afc74cabae518e4a0bd5798b3db112",
+      "etag": "etag: W/\"2f985c4c8e22d440dbc1b4b67f2f081b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-iJR-2g6k.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 812,
+      "sha256": "f439fcd331f27dd624afc3c5f10601e929c8bcb0ce39585331d86598ff4684bd",
+      "etag": "etag: W/\"4a6392df855eaaa090807629626d5c2d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-iMRdLrab.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3157,
+      "sha256": "684fb37c77da4f4372aa218a86b13f25773c05ad70b35e52f121f5ec87e33c9e",
+      "etag": "etag: W/\"bac8c90757ab594c943bde58dc541596\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-iusgfNG4.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3423,
+      "sha256": "aad2d3b74de533cb3dea8d6a655b17597c4d845d61629770d0185ffe79f6a0b3",
+      "etag": "etag: W/\"223372ce94322f13d9746645c516eb32\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-kT_0RLEx.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 224,
+      "sha256": "a48fd90a9e78355c9e0c035e7ada5cbd05fe39fca6dd35c3d2cda62d2262b986",
+      "etag": "etag: W/\"f02658f9fc14b90352fdbcb491fb9f25\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-mXjFBgIT.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3839,
+      "sha256": "c8ac1dde11ef280b7a6b4340cbc48a6b0e953c97c0aa822d633a306d9421c86b",
+      "etag": "etag: W/\"e3aa7a2b9fa19e1571850711de18bbd6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-n3PR7OfU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3699,
+      "sha256": "e1103badfb4fa0a8b5ab1dea4ab41047aed3142dd33667d1f9f261cea8676fec",
+      "etag": "etag: W/\"8742ae647fff74b82fbced31d5444a43\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-nqm3ezSI.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1127,
+      "sha256": "272d3d8d6348df8bd9c0053472db038dc1094f9d713bcb1d7f707aeeee8120e1",
+      "etag": "etag: W/\"3ecb3a39196a0de7c5df50efdaee8fbb\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-pyMv5oUO.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7042,
+      "sha256": "f0911a01ce2e45d7b95745d8c446aa5aec8ade1fda9f0a07f36ee2ed0ddb93ab",
+      "etag": "etag: W/\"a28ff2992147e54215da9719562f39a6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-pzRG9rCN.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 237,
+      "sha256": "236d388cd5801d759d240c66e0149f56349d578a568aaebced27dfaec36aee26",
+      "etag": "etag: W/\"18c7be3a08dc5eeee4042b658266dd86\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-qo72EKag.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5288,
+      "sha256": "f6e1540be16b612ec97382984bde8a56035b8900c21bae993fd5470718154a90",
+      "etag": "etag: W/\"ea8cb444cbe129e34aabc41d646b9dae\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-s68QQCgB.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1635,
+      "sha256": "5f0a046644bf54dfa6883d84a5464fde8f84a1bdc142e9ebbffa89d48afb85a8",
+      "etag": "etag: W/\"8dc633f785c8d1c46ed314b2c1283490\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-sFUM0DVH.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2107,
+      "sha256": "e231eb4e75a77a07e6d0db4b6e4d0dc44f64e322b0283720a93f1649c2b7c60d",
+      "etag": "etag: W/\"9307e97841fa832fbbf03077cc3a5609\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-sFt1XmxH.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2451,
+      "sha256": "3aaf05746c314876587651795e1c018456e81cce91e6e5f43c2a4db13407e690",
+      "etag": "etag: W/\"57e9cd0a95817b6d0a900d7adf8be7c7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-v-88cnG7.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 841,
+      "sha256": "fcd14e1890c7b9439e849b9d8c9341e72472946917293f0d62e8eabb0676a09f",
+      "etag": "etag: W/\"e24645458256d377737ee89779b6a19f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-vNOG3xvh.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4994,
+      "sha256": "84408f91fdc1dc6fe49465a32dd32d5ba56201e836f0894bc524409819b19e4d",
+      "etag": "etag: W/\"19d4d67069bc18e4d3ff530f779459b7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-vXmHvgSh.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8956,
+      "sha256": "9c4f82192583a52f646d2122b6b17867c57f0ad9579d887658e937597c276899",
+      "etag": "etag: W/\"409ca64a37a390bdc571b1aec0147d84\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-wDQxv8En.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4401,
+      "sha256": "fc2fd08444bcfab3643fac96b60fccbf085aa7f2642c6cd929de540e514cd421",
+      "etag": "etag: W/\"af52ff93ee0b9f83e3e716dedfbf61ba\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-wulOQQOq.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1626,
+      "sha256": "75283106b3ef2900a3df4ad5d5938e6584ba7fdd727cd890968746a0c2d1d4e7",
+      "etag": "etag: W/\"e6d670aa45adc610089179df2bdb770a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/a-xqjaV2R1.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 57,
+      "sha256": "71c484fb755a2a22756002e634bd79545b4794a7884053eefeb3b396631d2c5f",
+      "etag": "etag: W/\"b652ce5590451b41d9e57e7ed9ba7e31\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/abort-signal-any-CMRGJTbF.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 579,
+      "sha256": "ea3b433cfa30240d24762f5eaff22366cb2f23ac72e1c3533dd00a1d556f7af2",
+      "etag": "etag: W/\"82e136853de26a7071a50d66004d94ff\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/account-settings-preferences-ClUxkVy8.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 6219,
+      "sha256": "e895ce22a21e57798f5c4e26c0185dad80c1d73a96812fd7012757e359102699",
+      "etag": "etag: W/\"1f589a422fa0eb67730ce1322a3f48de\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/analytics-BID1u_Jt.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4171,
+      "sha256": "3d91dd2761a08d3db8c8a2f47b7f685c46c3e0f8f1dd52a710e0c31e343c7403",
+      "etag": "etag: W/\"cb6182e126a63fa05ebc506c98cf02f4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-DAkvOubI.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 112410,
+      "sha256": "76f9899f30a653548ac46db46059ae8f29b8ad9c9626baf616503204e37a5094",
+      "etag": "etag: W/\"de292ce9d8a52ddc71ff8fe08ebf4270\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/app.startup-9cP5YJYz.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7197,
+      "sha256": "8a9aef34fcca8a832f6af56d1b1cb490e891ae8d99e8b10bcc44a28d1fdf0674",
+      "etag": "etag: W/\"914a3955e675c886c61d957b5857cab4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-composer-BysTdW1F.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 321,
+      "sha256": "61a8fdfef1153a8267337298de02b74d0427345fede69f7d760030cadd3942d8",
+      "etag": "etag: W/\"f7f68f1904ee43229d2fea3302426473\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-composer-CD7B9KFH.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 243,
+      "sha256": "19f64b9dddbc069bf43433235512f5b90296a90aa9f703bc5991999dc0ca3764",
+      "etag": "etag: W/\"dff96f891e8547b834911598ba446e13\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-frame-runtime-modules-B38J-5dF.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 20820,
+      "sha256": "f35fdec61fcfa97f2de82b3eccf0c0ed799a1456d4228027a5ad490a889d77ae",
+      "etag": "etag: W/\"eeeacd3500fc3bd88a62de02ad105ada\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-hydration-capture-FXIFCX75.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 40,
+      "sha256": "2eb876b13290b86fd8fb331466baf12d2098e238dc62f4b069e3c328f239a9cb",
+      "etag": "etag: \"8ec323b6f23492bb188473ce30b2499d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-idle-signals-CiEUGS36.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8191,
+      "sha256": "947d2d0a380b604594e57c67ea1af4dbb50539508e67478f05fd861a08756b17",
+      "etag": "etag: W/\"231b859f36fbb424ef97e160234a6445\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-presentation-runtime-QersiXrg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 625781,
+      "sha256": "7f9b8a859519e81f3840b512c5e45fb6a018ad23f34f38902f8a396cb5e2f84f",
+      "etag": "etag: W/\"986e86ab96dfa58aa46abd2ffb8390de\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-presentation-tree-Ctn7Sjrl.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 15467,
+      "sha256": "c50d397ed4923eae9e9ab84dd8a05ffee0431de35e51d4fce3a51d9b90f025b3",
+      "etag": "etag: W/\"4110927c7ee0f41c8c3904b3f77029aa\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/assistant-ads-analytics-DExvRhHp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 21687,
+      "sha256": "ebc1bfeec116f78a6edd44e9742d5629a6564a43735dafd48705218d74d7a55c",
+      "etag": "etag: W/\"0604bd78556f2d2192fc73b5aed7ac2d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/assistant-ads-placement-BYGsn3dp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 23341,
+      "sha256": "edbdfd99b93e9dfc140d9426d60581a5cba2a44f1b5eeb43bb0cc8a0237064e7",
+      "etag": "etag: W/\"45e3ba51071708fef22789f5e75459c5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/authenticated-browser-client-B3_AVxup.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 18042,
+      "sha256": "e16549dc8c2dc0207dbd9d0bc794f8b0579c73a519158397ff6c452528bf95db",
+      "etag": "etag: W/\"7fd75a2fd3994096e9bd797582fc0133\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/authenticated-file-policy-DAr3flw2.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 999,
+      "sha256": "52f5eccd636c40b61cef2b2d829da29c01de31c8b2c1a690766deb90621eb27d",
+      "etag": "etag: W/\"b30d8059b3db03e01a8424b0c8727de5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/authenticated-history-signals-GGr1SFW-.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1203,
+      "sha256": "b2e2dda9c02c91cf79a370381f18289bd65c0635b66569598d4f097b6cabc203",
+      "etag": "etag: W/\"1f610d108d45c820941f6ccb347c6be2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/backend-api-CrK1MGfl.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1971,
+      "sha256": "47bc176ba3e7d4c10593f34e993eeb5b50eb6cb1a1aabf7c1e35840c8206f25c",
+      "etag": "etag: W/\"baa6f0981ca3f8eb3be4f3acc80939d5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/bounded-response-bytes-bcl06cg_.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 541,
+      "sha256": "5ad1baa5281b2c06468d13374ad81a98004304190d509d402fd0bf3db68608fb",
+      "etag": "etag: W/\"8a9f1cbfd9723fb56a65d874f8769343\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/canonical-dil-entity-actions-BfBQyHSg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7319,
+      "sha256": "e2d29a866d8f6fa676b0f905af1d317844a3066e4f2658429688624806dd01d6",
+      "etag": "etag: W/\"40ce41564a29101a6b1c339632c635c0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/ces-page-diagnostics-D2bvqPtE.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 989,
+      "sha256": "7932b512eb7f9c59e404ae1c506d567e7d38d323e5b6f007b048d0b4b3d4264f",
+      "etag": "etag: W/\"bc266240c9d28d2603431b2489885b15\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/ces-sdk-preload-vendor-DWYtoU0p.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 188,
+      "sha256": "4bfa6cd5304c08172f30cba4d6e1e1034a46a5d1eef527c34662bc82627610b0",
+      "etag": "etag: W/\"20410e095158c38bce4f4846099d30dc\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/ces-sdk-vendor-CH1XEi3X.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13313,
+      "sha256": "7a7e42c6062ca917daf255aba579f9070a9b4a2f453e86ce93036213355a4d9d",
+      "etag": "etag: W/\"d1e86f6b7d53137121eb1ecd3b90271c\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/client-i18n-scopes-MroZrClw.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 104839,
+      "sha256": "675c7b653dde4cdc835737a99fef08015af21245f1212818bff4df12b24b931a",
+      "etag": "etag: W/\"5dee48fab0be806cd8602d6a2f62f767\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/client-loader-C_X9Vvjg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4035,
+      "sha256": "a38edfc8cd9df52932d17b032c6fdb627a6a1b4bcd0fb0fb9dd1862e4c639430",
+      "etag": "etag: W/\"5dc4e12e6010da635a0a78c65134a263\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/client-polyfills-Cbp711bJ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2313,
+      "sha256": "eca9ff4337c3001a6043f81becf97e5c35b90e8f4532a08d04d707ff1f6e6347",
+      "etag": "etag: W/\"6d944f4dc3759b48b0b94407299b997a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/composer-height-resource-1-bafRWD.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 672,
+      "sha256": "b9e43a69a709d37b3e045f1bc9982028aa58222ee6ea5e69b3d6a0134f1ea153",
+      "etag": "etag: W/\"b9b8a652fa0cb7c4c89322f7985279d7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/composer-presentation-create-BkogTAeQ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 45863,
+      "sha256": "809215667a86deba4f26b060d0094313395b06c3c59b30dc9c03c97aa3d3ea81",
+      "etag": "etag: W/\"3ec712e20fa40e141ba45c00b14562ee\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-control-BJ72Y2XZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 26395,
+      "sha256": "dc4848caf9ff7accb945a9cce5601cb142d410544c3f09456016ecdd3e79796e",
+      "etag": "etag: W/\"887317b1c81ae8edddffa17ca6d3e9ea\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-control-consumer-Pie6sErW.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2720,
+      "sha256": "d0b96f9ad3b1ab1248a96bfc7e07302afab0ee343679c8dba5340f5963703714",
+      "etag": "etag: W/\"ba1673efa88082947144bcac50242431\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-followup-client-Dq2refpZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 35178,
+      "sha256": "f6049f87f466ec6ce626c16db4f6eec1eb115c68f1b003809878071889ea4e1e",
+      "etag": "etag: W/\"8e4ed638b7250a72b1957a85248903a9\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-followup-dom-controller-jjNFNkht.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 67773,
+      "sha256": "93d934facd3f11374e03bfbdb16a1991d25b371f961b6c22a7ddff950ec1b2f1",
+      "etag": "etag: W/\"21cc1d6c9658eb04fef8689c250a450f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-followup-retry-CAgejEFk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5933,
+      "sha256": "5ff95f982c1473dfb5f7f544832f501073ce8ae6d37325d3c5ebb502ff2700b7",
+      "etag": "etag: W/\"a2b924a1d72dd17bae15fbd9ec4d7eee\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-handoff-preparation-38rDl0sm.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2638,
+      "sha256": "81a10600765802deb692510c412dc39d743cf052de9136b26bb5ed035901a613",
+      "etag": "etag: W/\"e2e172cc61cd2b111c000667132a7913\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-history-cache-boundary-BuvtQzjZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7196,
+      "sha256": "a03f84384b1b435a78020664a9d2e5f0d2223c60a742c0ec290af196634c3962",
+      "etag": "etag: W/\"93b8c804152fb14553615875afba5bc0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-icon-sprite-C7KJJ80a.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 173,
+      "sha256": "8f0ea48b1bef1b3c93fcec30b4080a2c83b78154672dc6e07c3a6a880dbd1e1a",
+      "etag": "etag: W/\"7b9efd3af28d4514774b29424c39784a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-image-preview-C6RDnuQl.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 6393,
+      "sha256": "e684f4c420be3ccb991f9d09c39a8ad006bb562a7a946c117265f8ce1ed7cea9",
+      "etag": "etag: W/\"bf44886094d6c0ba0a081075e82bd019\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-image-preview-client-BtDcTIFf.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2451,
+      "sha256": "791742a9055c548e978bfdf623bfd2d700971e81a6e07772129fe78a91661d40",
+      "etag": "etag: W/\"a036a773e0f3cb6ac87a4fd24ff170d5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-observer-CWEQ1TcO.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 9725,
+      "sha256": "0525f2734b2dd4d98bdeb782aae8fea49d5c6516aa07dc30b440e2383d8a4dd9",
+      "etag": "etag: W/\"333566b1c2e6356c0a85d127b4631db6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-prepare-client-rrYSJSB4.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 10000,
+      "sha256": "6acc80e8a5f06329e3cd41fb14fc9465a481b536fe29c6d6f2571837bd5e937d",
+      "etag": "etag: W/\"03f6a77fbad1abf727dc32731e520b70\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-retry-owner-recovery-BiGK3sWt.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1890,
+      "sha256": "5a095ebdbcb06c9a9be2e59b4f057c80b88bcc1621b2ec10fda2615f34148044",
+      "etag": "etag: W/\"b199e93d4fc822311e05f916103ae84f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-retry-storage-BDN1qFnW.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 15037,
+      "sha256": "12b240c1e16ef79709d3c77bae0bf6a2678e04bd61f436b5358d57ca37b455d3",
+      "etag": "etag: W/\"425bbe3170abe5377ea4222380617797\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-saved-source-content-OMQdjlEp.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3419,
+      "sha256": "38d433e0cf287f9de8dbe9a8d96f0577cdf8a7a40ee869624ef402126f4e2978",
+      "etag": "etag: W/\"4ebd9099666e9bfb0955c97a27251499\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-shared-BRprbMu_.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 39943,
+      "sha256": "884255df9474f8e38f2cf2eec5ec5318d57a8512a4cbc742676d8efd8f8a2b4e",
+      "etag": "etag: W/\"9f5d145ddd736b43b0bb006fd1f7c526\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-source-client-yNncdGYI.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5317,
+      "sha256": "e7c9414643492a3b399394f8e284acdf7f0d1a035c12aebbb10767625e22f18d",
+      "etag": "etag: W/\"900669634c69ac821c8e4ded3e60da51\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-source-dil-DNhHbX_x.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1554353,
+      "sha256": "90c7cdec854ecf335e35251e8ff816564e4c0226bcebfe60e10a791fc9fca65f",
+      "etag": "etag: W/\"0b124b7e89bfc73f3af29733557ca6d0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-source-dil.worker-v8586EJk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 514843,
+      "sha256": "47222bafa21320d6e4f8a938f6d1edb340d86a4fce9c6d422027831119915bc3",
+      "etag": "etag: W/\"34d7b4df393dd384af838651e84295d7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-source-footnote-CicJp0P_.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2380,
+      "sha256": "c55cdec31d22b8ca510aa51b07270cb1660844c0332f7851c2586e39b726c2c0",
+      "etag": "etag: W/\"e0e95c940855efb90bb51424496d3e01\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-source-sources-5ZBNWi2L.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8200,
+      "sha256": "59169c6d5ad465ca1de86bd368f8d7b83fc7a8c4e16a8e2a292282850141bc48",
+      "etag": "etag: W/\"f823db5479f25432e359f89500c0410a\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-source-turn-CshVyOgy.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 21434,
+      "sha256": "acb4e3b02253beaf242540af655287e6e3eb50c3198eb6991fd3831527525f1f",
+      "etag": "etag: W/\"8038ade51b880ec33914b7116b24ccd1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-startup-measurement-reporter-Daih5VUL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 242,
+      "sha256": "8fa3cfa52f0d1ccecefe1a2ec890b9abc3dcd0dd6cd5f38af1278aa65eb99a18",
+      "etag": "etag: W/\"297fb063f5f4d7054b46b235e74be7ec\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/conversation-submitted-turn-presentation-BrWlks93.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 948,
+      "sha256": "ef00873fc4521a1979d6b3d6e944570bedd3185853d677be6c48e14c63f6e217",
+      "etag": "etag: W/\"7a03fa445f59fcb0c64fb429ecbf472f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-YduVCvuA.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 15264,
+      "sha256": "af4d8eb5b17b044c30d8c77cfc43d478eb7d80b758388995c27038de3a1c9aab",
+      "etag": "etag: W/\"33ccd297f9fc65624d305f5589f40520\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/dil-catalog-names-B5Mxxdfy.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 8568,
+      "sha256": "cbfd6b618447e00f0589814f045076d64070eb9dc8ea7518b47bf66891c6e800",
+      "etag": "etag: W/\"6d0963ce08629de5f959b778d0f560e2\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/document-application-layout-BPxpZJHu.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 18452,
+      "sha256": "f4722ccf96043be7185a406c8792864e03461fd87a6027de5789c5a596b29170",
+      "etag": "etag: W/\"5ddfa154b1cb11b664828bf27349bc22\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/en-US-BAzMF8Jl.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 154172,
+      "sha256": "da4632d484e44f0862484dce990cf878ce66618c4ccd420e690b1d8118dba804",
+      "etag": "etag: W/\"2a0714ba669f0ced6272f09544475dd6\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/essential-conversation-runtime-DlEHZtTa.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 630,
+      "sha256": "b74cd9b12c8caf7b2ac78baa24297f81d65d929e798b33865c487dd5d532d369",
+      "etag": "etag: W/\"b80d9c8d8a1f9cc97631ccfa453e0d56\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/frame-support-owYKMD02.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 13101,
+      "sha256": "fdfe55b94a1b3aadd7ffe9973040c0bea0134c7d27ac3e00aae2ef9673a3e5ab",
+      "etag": "etag: W/\"f64bc9916d0a58480a1ab56a7a8334d7\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/media-opening-DUjqsWCg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1621,
+      "sha256": "bbbfa1064e06c1fa337598d355977c9796167d119594ac5694c952b778af12b4",
+      "etag": "etag: W/\"0960ef6f97a0d367cbb41b3162971def\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-bottom-sheet-B_WneyJe.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 79021,
+      "sha256": "03832ce104ca0e5047f346594665a8cdf23e02387f0c64b43d01c6e03d4ec258",
+      "etag": "etag: W/\"9905484ce580680477fb692fdf2370a3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-composer-accepted-turn-ygHFZVO5.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 11436,
+      "sha256": "657890569775dc786a4604a007e498ac0522afaf0d788aad2f11594d09aa491b",
+      "etag": "etag: W/\"d2bf8f2ac17ddc918d6d988a82d0035f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-composer-draft-bootstrap-Bf4sT4xY.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 165,
+      "sha256": "4cc3ce3e0fd77e5ea420b46d8afbe52c8efab184d658a14b0cd410eacaea262c",
+      "etag": "etag: W/\"2abd56da3fe1272876ea8301e7c447df\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-content-reference-sheet-loader-B-ci-6HL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2079,
+      "sha256": "80a91ee28ef88c126707015373df92a46822171d814b2d8d944ed9b56e8a1a2a",
+      "etag": "etag: W/\"8a2e91bda169538ac910f50301e073c5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-conversation-action-change-YZzSdRf9.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3949,
+      "sha256": "1601f61d09d4b1b47994f8b2ed31181a53ce2964a0d081599ad82617d7c7476f",
+      "etag": "etag: W/\"c857d565386289b331d9b1bd35929fd1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-conversation-route-stylesheet-C4563ha0.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1386,
+      "sha256": "872a8f210b895e1b5a3e61199b6d81e5263ad818ee7fc84f4b7d7a8f770c53f8",
+      "etag": "etag: W/\"d358f15342f515cc894b162edaa0092f\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-CMQ7Y0Yg.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 4066,
+      "sha256": "954050d7a6e291e8d2d4390bf17820cc507da09d93a06a1a36e81898a7cb53a8",
+      "etag": "etag: W/\"53ef0be0f58c2ea1309793b4cec4f003\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-dil-location-state-D4SSf6WP.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3949,
+      "sha256": "7c376da0f19f859791893a77fc3f5c6b3e731d46883ca17ffa5000ebd873c6f3",
+      "etag": "etag: W/\"e5815f8b71b7fe68ef6bc03924530e51\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-home-interaction-loaders-CKmH9q1V.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5256,
+      "sha256": "149627e34c316a505102570ed81dd6763f93983a4aa01b28d706bc538dec7b57",
+      "etag": "etag: W/\"b0b8c92ec8ca90f8a2b13f06da0cbda5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-image-attachment-actions-n_Qcc8AU.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 310,
+      "sha256": "85cde2e37fc7a9e2fe1de5101c16a99c713371e0e4526df27ff9925ce7abfc01",
+      "etag": "etag: W/\"3c419c47ce873eb90cea1333e0a46aa1\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-initial-composer-sentinel-runtime--J8LxxBl.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 26636,
+      "sha256": "a24180137da5d0292029d2be8b109394a25e4405f10ac0c726093f1c55469955",
+      "etag": "etag: W/\"ce78dbf7bf37d5b64f7d4c23b967bc04\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-initial-landing-presentation-xydq86l4.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 747,
+      "sha256": "8c33513bd1a0be5470cdf63cac85459b1f5056ae9b1558ee6ae934314abf607c",
+      "etag": "etag: W/\"873fb885f36cf58fc76819856d407d85\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-initial-sentinel-prewarm-CxLrrxhZ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 11201,
+      "sha256": "c2d000eb42fb798155405af21e006bc0993d97bd8769a230df68b2543f3f4b4c",
+      "etag": "etag: W/\"e40163981144b6344cc0ab7ab4b384e0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-vLAyyR-4.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1516,
+      "sha256": "217592f43c0989c0febc23dff11391dfc6deae9358ed80e5930d747a658553ed",
+      "etag": "etag: W/\"e402a38da8e2ef0b90c81534495079ea\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-sidebar-navigation-metrics-C_ns9c5m.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3382,
+      "sha256": "e9e0ce7fa21aa4df65807349e8c386ff39dcdb4970640b6e951a1dead21a2e9e",
+      "etag": "etag: W/\"a743e1e627bc5f6a7e2f9f0edcfd5951\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-soft-login-rate-limit-By_7Pkiy.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 3507,
+      "sha256": "49c7c1daf24d9efddea0713b51f0d94e800a5c565adcc1228fd4a2c4d604b4b3",
+      "etag": "etag: W/\"85d9bd7cc3bbabc0627aef28acedacd3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-telemetry-Ddcyk9Xs.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 10681,
+      "sha256": "5eeed3cfd6c8520d5140cccbb36613e21e2d8b2957bfc780a400409ce699809d",
+      "etag": "etag: W/\"b76c413b12ef75952583cb4e0398e638\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/navigated-conversation-outcome-BFGn9515.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 6005,
+      "sha256": "6a0945af9af9ad1bc2770590c9132b9ff538ceaf9762d1c4a77889d580e31fb8",
+      "etag": "etag: W/\"31b21756eb67850f80d668e266e12316\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/octane-home-client-DAmzbJ8S.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 36109,
+      "sha256": "6b2a35d40c7bba508066d5bd6e67eab26649deb3a4a905f2ec57efa0d90f608b",
+      "etag": "etag: W/\"bc63340fca781799c1eb7e8f139c115b\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/octane-shell-shared-BobN2cR6.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 277574,
+      "sha256": "5b39fb245f1bd3aa1641e7d27fad5422a214b594b0f7d17a9f81ed0c02964704",
+      "etag": "etag: W/\"045f64b89ad340924a83066f3dc0af68\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/octane-signal-bootstrap-BloXzst-.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 686,
+      "sha256": "0f789226594156d03f12c0053f50d7930258ec4b3ee122b88e53fd3275faf9a7",
+      "etag": "etag: W/\"9257702d0b16bbbbf122bcce7d1eecf0\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/octane-signals-engine-B5VWQaSx.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 50494,
+      "sha256": "e8ad22db8d0d65d9280f3478f063d8608a0e3e257b829cf196d337e667af7ea2",
+      "etag": "etag: W/\"a01cea1089faeec6c52b5806b1b6d947\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/page-load-performance-B9hsBOlx.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1963,
+      "sha256": "441bac474463098040a6943f695a61a1da68f733925c70362aa0231eef293cdb",
+      "etag": "etag: W/\"26ed88a7ccd14d27912d6a3faa486ddf\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/performance-metrics-DhKp14yF.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 46395,
+      "sha256": "c9c66d408b500bf71cf102f5b5e93dc4907b40cbb4ca944f3f008567dea55b6e",
+      "etag": "etag: W/\"e5d6b0299028e7d98eedb205ea5b5889\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/popover-fn-qawXcIu8.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 10741,
+      "sha256": "c88af7c121316acd825dcd0a4060f9d6d24aae866c391c16d67bee486e4130a6",
+      "etag": "etag: W/\"f9c8ab5a4b24dfa5f4ff0af230fe0422\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-d48Zkzar.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 7998,
+      "sha256": "e36f7601e161b69e6407567c5b5b70dcfdf923a538584fe296dec8b3a68e5a65",
+      "etag": "etag: W/\"8c46ca29975fcbed45989976575258f8\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/registry-CMKX6kbQ.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 23007,
+      "sha256": "c3bc25646ae088fff4c74284b382b7a0f48e95d9dc6b31b95a9063a5b4842d55",
+      "etag": "etag: W/\"98304a79c369a5a7533071987e4841b5\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/replay-CuwWo7YL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 10628,
+      "sha256": "c59991ebf3ef35d98a24fa117eadf0f6db4a62becba9baaf15592d4a007b197a",
+      "etag": "etag: W/\"b9cc4832c86c544f8416b11f30152e56\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/retained-conversation-beacon-events-w6jd774V.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 680,
+      "sha256": "71e22bed29b11d9fe56b87218874761b4262127c1569b7627bcf60a85a1bd2d2",
+      "etag": "etag: W/\"b48b85cee7f5b1d9ca3db8d8331b96b3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/retired-service-worker-cleanup-BRPP_1vL.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 1558,
+      "sha256": "59c3376483c72aced8147f32fdd7e93a830e90bd273b5c92a4a89af9ace268d7",
+      "etag": "etag: W/\"e0c5d9ba517e1af883340f190aee7687\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/rolldown-runtime-BflCKaFw.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 894,
+      "sha256": "d010db2136823b60d50a986c99e8e43ab006af4a640503467bc8083b3d5af299",
+      "etag": "etag: W/\"7b5d0d4f76fdad67e4c4ca03f0a91b5e\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/segment-analytics-vendor-CBkpfoV-.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2680,
+      "sha256": "4f53035b3897abdc793b902ff5d454a2636ba4fd5357999ba03c39ef925c4897",
+      "etag": "etag: W/\"2d9d7fb54bcd58c0a2515096c5fe7afa\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/segment-analytics-vendor-CLiN40FE.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 23688,
+      "sha256": "43ad12e8450fec840d7c63792e8b444f4eecbf78b868d5dbe4f0127ba09cfa14",
+      "etag": "etag: W/\"e15cb62cdd449e018861a2c0523d78b9\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/segment-analytics-vendor-S87P6Pww.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 69791,
+      "sha256": "ab56a7d37db9160773046017447255800ad78cd90fc0e3de552182f261492263",
+      "etag": "etag: W/\"02f813e40bb5f18918c2a7e4923f6e08\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/sentinel-BSYstpD4.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 14858,
+      "sha256": "8599632a4f718713d2b4183efab047076755e272b0f3d5b348ff6b6a234f31f1",
+      "etag": "etag: W/\"d637e21c423aa50758a6c9f43427ccf3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/smart-app-banner-client-B0Lgki8r.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 511,
+      "sha256": "f2870ab1a4e2074da258023eb1aa7c747eb8411b625b3fa0f3195b90bedf7a05",
+      "etag": "etag: W/\"ef34b8db386dafab73242f550245ba43\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/tooltip-runtime-BZUHcZdk.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 19623,
+      "sha256": "b66f9b0a01dc0ffbc6348a070afeb54a66b87df2847dab284ee124f1eaa54c4b",
+      "etag": "etag: W/\"35c14ddaf6d413cdf98c26bca6cee476\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-C3njnEC7.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 27634,
+      "sha256": "783687e98c3e45c964cf30e5e22ffb94f2bd3c44494d6f7ab41f151ee1ffef68",
+      "etag": "etag: W/\"e2eba81919c9c16f32d5cf2c86f9d45d\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/turnstile-BVU1NDJT.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 5447,
+      "sha256": "8bb9a18142bac5930dcd0bd560e78f0b947eff5c604fc6d5f62b4181964856ff",
+      "etag": "etag: W/\"bce012723be00342b654b4cc13a96c43\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/scripts/app-install-beacon-handoff-9567714045e2.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 14366,
+      "sha256": "9567714045e2d4ab9fb8de919bcfcaa827220762845f68032cc1a79403cbb16d",
+      "etag": "etag: W/\"db652681c45a9fdfffc61ea681f99578\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/scripts/declarative-partial-updates-0716daaa665d.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 114236,
+      "sha256": "0716daaa665dee6e13797f1038a5c57320457e943ee15c485a960c21334f4854",
+      "etag": "etag: W/\"e06a2f95d9e7e73496b5c81a9b38caf4\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/scripts/images-home-document-transition-bootstrap-a9b569d9a614.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 498,
+      "sha256": "a9b569d9a614d39d7f7ebda2aebc4a53873965acd5be9eb9d8408d444a3679a8",
+      "etag": "etag: W/\"a0a0a7c0ed16041eef2549b6a9c6f1a3\""
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/scripts/legacy-hash-router-d41ab3332f6b.js",
+      "exit": 0,
+      "error": "",
+      "bytes": 2030,
+      "sha256": "d41ab3332f6b8fe20559ceb8cdf0d28d1977c0ae21998e91708f81760bd6d96a",
+      "etag": "etag: W/\"6f3e1aebef065001d2cf8fc355316d9b\""
+    }
+  ],
+  "live_payload_metric": "Unique observed script-response URLs joined to independently fetched, hashed immutable source bodies. Not a compressed wire-transfer measurement.",
+  "two_turn_diagnostic": {
+    "guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-js-25mb-20261106/live.py",
+        "coverage-followup",
+        "Build/chatgpt-js-25mb-20261106/coverage-assets",
+        "--two-turn"
+      ],
+      "reason": "memory_limit",
+      "child_exit_code": -9,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 12957466624,
+      "elapsed_seconds": 46.53180325,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "complete": false,
+    "first_answer_file": "Rome",
+    "followup_result_file_exists": false,
+    "scope": "This diagnostic used stale version-specific coverage resources against the newer deployment. It is not validation of the retained refresh and does not resolve long-session memory behavior."
+  },
+  "installed_assets": {
+    "kind": "adblock-resource-update",
+    "feature_commit": "3e1adf6c0",
+    "utc": "2026-11-06T06:44:45.147652Z",
+    "base_build": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "50642bb5699c6331b22268ba2ebe387f94b183a2013b4896d712667ce0089a0b",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-093814-059a54a2/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "30f7df0dd16525fa75c68c1dfa2dc3b6ab4674028b7e293f8ace0d4fdcd5df8a",
+        "dirty": true,
+        "head": "4036bf1997f41bc38f812e0ddf9a43ebb4e7705f",
+        "repository_sha256": "b0016c573f093e4256ed413723d8ab2ca497a7b42e717b2c8179a4e24c87039f"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "f1924343f767e88d05b376f314b60f9f9d9b8f3eff4e506525205878c1f36e2b",
+        "dirty": true,
+        "head": "c4f12a669469cb181967fe1ae303bd0481cf6aa7",
+        "repository_sha256": "b1dd66dc0a3810b4c7137e74dae52c1663bdca5d102cba6474ccde86d084f4ac"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "4036bf1997f41bc38f812e0ddf9a43ebb4e7705f",
+        "id": "2cfb39fd972c42629efe41e52dfb8097",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "30f7df0dd16525fa75c68c1dfa2dc3b6ab4674028b7e293f8ace0d4fdcd5df8a",
+        "dirty": true,
+        "head": "c4f12a669469cb181967fe1ae303bd0481cf6aa7",
+        "repository_sha256": "bffc1b974cc9bd843d3fd9f0f46db5c7060fbcd43718c1d31044022644adf4e9"
+      }
+    },
+    "sources": {
+      "engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "engine.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c"
+    },
+    "executable_before": "50642bb5699c6331b22268ba2ebe387f94b183a2013b4896d712667ce0089a0b",
+    "before": {
+      "engine.js.gz": "edcea6b56cf8a929d95ce12bbebdbd9102982432c815c3569472008afd9a6f4c",
+      "engine.snapshot.json.gz": "1f4218d499d080410d62c003ab1cc59a767d749f9174438f082a001e2cb13ba7",
+      "engine.snapshot.bin": "5304e407222c9168d5ee3a37eef674c72c0814a321308e34605a162487b9587d"
+    },
+    "executable_after": "6120b4e2ce25b5b534041d4b2e01a11e13eb05cb67cafede7d29248be7cffd38",
+    "after": {
+      "engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "engine.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c"
+    },
+    "codesign_verified": true
+  },
+  "checks": {
+    "filter_tests": 55,
+    "test_guard": {
+      "command": [
+        "npm",
+        "--prefix",
+        "tools/adblock",
+        "test"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 806191104,
+      "elapsed_seconds": 1.031771166,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "headless_smoke_guard": {
+      "command": [
+        "Build/v/Vox.app/Contents/MacOS/Vox",
+        "--headless-smoke"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.17501425,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "installed_query_guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-js-25mb-20261106/live.py",
+        "installed-query",
+        "adblock",
+        "--installed"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3357196288,
+      "elapsed_seconds": 25.186363500000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "installed_home_guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-js-25mb-20261106/live.py",
+        "installed-home",
+        "adblock",
+        "--installed",
+        "--home"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1291517952,
+      "elapsed_seconds": 17.216084916,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "limitations": [
+    "The 2.5 MB total startup target remains unmet.",
+    "The 2,658,689-byte pruning prototype passes only frozen homepage content/pixel checks; live conversation preservation is not established for that prototype.",
+    "Instrumented successful queries are not acceptance evidence for the separately pruned renderer bodies.",
+    "No CPU or load-time acceptance cohort was collected. Timing/guard duration is diagnostic and includes startup/settle/input/teardown work as applicable.",
+    "Experimental orchestration files were edited between isolated diagnostics; per-run identities and commands, final recipes and delivered redirect source are retained. No tooling snapshot completeness is claimed for every intermediate version.",
+    "The installed screenshot obtains Rome but shows the existing italic-parenthetical layout problem; this is not rich-answer rendering conformance."
+  ],
+  "engine_optimization_credit": false,
+  "raw_evidence": {
+    "path": "docs/performance/chatgpt-25mb-attempt-20261106-evidence.zip",
+    "sha256": "24ecf705544b41412be9839348ba5fdbe00e20b9e6c3579c979b4e9c40e27ece",
+    "bytes": 12605208,
+    "files": 257
+  },
+  "installed_query_screenshot": {
+    "path": "docs/parity/chatgpt-25mb-attempt-installed-query-20261106.png",
+    "sha256": "6bc838b937d28111856d762f2d724862960dbdf20e2208cb1361aa1ba47437e6",
+    "conversion": "Native published layer resized 2048x1760 to logical 1024x880, then cropped top 88/bottom 24 browser chrome."
+  }
+}
