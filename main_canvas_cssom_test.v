@@ -18,7 +18,10 @@ fn test_repeated_cssom_replay_preserves_native_canvas_owner_and_updated_rules() 
 		apply_javascript_state(document, state, runtime.canvas_elements_for_binding(), mut messages)
 		runtime.evaluate_host('__ladybirdClearLogs()') or { panic(err) }
 		style := document.get_element_by_id('rules') or { panic('rules') }
-		assert (style.as_node().text_content() or { '' }).contains('background-color: ${color}')
+		// CSSOM declaration edits update the live rule, without rewriting the
+		// style element's source text (which would replace its sheet/identities).
+		assert runtime.evaluate_host('rules.sheet.cssRules[0].style.backgroundColor')! == color
+		assert style.as_node().text_content() or { '' } == 'canvas { background-color: red; }'
 		canvas := document.get_element_by_id('canvas') or { panic('canvas') }
 		assert voidptr(canvas) == voidptr(owner)
 		bitmap := html.html_canvas_element_surface(unsafe { &dom.HTMLCanvasElement(canvas) }) or { panic('bitmap') }
