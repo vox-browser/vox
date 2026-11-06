@@ -6,10 +6,9 @@ alone on master, builds that commit in a dedicated release checkout, creates
 the GitHub release tagged with the bare version (for example 0.1.1), then
 points vox-browser.org/version, which the browser's update check reads, at it.
 
-The release checkout is a clone next to the canonical one that borrows its
-object store and keeps its own Build/ caches. Building there compiles only
-committed sources, while other sessions keep working, building and committing
-in the canonical checkout.
+The release checkout is a clone next to the canonical one with its own Build/
+caches and build queue. Building there compiles only committed sources, while
+other sessions keep working, building and committing in the canonical checkout.
 """
 import contextlib
 import fcntl
@@ -200,10 +199,15 @@ def prepare_checkout(root, checkout, commit):
             raise RuntimeError('%s exists but is not a release checkout' % checkout)
         print('Creating the release checkout %s (the first build fetches and builds its '
               'native dependencies)' % checkout, flush=True)
-        # Borrow the canonical object store instead of copying its history.
-        command(['git', 'clone', '--quiet', '--shared', '--no-checkout', str(root), str(checkout)])
+        command(['git', 'clone', '--quiet', '--no-checkout', str(root), str(checkout)])
     git = ['git', '-C', str(checkout)]
-    command([*git, 'checkout', '--quiet', '--force', '--detach', commit])
+    # The canonical repository is shallow, so Git copies its objects instead of
+    # sharing them; fetch the commits made since the last release.
+    command([*git, 'fetch', '--quiet', str(root), 'master'])
+    if subprocess.run([*git, 'cat-file', '-e', commit + '^{commit}']).returncode:
+        raise RuntimeError('%s is not on master' % commit)
+    # The build supervisor builds only master; this clone's own master names the commit.
+    command([*git, 'checkout', '--quiet', '--force', '-B', 'master', commit])
     command([*git, 'clean', '--quiet', '-ffd'])
     if command([*git, 'status', '--porcelain']).strip():
         raise RuntimeError('The release checkout %s is not clean' % checkout)

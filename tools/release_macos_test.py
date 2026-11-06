@@ -66,7 +66,7 @@ def repository(root, files):
     for name, content in files.items():
         (root / name).parent.mkdir(parents=True, exist_ok=True)
         (root / name).write_text(content)
-    git(root, 'init', '-q')
+    git(root, 'init', '-q', '-b', 'master')
     git(root, 'config', 'user.name', 'Vox')
     git(root, 'config', 'user.email', 'vox@example.com')
     git(root, 'add', '.')
@@ -204,11 +204,20 @@ class GitTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix='vox-release-git-')
         self.addCleanup(temporary.cleanup)
+        upstream = Path(temporary.name) / 'upstream'
+        upstream.mkdir()
+        repository(upstream, {'.gitignore': '/Build/\n', 'main.v': 'older\n',
+                              'staged.v': 'committed\n', release.INFO_PLIST: info_plist()})
+        (upstream / 'main.v').write_text('committed\n')
+        git(upstream, 'commit', '-q', '-am', 'second')
+        # Like the canonical checkout, the fixture is a shallow clone.
         self.root = Path(temporary.name) / 'vox2'
-        self.root.mkdir()
-        self.first = repository(self.root, {'.gitignore': '/Build/\n', 'main.v': 'committed\n',
-                                            'staged.v': 'committed\n',
-                                            release.INFO_PLIST: info_plist()})
+        subprocess.run(['git', 'clone', '-q', '--depth', '1', 'file://' + str(upstream), str(self.root)],
+                       check=True, capture_output=True)
+        git(self.root, 'config', 'user.name', 'Vox')
+        git(self.root, 'config', 'user.email', 'vox@example.com')
+        self.assertTrue((self.root / '.git/shallow').is_file())
+        self.first = git(self.root, 'rev-parse', 'HEAD')
 
     def test_version_bump_is_committed_alone_while_other_work_stays_uncommitted(self):
         (self.root / 'main.v').write_text('work in progress\n')
@@ -244,15 +253,17 @@ class GitTests(unittest.TestCase):
             release.prepare_checkout(self.root, checkout, self.first)
         self.assertEqual((checkout / 'main.v').read_text(), 'committed\n')
         self.assertFalse((checkout / 'new.v').exists())
-        self.assertTrue((checkout / '.git/objects/info/alternates').is_file())
         (checkout / 'Build').mkdir()
         (checkout / 'Build/cache').write_text('warm')
         (checkout / 'stray.o').write_text('junk')
         (checkout / 'main.v').write_text('edited in the release checkout\n')
-        git(self.root, 'commit', '-q', '-am', 'second')
+        # Commits made after the clone, including older than the canonical tip, are fetched.
+        git(self.root, 'commit', '-q', '-am', 'third')
         second = git(self.root, 'rev-parse', 'HEAD')
+        git(self.root, 'commit', '-q', '--allow-empty', '-m', 'fourth')
         release.prepare_checkout(self.root, checkout, second)
         self.assertEqual(git(checkout, 'rev-parse', 'HEAD'), second)
+        self.assertEqual(git(checkout, 'branch', '--show-current'), 'master')
         self.assertEqual((checkout / 'main.v').read_text(), 'work in progress\n')
         self.assertEqual((checkout / 'Build/cache').read_text(), 'warm')
         self.assertFalse((checkout / 'stray.o').exists())
@@ -261,6 +272,8 @@ class GitTests(unittest.TestCase):
         other.mkdir()
         with self.assertRaisesRegex(RuntimeError, 'not a release checkout'):
             release.prepare_checkout(self.root, other, second)
+        with self.assertRaisesRegex(RuntimeError, 'is not on master'):
+            release.prepare_checkout(self.root, checkout, '0' * 40)
 
 
 class PublishingTests(unittest.TestCase):
