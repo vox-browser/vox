@@ -15,9 +15,9 @@ struct JavaScriptCustomElementRegistry {
 mut:
 	constructors map[u64]voidptr
 	metadata     map[u64]voidptr
-	// Lifecycle callbacks captured by define(); the retained metadata array
-	// keeps each value alive.
-	callbacks    map[u64]map[string]voidptr
+	// Lifecycle callbacks captured by define(), keyed by "id:name"; the
+	// retained metadata array keeps each value alive.
+	callbacks    map[string]voidptr
 	pending      map[string]JavaScriptPromiseCapability
 }
 
@@ -76,28 +76,25 @@ pub fn (mut runtime Runtime) install_custom_element_registry_binding() ! {
 fn (binding &CustomElementRegistryBinding) lifecycle_callback(registry_handle voidptr, id u64, name string) ?voidptr {
 	for _, registry in binding.registries {
 		if voidptr(registry.native) != registry_handle { continue }
-		if id !in registry.callbacks { return none }
-		return registry.callbacks[id][name] or { return none }
+		return registry.callbacks['${id}:${name}'] or { return none }
 	}
 	return none
 }
 
 // The metadata factory returns [names, observed, disabled, form, prototype,
 // callbacks]; names and callbacks are parallel arrays.
-fn (mut runtime Runtime) custom_element_metadata_callbacks(metadata voidptr) !map[string]voidptr {
+fn (mut runtime Runtime) capture_custom_element_callbacks(mut registry JavaScriptCustomElementRegistry, id u64, metadata voidptr) ! {
 	mut exception := voidptr(0)
 	names_value := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, metadata, 0, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	values := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, metadata, 5, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	names := runtime.custom_element_metadata_strings(names_value)!
-	mut callbacks := map[string]voidptr{}
 	for index, name in names {
 		callback := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, u32(index), &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-		callbacks[name] = callback
+		registry.callbacks['${id}:${name}'] = callback
 	}
-	return callbacks
 }
 
 fn (mut runtime Runtime) custom_element_metadata_strings(value voidptr) ![]string {
@@ -213,7 +210,7 @@ fn (mut runtime Runtime) custom_element_registry_operation(mut binding CustomEle
 			}, html.ElementDefinitionOptions{ extends: extends }, read_metadata)!
 			registry.constructors[id] = runtime.retain_javascript_value(constructor)!
 			registry.metadata[id] = captured.value
-			registry.callbacks[id] = runtime.custom_element_metadata_callbacks(captured.value)!
+			runtime.capture_custom_element_callbacks(mut registry, id, captured.value)!
 			captured.value = unsafe { nil }
 			binding.constructor_ids[constructor] = id
 			if capability := registry.pending[name] {
