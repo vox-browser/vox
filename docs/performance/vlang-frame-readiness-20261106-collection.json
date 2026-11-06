@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "Build/vlang-60fps-20261106/collect_frame_readiness_evidence.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 3221225472,
+  "observed_peak_rss_bytes": 85409792,
+  "elapsed_seconds": 5.780456791,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

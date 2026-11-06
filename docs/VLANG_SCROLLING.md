@@ -2853,3 +2853,97 @@ retain the four trials, inputs/publications, diagnostics, checks, native artifac
 source patch and build identities. The endpoint remains native publication
 following `updateLayer`, rather than physical scanout. The 60 fps goal and
 independent compositor scheduling remain unfinished.
+
+### Shared GPU readiness before publication, November 6
+
+Smooth 60 fps remains open. `10d8c1259` adds an owned readiness token between
+GPU submission and its consumers. A frame, its pixel providers and a retained
+provider used independently of that frame share one scheduling result. The
+first consumer registers the IOSurface fences and releases the command buffer;
+later consumers reuse that result. Dropping an unpublished frame releases its
+ticket without waiting. Failed scheduling preserves the previous installed
+image, requests another frame and recovers through ordinary CPU replay.
+Missing helper capabilities retain the synchronous route.
+
+`VOX_GPU_TILE_DEFER_SCHEDULE_WAIT=1` moves the scheduling wait past CPU frame
+work to native publication. Publication remains on the main thread; this is a
+readiness ownership boundary for future independent publication, not a completed
+compositor thread. A separate live diagnostic confirms 469 input-window waits,
+all first consumed at publication, with no early pixel/capture consumption.
+Median wait is 0.718 ms, p95 2.485 ms and maximum 8.623 ms. These diagnostic
+wait times supply no FPS credit.
+
+The valid unprofiled comparison uses two alternating pairs with literal `-prod`,
+single-C-unit build `20261106-123237-a1883a12`, executable SHA-256
+`c05715c149c8a3f7b70644bb425bfdcd740e3cc0f37c59254bae74374b4dd6a5`.
+The same main executable, explicit primary renderer and explicit image backend
+serve both arms. GPU tiles, MSAA images, nested GPU canvases, immutable ICC
+uploads, sparse clear and earlier render submission are common. Identical-video
+reuse is the default; video upload keys and both blur options are off. The live
+1708×953, 2×, 600-input workload remains unchanged.
+
+| Candidate | Pair 1 publications/s | Pair 2 publications/s | Candidate p95 intervals, ms |
+|---|---:|---:|---:|
+| Wait at publication | 65.10→64.40 | 66.74→64.44 | 45.394 / 36.646 |
+| Disable CPU video-backdrop cache, separate cohort | 92.53→90.59 | 90.19→88.69 | 25.031 / 25.172 |
+
+Both experiments regress. The readiness switch stays off by default and the
+CPU video-backdrop policy remains unchanged. The deferred candidates miss
+16.67 ms in 22.25%/18.70% of intervals, with maxima 245.409/389.926 ms.
+The no-backdrop candidates miss it in 13.45%/14.70%. The latter tests whether
+removing a CPU capture barrier outweighs repainting the background; it does not
+freeze media, scripts or animations.
+
+All eight valid trials complete 600 inputs, exit normally and preserve input
+identities. Controls vary widely even with the same executable/native set.
+One-minute host loads range about 13.03–15.73 in the deferred cohort and
+5.69–21.60 in the separate no-backdrop cohort on 18 CPUs. Other sessions,
+live networking and retained OS/shader caches remain active. The cross-cohort
+baseline difference has no established single cause and earns no optimization
+credit. A first comparison is invalid: another session edited the canonical
+scroll probe during candidate 1, and both the per-trial and comparison identity
+checks reject it. That edit adds optional PNG capture after the timing endpoint;
+the option is unset in the valid rerun. The invalid attempts remain retained.
+
+Optimized, ASan/UBSan and ARC checks pass token ownership, concurrent consumers,
+independently retained providers, dropped frames, failed scheduling, unreadable
+failed providers and rejection with an owned ticket. `591aa998d` extends those
+failure checks. Native ring tests verify old-frame preservation and subsequent
+fresh CPU recovery, including actual CA pixels, in ARC, sanitized ARC and MRC.
+Backend checks exercise all combinations of both submission orders and both
+scheduling contracts, including 520 queued frames. Primary native checks cover
+the deferred route and a missing scheduling API. Focused V host compilation
+and runtime checks pass.
+
+Live deferred-mode verification checks 636 leaves within the unchanged limit
+three and 160 exact transport comparisons. The no-backdrop diagnostic checks
+783 leaves within three and 126 exact transports. The final screenshot smoke
+and same-size SVG source-switch check pass unchanged Darwin tolerances with
+explicit native libraries; the full smoke set is not pixel-exact.
+
+A separate 2,400-input sampled control records 2,254 inclusive main-thread
+native-update samples, 445 in GPU flush, 305 in upload, 372 in presentation,
+189 in `waitUntilScheduled`, 161 in video capture and 143 in CSS-filter end.
+These overlapping counts are diagnostic only. Disabling the CPU video cache
+based on the readback samples was evaluated above and rejected; sample counts
+alone cannot justify that policy change. Arena reset was inspected without
+changing or blaming it absent matched evidence.
+
+`e70edf1fc` also fixes the export failure contract: after earlier render
+submission has consumed its recording, copy-encoder failure rejects the frame
+instead of claiming an untouched decline. Its optimized and sanitizer checks
+verify both statuses and unchanged output. It changes failure handling and
+supplies no normal FPS credit.
+
+The [readiness report](performance/vlang-frame-readiness-20261106.json),
+[verified raw archive](performance/raw/vlang-frame-readiness-20261106.tar.gz),
+[collection receipt](performance/vlang-frame-readiness-20261106-collection.json),
+[failure follow-up](performance/raw/vlang-publication-failure-20261106.zip) and
+[follow-up receipt](performance/vlang-publication-failure-20261106-collection-v2.json)
+retain commands, identities, checks, timestamps, source patches, fixtures and
+failures. The earlier ownership fixture needed its autorelease pool drained;
+the earlier windowless-view assertion was corrected to check redraw generation
+and actual CPU recovery. The first small follow-up collector failed on an unavailable Python hashing helper;
+its failure receipt is retained and the streaming-hash rerun passes. Neither
+failed fixture is hidden. Main-thread
+publication still blocks; independent compositor scheduling remains unfinished.
