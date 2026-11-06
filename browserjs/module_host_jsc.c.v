@@ -65,6 +65,7 @@ pub fn (mut host ModuleHost) install(mut runtime Runtime) ! {
 		defer { runtime.release_javascript_value(functions) }
 		mut exception := unsafe { nil }
 		host.transform = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 0, &exception))!
+		host.lexer_status = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 2, &exception))!
 		dynamic := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 1, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		// A private global lexical binding survives page lockdown without adding
@@ -160,6 +161,13 @@ fn (mut host ModuleHost) rewrite(code string, base string, key string, is_module
 			C.vox_jsc_JSValueMakeBoolean(host.runtime.context, skip_specifier_lexer),
 		])!
 	result := host.runtime.binding_dom_string(value)!
+	if !skip_specifier_lexer && !host.lexer_reported && module_lexer_diagnostics {
+		status := host.runtime.call_javascript_function(host.lexer_status,
+			C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [])!
+		backend := host.runtime.binding_dom_string(status)!
+		host.lexer_reported = true
+		eprintln('Vox module lexer: backend=${backend} specifier parse executed')
+	}
 	if skip_specifier_lexer { report_keyword_free_module_lexer_skip() }
 	return result
 }

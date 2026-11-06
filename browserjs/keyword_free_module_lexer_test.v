@@ -41,6 +41,9 @@ fn install_counted_keyword_module_transform(mut host ModuleHost, mut runtime Run
 	assert exception == unsafe { nil }
 	runtime.release_javascript_value(host.transform)
 	host.transform = runtime.retain_javascript_value(transform)!
+	runtime.release_javascript_value(host.lexer_status)
+	host.lexer_status = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 2, &exception))!
+	host.lexer_reported = false
 }
 
 fn trusted_keyword_module_transform(host &ModuleHost, code string, is_module bool) !string {

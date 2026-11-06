@@ -51,6 +51,8 @@ mut:
 	connection         ?&requestserver.CurlConnection
 	native_loader      voidptr
 	transform          voidptr
+	lexer_status       voidptr
+	lexer_reported     bool
 	helper_name        string
 	sources            map[string]BrowserModuleSource
 	operations         []&BrowserModuleOperation
