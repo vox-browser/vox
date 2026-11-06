@@ -566,6 +566,16 @@ static BOOL native_layer_can_complete_frame(void) {
     // starve publication while successive display passes keep doing work.
     return YES;
 }
+static void native_layer_preserve_pending_redraw(NSView *view, uint64_t generation) {
+    if (native_layer_presenting || generation == native_layer_redraw_generation
+        || native_frame_publication_covers(view,native_layer_redraw_generation,
+            native_layer_effective_scale(view))) return;
+    // Supplying contents consumes CALayer's display bit. An asynchronous old
+    // frame must not consume a newer input's request when no replacement has
+    // been prepared. Restore the layer bit even if NSView already looks dirty.
+    view.needsDisplay = YES;
+    [view.layer setNeedsDisplay];
+}
 static void native_layer_complete_frame(NSView *view, VoxNativePreparedFrame *frame, BOOL ready) {
     if (!ready) {
         // Preserve the old coherent frame. CPU recovery supersedes other GPU
@@ -609,6 +619,7 @@ static void native_layer_complete_frame(NSView *view, VoxNativePreparedFrame *fr
         @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(view, &native_layer_frame_bounds_key,
         [NSValue valueWithRect:bounds], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    native_layer_preserve_pending_redraw(view,generation);
     native_frame_publication_notify(view,frame->submission.token,native_layer_presenting);
     native_document_submission_acknowledge(&frame->submission);
 }

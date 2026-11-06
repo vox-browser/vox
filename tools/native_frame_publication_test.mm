@@ -19,6 +19,7 @@ static int paint_value, gate_index = -1;
 static BOOL input_delivered;
 static bool gate_success = true, gate_block;
 static bool claim_submission;
+static bool expect_pending_redraw;
 static std::map<uint64_t,int> prepared_values;
 static std::vector<int> installed, acknowledged;
 static int pixel(CGImageRef image) {
@@ -51,6 +52,10 @@ static void prepared(void *pointer, uint64_t token, double started) {
 static void published(void *pointer, uint64_t token) {
     assert(NSThread.isMainThread && !native_layer_presenting);
     auto view = (__bridge NSView *)pointer;
+    if (expect_pending_redraw) {
+        assert(view.layer.needsDisplay);
+        expect_pending_redraw=false;
+    }
     int expected = prepared_values.at(token);
     assert(pixel(native_layer_frame_image(view)) == expected);
     installed.push_back(expected);
@@ -233,6 +238,14 @@ int main() { @autoreleasepool {
     assert(released[12]==1 && scheduled[12]==0);
     dispatch_semaphore_signal(proceed); idle(view);
     assert(installed.back()==250 && released[11]==1);
+    // Supplying stale contents clears CALayer's pending display bit. A newer
+    // input without a prepared replacement must keep its native redraw.
+    start_blocked(view,251,15);
+    ++native_layer_redraw_generation;
+    [view.layer setNeedsDisplay];
+    expect_pending_redraw=true;
+    dispatch_semaphore_signal(proceed); idle(view);
+    assert(!expect_pending_redraw);
     // The actual updateLayer wrapper flushes its final notification only
     // after the outer paint returns, including ordinary synchronous frames.
     size_t publications_before_update=installed.size();
