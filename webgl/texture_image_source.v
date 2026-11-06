@@ -5,7 +5,7 @@
 // DOM element variants are normalized to the frame state visible at upload.
 module webgl
 
-import skia
+import cpuraster
 
 pub enum WebGLTextureImageSourceKind {
 	image_bitmap
@@ -58,18 +58,19 @@ pub fn (mut context WebGLRenderingContext) read_texture_image_source(source WebG
 }
 
 // Services/Compositor/HostWebGLContext.cpp::convert_bitmap_for_upload. The
-// original frame metadata travels with the bitmap; Skia performs conversion
-// beside GL, using the same Gfx export format and destination-size rules.
-fn convert_bitmap_for_upload(source TexImageSourceFrame, format GLenum, type_ GLenum, destination_size ?WebGLIntSize) !skia.BitmapExport {
+// original frame metadata travels with the bitmap; cpuraster reproduces
+// Skia's conversion beside GL, using the same Gfx export format and
+// destination-size rules.
+fn convert_bitmap_for_upload(source TexImageSourceFrame, format GLenum, type_ GLenum, destination_size ?WebGLIntSize) !cpuraster.BitmapExport {
 	export_format := texture_export_format(format, type_) or { return error('Unsupported texture bitmap export format') }
 	native_format := match export_format {
-		.rgb888 { skia.BitmapExportFormat.rgb888 }
-		.rgb565 { skia.BitmapExportFormat.rgb565 }
-		.rgba8888 { skia.BitmapExportFormat.rgba8888 }
-		.rgba4444 { skia.BitmapExportFormat.rgba4444 }
-		.rgba5551 { skia.BitmapExportFormat.rgba5551 }
-		.alpha8 { skia.BitmapExportFormat.alpha8 }
-		.gray8 { skia.BitmapExportFormat.gray8 }
+		.rgb888 { cpuraster.BitmapExportFormat.rgb888 }
+		.rgb565 { cpuraster.BitmapExportFormat.rgb565 }
+		.rgba8888 { cpuraster.BitmapExportFormat.rgba8888 }
+		.rgba4444 { cpuraster.BitmapExportFormat.rgba4444 }
+		.rgba5551 { cpuraster.BitmapExportFormat.rgba5551 }
+		.alpha8 { cpuraster.BitmapExportFormat.alpha8 }
+		.gray8 { cpuraster.BitmapExportFormat.gray8 }
 	}
 	mut width := ?int(none)
 	mut height := ?int(none)
@@ -77,7 +78,7 @@ fn convert_bitmap_for_upload(source TexImageSourceFrame, format GLenum, type_ GL
 		width = size.width
 		height = size.height
 	}
-	return skia.export_bitmap_to_byte_buffer(skia.BitmapSource{
+	return cpuraster.export_bitmap_to_byte_buffer(cpuraster.BitmapSource{
 		width:       source.frame.width
 		height:      source.frame.height
 		pitch:       source.frame.pitch
