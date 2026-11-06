@@ -40,6 +40,21 @@ fn measurement_absolute_dependencies_are_internal(root &Node, node &Node) bool {
 		&& unsafe { &Node(static_containing) }.is_inclusive_ancestor_of(node)
 }
 
+fn measurement_inputs_have_ordinary_absolute_descendants(inputs []RetainedInlineInput) bool {
+	for input in inputs {
+		if input.node.is_absolutely_positioned() && input.measurement_image == none { return true }
+	}
+	return false
+}
+
+// Called in the shared pool's retained allocation scope. A one-use context
+// should not pay to retain all descendant values and glyphs.
+fn (mut pool MeasurementUsedValuesChunkPool) admit_absolute_measurement(node u64) bool {
+	if pool.absolute_measurement_seen_[node] { return true }
+	pool.absolute_measurement_seen_[node] = true
+	return false
+}
+
 fn report_absolute_measurement_reuse(inputs []RetainedInlineInput) {
 	if !absolute_measurement_diagnostics || absolute_measurement_reported { return }
 	for input in inputs {

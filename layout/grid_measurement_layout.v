@@ -62,6 +62,7 @@ struct GridMeasurementBasis {
 struct GridMeasurementLayout {
 	key GridMeasurementKey
 	opacity_measurement bool
+	absolute_measurement bool
 	external_heights_independent bool
 	inputs []RetainedInlineInput
 	values []RetainedBlockValues
@@ -221,7 +222,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			|| cached.font_policy != container.document().font_rendering_policy()
 			|| cached.style_environment != style_environment { continue }
 		if !grid_measurement_inputs_are_current(cached.inputs) {
-			if cached.opacity_measurement {
+			if cached.opacity_measurement || cached.absolute_measurement {
 				mut retained := platform.enter_retained_allocations()
 				pool.grid_measurement_rejections_[node_key] = true
 				retained.finish()
@@ -265,7 +266,9 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	mut eligible := collect_grid_measurement_inputs(container, mut inputs, mut pool.grid_measurement_rejections_)
 	if !eligible { pool.grid_measurement_rejections_[node_key] = true }
 	opacity_measurement := eligible && measurement_inputs_have_animated_opacity(inputs)
+	absolute_measurement := eligible && measurement_inputs_have_ordinary_absolute_descendants(inputs)
 	if opacity_measurement && !pool.admit_opacity_measurement(node_key) { eligible = false }
+	if absolute_measurement && !pool.admit_absolute_measurement(node_key) { eligible = false }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	if eligible {
 		for input in inputs { owned_inputs << own_image_measurement_input(input) }
@@ -274,8 +277,15 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	result := run_uncached_grid_formatting_context_internal(mut state, container, mut used,
 		mode, space, width_only)
 	if !eligible || font_generation != css.css_style_computer_for(container.document()).font_computer().environment_generation()
-		|| style_environment != container.document().style_environment_version()
-		|| !grid_measurement_inputs_are_current(owned_inputs) { return result }
+		|| style_environment != container.document().style_environment_version() { return result }
+	if !grid_measurement_inputs_are_current(owned_inputs) {
+		if absolute_measurement {
+			mut retained := platform.enter_retained_allocations()
+			pool.grid_measurement_rejections_[node_key] = true
+			retained.finish()
+		}
+		return result
+	}
 	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	mut snapshots := []RetainedBlockValues{cap: owned_inputs.len - 1}
@@ -287,6 +297,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	cached := &GridMeasurementLayout{
 		key: GridMeasurementKey{ ...key, external_bases: key.external_bases.clone() }
 		opacity_measurement: opacity_measurement
+		absolute_measurement: absolute_measurement
 		external_heights_independent: grid_measurement_external_heights_are_unused(owned_inputs)
 		inputs: owned_inputs
 		values: snapshots

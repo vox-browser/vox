@@ -1000,6 +1000,7 @@ mut:
 	flex_measurements_ map[u64][]&FlexMeasurementLayout
 	flex_measurement_rejections_ map[u64]bool
 	opacity_measurement_seen_ map[u64]bool
+	absolute_measurement_seen_ map[u64]bool
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -1036,6 +1037,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.flex_measurements_ = map[u64][]&FlexMeasurementLayout{}
 	pool.flex_measurement_rejections_ = map[u64]bool{}
 	pool.opacity_measurement_seen_ = map[u64]bool{}
+	pool.absolute_measurement_seen_ = map[u64]bool{}
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
 	}

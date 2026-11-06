@@ -111,6 +111,9 @@ fn test_absolute_measurements_keep_static_rects_and_final_layout_exact_after_scr
 			for width in [120, 180] {
 				for height in [0, 160] {
 					assert !absolute_measurement_compare(mut source, root, width, height, false)
+					// Admission is delayed only for the first occurrence of this
+					// context, not for every new width/height question.
+					if width == 120 && height == 0 { assert !absolute_measurement_compare(mut source, root, width, height, false) }
 					for _ in 0 .. 3 { assert absolute_measurement_compare(mut source, root, width, height, false) == absolute_measurement_enabled(kind) }
 					assert absolute_measurement_compare(mut source, root, width, height, true) == (absolute_measurement_enabled(kind)
 						&& if kind == 'grid' { !disable_committed_grid_measurement_reuse } else { !disable_committed_flex_measurement_reuse })
@@ -136,6 +139,7 @@ fn test_absolute_measurements_validate_mutations_before_reusing_static_positions
 			source.measurement_chunk_pool_.scratch_enabled_ = true
 			defer { source.release_measurement_chunk_pool() }
 			assert !absolute_measurement_compare(mut source, root, 180, 160, false)
+			assert !absolute_measurement_compare(mut source, root, 180, 160, false)
 			assert absolute_measurement_compare(mut source, root, 180, 160, false) == absolute_measurement_enabled(kind)
 			if change == 'text' {
 				mut text := absolute.children()[0].as_text_node()?
@@ -158,6 +162,10 @@ fn test_absolute_measurements_validate_mutations_before_reusing_static_positions
 				for entry in source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} } { assert !grid_measurement_inputs_are_current(entry.inputs), change }
 			}
 			assert !absolute_measurement_compare(mut source, root, 180, 160, false), change
+			if absolute_measurement_enabled(kind) {
+				key := u64(voidptr(root))
+				assert if kind == 'grid' { source.measurement_chunk_pool_.grid_measurement_rejections_[key] } else { source.measurement_chunk_pool_.flex_measurement_rejections_[key] }
+			}
 			// A changed absolute subtree may retain stale font-owner projections
 			// until final layout. Correctly declining admission is allowed.
 			for _ in 0 .. 2 { _ = absolute_measurement_compare(mut source, root, 180, 160, false) }
@@ -190,4 +198,25 @@ fn test_absolute_measurements_keep_specialized_positions_and_roots_on_full_layou
 	mut inputs := []RetainedInlineInput{}
 	mut rejected := map[u64]bool{}
 	assert !collect_grid_measurement_inputs(root, mut inputs, mut rejected)
+}
+
+fn test_absolute_measurement_admission_and_invalidated_entries_retire_with_the_pool() {
+	for kind in ['grid', 'flex'] {
+		mut document := absolute_measurement_document(kind, '<span id="absolute" style="position:absolute;width:65px">Words.</span>', '')
+		mut owner := document.enter_native_storage()
+		defer { owner.finish(); document.finalize(); document.release_native_storage() }
+		root := measurement_image_node(document, 'root')
+		for _ in 0 .. 3 {
+			mut source := LayoutState.new()
+			source.enable_measurement_chunk_pool()
+			source.measurement_chunk_pool_.scratch_enabled_ = true
+			assert !absolute_measurement_compare(mut source, root, 180, 160, false)
+			assert !absolute_measurement_compare(mut source, root, 180, 160, false)
+			assert absolute_measurement_compare(mut source, root, 180, 160, false) == absolute_measurement_enabled(kind)
+			pool := source.measurement_chunk_pool_
+			source.release_measurement_chunk_pool()
+			assert pool.closed && pool.absolute_measurement_seen_.len == 0
+			assert pool.grid_measurements_.len == 0 && pool.flex_measurements_.len == 0
+		}
+	}
 }
