@@ -1,0 +1,316 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "goal_instructions": 20000000000,
+  "goal_met": false,
+  "implementation_commit": "2cbfbfeef",
+  "final_focused_jobs": 12,
+  "final_test_function_executions": 440,
+  "component_verification": "docs/performance/chatgpt-absolute-root-measurements-component-verification-20261106.json",
+  "components": {
+    "absolute-root-flex": {
+      "control": [
+        6588098,
+        6588023,
+        6587523,
+        6584598
+      ],
+      "candidate": [
+        1735503,
+        1735484,
+        1735436,
+        1735382
+      ],
+      "control_median": 6587773.0,
+      "candidate_median": 1735460.0,
+      "reduction_percent": 73.65634790391229,
+      "conservative_separation": 4849095,
+      "calls": 100
+    },
+    "absolute-root-grid": {
+      "control": [
+        9880965,
+        9880878,
+        9880878,
+        9880915
+      ],
+      "candidate": [
+        1983546,
+        1983576,
+        1983524,
+        1983469
+      ],
+      "control_median": 9880896.5,
+      "candidate_median": 1983535.0,
+      "reduction_percent": 79.9255563500741,
+      "conservative_separation": 7897302,
+      "calls": 100
+    },
+    "changing-inset-root": {
+      "control": [
+        9892165,
+        9892115,
+        9892090,
+        9892090
+      ],
+      "candidate": [
+        9977630,
+        9969229,
+        9969288,
+        9969189
+      ],
+      "control_median": 9892102.5,
+      "candidate_median": 9969258.5,
+      "reduction_percent": -0.7799757432760179,
+      "conservative_separation": -85540,
+      "calls": 100
+    },
+    "external-width-root": {
+      "control": [
+        10045343,
+        10068752,
+        10045239,
+        10045147
+      ],
+      "candidate": [
+        2291257,
+        2291425,
+        2291452,
+        2291366
+      ],
+      "control_median": 10045291.0,
+      "candidate_median": 2291395.5,
+      "reduction_percent": 77.18935668463959,
+      "conservative_separation": 7753695,
+      "calls": 100
+    },
+    "fixed-root": {
+      "control": [
+        9880948,
+        9880923,
+        9880898,
+        9895563
+      ],
+      "candidate": [
+        9880898,
+        9880948,
+        9880898,
+        9880923
+      ],
+      "control_median": 9880935.5,
+      "candidate_median": 9880910.5,
+      "reduction_percent": 0.0002530124804445144,
+      "conservative_separation": -50,
+      "calls": 100
+    },
+    "fresh-root-pool": {
+      "control": [
+        77292535,
+        77060322,
+        77145636,
+        77027475
+      ],
+      "candidate": [
+        79163156,
+        80813148,
+        79305307,
+        79173057
+      ],
+      "control_median": 77102979.0,
+      "candidate_median": 79239182.0,
+      "reduction_percent": -2.7705842597858688,
+      "conservative_separation": -3785673,
+      "calls": 100
+    },
+    "nested-absolute-root": {
+      "control": [
+        10409235,
+        10409231,
+        10409353,
+        10409206
+      ],
+      "candidate": [
+        2296628,
+        2296739,
+        2296720,
+        2296601
+      ],
+      "control_median": 10409233.0,
+      "candidate_median": 2296674.0,
+      "reduction_percent": 77.93618415497087,
+      "conservative_separation": 8112467,
+      "calls": 100
+    },
+    "plain-flex": {
+      "control": [
+        1772748,
+        1772723,
+        1772698,
+        1772698
+      ],
+      "candidate": [
+        1772723,
+        1772748,
+        1772773,
+        1772673
+      ],
+      "control_median": 1772710.5,
+      "candidate_median": 1772735.5,
+      "reduction_percent": -0.0014102697535767206,
+      "conservative_separation": -75,
+      "calls": 100
+    },
+    "plain-grid": {
+      "control": [
+        1993248,
+        1993265,
+        1993240,
+        1993240
+      ],
+      "candidate": [
+        1993274,
+        1993240,
+        1993249,
+        1993249
+      ],
+      "control_median": 1993244.0,
+      "candidate_median": 1993249.0,
+      "reduction_percent": -0.000250847362393003,
+      "conservative_separation": -34,
+      "calls": 100
+    }
+  },
+  "production": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "f8fa18eac7016b66459b67811bcf509141983f0948ac801ae1bc8463d6aa04f2",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261106-113732-36a40bbc/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "42965661e4c141d187301563bc09b4d6d93c1266da535b63832bac6dcdd3bd98",
+      "dirty": true,
+      "head": "574790a30d01ea77b8bae25813c15176fbf42f36",
+      "repository_sha256": "54d6081b2dcfe73b4ebeef80311dcb3c96bcd2216ce12d6529d3d85fe094a453"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "42965661e4c141d187301563bc09b4d6d93c1266da535b63832bac6dcdd3bd98",
+      "dirty": true,
+      "head": "1141a99064bdaaaafcaa2732e5525e40f706fb21",
+      "repository_sha256": "43cd0e1e7b4a29bd8f2ef2572b7e0e692af34f76b17fc028e98ada863d29477b"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "574790a30d01ea77b8bae25813c15176fbf42f36",
+      "id": "74281c38d8684491a1f3eeb41bdce8e5",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "42965661e4c141d187301563bc09b4d6d93c1266da535b63832bac6dcdd3bd98",
+      "dirty": true,
+      "head": "2cbfbfeef1f74c7da1cb6b0117b1546786493984",
+      "repository_sha256": "54d6081b2dcfe73b4ebeef80311dcb3c96bcd2216ce12d6529d3d85fe094a453"
+    }
+  },
+  "useful_root_reuse_observed": false,
+  "valid_diagnostic_captures": 4,
+  "matched_captures": 0,
+  "page_instruction_credit": 0,
+  "broad_required": false,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "controller_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-absolute-root-measurements-production-20261106-r1/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {
+      "10634": "Fri Nov  6 11:40:52 2026    ",
+      "10638": "Fri Nov  6 11:40:52 2026    ",
+      "10859": "Fri Nov  6 11:41:00 2026    ",
+      "10861": "Fri Nov  6 11:41:00 2026    ",
+      "10864": "Fri Nov  6 11:41:00 2026    ",
+      "10865": "Fri Nov  6 11:41:00 2026    ",
+      "10867": "Fri Nov  6 11:41:00 2026    ",
+      "10961": "Fri Nov  6 11:41:09 2026    ",
+      "10964": "Fri Nov  6 11:41:09 2026    ",
+      "10967": "Fri Nov  6 11:41:09 2026    ",
+      "10968": "Fri Nov  6 11:41:09 2026    ",
+      "10969": "Fri Nov  6 11:41:09 2026    ",
+      "10984": "Fri Nov  6 11:41:09 2026    ",
+      "11064": "Fri Nov  6 11:41:18 2026    ",
+      "11066": "Fri Nov  6 11:41:18 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1975091200,
+    "elapsed_seconds": 48.577228667,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-absolute-root-measurements-checked-r1-20261106-evidence.zip",
+      "sha256": "a5523a583bbf7fe6343507dcf02f6d53a83de6cf6fa9ea8b99eff02cc322f837",
+      "bytes": 4237005,
+      "verified_entries": 29
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-root-measurements-checked-r2-20261106-evidence.zip",
+      "sha256": "e9a12726cbf624965caadfd9a99f51ee81c78541033b71585aab41725acb50c6",
+      "bytes": 12457473,
+      "verified_entries": 52
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-root-measurements-component-r1-20261106-evidence.zip",
+      "sha256": "f60e1d0ca0c44419f811ec04f93a02631ce308d7564ca93cab1e47c48b84aba7",
+      "bytes": 21714709,
+      "verified_entries": 30
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-root-measurements-component-r2-20261106-evidence.zip",
+      "sha256": "7dd3d349ff731b37d85e6b2b441c4c45eda688ef6504fe1ae4ac3c6a31121d61",
+      "bytes": 21711763,
+      "verified_entries": 43
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-root-measurements-production-r1-diagnostic-20261106-evidence.zip",
+      "sha256": "ffd9391d1376f8f9b8660f57bcb3c7b690f00484b19a9846260f3ee5c54fb5b8",
+      "bytes": 1484864,
+      "entries": 67,
+      "checkpoints": 6,
+      "verified_entries": 67
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-root-measurements-controller-20261106-evidence.zip",
+      "sha256": "2f903ed77a88d5c4752841c074e81b3d762e49172523e8e172291700d511de9a",
+      "bytes": 7793,
+      "verified_entries": 5
+    },
+    {
+      "path": "docs/performance/chatgpt-absolute-root-measurements-finalizer-20261106-evidence.zip",
+      "sha256": "fa81c3bbccab9281ba4f147791b1220be28ee0be3d471a9dde12727fe3ebae32",
+      "bytes": 8032,
+      "verified_entries": 4
+    }
+  ],
+  "qualification": "Final focused geometry/ownership checks and isolated components pass, but no actual root reuse marker appears on the frozen ChatGPT capture. The path audit correctly rejects; browser/kernel exits, full content/button/JS bootstrap audits and exact unchanged per-engine pixels all pass. Original SOCKS bytes/scripts/references, private profiles/caches, 1024x768 scale2 and five-second unfocused settle unchanged. Current completed single-C-unit V -prod app/libs/tools/fixture pinned under one shared publication lease, no copied app or manual build. No matched cohort, optimization credit, broad checkpoint or live-site claim. Latest complete matched candidate remains absolute-descendant 24.236522275B versus control 24.222585041B, overlapping ranges. 20B and original Brave targets remain unmet.",
+  "finalizer_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-absolute-root-measurements-finalize-20261106-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 3457024,
+    "elapsed_seconds": 0.17296150000000002,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

@@ -5831,3 +5831,29 @@ All **20** captures pass complete content/button identity, JavaScriptCore bootst
 The same one-time SOCKS capture and original scripts/references, private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. Counts cover coalition creation through completed encoded document PNG, including startup/window setup; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded. Four control/candidate pairs are diagnostic, below seven-pair acceptance. No live-site or isolated rendering claim follows.
 
 The candidate median remains **4,236,522,275.0 instructions above 20B**. The [verification receipt](performance/chatgpt-absolute-measurements-verification-20261106.json) retains every component/prototype result, failed test/preflight, source witness, guard, PNG, counter, command and identity. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Inner measurements of ordinary absolute roots (2026-11-06)
+
+Commit `2cbfbfeef` admits ordinary absolute grid/flex roots to the same bounded within-pass inner measurement cache. The caller still owns and recomputes outer sizing/positioning; the cache restores local descendant geometry and grid tracks only. Complete root dimensions, edges, constraints, immediate containing-block dimensions/definiteness and external size bases remain in the key. Absolute roots fail the unused-height proof, so relaxed external-height matching cannot apply. Non-root absolute dependencies must still remain inside the subtree. Persistent caches and specialized elements/positions retain their guards.
+
+The final **12 guarded jobs / 440 test-function executions** pass: 55 functions, two policies, ordinary GC, no GC, poisoned preallocation and address/undefined-behavior sanitizers. Additional tests compare numeric/glyph/static/grid-area geometry before and after full outer absolute positioning, including changed external dimensions, RTL, auto/percentage insets, nested absolute children, committed consumption, root style mutation and caller-owned static rectangles. The first test/component oracle omitted the external block for static-position adjustment and correctly tripped the subtree scope check; the repaired harness explicitly supplies that context without weakening engine guards. Both failed attempts remain archived.
+
+| Inner-layout component: 100 calls | Control median | Candidate median | Reduction |
+| --- | ---: | ---: | ---: |
+| Absolute grid root | 9,880,896.5 | 1,983,535.0 | 79.9256% |
+| Absolute flex root | 6,587,773.0 | 1,735,460.0 | 73.6563% |
+| Nested absolute root | 10,409,233.0 | 2,296,674.0 | 77.9362% |
+| Alternating external width | 10,045,291.0 | 2,291,395.5 | 77.1894% |
+| Root inset changes each call | 9,892,102.5 | 9,969,258.5 | -0.7800% |
+| Fresh pool each call | 77,102,979.0 | 79,239,182.0 | -2.7706% |
+| Plain grid control | 1,993,244.0 | 1,993,249.0 | -0.0003% |
+| Plain flex control | 1,772,710.5 | 1,772,735.5 | -0.0014% |
+| Fixed root, excluded | 9,880,935.5 | 9,880,910.5 | 0.0003% |
+
+Setup, initial document layout/styles and one warm question are excluded. The counter interval includes 100 inner probe create/layout/release operations and mutations/pool turnover/checksums. Full outer absolute positioning and an independent unpooled numeric/glyph oracle run outside timing. Four observations per variant retain the changing-inset and fresh-pool regressions. No component count is extrapolated to the page.
+
+Completed production executable `f8fa18eac7016b66459b67811bcf509141983f0948ac801ae1bc8463d6aa04f2` contains the final code and passes sealed-source proof. Four fresh Vox/Brave diagnostics pass full content/button identity, JavaScriptCore bootstrap, exact unchanged per-engine pixels and normal browser/kernel exits. Both Vox variants confirm Wasm lexer execution. **Neither Vox variant emits the useful absolute-root reuse marker.** The path audit therefore rejects with controller/guard exit one, while PID adoption succeeds and identities remain fixed. No unprofiled matched comparison is launched.
+
+The original one-time SOCKS capture/scripts/references, fresh private profiles/caches, 1024×768 scale two and five-second unfocused settle remain fixed. The latest completed single-C-unit V -prod bundle and libraries stay pinned under a nonblocking shared publication lease; no app is copied or build manually requested. Diagnostic counters supply no optimization credit. OS filesystem/shader caches remain retained; GPU/outside-coalition work remains excluded.
+
+Page credit and broad carry remain zero; no new 5M broad checkpoint is due. The latest complete matched result remains **24.237B candidate versus 24.223B control** for ordinary absolute descendants, with overlapping ranges. The [verification receipt](performance/chatgpt-absolute-root-measurements-verification-20261106.json) retains both failed harnesses, all final tests/components, source witnesses, commands, guards and four audited captures. **The 20B target and original 5%-below-Brave target remain unmet.**
