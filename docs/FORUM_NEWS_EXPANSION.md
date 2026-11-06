@@ -5,9 +5,10 @@ The [forum/news catalog](../Tests/Browser/Brave/forum-news.json) contains
 WIRED have sealed guest DOM archives, original response bodies, full-uBlock
 Origin reports and source PNGs. **TechCrunch and The Register have strict cold
 and complete-cache passes. WIRED's earlier strict first-frame passes remain
-recorded; recent cold Brave references vary.** Discord's fresh complete-cache
-candidate also passes every strict gate; its cold reference still fails and its registered archive remains unchanged. The
-other additions retain the open gaps documented below.
+recorded; recent cold Brave references vary.** Discord retains an earlier
+complete-cache candidate pass; newer processes still have source/reference
+gaps. Its registered archive remains unchanged. The other additions retain
+the open gaps documented below.
 
 The original ten remain incomplete. Latest cold controls retain strict zero
 for Hacker News, Lobsters, BBC, Slashdot, Guardian and The Verge. Guardian and
@@ -3280,6 +3281,92 @@ Use the repository's memory guard for the command. Cold source qualification,
 Slate source qualification, the earlier reference/access failures and the
 explicitly deferred Stack Overflow/Pikabu site work remain open. No broad
 rendering rerun is credited for these acquisition/diagnostic checks.
+
+## Discord post-capture compositor diagnostics (2026-11-06)
+
+Commit `574790a30` adds the optional `--post-capture-trace-dir` argument to the
+full-uBO Brave oracle. It saves layer snapshots, serialized picture traces and
+a separate diagnostic PNG **after the stable reference and filtering report**,
+while the original page CDP connection still retains its emulated viewport.
+The trace report authenticates the reference before and after collection and
+records whether the diagnostic PNG matches it. A changed diagnostic image never
+replaces a reference. Missing layers, an altered viewport, incomplete tracing,
+reference replacement and trace errors fail the diagnostic; requested tracing
+cannot export a prepared browser profile. Default captures do not enable it.
+
+All **162 Node checks and 51 Python checks pass** with unchanged inputs,
+including ten new diagnostic boundary cases. Two fresh Discord integrations
+retain 1024×768 before and after tracing, capture a matching-viewport layer
+snapshot, and have **0 pixels and identical PNG bytes** between the saved
+reference and their separate diagnostic image. The full-uBO report exists
+before the diagnostic directory is created. No new production build is needed
+for this tooling change, and no broad rendering-suite pass is claimed.
+
+The new references still differ from the prepared candidate's saved source at
+**308 pixels**, in both the cold and complete-cache diagnostic integrations.
+They are not new source-qualified site passes. The earlier 0-pixel complete
+cohort and 597-pixel cold cohort remain valid observations under their recorded
+build/cache conditions; complete caches are not a universal parity guarantee.
+The native control in this continuation still matches that saved source at 0.
+Registered fixtures, original encoded bodies and tolerances remain unchanged.
+
+Earlier ad hoc tracing exposed two diagnostic errors. Wildcard/category
+queries produced no layer snapshots (category discovery returned an empty
+list); explicit debug categories did expose them. Enabling those categories
+before measurement also changed consecutive frames, which the existing pixel
+stability gate rejected. Collecting after page-client detachment instead lost
+the viewport override and produced a different-sized image. The new hook runs
+before that teardown and retains these failed attempts separately. The first
+hook integration also exposed the need for an explicit `cc.debug` category;
+its missing-layer result is retained without credit for the final guards.
+
+The cold picture snapshot contains the original 2392×1690 hero bitmap. Its
+encoded WebP and recovered premultiplied PNG texels compare at **0 pixels and
+0 channel error**, including every alpha value, against both the SDK and
+Homebrew decoder candidates, with each library and input pinned independently.
+All **4,042,480 pixels**, including 2,283,526 opaque pixels, match. This closes
+the complete-image pixel-conversion lead for this control; it does not observe
+an incremental first generator or establish screenshot equality.
+
+A reader built against the matching Skia revision recovers the hero's
+`drawImageRect`: source 2392×1690, destination `(404,134,568,401)`, antialiasing
+on, linear filtering and mipmaps, and fast source constraints. The native
+probe removes its containing `(404,134,600,401)` image clip, and logs that
+substitution, but changes **0 pixels** from its matched native control. Both
+still differ from the current Brave reference at 308 pixels. No renderer clip
+change is justified by this result. Earlier reader compilation/version/codec
+failures and its invalid one-pixel placeholder images remain recorded; only
+the explicit-asset reader with correct dimensions supplies this command audit.
+
+Two prior-paint controls also remain diagnostic. Enlarging the background
+without its box differs by 61,885 pixels; resizing both to the expected upload
+geometry gives 672 source pixels and changes 75 pixels from the ordinary
+597-pixel replay. Neither explains the original small gap or directly measures
+the selected internal decode/mipmap state. The first decoder script lacked
+NumPy; its successful replacements use ctypes, Pillow and scalar integer math.
+The first injected clip library lacked its runtime search path; the corrected
+matched pair succeeds. No diagnostic error or altered paint history earns
+site acceptance or optimization credit.
+
+To request snapshots, append the following to a normal successful oracle
+capture (retain its ordinary URL, filtering and replay/proxy arguments):
+
+```sh
+--pixel-reference Build/reference-UNIQUE.png \
+--post-capture-trace-dir Build/post-trace-UNIQUE
+```
+
+`--capture-dir` can also supply the saved source reference. Run the command
+through the repository's memory guard. The trace directory must be new;
+`summary.json` distinguishes the saved reference from the instrumented image,
+and `layers.json` excludes snapshots at the browser UI's other viewport.
+
+[Checks and qualifications](evidence/discord-post-capture-trace-20261106.json)
+and [raw traces, encoded/decoded images, probes and failures](evidence/discord-post-capture-trace-20261106.zip)
+retain the original observations, identities, commands and actual exits.
+The ZIP contains 449 members and 46,781,302 bytes, SHA-256
+`9517fafac7861bb6de73749194424af55c5decc6098d59ac8cff3e70a0e8137f`;
+every member passes CRC and SHA-256 readback.
 
 ## Run
 

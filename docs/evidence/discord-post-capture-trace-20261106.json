@@ -1,0 +1,480 @@
+{
+  "feature_commit": "574790a30d01ea77b8bae25813c15176fbf42f36",
+  "scope": "Opt-in post-reference compositor diagnostics, decoded WebP control and native clip probe; no renderer fix or new Discord parity pass",
+  "checks": {
+    "node": 162,
+    "python": 51,
+    "new_post_trace_cases": 10,
+    "unchanged": true
+  },
+  "integration": [
+    {
+      "index": 0,
+      "layer_snapshots": 1,
+      "post_trace_pixels": 0,
+      "source_pixels": 308,
+      "normal_replay_pixels": 289,
+      "trace_summary": {
+        "scope": "Instrumented post-capture state; never a replacement pixel reference",
+        "reference": {
+          "file": "/Users/alex/code/vox2/Build/discord-mipmap-20261106/post-trace-integration-v2/0/brave.png",
+          "sha256": "cd172624bcded2bcee4e78324ad86bb1e19b3afaead3ffbafd1817734cd702d8",
+          "width": 1024,
+          "height": 768
+        },
+        "categories": [
+          "disabled-by-default-cc.debug",
+          "disabled-by-default-devtools.timeline.layers",
+          "disabled-by-default-cc.debug.picture"
+        ],
+        "complete": true,
+        "errors": [],
+        "layout_before": {
+          "layoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "visualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "contentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          },
+          "cssLayoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "cssVisualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "cssContentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          }
+        },
+        "post_png_sha256": "cd172624bcded2bcee4e78324ad86bb1e19b3afaead3ffbafd1817734cd702d8",
+        "post_png_matches_reference": true,
+        "layout_after": {
+          "layoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "visualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "contentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          },
+          "cssLayoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "cssVisualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "cssContentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          }
+        },
+        "reference_viewport_layer_snapshots": 1,
+        "reference_unchanged": true,
+        "success": true
+      }
+    },
+    {
+      "index": 1,
+      "layer_snapshots": 1,
+      "post_trace_pixels": 0,
+      "source_pixels": 308,
+      "normal_replay_pixels": 289,
+      "trace_summary": {
+        "scope": "Instrumented post-capture state; never a replacement pixel reference",
+        "reference": {
+          "file": "/Users/alex/code/vox2/Build/discord-mipmap-20261106/post-trace-integration-v2/1/brave.png",
+          "sha256": "cd172624bcded2bcee4e78324ad86bb1e19b3afaead3ffbafd1817734cd702d8",
+          "width": 1024,
+          "height": 768
+        },
+        "categories": [
+          "disabled-by-default-cc.debug",
+          "disabled-by-default-devtools.timeline.layers",
+          "disabled-by-default-cc.debug.picture"
+        ],
+        "complete": true,
+        "errors": [],
+        "layout_before": {
+          "layoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "visualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "contentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          },
+          "cssLayoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "cssVisualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "cssContentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          }
+        },
+        "post_png_sha256": "cd172624bcded2bcee4e78324ad86bb1e19b3afaead3ffbafd1817734cd702d8",
+        "post_png_matches_reference": true,
+        "layout_after": {
+          "layoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "visualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "contentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          },
+          "cssLayoutViewport": {
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768
+          },
+          "cssVisualViewport": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "pageX": 0,
+            "pageY": 0,
+            "clientWidth": 1024,
+            "clientHeight": 768,
+            "scale": 1,
+            "zoom": 1
+          },
+          "cssContentSize": {
+            "x": 0,
+            "y": 0,
+            "width": 1024,
+            "height": 5878
+          }
+        },
+        "reference_viewport_layer_snapshots": 1,
+        "reference_unchanged": true,
+        "success": true
+      }
+    }
+  ],
+  "decoded_webp": {
+    "width": 2392,
+    "height": 1690,
+    "alpha_differences": 0,
+    "opaque_pixels": 2283526,
+    "opaque_differences": 0,
+    "recovered_premultiplied_differences": 0,
+    "maximum": 0,
+    "scope": "Intrinsic image bytes extracted from post-capture SkPicture; no screenshot or live generator acceptance"
+  },
+  "decoded_webp_sdk": {
+    "width": 2392,
+    "height": 1690,
+    "alpha_differences": 0,
+    "opaque_pixels": 2283526,
+    "opaque_differences": 0,
+    "recovered_premultiplied_differences": 0,
+    "maximum": 0,
+    "scope": "Intrinsic image bytes extracted from post-capture SkPicture; no screenshot or live generator acceptance"
+  },
+  "picture_commands": {
+    "valid_reader": "picture-commands-v8",
+    "image_dimensions": [
+      2392,
+      1690
+    ],
+    "destination": [
+      404,
+      134,
+      568,
+      401
+    ],
+    "paint_antialias": true,
+    "sampling": "linear filter and linear mipmaps",
+    "source_constraint": "fast",
+    "picture_recording_origin": [
+      42,
+      0
+    ],
+    "note": "Pictures from the measured Skia version are decoded with the independently extracted PNG assets; the earlier default decoder substituted 1x1 placeholders and is not a valid image-argument control."
+  },
+  "containing_clip_probe": {
+    "results": [
+      {
+        "name": "baseline",
+        "native_source": 0,
+        "native_previous": 0,
+        "native_current_brave": 308
+      },
+      {
+        "name": "no-containing-clip",
+        "native_source": 0,
+        "native_previous": 0,
+        "native_current_brave": 308
+      }
+    ],
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "7ee68c53dc000c17695271728bd73e7b0e923af77d327c3893b9444f47be6465",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "87ee2102cccf1b948f9e3c6c6308196036a2756f6a97a168e35ec81dae75d73f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "7fee204250020a097bfd9459c7dcb7d07a58405494d50db7120c09af0de78b93",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "6bcdf0379c14a95582ceff52ad17950d10bc2a192dcf7cecabc28bcd52427492",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "dd50cab8ec224526325afe323bdd1647f7d391407d1beac0a8305767cc1ef92c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c7b4834e4cc21c5cce96eda69b862fdb18d2ab450559d6ad7090c1831e3eff5f",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "2056e0402f64ae9e888016ea9706fb9fa0d11d4c0d997cb8e0f1efa975604ed2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "959d4ce5686e1b3cb1412138efa9398a146ad5933b2e1da5b74e5ed86f0289c6",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "limit": "DYLD diagnostic only; target clip substitution is observed in the browser log; no production code change"
+  },
+  "prior_paint_controls": [
+    {
+      "name": "exact-upload-prior-paint",
+      "results": [
+        {
+          "index": 0,
+          "source_pixels": 61885,
+          "normal_replay_pixels": 61885
+        },
+        {
+          "index": 1,
+          "source_pixels": 61885,
+          "normal_replay_pixels": 61885
+        }
+      ]
+    },
+    {
+      "name": "exact-upload-box-prior-paint",
+      "results": [
+        {
+          "index": 0,
+          "source_pixels": 672,
+          "normal_replay_pixels": 75
+        },
+        {
+          "index": 1,
+          "source_pixels": 672,
+          "normal_replay_pixels": 75
+        }
+      ]
+    }
+  ],
+  "trace_attempts": [
+    {
+      "name": "trace-cache-pair",
+      "results": [
+        {
+          "index": 0,
+          "source_pixels": 597,
+          "normal_replay_pixels": 0
+        },
+        {
+          "index": 1,
+          "source_pixels": 0,
+          "normal_replay_pixels": 597
+        }
+      ]
+    },
+    {
+      "name": "trace-explicit-cache-pair",
+      "results": [
+        {
+          "index": 0,
+          "source_pixels": 597,
+          "normal_replay_pixels": 0
+        },
+        {
+          "index": 1,
+          "source_pixels": 308,
+          "normal_replay_pixels": 289
+        }
+      ]
+    },
+    {
+      "name": "trace-after-capture-pair",
+      "results": [
+        {
+          "index": 0,
+          "source_pixels": 308,
+          "normal_replay_pixels": 289
+        },
+        {
+          "index": 1,
+          "source_pixels": 308,
+          "normal_replay_pixels": 289
+        }
+      ]
+    }
+  ],
+  "detached_diagnostic_dimensions": [
+    {
+      "index": 0,
+      "reference": [
+        1024,
+        768
+      ],
+      "post_trace": [
+        756,
+        475
+      ]
+    },
+    {
+      "index": 1,
+      "reference": [
+        1024,
+        768
+      ],
+      "post_trace": [
+        756,
+        475
+      ]
+    }
+  ],
+  "retained_failures": [
+    "trace-known-cold: enabling debug tracing before measurement changes the two capture frames; rejected by the existing stability gate",
+    "post-trace-integration: the first implementation omitted the explicit cc.debug category and produced no compositor-layer snapshots; added category plus missing-layer and viewport guards before the passing final integration",
+    "decoder-comparison: NumPy was unavailable; the successful replacement uses only ctypes and Pillow with scalar integer math",
+    "picture readers: first a signature compilation failure, then unsupported old SKP format, missing PNG codec, callback signature errors and a clip-enum signature error; the matched-Skia explicit-asset reader v8 succeeds",
+    "native-containing-clip: first diagnostic library lacked its own LC_RPATH and failed launch; the corrected matched pair succeeds"
+  ],
+  "limits": [
+    "Default reference capture, production rendering policy, registered fixtures, source PNGs and tolerances are unchanged.",
+    "The optional hook runs only after a stable PNG and the full-uBO report have been saved, while the same page CDP connection and its viewport override remain active. Diagnostics never replace references and cannot export prepared profiles.",
+    "Two post-capture integration references differ from the historical source by 308 pixels despite matching their own post-trace PNGs. This is not a new source-qualified site pass. Earlier 0-pixel complete-cache and 597-pixel cold results remain historical pinned observations, not a universal complete-cache guarantee.",
+    "The decoded-image comparison recovers integer premultiplied texels from the PNG embedded in the post-capture picture. It does not observe an incremental first generator or establish browser screenshot equality.",
+    "Prior-paint controls target expected upload geometry but do not directly measure the internal selected decode level or mipmap state.",
+    "The containing-clip diagnostic changes no final pixels. No general clipping change is justified by that probe.",
+    "The native current-reference count is diagnostic; the reference hash is authenticated against its completed post-capture report, rather than being in the native cohort prospective pin list.",
+    "No production build was queued and no full rendering-suite rerun or optimization credit is claimed."
+  ],
+  "encoded_webp_sha256": "41d935a15699ef14010f4aaf65d945c22bfed042e7286d4e0e7f86a639baf83e",
+  "archive": {
+    "path": "discord-post-capture-trace-20261106.zip",
+    "members": 449,
+    "bytes": 46781302,
+    "sha256": "9517fafac7861bb6de73749194424af55c5decc6098d59ac8cff3e70a0e8137f"
+  },
+  "sealing_guard": {
+    "command": [
+      "python3",
+      "Build/discord-mipmap-20261106/seal.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 100073472,
+    "elapsed_seconds": 2.343402625,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
