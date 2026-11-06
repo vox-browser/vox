@@ -1,6 +1,6 @@
 # ChatGPT instruction comparison
 
-The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest native-source-transfer diagnostic observes a **26.41B** candidate median versus **26.59B** for its UTF-8 control. Observed ranges overlap; no new page instruction credit is assigned. All 20 captures pass content and exact pixels; 232 focused test executions pass. The [latest verification](performance/chatgpt-module-source-value-verification-20261106.json) retains every observation. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
+The current target is **20B instructions** for the frozen ChatGPT launch-through-PNG workload. The latest module-normalization diagnostic observes a **26.59B** candidate median versus **26.60B** for its duplicate-normalization control. Observed ranges overlap; no new page instruction credit is assigned. All 20 completed diagnostic/matched captures pass content and exact pixels; 256 focused test executions pass. The [latest verification](performance/chatgpt-module-normalization-verification-20261106.json) retains every observation and earlier rejected attempts. Four control/candidate pairs remain below seven-pair acceptance; the cohort below retains its earlier pinned build.
 
 The requested 5% advantage over Brave remains **unmet**. The latest complete
 seven-pair cohort uses executable
@@ -5370,3 +5370,39 @@ All **20** diagnostic/matched captures pass full content/button identity, JavaSc
 Frame-complete checkpoints are 439, 422, 391, 391 for controls and 430, 430, 401, 272 for candidates. Raw counters, identities, host contention and endpoints remain preserved; no result is normalized to a fixed frame count or another build.
 
 The candidate median remains **6,412,718,181.5 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-module-source-value-verification-20261106.json) links source witnesses, focused/component checks, commands, memory guards, counters, PNGs, failures and every authenticated archive. **The 20B target and original 5%-below-Brave target remain unmet.**
+
+## Reuse module input normalization toward 20B (2026-11-06)
+
+Commit `6037d9a2d` returns input normalization metadata from HTML module-specifier resolution. The native module host previously resolved the target, then repeated URL parsing and serialization to publish its resolved-module record. It now uses the first result. The mapped target stays separate from the original normalized input and URL-like classification: an HTTPS input mapped to a data URL must still be recorded as the HTTPS input. A bare input, data input or relative input likewise retains its original classification.
+
+No persistent resolution cache is introduced. Exact/scoped/prefix maps, late import-map mutation and filtering, blocked/missing/backtracking errors, parent fetch options, target integrity and referrer handling remain tested. Bare normalized text is copied into the output owner; URL records retain their existing immutable snapshot ownership. `resolve_module_specifier()` remains the URL-only compatibility wrapper. `VOX_RETAIN_DUPLICATE_MODULE_NORMALIZATION=1` uses that wrapper and repeats normalization for the control; both variants share the metadata implementation. The original author scripts and lexer bytes are unchanged.
+
+Final focused validation passes **20 guarded jobs / 256 test-function executions** across ordinary GC, no GC, poisoned preallocation and AddressSanitizer/UndefinedBehaviorSanitizer. Checks include temporary caller-input retirement, original-input metadata after remapping, late-map updates, failures without publishing state, descendant fetch metadata, real native linking/cycles/live exports/import.meta/top-level await, concurrent transport and independent workers. An initial test merged into a pre-install map whose scope array was copied on installation; the corrected test updates the installed map. That failed attempt and its authenticated source are retained.
+
+The component calls the real V module host directly. Document/import-map/host setup is outside each instruction interval; URL resolution, record publication, source lookup, assertions and rotating-map updates are inside. Four alternating observations per variant are retained. URL cases use eight exact asset URLs from the frozen archive, plus their derived relative spellings. These components execute no author JavaScript and perform no networking.
+
+| Resolver component | Calls | Duplicate normalization median | Reused metadata median | Reduction |
+| --- | ---: | ---: | ---: | ---: |
+| Archived absolute asset URLs | 2,400 | 180,421,711.5 | 92,120,244.0 | 48.9417% |
+| Relative spellings of archived assets | 2,400 | 111,471,472.5 | 58,234,506.0 | 47.7584% |
+| Mapped bare name | 300 | 2,447,747.5 | 1,436,997.5 | 41.2931% |
+| Scoped and top-level prefixes | 600 | 12,392,153.5 | 10,318,808.5 | 16.7311% |
+| Changing the installed map each round | 300 | 2,569,528.5 | 1,617,042.0 | 37.0685% |
+| Unmapped bare-name failure | 300 | 1,625,619.5 | 1,668,595.5 | -2.6437% |
+
+The failure-case regression is retained; component savings are not extrapolated to the page. Initial preparation assumed a CDN origin absent from this archive and stopped before compilation; the corrected driver takes the same-origin asset URLs from its manifest.
+
+| Unprofiled frozen-page variant | Every retained launch-through-PNG instruction count | Median |
+| --- | --- | ---: |
+| Duplicate-normalization control | 26,568,544,158; 26,760,958,133; 26,626,675,239; 26,556,225,279 | 26,597,609,698.5 |
+| Reused-metadata candidate | 26,518,770,071; 25,686,414,173; 26,652,455,808; 26,702,963,468 | 26,585,612,939.5 |
+
+The observed median changes by **0.0451% fewer instructions**; conservative observed separation is **-146,738,189 instructions**. Observed ranges overlap; no new page instruction credit is assigned. No new 5M broad checkpoint is due. Whole-page credit and carry remain zero.
+
+A source preflight first rejected the generated clone symbol spelling before launching any browser. A subsequent four-capture diagnostic passed content/pixels/exits but its adapter searched for an outdated marker. Those captures remain separately rejected, with no instruction credit. The corrected independent diagnostic verifies the normalization marker only in the candidate and the Wasm module lexer in both variants. All **20** captures in the final diagnostic/matched run pass bootstrap, full content/button identity, unchanged exact per-engine references and normal browser/kernel exits.
+
+Executable `f981e667dca81d3c4c665d70f1943cda1dee5b946f0f23825e5d3a0049e38869` and native libraries remain pinned under one nonblocking shared publication lease. The latest completed single-C-unit V `-prod` bundle contains the final implementation; no app was copied and no manual build was queued. The original single SOCKS capture/scripts/references, 1024×768 scale two, five-second unfocused settle and fresh private profiles/caches remain fixed. Exclusive-coalition creation through completed document PNG includes startup/window work; Brave also includes CDP delivery. OS filesystem/shader caches remain retained; GPU/outside-coalition work is excluded. Guard adoption succeeds and the controller exits zero; comparison drivers exit one for the unmet Brave gate.
+
+Frame-complete checkpoints are 426, 386, 397, 432 for controls and 441, 429, 431, 393 for candidates. Counts are not rescaled for frames, host load or a different build.
+
+The candidate median remains **6,585,612,939.5 instructions above 20B**. Four pairs do not establish formal seven-pair acceptance or live-site performance. The [verification receipt](performance/chatgpt-module-normalization-verification-20261106.json) links every raw observation, command, memory guard, source witness, PNG and verified evidence archive. **The 20B target and original 5%-below-Brave target remain unmet.**
