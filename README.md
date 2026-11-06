@@ -1,8 +1,8 @@
 ## Vox Browser
 
-https://vox.sx
+https://vox-browser.org
 
-![image](https://github.com/vlang/vox-browser/assets/687996/8abc3e44-e1ec-4897-b5d4-e3a0cabe0dc9)
+<img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 
