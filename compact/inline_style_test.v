@@ -143,3 +143,26 @@ fn test_compact_inline_style_query_flushed_timer_changes_reach_final_paint() {
 	assert voidptr(app.paint_display_list) != voidptr(paint)
 	assert runtime.evaluate_host('inlineStyleRefreshes')! == '1'
 }
+
+fn test_compact_element_style_assignment_forwards_to_css_text() {
+	mut document := html.parse_document('<!doctype html><div id="host" style="width:10px"></div>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+"use strict";
+const style=host.style;
+host.style="color: red";
+if(host.style!==style)throw new Error("style assignment replaced the declaration");
+if(style.color!=="red"||style.width!==""||host.getAttribute("style")!=="color: red;")throw new Error("style assignment did not replace cssText: "+host.getAttribute("style"));
+host.style="";
+if(style.length!==0)throw new Error("empty style assignment kept declarations");
+host.style[ "height" ]="5px";
+if(style.height!=="5px")throw new Error("declaration unusable after assignment");
+console.log("style assignment passed");
+'], runtime, mut messages)
+	assert messages == ['style assignment passed']
+}
