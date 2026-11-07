@@ -571,6 +571,34 @@ fn (mut c AAClip) set_path(path Path, clip IRect) bool {
 	return builder.finish(mut c)
 }
 
+// SkAAClip::setRegion() for a region given as its spans in scanline order:
+// full coverage over them.
+fn (mut c AAClip) set_spans(spans []IRect) bool {
+	if spans.len == 0 {
+		return c.set_empty()
+	}
+	mut bounds := spans[0]
+	for span in spans {
+		bounds.left = math.min(bounds.left, span.left)
+		bounds.top = math.min(bounds.top, span.top)
+		bounds.right = math.max(bounds.right, span.right)
+		bounds.bottom = math.max(bounds.bottom, span.bottom)
+	}
+	mut builder := new_aaclip_builder(bounds)
+	mut blitter := AAClipBuilderBlitter{
+		builder: &builder
+		left:    bounds.left
+		right:   bounds.right
+	}
+	for span in spans {
+		blitter.blit_h(span.left, span.top, span.width())
+	}
+	if blitter.min_y < max_i32 {
+		builder.min_y = blitter.min_y
+	}
+	return builder.finish(mut c)
+}
+
 // RowIter over one clip row.
 struct AAClipRowIter {
 	data         []u8

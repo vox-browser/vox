@@ -93,17 +93,16 @@ fn test_blurred_rects_match_skia() {
 		.src_over, 9, []) == 'f9911f428908818f'
 }
 
-// A ring whose mask is more than 8191 pixels across would need Skia's
-// non-anti-aliased SkScan::FillPath(): the draw declines and leaves the
-// pixels, even unpremultiplied ones, untouched.
-fn test_oversized_ring_declines_untouched() {
-	mut s := blur_test_rect(-9000, -9000, 9000, 9000)
-	s << blur_test_rect(-100, -100, 100, 100)
-	before := blur_test_background(64, 56)
-	mut px := before.clone()
-	assert !fill_canvas_path(mut px, 64, 56, 256, 1, canvas_path(s, false), blur_test_identity,
-		0xff000000, none, 1, .src_over, 20, [])
-	assert px == before
+// A ring whose mask is more than 8191 pixels across: the anti-aliased fill
+// would overflow its supersampled 16-bit coordinates, so Skia fills the mask
+// with the non-anti-aliased SkScan::FillPath().
+fn test_oversized_ring_mask_matches_skia() {
+	mut s := blur_test_rect(-4200, -100, 4250, 150)
+	s << blur_test_rect(-100, -50, 100, 100)
+	mut px := blur_test_background(64, 56)
+	assert fill_canvas_path(mut px, 64, 56, 256, 1, canvas_path(s, false), blur_test_identity,
+		0xff204080, none, 1, .src_over, 12, [])
+	assert sha256.sum(px).hex()[..16] == '6c7f50d0617e3740'
 }
 
 fn test_nested_rect_contours() {

@@ -168,12 +168,26 @@ fn test_scaled_images_match_skia() {
 	}) == '756d48e5937f902d'
 }
 
-// A rotation fills a non-anti-aliased path, which is not ported: the draw
-// declines without touching the pixels.
-fn test_rotated_images_decline() {
-	mut px := image_test_background()
-	before := px.clone()
-	assert !draw_canvas_image(mut px, 48, 40, 192, 2, [f32(0.9), 0.4, -0.4, 0.9, 5, 2]!, image_test_bitmap(7,
-		6, true, false), [f32(0), 0, 7, 6]!, [f32(5), 5, 20, 14]!, true, 1, .src_over, [])
-	assert px == before
+// Under a rotation both commands fill the rect's path without
+// anti-aliasing: SkScan::FillPath() into a region for the clear's clip
+// (intersected with an anti-aliased clip through SkAAClip::setRegion()),
+// and through the image shader for drawImage().
+fn test_rotated_commands_match_skia() {
+	rotation := [f32(0.9), 0.4, -0.4, 0.9, 5, 2]!
+	assert image_test_hash(ImageTestCase{
+		smoothing:   true
+		transform:   rotation
+		destination: [f32(5), 5, 20, 14]!
+	}) == 'e05cc38cab516e92'
+	assert image_test_hash(ImageTestCase{
+		mode:          .multiply
+		premultiplied: false
+		transform:     rotation
+		alpha:         0.7
+		destination:   [f32(5), 5, 20, 14]!
+		source:        [f32(1), 1, 5, 4]!
+		clip:          true
+	}) == 'cf98fb1fb46fb2ee'
+	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0, false) == '38711e4839a270f0'
+	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0xff000000, true) == '4524d50a45b3d820'
 }

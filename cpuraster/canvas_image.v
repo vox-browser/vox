@@ -50,9 +50,9 @@ fn canvas_affine(transform [6]f32) SkAffine {
 // clear_canvas_rect is operation 1: under the clip paths and transform,
 // clipRect(destination) without anti-aliasing, then clear(color), which is
 // drawColor(color, kSrc) over the device. color is an SkColor. A transform
-// that is not a scale and translation clips with a non-anti-aliased path,
-// which is not ported: the call then returns false without changing pixels,
-// as it does for devices Skia would tile.
+// that is not a scale and translation clips with the rect's path, filled
+// into a region by SkScan::FillPath. The call returns false without
+// changing pixels for devices Skia would tile.
 pub fn clear_canvas_rect(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, destination [4]f32, color u32, clips []Path) bool {
 	if !untiled_device(pixels, width, height, pitch) {
 		return false
@@ -62,12 +62,28 @@ pub fn clear_canvas_rect(mut pixels []u8, width int, height int, pitch int, alph
 	local := rect_xywh(destination)
 	// SkCanvas::clipRect() ignores a rect that is not finite.
 	finite := rect_is_finite(local)
-	if finite && mask & affine_affine_mask != 0 {
-		return false
-	}
-	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	mut rc := canvas_raster_clip(width, height, clips)
-	if finite {
+	path_clip := finite && mask & affine_affine_mask != 0
+	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
+	mut region := ?[]IRect(none)
+	if path_clip {
+		// SkRasterClip::op(path): SkRegion::setPath() within the clip's
+		// bounds; an anti-aliased clip intersects SkAAClip::setRegion() of it.
+		mut collector := SpanCollector{}
+		if !rc.is_empty {
+			matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
+			device := rect_path(make_sorted(local)).transform(matrix)
+			fill_path_region(device, device.convexity() != .concave, rc.bounds(), mut collector)
+		}
+		if rc.is_bw {
+			region = collector.spans
+		} else {
+			mut region_clip := AAClip{}
+			region_clip.set_spans(collector.spans)
+			rc.aa.op_clip(&region_clip)
+			rc.update_cache(true)
+		}
+	} else if finite {
 		dev := InverseMatrix{ctm, mask}.map_rect(make_sorted(local))
 		rc.op_device_rect(dev, false)
 	}
@@ -77,6 +93,13 @@ pub fn clear_canvas_rect(mut pixels []u8, width int, height int, pitch int, alph
 		return true
 	}
 	mut blitter := canvas_blitter(mut pixels, pitch, color, f32(color >> 24) * inv_255, .src) or {
+		return true
+	}
+	if spans := region {
+		// SkScan::FillIRect() through the region's rects.
+		for span in spans {
+			blitter.blit_h(span.left, span.top, span.width())
+		}
 		return true
 	}
 	fill_irect(IRect{0, 0, width, height}, &rc, mut blitter)
@@ -278,10 +301,10 @@ fn choose_sprite(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, 
 // SkBitmapDevice::drawImageRect(): the source clipped to the image, a
 // subset extracted for a source inside it, then Draw::drawBitmap()'s sprite
 // blitters, or a clamped image shader through Draw::drawRect() and
-// SkScan::FillRect(). A transform that does not keep rects rects, or a
-// destination outside the 16.16 range, fills a non-anti-aliased path, which
-// is not ported: the call then returns false without changing pixels, as it
-// does for devices Skia would tile and images it cannot install.
+// SkScan::FillRect(), or Draw::drawPath() of the rect under a transform that
+// does not keep rects rects or outside the 16.16 range. It returns false
+// without changing pixels for devices Skia would tile and images it cannot
+// install.
 pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path) bool {
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() {
 		return false
@@ -363,34 +386,53 @@ pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alph
 		}
 	}
 	// Draw::drawRect() of the destination with the clamped image shader:
-	// ComputeRectType() keeps a fill under a CTM that keeps rects rects.
-	if !rect_stays_rect(ctm) {
-		return false
-	}
-	dev := map_rect_corners(ctm, dst_rect)
-	if too_big_for_math(dev) {
-		return target.ready()
-	}
-	// SkRectPriv::FitsInFixed().
-	for v in [dev.left, dev.top, dev.right, dev.bottom] {
-		magnitude := if v < 0 { -v } else { v }
-		if !(magnitude <= 32767) {
-			return false
+	// a fill under a CTM that keeps rects rects, unless the destination
+	// leaves the 16.16 range; otherwise draw_rect_as_path().
+	shader := new_image_shader(bitmap, .clamp, .clamp, linear, total)
+	if rect_stays_rect(ctm) {
+		dev := map_rect_corners(ctm, dst_rect)
+		if too_big_for_math(dev) {
+			return target.ready()
+		}
+		mut fits := true
+		for v in [dev.left, dev.top, dev.right, dev.bottom] {
+			magnitude := if v < 0 { -v } else { v }
+			if !(magnitude <= 32767) {
+				fits = false
+			}
+		}
+		if fits {
+			target.ready()
+			if !irect_intersects(rc.bounds(), round_out(dev)) {
+				return true
+			}
+			mut blitter := canvas_paint_blitter(mut pixels, pitch, 0xff000000, shader, paint_alpha,
+				mode, dev) or { return true }
+			// SkScan::FillRect(): an empty rect draws nothing; others are
+			// rounded.
+			if rect_is_empty(dev) {
+				return true
+			}
+			fill_irect(round_rect(dev), &rc, mut blitter)
+			return true
 		}
 	}
+	// draw_rect_as_path(): Draw::drawPath() of the rect, the bitmap's bounds
+	// under the total matrix or the destination under the CTM, filled
+	// without anti-aliasing.
+	device := if draw_bitmap {
+		rect_path(Rect{0, 0, f32(bitmap.width), f32(bitmap.height)}).transform(affine_to_matrix(total))
+	} else {
+		rect_path(dst_rect).transform(matrix)
+	}
 	target.ready()
-	if !irect_intersects(rc.bounds(), round_out(dev)) {
+	device_bounds := device.bounds() or { return true }
+	if too_big_for_math(device_bounds) {
 		return true
 	}
-	shader := new_image_shader(bitmap, .clamp, .clamp, linear, total)
 	mut blitter := canvas_paint_blitter(mut pixels, pitch, 0xff000000, shader, paint_alpha, mode,
-		dev) or { return true }
-	// SkScan::FillRect(): an empty rect draws nothing; others are rounded.
-	if rect_is_empty(dev) {
-		return true
-	}
-	fill_irect(round_rect(dev), &rc, mut blitter)
-	return true
+		device_bounds) or { return true }
+	return fill_path_clip(device, false, &rc, mut blitter)
 }
 
 // SkIRect::Intersects().

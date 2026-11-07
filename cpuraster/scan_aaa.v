@@ -1715,12 +1715,12 @@ fn anti_fill_path_convex(path Path, convex bool, rc &RasterClip, mut blitter Bli
 }
 
 // SkScan::AntiFillPath(raw, region, blitter, forceRLE) for a rect region.
-fn anti_fill_region(path Path, convex bool, clip IRect, mut blitter Blitter, force_rle bool) bool {
+fn anti_fill_region(path Path, convex bool, clip_in IRect, mut blitter Blitter, force_rle bool) bool {
 	if path.is_inverse_fill() {
 		return false
 	}
 	bounds := path.bounds() or { return true }
-	if clip.is_empty() {
+	if clip_in.is_empty() {
 		return true
 	}
 	// safeRoundOut()
@@ -1730,15 +1730,24 @@ fn anti_fill_region(path Path, convex bool, clip IRect, mut blitter Blitter, for
 	if ir.is_empty() {
 		return true
 	}
-	clipped := ir.intersect(clip) or { return true }
+	clipped := ir.intersect(clip_in) or { return true }
+	// Bounds that overflow 16 bits once supersampled are filled without
+	// anti-aliasing.
 	if overflows_short_shift(clipped.left, 2) || overflows_short_shift(clipped.right, 2)
 		|| overflows_short_shift(clipped.top, 2) || overflows_short_shift(clipped.bottom, 2) {
-		return false
+		fill_path_region(path, convex, clip_in, mut blitter)
+		return true
 	}
+	// The runs' 16-bit indices limit the clip to 32767.
+	mut clip := clip_in
 	if clip.right > 32767 || clip.bottom > 32767 {
-		return false
+		clip = clip.intersect(IRect{0, 0, 32767, 32767}) or { IRect{} }
 	}
-	// SkScanClipper: a wrapper only when clipped horizontally.
+	// SkScanClipper: nothing outside the clip, and a wrapper only when
+	// clipped horizontally.
+	if !irect_intersects(clip, ir) {
+		return true
+	}
 	if clip.contains(ir) || !(clip.left > ir.left || clip.right < ir.right) {
 		return aaa_fill_path_entry(path, convex, mut blitter, ir, clip, force_rle)
 	}
