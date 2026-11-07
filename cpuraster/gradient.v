@@ -96,6 +96,9 @@ struct GradientShader {
 	negate           bool
 	compensate_focal bool
 	unswap           bool
+	// SkGradientBaseShader::onAsLuminanceColor()'s SkColor: the average of
+	// the stored stop colors.
+	luminance u32
 }
 
 // Only the strip and focal stages lack lowp versions.
@@ -478,8 +481,26 @@ fn new_gradient(geometry GradientGeometry, unit SkAffine, post SkAffine, colors_
 			fill:        gradient_fill(colors, positions)
 			premul:      !colors_are_opaque
 			opaque:      opaque_capable && colors_are_opaque
+			luminance:   average_color(colors)
 		}
 	}
+}
+
+// onAsLuminanceColor(): the stop colors summed from opaque black and
+// scaled by 1 / count, as an opaque SkColor.
+fn average_color(colors [][4]f32) u32 {
+	mut sum := [f32(0), 0, 0]!
+	for c in colors {
+		for i in 0 .. 3 {
+			sum[i] += c[i]
+		}
+	}
+	scale := f32(1) / f32(colors.len)
+	mut out := u32(0xff000000)
+	for i in 0 .. 3 {
+		out |= color4f_byte(sum[i] * scale) << (16 - 8 * i)
+	}
+	return out
 }
 
 // The constructor's stops: implicit first and last stops, positions pinned
