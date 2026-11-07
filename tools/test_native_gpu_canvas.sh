@@ -109,6 +109,7 @@ done
 "$output_dir/native_gpu_canvas_test" --layer-pixels
 "$output_dir/native_gpu_canvas_test" --text-layer-composite
 "$output_dir/native_gpu_canvas_test" --text-mask
+"$output_dir/native_gpu_canvas_test" --text-two-clips
 "$output_dir/native_gpu_canvas_test" --grazing-text-mask
 VOX_DISABLE_CLIPPED_TEXT_MASKS=1 "$output_dir/native_gpu_canvas_test" --grazing-text-mask
 "$output_dir/native_gpu_canvas_test" --scale1-root-gradient

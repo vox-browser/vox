@@ -163,6 +163,52 @@ static void draw_grazing_text_leaves(CGContextRef context, bool canvas)
         css_width, css_height, 51, 51, 51, 255, 16 | 32 | 2 | VOX_GLYPH_PRIVATE_BITMAP));
 }
 
+// Text under two CSS clips, as on 2ch.su's catalog cards: the card's rounded
+// overflow clip, then its info row's overflow: clip. Both are tracked like
+// native_add_corner_rounded_clip records them, in CSS pixels, and also clip
+// the CPU context the ordinary leaf draws into.
+static void draw_two_clip_text_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 20, 80, 360, 140, 4, 4, 4, 4, 4, 4, 4, 4,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 221, 221, 221, 255, 1, 0, 1, 1));
+    auto clip = [&](float x, float y, float w, float h, float r) {
+        CGContextSaveGState(context);
+        ladybird_v_skia_save_shared_clip(context);
+        float rect[] {x, y, w, h, r, r, r, r, r, r, r, r};
+        float transform[] {1, 0, 0, 1, 0, 0};
+        ladybird_v_skia_add_shared_rounded_clip(context, rect, transform);
+        auto path = CGPathCreateWithRoundedRect(CGRectMake(x, css_height - y - h, w, h), r, r, nullptr);
+        CGContextAddPath(context, path);
+        CGContextClip(context);
+        CGPathRelease(path);
+    };
+    clip(21, 81, 358, 138, 3);
+    clip(22, 112, 356, 30, 0);
+    char const* path = "/System/Library/Fonts/Supplemental/Verdana.ttf";
+    char const* text = "\xD0\x9F\xD0\xBE\xD1\x81\xD1\x82\xD0\xBE\xD0\xB2: 49 / \xD0\xA4\xD0\xB0\xD0\xB9\xD0\xBB\xD0\xBE\xD0\xB2: 19";
+    auto* face = select_typeface(path, 0, 400, 0);
+    assert(face);
+    SkFont font(sk_ref_sp(face), 12.6f);
+    size_t length = std::strlen(text);
+    int count = font.countText(text, length, SkTextEncoding::kUTF8);
+    std::vector<uint16_t> glyphs(count);
+    assert(font.textToGlyphs(text, length, SkTextEncoding::kUTF8, SkSpan<SkGlyphID>(glyphs.data(), count)) == count);
+    std::vector<float> widths(count);
+    font.getWidths(SkSpan<SkGlyphID const>(glyphs.data(), count), widths);
+    std::vector<double> positions(size_t(count) * 2);
+    double advance = 0;
+    for (int i = 0; i < count; ++i) { positions[size_t(i) * 2] = advance; advance += widths[i]; }
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_text", 9, 0) == 1);
+    assert(ladybird_v_skia_draw_glyph_run(context, path, 0, glyphs.data(), positions.data(),
+        count, 12.6f, 400, 0, 60.25f, 130, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+        css_width, css_height, 51, 51, 51, 255, 16 | 32 | 2 | VOX_GLYPH_PRIVATE_BITMAP));
+    for (int index = 0; index < 2; ++index) {
+        ladybird_v_skia_restore_shared_clip(context);
+        CGContextRestoreGState(context);
+    }
+}
+
 // At scale 1 the ordinary root leaf replays an SVG gradient in each Chromium
 // raster tile's own coordinates, keeping Blink's ordered-dither phase. The
 // canvas's eight-pixel-aligned surfaces would shift that phase when the
@@ -1467,6 +1513,41 @@ int main(int argc, char** argv)
         assert(legacy_error <= 3);
         std::cout << "GPU canvas text mask: " << cases << " opaque/translucent scenes exact; "
             "opaque premultiplied text raster max error " << legacy_error << '\n';
+        return 0;
+    }
+    if (argc == 2 && !std::strcmp(argv[1], "--text-two-clips")) {
+        auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        assert(api && api->draw_mask && api->read);
+        s_backend_read = api->read; api->read = counted_read;
+        auto reference = render(false, false, draw_two_clip_text_leaves);
+        auto card = render(false, false, [](CGContextRef context, bool) {
+            assert(ladybird_v_skia_draw_rounded_rect(context, 20, 80, 360, 140, 4, 4, 4, 4, 4, 4, 4, 4,
+                1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 221, 221, 221, 255, 1, 0, 1, 1));
+        });
+        size_t text_bytes = 0;
+        for (size_t at = 0; at < reference.size(); ++at) text_bytes += reference[at] != card[at];
+        assert(text_bytes > 500);
+        unsigned cases = 0;
+        for (bool mask : {true, false}) {
+            if (!mask) setenv("VOX_GPU_CANVAS_DISABLE_TEXT_MASK", "1", 1);
+            auto candidate = render(true, false, draw_two_clip_text_leaves);
+            unsetenv("VOX_GPU_CANVAS_DISABLE_TEXT_MASK");
+            assert(s_draws == 2 && !s_declined && !s_cpu_leaves);
+            size_t different = 0;
+            int error = 0;
+            for (size_t at = 0; at < reference.size(); ++at) {
+                different += reference[at] != candidate[at];
+                error = std::max(error, std::abs(int(reference[at]) - int(candidate[at])));
+            }
+            if (mask ? different != 0 : error > 3) {
+                std::cerr << "GPU canvas text under two clips (" << (mask ? "mask" : "raster")
+                    << ") differs in " << different << " bytes, max error " << error << '\n';
+                return 1;
+            }
+            ++cases;
+        }
+        std::cout << "GPU canvas text under two clips: " << cases << " paths match; "
+            << text_bytes << " text bytes\n";
         return 0;
     }
     if (argc == 2 && !std::strcmp(argv[1], "--text-layer-composite")) {
