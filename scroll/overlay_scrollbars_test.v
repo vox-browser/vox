@@ -97,3 +97,24 @@ fn test_overlay_scrollbar_input_reveals_and_releases_the_live_thumb() {
 	assert !app.overlay_scrollbars.hovered
 	assert app.overlay_scrollbars.opacity_at(app.overlay_scrollbars.last_activity_ns + 900_000_000) == 0
 }
+
+fn test_overlay_scrollbar_activity_keeps_one_pending_fade_wake() {
+	$if macos {
+		mut app := BrowserApp{ ctx: &gg.Context{ native_rendering: true } }
+		app.overlay_scrollbars.enabled = true
+		app.overlay_scrollbar_activity()
+		first := app.overlay_scrollbars.wake_deadline_ns
+		assert first > app.overlay_scrollbars.last_activity_ns
+		// Every wheel refreshes activity; the pending wake still covers it.
+		for _ in 0 .. 5 {
+			app.overlay_scrollbar_activity()
+		}
+		assert app.overlay_scrollbars.wake_deadline_ns == first
+		// After the wake fires, the remaining hold is scheduled once more.
+		now := first + 1
+		app.schedule_overlay_scrollbar_wake(now, 250_000_000)
+		assert app.overlay_scrollbars.wake_deadline_ns == now + 250_000_000
+		app.schedule_overlay_scrollbar_wake(now + 10, 600_000_000)
+		assert app.overlay_scrollbars.wake_deadline_ns == now + 250_000_000
+	}
+}

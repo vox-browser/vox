@@ -11,6 +11,7 @@ const wheel_hit_reuse_diagnostics = os.getenv('VOX_WHEEL_HIT_REUSE_DIAGNOSTICS')
 const disable_deferred_wheel_coalescing = os.getenv('VOX_DISABLE_WHEEL_COALESCING') != ''
 const disable_frame_aligned_wheels = os.getenv('VOX_DISABLE_FRAME_ALIGNED_WHEELS') != ''
 const disable_replayed_input_frame_stamp = os.getenv('VOX_DISABLE_REPLAYED_INPUT_FRAME_STAMP') != ''
+const disable_overlay_wake_coalescing = os.getenv('VOX_DISABLE_OVERLAY_SCROLLBAR_WAKE_COALESCING') != ''
 
 fn wheel_input_target(hit dom.HitTestResult) ?page.InputTarget {
 	node := if hit.node != unsafe { nil } {

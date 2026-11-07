@@ -15,6 +15,8 @@ mut:
 	dragging         bool
 	last_activity_ns i64
 	paint_opacity    f64 = 1
+	// When the pending fade wake fires; one wake covers the hold.
+	wake_deadline_ns i64
 }
 
 fn (mut bars BrowserOverlayScrollbars) activity(now_ns i64) {
@@ -34,11 +36,28 @@ fn (bars &BrowserOverlayScrollbars) opacity_at(now_ns i64) f64 {
 
 fn (mut app BrowserApp) overlay_scrollbar_activity() {
 	if !app.overlay_scrollbars.enabled { return }
-	app.overlay_scrollbars.activity(time.sys_mono_now())
+	now := time.sys_mono_now()
+	app.overlay_scrollbars.activity(now)
 	$if macos {
 		if app.ctx != unsafe { nil } && app.ctx.native_rendering {
-			C.native_wake_browser_after(600)
+			if disable_overlay_wake_coalescing {
+				C.native_wake_browser_after(600)
+			} else {
+				app.schedule_overlay_scrollbar_wake(now, overlay_scrollbar_hold_ns)
+			}
 		}
+	}
+}
+
+// Every wheel refreshes the activity time. A wake per wheel released a stream
+// of input-free frames 600 ms later while scrolling continued, each delaying
+// the next input. Keep one pending wake; when it fires before the hold ends,
+// preparation schedules the remainder.
+fn (mut app BrowserApp) schedule_overlay_scrollbar_wake(now_ns i64, delay_ns i64) {
+	$if macos {
+		if app.overlay_scrollbars.wake_deadline_ns > now_ns { return }
+		app.overlay_scrollbars.wake_deadline_ns = now_ns + delay_ns
+		C.native_wake_browser_after(int((delay_ns + 999_999) / 1_000_000))
 	}
 }
 
@@ -57,13 +76,23 @@ fn (mut app BrowserApp) prepare_overlay_scrollbars() {
 		app.overlay_scrollbars.paint_opacity = 0
 		return
 	}
+	now := time.sys_mono_now()
 	if enabled && app.overlay_scrollbars.paint_opacity > 0 && !app.overlay_scrollbars.hovered
 		&& !app.overlay_scrollbars.dragging
-		&& time.sys_mono_now() - app.overlay_scrollbars.last_activity_ns >= overlay_scrollbar_hold_ns {
+		&& now - app.overlay_scrollbars.last_activity_ns >= overlay_scrollbar_hold_ns {
 		$if macos {
 			if app.ctx != unsafe { nil } && app.ctx.native_rendering {
 				// Continue the fade through its final completely hidden frame.
 				C.native_wake_browser_after(16)
+			}
+		}
+	} else if enabled && !disable_overlay_wake_coalescing && app.overlay_scrollbars.paint_opacity > 0
+		&& !app.overlay_scrollbars.hovered && !app.overlay_scrollbars.dragging
+		&& app.overlay_scrollbars.active {
+		$if macos {
+			if app.ctx != unsafe { nil } && app.ctx.native_rendering {
+				app.schedule_overlay_scrollbar_wake(now, app.overlay_scrollbars.last_activity_ns
+					+ overlay_scrollbar_hold_ns - now)
 			}
 		}
 	}
