@@ -575,23 +575,25 @@ entry points take their integer arguments as one `i32` array.
 | `skia.font_typeface_is_valid` (SkFontMgr makeFromStream) | CSS font loading | `gfxfont.typeface_data_is_valid`: CoreText descriptor/font creation, or FreeType face, axes and design coordinates on Linux; 3,022 font comparisons equal |
 | `skia.export_bitmap_to_byte_buffer` (drawImageRect into export formats) | WebGL texture uploads | `cpuraster.export_bitmap_to_byte_buffer`: lowp/highp pipelines, Display P3, nearest sampling with draw tiles, legacy fixed-point sampler; 448 exhaustive and 100,016 random exports exact |
 | `skia.draw_path` solid fills | Canvas 2D `fill()`/`fillRect()` | `cpuraster.fill_canvas_path` for solid source-over fills without clips, shadows or filters, including SVG arcs and global alpha: Skia's analytic AA (`SkScan_AAAPath`, analytic edges, edge and line clippers with `SkCubics` chops, introsort) and legacy `SkARGB32` blitters on macOS's `SkPathRef` paths; 60,000 random fills and 5,000 production canvas fills exact |
-| `skia.draw_path` hairline strokes | Canvas 2D `stroke()`/`strokeRect()` whose `lineWidth` maps to at most one device pixel, including the default width 1 untransformed | `cpuraster.stroke_canvas_path` for solid, undashed source-over strokes without clips, shadow blur or filters: SkDraw's thin-stroke-as-hairline alpha scaling and SkCanvas's quick reject, `SkScan_Hairline` flattening with butt, square and round caps (cubics chopped at maximum curvature), `SkScan_Antihair`'s four line walkers with fixed-point range and rect clipping; 36,124 random strokes exact, wider strokes still use Skia |
-| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Not started: wider strokes (`SkStroke`), dashes, AA clips, gradients, patterns, composite ops (raster pipeline blitter), shadows, filters and SVG filter graphs, glyph masks |
+| `skia.draw_path` hairline strokes | Canvas 2D `stroke()`/`strokeRect()` whose `lineWidth` maps to at most one device pixel, including the default width 1 untransformed | `cpuraster.stroke_canvas_path` for solid, undashed source-over strokes without clips, shadow blur or filters: SkDraw's thin-stroke-as-hairline alpha scaling and SkCanvas's quick reject, `SkScan_Hairline` flattening with butt, square and round caps (cubics chopped at maximum curvature), `SkScan_Antihair`'s four line walkers with fixed-point range and rect clipping; 36,124 random strokes exact |
+| `skia.draw_path` wider strokes | Canvas 2D `stroke()`/`strokeRect()` wider than a device pixel | `cpuraster.stroke_canvas_path` for the same solid, undashed source-over strokes: `skpathutils::FillPathWithPaint`'s `SkStrokeRec` at the matrix's resolution scale, `SkStroke`/`SkPathStroker` (quad approximation of quads, conics and cubics with their recursion limits, inflection splits and cusp circles, degenerate-curve reductions, `strokeRect` for closed rects) with `SkStrokerPriv`'s caps and joins (unit-arc round joins, miter limits), then `SkPathBuilder::transform` and analytic AA fill, keeping a rect outline's known convexity; 150,000 random strokes over five seeds, 112,726 of them wider than a device pixel, exact in both default and `-prod -gc none` builds; dashed strokes still use Skia |
+| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Not started: dashes, AA clips, gradients, patterns, composite ops (raster pipeline blitter), shadows, filters and SVG filter graphs, glyph masks |
 | `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Not started: AA clips under transforms, PathOps difference, blur mask filters, blur image filter layers, glyph masks |
 | `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
 | `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
 | `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
 | Linux `pkg-config skia` | Canvas and portable shadows | Remains until those ports land |
 
-Anti-aliased path filling, hairlines and the legacy solid blitters are ported
-(see `cpuraster/scan_aaa.v` and `cpuraster/scan_hairline.v`). Platform
+Anti-aliased path filling, hairlines, the stroker and the legacy solid
+blitters are ported (see `cpuraster/scan_aaa.v`, `cpuraster/scan_hairline.v`
+and `cpuraster/stroke.v`). Platform
 differences matter: macOS LibWeb Skia uses the `SkPathRef` path backend
 (trailing moves keep their bounds) and RGBA as kN32 (legacy blitters for RGBA
 canvases), while the Linux build defines `SK_HIDE_PATH_EDIT_METHODS`
 (`SkPathData`, which trims trailing moves) and `SK_R32_SHIFT=16` (BGRA kN32, so
 RGBA canvases use the raster pipeline blitter); the Linux behavior is not ported
-yet. Next prerequisites: the stroker (`SkStroke`) for wider strokes, AA clips,
-the raster pipeline blitter and mask blurs.
+yet. Next prerequisites: dashes (`SkDashPathEffect`), AA clips, the raster
+pipeline blitter and mask blurs.
 
 ## Hacker News performance (2026-11-06)
 
