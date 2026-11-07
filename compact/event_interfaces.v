@@ -28,10 +28,12 @@ fn compact_event_interfaces_bootstrap() string {
    __elementApply(set,records,[event,values]);
    return event;
   }}[name];
+  Object.defineProperty(constructor,"length",{value:1});
   Object.setPrototypeOf(constructor,Event);
   constructor.prototype=Object.create(Event.prototype,{constructor:{value:constructor,writable:true,configurable:true}});
   Object.defineProperty(constructor,"prototype",{writable:false});
-  for(const [member] of members)Object.defineProperty(constructor.prototype,member,{get:function(){const values=__elementApply(get,records,[this]);if(!values)throw new TypeError("Illegal invocation");return values[member];},enumerable:true,configurable:true});
+  // An accessor defined by name gives the getter its WebIDL name, "get member".
+  for(const [member] of members)Object.defineProperty(constructor.prototype,member,{get:Object.getOwnPropertyDescriptor({get [member](){const values=__elementApply(get,records,[this]);if(!values)throw new TypeError("Illegal invocation");return values[member];}},member).get,enumerable:true,configurable:true});
   Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
   Object.defineProperty(globalThis,name,{value:constructor,writable:true,configurable:true});
  }

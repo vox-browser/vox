@@ -21,6 +21,7 @@ const button=document.getElementById("b"),command=new CommandEvent("command",{co
 if(command.command!=="toggle-popover"||command.source!==button)fail("CommandEvent");
 let threw=false;try{new TransitionEvent("x",{elapsedTime:NaN});}catch(error){threw=error instanceof TypeError;}
 if(!threw)fail("non-finite elapsedTime");
+if(TransitionEvent.length!==1||Object.getOwnPropertyDescriptor(TransitionEvent.prototype,"propertyName").get.name!=="get propertyName")fail("WebIDL shape");
 console.log("event interfaces passed");
 '], runtime, mut messages)
 	assert messages == ['event interfaces passed']
