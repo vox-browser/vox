@@ -209,6 +209,44 @@ def evaluate_pairs(pairs, required_reduction=.15):
                 passed=max(vox) * target.denominator <= target.numerator * min(brave))
 
 
+def evaluate_vox_cohort(observations, baseline=None, required_reduction=.10):
+    """Vox-only cohort, optionally against an earlier Vox cohort on the same fixture."""
+    if not observations or any(set(row) != {'vox'} for row in observations):
+        raise ValueError('Every Vox-only observation must contain exactly one Vox report')
+    rows = [row['vox'] for row in observations]
+    if any(row.get('pixels_exact') is not True for row in rows):
+        raise ValueError('Every measured browser capture must pass exact pixel equality')
+    if any(type(row.get('exit')) is not int or row['exit'] != 0
+           or row.get('shutdown_forced', False) is not False or row.get('valid', True) is not True
+           for row in rows):
+        raise ValueError('Every measured browser must have a recorded successful exit')
+    vox = [row['instructions'] for row in rows]
+    if any(type(value) is not int or value <= 0 for value in vox + list(baseline or [])):
+        raise ValueError('Instruction counters must be positive')
+    result = dict(vox_median_instructions=statistics.median(vox), vox_instructions=vox)
+    if baseline:
+        target = 1 - Fraction(str(required_reduction))
+        if not 0 < target <= 1:
+            raise ValueError('Required reduction must be in [0, 1)')
+        result.update(baseline_vox_instructions=list(baseline),
+                      baseline_vox_median_instructions=statistics.median(baseline),
+                      median_reduction=1 - statistics.median(vox) / statistics.median(baseline),
+                      worst_over_best_baseline=max(vox) / min(baseline),
+                      required_reduction=required_reduction,
+                      passed=statistics.median(vox) * target.denominator
+                             <= target.numerator * statistics.median(baseline),
+                      conservative_passed=max(vox) * target.denominator <= target.numerator * min(baseline))
+    return result
+
+
+def baseline_vox_counts(path, html_digest, reference_digest, cache_hash):
+    summary = json.loads(Path(path).read_text())
+    if (summary.get('html_sha256') != html_digest or summary.get('vox_reference_sha256') != reference_digest
+            or summary.get('cache_sha256') != cache_hash):
+        raise ValueError('Baseline cohort used a different fixture, cache or Vox reference')
+    return [pair['vox']['instructions'] for pair in summary['pairs']]
+
+
 def engine_reference(args, engine):
     """A Vox-specific reference checks per-engine stability, not cross-browser equality."""
     vox_reference = getattr(args, 'expected_vox', None)
@@ -252,7 +290,13 @@ def main():
     parser.add_argument('--diff-tool', type=Path, default=REPO/'Build/pixel-equality/pixel_diff')
     parser.add_argument('--repeat', type=int, default=7)
     parser.add_argument('--required-reduction', type=float, default=.15)
+    parser.add_argument('--vox-only', action='store_true',
+                        help='Measure only Vox against its fixed reference; Brave is not launched.')
+    parser.add_argument('--baseline-summary', type=Path,
+                        help='With --vox-only, compare medians with an earlier Vox cohort on the same fixture.')
     args = parser.parse_args()
+    if args.baseline_summary is not None and not args.vox_only:
+        parser.error('--baseline-summary compares Vox-only cohorts')
     if args.repeat < 1 or not 0 <= args.required_reduction < 1:
         parser.error('Invalid repeat count or required reduction')
     for name in ['html', 'expected', 'expected_vox', 'cache', 'output', 'vox', 'brave', 'network_deny', 'diff_tool']:
@@ -262,7 +306,7 @@ def main():
         parser.error('Build the process-local network deny dylib first')
     args.output.mkdir(parents=True, exist_ok=False, mode=0o700)
     cross_browser = None
-    if args.expected_vox is not None:
+    if args.expected_vox is not None and not args.vox_only:
         cross_browser = compare(args.expected, args.expected_vox,
                                 args.output/'vox-reference-vs-brave-reference.diff.png', args.diff_tool)
     title, posts = document_identity(args.html)
@@ -272,11 +316,16 @@ def main():
         attributes=['data-fullname'], layout_depth=0)])))
     pinned = pinned_inputs(args)
     cache_hash = fingerprint_tree(args.cache)
+    html_digest, reference_digest = digest(args.html), digest(engine_reference(args, 'vox'))
+    baseline = None
+    if args.baseline_summary is not None:
+        baseline = baseline_vox_counts(args.baseline_summary, html_digest, reference_digest, cache_hash)
     api = MacCounters()
     pairs = []
     for index in range(args.repeat):
         pair = {}
-        for engine in (['vox', 'brave'] if index % 2 == 0 else ['brave', 'vox']):
+        engines = ['vox'] if args.vox_only else ['vox', 'brave'] if index % 2 == 0 else ['brave', 'vox']
+        for engine in engines:
             prefix = args.output / f'pair-{index+1}.{engine}'
             config = SimpleNamespace(binary=args.vox if engine=='vox' else args.brave,
                 url=args.html.as_uri(), width=1024, height=768, timeout=90,
@@ -321,8 +370,14 @@ def main():
         pairs.append(pair)
     if pinned != pinned_inputs(args) or cache_hash != fingerprint_tree(args.cache):
         raise RuntimeError('Pinned executable, runtime or benchmark input changed')
-    summary = evaluate_pairs(pairs, args.required_reduction)
-    summary.update(reference_policy='per-engine fixed references' if cross_browser else 'shared Brave reference',
+    if args.vox_only:
+        summary = evaluate_vox_cohort(pairs, baseline, args.required_reduction)
+        summary.update(baseline_summary=str(args.baseline_summary) if baseline else None)
+    else:
+        summary = evaluate_pairs(pairs, args.required_reduction)
+    summary.update(html_sha256=html_digest, vox_reference_sha256=reference_digest,
+                   reference_policy='Vox-only fixed Vox reference' if args.vox_only
+                   else 'per-engine fixed references' if cross_browser else 'shared Brave reference',
                    cross_browser_reference_pixels=cross_browser)
     summary.update(pairs=pairs, pinned_sha256=pinned, cache_sha256=cache_hash,
                    selected_js_engines=dict(vox=args.vox_js_engine, brave='v8'),
@@ -335,7 +390,7 @@ def main():
                    workload_note='Frozen input has executable script elements removed; preserve normal noscript semantics.')
     (args.output/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
     print(json.dumps({k:v for k,v in summary.items() if k not in ['pairs','pinned_sha256','scope']}),flush=True)
-    return 0 if summary['passed'] else 1
+    return 0 if summary.get('passed', True) else 1
 
 
 if __name__ == '__main__':

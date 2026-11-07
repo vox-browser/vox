@@ -153,6 +153,27 @@ class InstructionGateTests(unittest.TestCase):
         self.assertGreater(result['median_paired_reduction'],.15)
         self.assertFalse(result['passed'])
 
+    def test_vox_only_cohort_compares_medians_and_keeps_the_conservative_bound(self):
+        rows=lambda *counts:[{'vox':dict(instructions=c,pixels_exact=True,exit=0)} for c in counts]
+        result=benchmark.evaluate_vox_cohort(rows(88,90,95),[100,101,99],.10)
+        self.assertTrue(result['passed']);self.assertFalse(result['conservative_passed'])
+        self.assertAlmostEqual(result['median_reduction'],.10)
+        self.assertFalse(benchmark.evaluate_vox_cohort(rows(91),[100],.10)['passed'])
+        self.assertNotIn('passed',benchmark.evaluate_vox_cohort(rows(91)))
+        for bad in [rows(0),[{'vox':dict(instructions=5,pixels_exact=False,exit=0)}],
+                    [{'vox':dict(instructions=5,pixels_exact=True,exit=1)}],
+                    [{'vox':dict(instructions=5,pixels_exact=True,exit=0),'brave':{}}]]:
+            with self.assertRaises(ValueError):benchmark.evaluate_vox_cohort(bad,[100])
+
+    def test_vox_only_baseline_must_share_fixture_cache_and_reference(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'summary.json'
+            path.write_text(json.dumps(dict(html_sha256='h',vox_reference_sha256='r',cache_sha256='c',
+                                            pairs=[{'vox':dict(instructions=7)}])))
+            self.assertEqual(benchmark.baseline_vox_counts(path,'h','r','c'),[7])
+            for changed in [('x','r','c'),('h','x','c'),('h','r','x')]:
+                with self.assertRaises(ValueError):benchmark.baseline_vox_counts(path,*changed)
+
     def test_failed_or_absent_pixel_equality_and_zero_counters_receive_no_credit(self):
         for pairs in [[],[self.pair(50,100,False)],[self.pair(0,100)]]:
             with self.assertRaises(ValueError):benchmark.evaluate_pairs(pairs)
