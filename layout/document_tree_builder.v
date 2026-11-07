@@ -963,6 +963,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 			state.previous_block_layouts_ = previous.state.block_layouts_
 		}
 		previous_backoff = previous.state.block_layout_backoff_
+		state.previous_state_ = unsafe { &LayoutState(previous.state) }
 	}
 	state.begin_retained_block_backoff_pass(previous_backoff)
 	state.enable_measurement_chunk_pool()
@@ -993,6 +994,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// the lookup owner for removed or otherwise ineligible previous contexts.
 	state.previous_inline_layouts_ = map[u64]&RetainedInlineLayout{}
 	state.previous_block_layouts_ = map[u64]&RetainedBlockLayout{}
+	state.previous_state_ = unsafe { nil }
 	state.block_layout_rejections_ = map[u64]bool{}
 	timing_checkpoint = layout_timing_checkpoint('      scrollable_overflow', timing_checkpoint)
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {

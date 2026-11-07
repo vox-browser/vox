@@ -1135,6 +1135,9 @@ pub mut:
 	list_style_image_ ?css.StyleValue
 	image_observers_  []&ImageObserver
 	layout_index_     u32
+	// The index of the last layout tree before reindexing; a rebuild shifts
+	// the indices after each insertion (line_box_equality.v).
+	previous_layout_index_ u32
 mut:
 	inherited_style_proof_ &css.LayoutInheritanceProof = unsafe { nil }
 }
@@ -1416,6 +1419,7 @@ fn assign_layout_indexes_in_subtree(node &Node, starting_index u32, mut order La
 	mut next_index := starting_index
 	if styled := node.as_node_with_style() {
 		mut mutable_styled := unsafe { &NodeWithStyle(styled) }
+		mutable_styled.previous_layout_index_ = mutable_styled.layout_index_
 		mutable_styled.set_layout_index(next_index)
 		next_index++
 	}

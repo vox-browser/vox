@@ -1317,6 +1317,9 @@ mut:
 	previous_block_layouts_ map[u64]&RetainedBlockLayout
 	block_layout_rejections_ map[u64]bool
 	block_layout_backoff_ &RetainedBlockBackoffTable = unsafe { nil }
+	// The committed state of the previous document pass, while this pass runs
+	// (line_box_equality.v). Cleared before publication.
+	previous_state_ &LayoutState = unsafe { nil }
 	block_paint_owners_ map[u64]&RetainedBlockLayout
 	inline_layouts_ map[u64]&RetainedInlineLayout
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
