@@ -422,3 +422,51 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
 	}
 	assert !host.has_pending_work(), messages.join('\n')
 }
+
+fn child_xml_serve(mut listener net.TcpListener, finished chan bool) {
+	mut socket := listener.accept() or {
+		finished <- false
+		return
+	}
+	defer { socket.close() or {} }
+	socket.set_read_timeout(5 * time.second)
+	mut reader := io.new_buffered_reader(reader: socket)
+	request := reader.read_line() or { panic(err) }
+	assert request.contains('/dummy.xml')
+	for { if (reader.read_line() or { '' }) == '' { break } }
+	body := '<foo id="root">Dummy XML document</foo>\n'
+	socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: application/xml\r\nContent-Length: ${body.len}\r\nConnection: close\r\n\r\n${body}') or { panic(err) }
+	finished <- true
+}
+
+fn test_browser_child_host_parses_an_xml_response_as_an_xml_document() {
+	$if !darwin {
+		return
+	}
+	requestserver.install_native_font_fetch_host()!
+	defer { requestserver.close_native_font_fetch_host() }
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	listener.set_accept_timeout(20 * time.second)
+	defer { listener.close() or {} }
+	address := 'http://${listener.addr()!}'
+	finished := chan bool{cap: 1}
+	spawn child_xml_serve(mut listener, finished)
+	mut host, mut parent := child_browser_fixture('<!doctype html><iframe src="${address}/dummy.xml"></iframe>', 'http://parent.example/parent')
+	defer {
+		host.close()
+		parent.destroy_a_document_and_its_descendants()
+		parent.finalize()
+		parent.release_native_storage()
+	}
+	mut messages := []string{}
+	child_browser_wait(host, 'root', mut messages)
+	assert <-finished
+	service := host.children[0].service?
+	document := service.document
+	assert document.is_xml_document(), messages.join('\n')
+	assert document.get_content_type() == 'application/xml'
+	root := document.document_element()?
+	assert root.local_name() == 'foo'
+	assert root.as_node().text_content()? == 'Dummy XML document'
+	assert document.as_node().children.len == 1
+}

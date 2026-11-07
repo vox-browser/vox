@@ -16,6 +16,7 @@ import fetch
 import highresolutiontime
 import http
 import math
+import mimesniff
 import page
 import painting
 import rand
@@ -1239,8 +1240,16 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		if owner := model.page() {
 			document.set_page(owner)
 		}
-		document.set_document_type(.html)
-		document.set_content_type('text/html')
+		// An XML response becomes an XML document; everything else is parsed
+		// as HTML here.
+		xml_type := navigation_response_xml_type(navigation_params)
+		if type_ := xml_type {
+			document.set_document_type(.xml)
+			document.set_content_type(type_.essence())
+		} else {
+			document.set_document_type(.html)
+			document.set_content_type('text/html')
+		}
 		document.set_origin(state.origin or { entry.url.origin() })
 		document.set_about_base_url(state.about_base_url)
 		document.set_navigation_id(navigation_id)
@@ -1285,7 +1294,9 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		match state.resource {
 			string {
 				markup := state.resource as string
-				if document.document_ready_to_run_scripts() {
+				if xml_type != none {
+					parse_navigated_xml_document(document, markup)
+				} else if document.document_ready_to_run_scripts() {
 					parse_html_from_a_string(document, markup)
 				} else {
 					document_pointer := voidptr(document)
@@ -1324,6 +1335,26 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 	if callback := completion_steps {
 		callback()
 	}
+}
+
+// https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml
+// The XML MIME type of a navigation response, when it has one.
+fn navigation_response_xml_type(navigation_params ?&NavigationParams) ?mimesniff.MimeType {
+	params := navigation_params or { return none }
+	response := params.response.unsafe_response()
+	type_ := fetch.extract_mime_type(response.header_list) or { return none }
+	if !type_.is_xml() || type_.is_html() { return none }
+	return type_
+}
+
+fn parse_navigated_xml_document(document &dom.Document, source string) {
+	mut owner := unsafe { &dom.Document(document) }
+	// A malformed document keeps what was built before the error, as no
+	// error document is translated for this path yet.
+	parse_xml_document_source(document, source) or {}
+	owner.update_readiness(.interactive)
+	owner.update_readiness(.complete)
+	owner.completely_finish_loading()
 }
 
 fn urls_differ_only_by_fragment(a dom.URL, b dom.URL) bool {
