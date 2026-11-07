@@ -249,3 +249,54 @@ fn test_native_work_pump_preserves_changed_view_size_and_backing_invalidations()
 		assert C.vox_test_navigation_native_size_invalidations() == 7
 	}
 }
+
+fn test_wheels_queued_behind_engine_work_coalesce_like_chromium() {
+	mut app := &BrowserApp{ctx: &gg.Context{}}
+	mut scope := app.begin_navigation_work()
+	y := f32(app.page_top() + 100)
+	app.handle_event(&gg.Event{typ: .mouse_scroll, scroll_y: -1, mouse_x: 10, mouse_y: y})
+	app.handle_event(&gg.Event{typ: .mouse_scroll, scroll_x: 0.5, scroll_y: -2, mouse_x: 12, mouse_y: y + 1})
+	app.handle_event(&gg.Event{typ: .mouse_scroll, scroll_y: -0.25, mouse_x: 14, mouse_y: y + 2})
+	assert app.deferred_page_input.len == 1
+	merged := app.deferred_page_input[0].event
+	// The latest wheel supplies its position; deltas accumulate.
+	assert merged.mouse_x == 14 && merged.mouse_y == y + 2
+	assert merged.scroll_x == 0.5
+	assert merged.scroll_y == -3.25
+	// Different modifiers and intervening input keep their own events.
+	app.handle_event(&gg.Event{typ: .mouse_scroll, scroll_y: -1, mouse_x: 14, mouse_y: y, modifiers: 1})
+	app.handle_event(&gg.Event{typ: .mouse_move, mouse_x: 15, mouse_y: y})
+	app.handle_event(&gg.Event{typ: .mouse_scroll, scroll_y: -1, mouse_x: 15, mouse_y: y})
+	app.handle_event(&gg.Event{typ: .mouse_scroll, scroll_y: -1, mouse_x: 16, mouse_y: y})
+	assert app.deferred_page_input.len == 4
+	assert app.deferred_page_input[1].event.modifiers == 1
+	assert app.deferred_page_input[1].event.scroll_y == -1
+	assert app.deferred_page_input[2].event.typ == .mouse_move
+	assert app.deferred_page_input[3].event.scroll_y == -2
+	assert app.deferred_page_input[3].event.mouse_x == 16
+	scope.finish()
+	app.ctx = unsafe { nil }
+	app.navigation_generation++
+	app.poll_deferred_page_input()
+	assert app.deferred_page_input.len == 0
+}
+
+fn test_coalesced_queued_wheels_scroll_by_their_combined_delta() {
+	mut owner := page.Page.create(1)!
+	mut app := &BrowserApp{ page_model: owner, viewport_width: 320, viewport_height: 200 }
+	app.install_loaded_page(LoadedPage{ url: 'https://news.ycombinator.com/item?id=1', markup: '<!doctype html><body style="margin:0">' + '<p style="height:40px;margin:0">comment</p>'.repeat(100), content_type: 'text/html' }, false)
+	mut document := app.document
+	defer { document.finalize() }
+	y := f32(app.page_top() + 50)
+	app.ctx = &gg.Context{}
+	mut scope := app.begin_navigation_work()
+	for _ in 0 .. 3 {
+		app.handle_event(&gg.Event{ typ: .mouse_scroll, scroll_y: -1, mouse_x: 20, mouse_y: y })
+	}
+	assert app.deferred_page_input.len == 1
+	scope.finish()
+	app.ctx = unsafe { nil }
+	app.poll_deferred_page_input()
+	assert app.deferred_page_input.len == 0
+	assert app.scroll_y == 3 * 42
+}

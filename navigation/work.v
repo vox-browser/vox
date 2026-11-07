@@ -124,6 +124,20 @@ fn (mut app BrowserApp) defer_page_input(event &gg.Event) {
 	last := app.deferred_page_input.len - 1
 	if event.typ == .mouse_move && last >= 0 && app.deferred_page_input[last].event.typ == .mouse_move {
 		app.deferred_page_input[last] = input
+	} else if last >= 0 && deferred_wheel_inputs_coalesce(app.deferred_page_input[last], input) {
+		// Like Chromium's main-thread queue (WebMouseWheelEvent::Coalesce), a
+		// wheel queued behind a busy frame merges into the preceding one: the
+		// latest event supplies position and state, the deltas accumulate.
+		// Each replayed wheel otherwise hit-tests the document again.
+		previous := app.deferred_page_input[last].event
+		mut merged := *event
+		merged.scroll_x += previous.scroll_x
+		merged.scroll_y += previous.scroll_y
+		app.deferred_page_input[last] = DeferredPageInput{
+			event:      merged
+			document:   input.document
+			generation: input.generation
+		}
 	} else {
 		app.deferred_page_input << input
 	}
@@ -168,4 +182,10 @@ fn (mut app BrowserApp) poll_deferred_navigation_input() {
 	} else {
 		app.navigate(address, input.add_history)
 	}
+}
+
+fn deferred_wheel_inputs_coalesce(previous DeferredPageInput, next DeferredPageInput) bool {
+	return !disable_deferred_wheel_coalescing && previous.event.typ == .mouse_scroll
+		&& next.event.typ == .mouse_scroll && previous.event.modifiers == next.event.modifiers
+		&& previous.document == next.document && previous.generation == next.generation
 }
