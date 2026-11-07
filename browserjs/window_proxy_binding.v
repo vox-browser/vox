@@ -7,7 +7,10 @@ pub:
 	proxy ?&dom.WindowProxy
 }
 
-pub type FrameWindowResolver = fn (voidptr) !FrameWindowResult
+// The resolver creates the frame's initial about:blank realm when `realm` is
+// set: a script then reads into the child (contentDocument or a same-origin
+// WindowProxy property) rather than only holding its WindowProxy.
+pub type FrameWindowResolver = fn (voidptr, bool) !FrameWindowResult
 
 fn window_proxy_binding_factory() string {
 	return r'(function(operate,global){
@@ -19,7 +22,7 @@ fn window_proxy_binding_factory() string {
  // A same-origin child WindowProxy is its global; other proxies throw or
  // expose no document, and both mean the content document is unavailable.
  const content=descriptor({get contentDocument(){
-  const view=apply(frame,this,[]);if(view===null||view===undefined)return null;
+  const view=operate("frameRealm",this);if(view===null||view===undefined)return null;
   try{const value=view.document;return value===undefined?null:value;}catch(error){return null;}
  }},"contentDocument").get;
  define(global.HTMLIFrameElement.prototype,"contentDocument",{get:content,enumerable:true,configurable:true});

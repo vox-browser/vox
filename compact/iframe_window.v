@@ -13,7 +13,7 @@ fn install_compact_iframe_windows(document &dom.Document, mut runtime browserjs.
 		})
 	}
 	owner := voidptr(&runtime)
-	runtime.install_window_proxy_binding(fn [document, owner, host] (wrapper voidptr) !browserjs.FrameWindowResult {
+	runtime.install_window_proxy_binding(fn [document, owner, host] (wrapper voidptr, realm bool) !browserjs.FrameWindowResult {
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
 		mut runtime := unsafe { &browserjs.Runtime(owner) }
@@ -35,6 +35,7 @@ fn install_compact_iframe_windows(document &dom.Document, mut runtime browserjs.
 		}
 		mut manager := unsafe { &BrowserChildDocumentHost(host) }
 		model := manager.ensure_child(element)!
+		if realm { manager.ensure_initial_realm(element, mut messages) }
 		if proxy := model.active_window_proxy() {
 			return browserjs.FrameWindowResult{ proxy: proxy.dom_proxy() }
 		}

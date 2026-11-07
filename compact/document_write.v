@@ -20,6 +20,9 @@ fn (mut binding CompactElementQueryBinding) document_write_query(key string, sou
 			}
 		}
 	}
+	// An initial about:blank document is created without the parser hooks
+	// that parsed documents receive; open() needs its scripting parser.
+	if document.html_fragment_parsing_hook() == none { html.install_document_fragment_parsing_hook(document) }
 	if op in ['write', 'writeln'] && binding.write_after_current_script(mut document, text.join('') +
 		if op == 'writeln' { '\n' } else { '' })! {
 		return json2.encode({

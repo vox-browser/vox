@@ -355,3 +355,44 @@ fn test_browser_pointer_enters_transformed_iframe_with_child_coordinates_and_sin
 	assert runtime.evaluate_host('outerClicks===0&&childMessages===1')! == 'true'
 	assert app.js_messages == []string{}, app.js_messages.join('\n')
 }
+
+fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
+	$if !darwin {
+		return
+	}
+	mut host, mut document := child_browser_fixture('<!doctype html><body></body>', 'https://parent.example/')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		host.close()
+		runtime.close()
+		document.destroy_a_document_and_its_descendants()
+		document.finalize()
+		document.release_native_storage()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+ globalThis.frame=document.createElement("iframe");document.body.appendChild(frame);
+ globalThis.held=frame.contentWindow;
+ const child=frame.contentDocument;
+ globalThis.initial=child!==null&&child.URL==="about:blank"&&held.document===child;
+ globalThis.loads=0;frame.addEventListener("load",()=>loads++);
+ child.open();child.write("<p id=written>h");child.write("i</p>");child.close();
+ globalThis.written=frame.contentDocument.getElementById("written").textContent;
+ globalThis.tree=frame.contentDocument.documentElement.outerHTML;
+ globalThis.rewritten=(child.open(),child.write("<b>second</b>"),child.close(),child.body.innerHTML);
+'], runtime, mut messages)
+	assert runtime.evaluate_host('initial')! == 'true', messages.join('\n')
+	assert runtime.evaluate_host('typeof written')! == 'string', messages.join('\n')
+	assert runtime.evaluate_host('written')! == 'hi'
+	tree := runtime.evaluate_host('tree')!
+	assert tree == '<html><head></head><body><p id="written">hi</p></body></html>', tree
+	rewritten := runtime.evaluate_host('rewritten')!
+	assert rewritten == '<b>second</b>', rewritten
+	mut loop := html.main_thread_event_loop()
+	deadline := time.sys_mono_now() + 5 * time.second
+	loop.spin_until(fn [runtime, deadline] () bool {
+		return (runtime.evaluate_host('loads') or { '0' }) == '2' || time.sys_mono_now() >= deadline
+	})
+	loads := runtime.evaluate_host('loads')!
+	assert loads == '2', loads
+}

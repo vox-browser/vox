@@ -109,6 +109,29 @@ fn (mut host BrowserChildDocumentHost) ensure_child(element &dom.Element) !&html
 	return navigable
 }
 
+// A script can read an iframe's contentWindow before the next host poll. The
+// initial about:blank document has no resources to fetch, so its realm is
+// created at once and contentDocument.open()/write() reach a live document.
+fn (mut host BrowserChildDocumentHost) ensure_initial_realm(element &dom.Element, mut messages []string) {
+	for index in 0 .. host.children.len {
+		mut child := host.children[index]
+		if child.closed || voidptr(child.element) != voidptr(element) { continue }
+		active := child.navigable.active_document() or { return }
+		if !active.get_is_initial_about_blank() { return }
+		if mut service := child.service {
+			if voidptr(service.document) == voidptr(active) {
+				service.initialize(host.engine, mut messages)
+				return
+			}
+			service.close()
+		}
+		mut service := &BrowserHostedDocument{ document: active }
+		child.service = service
+		service.initialize(host.engine, mut messages)
+		return
+	}
+}
+
 fn retire_hosted_browser_document(document &dom.Document) {
 	mut owner := unsafe { &dom.Document(document) }
 	if !owner.has_been_destroyed() { owner.destroy_a_document_and_its_descendants() }

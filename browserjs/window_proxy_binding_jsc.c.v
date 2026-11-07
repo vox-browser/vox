@@ -81,6 +81,12 @@ fn (runtime &Runtime) same_agent_window_global(window &html.WindowModel) ?voidpt
 	return none
 }
 
+fn (mut runtime Runtime) window_container_wrapper(window &html.WindowModel) ?voidptr {
+	navigable := window.associated_document().navigable() or { return none }
+	container := navigable.container() or { return none }
+	return runtime.javascript_event_target(unsafe { &dom.EventTarget(container) }, none) or { return none }
+}
+
 fn (mut runtime Runtime) javascript_window_proxy(proxy &dom.WindowProxy) !voidptr {
 	window := window_model_for_proxy(proxy)!
 	if settings := runtime.scripting_settings_ {
@@ -107,8 +113,8 @@ fn (mut runtime Runtime) window_proxy_security_error() !voidptr {
 fn (mut runtime Runtime) window_proxy_operation(binding &WindowProxyBinding, args []voidptr) !voidptr {
 	if args.len < 2 { return runtime.event_binding_type_error('Missing Window operation') }
 	method := runtime.binding_dom_string(args[0])!
-	if method == 'frame' {
-		result := binding.frame(args[1])!
+	if method == 'frame' || method == 'frameRealm' {
+		result := binding.frame(args[1], method == 'frameRealm')!
 		if proxy := result.proxy { return runtime.javascript_window_proxy(proxy) }
 		return C.vox_jsc_JSValueMakeNull(runtime.context)
 	}
@@ -155,7 +161,19 @@ fn (mut runtime Runtime) window_proxy_operation(binding &WindowProxyBinding, arg
 		'blur' { window.blur() }
 		'get' {
 			if !same_origin { return runtime.window_proxy_security_error() }
-			// Same-origin DOM/global forwarding is a separate realm binding.
+			if args.len < 3 { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
+			mut global := runtime.same_agent_window_global(window)
+			if global == none {
+				// A WindowProxy read before its frame had a realm: create the
+				// initial one through the frame's container element.
+				if wrapper := runtime.window_container_wrapper(window) {
+					binding.frame(wrapper, true) or {}
+					global = runtime.same_agent_window_global(window)
+				}
+			}
+			if value := global {
+				return runtime.binding_property(value, runtime.binding_dom_string(args[2])!)
+			}
 			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		'write' { return runtime.window_proxy_security_error() }
