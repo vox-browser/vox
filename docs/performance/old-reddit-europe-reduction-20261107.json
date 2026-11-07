@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "workload": {
+    "original_url": "https://old.reddit.com/r/europe/",
+    "main_document": "Private frozen derivative of a 2026-11-07 fetch with the imported Reddit session; all 17 script elements removed; base URL installed. Account markup is not committed.",
+    "source_sha256": "99c069cea2ac09aab516479f4bcb88dbf7742df0d1ddafe41989337c993eaf52",
+    "frozen_html_sha256": "03e5c53d29f0256ef7a3d13ccd7ad7021def72c531f508b4bdf203399db50212",
+    "sealed_resources": 44,
+    "post_count": 25,
+    "viewport_css": [
+      1024,
+      768
+    ],
+    "capture_scale": 1,
+    "vox_reference_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+    "reference_policy": "Vox-only fixed Vox reference; Brave thumbnail downscaling differed by 2,603 pixels between two fresh Brave runs, so no Brave cohort is claimed."
+  },
+  "metric": {
+    "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+    "sample_interval_seconds": 0.005,
+    "scope": "Vox process tree from launch through native capture, document audit and exit (root read as an unreaped zombie); polling lower bound; GPU and outside services excluded."
+  },
+  "cohorts": {
+    "baseline": {
+      "description": "Shared Build/v/Vox.app before the fix (receipt 20261107-164307-dd221c8a, single C unit).",
+      "vox_median": 5870338864,
+      "vox_binary_sha256": "99dd89f79c418afe2e824016dc68f7a000c97958d4e7f8df7a85941ccc8ac8da",
+      "vox_control_environment": {},
+      "cache_sha256": "b556fce0a70e8d58c45e74abbf776960abf691b3ae70f6bacdecf131e6733c25",
+      "observations": [
+        {
+          "instructions": 5915809897,
+          "root_instructions": 5687187381,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 676021856,
+          "host_load_before": 14.46240234375
+        },
+        {
+          "instructions": 5919898014,
+          "root_instructions": 5690082235,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 675874424,
+          "host_load_before": 14.02490234375
+        },
+        {
+          "instructions": 5905253815,
+          "root_instructions": 5673401234,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 676415096,
+          "host_load_before": 14.02490234375
+        },
+        {
+          "instructions": 5870338864,
+          "root_instructions": 5642681811,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 677316216,
+          "host_load_before": 14.4228515625
+        },
+        {
+          "instructions": 5841292203,
+          "root_instructions": 5614696619,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 676005496,
+          "host_load_before": 14.4228515625
+        },
+        {
+          "instructions": 5831130101,
+          "root_instructions": 5604564352,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 677824096,
+          "host_load_before": 14.30859375
+        },
+        {
+          "instructions": 5827028118,
+          "root_instructions": 5601284839,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 677021256,
+          "host_load_before": 14.30859375
+        }
+      ],
+      "guard": {
+        "child_exit_code": 0,
+        "observed_peak_rss_bytes": 822083584,
+        "limit_bytes": 12884901888
+      }
+    },
+    "final": {
+      "description": "Private single-C-unit build of the canonical tree including 910255d60.",
+      "vox_median": 4895716560,
+      "vox_binary_sha256": "30fbbb778af679662c390964bffe6671a27e31b500aa7e58109228432386fd09",
+      "vox_control_environment": {},
+      "cache_sha256": "b556fce0a70e8d58c45e74abbf776960abf691b3ae70f6bacdecf131e6733c25",
+      "observations": [
+        {
+          "instructions": 4945238043,
+          "root_instructions": 4719513545,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 659899976,
+          "host_load_before": 19.00390625
+        },
+        {
+          "instructions": 4925770261,
+          "root_instructions": 4699746485,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 662898224,
+          "host_load_before": 19.00390625
+        },
+        {
+          "instructions": 4913355079,
+          "root_instructions": 4687180724,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 661538376,
+          "host_load_before": 18.20263671875
+        },
+        {
+          "instructions": 4895518221,
+          "root_instructions": 4669301164,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 655853128,
+          "host_load_before": 18.20263671875
+        },
+        {
+          "instructions": 4887410575,
+          "root_instructions": 4660038725,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 655312456,
+          "host_load_before": 17.78564453125
+        },
+        {
+          "instructions": 4895716560,
+          "root_instructions": 4668247689,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 652494408,
+          "host_load_before": 17.78564453125
+        },
+        {
+          "instructions": 4890349305,
+          "root_instructions": 4663107735,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 663406152,
+          "host_load_before": 17.78564453125
+        }
+      ],
+      "guard": {
+        "child_exit_code": 0,
+        "observed_peak_rss_bytes": 878723072,
+        "limit_bytes": 12884901888
+      }
+    },
+    "control": {
+      "description": "Same executable as final with VOX_DISABLE_IMAGE_DISK_CACHE_RETENTION=1.",
+      "vox_median": 5740703465,
+      "vox_binary_sha256": "30fbbb778af679662c390964bffe6671a27e31b500aa7e58109228432386fd09",
+      "vox_control_environment": {
+        "VOX_DISABLE_IMAGE_DISK_CACHE_RETENTION": "1"
+      },
+      "cache_sha256": "b556fce0a70e8d58c45e74abbf776960abf691b3ae70f6bacdecf131e6733c25",
+      "observations": [
+        {
+          "instructions": 5782153178,
+          "root_instructions": 5556191516,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 680380024,
+          "host_load_before": 19.29052734375
+        },
+        {
+          "instructions": 5735951756,
+          "root_instructions": 5509331957,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 679364192,
+          "host_load_before": 19.29052734375
+        },
+        {
+          "instructions": 5783831733,
+          "root_instructions": 5557159907,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 677103224,
+          "host_load_before": 19.34716796875
+        },
+        {
+          "instructions": 5726288126,
+          "root_instructions": 5498147828,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 676873848,
+          "host_load_before": 19.34716796875
+        },
+        {
+          "instructions": 5720901601,
+          "root_instructions": 5494389988,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 676693624,
+          "host_load_before": 19.8798828125
+        },
+        {
+          "instructions": 5740703465,
+          "root_instructions": 5513088150,
+          "missing_final_sample_count": 1,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 680445560,
+          "host_load_before": 19.88916015625
+        },
+        {
+          "instructions": 5748734014,
+          "root_instructions": 5519489657,
+          "missing_final_sample_count": 0,
+          "exit": 0,
+          "pixels_exact": true,
+          "png_sha256": "48211c4bfb91ccdc51f44c10a89086129bd9f5e7b289995bf4771a6b6b3c0abf",
+          "root_lifetime_max_phys_footprint": 676333176,
+          "host_load_before": 19.88916015625
+        }
+      ],
+      "guard": {
+        "child_exit_code": 0,
+        "observed_peak_rss_bytes": 898613248,
+        "limit_bytes": 12884901888
+      }
+    }
+  },
+  "results": {
+    "final_vs_baseline_median_reduction": 0.16602487975215463,
+    "worst_final_over_best_baseline": 0.8486724180588552,
+    "fix_saving_same_binary_median": 844986905,
+    "fix_saving_same_binary_fraction": 0.14719222307017388,
+    "concurrent_changes_baseline_to_control_median": 129635399
+  },
+  "commits": {
+    "fix": "910255d60",
+    "tooling": [
+      "b70593c61",
+      "c9bbf89ab",
+      "09879b39d"
+    ]
+  }
+}
