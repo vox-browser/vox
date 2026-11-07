@@ -455,14 +455,16 @@ pub fn html_source_element_inserted(source &dom.HTMLSourceElement) {
 	if mut media := html_media_element_for_dom_element(parent) {
 		if !parent.has_attribute('src') && media.network_state() == .empty {
 			mut candidates := []string{}
+			mut types := []string{}
 			for child in parent.as_node().children_as_vector() {
 				if source_candidate := child.as_element() {
 					if source_candidate.local_name() == 'source' {
 						candidates << source_candidate.get_attribute_value('src')
+						types << source_candidate.get_attribute_value('type')
 					}
 				}
 			}
-			media.set_source_candidates(candidates)
+			media.set_typed_source_candidates(candidates, types)
 			media.select_resource() or {}
 		}
 	}

@@ -199,6 +199,8 @@ mut:
 	current_src_                string
 	source_                     ?string
 	source_candidates_          []string
+	// The `type` of each `<source>` candidate, or '' when it has none.
+	source_candidate_types_     []string
 	network_state_              MediaNetworkState
 	ready_state_                MediaReadyState
 	first_data_load_event_since_load_start_ bool
@@ -600,26 +602,32 @@ pub fn (mut element HTMLMediaElement) toggle_fullscreen() {
 	dom_element.request_fullscreen(.bindings)
 }
 
-fn media_source_candidates_from_dom(element &dom.Element) []string {
+fn media_source_candidates_from_dom(element &dom.Element) ([]string, []string) {
 	mut candidates := []string{}
+	mut types := []string{}
 	for child in element.as_node().children_as_vector() {
 		if source_element := child.as_element() {
 			if source_element.is_html_element() && source_element.local_name() == 'source' {
 				source := source_element.get_attribute_ns(none, 'src') or { '' }
 				if source.trim_space() != '' {
 					candidates << source
+					types << source_element.get_attribute_ns(none, 'type') or { '' }
 				}
 			}
 		}
 	}
-	return candidates
+	return candidates, types
+}
+
+fn (mut element HTMLMediaElement) update_source_candidates_from_dom(dom_element &dom.Element) {
+	element.source_candidates_, element.source_candidate_types_ = media_source_candidates_from_dom(dom_element)
 }
 
 pub fn (mut element HTMLMediaElement) children_changed(metadata dom.ChildrenChangedMetadata) {
 	if html_element := element.associated_element_ {
 		mut dom_element := unsafe { &dom.Element(html_element) }
 		dom_element.children_changed(metadata)
-		element.source_candidates_ = media_source_candidates_from_dom(dom_element)
+		element.update_source_candidates_from_dom(dom_element)
 		if element.network_state_ == .no_source && element.source_ == none {
 			element.select_resource() or {}
 		}
@@ -886,6 +894,18 @@ pub fn (mut element HTMLMediaElement) set_source(source ?string) {
 
 pub fn (mut element HTMLMediaElement) set_source_candidates(candidates []string) {
 	element.source_candidates_ = candidates.clone()
+	element.source_candidate_types_ = []string{len: candidates.len}
+}
+
+// Candidates from `<source>` elements with their `type` attributes ('' when
+// absent), in tree order.
+pub fn (mut element HTMLMediaElement) set_typed_source_candidates(candidates []string, types []string) {
+	element.set_source_candidates(candidates)
+	for index, type_ in types {
+		if index < element.source_candidate_types_.len {
+			element.source_candidate_types_[index] = type_
+		}
+	}
 }
 
 pub fn (mut element HTMLMediaElement) set_crossorigin(value ?string) {
@@ -1138,7 +1158,7 @@ fn (mut element HTMLMediaElement) select_resource_if_connected_and_empty() {
 		html_element := element.associated_element_ or { return }
 		dom_element := unsafe { &dom.Element(html_element) }
 		element.source_ = dom_element.get_attribute('src')
-		element.source_candidates_ = media_source_candidates_from_dom(dom_element)
+		element.update_source_candidates_from_dom(dom_element)
 		// Without a src attribute or <source> child, selection only resets an
 		// already empty state; skip its load-event delay bookkeeping.
 		if (element.source_ or { '' }).trim_space() == '' && element.source_candidates_.len == 0 {
@@ -1173,12 +1193,21 @@ fn (mut element HTMLMediaElement) select_resource_for_current_load() ! {
 		return
 	}
 	mut candidates := []string{}
+	mut candidate_types := []string{}
 	if source := element.source_ {
 		if source.trim_space() != '' {
 			candidates << source
+			candidate_types << ''
 		}
 	}
 	candidates << element.source_candidates_
+	for index in 0 .. element.source_candidates_.len {
+		candidate_types << if index < element.source_candidate_types_.len {
+			element.source_candidate_types_[index]
+		} else {
+			''
+		}
+	}
 	if candidates.len == 0 {
 		element.network_state_ = .empty
 		return
@@ -1186,9 +1215,23 @@ fn (mut element HTMLMediaElement) select_resource_for_current_load() ! {
 	element.network_state_ = .loading
 	element.fire_event('loadstart')
 	mut last_error := 'No supported media source'
-	for candidate in candidates {
+	for candidate_index, candidate in candidates {
+		// A <source> without a src value fails rather than resolving to the
+		// document's base URL.
+		if candidate.trim_space() == '' {
+			last_error = 'Missing media source URL'
+			continue
+		}
 		url := dom.dom_url_parse(candidate, element.base_url_, 'UTF-8') or {
 			last_error = 'Invalid media URL'
+			continue
+		}
+		// https://html.spec.whatwg.org/multipage/media.html#concept-media-load-algorithm
+		// A <source> whose type the user agent knows it cannot render fails
+		// without fetching, and selection continues with the next candidate.
+		candidate_type := candidate_types[candidate_index]
+		if candidate_type.trim_space() != '' && element.can_play_type(candidate_type) == .empty {
+			last_error = 'Unsupported media type'
 			continue
 		}
 		element.current_src_ = url.serialize()
