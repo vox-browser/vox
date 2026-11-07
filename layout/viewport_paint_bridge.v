@@ -1252,19 +1252,52 @@ fn (mut result DocumentLayoutResult) indexed_visual_context_for_layout_handle(la
 	return box.accumulated_visual_context_index
 }
 
+// Inline boxes and text have no retained box of their own. Upstream assigns such
+// paintables their containing paintable box's descendants context
+// (ViewportPaintable::assign_accumulated_visual_contexts), which carries that
+// box's scroll offset and, in device-pixel layout, the viewport's CSS scale.
+fn (mut result DocumentLayoutResult) client_rect_visual_context(layout_handle voidptr) ?int {
+	if index := result.indexed_visual_context_for_layout_handle(layout_handle) {
+		return index
+	}
+	result.ensure_boxes_by_layout_cache()
+	mut current := unsafe { &Node(layout_handle) }.parent()
+	for {
+		ancestor := current or { break }
+		if box := result.visual_boxes_by_layout_cache[u64(voidptr(ancestor))] {
+			return box.accumulated_visual_context_for_descendants_idx
+		}
+		current = ancestor.parent()
+	}
+	return none
+}
+
+fn layout_rects_in_css_pixels(rects []dom.CSSPixelRect_, scale f64) []dom.CSSPixelRect_ {
+	if scale == 1 { return rects.clone() }
+	return rects.map(dom.CSSPixelRect_{
+		x_: it.x_ / scale
+		y_: it.y_ / scale
+		width_: it.width_ / scale
+		height_: it.height_ / scale
+	})
+}
+
 fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	rects []dom.CSSPixelRect_) []dom.CSSPixelRect_ {
 	mut result := viewport_layout_result(target)
-	layout_node := node.layout_node() or { return rects.clone() }
+	// Without any visual context, still report CSS pixels rather than the
+	// device-pixel layout coordinates of a scaled document.
+	scale := result.document.layout_coordinate_scale()
+	layout_node := node.layout_node() or { return layout_rects_in_css_pixels(rects, scale) }
 	layout_handle := layout_node.real_layout_handle()
 	if layout_handle == unsafe { nil } {
-		return rects.clone()
+		return layout_rects_in_css_pixels(rects, scale)
 	}
 	if result.paint_projection_incomplete && result.retained_box_for_layout(layout_handle) == none {
 		restore_complete_paint_projection(mut result)
 	}
-	context_index := result.indexed_visual_context_for_layout_handle(layout_handle) or {
-		return rects.clone()
+	context_index := result.client_rect_visual_context(layout_handle) or {
+		return layout_rects_in_css_pixels(rects, scale)
 	}
 	mut transformed_rects := []dom.CSSPixelRect_{cap: rects.len}
 	for rect in rects {
