@@ -109,3 +109,22 @@ fn test_polled_image_completion_does_not_queue_a_replay_after_its_prepared_frame
 		assert C.vox_test_document_preparation_pump() == before + 1
 	}
 }
+
+fn test_input_replayed_by_a_frame_stamps_its_repaint_into_that_frame() {
+	$if macos {
+		owner := page.Page.create(1)!
+		mut app := &BrowserApp{page_model:owner,ctx:&gg.Context{native_rendering:true}}
+		app.install_document_frame_request_hook()
+		mut client := owner.client()
+		before := C.vox_test_document_preparation_begin()
+		defer { C.vox_test_document_preparation_end() }
+		// Wheels queued for this frame replay before preparation begins; their
+		// repaint is painted by the same frame and must not queue another.
+		app.replaying_deferred_page_input = true
+		client.request_frame()
+		app.replaying_deferred_page_input = false
+		assert C.vox_test_document_redraw_generation() == before + 1
+		C.vox_browser_frame_prepared()
+		assert C.vox_test_document_preparation_pump() == before + 1
+	}
+}

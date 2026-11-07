@@ -21,8 +21,12 @@ fn request_browser_frame_during_preparation() {
 }
 
 fn (app &BrowserApp) request_document_frame() {
-	if app.frame_preparation_depth > 0 && app.ctx != unsafe { nil }
-		&& app.ctx.native_rendering {
+	// Input replayed at the start of a frame (queued wheels and input deferred
+	// by engine work) is prepared and painted by that same frame. An ordinary
+	// wake from its repaint request queued a second, input-free frame after it.
+	in_frame := app.frame_preparation_depth > 0
+		|| (app.replaying_deferred_page_input && !disable_replayed_input_frame_stamp)
+	if in_frame && app.ctx != unsafe { nil } && app.ctx.native_rendering {
 		request_browser_frame_during_preparation()
 	} else {
 		request_browser_frame()
