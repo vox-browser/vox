@@ -110,6 +110,9 @@ pub mut:
 	type_state_                      HTMLInputTypeState
 	value_                           string
 	dirty_value_                     bool
+	// Whether the value was last changed by a user edit rather than by
+	// script; only such values can be too long or too short.
+	value_last_changed_by_user_edit_ bool
 	user_validity_                   bool
 	has_uncommitted_changes_         bool
 	selected_files_                  ?&fileapi.FileList
@@ -629,6 +632,7 @@ pub fn (mut model HTMLInputElementModel) set_value(value string) ! {
 	old := model.value_
 	model.value_ = model.sanitize_value(value)
 	model.dirty_value_ = true
+	model.value_last_changed_by_user_edit_ = false
 	model.text_control.dirty_value_flag = true
 	model.text_control.set_relevant_value(model.value_)
 	if old != model.value_ && model.selection_or_range_applies() {
@@ -1278,6 +1282,7 @@ pub fn (mut model HTMLInputElementModel) did_edit_text_node(input_type string, d
 		model.value_ = model.value_sanitization_algorithm(text.data())
 	}
 	model.dirty_value_ = true
+	model.value_last_changed_by_user_edit_ = true
 	model.text_control.dirty_value_flag = true
 	model.text_control.set_relevant_value(model.value_)
 	if model.value_ != old_value {
@@ -2655,8 +2660,10 @@ pub fn (mut model HTMLInputElementModel) update_validity() {
 	max_length := limited_nonnegative_attribute(element, 'maxlength')
 	min_length := limited_nonnegative_attribute(element, 'minlength')
 	length := i32(form_string_to_utf16(model.value()).len)
-	model.control.too_long_ = model.dirty_value_ && max_length >= 0 && length > max_length
-	model.control.too_short_ = model.dirty_value_ && model.value() != '' && min_length >= 0 && length < min_length
+	// https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#setting-maximum-input-length-requirements:-the-maxlength-attribute
+	user_edited := model.dirty_value_ && model.value_last_changed_by_user_edit_
+	model.control.too_long_ = user_edited && max_length >= 0 && length > max_length
+	model.control.too_short_ = user_edited && model.value() != '' && min_length >= 0 && length < min_length
 }
 
 pub fn (mut model HTMLInputElementModel) commit_pending_changes() {

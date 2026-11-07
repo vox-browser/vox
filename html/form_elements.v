@@ -69,6 +69,8 @@ pub mut:
 	control                &FormAssociatedElement
 	text                   &FormAssociatedTextControlElement
 	dirty_value            bool
+	// Whether the value was last changed by a user edit rather than by script.
+	value_user_edited      bool
 	user_validity          bool
 	placeholder_element_   ?&dom.Element
 	placeholder_text_node_ ?&dom.Text
@@ -132,6 +134,7 @@ pub fn (mut model HTMLTextAreaElementModel) set_value(value string) {
 	model.set_raw_value(value)
 	model.text.dirty_value_flag = true
 	model.dirty_value = true
+	model.value_user_edited = false
 	if model.value() != old_value {
 		model.sync_text_node_to_raw_value()
 		length := u32(form_string_to_utf16(model.value()).len)
@@ -219,8 +222,9 @@ pub fn (mut model HTMLTextAreaElementModel) update_validity() {
 	model.control.missing_ = model.suffering_from_being_missing()
 	max_length := model.max_length()
 	min_length := model.min_length()
-	model.control.too_long_ = model.dirty_value && max_length >= 0 && length > max_length
-	model.control.too_short_ = model.dirty_value && model.value() != '' && min_length >= 0 && length < min_length
+	user_edited := model.dirty_value && model.value_user_edited
+	model.control.too_long_ = user_edited && max_length >= 0 && length > max_length
+	model.control.too_short_ = user_edited && model.value() != '' && min_length >= 0 && length < min_length
 }
 
 pub fn (mut model HTMLTextAreaElementModel) reset() {

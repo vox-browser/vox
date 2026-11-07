@@ -264,6 +264,7 @@ pub fn (mut model HTMLTextAreaElementModel) did_edit_text_node(input_type string
 	// The first edit is already dirty when listeners run. Reentrant value or
 	// defaultValue access must not replace that edit with the default text.
 	model.dirty_value = true
+	model.value_user_edited = true
 	model.text.dirty_value_flag = true
 	model.dispatch_input_event(input_type, data)
 	model.user_validity = true

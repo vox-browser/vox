@@ -70,8 +70,15 @@ fn test_textarea_value_constraints_dimensions_selection_and_reset() {
 	textarea.create_shadow_tree_if_needed()
 	assert textarea.placeholder_value() == none
 	textarea.set_value('abcdef')
-	assert textarea.control.suffering_from_being_too_long()
+	// Only a value last changed by a user edit can be too long.
+	assert !textarea.control.suffering_from_being_too_long()
 	assert textarea.text.selection_start() == 6
+	mut edited_text := textarea.text_node_ or { panic('textarea text node') }
+	edited_text.set_data('abcdefg')
+	textarea.did_edit_text_node('insertText', 'g')
+	assert textarea.control.suffering_from_being_too_long()
+	textarea.set_value('abcdef')
+	assert !textarea.control.suffering_from_being_too_long()
 	textarea.set_max_length(10)!
 	textarea.set_min_length(2)!
 	textarea.set_cols(40)
@@ -87,6 +94,26 @@ fn test_textarea_value_constraints_dimensions_selection_and_reset() {
 	assert textarea.control.suffering_from_being_missing()
 	assert textarea.placeholder_value()? == 'hint\nignored'
 	drain_form_element_tasks()
+}
+
+fn test_input_length_constraints_apply_only_to_user_edits() {
+	mut document := parse_document('<input maxlength="3" minlength="2">')
+	form_elements_make_document_fully_active(mut document)
+	element := form_elements_find(unsafe { &dom.Node(document) }, 'input') or { panic('input') }
+	mut input := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	input.set_value('abcd')!
+	assert !input.control.suffering_from_being_too_long()
+	input.set_value('a')!
+	assert !input.control.suffering_from_being_too_short()
+	mut text_node := input.text_node_ or { panic('input text node') }
+	text_node.set_data('abcde')
+	input.did_edit_text_node('insertText', 'e')
+	assert input.control.suffering_from_being_too_long()
+	text_node.set_data('x')
+	input.did_edit_text_node('deleteContentBackward', none)
+	assert input.control.suffering_from_being_too_short()
+	input.set_value('x')!
+	assert !input.control.suffering_from_being_too_short()
 }
 
 fn test_window_selection_stringifier_uses_focused_text_control_selection() {
