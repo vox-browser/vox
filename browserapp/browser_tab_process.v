@@ -18,6 +18,11 @@ $if macos {
 	fn C.vox_tab_x11_show(voidptr, uint, i32, f64, f64, f64, f64)
 }
 
+// A process started by Session.open joins its group as a hidden tab.
+fn joins_process_tab_group() bool {
+	return os.getenv('VOX_TAB_GROUP') != ''
+}
+
 fn (app &BrowserApp) process_tabs() bool {
 	return app.tabs != unsafe { nil } && app.tabs.session != unsafe { nil }
 }

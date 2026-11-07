@@ -38,6 +38,12 @@ fn configure_native_browser_context(mut context gg.Context) {
 		if !context.native_rendering {
 			return
 		}
+		// A tab joining an existing window starts hidden. Keep it out of the
+		// Dock and the application switcher until its group shows it;
+		// initialize_native_browser_context finishes the launch.
+		if joins_process_tab_group() {
+			browserwindow.begin_tab_process_launch()
+		}
 		if processmetrics.load_stages_enabled() {
 			C.native_set_load_stage_callbacks(processmetrics.begin_native_instruction_stage,
 				processmetrics.finish_native_instruction_stage)
@@ -144,6 +150,11 @@ fn initialize_native_browser_context(user_data voidptr) {
 	if context.user_data != unsafe { nil } && sapp.isvalid() {
 		mut app := unsafe { &BrowserApp(context.user_data) }
 		app.start_process_tabs()
+	}
+	$if macos {
+		// A joining tab ends its accessory launch in prepare_tab_window. If it
+		// did not join (or no window exists), it becomes a regular app here.
+		browserwindow.finish_tab_process_launch()
 	}
 }
 
