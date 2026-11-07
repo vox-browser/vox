@@ -566,8 +566,11 @@ the `neon::` and `neon::lowp::` stage functions list the raster pipeline Skia
 actually executes, and stage contexts hold its constants (transfer functions,
 gamut matrices, sampling matrices). The disassembly shows which operations
 fuse: this Skia is built with `-ffp-contract=off`, so only explicit `mad()`
-(`fmla`/`fmls`) fuses. V calls `dlsym` pointers without prototypes, so oracle
-entry points take their integer arguments as one `i32` array.
+(`fmla`/`fmls`) fuses. Ports must keep every other product in its own
+statement, because clang fuses `a + b * c` written in one V expression;
+`tools/gg_migration/fma_audit.py --contracted-only` lists any it finds. V
+calls `dlsym` pointers without prototypes, so oracle entry points take their
+integer arguments as one `i32` array.
 
 | Dependency | Users | Status |
 | --- | --- | --- |
@@ -579,24 +582,27 @@ entry points take their integer arguments as one `i32` array.
 | `skia.draw_path` wider strokes | Canvas 2D `stroke()`/`strokeRect()` wider than a device pixel | `cpuraster.stroke_canvas_path` for the same solid source-over strokes: `skpathutils::FillPathWithPaint`'s `SkStrokeRec` at the matrix's resolution scale, `SkStroke`/`SkPathStroker` (quad approximation of quads, conics and cubics with their recursion limits, inflection splits and cusp circles, degenerate-curve reductions, `strokeRect` for closed rects) with `SkStrokerPriv`'s caps and joins (unit-arc round joins, miter limits), then `SkPathBuilder::transform` and analytic AA fill, keeping a rect outline's known convexity; 150,000 random strokes over five seeds, 112,726 of them wider than a device pixel, exact in both default and `-prod -gc none` builds |
 | `skia.draw_path` dashed strokes | Canvas 2D `setLineDash()` strokes | `cpuraster.stroke_canvas_path` with `SkDashPathEffect`: `ValidDashPath`/`CalcDashParameters` (invalid lists leave the stroke undashed), `SkDashPath::InternalFilter` with its cull rect (the device bounds mapped through `SkMatrix::invert`/`mapRect`, lines and rects trimmed in phase, the closed-rect corner join), `SpecialLineRec`'s direct quads for butt-capped lines, the million-dash limit's fallback, and `SkContourMeasure` (length tables with curve tolerances, `getSegment` with quad, conic and cubic chops); the dashes are then drawn as hairlines or stroked; 100,000 random dashed strokes over five seeds, 66,597 of them wider than a device pixel, exact in both default and `-prod -gc none` builds |
 | `skia.draw_path` clips | Canvas 2D `clip()` under fills and strokes | `cpuraster.canvas_raster_clip` with `SkCanvas::clipPath`'s anti-aliased intersections in device space: `SkRasterClip` (rect paths through `op(rect)` with its nearly-integral hard-edge test, path clips into an `SkAAClip`, and AA clips that are hard-edged rects back to rects, keeping `SkAAClip::isRect()`'s offset quirk), `SkAAClip` (the builder's coverage rows from an RLE analytic AA fill, row merging, Y-gap rows, top/bottom and left/right trimming, `quickContains`, and intersections run by run with `SkMulDiv255Round`), and `SkAAClipBlitter` merging the clip's coverage into every span and column; fills force the RLE blitter and hairlines go unclipped where the clip is opaque, as in Skia; quick reject and the dash cull rect use the clip's bounds; 100,000 random clipped fills and strokes (hairline, wide and dashed) over five seeds exact in both default and `-prod -gc none` builds |
-| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Not started: gradients, patterns, composite ops (raster pipeline blitter), shadows, filters and SVG filter graphs, glyph masks |
+| `skia.draw_path` composite operations | Canvas 2D `globalCompositeOperation` under solid fills and strokes | `cpuraster` pipeline blitter (`SkRasterPipelineBlitter` for a constant color) for every operation but the runtime-effect `plus-darker` and `plus-lighter`: `SkBlitter::Choose`'s fast paths (an opaque `copy` draws as source-over, an opaque `destination-in` draws nothing) and `SkPaint::nothingToDraw`, the constant color pipeline and `copy`'s memset, coverage scaled before or lerped after the blend, the lowp stages (wrapping 16-bit lanes, NEON's exact `div255`) and the highp ones for color-dodge, color-burn, soft-light, hue, saturation, color and luminosity (fused `mad`, `vminq`/`vmaxq` NaN and signed-zero rules, `rcp_fast` from a software `FRECPE` equal to the hardware's on all 2^32 inputs); thin strokes stay `SkStroke` outlines unless the mode supports coverage as alpha; 200,000 random composited fills and strokes over five seeds exact in both default and `-prod -gc none` builds |
+| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Not started: gradients, patterns, the `plus-darker` and `plus-lighter` runtime blenders, shadows, filters and SVG filter graphs, glyph masks |
 | `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Not started: AA clips under transforms, PathOps difference, blur mask filters, blur image filter layers, glyph masks |
 | `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
 | `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
 | `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
 | Linux `pkg-config skia` | Canvas and portable shadows | Remains until those ports land |
 
-Anti-aliased path filling, hairlines, the stroker, dashing, anti-aliased clips
-and the legacy solid blitters are ported (see `cpuraster/scan_aaa.v`,
-`cpuraster/scan_hairline.v`, `cpuraster/stroke.v`, `cpuraster/dash.v` and
-`cpuraster/aaclip.v`). Platform
+Anti-aliased path filling, hairlines, the stroker, dashing, anti-aliased clips,
+the legacy solid blitters and the raster pipeline blitter for constant colors
+are ported (see `cpuraster/scan_aaa.v`, `cpuraster/scan_hairline.v`,
+`cpuraster/stroke.v`, `cpuraster/dash.v`, `cpuraster/aaclip.v` and
+`cpuraster/pipeline_blitter.v`). Platform
 differences matter: macOS LibWeb Skia uses the `SkPathRef` path backend
 (trailing moves keep their bounds) and RGBA as kN32 (legacy blitters for RGBA
 canvases), while the Linux build defines `SK_HIDE_PATH_EDIT_METHODS`
 (`SkPathData`, which trims trailing moves) and `SK_R32_SHIFT=16` (BGRA kN32, so
 RGBA canvases use the raster pipeline blitter); the Linux behavior is not ported
-yet. Next prerequisites: the raster pipeline blitter (composite operations)
-and mask blurs.
+yet. The pipeline stages follow the arm64 (NEON) build; x86 Skia's lowp
+`div255` and its `rcp_fast` differ. Next prerequisites: mask blurs (shadows),
+then gradient and pattern shaders.
 
 ## Hacker News performance (2026-11-06)
 

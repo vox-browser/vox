@@ -51,7 +51,9 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   (or those of `--prefix`); Skia is compiled with `-ffp-contract=off`.
   Instructions after assembler-local labels count toward their function. For
   `cpuraster__` it lists the explicit `mad()`/`fma` calls that reproduce
-  Skia's raster pipeline and `SkCubics`; nothing else may appear.
+  Skia's raster pipeline and `SkCubics`; with `--contracted-only` it compiles
+  the C again with `-ffp-contract=off` and lists only the functions clang
+  fused on its own, which must be none.
 - `graphite_shape_oracle.mm` runs Vox's own `libVoxGraphite.dylib` entry point
   on shape descriptors and traces it. With a third argument it replays
   descriptors dumped from the browser (`NAME.shape.bin`, `NAME.args` and
@@ -82,10 +84,14 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   invalid intervals and phases, lines and rects culled to the device,
   translations, too many dashes), all also inside random anti-aliased and
   hard-edged clips (rects, circles, ellipses, slivers and curved paths with
-  either fill rule), through the production `vox_skia_canvas_path()`. Inputs must
-  stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
-  `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes` to run only the stroke
-  comparisons. The driver takes an optional seed after `COUNT`.
+  either fill rule), and with every composite operation the raster pipeline
+  blitter draws (over backgrounds with transparent, opaque and
+  channel-equals-alpha pixels), through the production `vox_skia_canvas_path()`.
+  Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
+  `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes` or `composites` to run only
+  those comparisons. The driver takes an optional seed after `COUNT`; with
+  `CPU_RASTER_FAILURE_DIR` set it saves a failing case's starting, Skia and
+  cpuraster bitmaps and parameters there.
 - `test_clipped_text.sh OUTPUT [COUNT]` builds a native CPU Skia oracle and a
   V driver for the canonical borrowed-frame glyph adapter. It compares the
   original Skia draw with the real `ggtext.glyph_run` callback, including partial
