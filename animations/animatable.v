@@ -200,8 +200,29 @@ fn compare_associated_animations(a &Animation, b &Animation) int {
 	return 0
 }
 
+// Composite order of the animation classes: CSS transitions, then CSS
+// animations, then animations created through the API.
+fn dom_animation_class_rank(kind dom.ConcreteAnimationKind) int {
+	return match kind {
+		.css_transition { 0 }
+		.css_animation { 1 }
+		.web_animation { 2 }
+	}
+}
+
 fn compare_dom_animations(_ voidptr, a &dom.Animation, b &dom.Animation) int {
 	if a.concrete_handle_ == unsafe { nil } || b.concrete_handle_ == unsafe { nil } {
+		return 0
+	}
+	rank_a := dom_animation_class_rank(a.concrete_kind_)
+	rank_b := dom_animation_class_rank(b.concrete_kind_)
+	if rank_a != rank_b {
+		return rank_a - rank_b
+	}
+	// Only API animations are Animations.Animation objects. CSS transitions
+	// and animations belong to the css module; their events keep the order in
+	// which they were queued.
+	if a.concrete_kind_ != .web_animation {
 		return 0
 	}
 	return compare_animations(unsafe { &Animation(a.concrete_handle_) }, unsafe { &Animation(b.concrete_handle_) })
