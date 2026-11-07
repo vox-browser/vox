@@ -130,6 +130,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			keys = scroll_raster_frame_keys_with_scrollbars(app.paint_commands, key_scroll,
 				app.overlay_scrollbars.paint_opacity, css.width, css.height, inline_scrollbars)
 			app.mark_video_backdrop_keys(mut keys)
+			app.mark_background_image_keys(mut keys)
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'
 			} else if content := scroll_raster_content_damage(&app.scroll_raster_keys, keys,
@@ -329,6 +330,40 @@ fn (app &BrowserApp) mark_video_backdrop_keys(mut keys []ScrollRasterCommandKey)
 		}
 		keys[index].video_backdrop = scroll_raster_nothing_above(keys, index)
 	}
+}
+
+// A background image draws whatever the resource cache holds at replay time,
+// so its command is identical before and after the image arrives. Mix the
+// resource state into its key, and into every group around it whose output
+// can spread beyond its ink, so an arrival damages pixels retained without it.
+fn (app &BrowserApp) mark_background_image_keys(mut keys []ScrollRasterCommandKey) {
+	if keys.len != app.paint_commands.len { return }
+	mut begins := []int{}
+	for index in 0 .. app.paint_commands.len {
+		for begins.len > 0 && index > keys[begins.last()].group_end { begins.pop() }
+		command := unsafe { &app.paint_commands[index] }
+		if layout.scroll_raster_group_begin(command.kind) && keys[index].group_end > index {
+			begins << index
+			continue
+		}
+		if command.kind != 'draw_background_image' || command.image_data == unsafe { nil } { continue }
+		data := command.image_data
+		if data.background_svg_document != none || data.background_static_svg_resource != none {
+			continue
+		}
+		token := app.background_image_resource_token(data.image_url)
+		keys[index].hash = srk_mix(keys[index].hash, token)
+		for begin in begins { keys[begin].hash = srk_mix(keys[begin].hash, token) }
+	}
+}
+
+// Network images are fetched on first draw; until the response arrives the
+// draw paints nothing. Local and data images decode synchronously.
+fn (app &BrowserApp) background_image_resource_token(url string) u64 {
+	if !url.starts_with('http://') && !url.starts_with('https://') { return 1 }
+	resource := app.resource_cache[url] or { return 2 }
+	if resource.error != '' { return 3 }
+	return srk_int(srk_bool(4, resource.adblock_replacement), resource.body.len)
 }
 
 fn scroll_raster_nothing_above(keys []ScrollRasterCommandKey, index int) bool {
