@@ -5,8 +5,12 @@ Skia is compiled with -ffp-contract=off, so V ports of its arithmetic must not
 contain expressions that clang's default -ffp-contract=on turns into FMAs.
 Compiles V's generated C (with the V compiler's own flags) to arm64 assembly
 and reports every fmadd/fmsub/fnmadd/fnmsub instruction in functions whose
-name starts with the given prefix.
+name starts with the given prefix. With --contracted-only it compiles the C a
+second time with -ffp-contract=off and reports only the functions with more
+fused instructions under clang's default, so explicit fma()/fmaf() calls,
+which stay fused either way, are not listed.
 """
+import collections
 import argparse
 import re
 import shlex
@@ -20,6 +24,7 @@ def main():
     parser.add_argument('cc_command', help='file with the C compiler command printed by v -showcc')
     parser.add_argument('--prefix', default='canvas__')
     parser.add_argument('--asm', default=None)
+    parser.add_argument('--contracted-only', action='store_true')
     args = parser.parse_args()
     words = shlex.split(open(args.cc_command).read())
     keep = []
@@ -34,7 +39,25 @@ def main():
             keep.append(w)
         i += 1
     out = args.asm or args.c_file + '.s'
-    command = ['clang', '-S', '-O2', '-w', '-x', 'objective-c', *keep, '-o', out, args.c_file]
+    findings = fused_instructions(keep, args.c_file, out, args.prefix, [])
+    if args.contracted_only:
+        explicit = collections.Counter(function for function, _ in fused_instructions(keep,
+            args.c_file, out + '.nocontract.s', args.prefix, ['-ffp-contract=off']))
+        counts = collections.Counter(function for function, _ in findings)
+        extra = {f: n - explicit[f] for f, n in counts.items() if n > explicit[f]}
+        for function, count in sorted(extra.items()):
+            print(f'{function}: {count} contracted multiply-adds')
+        print(f'{sum(extra.values())} contracted multiply-add instructions in {args.prefix}* functions '
+              f'({sum(explicit.values())} explicit)')
+        return 1 if extra else 0
+    for function, instruction in findings:
+        print(f'{function}: {instruction}')
+    print(f'{len(findings)} fused multiply-add instructions in {args.prefix}* functions')
+    return 1 if findings else 0
+
+
+def fused_instructions(keep, c_file, out, prefix, extra_flags):
+    command = ['clang', '-S', '-O2', '-w', '-x', 'objective-c', *keep, *extra_flags, '-o', out, c_file]
     subprocess.run(command, check=True)
     fused = re.compile(r'^\s+(fmadd|fmsub|fnmadd|fnmsub|fmla|fmls)\b')
     function = None
@@ -48,12 +71,9 @@ def main():
                 continue
             function = m.group(2)
             continue
-        if function and function.startswith(args.prefix) and fused.match(line):
+        if function and function.startswith(prefix) and fused.match(line):
             findings.append((function, line.strip()))
-    for function, instruction in findings:
-        print(f'{function}: {instruction}')
-    print(f'{len(findings)} fused multiply-add instructions in {args.prefix}* functions')
-    return 1 if findings else 0
+    return findings
 
 
 if __name__ == '__main__':
