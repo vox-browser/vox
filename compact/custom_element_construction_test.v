@@ -137,3 +137,24 @@ fn test_compact_custom_element_construction_keeps_pending_console_output() {
  '], runtime, mut messages)
 	assert messages == ['before definition', 'before creation', 'constructing', 'created true'], messages.str()
 }
+
+// Compact element facades keep DOM members as own properties. A custom element
+// class's members must still win, as for GitHub's react-app `name` getter.
+fn test_compact_custom_element_class_members_replace_facade_members() {
+	address := dom.URL{value: 'https://custom-construction.test/'}
+	mut document := html.parse_navigation_document('<!doctype html><x-app id="parsed" app-name="code-view" name="attr" hidden></x-app><div id="plain" name="plain-name"></div>', address, address.origin(), none) or { panic(err) }
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+ class Base extends HTMLElement{get nameAttribute(){return "app-name"} get name(){return this.getAttribute(this.nameAttribute)}}
+ class App extends Base{get hidden(){return "class-hidden"} get value(){return "class-value"} set value(v){this.stored=v} connectedCallback(){this.connectedName=this.name}}
+ customElements.define("x-app",App);
+ const parsed=document.getElementById("parsed"),created=document.createElement("x-app");created.setAttribute("app-name","created");
+ const checks=[parsed instanceof App,parsed.name==="code-view",parsed.connectedName==="code-view",parsed.hidden==="class-hidden",parsed.value==="class-value",
+  created.name==="created",created.hidden==="class-hidden",(created.value="x",created.stored==="x"),parsed.id==="parsed",parsed.getAttribute("name")==="attr",
+  plain.name==="plain-name",!plain.hidden,(plain.hidden=true,plain.hasAttribute("hidden"))];
+ if(checks.some(check=>!check))throw Error("class members "+JSON.stringify(checks));
+ '], runtime, mut messages)
+	assert messages == []string{}, messages.str()
+}

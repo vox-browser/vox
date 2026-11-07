@@ -56,7 +56,7 @@ function __compactTemplateInnerHTML(state){
  return __readElementContent(String(state.bridgeKey)+":innerHTML");
 }
 function __compactElementContentBinding(object,state){
- if(!__compactIsTemplateState(state))Object.defineProperty(object,"content",{get:function(){return state.attributes.content||"";},set:function(value){__setAttribute(state,"content",value);}});
+ if(!__compactIsTemplateState(state))Object.defineProperty(object,"content",{get:function(){return state.attributes.content||"";},set:function(value){__setAttribute(state,"content",value);},configurable:true});
 }
 '
 }

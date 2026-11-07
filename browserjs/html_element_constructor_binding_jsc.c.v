@@ -34,7 +34,10 @@ pub fn (mut runtime Runtime) install_html_element_constructor_binding(wrap HTMLE
 	settings := runtime.scripting_settings_ or { return error('HTMLConstructor requires Window settings') }
 	document := settings.responsible_document() or { return error('HTMLConstructor requires a Document') }
 	mut binding := &HTMLElementConstructorBinding{ runtime: &runtime, document: document, wrap: wrap, replay: replay }
-	helpers := runtime.evaluate_host_value(r'(function(){const construct=Reflect.construct,set=Object.setPrototypeOf;return [C=>construct(C,[]),(element,C,fallback)=>{const p=C.prototype;return set(element,p!==null&&(typeof p==="object"||typeof p==="function")?p:fallback)}]})()')!
+	// Compact element facades carry DOM members as own properties. Members the
+	// author's class chain defines, between its prototype and the interface
+	// prototype, must win over them, as they do over interface members.
+	helpers := runtime.evaluate_host_value(r'(function(){const construct=Reflect.construct,set=Object.setPrototypeOf,get=Object.getPrototypeOf,keys=Reflect.ownKeys,own=Object.getOwnPropertyDescriptor,remove=Reflect.deleteProperty,base=Object.prototype;return [C=>construct(C,[]),(element,C,fallback)=>{const p=C.prototype,prototype=p!==null&&(typeof p==="object"||typeof p==="function")?p:fallback;set(element,prototype);for(let current=prototype;current!==null&&current!==fallback&&current!==base;current=get(current))for(const key of keys(current)){if(key==="constructor")continue;const member=own(element,key);if(member&&member.configurable)remove(element,key)}return element}]})()')!
 	defer { runtime.release_javascript_value(helpers) }
 	binding.construct = runtime.retain_javascript_value(runtime.binding_property(helpers, '0')!)!
 	binding.set_prototype = runtime.retain_javascript_value(runtime.binding_property(helpers, '1')!)!

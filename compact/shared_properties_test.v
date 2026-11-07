@@ -38,7 +38,7 @@ for(const name of ["id","firstChild","parentNode","parentElement","textContent",
  const getter=Object.getOwnPropertyDescriptor(first,name).get,setter=Object.getOwnPropertyDescriptor(first,name).set;
  for(const object of wrappers){
   const descriptor=Object.getOwnPropertyDescriptor(object,name);
-  if(!descriptor||descriptor.get!==getter||descriptor.set!==setter||descriptor.enumerable||descriptor.configurable)throw new Error("unshared descriptor "+name);
+  if(!descriptor||descriptor.get!==getter||descriptor.set!==setter||descriptor.enumerable||!descriptor.configurable)throw new Error("unshared descriptor "+name);
  }
 }
 first.id="renamed";second.className="changed";drawing.id="svg-renamed";

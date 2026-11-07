@@ -104,7 +104,7 @@ function __compactControlValue(receiver,tag,property,write,value){
 }
 for(const [constructor,tag] of [[HTMLInputElement,"input"],[HTMLTextAreaElement,"textarea"]])for(const property of ["value","defaultValue"])Object.defineProperty(constructor.prototype,property,{get:function(){return __compactControlValue(this,tag,property,false);},set:function(value){__compactControlValue(this,tag,property,true,value);},enumerable:true,configurable:true});
 function __compactElementValue(object,state){
- if(!(state.namespaceURI==="http://www.w3.org/1999/xhtml"&&["input","textarea","select"].includes(state.tagName)))Object.defineProperty(object,"value",{get:function(){return state.value;},set:function(value){state.value=String(value);}});
+ if(!(state.namespaceURI==="http://www.w3.org/1999/xhtml"&&["input","textarea","select"].includes(state.tagName)))Object.defineProperty(object,"value",{get:function(){return state.value;},set:function(value){state.value=String(value);},configurable:true});
 }
 '
 }

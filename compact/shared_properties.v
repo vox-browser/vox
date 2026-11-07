@@ -1,8 +1,9 @@
 module main
 
 // Common facade accessors depend on their receiver, not on a per-element
-// closure. Keep their existing own-property descriptors while sharing the
-// functions across the realm. Legacy fragment facades have a separate registry
+// closure. They stay own, non-enumerable properties while sharing the
+// functions across the realm; they are configurable so custom element classes
+// can replace them. Legacy fragment facades have a separate registry
 // so they do not acquire the native Element brand.
 fn compact_element_common_properties_bootstrap() string {
 	return r'
@@ -32,6 +33,9 @@ const __compactCommonProperties={
  data:{get:function(){return __compactCommonPropertyState(this).attributes.data||"";},set:function(value){__setElementData(__compactCommonPropertyState(this),value);}},
  sheet:{get:function(){const s=__compactCommonPropertyState(this);return s.tagName==="style"||s.tagName==="link"?__linkStyleSheet(s):null;}}
 };
+// Configurable, so accessors of a custom element class (such as GitHub
+// react-app name) can replace these facade members after construction.
+for(const key in __compactCommonProperties)__compactCommonProperties[key].configurable=true;
 function __compactElementCommonProperties(object,state){
  if(!__compactCommonElementGet(object))__elementApply(__elementRecordSet,__compactLegacyPropertyRecords,[object,state]);
  __compactDefineCommonProperties(object,__compactCommonProperties);
