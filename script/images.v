@@ -54,6 +54,9 @@ fn (mut app BrowserApp) request_script_inserted_images() []string {
 			ready << resource_url
 			continue
 		}
+		if app.request_lazy_script_inserted_image(element) {
+			continue
+		}
 		if layout_is_current && resource_url !in app.resource_cache
 			&& resource_url !in app.background_resource_pending
 			&& app.resource_cache.len < max_cached_resources
@@ -73,6 +76,29 @@ fn (mut app BrowserApp) request_script_inserted_images() []string {
 		}
 	}
 	return ready
+}
+
+// A script-inserted image with the lazy-loading policy, such as each of
+// 4chan's 201 catalog thumbnails, takes the document's image loader as its
+// fetch hook. Like a parser-inserted image it then waits until it is laid out
+// near the viewport and shares the loader's per-document fetch limit, instead
+// of every thumbnail starting its own request at once. The burst made a
+// proxied catalog wait for all 201 responses and could exhaust a server's
+// connection backlog, leaving broken thumbnails.
+fn (mut app BrowserApp) request_lazy_script_inserted_image(element &dom.Element) bool {
+	image := unsafe { &dom.HTMLImageElement(element) }
+	if !browser_image_has_lazy_loading_policy(image) {
+		return false
+	}
+	loader := app.image_request_loader or { return false }
+	if loader.cancelled || voidptr(loader.document) != voidptr(app.document)
+		|| voidptr(element.document()) != voidptr(app.document) {
+		return false
+	}
+	mut model := html.html_image_element_model_for_dom_element(image)
+	model.set_model_async_fetch_hook(loader.static_callback())
+	model.update_the_image_data(false, false)
+	return true
 }
 
 // At most this many script-inserted images are read from the disk cache

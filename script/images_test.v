@@ -240,3 +240,51 @@ fn test_unsized_script_inserted_images_complete_before_the_first_layout() {
 	sized_model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(sized) })
 	assert !sized_model.has_fetch_hook()
 }
+
+// 4chan's catalog writes 201 lazy thumbnails through innerHTML. With
+// scripting enabled they follow the lazy-loading policy through the document's
+// image loader, as parser-inserted images do: one near the viewport is
+// requested, one far below waits, and neither starts its own background fetch.
+fn test_lazy_script_inserted_images_wait_for_the_viewport_through_the_image_loader() {
+	$if !darwin {
+		return
+	}
+	mut document := parse_loaded_browser_navigation_document(LoadedPage{
+		url:    'about:blank'
+		markup: '<!doctype html><style>html,body{margin:0}</style><div id="threads"></div>'
+	}, dom.url_about_blank(), none, none, none, true)
+	document.set_viewport_rect(dom.Rect{width: 320, height: 200})
+	mut app := &BrowserApp{document: document, viewport_width: 320, viewport_height: 200}
+	app.image_request_loader = new_browser_image_request_loader(document, map[string]PreloadedResource{})
+	mut runtime := browserjs.Runtime.create()
+	app.js_runtime = runtime
+	defer {
+		if mut owner := app.image_request_loader { owner.cancel() }
+		app.document.finalize()
+		runtime.close()
+	}
+	mut loader := app.image_request_loader or { panic('missing image loader') }
+	// Queued jobs stay off the network while every fetch slot looks busy.
+	loader.active_fetches = max_browser_image_fetches
+	near_url := 'https://i.script-images.test/pol/5s.png'
+	far_url := 'https://i.script-images.test/pol/6s.png'
+	mut threads := app.document.get_element_by_id('threads') or { panic('missing threads') }
+	threads.set_inner_html('<img loading="lazy" id="near" width="20" height="10" src="${near_url}"><div style="height:5000px"></div><img loading="lazy" id="far" width="20" height="10" src="${far_url}">')!
+	app.relayout(320, 284)
+	app.poll_background_resources()
+	near_element := app.document.get_element_by_id('near') or { panic('missing near') }
+	far_element := app.document.get_element_by_id('far') or { panic('missing far') }
+	near := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(near_element) })
+	far := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(far_element) })
+	assert near.has_fetch_hook() && far.has_fetch_hook()
+	assert app.script_image_requests.len == 0
+	assert near_url !in app.background_resource_pending && far_url !in app.background_resource_pending
+	assert loader.queued.map(it.url) == [near_url]
+	assert loader.deferred_lazy_images.len == 1
+	assert !near.complete() && !far.complete()
+	// A later scan neither requests the thumbnails again nor duplicates the job.
+	app.script_image_scan_version = 0
+	app.poll_background_resources()
+	assert loader.queued.len == 1 && loader.deferred_lazy_images.len == 1
+	assert app.script_image_requests.len == 0
+}
