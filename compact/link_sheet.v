@@ -197,8 +197,48 @@ fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !stri
 					else { media.delete_medium(request.value.clone())! }
 				}
 			}
-			'hasStyle' { result = rule.style() != none }
+			'hasStyle' { result = rule.style() != none || rule.font_face_rule_ref() != none }
 			else {
+				// An @font-face rule's style is its CSSFontFaceDescriptors.
+				if rule.style() == none {
+					if mut font_face := rule.font_face_rule_ref() {
+						mut descriptors := font_face.descriptors()
+						match request.op {
+							'styleValue' { result = descriptors.get_property_value(request.name) }
+							'stylePriority' { result = '' }
+							'styleLength' { result = descriptors.descriptors.len }
+							'styleItem' {
+								index := int(request.index)
+								result = if index >= 0 && index < descriptors.descriptors.len {
+									css.font_face_descriptor_property_name(descriptors.descriptors[index].id)
+								} else {
+									''
+								}
+							}
+							'styleText' {
+								mut parts := []string{}
+								for descriptor in descriptors.descriptors {
+									name := css.font_face_descriptor_property_name(descriptor.id)
+									parts << '${name}: ${descriptors.get_property_value(name)};'
+								}
+								result = parts.join(' ')
+							}
+							'styleSet' {
+								descriptors.set_property(request.name.clone(), request.value.clone(), request.priority.clone())!
+							}
+							'styleRemove' { result = descriptors.remove_property(request.name)! }
+							'supported' { result = css.font_face_descriptor_id_from_property(request.name) != none }
+							else { return error('TypeError: This CSS rule has no declaration') }
+						}
+						if request.op in ['styleSet', 'styleRemove'] {
+							mut runtime := unsafe { &browserjs.Runtime(binding.runtime) }
+							runtime.mark_document_state_dirty()
+							runtime.mark_document_replay_effects()
+						}
+						allocations.finish()
+						return json2.encode(result)
+					}
+				}
 				mut declaration := rule.style() or { return error('TypeError: This CSS rule has no declaration') }
 				match request.op {
 					'styleText' { result = declaration.serialized() }
