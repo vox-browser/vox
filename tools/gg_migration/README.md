@@ -80,8 +80,9 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   thresholds, closed rects, cusps, degenerate curves, zero-length contours and
   extreme widths), and `SkDashPathEffect` dashes (random, degenerate and
   invalid intervals and phases, lines and rects culled to the device,
-  translations, too many dashes) through the production
-  `vox_skia_canvas_path()`. Inputs must
+  translations, too many dashes), all also inside random anti-aliased and
+  hard-edged clips (rects, circles, ellipses, slivers and curved paths with
+  either fill rule), through the production `vox_skia_canvas_path()`. Inputs must
   stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes` to run only the stroke
   comparisons. The driver takes an optional seed after `COUNT`.
