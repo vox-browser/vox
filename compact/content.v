@@ -24,6 +24,7 @@ mut:
 	css_rule_lists map[string]&css.CSSRuleList
 	radio_lists map[string]&html.RadioNodeList
 	web_animations map[string]voidptr
+	node_iterators map[string]&dom.NodeIterator
 	next_key int
 	scroll_promises map[string]&dom.Promise
 	next_scroll_promise int
@@ -238,6 +239,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'templateContent' { return binding.template_content_query(key, selector) }
 	if action == 'urlPattern' { return compact_url_pattern_query(selector) }
 	if action == 'webAnimation' { return binding.web_animation_query(key, selector) }
+	if action == 'nodeIterator' { return binding.node_iterator_query(key, selector) }
 	if action == 'compressionTransform' { return compact_compression_query(selector) }
 	if action == 'isEqualNode' { return binding.equal_node_query(key, selector) }
 	if action == 'compareDocumentPosition' { return binding.node_position_query(key, selector) }
