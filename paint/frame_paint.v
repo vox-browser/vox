@@ -4,6 +4,7 @@ import processmetrics
 
 import dom
 import layout
+import math
 import time
 import platform
 import os
@@ -30,6 +31,7 @@ fn (app &BrowserApp) prepare_native_css_filter_renderer() {
 // update only what those filters actually invalidate before adopting paint.
 fn (mut app BrowserApp) synchronize_javascript_task_paint(replayed_effects bool) {
 	if app.document == unsafe { nil } { return }
+	app.adopt_document_viewport_scroll()
 	stale_paint := app.javascript_tasks_have_unadopted_paint()
 	if replayed_effects || app.document.needs_style_update_after_layout()
 		|| !app.document.layout_is_up_to_date()
@@ -55,6 +57,19 @@ fn (mut app BrowserApp) synchronize_javascript_task_paint(replayed_effects bool)
 	if javascript_paint_sync_diagnostics {
 		eprintln('VOX_JAVASCRIPT_PAINT_SYNC action=paint')
 	}
+}
+
+// Script scrolls (window.scrollTo, scrollIntoView, viewport scroll snapping)
+// move the translated document's viewport offset. The shell paints from
+// app.scroll_y and writes it back to the document after every relayout, so
+// adopt a document-initiated offset before that write-back undoes it.
+fn (mut app BrowserApp) adopt_document_viewport_scroll() bool {
+	if app.document == unsafe { nil } || app.page_zoom <= 0 { return false }
+	requested := app.document.viewport_rect().y * app.page_zoom
+	if math.abs(requested - app.scroll_y) < 0.001 { return false }
+	app.set_scroll_y(requested, app.viewport_height + app.chrome_height())
+	request_browser_frame()
+	return true
 }
 
 // Native frame preparation can install a document, run callbacks, relayout and
@@ -89,6 +104,9 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 		app.paint_commands_pending = false
 		return
 	}
+	// Smooth viewport scrolls and scroll snapping move the document offset
+	// between script tasks; the relayout below would otherwise restore the old one.
+	app.adopt_document_viewport_scroll()
 	// Boundary events such as mouseleave can leave a pending CSS state change.
 	// Commit it before consulting the cached display list for this frame.
 	mut document := unsafe { &dom.Document(app.document) }
