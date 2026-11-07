@@ -25,7 +25,8 @@ fn compact_computed_style_query(root &dom.Node, source string) !string {
 	window := unsafe { &html.WindowModel(window_pointer) }
 	query := compact_decode_query[CompactComputedStyleQuery](source)!
 	// Computed values include the current effect of script-driven animations.
-	if query.op in ['value', 'named'] {
+	// CSS animations and transitions keep sampling in rendering updates.
+	if query.op in ['value', 'named'] && element.animations_animatable_handle_ != unsafe { nil } {
 		mut owner := unsafe { &dom.Document(document) }
 		owner.update_animated_style_if_needed()
 	}
