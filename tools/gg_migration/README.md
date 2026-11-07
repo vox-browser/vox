@@ -93,11 +93,14 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   (degenerate geometries, focal and strip cases, swapped circles, thin rings,
   zero to nine hard and uneven stops, singular transforms) and patterns
   (one-pixel to 24-pixel images, premultiplied, unpremultiplied and Display
-  P3, every repetition, legacy-context and raster-pipeline cases), through
-  the production `vox_skia_canvas_path()`.
+  P3, every repetition, legacy-context and raster-pipeline cases), and the
+  bitmap commands (`clearRect()` under hard and anti-aliased clips, and
+  `drawImage()` from whole, partial and out-of-bounds sources into sprite,
+  scaled, flipped and quarter-turned destinations), through the production
+  `vox_skia_canvas_path()`; declined draws must leave the pixels untouched.
   Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes`, `composites`, `shadows`,
-  `gradients` or `patterns`
+  `gradients`, `patterns`, `clears` or `images`
   to run only those comparisons; a `-gc none` binary never frees, so run its
   categories in separate processes. The driver takes an optional seed after `COUNT`; with
   `CPU_RASTER_FAILURE_DIR` set it saves a failing case's starting, Skia and
