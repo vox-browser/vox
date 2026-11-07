@@ -4089,14 +4089,24 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 			bottom: first.border.bottom
 			left: if first.fragment_left_edge_away { 0.0 } else { first.border.left }
 		}
+		// box-decoration-break: slice. A line that continues the inline box from
+		// the previous line, or into the next one, has neither border nor
+		// padding on that edge.
+		effective_padding := BoxEdges{
+			top: first.padding.top
+			right: if last.fragment_right_edge_away { 0.0 } else { first.padding.right }
+			bottom: first.padding.bottom
+			left: if first.fragment_left_edge_away { 0.0 } else { first.padding.left }
+		}
 		decorating_fragment := TextFragment{
 			...first
 			border: effective_border
+			padding: effective_padding
 		}
 		unrounded_border_rect := painting.Rect{
-			x: first.x - first.padding.left - effective_border.left
+			x: first.x - effective_padding.left - effective_border.left
 			y: first.y - first.padding.top - first.border.top
-			width: last.x + last.width - first.x + first.padding.left + first.padding.right + effective_border.left + effective_border.right
+			width: last.x + last.width - first.x + effective_padding.left + effective_padding.right + effective_border.left + effective_border.right
 			height: first.height + first.padding.top + first.padding.bottom + first.border.top + first.border.bottom
 		}
 		converter := painting.new_device_pixel_converter(1.0) or { return InlineFragmentPaintCommands{} }
