@@ -15,7 +15,7 @@ fn test_compact_html_interfaces_classify_parser_and_script_created_iframes() {
 if(!(host instanceof HTMLElement)||!(host instanceof Element)||host instanceof HTMLIFrameElement)throw new Error("HTML element hierarchy");
 if(!(frame instanceof HTMLIFrameElement)||!(frame instanceof HTMLElement)||!(frame instanceof Element))throw new Error("iframe hierarchy");
 if(Object.getPrototypeOf(HTMLIFrameElement)!==HTMLElement||Object.getPrototypeOf(HTMLIFrameElement.prototype)!==HTMLElement.prototype||Object.getPrototypeOf(HTMLElement.prototype)!==Element.prototype)throw new Error("interface inheritance");
-if(Object.prototype.toString.call(frame)!=="[object HTMLIFrameElement]"||Object.prototype.toString.call(host)!=="[object HTMLElement]")throw new Error("interface tags");
+if(Object.prototype.toString.call(frame)!=="[object HTMLIFrameElement]"||Object.prototype.toString.call(host)!=="[object HTMLDivElement]")throw new Error("interface tags");
 if(svg instanceof HTMLElement||foreign instanceof HTMLIFrameElement)throw new Error("namespace classification");
 const created=document.createElement("iframe"),other=document.createElementNS("http://www.w3.org/2000/svg","iframe");
 if(!(created instanceof HTMLIFrameElement)||other instanceof HTMLIFrameElement)throw new Error("created iframe");
@@ -48,6 +48,30 @@ for(const [tag,name,id] of [["link","HTMLLinkElement","sheet"],["script","HTMLSc
  if(!illegal)throw new Error(name+" constructor");
 }
 if(sheet.rel!=="stylesheet"||bootstrap.type!=="application/json")throw new Error("reflected startup attributes");
+'], runtime, mut messages)
+	assert messages == []string{}
+}
+
+// GitHub's React router checks links and headings with instanceof; every
+// element in the HTML index gets its interface.
+fn test_compact_html_element_index_interfaces() {
+	mut document := html.parse_document('<!doctype html><h2 id="heading">t</h2><a id="link" href="/x">x</a><table><tbody><tr><td id="cell">c</td></tr></tbody></table><custom-tag id="custom"></custom-tag><blink id="unknown"></blink>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+for(const [tag,name] of [["a","HTMLAnchorElement"],["h1","HTMLHeadingElement"],["h6","HTMLHeadingElement"],["p","HTMLParagraphElement"],["span","HTMLSpanElement"],["div","HTMLDivElement"],["ul","HTMLUListElement"],["ol","HTMLOListElement"],["li","HTMLLIElement"],["td","HTMLTableCellElement"],["th","HTMLTableCellElement"],["tr","HTMLTableRowElement"],["tbody","HTMLTableSectionElement"],["table","HTMLTableElement"],["label","HTMLLabelElement"],["option","HTMLOptionElement"],["pre","HTMLPreElement"],["blockquote","HTMLQuoteElement"],["canvas","HTMLCanvasElement"],["details","HTMLDetailsElement"],["slot","HTMLSlotElement"],["style","HTMLStyleElement"],["body","HTMLBodyElement"]]){
+ const Constructor=globalThis[name],created=document.createElement(tag);
+ if(typeof Constructor!=="function"||!(created instanceof Constructor)||!(created instanceof HTMLElement)||Object.getPrototypeOf(Constructor.prototype)!==HTMLElement.prototype)throw new Error(tag+" "+name);
+ if(Object.prototype.toString.call(created)!=="[object "+name+"]"||Constructor.prototype.constructor!==Constructor)throw new Error(name+" prototype");
+ if(document.createElementNS("http://www.w3.org/2000/svg",tag) instanceof Constructor)throw new Error(name+" namespace");
+ let illegal=false;try{new Constructor()}catch(error){illegal=error instanceof TypeError}if(!illegal)throw new Error(name+" constructor");
+}
+if(!(heading instanceof HTMLHeadingElement)||!(link instanceof HTMLAnchorElement)||!(cell instanceof HTMLTableCellElement)||!(unknown instanceof HTMLUnknownElement))throw new Error("parsed interfaces");
+if(Object.getPrototypeOf(custom)!==HTMLElement.prototype||link instanceof HTMLHeadingElement)throw new Error("custom and unrelated");
 '], runtime, mut messages)
 	assert messages == []string{}
 }

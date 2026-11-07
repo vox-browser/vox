@@ -21,7 +21,7 @@ for(const element of [ordinary,picture,movie,vector,document.createElement("span
  if(!(element instanceof Element)||!(element instanceof EventTarget))throw new Error("element inheritance");
  if(Element.prototype.matches.call(element,"*")!==true)throw new Error("native match");
 }
-if(Object.getPrototypeOf(ordinary)!==HTMLElement.prototype||Object.getPrototypeOf(picture)!==HTMLImageElement.prototype||Object.getPrototypeOf(movie)!==HTMLVideoElement.prototype)throw new Error("specialized facade");
+if(Object.getPrototypeOf(ordinary)!==HTMLDivElement.prototype||Object.getPrototypeOf(picture)!==HTMLImageElement.prototype||Object.getPrototypeOf(movie)!==HTMLVideoElement.prototype)throw new Error("specialized facade");
 if(![ordinary,picture,movie].every(element=>element instanceof HTMLElement))throw new Error("HTML ancestry");
 for(const Constructor of [HTMLImageElement,HTMLMediaElement,HTMLTrackElement])if(Object.getPrototypeOf(Constructor)!==HTMLElement)throw new Error("HTML constructor ancestry");
 if(document.createDocumentFragment() instanceof Element)throw new Error("fragment is an element");
