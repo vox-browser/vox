@@ -525,9 +525,11 @@ Object.defineProperty(Element.prototype,"hasChildNodes",{value:function hasChild
  return !!state.hasChildren;
 },writable:true,enumerable:true,configurable:true});
 // Document.forms: the form elements of the document, named by id or name.
-{
- const forms=__classCollection("","",()=>__queryElements("","querySelectorAll","form"));
- Object.defineProperty(document,"forms",{get:function(){return forms;},enumerable:true,configurable:true});
+// The images, embeds/plugins, links and scripts collections are the same kind
+// of live HTMLCollection over the elements of the document.
+for(const [name,selector] of [["forms","form"],["images","img"],["embeds","embed"],["plugins","embed"],["links","a[href],area[href]"],["scripts","script"]]){
+ const collection=__classCollection("","",()=>__queryElements("","querySelectorAll",selector));
+ Object.defineProperty(document,name,{get:function(){return collection;},enumerable:true,configurable:true});
 }
 document.getElementsByClassName=function getElementsByClassName(classNames){
  "use strict";
