@@ -301,6 +301,8 @@ def main():
                         help="Seed only allow_any_site in the private profile for file/loopback fixtures")
     parser.add_argument("--disable-gpu-canvas", action="store_true",
                         help="Seed the advanced setting disable_gpu_canvas=true in the private profile")
+    parser.add_argument("--zoom", action="append", default=[], metavar="DOMAIN=LEVEL",
+                        help="Seed a per-domain page zoom level in the private profile's zoom.json")
     parser.add_argument("--v-profile-reset", action="store_true",
                         help="Diagnostic only: reset v -profile counters immediately before native input")
     parser.add_argument("--capture-faults", action="store_true",
@@ -376,6 +378,15 @@ def main():
         seeded["disable_gpu_canvas"] = True
     if seeded:
         (profile / "settings.json").write_text(json.dumps(seeded, separators=(",", ":")) + "\n")
+    # Zoom levels live in their own file and do not override proxy settings.
+    zoom_levels = {}
+    for item in args.zoom:
+        domain, separator, level = item.partition("=")
+        if not separator or not domain or not 0.25 <= float(level) <= 5:
+            parser.error(f"--zoom expects DOMAIN=LEVEL with 0.25 <= LEVEL <= 5, got {item!r}")
+        zoom_levels[domain] = float(level)
+    if zoom_levels:
+        (profile / "zoom.json").write_text(json.dumps({"levels": zoom_levels}, separators=(",", ":")) + "\n")
     digest = hashlib.sha256()
     for path in sorted(cache.rglob("*")):
         if path.is_file():
@@ -456,6 +467,7 @@ def main():
                                      + "; default bookmark bar; explicit direct networking"
                                      if seeded else
                                      "empty private profile; default bookmark bar; no saved proxy override"),
+                    zoom_levels=zoom_levels,
                     native_configuration="explicit unpublished native candidate" if native_bridge or picture_bridge or image_bridge else "installed bundle",
                     native_renderer_bridge=str(native_bridge) if native_bridge else None,
                     picture_renderer_bridge=str(picture_bridge) if picture_bridge else None,

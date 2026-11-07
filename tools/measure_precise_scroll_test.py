@@ -71,6 +71,29 @@ class PreciseScrollTests(unittest.TestCase):
     def test_fixture_navigation_and_disabled_gpu_canvas_share_one_profile(self):
         self.check_isolated_launch(True, disable_gpu_canvas=True)
 
+    def test_page_zoom_is_seeded_without_overriding_the_proxy_route(self):
+        # zoom.json is not a settings file: the replay proxy stays in force.
+        self.check_isolated_launch(False, zoom={"old.reddit.com": 1.75})
+
+    def test_page_zoom_and_fixture_navigation_share_one_profile(self):
+        self.check_isolated_launch(True, zoom={"example.com": 2.0, "news.ycombinator.com": 1.5})
+
+    def test_rejects_malformed_or_out_of_range_page_zoom(self):
+        for value in ["old.reddit.com", "=1.5", "old.reddit.com=9"]:
+            with tempfile.TemporaryDirectory() as temporary, \
+                    mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
+                    mock.patch.object(measure_precise_scroll.sys, "argv",
+                                      ["probe", "--binary", str(Path(temporary) / "Vox"),
+                                       "--output", str(Path(temporary) / "measurement"),
+                                       "--network-policy", "fixture", "--zoom", value]), \
+                    mock.patch.object(measure_precise_scroll.subprocess, "run",
+                                      lambda command, **kwargs: Path(command[-1]).write_bytes(b"probe")), \
+                    contextlib.redirect_stderr(io.StringIO()) as errors:
+                (Path(temporary) / "Vox").write_bytes(b"fixture binary")
+                with self.assertRaises(SystemExit):
+                    measure_precise_scroll.main()
+            self.assertIn("--zoom expects DOMAIN=LEVEL", errors.getvalue())
+
     def test_disabled_gpu_canvas_profile_cannot_silently_disable_replay_proxy(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "measurement"
@@ -136,7 +159,7 @@ class PreciseScrollTests(unittest.TestCase):
     def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False,
                               capture_faults=False, mutate_worker=False, mutate_packaged=False,
                               image_bridge=False, mutate_image=False, disable_gpu_canvas=False,
-                              diagnostic_environment=None):
+                              diagnostic_environment=None, zoom=None):
         seeded = {}
         if allow_fixture_navigation:
             seeded["allow_any_site"] = True
@@ -178,10 +201,13 @@ class PreciseScrollTests(unittest.TestCase):
             def launch(command, **kwargs):
                 env = kwargs["env"]
                 self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
-                profile_files = list((output / "profile").iterdir())
-                self.assertEqual([p.name for p in profile_files], ["settings.json"] if seeded else [])
+                profile = output / "profile"
+                self.assertEqual(sorted(p.name for p in profile.iterdir()),
+                                 (["settings.json"] if seeded else []) + (["zoom.json"] if zoom else []))
                 if seeded:
-                    self.assertEqual(json.loads(profile_files[0].read_text()), seeded)
+                    self.assertEqual(json.loads((profile / "settings.json").read_text()), seeded)
+                if zoom:
+                    self.assertEqual(json.loads((profile / "zoom.json").read_text()), {"levels": zoom})
                 self.assertEqual(command[command.index("--window-height") + 1], "876")
                 self.assertNotIn("--enable-javascript", command)
                 self.assertNotIn("--disable-javascript", command)
@@ -218,6 +244,8 @@ class PreciseScrollTests(unittest.TestCase):
                 arguments.append("--allow-fixture-navigation")
             if disable_gpu_canvas:
                 arguments.append("--disable-gpu-canvas")
+            for domain, level in (zoom or {}).items():
+                arguments.extend(["--zoom", f"{domain}={level}"])
             if v_profile_reset:
                 arguments.append("--v-profile-reset")
             if capture_faults:
@@ -263,6 +291,7 @@ class PreciseScrollTests(unittest.TestCase):
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
             self.assertEqual(evidence["source_and_binary_sha256"][str(header)],
                              hashlib.sha256(header.read_bytes()).hexdigest())
+            self.assertEqual(evidence["zoom_levels"], zoom or {})
             self.assertEqual("seeded only" in evidence["initial_profile"], bool(seeded))
             for name in seeded:
                 self.assertIn(f"{name}=true", evidence["initial_profile"])
