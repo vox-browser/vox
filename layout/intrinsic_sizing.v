@@ -223,10 +223,22 @@ fn calculate_transferred_width_for_replaced_element(mut state LayoutState, box &
 	}
 	styled := node.as_node_with_style() or { return none }
 	box_state := state.get(styled)
-	available_space := box_state.available_inner_space_or_constraints_from(AvailableSpace.new(
+	mut available_space := box_state.available_inner_space_or_constraints_from(AvailableSpace.new(
 		AvailableSize.make_max_content(), AvailableSize.make_indefinite()))
 	if should_treat_height_as_auto(state, box, available_space) {
 		return none
+	}
+	// A percentage height that is not treated as auto resolves against its
+	// containing block's definite height. The measured box itself may have no
+	// available height yet, as for an icon inside a button's anonymous wrappers.
+	if computed_height.contains_percentage() && !available_space.height.is_definite()
+		&& !node.is_absolutely_positioned() {
+		if containing := percentage_height_containing_block_used_values(state, node) {
+			if containing.has_definite_height() {
+				available_space = AvailableSpace.new(available_space.width,
+					AvailableSize.make_definite(containing.content_height()))
+			}
+		}
 	}
 	return compute_replaced_size(box, available_space).width()
 }

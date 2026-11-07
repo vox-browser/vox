@@ -384,6 +384,24 @@ fn should_treat_width_as_auto(state &LayoutState, box &Box, available_space Avai
 	return false
 }
 
+// The used values of the box a percentage height resolves against.
+// NOTE: Anonymous blocks inherit height definiteness from their containing block.
+//       However, anonymous table cells are proper containing blocks with their own
+//       height semantics, so we must not walk past them.
+fn percentage_height_containing_block_used_values(state &LayoutState, node &Node) ?&UsedValues {
+	mut containing_block := node.containing_block()
+	for {
+		current := containing_block or { return none }
+		if !current.is_anonymous() || current.display().is_table_cell() {
+			break
+		}
+		containing_block = current.containing_block()
+	}
+	current := containing_block or { return none }
+	containing_styled := unsafe { &Node(current) }.as_node_with_style() or { return none }
+	return state.try_get(containing_styled)
+}
+
 // FormattingContext::should_treat_height_as_auto()
 fn should_treat_height_as_auto(state &LayoutState, box &Box, available_space AvailableSpace) bool {
 	node := unsafe { &Node(box) }
@@ -412,20 +430,9 @@ fn should_treat_height_as_auto(state &LayoutState, box &Box, available_space Ava
 		// is treated as 'auto'.
 		if !node.is_absolutely_positioned()
 			&& !percentage_height_quirk_applies(node, node.computed_values()) {
-			// NOTE: Anonymous blocks inherit height definiteness from their containing block.
-			//       However, anonymous table cells are proper containing blocks with their own
-			//       height semantics, so we must not walk past them.
-			mut containing_block := node.containing_block()
-			for {
-				current := containing_block or { return true }
-				if !current.is_anonymous() || current.display().is_table_cell() {
-					break
-				}
-				containing_block = current.containing_block()
+			containing_used_values := percentage_height_containing_block_used_values(state, node) or {
+				return true
 			}
-			current := containing_block or { return true }
-			containing_styled := unsafe { &Node(current) }.as_node_with_style() or { return true }
-			containing_used_values := state.try_get(containing_styled) or { return true }
 			if !containing_used_values.has_definite_height() {
 				return true
 			}
