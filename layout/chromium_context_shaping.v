@@ -87,8 +87,16 @@ enum ChromiumContextScript {
 	cyrillic
 }
 
-// The script of a chunk's first Latin or Cyrillic letter. Spaces, digits,
-// punctuation and combining marks are common to both.
+// Spaces, digits, punctuation and combining marks are common to both scripts.
+fn chromium_context_code_point_script(code_point u32) ChromiumContextScript {
+	if code_point in u32(`A`) .. u32(`Z` + 1) || code_point in u32(`a`) .. u32(`z` + 1)
+		|| code_point in u32(0x00c0) .. u32(0x0300) {
+		return .latin
+	}
+	return if code_point in u32(0x0400) .. u32(0x0530) { .cyrillic } else { .common }
+}
+
+// The script of a chunk's first Latin or Cyrillic letter.
 fn chromium_context_chunk_script(view string) ChromiumContextScript {
 	if view.is_ascii() {
 		for character in view {
@@ -99,12 +107,8 @@ fn chromium_context_chunk_script(view string) ChromiumContextScript {
 		return .common
 	}
 	for character in view.runes() {
-		code_point := u32(character)
-		if code_point in u32(`A`) .. u32(`Z` + 1) || code_point in u32(`a`) .. u32(`z` + 1)
-			|| code_point in u32(0x00c0) .. u32(0x0300) {
-			return .latin
-		}
-		if code_point in u32(0x0400) .. u32(0x0530) { return .cyrillic }
+		script := chromium_context_code_point_script(u32(character))
+		if script != .common { return script }
 	}
 	return .common
 }

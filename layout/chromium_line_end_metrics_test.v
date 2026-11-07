@@ -1,6 +1,7 @@
 module layout
 
 import html
+import os
 import platform
 
 fn test_chromium_line_end_metrics_match_materialized_context_slices() {
@@ -143,6 +144,62 @@ fn test_chromium_trailing_width_queries_match_trim_without_mutating_fragments() 
 					}
 				}
 			}
+		}
+	}
+}
+
+// 2ch.su's catalog titles: with separate Cyrillic and Latin subset faces the
+// Latin-face " VK " merges into one fragment after Cyrillic text. Blink keeps
+// its leading space in the Cyrillic script run when reshaping the line end,
+// so the face's space-V kern must not return; after Latin text it does.
+fn test_chromium_line_end_keeps_a_space_after_cyrillic_out_of_a_latin_reshape() {
+	times := '/System/Library/Fonts/Supplemental/Times New Roman.ttf'
+	if !os.exists(times) { return }
+	for prefix in ['подразделений', 'subdivisions', ''] {
+		text := prefix + ' VK '
+		mut document := html.parse_document('<!doctype html><style>@font-face { font-family:Fixture; src:url("file://${times}") }</style><div style="font:20px Fixture">${text}</div>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		root := layout_document_typed_in_viewport(document, 400, 300)
+		result := document_layout_result(document) or { panic('missing layout') }
+		mut pending := [result.root]
+		mut node := unsafe { &Node(nil) }
+		for pending.len > 0 {
+			candidate := pending.pop()
+			for child in candidate.children() { pending << child }
+			if found := candidate.as_text_node() {
+				if found.text_for_rendering().trim_space() == text.trim_space() {
+					node = candidate
+					break
+				}
+			}
+		}
+		assert voidptr(node) != unsafe { nil }
+		mut font := unsafe { &platform.Font(nil) }
+		for command in root.paint_commands() {
+			if command.kind == 'draw_text' {
+				font = (command.glyph_run or { panic('missing glyph run') }).font()
+				break
+			}
+		}
+		assert voidptr(font) != unsafe { nil }
+		run := platform.shape_text_with_spacing(0, 0, 0, ' VK ', font, .ltr).glyph_run
+		// The face kerns space-V when they share a shaping run.
+		assert platform.shape_text(0, 0, ' V', font, .ltr).width() < platform.shape_text(0, 0, ' ', font, .ltr).width()
+			+ platform.shape_text(0, 0, 'V', font, .ltr).width()
+		start := utf16_code_units_for_line_box(prefix).len
+		mut line := LineBox.new(.ltr, .horizontal_tb)
+		line.has_break_ = true
+		line.add_fragment_with_trailing_whitespace(node, start, 4, CSSPixels.new(0), CSSPixels.new(0),
+			CSSPixels.new(0), CSSPixels.new(0), shaped_inline_width(run, 0), CSSPixels.new(24),
+			CSSPixels.new(0), CSSPixels.new(0), run, TrailingWhitespace{ length_in_code_units: 1, inline_size: CSSPixels.new(1) })
+		fragment := line.fragments_[0]
+		assert fragment.chromium_line_end_crosses_script_run(' VK') == (prefix == 'подразделений'), prefix
+		if prefix == 'подразделений' {
+			assert fragment.chromium_visible_line_end(true) == none
+			assert fragment.chromium_width_without_trailing_whitespace(true) == none
+		} else {
+			assert fragment.chromium_visible_line_end(true) or { panic('missing line end') } == ' VK'
 		}
 	}
 }
