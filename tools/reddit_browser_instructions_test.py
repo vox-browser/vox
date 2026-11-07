@@ -165,6 +165,13 @@ class InstructionGateTests(unittest.TestCase):
                     [{'vox':dict(instructions=5,pixels_exact=True,exit=0),'brave':{}}]]:
             with self.assertRaises(ValueError):benchmark.evaluate_vox_cohort(bad,[100])
 
+    def test_vox_controls_are_explicit_kill_switches(self):
+        self.assertEqual(benchmark.vox_control_environment(['VOX_DISABLE_X=1']), {'VOX_DISABLE_X': '1'})
+        self.assertEqual(benchmark.vox_control_environment([]), {})
+        for bad in [['VOX_PROFILE_INSTRUCTIONS=1'], ['VOX_DISABLE_X'], ['VOX_DISABLE_X='],
+                    ['VOX_DISABLE_X=1', 'VOX_DISABLE_X=2'], ['GC_MARKERS=1']]:
+            with self.assertRaises(ValueError):benchmark.vox_control_environment(bad)
+
     def test_vox_only_baseline_must_share_fixture_cache_and_reference(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'summary.json'

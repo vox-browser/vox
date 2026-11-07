@@ -247,6 +247,17 @@ def baseline_vox_counts(path, html_digest, reference_digest, cache_hash):
     return [pair['vox']['instructions'] for pair in summary['pairs']]
 
 
+def vox_control_environment(assignments):
+    """Explicit same-binary kill switches; nothing else may reach the measured process."""
+    controls = {}
+    for assignment in assignments:
+        key, separator, value = assignment.partition('=')
+        if not separator or not key.startswith('VOX_DISABLE_') or not value or key in controls:
+            raise ValueError(f'Invalid --vox-env control {assignment!r}')
+        controls[key] = value
+    return controls
+
+
 def engine_reference(args, engine):
     """A Vox-specific reference checks per-engine stability, not cross-browser equality."""
     vox_reference = getattr(args, 'expected_vox', None)
@@ -292,11 +303,17 @@ def main():
     parser.add_argument('--required-reduction', type=float, default=.15)
     parser.add_argument('--vox-only', action='store_true',
                         help='Measure only Vox against its fixed reference; Brave is not launched.')
+    parser.add_argument('--vox-env', action='append', default=[], metavar='VOX_DISABLE_NAME=VALUE',
+                        help='Set a VOX_DISABLE_* control in every Vox observation (same-binary A/B).')
     parser.add_argument('--baseline-summary', type=Path,
                         help='With --vox-only, compare medians with an earlier Vox cohort on the same fixture.')
     args = parser.parse_args()
     if args.baseline_summary is not None and not args.vox_only:
         parser.error('--baseline-summary compares Vox-only cohorts')
+    try:
+        vox_controls = vox_control_environment(args.vox_env)
+    except ValueError as error:
+        parser.error(str(error))
     if args.repeat < 1 or not 0 <= args.required_reduction < 1:
         parser.error('Invalid repeat count or required reduction')
     for name in ['html', 'expected', 'expected_vox', 'cache', 'output', 'vox', 'brave', 'network_deny', 'diff_tool']:
@@ -339,6 +356,7 @@ def main():
                 if engine == 'vox':
                     os.environ['VOX_CAPTURE_AUDIT_PATH'] = str(prefix)+'.audit.json'
                     os.environ['VOX_CAPTURE_AUDIT_CONFIG'] = str(audit_config)
+                    os.environ.update(vox_controls)
                     with measurement.fresh_vox_cache(args.cache, args.output) as (cache, _):
                         report = measurement.run_vox(config, prefix, api, cache)
                     report['document_audit'] = json.loads(Path(str(prefix)+'.audit.json').read_text())
@@ -376,6 +394,7 @@ def main():
     else:
         summary = evaluate_pairs(pairs, args.required_reduction)
     summary.update(html_sha256=html_digest, vox_reference_sha256=reference_digest,
+                   vox_control_environment=vox_controls,
                    reference_policy='Vox-only fixed Vox reference' if args.vox_only
                    else 'per-engine fixed references' if cross_browser else 'shared Brave reference',
                    cross_browser_reference_pixels=cross_browser)
