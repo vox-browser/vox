@@ -1536,11 +1536,18 @@ fn grid_inline_content_geometry(container &Node, container_width CSSPixels, trac
 	}
 	used_size := tracks_size.plus(effective_gap.scaled(f64(gap_count)))
 	free_space := css_pixels_max(container_width.minus(used_size), CSSPixels.new(0))
+	// Blink's ComputeFirstSetGeometry clamps only 'safe' alignment: positional
+	// alignment overflows both edges, as in GitHub's 28px icon buttons whose
+	// 16px track exceeds the 12px content box.
+	positional_free_space := grid_positional_free_space(container, container_width.minus(used_size), free_space)
 	mut leading := match container.computed_values().justify_content() {
 		.end_, .flex_end, .right {
-			free_space
+			positional_free_space
 		}
-		.center, .space_around, .space_evenly {
+		.center {
+			CSSPixels.from_raw(positional_free_space.raw_value() / 2)
+		}
+		.space_around, .space_evenly {
 			CSSPixels.from_raw(free_space.raw_value() / 2)
 		}
 		else {
@@ -1550,7 +1557,7 @@ fn grid_inline_content_geometry(container &Node, container_width CSSPixels, trac
 	if container.computed_values().direction() == .rtl {
 		match container.computed_values().justify_content() {
 			.left {
-				leading = free_space
+				leading = positional_free_space
 			}
 			.right {
 				leading = CSSPixels.new(0)
@@ -1580,11 +1587,15 @@ fn grid_block_content_geometry(container &Node, container_height CSSPixels, trac
 	}
 	used_size := tracks_size.plus(effective_gap.scaled(f64(gap_count)))
 	free_space := css_pixels_max(container_height.minus(used_size), CSSPixels.new(0))
+	positional_free_space := grid_positional_free_space(container, container_height.minus(used_size), free_space)
 	leading := match container.computed_values().align_content() {
 		.end_, .flex_end {
-			free_space
+			positional_free_space
 		}
-		.center, .space_around, .space_evenly {
+		.center {
+			CSSPixels.from_raw(positional_free_space.raw_value() / 2)
+		}
+		.space_around, .space_evenly {
 			CSSPixels.from_raw(free_space.raw_value() / 2)
 		}
 		else {
@@ -1592,6 +1603,12 @@ fn grid_block_content_geometry(container &Node, container_height CSSPixels, trac
 		}
 	}
 	return leading, effective_gap
+}
+
+// Negative free space for positional content alignment under the Chromium
+// policy; LibWeb keeps its clamped start alignment.
+fn grid_positional_free_space(container &Node, free_space CSSPixels, clamped CSSPixels) CSSPixels {
+	return if container.document().font_rendering_policy() == .chromium { free_space } else { clamped }
 }
 
 fn grid_physical_column_offset(container &Node, container_width CSSPixels, tracks []GridTrack, start int, span int, gap CSSPixels, leading CSSPixels) CSSPixels {
