@@ -90,7 +90,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	// rasterizer, which reproduces Skia's pixels: dashes from
 	// SkDashPathEffect, then hairlines for strokes at most a device pixel wide
 	// and SkStroke outlines for wider ones, inside the anti-aliased clip, with
-	// any composite operation but the runtime-effect plus-darker and
+	// any composite operation, including the runtime-effect plus-darker and
 	// plus-lighter blenders. A blurred shadow takes Skia's blur mask filter,
 	// which replaces the canvas filters; other filtered draws stay on Skia.
 	solid := native_style.kind == 0
