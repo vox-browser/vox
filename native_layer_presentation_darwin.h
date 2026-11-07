@@ -35,6 +35,19 @@ static uint64_t native_layer_redraw_generation;
 static uint64_t native_layer_paint_generation;
 static uint64_t native_layer_last_prepared_generation;
 static BOOL native_layer_paint_started;
+// Navigation work suppresses document frames while V services native input
+// (browserwindow.pump_pending_events); the generation shows whether that
+// servicing delivered a redraw.
+static void vox_set_navigation_work_active(int active) {
+	native_layer_document_work_active = active != 0;
+}
+static int vox_native_frame_consumed_redraws(void) {
+	return native_layer_presenting && native_layer_paint_started
+		&& native_layer_paint_generation == native_layer_redraw_generation;
+}
+static uint64_t vox_native_layer_redraw_generation(void) {
+	return native_layer_redraw_generation;
+}
 // Only completed preparation covers work due at its start. Cached image
 // copies leave this boundary unchanged.
 VOX_NATIVE_STATE double native_layer_preparation_started;

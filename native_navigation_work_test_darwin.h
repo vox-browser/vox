@@ -1,6 +1,7 @@
 #pragma once
 #include "native_layer_presentation_darwin.h"
-#include "native_navigation_work_darwin.h"
+// Exported by navigation/main_navigation_work.v.
+int32_t vox_service_navigation_ui(void);
 
 void native_wake_browser(void);
 

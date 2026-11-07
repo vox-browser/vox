@@ -9,11 +9,8 @@ import browsersettings
 import platform
 import ui2
 
-$if vox_ui2 ? {
-	#include "@VMODROOT/native_browser_chrome_style_darwin.m"
-	fn C.native_browser_chrome_prepare_window(parent voidptr)
-	fn C.native_browser_chrome_restore_window()
-	fn C.native_browser_chrome_configure_window_host() bool
+$if macos {
+	import browserwindow
 }
 
 struct BrowserChromeState {
@@ -217,7 +214,7 @@ $if vox_ui2 ? {
 		defer { platform.leave_persistent(persistent) }
 		mut owner := unsafe { address_bar_owner }
 		owner.app = app
-		C.native_browser_chrome_prepare_window(parent)
+		$if macos { browserwindow.prepare_chrome_window(parent) }
 		chrome := app.browser_chrome_state(width, height)
 		ui2.mount_embedded_browser(parent, app.browser_chrome_ui_elements(chrome), address_bar_event)!
 		app.browser_chrome = chrome

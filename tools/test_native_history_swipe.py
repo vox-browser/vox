@@ -1,32 +1,21 @@
 #!/usr/bin/env python3
-"""Check macOS history gesture handling through tools/run_memory_bounded.py."""
-from datetime import datetime
+"""Check macOS history gesture handling (browserwindow) under the memory guard."""
+import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
+import tempfile
 
 
 def main():
     repo = Path(__file__).resolve().parent.parent
-    output = repo / "Build" / ("history-swipe-native-" + datetime.now().strftime("%Y%m%d-%H%M%S-%f"))
-    output.mkdir(parents=True)
-    binary = output / "history-swipe-test"
-    commands = [
-        ["clang", "-fobjc-arc", "-fblocks", "-Wall", "-Wextra", "-Werror",
-         "-framework", "Cocoa", str(repo / "tools/native_history_swipe_test.m"),
-         "-o", str(binary)],
-        [str(binary)],
-    ]
-    with (output / "checks.log").open("w") as log:
-        for command in commands:
-            log.write(repr(command) + "\n")
-            log.flush()
-            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
-            log.write(f"exit_code={result.returncode}\n")
-            log.flush()
-            if result.returncode:
-                print((output / "checks.log").read_text(), end="")
-                raise SystemExit(result.returncode)
-    print((output / "checks.log").read_text(), end="")
+    compiler = os.environ.get("V_BIN") or shutil.which("v") or str(Path.home() / "code/v/v")
+    with tempfile.TemporaryDirectory(prefix="history-swipe-") as scratch:
+        command = [sys.executable, str(repo / "tools/run_memory_bounded.py"), "--limit-gib", "3",
+                   "--lock", str(Path(scratch) / "run.lock"), "--report", str(Path(scratch) / "run.json"),
+                   "--", compiler, "-memory-limit", "10G", "test", "browserwindow/history_swipe_darwin_test.v"]
+        raise SystemExit(subprocess.run(command, cwd=repo).returncode)
 
 
 if __name__ == "__main__":

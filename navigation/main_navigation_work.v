@@ -4,16 +4,29 @@ import platform
 import gg
 
 $if macos {
+	import browserwindow
 	import os
 }
 
-$if macos {
-	#include "@VMODROOT/native_navigation_work_darwin.m"
-}
-
-fn C.vox_service_navigation_ui() int
 fn C.vox_set_navigation_work_active(int)
 fn C.vox_native_frame_consumed_redraws() int
+fn C.vox_native_layer_redraw_generation() u64
+
+// vox_service_navigation_ui gives AppKit a bounded chance to deliver input
+// during long document work. It returns 1 when that delivered a redraw, which
+// the cooperative-work checkpoint records; native tests call it too. A pump
+// can consume a resource's wake while document work suppresses its native
+// frame. Preserve that redraw, but never turn pumping alone into a request for
+// another frame: slow static frames must eventually become idle.
+@[export: 'vox_service_navigation_ui']
+fn vox_service_navigation_ui() i32 {
+	$if macos {
+		generation := C.vox_native_layer_redraw_generation()
+		if !browserwindow.pump_pending_events(16) { return 0 }
+		return i32(C.vox_native_layer_redraw_generation() != generation)
+	}
+	return 0
+}
 
 struct DeferredNavigationInput {
 	address       string
@@ -42,10 +55,8 @@ fn service_navigation_ui(context voidptr) {
 	// and editable browser chrome belong to the shell across those checkpoints.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	$if macos {
-		if C.vox_service_navigation_ui() != 0 {
-			app.navigation_work_yielded = true
-		}
+	if vox_service_navigation_ui() != 0 {
+		app.navigation_work_yielded = true
 	}
 }
 

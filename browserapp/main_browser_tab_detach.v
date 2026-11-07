@@ -12,6 +12,10 @@ import platform
 import rand
 import time
 
+$if macos {
+	import browserwindow
+}
+
 // The native renderer and chrome have one window owner per process. Transfer a
 // session to another instance rather than sharing those global native owners.
 struct DetachedTabSession {
@@ -87,8 +91,7 @@ fn (app &BrowserApp) detached_tab_session() DetachedTabSession {
 	mut drop_x := 0.0
 	mut drop_y := 0.0
 	$if macos {
-		drop_x = C.native_tab_drop_x()
-		drop_y = C.native_tab_drop_y()
+		drop_x, drop_y = browserwindow.pointer_location()
 	}
 	return DetachedTabSession{
 		url:           if app.document != unsafe { nil } { app.document.url_string() } else { app.address }
@@ -274,7 +277,7 @@ fn (mut app BrowserApp) finish_detached_tab_restore() {
 fn open_detached_browser_window(path string) ! {
 	executable := adblock.current_executable_path()!
 	$if macos {
-		if !C.native_open_tab_window(executable.str, path.str) {
+		if !browserwindow.open_tab_window(executable, path) {
 			return error('could not launch Vox')
 		}
 	} $else {

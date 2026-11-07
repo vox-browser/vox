@@ -7,6 +7,10 @@ $if vox_ui2 ? {
 	import sokol.sapp
 }
 
+$if macos {
+	import browserwindow
+}
+
 struct AddressBarOwner {
 mut:
 	app &BrowserApp = unsafe { nil }
@@ -42,7 +46,7 @@ fn (mut app BrowserApp) unmount_address_bar() {
 		if !app.native_address_bar { return }
 		close_browser_settings()
 		ui2.remove_embedded_panel('settings')
-		C.native_browser_chrome_restore_window()
+		$if macos { browserwindow.restore_chrome_window() }
 		ui2.unmount_embedded_browser()
 		mut owner := unsafe { address_bar_owner }
 		owner.app = unsafe { nil }

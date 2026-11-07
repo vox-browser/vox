@@ -11,10 +11,7 @@ import time
 import ui2
 
 $if macos {
-	#include "@VMODROOT/native_browser_tab_process_darwin.m"
-	fn C.vox_tab_window_prepare(voidptr)
-	fn C.vox_tab_window_frame(voidptr, &f64)
-	fn C.vox_tab_window_show(voidptr, i32, f64, f64, f64, f64)
+	import browserwindow
 } $else $if linux {
 	#include "@VMODROOT/native_browser_tab_process_linux.h"
 	fn C.vox_tab_x11_frame(voidptr, uint, &f64)
@@ -47,7 +44,8 @@ fn (app &BrowserApp) browser_selected_tab() int {
 fn process_tab_window_frame() browsertabs.Frame {
 	mut values := [4]f64{}
 	$if macos {
-		C.vox_tab_window_frame(sapp.macos_get_window(), &values[0])
+		frame := browserwindow.tab_window_frame(sapp.macos_get_window())
+		values = [frame.x, frame.y, frame.width, frame.height]!
 	} $else $if linux {
 		C.vox_tab_x11_frame(sapp.x11_get_display(), uint(sapp.x11_get_window()), &values[0])
 	}
@@ -56,7 +54,7 @@ fn process_tab_window_frame() browsertabs.Frame {
 
 fn process_tab_window_show(visible bool, frame browsertabs.Frame) {
 	$if macos {
-		C.vox_tab_window_show(sapp.macos_get_window(), i32(visible), frame.x, frame.y, frame.width, frame.height)
+		browserwindow.show_tab_window(sapp.macos_get_window(), visible, browserwindow.Frame{ x: frame.x, y: frame.y, width: frame.width, height: frame.height })
 	} $else $if linux {
 		C.vox_tab_x11_show(sapp.x11_get_display(), uint(sapp.x11_get_window()), i32(visible), frame.x, frame.y, frame.width, frame.height)
 	}
@@ -93,7 +91,7 @@ fn (mut app BrowserApp) start_process_tabs() {
 	if folder != '' {
 		app.tabs.process_initializing = true
 		$if macos {
-			C.vox_tab_window_prepare(sapp.macos_get_window())
+			browserwindow.prepare_tab_window(sapp.macos_get_window())
 		}
 	}
 	mut timer := platform.Timer.create_repeating(100, fn [mut app] () { app.poll_process_tabs() })

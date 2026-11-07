@@ -81,7 +81,7 @@ fn test_native_frame_consumes_preparation_wakes_but_retains_pending_document_wor
 	assert app.native_frame_consumed_work()
 	images.results <- PreloadedResource{url: 'https://frame-work.example/image'}
 	C.vox_test_queue_navigation_redraw()
-	for _ in 0 .. 1000 { if C.vox_service_navigation_ui() != 0 { break } }
+	for _ in 0 .. 1000 { if vox_service_navigation_ui() != 0 { break } }
 	C.vox_browser_frame_prepared()
 	assert !app.native_frame_consumed_work()
 	_ = <-images.results
@@ -95,7 +95,7 @@ fn test_native_frame_consumes_preparation_wakes_but_retains_pending_document_wor
 	assert app.native_frame_consumed_work()
 	// A new invalidation delivered after the paint boundary remains pending.
 	C.vox_test_queue_navigation_redraw()
-	for _ in 0 .. 1000 { if C.vox_service_navigation_ui() != 0 { break } }
+	for _ in 0 .. 1000 { if vox_service_navigation_ui() != 0 { break } }
 	assert !app.native_frame_consumed_work()
 }
 

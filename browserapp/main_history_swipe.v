@@ -4,13 +4,7 @@ import page
 import browserui
 
 $if macos {
-	#include "@VMODROOT/native_history_swipe_darwin.m"
-	fn C.native_history_swipe_install(window voidptr, owner voidptr,
-		begin fn (voidptr, i32, f64, f64, f64, f64, &voidptr) i32,
-		filter fn (voidptr, i32, i32, i32, i32, u32, f64, f64) i32,
-		capture fn (voidptr, u64) u64,
-		progress fn (voidptr, voidptr, u64, f64, i32, i32, i32) i32)
-	fn C.native_history_swipe_remove()
+	import browserwindow
 }
 
 // The first horizontal wheel event gets the ordinary DOM/default-action path.
@@ -58,7 +52,7 @@ fn commit_browser_history_swipe(owner voidptr, document_token voidptr, delta i32
 
 fn install_browser_history_swipe(window voidptr, owner voidptr) {
 	$if macos {
-		C.native_history_swipe_install(window, owner, begin_browser_history_swipe, filter_browser_history_swipe, capture_browser_history_swipe, progress_browser_history_swipe)
+		browserwindow.install_history_swipe(window, owner, begin_browser_history_swipe, filter_browser_history_swipe, capture_browser_history_swipe, progress_browser_history_swipe)
 	}
 }
 

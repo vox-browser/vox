@@ -5,6 +5,10 @@ import processmetrics
 import sokol.sapp
 import time
 
+$if macos {
+	import browserwindow
+}
+
 #flag darwin -framework IOSurface
 
 fn C.native_configure_browser_drawables()
@@ -30,7 +34,7 @@ fn (app &BrowserApp) update_window_title() {
 fn configure_native_browser_context(mut context gg.Context) {
 	$if macos {
 		// Runs before the window exists; AppKit reads this when indexing it.
-		C.native_window_register_indexing_default()
+		browserwindow.register_window_tab_indexing_default()
 		if !context.native_rendering {
 			return
 		}
@@ -41,7 +45,7 @@ fn configure_native_browser_context(mut context gg.Context) {
 		$if vox_ui2 ? {
 			// UI2 supplies the top row; retain native window capabilities without
 			// constructing AppKit's hidden title bar first.
-			context.window.borderless_window = C.native_browser_chrome_configure_window_host()
+			context.window.borderless_window = browserwindow.configure_window_host()
 		}
 		// The Cocoa child paints the browser. Its MetalKit parent still starts
 		// before our init callback, so avoid allocating its unused MSAA target.
@@ -149,7 +153,7 @@ fn cleanup_native_browser_context(user_data voidptr) {
 		return
 	}
 	$if macos {
-		C.native_history_swipe_remove()
+		browserwindow.remove_history_swipe()
 		finish_browser_window_state()
 	}
 	if context.config.cleanup_fn != unsafe { nil } {
