@@ -193,3 +193,62 @@ static int cpuraster_ct_draw_glyph(void* font_ref, uint16_t glyph_id, double con
     CGContextRelease(cg);
     return 1;
 }
+
+// SkScalerContext_Mac::generatePath()'s CoreText path: CTFontCreatePathForGlyph()
+// through fTransform concatenated with a (sx, sy) scale, its elements
+// collected by CGPathApply() as seven doubles each: the element type, then
+// up to three points. Returns the element count, or -1 without a path; the
+// caller frees *elements.
+typedef struct {
+    double* values;
+    int count;
+    int capacity;
+} cpuraster_ct_path_sink;
+
+static void cpuraster_ct_path_element(void* info, CGPathElement const* element) {
+    cpuraster_ct_path_sink* sink = (cpuraster_ct_path_sink*)info;
+    if (sink->count == sink->capacity) {
+        int capacity = sink->capacity ? sink->capacity * 2 : 64;
+        double* values = (double*)realloc(sink->values, (size_t)capacity * 7 * sizeof(double));
+        if (!values)
+            return;
+        sink->values = values;
+        sink->capacity = capacity;
+    }
+    double* v = sink->values + (size_t)sink->count * 7;
+    int points = 0;
+    switch (element->type) {
+    case kCGPathElementMoveToPoint:
+    case kCGPathElementAddLineToPoint:
+        points = 1;
+        break;
+    case kCGPathElementAddQuadCurveToPoint:
+        points = 2;
+        break;
+    case kCGPathElementAddCurveToPoint:
+        points = 3;
+        break;
+    default:
+        break;
+    }
+    v[0] = (double)element->type;
+    for (int i = 0; i < 3; ++i) {
+        v[1 + i * 2] = i < points ? element->points[i].x : 0;
+        v[2 + i * 2] = i < points ? element->points[i].y : 0;
+    }
+    sink->count++;
+}
+
+static int cpuraster_ct_glyph_path(void* font_ref, uint16_t glyph_id, double const* t, double sx, double sy, double** elements) {
+    *elements = NULL;
+    CGAffineTransform scale = CGAffineTransformMakeScale(sx, sy);
+    CGAffineTransform xform = CGAffineTransformConcat(cpuraster_ct_transform(t), scale);
+    CGPathRef path = CTFontCreatePathForGlyph((CTFontRef)font_ref, (CGGlyph)glyph_id, &xform);
+    if (!path)
+        return -1;
+    cpuraster_ct_path_sink sink = { NULL, 0, 0 };
+    CGPathApply(path, &sink, cpuraster_ct_path_element);
+    CGPathRelease(path);
+    *elements = sink.values;
+    return sink.count;
+}

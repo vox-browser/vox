@@ -142,24 +142,40 @@ fn test_glyph_runs_match_skia() {
 	}) == '62cea4a16ecb51ad'
 }
 
-// Runs Skia draws as paths, faces past the first and missing files decline
-// without touching the pixels.
+// Glyphs over 256 pixels per em are filled as their 64-point outlines:
+// under the concatenated canvas matrix for a solid color, and mapped first
+// when a gradient keeps the canvas matrix.
+fn test_path_glyph_runs_match_skia() {
+	$if !macos {
+		return
+	}
+	assert glyph_test_hash(GlyphTestCase{
+		size:        300
+		glyphs:      [u16(5), 9]
+		positions:   [f32(0), 0, 160.5, 0.25]
+		translation: [f32(-30), 140]!
+		color:       0xff2050a0
+		alpha:       0.85
+		alpha_type:  1
+	}) == '3beb1f538036b195'
+	assert glyph_test_hash(GlyphTestCase{
+		size:        20
+		glyphs:      [u16(9)]
+		positions:   [f32(-0.3), 0.4]
+		translation: [f32(-3.5), 9]!
+		transform:   [f32(14), 3, -2, 15, 0, 0]!
+		clip:        true
+		gradient:    true
+	}) == '15ff405c7a9e0e08'
+}
+
+// Faces past the first and missing files decline without touching the
+// pixels.
 fn test_unported_glyph_runs_decline() {
 	$if !macos {
 		return
 	}
 	for c in [
-		GlyphTestCase{
-			size:      300
-			glyphs:    [u16(5)]
-			positions: [f32(0), 0]
-		},
-		GlyphTestCase{
-			size:      20
-			glyphs:    [u16(5)]
-			positions: [f32(0), 0]
-			transform: [f32(20), 0, 0, 20, 0, 0]!
-		},
 		GlyphTestCase{
 			font:      'missing'
 			size:      12

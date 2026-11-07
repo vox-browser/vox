@@ -10,7 +10,9 @@ import math
 // skcpu::GlyphRunListPainter::drawForBitmapDevice(): glyphs whose text
 // matrix stays at most 256 pixels per em become A8 masks of an unhinted
 // SkScalerContext_Mac strike, positioned to a quarter pixel and blitted with
-// the paint (Draw::paintMasks()).
+// the paint (Draw::paintMasks()). Larger glyphs are filled as paths: the
+// outlines of a 64-point strike, scaled to the font size and placed at
+// their positions (SkStrikeSpec::MakePath()).
 
 // CanvasGlyphRun is a positioned glyph run: the font file and face, its
 // size, glyph IDs, x and y per glyph, and the blob's origin.
@@ -28,8 +30,8 @@ pub:
 // pattern style when there is one, at global_alpha through transform and
 // the device-space clip paths, as for fill_canvas_path(). Returns false
 // without changing pixels for a draw it does not cover: devices Skia would
-// tile, faces Skia cannot open, color (ARGB) glyphs, glyphs large enough for
-// Skia to draw as paths, and non-finite glyph positions.
+// tile, faces Skia cannot open, color (ARGB) glyphs, path-sized glyphs
+// without an outline, and non-finite glyph positions.
 pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path) bool {
 	if run.glyphs.len == 0 {
 		return true
@@ -57,8 +59,10 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	ctm := canvas_affine(transform)
 	origin := Point{run.translation[0], run.translation[1]}
 	position_matrix := pre_translate(ctm, origin.x, origin.y)
-	if glyphs_draw_as_paths(run.font_size, position_matrix) {
-		return false
+	as_paths := glyphs_draw_as_paths(run.font_size, position_matrix)
+	mut outlines := []?Path{}
+	if as_paths {
+		outlines = glyph_outlines(face, run.glyphs) or { return false }
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	target.ready()
@@ -93,6 +97,11 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		return true
 	}
 	shader := canvas_paint_shader(style, matrix)
+	if as_paths {
+		fill_glyph_outlines(mut pixels, pitch, run, outlines, ctm, &rc, paint_color, shader, alpha,
+			mode)
+		return true
+	}
 	mut strike := new_glyph_strike(face, run.font_size, position_matrix, paint_luminance(paint_color,
 		shader)) or { return true }
 	defer {
@@ -140,6 +149,167 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		wrapped.blit_mask(&mask, bounds)
 	}
 	return true
+}
+
+// SkFontPriv::kCanonicalTextSizeForPaths.
+const glyph_path_size = f32(64)
+
+// The 64-point path strike's outlines for each glyph, none for empty glyphs
+// (which are dropped). Fails when a glyph has bounds but no path: Skia
+// would draw it as a mask at the large size, which is not ported.
+fn glyph_outlines(face GlyphFace, ids []u16) ?[]?Path {
+	mut strike := new_glyph_strike(face, glyph_path_size, SkAffine{}, 0) or { return none }
+	defer {
+		strike.release()
+	}
+	mut outlines := []?Path{}
+	mut cache := map[u16]?Path{}
+	for id in ids {
+		if id in cache {
+			outlines << cache[id]
+			continue
+		}
+		bounds := strike.glyph_bounds(id, 0, 0)
+		outline := if bounds.width == 0 || bounds.height == 0 {
+			?Path(none)
+		} else {
+			?Path(glyph_outline(strike.font, id, strike.transform) or { return none })
+		}
+		cache[id] = outline
+		outlines << outline
+	}
+	return outlines
+}
+
+// SkScalerContext_Mac::generatePath() for an unsnapped subpixel strike:
+// CoreText's path at four times the size, through SkCTPathGeometrySink
+// (moves deferred to the next segment, segments that stay at the current
+// point dropped, y flipped), scaled back by a quarter.
+fn glyph_outline(font voidptr, id u16, transform [6]f64) ?Path {
+	elements := glyph_path(font, id, transform, 4, 4)?
+	mut b := PathBuilder{}
+	mut started := false
+	mut cx := f64(0)
+	mut cy := f64(0)
+	for i := 0; i + 6 < elements.len; i += 7 {
+		e := elements[i..i + 7]
+		match int(e[0]) {
+			0 {
+				started = false
+				cx = e[1]
+				cy = e[2]
+			}
+			1 {
+				if cx != e[1] || cy != e[2] {
+					if !started {
+						started = true
+						b.move_to(f32(cx), f32(-cy))
+					}
+					cx, cy = e[1], e[2]
+					b.line_to(f32(e[1]), f32(-e[2]))
+				}
+			}
+			2 {
+				if cx != e[1] || cy != e[2] || cx != e[3] || cy != e[4] {
+					if !started {
+						started = true
+						b.move_to(f32(cx), f32(-cy))
+					}
+					cx, cy = e[3], e[4]
+					b.quad_to(f32(e[1]), f32(-e[2]), f32(e[3]), f32(-e[4]))
+				}
+			}
+			3 {
+				if cx != e[1] || cy != e[2] || cx != e[3] || cy != e[4] || cx != e[5] || cy != e[6] {
+					if !started {
+						started = true
+						b.move_to(f32(cx), f32(-cy))
+					}
+					cx, cy = e[5], e[6]
+					b.cubic_to(f32(e[1]), f32(-e[2]), f32(e[3]), f32(-e[4]), f32(e[5]), f32(-e[6]))
+				}
+			}
+			4 {
+				if started {
+					b.close()
+				}
+			}
+			else {}
+		}
+	}
+	// SkPathBuilder::transform() with the inverse scale.
+	quarter := f32(1) / f32(4)
+	for mut p in b.points {
+		p = Point{p.x * quarter, p.y * quarter}
+	}
+	return b.detach()
+}
+
+// The path branch of drawForBitmapDevice(): each glyph's outline at
+// (origin + position) scaled from 64 points to the font size, filled
+// anti-aliased like SkCanvas::drawPath(). Without a shader the scale and
+// translation are concatenated onto the canvas matrix (SkCanvas::concat(),
+// in SkM44's float arithmetic); with one the outline's points are mapped
+// first so the shader keeps the canvas matrix.
+fn fill_glyph_outlines(mut pixels []u8, pitch int, run CanvasGlyphRun, outlines []?Path, ctm SkAffine, rc &RasterClip, color u32, shader ?CanvasShader, alpha f32, mode BlendMode) {
+	scale := run.font_size / glyph_path_size
+	exact_ctm := if s := shader { s.kind != .null_ } else { false }
+	ctm_matrix := Matrix{ctm.sx, ctm.ky, ctm.kx, ctm.sy, ctm.tx, ctm.ty}
+	for i, outline_or_none in outlines {
+		outline := outline_or_none or { continue }
+		tx := run.translation[0] + run.positions[i * 2]
+		ty := run.translation[1] + run.positions[i * 2 + 1]
+		device := if exact_ctm {
+			placed := if (scale == 1 && tx == 0 && ty == 0) || outline.verbs.len == 0 {
+				outline
+			} else {
+				outline.transform(Matrix{scale, 0, 0, scale, tx, ty})
+			}
+			placed.transform(ctm_matrix)
+		} else {
+			m := if scale == 1 && tx == 0 && ty == 0 {
+				ctm
+			} else {
+				m44_pre_concat_scale_translate(ctm, scale, tx, ty)
+			}
+			outline.transform(Matrix{m.sx, m.ky, m.kx, m.sy, m.tx, m.ty})
+		}
+		mut blitter := canvas_paint_blitter(mut pixels, pitch, color, shader, alpha, mode,
+			device.bounds() or { Rect{} }) or { continue }
+		anti_fill_path_clip(device, false, rc, mut blitter)
+	}
+}
+
+// SkM44::preConcat() of the canvas matrix with a scale-translate, as
+// SkM44's columns: c0 * r0 + (c1 * r1 + (c2 * r2 + c3 * r3)) per column.
+fn m44_pre_concat_scale_translate(c SkAffine, s f32, tx f32, ty f32) SkAffine {
+	z := f32(0)
+	one := f32(1)
+	sx := m44_column(c.sx, c.kx, c.tx, s, z, z, z)
+	ky := m44_column(c.ky, c.sy, c.ty, s, z, z, z)
+	kx := m44_column(c.sx, c.kx, c.tx, z, s, z, z)
+	sy := m44_column(c.ky, c.sy, c.ty, z, s, z, z)
+	ntx := m44_column(c.sx, c.kx, c.tx, tx, ty, z, one)
+	nty := m44_column(c.ky, c.sy, c.ty, tx, ty, z, one)
+	return SkAffine{
+		sx: sx
+		kx: kx
+		tx: ntx
+		ky: ky
+		sy: sy
+		ty: nty
+	}
+}
+
+// One row of a column: a * r0 + (b * r1 + (0 * r2 + t * r3)).
+fn m44_column(a f32, b f32, t f32, r0 f32, r1 f32, r2 f32, r3 f32) f32 {
+	p0 := a * r0
+	p1 := b * r1
+	p2 := f32(0) * r2
+	p3 := t * r3
+	inner := p2 + p3
+	middle := p1 + inner
+	return p0 + middle
 }
 
 // SkPackedGlyphID::kSubpixelRound: half of a quarter pixel.
@@ -497,6 +667,39 @@ fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
 // SkScalerContext::internalMakeGlyph() with SkScalerContext_Mac's
 // generateMetrics() and generateImage().
 fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
+	g := s.glyph_bounds(id, sub_x_field, sub_y_field)
+	if g.width == 0 || g.height == 0 || g.width >= glyph_max_width {
+		return g
+	}
+	sub_x := f32(sub_x_field) / f32(4)
+	sub_y := f32(sub_y_field) / f32(4)
+	g_left, g_top, g_width, g_height := g.left, g.top, g.width, g.height
+	// Offscreen::getCG(): the glyph drawn at its subpixel offset from the
+	// bottom-left of a power-of-two context.
+	context_width := next_pow2(g_width)
+	context_height := next_pow2(g_height)
+	x := f32(-g_left) + sub_x
+	y := f32(g_top + g_height) - sub_y
+	cg := draw_glyph(s.font, id, s.transform, s.invertible, f64(x), f64(y), context_width,
+		context_height, g_width, g_height) or { return StrikeGlyph{} }
+	// RGBToA8<true>(): luminance of the inverted pixel through the table.
+	mut image := []u8{len: g_width * g_height}
+	first := (context_height - g_height) * context_width
+	for row in 0 .. g_height {
+		for column in 0 .. g_width {
+			p := cg[first + row * context_width + column]
+			red := 255 - (p >> 16 & 0xff)
+			green := 255 - (p >> 8 & 0xff)
+			blue := 255 - (p & 0xff)
+			image[row * g_width + column] = s.table[compute_luminance(red, green, blue)]
+		}
+	}
+	return StrikeGlyph{g_left, g_top, g_width, g_height, image}
+}
+
+// generateMetrics()'s bounds, rounded out, outset and saturated; zero for
+// an empty glyph.
+fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
 	metrics := glyph_metrics(s.font, id, s.transform) or { return StrikeGlyph{} }
 	// SkFixedToFloat() of the subpixel field.
 	sub_x := f32(sub_x_field) / f32(4)
@@ -521,30 +724,7 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 	if g_width == 0 || g_height == 0 {
 		return StrikeGlyph{}
 	}
-	if g_width >= glyph_max_width {
-		return StrikeGlyph{g_left, g_top, g_width, g_height, []u8{}}
-	}
-	// Offscreen::getCG(): the glyph drawn at its subpixel offset from the
-	// bottom-left of a power-of-two context.
-	context_width := next_pow2(g_width)
-	context_height := next_pow2(g_height)
-	x := f32(-g_left) + sub_x
-	y := f32(g_top + g_height) - sub_y
-	cg := draw_glyph(s.font, id, s.transform, s.invertible, f64(x), f64(y), context_width,
-		context_height, g_width, g_height) or { return StrikeGlyph{} }
-	// RGBToA8<true>(): luminance of the inverted pixel through the table.
-	mut image := []u8{len: g_width * g_height}
-	first := (context_height - g_height) * context_width
-	for row in 0 .. g_height {
-		for column in 0 .. g_width {
-			p := cg[first + row * context_width + column]
-			red := 255 - (p >> 16 & 0xff)
-			green := 255 - (p >> 8 & 0xff)
-			blue := 255 - (p & 0xff)
-			image[row * g_width + column] = s.table[compute_luminance(red, green, blue)]
-		}
-	}
-	return StrikeGlyph{g_left, g_top, g_width, g_height, image}
+	return StrikeGlyph{g_left, g_top, g_width, g_height, []u8{}}
 }
 
 fn saturate_i16(v i64) int {

@@ -119,3 +119,26 @@ fn draw_glyph(font voidptr, id u16, transform [6]f64, invertible bool, x f64, y 
 	}
 	return pixels
 }
+
+fn C.cpuraster_ct_glyph_path(font voidptr, glyph u16, transform &f64, sx f64, sy f64, elements &&f64) int
+fn C.free(ptr voidptr)
+
+// The CoreText path of a glyph through transform and a (sx, sy) scale:
+// seven values per CGPathElement (type, then three points). None when
+// CoreText has no path for it.
+fn glyph_path(font voidptr, id u16, transform [6]f64, sx f64, sy f64) ?[]f64 {
+	mut elements := &f64(unsafe { nil })
+	count := C.cpuraster_ct_glyph_path(font, id, &transform[0], sx, sy, &elements)
+	if count < 0 {
+		return none
+	}
+	if count == 0 || elements == unsafe { nil } {
+		return []f64{}
+	}
+	mut values := []f64{len: count * 7}
+	unsafe {
+		vmemcpy(values.data, elements, count * 7 * int(sizeof(f64)))
+		C.free(elements)
+	}
+	return values
+}
