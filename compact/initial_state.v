@@ -35,7 +35,8 @@ fn javascript_initial_element_state(element &dom.Element, bridge_key string, ele
 		'id':               json2.Any(id)
 		'bridgeKey':        json2.Any(bridge_key)
 		'elementIndex':     json2.Any(element_index)
-		'tagName':          json2.Any(element.local_name())
+		// A prefixed element reports its qualified name, as created ones do.
+		'tagName':          json2.Any(if element.prefix() != none { element.qualified_name_str() } else { element.local_name() })
 		'namespaceURI':     json2.Any(element.namespace_uri() or { '' })
 		'attributes':       json2.Any(attributes)
 		'attributeRecords': json2.Any(attribute_records)

@@ -57,7 +57,8 @@ fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string,
 		host.elements[key] = element
 	}
 	if element := host.elements[key] {
-		name := if key.starts_with('__created_') {
+		// Wrapper state names a prefixed element by its qualified name.
+		name := if key.starts_with('__created_') || element.prefix() != none {
 			element.qualified_name_str()
 		} else {
 			element.local_name()
