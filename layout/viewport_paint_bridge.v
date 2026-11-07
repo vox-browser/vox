@@ -3483,6 +3483,7 @@ fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.H
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return none }
 	mut hit_test_state := CompatibilityHitTestState{}
+	mut memo := new_compatibility_hit_point_memo(&result.visual_context_tree, snapshot, x, y)
 	// StackingContext paints chrome in the overlay phase, fragments in the
 	// foreground phase, and the box itself behind its descendants. Reversing
 	// that retained source-shaped plan preserves the recursive hit-test order
@@ -3500,26 +3501,26 @@ fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.H
 					continue
 				}
 				// PaintableWithLines tests an empty editable host before chrome.
-				if empty_editable_result := compatibility_empty_editable_hit_test(box, x, y, type_, result.visual_context_tree, snapshot) {
+				if empty_editable_result := compatibility_empty_editable_hit_test_at(box, type_, mut memo) {
 					if hit_test_state.consider_hit_test_result(empty_editable_result, type_) {
 						return hit_test_state.result
 					}
 				}
-				if chrome_result := compatibility_hit_test_chrome(box, x, y, result.visual_context_tree, snapshot, metrics) {
+				if chrome_result := compatibility_hit_test_chrome_at(box, mut memo, metrics) {
 					if hit_test_state.consider_hit_test_result(chrome_result, type_) {
 						return hit_test_state.result
 					}
 				}
 			}
 			.foreground {
-				if compatibility_hit_test_fragments(result.document, box, x, y, type_, result.visual_context_tree, snapshot, mut hit_test_state) {
+				if compatibility_hit_test_fragments_at(result.document, box, type_, mut memo, mut hit_test_state) {
 					return hit_test_state.result
 				}
 			}
 			.border {
 				candidate_node_id := box.node_id_for_hit_test()
 				if candidate_node_id == 0 || !box.visible || !box.pointer_events_enabled
-					|| !compatibility_box_contains_hit_test_point(box, x, y, box.stacking_context, result.visual_context_tree, snapshot) {
+					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
 				}
 				if element := element_for_paint_node_id(candidate_node_id) {
@@ -3851,6 +3852,61 @@ mut:
 	result ?dom.HitTestResult
 }
 
+// One hit-test query maps the same viewport point into the visual context of
+// every candidate step. Long documents share a handful of contexts across
+// thousands of boxes, so resolve each context's ancestor chain once per query.
+// Results equal paintable_box_transform_point_to_local() at one device pixel
+// per CSS pixel, including clip rejection.
+const disable_hit_point_memo = os.getenv('VOX_DISABLE_HIT_POINT_MEMO') != ''
+
+struct CompatibilityHitPointMemo {
+	tree     &painting.AccumulatedVisualContextTree = unsafe { nil }
+	snapshot painting.ScrollStateSnapshot
+	point    painting.Point
+mut:
+	// 0 unresolved, 1 mapped, 2 rejected by a clip or singular transform.
+	states []u8
+	points []painting.Point
+}
+
+fn new_compatibility_hit_point_memo(tree &painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, x f64, y f64) CompatibilityHitPointMemo {
+	return CompatibilityHitPointMemo{
+		tree:     unsafe { tree }
+		snapshot: snapshot
+		point:    painting.Point{x, y}
+	}
+}
+
+fn (mut memo CompatibilityHitPointMemo) local(index int) ?painting.Point {
+	if index == 0 {
+		return memo.point
+	}
+	if index < 0 || index >= memo.tree.nodes.len {
+		return none
+	}
+	if memo.states.len != memo.tree.nodes.len {
+		memo.states = []u8{len: memo.tree.nodes.len}
+		memo.points = []painting.Point{len: memo.tree.nodes.len}
+	}
+	if !disable_hit_point_memo {
+		match memo.states[index] {
+			1 { return memo.points[index] }
+			2 { return none }
+			else {}
+		}
+	}
+	device_position := paintable_box_point_to_device_pixels(memo.point, 1.0)
+	mapped := memo.tree.transform_point_for_hit_test(index, device_position, memo.snapshot) or {
+		memo.states[index] = 2
+		return none
+	}
+	local := paintable_box_point_to_css_pixels(mapped, 1.0)
+	memo.states[index] = 1
+	memo.points[index] = local
+	return local
+}
+
 fn compatibility_hit_test_distance(distance ?f64) f64 {
 	// CSSPixels::max_integer_value is the fallback in PaintableBox.cpp. The
 	// fixed-point maximum itself still contains its 63/64 fractional tail.
@@ -3965,11 +4021,19 @@ fn compatibility_uses_paintable_with_lines_hit_test(box &BlockBox) bool {
 fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 	tree &painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot,
 	metrics painting.ChromeMetrics) ?dom.HitTestResult {
+	mut memo := new_compatibility_hit_point_memo(tree, snapshot, x, y)
+	return compatibility_hit_test_chrome_at(box, mut memo, metrics)
+}
+
+fn compatibility_hit_test_chrome_at(box &BlockBox, mut memo CompatibilityHitPointMemo,
+	metrics painting.ChromeMetrics) ?dom.HitTestResult {
+	// Every result below requires retained chrome. Test it before resolving
+	// the layout node for each box of a long document.
+	overlay := box.overlay or { return none }
 	uses_lines_hit_test := compatibility_uses_paintable_with_lines_hit_test(box)
 	if !box.visible || (!uses_lines_hit_test && !box.pointer_events_enabled) {
 		return none
 	}
-	overlay := box.overlay or { return none }
 	has_resizer := overlay.has_resizer
 	can_scroll_horizontally := overlay.scrollbar_width != .none_
 		&& overlay.can_scroll_horizontally
@@ -3977,10 +4041,12 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 	if !has_resizer && !can_scroll_horizontally && !can_scroll_vertically {
 		return none
 	}
+	// PaintableBox::transform_to_local_coordinates() keeps the screen point
+	// when the context rejects it.
 	position := if uses_lines_hit_test {
-		painting.Point{x, y}
+		memo.point
 	} else {
-		paintable_box_transform_to_local_coordinates(box, painting.Point{x, y}, 1.0, tree, snapshot)
+		memo.local(box.accumulated_visual_context_index) or { memo.point }
 	}
 	if box.node_id == 0 {
 		return none
@@ -4021,8 +4087,14 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 fn compatibility_empty_editable_hit_test(box &BlockBox, x f64, y f64,
 	type_ dom.HitTestType, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) ?dom.HitTestResult {
-	if !box.paintable_with_lines || box.lines.any(it.fragments.len > 0) || box.children.len > 0
-		|| type_ != .text_cursor || !box.visible || !box.pointer_events_enabled
+	mut memo := new_compatibility_hit_point_memo(tree, snapshot, x, y)
+	return compatibility_empty_editable_hit_test_at(box, type_, mut memo)
+}
+
+fn compatibility_empty_editable_hit_test_at(box &BlockBox, type_ dom.HitTestType,
+	mut memo CompatibilityHitPointMemo) ?dom.HitTestResult {
+	if type_ != .text_cursor || !box.paintable_with_lines || box.children.len > 0
+		|| box.lines.any(it.fragments.len > 0) || !box.visible || !box.pointer_events_enabled
 		|| box.layout_handle == unsafe { nil } {
 		return none
 	}
@@ -4031,7 +4103,7 @@ fn compatibility_empty_editable_hit_test(box &BlockBox, x f64, y f64,
 	if !dom_node.is_editable_or_editing_host() {
 		return none
 	}
-	local_position := paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return none }
+	local_position := memo.local(box.accumulated_visual_context_index) or { return none }
 	if !box.border_box_contains_hit_test_point(local_position) {
 		return none
 	}
@@ -4051,23 +4123,40 @@ fn compatibility_text_cursor_common_ancestor_parent(document &dom.Document) ?&do
 fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64,
 	y f64, type_ dom.HitTestType, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, mut hit_test_state CompatibilityHitTestState) bool {
+	mut memo := new_compatibility_hit_point_memo(tree, snapshot, x, y)
+	return compatibility_hit_test_fragments_at(document, box, type_, mut memo, mut hit_test_state)
+}
+
+fn compatibility_hit_test_fragments_at(document &dom.Document, box &BlockBox,
+	type_ dom.HitTestType, mut memo CompatibilityHitPointMemo,
+	mut hit_test_state CompatibilityHitTestState) bool {
 	if !compatibility_uses_paintable_with_lines_hit_test(box) || !box.visible
 		|| !box.pointer_events_enabled {
 		return false
 	}
+	tree := memo.tree
+	snapshot := memo.snapshot
 	local_position := if box.stacking_context {
-		paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
+		memo.local(box.accumulated_visual_context_index) or { return false }
 	} else {
-		paintable_box_transform_point_to_local_for_descendants(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
+		memo.local(box.accumulated_visual_context_for_descendants_idx) or { return false }
 	}
 	common_ancestor_parent := if type_ == .text_cursor {
 		compatibility_text_cursor_common_ancestor_parent(document)
 	} else {
 		?&dom.Node(none)
 	}
-	for line in box.lines {
-		for fragment in line.fragments {
-			fragment_rect := fragment.paintable_fragment.absolute_rect()
+	for line_index in 0 .. box.lines.len {
+		line := unsafe { &box.lines[line_index] }
+		for fragment_index in 0 .. line.fragments.len {
+			// Borrow each fragment: this scan visits every fragment of every
+			// box with lines, and a by-value TextFragment copies its wide record.
+			fragment := unsafe { &line.fragments[fragment_index] }
+			paintable_fragment := unsafe { &fragment.paintable_fragment }
+			// PaintableFragment::absolute_rect(), without copying the fragment.
+			fragment_rect := painting.Rect{paintable_fragment.offset.x + paintable_fragment.containing_block_offset.x,
+				paintable_fragment.offset.y + paintable_fragment.containing_block_offset.y,
+				paintable_fragment.size.width, paintable_fragment.size.height}
 			// Exact pointer hits cannot use an out-of-bounds fragment. Avoid
 			// querying its style and DOM ancestry while scanning long documents.
 			// Cursor hit testing still considers nearby fragment edges.
@@ -4153,6 +4242,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return []&dom.Element{} }
 	mut elements := []&dom.Element{}
+	mut memo := new_compatibility_hit_point_memo(&result.visual_context_tree, snapshot, x, y)
 	for index := result.hit_test_steps.len - 1; index >= 0; index-- {
 		step := result.hit_test_steps[index]
 		box := step.box
@@ -4161,7 +4251,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 				if box.stacking_context && voidptr(box) != voidptr(&result.paint_tree) {
 					continue
 				}
-				if chrome_result := compatibility_hit_test_chrome(box, x, y, result.visual_context_tree, snapshot, metrics) {
+				if chrome_result := compatibility_hit_test_chrome_at(box, mut memo, metrics) {
 					if chrome_result.element != unsafe { nil } {
 						elements << chrome_result.element
 					}
@@ -4170,7 +4260,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 			.border {
 				node_id := box.node_id_for_hit_test()
 				if node_id == 0 || !box.visible || !box.pointer_events_enabled
-					|| !compatibility_box_contains_hit_test_point(box, x, y, box.stacking_context, result.visual_context_tree, snapshot) {
+					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
 				}
 				if element := element_for_paint_node_id(node_id) {
@@ -4186,7 +4276,13 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64,
 	stacking_context_root bool, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) bool {
-	local_point := paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
+	mut memo := new_compatibility_hit_point_memo(tree, snapshot, x, y)
+	return compatibility_box_contains_hit_test_point_at(box, stacking_context_root, mut memo)
+}
+
+fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_root bool,
+	mut memo CompatibilityHitPointMemo) bool {
+	local_point := memo.local(box.accumulated_visual_context_index) or { return false }
 	if !box.svg_path_bounding_box_contains_hit_test_point(local_point) {
 		return false
 	}
