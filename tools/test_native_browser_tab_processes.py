@@ -105,6 +105,28 @@ def main():
     def selected(data):
         return next(tab['pid'] for tab in data['tabs'] if tab['id'] == data['selected'])
 
+    def application_types(pids):
+        # LaunchServices' own view: only a "Foreground" application has a Dock
+        # icon and an entry in the Cmd-Tab application switcher.
+        types, pid = {}, None
+        for line in subprocess.run(['lsappinfo', 'list'], capture_output=True, text=True,
+                                   check=True).stdout.splitlines():
+            line = line.strip()
+            if line.startswith('pid = '):
+                pid = int(line.split()[2])
+                if pid in pids and 'type="' in line:
+                    types[pid] = line.split('type="', 1)[1].split('"', 1)[0]
+        return types
+
+    def single_switcher_entry(data):
+        # Each tab is a process; only the shown tab may be a regular application.
+        pids = {tab['pid'] for tab in data['tabs']}
+        policies = {pid: report(pid).get('policy') for pid in pids}
+        shown = selected(data)
+        return (policies == {pid: 0 if pid == shown else 1 for pid in pids} and
+                application_types(pids) == {pid: 'Foreground' if pid == shown else 'UIElement'
+                                            for pid in pids})
+
     try:
         wait('initial page rendered', lambda s: report(root.pid).get('painted') and
              report(root.pid).get('title', '').startswith('Process First'))
@@ -117,6 +139,8 @@ def main():
                     report(selected(s)).get('painted') and not report(root.pid).get('visible'))
         second = selected(data)
         assert second != root.pid
+        wait('hidden original leaves the application switcher', lambda s:
+             selected(s) == second and single_switcher_entry(s))
         assert report(second)['frame'] == first_frame
         # AppKit schedules its last-window termination check after orderOut:.
         # Keep the original hidden long enough to catch a group-wide shutdown.
@@ -137,11 +161,15 @@ def main():
         wait('original document retained after switch', lambda s: selected(s) == root.pid and
              report(root.pid).get('visible') and report(root.pid).get('title') == first_title and
              not report(second).get('visible'))
+        wait('switching tabs moves the application switcher entry', lambda s:
+             selected(s) == root.pid and single_switcher_entry(s))
         command(root.pid, 'new')
         data = wait('third tab has a third PID', lambda s: len(s['tabs']) == 3 and selected(s) not in (root.pid, second)
                     and report(selected(s)).get('visible'))
         third = selected(data)
         assert len({root.pid, second, third}) == 3
+        wait('only the shown tab is in the Dock and application switcher', lambda s:
+             len(s['tabs']) == 3 and selected(s) == third and single_switcher_entry(s))
         # Kill an inactive page. The selected document must survive and the
         # dead process must disappear from every responsive tab's chrome.
         os.kill(second, signal.SIGKILL)
@@ -169,7 +197,7 @@ def main():
             time.sleep(.05)
         assert not folder.exists(), 'closing the visible window did not end the group'
         snapshots.append({'check': 'closing the window ends the group', 'pid': replacement})
-        print('PASS native tab processes: unique PIDs, selection, navigation, reopen, crashes, parent exit, last-tab replacement, window close')
+        print('PASS native tab processes: unique PIDs, selection, navigation, reopen, one switcher entry, crashes, parent exit, last-tab replacement, window close')
     finally:
         state()
         for pid in known:

@@ -66,6 +66,7 @@ static void poll(void) {
         const char *firstImage = _dyld_get_image_name(0);
         NSDictionary *report=@{@"pid":@(getpid()), @"visible":@(window.visible && window.alphaValue>0),
             @"active":@(NSApp.active), @"minimized":@(window.miniaturized),
+            @"policy":@(NSApp.activationPolicy),
             @"title":window.title ?: @"", @"address":address.stringValue ?: @"", @"painted":@(painted),
             @"executable":@(executable), @"first_image":firstImage ? @(firstImage) : @"",
             @"frame":@[@(frame.origin.x),@(frame.origin.y),@(frame.size.width),@(frame.size.height)]};
