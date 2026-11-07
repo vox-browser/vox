@@ -8,11 +8,12 @@ import time
 pub const version_url = 'https://vox-browser.org/version'
 pub const download_url = 'https://vox-browser.org'
 
-// Embed the packaging source so installed copies never read the checkout, and
-// macOS and Linux compare the same release version. Bump this plist for releases.
+// Embed the shared version source so installed copies never read the
+// checkout, and every platform compares the same release version.
+// Bump packaging/version.txt for releases and keep the macOS bundle
+// version in packaging/Info.plist in sync with it.
 pub fn current_version() string {
-	info := $embed_file('../packaging/Info.plist').to_string()
-	return info.all_after('<key>CFBundleShortVersionString</key>').all_after('<string>').all_before('</string>').trim_space()
+	return $embed_file('../packaging/version.txt').to_string().trim_space()
 }
 
 fn parse_version(raw string) !semver.Version {

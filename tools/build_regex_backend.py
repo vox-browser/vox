@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Build the byte-exact pinned LibRegex Rust dependency owned by this repository."""
 import argparse
-import fcntl
 import hashlib
 import json
 import os
@@ -9,6 +8,11 @@ import platform
 from pathlib import Path
 import shutil
 import subprocess
+
+if os.name == 'nt':
+    import msvcrt
+else:
+    import fcntl
 
 
 def main():
@@ -42,13 +46,19 @@ def main():
     # x86-64/ARM archives in a shared checkout. Include rustc's host triple.
     digest.update(compiler_identity.encode())
     fingerprint = digest.hexdigest()
-    # A Linux VM can share this checkout with its macOS host. Keep their
-    # archives separate for the entire compile/link lifetime, not just while
-    # rebuilding the archive under the lock.
+    # A Linux VM can share this checkout with its macOS host, or WSL with its
+    # Windows host. Keep their archives separate for the entire compile/link
+    # lifetime, not just while rebuilding the archive under the lock.
     output = repo / 'Build/libregex' / platform.system().lower()
     output.mkdir(parents=True, exist_ok=True)
     lock = (output / 'build.lock').open('w')
-    fcntl.flock(lock, fcntl.LOCK_EX)
+    if os.name == 'nt':
+        # Windows has no fcntl; lock the first byte instead. The lock is
+        # held until this handle closes at process exit.
+        lock.seek(0)
+        msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+    else:
+        fcntl.flock(lock, fcntl.LOCK_EX)
     archive = output / 'libregex_native.a'
     stamp = output / 'source.sha256'
     if archive.exists() and stamp.exists() and stamp.read_text().strip() == fingerprint:

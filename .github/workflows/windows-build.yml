@@ -1,0 +1,56 @@
+name: Windows build (scaffolding)
+
+# Baseline for the Windows release work (see docs/WINDOWS.md). A native
+# Windows checkout is still blocked by pixel_tests fixture names that are
+# illegal on Windows (see issue #8), so this runs on Linux: it verifies the
+# pinned sources, syntax-checks the touched helper, and exercises the
+# x.imp build script end to end through `v run build.v --help`.
+on:
+  push:
+    branches: [master]
+    paths:
+      - build.v
+      - .github/workflows/windows-build.yml
+      - tools/build_regex_backend.py
+      - packaging/version.txt
+      - browserupdate/**
+      - docs/WINDOWS.md
+  pull_request:
+    paths:
+      - build.v
+      - .github/workflows/windows-build.yml
+      - tools/build_regex_backend.py
+      - packaging/version.txt
+      - browserupdate/**
+      - docs/WINDOWS.md
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scaffolding:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify pinned LibRegex sources
+        run: python3 tools/build_regex_backend.py --verify-only
+
+      - name: Syntax-check the LibRegex helper
+        run: python3 -m py_compile tools/build_regex_backend.py
+
+      - name: Install V from source (for x.imp)
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/vlang/v.git "$RUNNER_TEMP/v"
+          make -C "$RUNNER_TEMP/v" -j2
+          "$RUNNER_TEMP/v/v" version
+
+      - name: Show x.imp build flows
+        run: '"$RUNNER_TEMP/v/v" run build.v --help'

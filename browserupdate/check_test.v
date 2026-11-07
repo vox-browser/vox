@@ -58,6 +58,12 @@ fn test_check_fetches_version_and_ignores_unavailable_invalid_and_unchanged_resp
 	assert fetch_version('not a URL', '0.1') == ''
 }
 
+fn test_packaging_version_matches_bundle_plist() {
+	info := $embed_file('../packaging/Info.plist').to_string()
+	bundle := info.all_after('<key>CFBundleShortVersionString</key>').all_after('<string>').all_before('</string>').trim_space()
+	assert current_version() == bundle
+}
+
 struct HandoffLog {
 mut:
 	events []string
