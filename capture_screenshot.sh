@@ -2,7 +2,9 @@
 set -eu
 
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-browser="$repo_dir/Build/v/Vox.app/Contents/MacOS/Vox"
+# SCREENSHOT_BROWSER pins another executable, such as a private bundle; the
+# caller is responsible for its identity and no rebuild check applies.
+browser=${SCREENSHOT_BROWSER:-"$repo_dir/Build/v/Vox.app/Contents/MacOS/Vox"}
 
 # macOS strips DYLD_* when starting its protected shell. Reestablish an
 # explicitly requested diagnostic backend here, before launching the browser.
@@ -26,7 +28,7 @@ esac
 
 # Callers that pin a completed shared bundle can test it while newer source
 # changes are being built elsewhere. They remain responsible for its identity.
-if [ "${SCREENSHOT_REUSE_PRODUCTION:-0}" != 1 ]; then
+if [ -z "${SCREENSHOT_BROWSER:-}" ] && [ "${SCREENSHOT_REUSE_PRODUCTION:-0}" != 1 ]; then
 if [ ! -x "$browser" ] \
     || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/Vox.icns" ] \
     || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin" ] \
