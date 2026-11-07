@@ -20,7 +20,7 @@ fn pseudo_element_parsing_impl(text string) !css.PseudoElementSelector {
 		|| compounds[0].simple_selectors[0].type_ != .pseudo_element {
 		return error('Invalid pseudo-element selector: "${text}"')
 	}
-	pseudo := compounds[0].simple_selectors[0].pseudo_element
+	pseudo := compounds[0].simple_selectors[0].pseudo_element()
 	if text in [':before', ':after', ':first-letter', ':first-line'] {
 		// Serializing the parsed selector canonicalizes the legacy spelling to
 		// the equivalent two-colon selector.
