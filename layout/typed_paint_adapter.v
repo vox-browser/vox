@@ -3941,6 +3941,42 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		paint_position = CSSPixelPoint.from_values(mapped_bounds.x, mapped_bounds.y)
 		paint_width = mapped_bounds.width
 		paint_height = mapped_bounds.height
+		// An SVG image element that references an SVG document draws that
+		// isolated document into its viewport, like an <img>, instead of passing
+		// the vector bytes to the raster decoders. GitHub's README badges embed
+		// their logos this way. The default preserveAspectRatio meets and centers.
+		if replaced_image_url != '' {
+			color_scheme := image_color_scheme(node.document(), computed)
+			if svg_document := svg_image_document_for_source_in_viewport(node, replaced_image_url, color_scheme) {
+				mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+				mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(color_scheme))
+				viewport_rect := painting.Rect{
+					x: mapped_bounds.x
+					y: mapped_bounds.y
+					width: mapped_bounds.width
+					height: mapped_bounds.height
+				}
+				default_size := css.CSSPixelSize.new(CSSPixels.nearest_value_for(mapped_bounds.width),
+					CSSPixels.nearest_value_for(mapped_bounds.height))
+				concrete_size := css.run_default_sizing_algorithm(none, none, svg_background_natural_size(svg_document), default_size)
+				if fitted := painting.get_replaced_box_painting_rect(viewport_rect, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()},
+					.contain, computed.object_position(), computed.length_resolution_context()) {
+					converter := painting.new_device_pixel_converter(1.0) or { panic(err) }
+					device := converter.rounded_device_rect(fitted)
+					nested_viewport_document = svg_document
+					nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
+						nested_layout_size: if node.document().font_rendering_policy() == .chromium {
+							?painting.Size(painting.Size{fitted.width, fitted.height})
+						} else {
+							none
+						}
+						viewport_rect: viewport_rect
+						nested_rect: painting.Rect{f64(device.x), f64(device.y), f64(device.width), f64(device.height)}
+					}
+					replaced_image_url = ''
+				}
+			}
+		}
 	}
 	if replaced_image_url != '' || node.is_image_box() {
 		mut replaced_intrinsic_size := ?css.SizeWithAspectRatio(none)

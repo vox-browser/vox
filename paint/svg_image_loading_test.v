@@ -77,3 +77,21 @@ fn test_native_svg_decode_follows_the_response_content_type() {
 	assert decoded.intrinsic_height()? == 20
 	assert browser_response_mime_essence([adblock.ResponseHeader{name: 'content-type', value: ' Image/SVG+XML ; charset=utf-8'}]) == 'image/svg+xml'
 }
+
+// GitHub's README badges are SVG images whose <image> elements embed SVG logos
+// as data URLs. The referenced document draws as a nested display list inside
+// the image viewport rather than failing in the raster decoders.
+fn test_svg_image_elements_draw_referenced_svg_documents() {
+	logo := '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M0 0H24V24H0Z"/></svg>'
+	address := 'data:image/svg+xml;base64,' + base64.encode_str(logo)
+	mut document := parse_loaded_browser_navigation_document(LoadedPage{
+		url: 'https://github.com/vlang/v'
+		markup: '<!doctype html><style>html,body{margin:0}</style><svg width="99" height="20"><rect width="99" height="20" fill="#555"/><image x="5" y="3" width="14" height="14" href="${address}"/></svg>'
+	}, dom.URL{value: 'https://github.com/vlang/v'}, none, none, none, false)
+	defer { document.finalize() }
+	mut app := BrowserApp{document: document}
+	app.relayout(400, 300)
+	nested := app.paint_commands.filter(it.kind == 'paint_nested_display_list')
+	assert nested.len == 1
+	assert nested[0].nested_viewport_commands.any(it.kind == 'draw_svg_path')
+}
