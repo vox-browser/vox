@@ -5,11 +5,18 @@ import os
 import platform
 
 const disable_viewport_ink_cache = os.getenv('VOX_DISABLE_VIEWPORT_INK_CACHE') != ''
+const disable_viewport_ink_bounds = os.getenv('VOX_DISABLE_VIEWPORT_INK_BOUNDS') != ''
 
 struct ViewportCachedEntryInk {
 	first int
 	count int
 	bounded bool
+	// Union of the components when every one is a finite positive-area rect.
+	// An affine image of a component lies inside the image of the union, so a
+	// union beyond one viewport edge proves each component is beyond it. Long
+	// documents reject almost every entry with this one test.
+	has_bounds bool
+	bounds     LayoutRect
 }
 
 // Private recording workspace. Rectangles contain no paint-tree or glyph roots.
@@ -46,11 +53,46 @@ fn refresh_viewport_entry_ink_cache(mut result DocumentLayoutResult) {
 	for entry in result.paint_order {
 		first := cache.rects.len
 		bounded := append_viewport_entry_ink(entry.box, mut cache.rects)
-		cache.entries << ViewportCachedEntryInk{first, cache.rects.len - first, bounded}
+		bounds, has_bounds := viewport_ink_component_bounds(cache.rects, first)
+		cache.entries << ViewportCachedEntryInk{
+			first:      first
+			count:      cache.rects.len - first
+			bounded:    bounded
+			has_bounds: bounded && has_bounds
+			bounds:     bounds
+		}
 	}
 	cache.revision = revision
 	cache.order = result.paint_order.data
 	cache.valid = true
+}
+
+fn viewport_ink_component_bounds(rects []LayoutRect, first int) (LayoutRect, bool) {
+	if first >= rects.len { return LayoutRect{}, false }
+	mut left := f64(0)
+	mut top := f64(0)
+	mut right := f64(0)
+	mut bottom := f64(0)
+	for index in first .. rects.len {
+		rect := rects[index]
+		// Degenerate or non-finite components never prove an entry outside;
+		// keep their exact per-component result.
+		if !(rect.width > 0 && rect.height > 0) || math.is_nan(rect.x) || math.is_nan(rect.y)
+			|| math.is_inf(rect.x, 0) || math.is_inf(rect.y, 0) || math.is_inf(rect.width, 0)
+			|| math.is_inf(rect.height, 0) {
+			return LayoutRect{}, false
+		}
+		if index == first {
+			left, top = rect.x, rect.y
+			right, bottom = rect.x + rect.width, rect.y + rect.height
+			continue
+		}
+		left = math.min(left, rect.x)
+		top = math.min(top, rect.y)
+		right = math.max(right, rect.x + rect.width)
+		bottom = math.max(bottom, rect.y + rect.height)
+	}
+	return LayoutRect{left, top, right - left, bottom - top}, true
 }
 
 fn append_viewport_entry_ink(box &BlockBox, mut rects []LayoutRect) bool {
@@ -106,6 +148,10 @@ fn viewport_cached_entry_ink_is_outside(cache &ViewportEntryInkCache, index int,
 	transform [6]f64, width f64, height f64, mut ink_probe PaintCommand) bool {
 	entry := cache.entries[index]
 	if !entry.bounded { return false }
+	if entry.has_bounds && !disable_viewport_ink_bounds && !disable_direct_viewport_rect_culling
+		&& viewport_rect_is_outside(entry.bounds, transform, width, height, mut ink_probe) {
+		return true
+	}
 	for offset in 0 .. entry.count {
 		if !viewport_rect_is_outside(cache.rects[entry.first + offset], transform,
 			width, height, mut ink_probe) { return false }

@@ -77,3 +77,62 @@ fn test_viewport_ink_workspace_moves_without_reusing_an_old_layouts_bounds() {
 	_ = document.record_viewport_display_list()?
 	assert_cached_viewport_ink_matches_replay(current)
 }
+
+fn test_viewport_ink_bounds_match_components_on_long_documents() {
+	// Many entries far outside the viewport, empty/space-only text runs and
+	// inline boxes take the cached union path; the result must equal the
+	// per-component check under every transform, including singular ones.
+	mut html_source := '<!doctype html><style>html,body{margin:0}td{padding:2px}</style><table>'
+	for index in 0 .. 60 {
+		html_source += '<tr><td><img src="s.gif" width="${index * 4}" height="1"></td><td><span class="c"><a href="#">user${index}</a> <span> </span> | <u>reply</u></span><div>comment text ${index} with several words</div></td></tr>'
+	}
+	html_source += '</table>'
+	mut document := html.parse_document(html_source)
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	_ = document.record_viewport_display_list()?
+	result := document_layout_result(document)?
+	cache := &result.record_scratch.viewport_ink_cache
+	assert cache.valid
+	mut with_bounds := 0
+	for entry in cache.entries {
+		if entry.has_bounds { with_bounds++ }
+	}
+	assert with_bounds > 100
+	transforms := [
+		[f64(1), 0, 0, 1, 0, -2000]!,
+		[f64(1), 0, 0, 1, 0, -97]!,
+		[f64(0), 0, 0, 1, 0, -500]!,
+		[f64(1), 0, 0, 0, 0, -500]!,
+		[f64(-1), 0, 0, -1, 320, 1200]!,
+		[f64(.5), .25, -.25, .5, 40, -300]!,
+	]
+	mut probe := PaintCommand{}
+	mut outside := 0
+	for index, entry in result.paint_order {
+		for transform in transforms {
+			before := viewport_entry_has_bounded_ink(entry.box)
+				&& viewport_box_ink_is_outside(entry.box, transform, 320, 100, mut probe)
+			after := viewport_cached_entry_ink_is_outside(cache, index, transform, 320, 100, mut probe)
+			assert before == after, 'entry=${index}, transform=${transform}'
+			if after { outside++ }
+		}
+	}
+	assert outside > 0
+	for y in [f64(0), 333.5, 1200] {
+		document.set_viewport_rect(dom.Rect{0, y, 320, 100})
+		_ = document.record_viewport_display_list()?
+		assert_cached_viewport_ink_matches_replay(result)
+	}
+}
+
+fn test_viewport_ink_bounds_reject_degenerate_components() {
+	rects := [LayoutRect{0, 0, 10, 10}, LayoutRect{5, 20, 0, 4}]
+	bounds, valid := viewport_ink_component_bounds(rects, 0)
+	assert !valid && bounds == LayoutRect{}
+	union_, ok := viewport_ink_component_bounds([LayoutRect{0, 0, 10, 10}, LayoutRect{-5, 30, 2, 4}], 0)
+	assert ok
+	assert union_ == LayoutRect{-5, 0, 15, 34}
+	_, empty := viewport_ink_component_bounds([LayoutRect{0, 0, 10, 10}], 1)
+	assert !empty
+}
