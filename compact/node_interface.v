@@ -14,7 +14,12 @@ Object.defineProperty(globalThis,"Node",{value:Node,writable:true,configurable:t
 function __compactEqualityState(node){
  if(node===document)return{bridgeKey:"",nodeType:9};
  const state=__elementApply(__elementRecordGet,__elementRecords,[node])||__elementApply(__compactNodeGet,__compactNodeRecords,[node])||__elementApply(__compactNodeGet,__compactDocuments,[node]);
- if(!state)throw new TypeError("Expected a Node");return state;
+ if(state)return state;
+ // A node of another browsing context, such as an iframe document, has the
+ // local wrapper that names the same native node.
+ const local=typeof __compactForeignNode==="function"?__compactForeignNode(node):null;
+ if(local&&local!==node)return __compactEqualityState(local);
+ throw new TypeError("Expected a Node");
 }
 Object.defineProperty(Node.prototype,"isEqualNode",{value:{isEqualNode(other){
  "use strict";const own=__compactEqualityState(this);

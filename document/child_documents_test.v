@@ -385,6 +385,8 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
  reference.removeChild(reference.documentElement);
  reference.appendChild(child.documentElement.cloneNode(true));
  globalThis.adopted=reference.documentElement.outerHTML;
+ // Equality and position compare nodes across the two realms.
+ globalThis.equalities=[child.body.isEqualNode(reference.body),reference.body.isEqualNode(child.body),child.isEqualNode(child),child.documentElement.isEqualNode(document.documentElement),child.body.compareDocumentPosition(reference.body)&Node.DOCUMENT_POSITION_DISCONNECTED].join(" ");
  const italic=child.createElement("i");italic.textContent="moved";document.body.appendChild(italic);
  globalThis.moved=document.body.lastChild.outerHTML+" "+(document.body.lastChild.ownerDocument===document);
  // A WindowProxy taken before its frame has a realm reads and writes it.
@@ -405,6 +407,8 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
 	assert rewritten == '<b>second</b>', rewritten
 	adopted := runtime.evaluate_host('adopted')!
 	assert adopted == '<html><head></head><body><b>second</b></body></html>', adopted
+	equalities := runtime.evaluate_host('equalities')!
+	assert equalities == 'true true true false 1', equalities
 	moved := runtime.evaluate_host('moved')!
 	assert moved == '<i>moved</i> true', moved
 	proxied := runtime.evaluate_host('proxied')!
