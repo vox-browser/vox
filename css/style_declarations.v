@@ -1387,6 +1387,12 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 			} else {
 				style_computer.compute_style_with_seeded_ancestors(owner)
 			}
+			if property_id == .transform_origin {
+				return StyleProperty{
+					property_id: property_id
+					value: cssom_transform_origin_without_box(computed)
+				}
+			}
 			value := computed.property(property_id, .yes) or { return none }
 			return StyleProperty{
 				property_id: property_id
@@ -1429,6 +1435,26 @@ fn cssom_style_value_for_length_percentage(value LengthPercentage) &dom.StyleVal
 		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(value.length())))
 	}
 	return dom_style_value_from_value_logic(StyleValue(value.calculated()))
+}
+
+// transform-origin of an element without a box: there is no reference box,
+// so its offsets stay length-percentages and a zero z is omitted.
+fn cssom_transform_origin_without_box(computed &ComputedProperties) &dom.StyleValue {
+	origin := computed.transform_origin()
+	length_percentage := fn (value LengthPercentage) StyleValue {
+		if value.is_percentage() {
+			return StyleValue(PercentageStyleValue.create(value.percentage()))
+		}
+		if value.is_length() {
+			return StyleValue(LengthStyleValue.create(value.length()))
+		}
+		return StyleValue(value.calculated())
+	}
+	mut offsets := [length_percentage(origin.x), length_percentage(origin.y)]
+	if origin.z.is_absolute() && origin.z.absolute_length_to_px_without_rounding() != 0 {
+		offsets << StyleValue(LengthStyleValue.create(origin.z))
+	}
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(offsets, .space, .no)))
 }
 
 fn cssom_style_value_for_length_percentage_or_auto(value LengthPercentageOrAuto) &dom.StyleValue {
@@ -1707,6 +1733,32 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		}
 		.text_shadow {
 			return cssom_style_value_for_shadow(.text, computed.text_shadow(layout_node))
+		}
+		// https://drafts.csswg.org/css-transforms/#transform-origin-property
+		// The transform-origin property is a resolved value special case property like height.
+		.transform_origin {
+			origin := computed.transform_origin()
+			scale := owner.document().layout_coordinate_scale()
+			context := LengthResolutionContext.for_layout_node(layout_node)
+			offset := fn [context] (value LengthPercentage, reference f64) f64 {
+				if value.is_percentage() {
+					return reference * value.percentage().as_fraction()
+				}
+				return value.to_px(context, CSSPixels.nearest_value_for(reference)).to_double()
+			}
+			if !display_allows_used_value {
+				return cssom_transform_origin_without_box(computed)
+			}
+			mut offsets := [
+				StyleValue(LengthStyleValue.create(Length.make_px(offset(origin.x, layout_node.border_box_.width / scale)))),
+				StyleValue(LengthStyleValue.create(Length.make_px(offset(origin.y, layout_node.border_box_.height / scale)))),
+			]
+			z := origin.z.to_px_without_rounding(context)
+			if z != 0 {
+				offsets << StyleValue(LengthStyleValue.create(Length.make_px(z)))
+			}
+			return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(offsets, .space,
+				.no)))
 		}
 		.line_height {
 			value := computed.property(property_id, .yes) or { return none }

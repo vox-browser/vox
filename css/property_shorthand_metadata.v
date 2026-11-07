@@ -1817,7 +1817,7 @@ pub fn generated_property_needs_layout_for_getcomputedstyle(property_id Property
 
 pub fn generated_property_needs_layout_node_for_resolved_value(property_id PropertyID) bool {
 	return match property_id {
-		.webkit_text_fill_color, .animation_duration, .backdrop_filter, .background_color, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_top_color, .border_top_width, .box_shadow, .caret_color, .color, .column_rule_color, .contain, .filter, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .outline_color, .text_decoration_color, .text_shadow, .transform, .z_index {
+		.webkit_text_fill_color, .animation_duration, .backdrop_filter, .background_color, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_top_color, .border_top_width, .box_shadow, .caret_color, .color, .column_rule_color, .contain, .filter, .font_weight, .font_width, .letter_spacing, .line_height, .math_depth, .outline_color, .text_decoration_color, .text_shadow, .transform, .transform_origin, .z_index {
 			true
 		}
 		else { false }
