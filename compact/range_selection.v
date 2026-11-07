@@ -148,7 +148,8 @@ fn (mut binding CompactElementQueryBinding) range_query(key string, source strin
 		}
 		else { return error('Invalid Range operation') }
 	}
-	result['range'] = binding.range_state(range)
+	// Boundary updates need no reply; the realm asks for state when it reads.
+	if op == 'state' { result['range'] = binding.range_state(range) }
 	return json2.encode(result)
 }
 
@@ -296,8 +297,27 @@ fn compact_range_selection_bootstrap() string {
  function adopt(object,state){__elementApply(set,records,[object,state.key]);wrappers.set(state.key,object);return object;}
  function wrap(state){if(state===null||state===undefined)return null;const existing=wrappers.get(state.key);return existing||adopt(Object.create(Range.prototype),state);}
  function key(receiver){const own=__elementApply(get,records,[receiver]);if(!own)throw new TypeError("Illegal Range receiver");return own;}
- function op(receiver,name,fields){return refresh(call("","range",Object.assign({op:name,range:key(receiver)},fields||{})));}
- function rangeState(receiver){return op(receiver,"state").range;}
+ // Range state stays valid until another range, selection or editing
+ // operation, or a DOM change, which the content version reflects.
+ const contentVersion=globalThis.__ladybirdDOMContentVersion;
+ let epoch=0;const states=new Map();
+ function version(){
+  if(typeof contentVersion!=="function")return -1;
+  if(__state.operations.length||__dirtyElementStates.size)return -1;
+  return contentVersion();
+ }
+ function op(receiver,name,fields){
+  const own=key(receiver);
+  if(name!=="state")epoch++;
+  return refresh(call("","range",Object.assign({op:name,range:own},fields||{})));
+ }
+ function rangeState(receiver){
+  const own=key(receiver),current=version(),cached=states.get(own);
+  if(cached&&current>=0&&cached.version===current&&cached.epoch===epoch)return cached.state;
+  const state=op(receiver,"state").range,after=version();
+  if(after>=0)states.set(own,{state,version:after,epoch});
+  return state;
+ }
  for(const name of ["startContainer","endContainer","commonAncestorContainer"])Object.defineProperty(AbstractRange.prototype,name,{get:function(){return __queryElement(rangeState(this)[name]);},enumerable:true,configurable:true});
  for(const name of ["startOffset","endOffset","collapsed"])Object.defineProperty(AbstractRange.prototype,name,{get:function(){return rangeState(this)[name];},enumerable:true,configurable:true});
  const point=name=>function(target,offset){if(arguments.length<2)throw new TypeError(name+" requires a node and an offset");op(this,name,{node:node(target,"node"),offset:unsigned(offset)});};
@@ -336,6 +356,7 @@ fn compact_range_selection_bootstrap() string {
  function selectionOwner(receiver){const owner=__elementApply(get,selections,[receiver]);if(owner===undefined)throw new TypeError("Illegal Selection receiver");return owner;}
  function selectionOp(receiver,name,fields){
   const owner=selectionOwner(receiver);
+  if(name!=="state"&&name!=="containsNode"&&name!=="toString")epoch++;
   const result=refresh(call(owner,"selection",Object.assign({op:name},fields||{})));
   return result;
  }
@@ -373,6 +394,7 @@ fn compact_range_selection_bootstrap() string {
  Object.defineProperty(globalThis,"getSelection",{value:function getSelection(){return selectionFor(document);},writable:true,enumerable:true,configurable:true});
  function editing(receiver,name,command,fields){
   const state=__compactDocumentState(receiver);
+  if(name==="exec")epoch++;
   return refresh(call(state.bridgeKey,"editing",Object.assign({op:name,command:string(command)},fields||{}))).value;
  }
  const commands={
