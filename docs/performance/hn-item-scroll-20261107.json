@@ -1,0 +1,524 @@
+{
+  "date": "2026-11-07",
+  "page": "https://news.ycombinator.com/item?id=50391456 (1,904 comments, 2.8 MB HTML)",
+  "endpoint": "completed native frame installation after outer view paint; nested revisions coalesced; rendered-input stamp; not physical scanout",
+  "protocol": {
+    "tool": "tools/measure_precise_scroll.py",
+    "viewport": [
+      1701,
+      948
+    ],
+    "chrome_height": 112,
+    "backing_scale": 2,
+    "inputs": 600,
+    "input_hz": 120,
+    "delta_css_px": 6,
+    "reverse_every": 300,
+    "settle_seconds": 10,
+    "required_title": "Cybertruck",
+    "network": "Live HTTPS; fresh private profile/cache; OS caches retained (ff-* trials: local file fixture, scripts removed, 600 inputs without reversal)",
+    "target_hz": 60
+  },
+  "builds": {
+    "shared_baseline_executable_sha256": "d3c519f569cef0eebefe765dee2b9ec9dcd9bc77d5099b28d29b2cc728cb7afd",
+    "b1": "private single-C bundle with coalescing + hit memo (dirty tree incl. other sessions work), 489b87cc6e237fcd31b57cbb8df8e27aecb6b003dc92d8b16ca3f35be5bb5e46",
+    "b2": "private single-C bundle with all six commits (dirty tree incl. other sessions work), f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b"
+  },
+  "trials": [
+    {
+      "trial": "live1",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "d3c519f569cef0eebefe765dee2b9ec9dcd9bc77d5099b28d29b2cc728cb7afd",
+      "disabled": [],
+      "mean_scroll_fps": 20.88,
+      "median_interval_ms": 45.65,
+      "p95_interval_ms": 58.29,
+      "max_interval_ms": 113.51,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 289,
+      "completed_inputs": 600,
+      "completed_publications": 298,
+      "input_delivery_hz": 43.3,
+      "first_counted_scroll_delay_ms": 130.8,
+      "last_scroll_publication_gap_ms": 29.6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.806640625,
+          9.24951171875,
+          13.2705078125
+        ],
+        "load_average_after": [
+          10.33837890625,
+          9.7255859375,
+          13.28076171875
+        ]
+      }
+    },
+    {
+      "trial": "b1-ctl-1",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "489b87cc6e237fcd31b57cbb8df8e27aecb6b003dc92d8b16ca3f35be5bb5e46",
+      "disabled": [
+        "VOX_DISABLE_WHEEL_COALESCING",
+        "VOX_DISABLE_HIT_POINT_MEMO"
+      ],
+      "mean_scroll_fps": 21.12,
+      "median_interval_ms": 44.86,
+      "p95_interval_ms": 64.9,
+      "max_interval_ms": 132.52,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 292,
+      "completed_inputs": 600,
+      "completed_publications": 301,
+      "input_delivery_hz": 43.3,
+      "first_counted_scroll_delay_ms": 99.4,
+      "last_scroll_publication_gap_ms": 34.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          13.7431640625,
+          16.244140625,
+          16.93017578125
+        ],
+        "load_average_after": [
+          13.69287109375,
+          15.9228515625,
+          16.78271484375
+        ]
+      }
+    },
+    {
+      "trial": "b1-new-1",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "489b87cc6e237fcd31b57cbb8df8e27aecb6b003dc92d8b16ca3f35be5bb5e46",
+      "disabled": [],
+      "mean_scroll_fps": 29.21,
+      "median_interval_ms": 33.72,
+      "p95_interval_ms": 37.29,
+      "max_interval_ms": 48.81,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 301,
+      "completed_inputs": 600,
+      "completed_publications": 311,
+      "input_delivery_hz": 58.1,
+      "first_counted_scroll_delay_ms": 81.0,
+      "last_scroll_publication_gap_ms": 23.7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          13.69287109375,
+          15.9228515625,
+          16.78271484375
+        ],
+        "load_average_after": [
+          12.70068359375,
+          15.466796875,
+          16.5869140625
+        ]
+      }
+    },
+    {
+      "trial": "b1-ctl-2",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "489b87cc6e237fcd31b57cbb8df8e27aecb6b003dc92d8b16ca3f35be5bb5e46",
+      "disabled": [
+        "VOX_DISABLE_WHEEL_COALESCING",
+        "VOX_DISABLE_HIT_POINT_MEMO"
+      ],
+      "mean_scroll_fps": 22.94,
+      "median_interval_ms": 42.78,
+      "p95_interval_ms": 48.86,
+      "max_interval_ms": 81.89,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 297,
+      "completed_inputs": 600,
+      "completed_publications": 306,
+      "input_delivery_hz": 46.3,
+      "first_counted_scroll_delay_ms": 89.7,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          12.70068359375,
+          15.466796875,
+          16.5869140625
+        ],
+        "load_average_after": [
+          13.1708984375,
+          15.24755859375,
+          16.45849609375
+        ]
+      }
+    },
+    {
+      "trial": "b1-new-2",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "489b87cc6e237fcd31b57cbb8df8e27aecb6b003dc92d8b16ca3f35be5bb5e46",
+      "disabled": [],
+      "mean_scroll_fps": 33.92,
+      "median_interval_ms": 29.18,
+      "p95_interval_ms": 32.66,
+      "max_interval_ms": 41.32,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 325,
+      "completed_inputs": 600,
+      "completed_publications": 333,
+      "input_delivery_hz": 62.5,
+      "first_counted_scroll_delay_ms": 75.8,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          13.1708984375,
+          15.24755859375,
+          16.45849609375
+        ],
+        "load_average_after": [
+          11.03759765625,
+          14.54833984375,
+          16.16357421875
+        ]
+      }
+    },
+    {
+      "trial": "b2-new-1",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [],
+      "mean_scroll_fps": 74.34,
+      "median_interval_ms": 12.84,
+      "p95_interval_ms": 17.33,
+      "max_interval_ms": 35.79,
+      "fraction_over_16_67ms": 0.068,
+      "moving_intervals": 531,
+      "completed_inputs": 600,
+      "completed_publications": 541,
+      "input_delivery_hz": 83.9,
+      "first_counted_scroll_delay_ms": 41.3,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          8.26806640625,
+          9.650390625,
+          11.0205078125
+        ],
+        "load_average_after": [
+          7.5322265625,
+          9.35791015625,
+          10.8740234375
+        ]
+      }
+    },
+    {
+      "trial": "b2-new-2",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [],
+      "mean_scroll_fps": 74.52,
+      "median_interval_ms": 12.84,
+      "p95_interval_ms": 17.04,
+      "max_interval_ms": 23.12,
+      "fraction_over_16_67ms": 0.065,
+      "moving_intervals": 522,
+      "completed_inputs": 600,
+      "completed_publications": 532,
+      "input_delivery_hz": 85.5,
+      "first_counted_scroll_delay_ms": 42.8,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.5322265625,
+          9.35791015625,
+          10.8740234375
+        ],
+        "load_average_after": [
+          7.88037109375,
+          9.29443359375,
+          10.806640625
+        ]
+      }
+    },
+    {
+      "trial": "b2-off-1",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [
+        "VOX_DISABLE_WHEEL_COALESCING",
+        "VOX_DISABLE_HIT_POINT_MEMO",
+        "VOX_DISABLE_BOUNDED_IMAGE_ENTRIES",
+        "VOX_DISABLE_VIEWPORT_INK_BOUNDS"
+      ],
+      "mean_scroll_fps": 40.09,
+      "median_interval_ms": 24.26,
+      "p95_interval_ms": 31.35,
+      "max_interval_ms": 38.24,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 448,
+      "completed_inputs": 600,
+      "completed_publications": 457,
+      "input_delivery_hz": 53.6,
+      "first_counted_scroll_delay_ms": 58.9,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          6.89892578125,
+          8.8505859375,
+          10.57275390625
+        ],
+        "load_average_after": [
+          7.71240234375,
+          8.8505859375,
+          10.51123046875
+        ]
+      }
+    },
+    {
+      "trial": "b2-new-3",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [],
+      "mean_scroll_fps": 70.66,
+      "median_interval_ms": 13.62,
+      "p95_interval_ms": 17.65,
+      "max_interval_ms": 29.91,
+      "fraction_over_16_67ms": 0.118,
+      "moving_intervals": 518,
+      "completed_inputs": 600,
+      "completed_publications": 528,
+      "input_delivery_hz": 81.7,
+      "first_counted_scroll_delay_ms": 41.4,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.71240234375,
+          8.8505859375,
+          10.51123046875
+        ],
+        "load_average_after": [
+          7.7490234375,
+          8.7783203125,
+          10.43701171875
+        ]
+      }
+    },
+    {
+      "trial": "b2-off-2",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [
+        "VOX_DISABLE_WHEEL_COALESCING",
+        "VOX_DISABLE_HIT_POINT_MEMO",
+        "VOX_DISABLE_BOUNDED_IMAGE_ENTRIES",
+        "VOX_DISABLE_VIEWPORT_INK_BOUNDS"
+      ],
+      "mean_scroll_fps": 36.85,
+      "median_interval_ms": 25.84,
+      "p95_interval_ms": 36.48,
+      "max_interval_ms": 47.56,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 418,
+      "completed_inputs": 600,
+      "completed_publications": 426,
+      "input_delivery_hz": 52.8,
+      "first_counted_scroll_delay_ms": 74.0,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.7490234375,
+          8.7783203125,
+          10.43701171875
+        ],
+        "load_average_after": [
+          8.4248046875,
+          8.83203125,
+          10.3984375
+        ]
+      }
+    },
+    {
+      "trial": "b2-new-4",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [],
+      "mean_scroll_fps": 70.42,
+      "median_interval_ms": 13.58,
+      "p95_interval_ms": 17.97,
+      "max_interval_ms": 30.23,
+      "fraction_over_16_67ms": 0.132,
+      "moving_intervals": 509,
+      "completed_inputs": 600,
+      "completed_publications": 519,
+      "input_delivery_hz": 82.9,
+      "first_counted_scroll_delay_ms": 41.3,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          8.4248046875,
+          8.83203125,
+          10.3984375
+        ],
+        "load_average_after": [
+          8.3251953125,
+          8.76708984375,
+          10.3193359375
+        ]
+      }
+    },
+    {
+      "trial": "b2-noimg-1",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [
+        "VOX_DISABLE_BOUNDED_IMAGE_ENTRIES"
+      ],
+      "mean_scroll_fps": 48.96,
+      "median_interval_ms": 19.64,
+      "p95_interval_ms": 24.64,
+      "max_interval_ms": 27.68,
+      "fraction_over_16_67ms": 0.982,
+      "moving_intervals": 449,
+      "completed_inputs": 600,
+      "completed_publications": 458,
+      "input_delivery_hz": 65.3,
+      "first_counted_scroll_delay_ms": 55.5,
+      "last_scroll_publication_gap_ms": 23.5,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.88037109375,
+          9.29443359375,
+          10.806640625
+        ],
+        "load_average_after": [
+          6.80908203125,
+          8.89794921875,
+          10.60986328125
+        ]
+      }
+    },
+    {
+      "trial": "b2-noimg-2",
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [
+        "VOX_DISABLE_BOUNDED_IMAGE_ENTRIES"
+      ],
+      "mean_scroll_fps": 39.66,
+      "median_interval_ms": 24.79,
+      "p95_interval_ms": 30.02,
+      "max_interval_ms": 40.11,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 398,
+      "completed_inputs": 600,
+      "completed_publications": 407,
+      "input_delivery_hz": 59.7,
+      "first_counted_scroll_delay_ms": 59.4,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          8.3251953125,
+          8.76708984375,
+          10.3193359375
+        ],
+        "load_average_after": [
+          9.14306640625,
+          8.916015625,
+          10.31884765625
+        ]
+      }
+    },
+    {
+      "trial": "ff-new",
+      "url": "file:///Users/alex/code/vox2/Build/hn-item-scroll-20261107/fixture/item-inline.html",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [],
+      "mean_scroll_fps": 63.77,
+      "median_interval_ms": 15.12,
+      "p95_interval_ms": 20.11,
+      "max_interval_ms": 35.5,
+      "fraction_over_16_67ms": 0.297,
+      "moving_intervals": 465,
+      "completed_inputs": 600,
+      "completed_publications": 475,
+      "input_delivery_hz": 82.1,
+      "first_counted_scroll_delay_ms": 44.6,
+      "last_scroll_publication_gap_ms": 4.9,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          9.6513671875,
+          9.15087890625,
+          10.19189453125
+        ],
+        "load_average_after": [
+          9.48828125,
+          9.1416015625,
+          10.169921875
+        ]
+      }
+    },
+    {
+      "trial": "ff-off",
+      "url": "file:///Users/alex/code/vox2/Build/hn-item-scroll-20261107/fixture/item-inline.html",
+      "executable_sha256": "f6ca5af9ec5e1e76c64ee33383bca06d8da7df2f97f3f3bce99bb4c4203e421b",
+      "disabled": [
+        "VOX_DISABLE_WHEEL_COALESCING",
+        "VOX_DISABLE_HIT_POINT_MEMO",
+        "VOX_DISABLE_BOUNDED_IMAGE_ENTRIES",
+        "VOX_DISABLE_VIEWPORT_INK_BOUNDS"
+      ],
+      "mean_scroll_fps": 30.28,
+      "median_interval_ms": 32.77,
+      "p95_interval_ms": 39.86,
+      "max_interval_ms": 124.79,
+      "fraction_over_16_67ms": 1.0,
+      "moving_intervals": 344,
+      "completed_inputs": 600,
+      "completed_publications": 353,
+      "input_delivery_hz": 52.7,
+      "first_counted_scroll_delay_ms": 85.0,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          9.12841796875,
+          9.07275390625,
+          10.13916015625
+        ],
+        "load_average_after": [
+          9.2294921875,
+          9.099609375,
+          10.12353515625
+        ]
+      }
+    }
+  ],
+  "pixel_checks": {
+    "screenshots": "b2, local fixture, --screenshot-scroll-y 0/2500/20000/61000, default vs VOX_DISABLE_BOUNDED_IMAGE_ENTRIES+VOX_DISABLE_VIEWPORT_INK_BOUNDS: byte-identical PNGs",
+    "final_frames": "b2, local fixture after 3,600 CSS px of incremental scrolling (ff-new vs ff-off): 0 of 7,212,240 pixels differ"
+  },
+  "display_list": "layout probe on the fixture at 1701x948, scroll 6000: 5,561 commands (174 draw_text, 1,772 fill_gradient, 1,772 draw_background_image, 1,795 draw_replaced_image) -> 311 commands"
+}

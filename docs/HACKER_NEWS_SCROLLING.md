@@ -189,3 +189,76 @@ range above belongs to the pinned production snapshot, not every later build.
 Implementation commits: glyph retention `58e8d7fb`, HN catalog/icon `01eda037`,
 and explicit production C/Clang selection `8da83a2e`. The profiler-reset
 measurement support is `cd250d8d` and only activates in diagnostic runs.
+
+## Long comment threads (2026-11-07)
+
+Scrolling `https://news.ycombinator.com/item?id=50391456` (1,904 comments,
+2.8 MB of HTML) ran at about 21 FPS: every scrolled frame took ~45 ms.
+Sampling the main thread showed where:
+
+- One full-document hit test per replayed wheel. Wheels that arrive during
+  frame work are queued, and 4–5 of them replayed per frame, each mapping the
+  pointer through every one of ~207,000 retained hit-test steps (35% of the
+  main thread).
+- Viewport recording kept every entry with a background image, gradient or
+  `<img>`. Each HN row has a vote-arrow background (image plus gradient) and
+  an indent spacer image, so a 948 px viewport recorded 5,561 commands, of
+  which 174 were visible text. Culling, key hashing, layer planning and replay
+  then walked all of them on every frame.
+- Wide `PaintCommand` and `TextFragment` values copied by value in per-frame
+  scans.
+
+Commits, each with its own kill switch where behavior changes:
+
+| Commit | Change | Control |
+| --- | --- | --- |
+| `443905e78` | Coalesce queued wheels like Chromium's input queue (latest position, summed deltas, same modifiers) | `VOX_DISABLE_WHEEL_COALESCING=1` |
+| `00278f0b4` | Map the hit-test point once per visual context per query; borrow fragments | `VOX_DISABLE_HIT_POINT_MEMO=1` |
+| `057edbce1` | Copy each recorded viewport command once | none (same commands) |
+| `42b9977f5` | Borrow commands in shared-recording layer scans | none (same decisions) |
+| `3af03eeb0` | Reject offscreen entries with one cached ink union | `VOX_DISABLE_VIEWPORT_INK_BOUNDS=1` |
+| `11f2211c1` | Cull background, gradient and `<img>` entries by border-box ink, keeping one viewport of prepaint above and below; still prefetch every network background | `VOX_DISABLE_BOUNDED_IMAGE_ENTRIES=1` |
+
+The thread now records 311 commands per frame instead of 5,561.
+
+Protocol: `tools/measure_precise_scroll.py`, live HTTPS, fresh private
+profile and cache (OS caches retained), 1701×948 document viewport, 112 px
+chrome, backing scale 2, 600 precise inputs at nominal 120 Hz, 6 CSS px per
+input, reversing every 300, 10 s settle after the title matches `Cybertruck`.
+The endpoint is changed native layer publication, not display scanout.
+Host: 18 CPUs, load averages 7–17 from other sessions. All browser and guard
+exits were 0.
+
+| Build / arm | Mean scroll FPS | Median / p95 / max interval (ms) | Over 16.67 ms |
+| --- | --- | --- | --- |
+| Shared bundle `d3c519f5…` before the changes | 20.9 | 45.6 / 58.3 / 113.5 | 100% |
+| b1 (`489b87cc…`), coalescing + memo disabled | 21.1, 22.9 | 44.9, 42.8 median | 100% |
+| b1, default | 29.2, 33.9 | 33.7, 29.2 median | 100% |
+| b2 (`f6ca5af9…`), all four switches set | 40.1, 36.8 | 24.3 / 31.4 / 38.2; 25.8 / 36.5 / 47.6 | 100% |
+| b2, only `VOX_DISABLE_BOUNDED_IMAGE_ENTRIES=1` | 49.0, 39.7 | 19.6 / 24.6 / 27.7; 24.8 / 30.0 / 40.1 | 98–100% |
+| b2, default | 74.3, 74.5, 70.7, 70.4 | 12.8 / 17.0–17.3 / 23.1–35.8; 13.6 / 17.6–18.0 / 29.9–30.2 | 7–13% |
+
+b1 and b2 are private single-C bundles of the dirty canonical tree, which
+included other sessions' uncommitted work. Comparisons are same-binary
+alternations of the kill switches. The b2 "switches set" arm still contains
+the two commits without switches. Trials alternate, and all are retained in
+[`docs/performance/hn-item-scroll-20261107.json`](performance/hn-item-scroll-20261107.json).
+Input delivery rose from ~45 Hz to ~84 Hz because the main thread no longer
+blocks the 120 Hz input timer. Average throughput above 60 means
+publications exceed the 60 Hz budget metric; it does not establish 120 Hz
+smoothness: the median interval is still 12.8–13.6 ms.
+
+Pixels: on a local copy of the thread (HN's CSS inlined, scripts removed,
+assets saved), b2 captures at scroll offsets 0, 2500, 20000 and 61000 are
+byte-identical with and without the culling switches. The final frame after
+3,600 CSS px of incremental ring-reused scrolling differs in 0 of 7,212,240
+pixels between the default and all-switches-off arms. Focused layout tests
+pass in Boehm and no-GC builds. Six cases in `scroll/wheel_input_routing_test.v` and
+`scroll/element_wheel_owner_test.v` fail identically with the HEAD versions
+of every changed file (`scroll_y` 4.0 instead of 3.75 and one listener-order
+check). They predate these commits.
+
+Remaining per-frame cost on this page: the single coalesced hit test still
+walks every retained step (no spatial culling of hit-test steps), and the
+scroll ring's row restore and `CGBitmapContextCreateImage` copy remain from
+the earlier profiles.
