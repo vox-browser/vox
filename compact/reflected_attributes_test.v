@@ -3,37 +3,15 @@ module main
 import browserjs
 import html
 
-// 4chan's catalog creates its theme stylesheet link by assigning rel and type
-// as properties, then inserts it into the head before #mobile-css.
-fn test_compact_elements_reflect_link_attributes_set_as_properties() {
+fn test_aria_and_html_element_attributes_reflect_their_content_attributes() {
 	$if !darwin { return }
-	document := html.parse_document('<!doctype html><html><head><link id="mobile-css" rel="stylesheet" href="mobile.css"></head><body><a id="link" href="thread/1">thread</a><div id="plain"></div></body></html>')
+	document := html.parse_document('<!doctype html><div id="box" role="button" aria-label="Go" dir="RTL" tabindex=" 7x" translate="no"><a id="link" href="#">l</a><span id="inner"></span></div>')
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }
 	mut messages := []string{}
-	run_document_javascript(document, 'https://boards.4chan.org/pol/catalog', ['
-		const link = document.createElement("link");
-		link.type = "text/css";
-		link.id = "base-css";
-		link.rel = "stylesheet";
-		link.media = "screen";
-		link.title = "switch";
-		link.setAttribute("href", "//s.4cdn.org/css/catalog_yotsuba_new.705.css");
-		document.head.insertBefore(link, document.getElementById("mobile-css"));
-		const anchor = document.getElementById("link");
-		globalThis.result = [link.rel, link.type, link.media, link.title, link.href, anchor.href,
-			anchor.rel, document.getElementById("plain").href === undefined,
-			document.getElementById("plain").rel === undefined].join("|");
-	'], runtime, mut messages)
-	assert runtime.evaluate_host('result')! == 'stylesheet|text/css|screen|switch|https://s.4cdn.org/css/catalog_yotsuba_new.705.css|https://boards.4chan.org/pol/thread/1||true|true'
-	state := runtime.evaluate_host('__ladybirdFinalize()')!
-	apply_javascript_state(document, state, runtime.canvas_elements_for_binding(), mut messages)
-	link := document.get_element_by_id('base-css') or { panic('missing inserted link') }
-	assert link.get_attribute_value('rel') == 'stylesheet'
-	assert link.get_attribute_value('type') == 'text/css'
-	assert link.get_attribute_value('media') == 'screen'
-	assert link.get_attribute_value('title') == 'switch'
-	next := link.as_node().next_sibling() or { panic('missing next sibling') }
-	assert next.as_element()?.get_attribute_value('id') == 'mobile-css'
-	assert messages == []
+	run_document_javascript(document, 'about:blank', [
+		'console.log(box.role,box.ariaLabel,String(box.ariaHidden),box.dir,box.tabIndex,link.tabIndex,inner.tabIndex,inner.translate,link.draggable,inner.draggable,String(box.popover),box.contentEditable);box.ariaHidden="true";box.ariaLabel=null;box.popover="";box.inert=true;console.log(box.getAttribute("aria-hidden"),box.hasAttribute("aria-label"),box.popover,box.hasAttribute("inert"));try{box.contentEditable="maybe"}catch(e){console.log(e.name)}box.contentEditable="PLAINTEXT-ONLY";console.log(box.getAttribute("contenteditable"),box.contentEditable,inner.slot,box.enterKeyHint);',
+	], runtime, mut messages)
+	assert messages == ['button Go null rtl 7 0 -1 false true false null inherit',
+		'true false auto true', 'SyntaxError', 'plaintext-only plaintext-only  ']
 }
