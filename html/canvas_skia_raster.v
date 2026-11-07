@@ -86,26 +86,27 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	native_style := canvas_skia_style(style)
 	native_transform := canvas_skia_transform(transform)
 	filters := context.canvas_skia_filters()
-	// Solid fills and strokes without shadows or filters use the Skia-free
-	// rasterizer, which reproduces Skia's pixels: dashes from
-	// SkDashPathEffect, then hairlines for strokes at most a device pixel wide
-	// and SkStroke outlines for wider ones, inside the anti-aliased clip, with
-	// any composite operation but the runtime-effect plus-darker and
-	// plus-lighter blenders.
-	if native_style.kind == 0 && blur <= 0 && filters.len == 0 {
+	// Solid fills and strokes use the Skia-free rasterizer, which reproduces
+	// Skia's pixels: dashes from SkDashPathEffect, then hairlines for strokes
+	// at most a device pixel wide and SkStroke outlines for wider ones, inside
+	// the anti-aliased clip, with any composite operation but the
+	// runtime-effect plus-darker and plus-lighter blenders. A blurred shadow
+	// takes Skia's blur mask filter, which replaces the canvas filters; other
+	// filtered draws stay on Skia.
+	if native_style.kind == 0 && (f32(blur) > 0 || filters.len == 0) {
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_path := cpuraster.canvas_path(native_path.segments, native_path.even_odd)
 			cpu_clips := clips.map(cpuraster.canvas_path(it.segments, it.even_odd))
 			painted := if stroke {
 				cpuraster.stroke_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
 					bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color,
-					f32(alpha), mode, f32(state.line_width), cpu_stroke_cap(state.line_cap), cpu_stroke_join(state.line_join),
+					f32(alpha), mode, f32(blur), f32(state.line_width), cpu_stroke_cap(state.line_cap), cpu_stroke_join(state.line_join),
 					f32(state.miter_limit), state.dash_list.map(f32(it)), f32(state.line_dash_offset),
 					cpu_clips)
 			} else {
 				cpuraster.fill_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
 					bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color,
-					f32(alpha), mode, cpu_clips)
+					f32(alpha), mode, f32(blur), cpu_clips)
 			}
 			if painted {
 				mutable_bitmap.alpha_type = 2

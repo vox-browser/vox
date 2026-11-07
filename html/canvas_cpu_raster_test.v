@@ -1,6 +1,7 @@
 module html
 
 import dom
+import math
 import skia
 
 fn cpu_raster_test_context() &CanvasRenderingContext2D {
@@ -309,6 +310,99 @@ fn test_composited_canvas_draws_match_skia() {
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		assert after.data == expected, 'composited draw ${i} (${draw.operation}) differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}
+
+struct CpuRasterTestShadow {
+	blur      f64
+	offset_x  f64
+	offset_y  f64
+	width     f64
+	operation CompositingAndBlendingOperator
+	shadow    dom.Color
+}
+
+// Shadows with a blur take the Skia-free blur mask filter: a lone rect's
+// analytic nine-patch, a stroked rect's ring nine-patch and blurred masks for
+// other paths and hairlines. The shadow and the shape must match
+// skia.draw_path() drawing both commands.
+fn test_blurred_canvas_shadows_match_skia() {
+	shadows := [
+		CpuRasterTestShadow{12, 6, 4, 0, .source_over, dom.Color{20, 30, 60, 200}},
+		CpuRasterTestShadow{3, -4, 5, 5, .source_over, dom.Color{200, 40, 40, 255}},
+		CpuRasterTestShadow{20, 0, 8, 1, .multiply, dom.Color{0, 0, 0, 160}},
+		CpuRasterTestShadow{8, 10, -6, 0, .destination_over, dom.Color{40, 160, 90, 230}},
+	]
+	mut context := cpu_raster_test_context()
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, shadow in shadows {
+		stroke := shadow.width > 0
+		color := dom.Color{
+			r: u8(60 + i * 40)
+			g: 150
+			b: u8(200 - i * 30)
+			a: 255
+		}
+		if stroke {
+			context.drawing_state.stroke_style = FillOrStrokeStyle.from_color(color)
+		} else {
+			context.drawing_state.fill_style = FillOrStrokeStyle.from_color(color)
+		}
+		context.drawing_state.transform = CanvasAffineTransform{0.95, 0, 0, 1.05, 3, 2}
+		context.drawing_state.global_alpha = 1
+		context.drawing_state.line_width = if stroke { shadow.width } else { 1 }
+		context.drawing_state.current_compositing_and_blending_operator = shadow.operation
+		context.drawing_state.shadow_blur = shadow.blur
+		context.drawing_state.shadow_offset_x = shadow.offset_x
+		context.drawing_state.shadow_offset_y = shadow.offset_y
+		context.drawing_state.shadow_color = shadow.shadow
+		cpu_raster_test_path(mut context, i % 3)
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
+		mut alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		state := context.drawing_state
+		style := if stroke { state.stroke_style } else { state.fill_style }
+		path := canvas_skia_path(context.CanvasPath.path(), 'nonzero')
+		alpha := canvas_shadow_alpha(state)
+		shadow_color := dom.Color{shadow.shadow.r, shadow.shadow.g, shadow.shadow.b, u8(math.round(f32(shadow.shadow.a) * alpha))}
+		shadow_command := skia.Command{
+			path:         path
+			style:        canvas_skia_style(FillOrStrokeStyle.from_color(shadow_color).to_gfx_paint_style())
+			transform:    canvas_skia_transform(canvas_transform_multiply(CanvasAffineTransform{
+				e: shadow.offset_x
+				f: shadow.offset_y
+			}, state.transform))
+			stroke:       stroke
+			cap:          int(state.line_cap)
+			join:         int(state.line_join)
+			composite:    int(shadow.operation)
+			width:        f32(state.line_width)
+			miter:        f32(state.miter_limit)
+			global_alpha: 1
+			blur:         f32(shadow.blur)
+		}
+		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			shadow_command)
+		alpha_type = 2
+		command := skia.Command{
+			...shadow_command
+			style:     canvas_skia_style(style.to_gfx_paint_style())
+			transform: canvas_skia_transform(state.transform)
+			blur:      0
+		}
+		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			command)
+		expected = pixels.clone()
+		expected_alpha_type = 2
+		if stroke {
+			context.stroke()
+		} else {
+			context.fill('nonzero')
+		}
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'shadow ${i} differs from Skia'
 	}
 	assert expected.any(it != 0 && it != 255)
 }

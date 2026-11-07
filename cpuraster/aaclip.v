@@ -564,7 +564,7 @@ fn (mut c AAClip) set_path(path Path, clip IRect) bool {
 		right:   ibounds.right
 	}
 	// SkScan::AntiFillPath(raw, SkRegion(bounds), &blitter, true).
-	anti_fill_region(path, false, ibounds, mut blitter, true)
+	anti_fill_region(path, path.convexity() != .concave, ibounds, mut blitter, true)
 	if blitter.min_y < max_i32 {
 		builder.min_y = blitter.min_y
 	}

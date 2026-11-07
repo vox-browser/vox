@@ -40,24 +40,84 @@ const max_untiled_dimension = 8191
 // global_alpha through transform ([a b c d e f]) into width x height RGBA_8888
 // pixels, which are premultiplied when alpha_type is 2 and premultiplied first
 // otherwise. mode is the composite operation's blend mode (canvas_blend_mode()).
+// A positive blur is a shadow's blur: the paint then takes a blur mask filter
+// of sigma blur / 2 instead of global_alpha (canvas_shadow_sigma()).
 // Returns false without changing pixels for devices Skia would tile.
 // clips are the Canvas2D clip paths in device space, applied anti-aliased in
 // order (canvas_raster_clip()).
-pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, mode BlendMode, clips []Path) bool {
+pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, mode BlendMode, blur f32, clips []Path) bool {
 	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
-	if alpha_type != 2 {
-		premultiply_rows(mut pixels, width, height, pitch)
-	}
-	alpha := canvas_paint_alpha(color, global_alpha)
+	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
+	alpha := canvas_paint_alpha(color, if blur > 0 { f32(1) } else { global_alpha })
 	if blend_draws_nothing(mode, paint_alpha_byte(alpha)) {
-		return true
+		return target.ready()
 	}
 	rc := canvas_raster_clip(width, height, clips)
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
+	if sigma := canvas_shadow_sigma(blur) {
+		// SkCanvas::internalQuickReject() with the mask filter's 3 sigma
+		// outset, then Draw::drawDevPath() through filterPath().
+		bounds := path.bounds() or { return target.ready() }
+		pad := f32(3) * sigma
+		outset := Rect{bounds.left - pad, bounds.top - pad, bounds.right + pad, bounds.bottom + pad}
+		if canvas_quick_reject(outset, matrix, &rc) {
+			return target.ready()
+		}
+		device := path.transform(matrix)
+		device_bounds := device.bounds() or { return target.ready() }
+		if too_big_for_math(device_bounds) {
+			return target.ready()
+		}
+		convex := device.convexity() != .concave
+		plan := plan_blur(device, convex, sigma, matrix, &rc, false)
+		if plan.kind == .declined {
+			return false
+		}
+		target.ready()
+		mut blitter := canvas_blitter(mut pixels, pitch, color, alpha, mode) or { return true }
+		if plan.kind == .unfiltered {
+			return anti_fill_path_convex(device, convex, &rc, mut blitter)
+		}
+		plan.draw(&rc, blitter)
+		return true
+	}
+	target.ready()
 	mut blitter := canvas_blitter(mut pixels, pitch, color, alpha, mode) or { return true }
 	return anti_fill_path_clip(path.transform(matrix), false, &rc, mut blitter)
+}
+
+// canvas_shadow_sigma is the blur mask filter vox_skia_canvas_path() gives a
+// positive shadow blur: SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur / 2),
+// which is none for a sigma that is not finite and positive.
+fn canvas_shadow_sigma(blur f32) ?f32 {
+	if blur > 0 {
+		return new_blur_sigma(blur / 2)
+	}
+	return none
+}
+
+// SkCanvas::quickReject() of local bounds: mapped through the matrix and
+// tested against the clip bounds outset by a pixel, empty for an empty clip.
+fn canvas_quick_reject(local Rect, matrix Matrix, rc &RasterClip) bool {
+	device := map_rect_affine(local, matrix)
+	if !is_finite_f32(device.left) || !is_finite_f32(device.top) || !is_finite_f32(device.right)
+		|| !is_finite_f32(device.bottom) {
+		return true
+	}
+	clip_bounds := rc.bounds()
+	reject_bounds := if rc.is_empty {
+		Rect{}
+	} else {
+		Rect{f32(clip_bounds.left) - 1, f32(clip_bounds.top) - 1, f32(clip_bounds.right) + 1, f32(clip_bounds.bottom) +
+			1}
+	}
+	reject_left := fmax_std(device.left, reject_bounds.left)
+	reject_right := fmin_std(device.right, reject_bounds.right)
+	reject_top := fmax_std(device.top, reject_bounds.top)
+	reject_bottom := fmin_std(device.bottom, reject_bounds.bottom)
+	return !(reject_left < reject_right && reject_top < reject_bottom)
 }
 
 fn untiled_device(pixels []u8, width int, height int, pitch int) bool {
@@ -84,8 +144,10 @@ pub enum StrokeJoin {
 // fill_canvas_path(). color is the style's SkColor before global_alpha, and
 // mode the composite operation's blend mode: a thin stroke stays an outline
 // unless the mode supports coverage as alpha or the stroke is a full pixel.
+// blur is a shadow's blur, as for fill_canvas_path(); the blur mask filter
+// draws hairlines into its mask with butt caps.
 // Returns false without changing pixels for devices Skia would tile.
-pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, mode BlendMode, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path) bool {
+pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, mode BlendMode, blur f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path) bool {
 	if !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
@@ -114,45 +176,33 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			hairline = false
 		}
 	}
-	if alpha_type != 2 {
-		premultiply_rows(mut pixels, width, height, pitch)
-	}
+	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	// vox_skia_canvas_path() draws nothing for non-positive widths.
 	if line_width <= 0 {
-		return true
+		return target.ready()
 	}
-	paint_alpha := canvas_paint_alpha(color, global_alpha)
+	paint_alpha := canvas_paint_alpha(color, if blur > 0 { f32(1) } else { global_alpha })
 	alpha := paint_alpha_byte(paint_alpha)
+	sigma := canvas_shadow_sigma(blur)
 	// SkCanvas::onDrawPath(): non-finite paths, SkPaint::nothingToDraw() and
 	// internalQuickReject().
-	bounds := path.bounds() or { return true }
+	bounds := path.bounds() or { return target.ready() }
 	if blend_draws_nothing(mode, alpha) || path.is_inverse_fill() {
-		return true
+		return target.ready()
 	}
+	// SkPaint::computeFastBounds(): the stroke's inflation, then the blur
+	// mask filter's 3 sigma.
 	radius := inflation_radius(stroke_width, cap, join, miter_limit)
-	outset := Rect{bounds.left - radius, bounds.top - radius, bounds.right + radius, bounds.bottom +
+	mut outset := Rect{bounds.left - radius, bounds.top - radius, bounds.right + radius, bounds.bottom +
 		radius}
-	device := map_rect_affine(outset, matrix)
-	if !is_finite_f32(device.left) || !is_finite_f32(device.top) || !is_finite_f32(device.right)
-		|| !is_finite_f32(device.bottom) {
-		return true
+	if s := sigma {
+		pad := f32(3) * s
+		outset = Rect{outset.left - pad, outset.top - pad, outset.right + pad, outset.bottom + pad}
 	}
-	// fQuickRejectBounds: the clip bounds outset by a pixel, empty for an
-	// empty clip.
 	rc := canvas_raster_clip(width, height, clips)
 	clip_bounds := rc.bounds()
-	reject_bounds := if rc.is_empty {
-		Rect{}
-	} else {
-		Rect{f32(clip_bounds.left) - 1, f32(clip_bounds.top) - 1, f32(clip_bounds.right) + 1, f32(clip_bounds.bottom) +
-			1}
-	}
-	reject_left := fmax_std(device.left, reject_bounds.left)
-	reject_right := fmin_std(device.right, reject_bounds.right)
-	reject_top := fmax_std(device.top, reject_bounds.top)
-	reject_bottom := fmin_std(device.bottom, reject_bounds.bottom)
-	if !(reject_left < reject_right && reject_top < reject_bottom) {
-		return true
+	if canvas_quick_reject(outset, matrix, &rc) {
+		return target.ready()
 	}
 	// skpathutils::FillPathWithPaint(): the dash path effect first, with the
 	// device clip mapped into source space as its cull rect, at the matrix's
@@ -198,6 +248,28 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			}
 		}
 		device_path, known_convex := outline.transformed(matrix)
+		if s := sigma {
+			device_bounds := device_path.bounds() or { return target.ready() }
+			if too_big_for_math(device_bounds) {
+				return target.ready()
+			}
+			convex := known_convex || device_path.convexity() != .concave
+			plan := plan_blur(device_path, convex, s, matrix, &rc, false)
+			if plan.kind == .declined {
+				return false
+			}
+			target.ready()
+			mut blitter := canvas_blitter(mut pixels, pitch, color, paint_alpha, mode) or {
+				return true
+			}
+			if plan.kind == .unfiltered {
+				anti_fill_path_convex(device_path, convex, &rc, mut blitter)
+			} else {
+				plan.draw(&rc, blitter)
+			}
+			return true
+		}
+		target.ready()
 		mut blitter := canvas_blitter(mut pixels, pitch, color, paint_alpha, mode) or { return true }
 		anti_fill_path_clip(device_path, known_convex, &rc, mut blitter)
 		return true
@@ -205,7 +277,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	if dashed {
 		for p in source.points {
 			if !point_is_finite(p) {
-				return true
+				return target.ready()
 			}
 		}
 	}
@@ -215,8 +287,56 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		scale := int(saturate_to_i32(coverage * f32(256)))
 		hair_alpha = tpin(f32((alpha * scale) >> 8) * inv_255, 0, 1)
 	}
+	device_path := source.transform(matrix)
+	if s := sigma {
+		device_bounds := device_path.bounds() or { return target.ready() }
+		if too_big_for_math(device_bounds) {
+			return target.ready()
+		}
+		plan := plan_blur(device_path, false, s, matrix, &rc, true)
+		target.ready()
+		mut blitter := canvas_blitter(mut pixels, pitch, color, hair_alpha, mode) or { return true }
+		if plan.kind == .unfiltered {
+			anti_hair_path_clip(device_path, cap, &rc, mut blitter)
+		} else {
+			plan.draw(&rc, blitter)
+		}
+		return true
+	}
+	target.ready()
 	mut blitter := canvas_blitter(mut pixels, pitch, color, hair_alpha, mode) or { return true }
-	anti_hair_path_clip(source.transform(matrix), cap, &rc, mut blitter)
+	anti_hair_path_clip(device_path, cap, &rc, mut blitter)
+	return true
+}
+
+// The canvas pixels, which writePixels() premultiplies. A draw premultiplies
+// them once it draws or is known to draw nothing; until then it can still
+// decline without changing them.
+struct CanvasTarget {
+	width  int
+	height int
+	pitch  int
+mut:
+	pixels  []u8
+	pending bool
+}
+
+fn new_canvas_target(mut pixels []u8, width int, height int, pitch int, alpha_type int) CanvasTarget {
+	return CanvasTarget{
+		width:   width
+		height:  height
+		pitch:   pitch
+		pixels:  pixels
+		pending: alpha_type != 2
+	}
+}
+
+// ready premultiplies the pixels unless they already are, and returns true.
+fn (mut t CanvasTarget) ready() bool {
+	if t.pending {
+		premultiply_rows(mut t.pixels, t.width, t.height, t.pitch)
+		t.pending = false
+	}
 	return true
 }
 

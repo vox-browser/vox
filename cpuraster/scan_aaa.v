@@ -1685,6 +1685,13 @@ fn anti_fill_path_convexity(path Path, known_convex bool, clip IRect, mut blitte
 // SkScan::AntiFillPath(raw, rasterClip, blitter), which fills inside an
 // SkAAClip through SkAAClipBlitter and run-length coverage.
 fn anti_fill_path_clip(path Path, known_convex bool, rc &RasterClip, mut blitter Blitter) bool {
+	return anti_fill_path_convex(path, known_convex || path.convexity() != .concave, rc, mut
+		blitter)
+}
+
+// anti_fill_path_convex is anti_fill_path_clip() for a path whose convexity
+// is already resolved, as an SkPathRaw carries it.
+fn anti_fill_path_convex(path Path, convex bool, rc &RasterClip, mut blitter Blitter) bool {
 	if path.is_inverse_fill() {
 		return false
 	}
@@ -1701,14 +1708,14 @@ fn anti_fill_path_clip(path Path, known_convex bool, rc &RasterClip, mut blitter
 		return true
 	}
 	if rc.is_bw {
-		return anti_fill_region(path, known_convex, rc.rect, mut blitter, false)
+		return anti_fill_region(path, convex, rc.rect, mut blitter, false)
 	}
 	mut aa := new_aaclip_blitter(blitter, &rc.aa)
-	return anti_fill_region(path, known_convex, rc.aa.bounds, mut aa, true)
+	return anti_fill_region(path, convex, rc.aa.bounds, mut aa, true)
 }
 
 // SkScan::AntiFillPath(raw, region, blitter, forceRLE) for a rect region.
-fn anti_fill_region(path Path, known_convex bool, clip IRect, mut blitter Blitter, force_rle bool) bool {
+fn anti_fill_region(path Path, convex bool, clip IRect, mut blitter Blitter, force_rle bool) bool {
 	if path.is_inverse_fill() {
 		return false
 	}
@@ -1732,7 +1739,6 @@ fn anti_fill_region(path Path, known_convex bool, clip IRect, mut blitter Blitte
 		return false
 	}
 	// SkScanClipper: a wrapper only when clipped horizontally.
-	convex := known_convex || path.convexity() != .concave
 	if clip.contains(ir) || !(clip.left > ir.left || clip.right < ir.right) {
 		return aaa_fill_path_entry(path, convex, mut blitter, ir, clip, force_rle)
 	}

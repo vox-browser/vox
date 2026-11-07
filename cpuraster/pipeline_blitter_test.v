@@ -50,14 +50,14 @@ const composite_test_transform = [f32(0.97), 0.12, -0.1, 0.95, 1.5, 2.25]!
 fn composite_fill_hash(mode BlendMode, color u32, alpha f32) string {
 	mut px := composite_test_background(48, 40)
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, canvas_path(composite_test_shape(), false),
-		composite_test_transform, color, alpha, mode, [])
+		composite_test_transform, color, alpha, mode, 0, [])
 	return sha256.sum(px).hex()[..16]
 }
 
 fn composite_stroke_hash(mode BlendMode, color u32, alpha f32, line_width f32, dashes []f32, clips []Path) string {
 	mut px := composite_test_background(48, 40)
 	assert stroke_canvas_path(mut px, 48, 40, 192, 2, canvas_path(composite_test_shape(),
-		false), composite_test_transform, color, alpha, mode, line_width, .round, .miter, 10,
+		false), composite_test_transform, color, alpha, mode, 0, line_width, .round, .miter, 10,
 		dashes, 1.5, clips)
 	return sha256.sum(px).hex()[..16]
 }
@@ -113,25 +113,25 @@ fn test_skia_fast_paths_for_solid_colors() {
 	// Opaque destination-in multiplies by one and draws nothing.
 	mut kept := background.clone()
 	assert fill_canvas_path(mut kept, 48, 40, 192, 2, canvas_path(composite_test_shape(), false),
-		composite_test_transform, 0xff336699, 1, .dst_in, [])
+		composite_test_transform, 0xff336699, 1, .dst_in, 0, [])
 	assert kept == background
 	// An opaque copy draws as source-over.
 	mut copied := background.clone()
 	mut over := background.clone()
 	assert fill_canvas_path(mut copied, 48, 40, 192, 2, canvas_path(composite_test_shape(),
-		false), composite_test_transform, 0xff336699, 1, .src, [])
+		false), composite_test_transform, 0xff336699, 1, .src, 0, [])
 	assert fill_canvas_path(mut over, 48, 40, 192, 2, canvas_path(composite_test_shape(), false),
-		composite_test_transform, 0xff336699, 1, .src_over, [])
+		composite_test_transform, 0xff336699, 1, .src_over, 0, [])
 	assert copied == over && copied != background
 	// SkPaint::nothingToDraw() for a transparent source-atop, but not for
 	// source-in, which clears what it covers.
 	mut atop := background.clone()
 	assert fill_canvas_path(mut atop, 48, 40, 192, 2, canvas_path(composite_test_shape(), false),
-		composite_test_transform, 0xff336699, 0, .src_atop, [])
+		composite_test_transform, 0xff336699, 0, .src_atop, 0, [])
 	assert atop == background
 	mut cleared := background.clone()
 	assert fill_canvas_path(mut cleared, 48, 40, 192, 2, canvas_path(composite_test_shape(),
-		false), composite_test_transform, 0xff336699, 0, .src_in, [])
+		false), composite_test_transform, 0xff336699, 0, .src_in, 0, [])
 	assert cleared != background
 }
 
