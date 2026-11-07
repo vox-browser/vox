@@ -649,13 +649,15 @@ fn cubics_roots_real(a_in f64, b_in f64, c_in f64, d_in f64) []f64 {
 	b := big_c * inv_a
 	c := big_d * inv_a
 	a2 := a * a
-	q := (a2 - b * 3) / 9
+	b3 := b * 3
+	q := (a2 - b3) / 9
 	two_a2 := 2 * a2
 	two_a3 := two_a2 * a
 	nine_a := 9 * a
 	nine_ab := nine_a * b
 	r_num := two_a3 - nine_ab
-	r := (r_num + 27 * c) / 54
+	c27 := 27 * c
+	r := (r_num + c27) / 54
 	r2 := r * r
 	q2 := q * q
 	q3 := q2 * q
@@ -675,12 +677,17 @@ fn cubics_roots_real(a_in f64, b_in f64, c_in f64, d_in f64) []f64 {
 			ratio
 		})
 		neg2_root_q := -2 * math.sqrt(q)
-		roots << neg2_root_q * C.cos(theta / 3) - adiv3
-		mut root := neg2_root_q * C.cos((theta + 2 * double_pi) / 3) - adiv3
+		// Each product is its own statement: SkCubics is compiled with
+		// -ffp-contract=off, and clang would fuse it into the subtraction.
+		first := neg2_root_q * C.cos(theta / 3)
+		roots << first - adiv3
+		second := neg2_root_q * C.cos((theta + 2 * double_pi) / 3)
+		mut root := second - adiv3
 		if !doubles_nearly_equal(roots[0], root) {
 			roots << root
 		}
-		root = neg2_root_q * C.cos((theta - 2 * double_pi) / 3) - adiv3
+		third := neg2_root_q * C.cos((theta - 2 * double_pi) / 3)
+		root = third - adiv3
 		if !doubles_nearly_equal(roots[0], root)
 			&& (roots.len == 1 || !doubles_nearly_equal(roots[1], root)) {
 			roots << root
