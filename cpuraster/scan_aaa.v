@@ -1670,6 +1670,13 @@ fn intersect_rect(a Rect, b Rect) ?Rect {
 // without blitting, for the cases not yet ported: inverse fills and paths too
 // large for anti-aliasing.
 pub fn anti_fill_path(path Path, clip IRect, mut blitter Blitter) bool {
+	return anti_fill_path_convexity(path, false, clip, mut blitter)
+}
+
+// anti_fill_path_convexity is anti_fill_path() for a path whose builder
+// already knows it is convex (SkPathPriv::Raw() keeps a known convexity
+// instead of computing it).
+fn anti_fill_path_convexity(path Path, known_convex bool, clip IRect, mut blitter Blitter) bool {
 	if path.is_inverse_fill() {
 		return false
 	}
@@ -1701,7 +1708,7 @@ pub fn anti_fill_path(path Path, clip IRect, mut blitter Blitter) bool {
 		return false
 	}
 	// SkScanClipper: a wrapper only when clipped horizontally.
-	convex := path.convexity() != .concave
+	convex := known_convex || path.convexity() != .concave
 	if clip.contains(ir) || !(clip.left > ir.left || clip.right < ir.right) {
 		return aaa_fill_path_entry(path, convex, mut blitter, ir, clip)
 	}

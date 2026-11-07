@@ -65,12 +65,12 @@ pub enum StrokeJoin {
 }
 
 // stroke_canvas_path strokes path the way vox_skia_canvas_path() does for a
-// solid source-over stroke without dashes, clips, filters or shadows when
-// SkDraw treats the stroke as a hairline: line_width mapped through transform
-// is at most one device pixel along both axes, so it draws a one-pixel
-// hairline with alpha scaled by the width. color is the style's SkColor
-// before global_alpha. Returns false without changing pixels for wider
-// strokes and for devices Skia would tile.
+// solid source-over stroke without dashes, clips, filters or shadows. When
+// line_width mapped through transform is at most one device pixel along both
+// axes, SkDraw draws a one-pixel hairline with alpha scaled by the width;
+// wider strokes are outlined by SkStroke in source space and the outline is
+// filled in device space. color is the style's SkColor before global_alpha.
+// Returns false without changing pixels for devices Skia would tile.
 pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32) bool {
 	if !untiled_device(pixels, width, height, pitch) {
 		return false
@@ -87,13 +87,15 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	miter_limit := if miter >= 0 { miter } else { f32(4) }
 	// DrawTreatAsHairline(): the stroke width's device vectors.
 	mut coverage := f32(1)
+	mut hairline := true
 	if stroke_width != 0 {
 		len0 := fast_len(stroke_width * matrix.a, stroke_width * matrix.b)
 		len1 := fast_len(stroke_width * matrix.c, stroke_width * matrix.d)
-		if !(len0 <= 1 && len1 <= 1) {
-			return false
+		if len0 <= 1 && len1 <= 1 {
+			coverage = float_midpoint(len0, len1)
+		} else {
+			hairline = false
 		}
-		coverage = float_midpoint(len0, len1)
 	}
 	if alpha_type != 2 {
 		premultiply_rows(mut pixels, width, height, pitch)
@@ -123,6 +125,23 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	reject_top := fmax(device.top, -1)
 	reject_bottom := fmin(device.bottom, f32(height) + 1)
 	if !(reject_left < reject_right && reject_top < reject_bottom) {
+		return true
+	}
+	if !hairline {
+		// skpathutils::FillPathWithPaint(): SkStrokeRec::applyToPath() at the
+		// matrix's resolution scale, an empty path when the outline is not
+		// finite, then SkPathBuilder::transform() and SkScan::AntiFillPath().
+		mut outline := stroke_path(path, stroke_width, cap, join, miter_limit, res_scale_for_stroking(matrix))
+		for p in outline.builder.points {
+			if !point_is_finite(p) {
+				outline = StrokeOutline{}
+				break
+			}
+		}
+		device_path, known_convex := outline.transformed(matrix)
+		mut blitter := new_solid_blitter(mut pixels, pitch, canvas_fill_color(color, global_alpha))
+		anti_fill_path_convexity(device_path, known_convex, IRect{0, 0, width, height}, mut
+			blitter)
 		return true
 	}
 	// modifyPaintForHairlines(): partial coverage scales the paint's alpha.

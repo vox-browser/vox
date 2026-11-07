@@ -26,6 +26,12 @@ fn cpu_raster_test_path(mut context CanvasRenderingContext2D, index int) {
 		context.bezier_curve_to(60, 160, -20, 40, 30.5, 70.25)
 		context.close_path()
 		context.rect(40.5, 30.25, 80, 50)
+	} else if index == 2 {
+		// A lone closed rect, which SkStroke outlines as rects, and a
+		// zero-length subpath that only round and square caps draw.
+		context.rect(60.5, 40.25, 110, 70)
+		context.move_to(250, 60)
+		context.line_to(250, 60)
 	} else {
 		context.move_to(150, 20)
 		context.line_to(320, 75.5)
@@ -92,14 +98,19 @@ struct CpuRasterTestStroke {
 }
 
 // Strokes at most a device pixel wide take the Skia-free hairline
-// rasterizer, wider ones Skia's stroker; both must produce the pixels
-// skia.draw_path() produces for the same command.
+// rasterizer, wider ones the Skia-free SkStroke port; both must produce the
+// pixels skia.draw_path() produces for the same command.
 fn test_canvas_strokes_match_skia() {
 	strokes := [
 		CpuRasterTestStroke{1, .butt, .miter, CanvasAffineTransform{1, 0, 0, 1, 0, 0}, 1},
 		CpuRasterTestStroke{0.45, .round, .round, CanvasAffineTransform{1, 0, 0, 1, 0.5, 0}, 0.8},
 		CpuRasterTestStroke{1.6, .square, .bevel, CanvasAffineTransform{0.5, 0.2, -0.1, 0.55, 12, 4}, 1},
 		CpuRasterTestStroke{3, .round, .miter, CanvasAffineTransform{1, 0, 0, 1, 0, 0}, 0.7},
+		CpuRasterTestStroke{7.5, .square, .miter, CanvasAffineTransform{0.94, 0.34, -0.34, 0.94, 30, -12}, 1},
+		CpuRasterTestStroke{12, .round, .round, CanvasAffineTransform{1.2, 0, 0, 0.8, -6, 3}, 0.9},
+		CpuRasterTestStroke{9, .butt, .bevel, CanvasAffineTransform{0, 1, -1, 0, 260, 10}, 1},
+		CpuRasterTestStroke{5, .round, .miter, CanvasAffineTransform{1, 0, 0, 1, 0, 0}, 1},
+		CpuRasterTestStroke{16, .square, .round, CanvasAffineTransform{1, 0, 0, 1, 0, 0}, 0.6},
 	]
 	mut context := cpu_raster_test_context()
 	mut expected := []u8{}
@@ -117,7 +128,7 @@ fn test_canvas_strokes_match_skia() {
 		context.drawing_state.line_width = stroke.width
 		context.drawing_state.line_cap = stroke.cap
 		context.drawing_state.line_join = stroke.join
-		cpu_raster_test_path(mut context, i % 2)
+		cpu_raster_test_path(mut context, i % 3)
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
 		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }

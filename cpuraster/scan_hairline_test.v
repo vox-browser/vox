@@ -71,13 +71,13 @@ fn test_stroke_square_caps_clip_at_the_device_edges() {
 		.bevel) == '39a45c3f5a2c4ec5'
 }
 
-fn test_stroke_declines_strokes_wider_than_a_device_pixel() {
-	mut pixels := hairline_background(20, 20)
+fn test_stroke_declines_devices_skia_tiles() {
+	mut pixels := hairline_background(8192, 1)
 	before := pixels.clone()
-	path := canvas_path(hairline_segment(0, [f32(2), 2]), false)
-	assert !stroke_canvas_path(mut pixels, 20, 20, 80, 2, path, [f32(1), 0, 0, 1, 0, 0]!,
-		0xff000000, 1, 1.5, .butt, .miter, 10)
-	assert !stroke_canvas_path(mut pixels, 20, 20, 80, 2, path, [f32(1.2), 0, 0, 1, 0, 0]!,
+	path := canvas_path(hairline_segment(0, [f32(2), 0.5]), false)
+	assert !stroke_canvas_path(mut pixels, 8192, 1, 8192 * 4, 2, path, [f32(1), 0, 0, 1, 0, 0]!,
 		0xff000000, 1, 1, .butt, .miter, 10)
+	assert !stroke_canvas_path(mut pixels, 8192, 1, 8192 * 4, 2, path, [f32(1), 0, 0, 1, 0, 0]!,
+		0xff000000, 1, 6, .butt, .miter, 10)
 	assert pixels == before
 }

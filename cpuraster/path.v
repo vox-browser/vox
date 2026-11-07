@@ -522,11 +522,28 @@ fn sorted_rect(a Point, b Point) Rect {
 }
 
 fn (p Path) is_rect() ?Rect {
+	rc := p.rect_contour() or { return none }
+	return rc.rect
+}
+
+// SkPathPriv::RectContour: the rect, whether its contour was closed and
+// whether it runs clockwise.
+struct RectContour {
+	rect   Rect
+	closed bool
+	cw     bool
+}
+
+// SkPathPriv::IsRectContour(..., allowPartial = false), as SkPath::isRect()
+// and SkPathRaw::isRect() call it.
+fn (p Path) rect_contour() ?RectContour {
 	if p.segment_mask() != segment_line || p.points.len < 4 || p.verbs.len < 4 {
 		return none
 	}
 	if r := trivial_rect(p.points, p.verbs) {
-		return r
+		v0 := Point{p.points[1].x - p.points[0].x, p.points[1].y - p.points[0].y}
+		v1 := Point{p.points[2].x - p.points[1].x, p.points[2].y - p.points[1].y}
+		return RectContour{r, true, cross_product(v0, v1) > 0}
 	}
 	pts := p.points
 	mut pi := 0
@@ -634,7 +651,8 @@ fn (p Path) is_rect() ?Rect {
 	if close_x != 0 && close_y != 0 {
 		return none
 	}
-	return sorted_rect(first_corner, third_corner)
+	return RectContour{sorted_rect(first_corner, third_corner), auto_close, directions[0] == ((directions[1] +
+		1) & 3)}
 }
 
 #include "@DIR/path_math.h"
