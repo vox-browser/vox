@@ -153,6 +153,17 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	}
 }
 
+// Elements whose boxes the tree builder constructs from their computed style
+// alone. Autonomous custom elements (a hyphenated name) are ordinary HTML
+// elements to the tree builder; one with a shadow root is rejected above.
+fn retained_flow_element_name_is_generic(name string) bool {
+	return name in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p',
+		'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote',
+		'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br', 'form', 'img', 'kbd',
+		'label', 'abbr', 'sup', 'sub', 'u', 'mark', 'cite', 'var', 'samp', 'dfn', 'ins', 'dl', 'dt',
+		'dd', 'figure', 'figcaption'] || (name.contains('-') && name.len > 1 && name[0] >= `a` && name[0] <= `z`)
+}
+
 fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Element, mut rejected map[u64]bool) bool {
 	key := u64(voidptr(element))
 	if rejected[key] { return false }
@@ -176,7 +187,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		|| (computed.position() !in [.static_, .relative]
 			&& !(computed.position() == .absolute && element.as_node().is_html_image_element()
 				&& !disable_extended_image_trees))
-		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br', 'form', 'img'] {
+		|| !retained_flow_element_name_is_generic(element.local_name()) {
 		return false
 	}
 	if value := computed.typed_property_value(.content) {
