@@ -86,30 +86,44 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	native_style := canvas_skia_style(style)
 	native_transform := canvas_skia_transform(transform)
 	filters := context.canvas_skia_filters()
-	// Solid and gradient fills and strokes use the Skia-free rasterizer, which
-	// reproduces Skia's pixels: dashes from SkDashPathEffect, then hairlines
-	// for strokes at most a device pixel wide and SkStroke outlines for wider
-	// ones, inside the anti-aliased clip, with any composite operation but the
-	// runtime-effect plus-darker and plus-lighter blenders. A blurred shadow
-	// takes Skia's blur mask filter, which replaces the canvas filters; other
-	// filtered draws and patterns stay on Skia.
+	// Solid, gradient and pattern fills and strokes use the Skia-free
+	// rasterizer, which reproduces Skia's pixels: dashes from
+	// SkDashPathEffect, then hairlines for strokes at most a device pixel wide
+	// and SkStroke outlines for wider ones, inside the anti-aliased clip, with
+	// any composite operation but the runtime-effect plus-darker and
+	// plus-lighter blenders. A blurred shadow takes Skia's blur mask filter,
+	// which replaces the canvas filters; other filtered draws stay on Skia.
 	solid := native_style.kind == 0
-	gradient := native_style.kind >= 1 && native_style.kind <= 3
-	if (solid || gradient) && ((solid && f32(blur) > 0) || filters.len == 0) {
-		cpu_gradient := if gradient {
-			?cpuraster.CanvasGradient(cpuraster.CanvasGradient{
-				kind:  native_style.kind
-				x0:    native_style.x0
-				y0:    native_style.y0
-				r0:    native_style.r0
-				x1:    native_style.x1
-				y1:    native_style.y1
-				r1:    native_style.r1
-				angle: native_style.angle
-				stops: native_style.stops
-			})
-		} else {
-			?cpuraster.CanvasGradient(none)
+	if native_style.kind <= 4 && ((solid && f32(blur) > 0) || filters.len == 0) {
+		cpu_style := match native_style.kind {
+			1, 2, 3 {
+				?cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
+					kind:  native_style.kind
+					x0:    native_style.x0
+					y0:    native_style.y0
+					r0:    native_style.r0
+					x1:    native_style.x1
+					y1:    native_style.y1
+					r1:    native_style.r1
+					angle: native_style.angle
+					stops: native_style.stops
+				})
+			}
+			4 {
+				?cpuraster.CanvasPaintStyle(cpuraster.CanvasPattern{
+					pixels:        native_style.pattern
+					width:         native_style.pattern_width
+					height:        native_style.pattern_height
+					pitch:         native_style.pattern_pitch
+					premultiplied: native_style.pattern_alpha == 2
+					display_p3:    native_style.pattern_color_space == 1
+					repetition:    native_style.repetition
+					transform:     native_style.pattern_transform
+				})
+			}
+			else {
+				?cpuraster.CanvasPaintStyle(none)
+			}
 		}
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_path := cpuraster.canvas_path(native_path.segments, native_path.even_odd)
@@ -117,13 +131,13 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 			painted := if stroke {
 				cpuraster.stroke_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
 					bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color,
-					cpu_gradient, f32(alpha), mode, f32(blur), f32(state.line_width), cpu_stroke_cap(state.line_cap), cpu_stroke_join(state.line_join),
+					cpu_style, f32(alpha), mode, f32(blur), f32(state.line_width), cpu_stroke_cap(state.line_cap), cpu_stroke_join(state.line_join),
 					f32(state.miter_limit), state.dash_list.map(f32(it)), f32(state.line_dash_offset),
 					cpu_clips)
 			} else {
 				cpuraster.fill_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
 					bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color,
-					cpu_gradient, f32(alpha), mode, f32(blur), cpu_clips)
+					cpu_style, f32(alpha), mode, f32(blur), cpu_clips)
 			}
 			if painted {
 				mutable_bitmap.alpha_type = 2

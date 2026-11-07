@@ -26,13 +26,15 @@ pub:
 	stops []f32
 }
 
-// What the gradient factory returned: nothing (the paint keeps its black
-// color), a solid SkShaders::Color(), a gradient, or a gradient that cannot
-// append its stages (a non-invertible matrix), which draws nothing.
+// What the shader factory returned: nothing (the paint keeps its black
+// color), a solid SkShaders::Color(), a gradient, an image shader, or a
+// shader that cannot append its stages (a non-invertible matrix), which
+// draws nothing.
 enum ShaderKind {
 	null_
 	color
 	gradient
+	image
 	empty
 }
 
@@ -40,6 +42,7 @@ struct CanvasShader {
 	kind     ShaderKind
 	color    [4]f32
 	gradient GradientShader
+	image    ImageShader
 }
 
 enum GradientGeometry {

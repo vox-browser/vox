@@ -36,7 +36,8 @@ pub fn canvas_path(segments []f32, even_odd bool) Path {
 // SkDrawTiler splits devices wider or taller than this into translated tiles.
 const max_untiled_dimension = 8191
 
-// fill_canvas_path fills path with color (an SkColor, 0xAARRGGBB) at
+// fill_canvas_path fills path with color (an SkColor, 0xAARRGGBB), or the
+// gradient or pattern style when there is one, at
 // global_alpha through transform ([a b c d e f]) into width x height RGBA_8888
 // pixels, which are premultiplied when alpha_type is 2 and premultiplied first
 // otherwise. mode is the composite operation's blend mode (canvas_blend_mode()).
@@ -45,19 +46,20 @@ const max_untiled_dimension = 8191
 // Returns false without changing pixels for devices Skia would tile.
 // clips are the Canvas2D clip paths in device space, applied anti-aliased in
 // order (canvas_raster_clip()).
-pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, gradient ?CanvasGradient, global_alpha f32, mode BlendMode, blur_in f32, clips []Path) bool {
-	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch) {
+pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, clips []Path) bool {
+	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch)
+		|| !canvas_style_installs(style) {
 		return false
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
-	paint_color, blur := canvas_paint_source(color, gradient, blur_in)
+	paint_color, blur := canvas_paint_source(color, style, blur_in)
 	alpha := canvas_paint_alpha(paint_color, if blur > 0 { f32(1) } else { global_alpha })
 	if blend_draws_nothing(mode, paint_alpha_byte(alpha)) {
 		return target.ready()
 	}
 	rc := canvas_raster_clip(width, height, clips)
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
-	shader := canvas_paint_shader(gradient, matrix)
+	shader := canvas_paint_shader(style, matrix)
 	if sigma := canvas_shadow_sigma(blur) {
 		// SkCanvas::internalQuickReject() with the mask filter's 3 sigma
 		// outset, then Draw::drawDevPath() through filterPath().
@@ -78,9 +80,8 @@ pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha
 			return false
 		}
 		target.ready()
-		mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, alpha, mode) or {
-			return true
-		}
+		mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, alpha, mode,
+			device_bounds) or { return true }
 		if plan.kind == .unfiltered {
 			return anti_fill_path_convex(device, convex, &rc, mut blitter)
 		}
@@ -88,10 +89,10 @@ pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha
 		return true
 	}
 	target.ready()
-	mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, alpha, mode) or {
-		return true
-	}
-	return anti_fill_path_clip(path.transform(matrix), false, &rc, mut blitter)
+	device := path.transform(matrix)
+	mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, alpha, mode,
+		device.bounds() or { Rect{} }) or { return true }
+	return anti_fill_path_clip(device, false, &rc, mut blitter)
 }
 
 // canvas_shadow_sigma is the blur mask filter vox_skia_canvas_path() gives a
@@ -140,7 +141,7 @@ pub enum StrokeJoin {
 }
 
 // stroke_canvas_path strokes path the way vox_skia_canvas_path() does for a
-// solid stroke without filters or shadows. When line_width
+// solid, gradient or pattern stroke without filters. When line_width
 // mapped through transform is at most one device pixel along both axes,
 // SkDraw draws a one-pixel hairline with alpha scaled by the width; wider
 // strokes are outlined by SkStroke in source space and the outline is filled
@@ -153,8 +154,8 @@ pub enum StrokeJoin {
 // blur is a shadow's blur, as for fill_canvas_path(); the blur mask filter
 // draws hairlines into its mask with butt caps.
 // Returns false without changing pixels for devices Skia would tile.
-pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, gradient ?CanvasGradient, global_alpha f32, mode BlendMode, blur_in f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path) bool {
-	if !untiled_device(pixels, width, height, pitch) {
+pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path) bool {
+	if !untiled_device(pixels, width, height, pitch) || !canvas_style_installs(style) {
 		return false
 	}
 	for v in transform {
@@ -187,9 +188,9 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	if line_width <= 0 {
 		return target.ready()
 	}
-	paint_color, blur := canvas_paint_source(color, gradient, blur_in)
+	paint_color, blur := canvas_paint_source(color, style, blur_in)
 	paint_alpha := canvas_paint_alpha(paint_color, if blur > 0 { f32(1) } else { global_alpha })
-	shader := canvas_paint_shader(gradient, matrix)
+	shader := canvas_paint_shader(style, matrix)
 	alpha := paint_alpha_byte(paint_alpha)
 	sigma := canvas_shadow_sigma(blur)
 	// SkCanvas::onDrawPath(): non-finite paths, SkPaint::nothingToDraw() and
@@ -268,7 +269,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			}
 			target.ready()
 			mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, paint_alpha,
-				mode) or { return true }
+				mode, device_bounds) or { return true }
 			if plan.kind == .unfiltered {
 				anti_fill_path_convex(device_path, convex, &rc, mut blitter)
 			} else {
@@ -278,7 +279,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		}
 		target.ready()
 		mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, paint_alpha,
-			mode) or { return true }
+			mode, device_path.bounds() or { Rect{} }) or { return true }
 		anti_fill_path_clip(device_path, known_convex, &rc, mut blitter)
 		return true
 	}
@@ -303,9 +304,8 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		}
 		plan := plan_blur(device_path, false, s, matrix, &rc, true)
 		target.ready()
-		mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, hair_alpha, mode) or {
-			return true
-		}
+		mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, hair_alpha,
+			mode, device_bounds) or { return true }
 		if plan.kind == .unfiltered {
 			anti_hair_path_clip(device_path, cap, &rc, mut blitter)
 		} else {
@@ -314,9 +314,8 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		return true
 	}
 	target.ready()
-	mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, hair_alpha, mode) or {
-		return true
-	}
+	mut blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, hair_alpha, mode,
+		device_path.bounds() or { Rect{} }) or { return true }
 	anti_hair_path_clip(device_path, cap, &rc, mut blitter)
 	return true
 }
@@ -415,19 +414,34 @@ fn color4f_byte(v f32) u32 {
 	return u32(u8(fmin(fmax(biased, 0), 255)))
 }
 
-// apply_style() for the paint's source: a gradient leaves SkPaint's default
-// opaque black color, and only a solid color's shadow takes the blur mask
-// filter. Returns the paint color and the blur that applies.
-fn canvas_paint_source(color u32, gradient ?CanvasGradient, blur f32) (u32, f32) {
-	if _ := gradient {
+// apply_style() for the paint's source: a gradient or pattern leaves
+// SkPaint's default opaque black color, and only a solid color's shadow
+// takes the blur mask filter. Returns the paint color and the blur that
+// applies.
+fn canvas_paint_source(color u32, style ?CanvasPaintStyle, blur f32) (u32, f32) {
+	if _ := style {
 		return u32(0xff000000), f32(0)
 	}
 	return color, blur
 }
 
-fn canvas_paint_shader(gradient ?CanvasGradient, m Matrix) ?CanvasShader {
-	g := gradient or { return none }
-	return canvas_gradient_shader(g, m)
+// apply_style() fails the draw when SkBitmap::installPixels() rejects the
+// pattern: an empty image or rows shorter than its width.
+fn canvas_style_installs(style ?CanvasPaintStyle) bool {
+	s := style or { return true }
+	if s is CanvasPattern {
+		return s.width > 0 && s.height > 0 && s.pitch >= s.width * 4
+			&& s.pixels.len >= s.pitch * (s.height - 1) + s.width * 4
+	}
+	return true
+}
+
+fn canvas_paint_shader(style ?CanvasPaintStyle, m Matrix) ?CanvasShader {
+	s := style or { return none }
+	return match s {
+		CanvasGradient { canvas_gradient_shader(s, m) }
+		CanvasPattern { canvas_pattern_shader(s, m) }
+	}
 }
 
 // The paint's SkColor4f alpha after SkPaint::setAlphaf(getAlphaf() * global_alpha).

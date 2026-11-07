@@ -133,9 +133,11 @@ fn canvas_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, paint_mo
 }
 
 // canvas_paint_blitter is SkBlitter::Choose() for the canvas paint: its
-// solid SkColor, or the shader its gradient made. A shader keeps the
-// raster pipeline blitter, since gradients have no legacy shader context.
-fn canvas_paint_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode) ?Blitter {
+// solid SkColor, or the shader its gradient or pattern made. A shader keeps
+// the raster pipeline blitter, since this build has no legacy shader
+// contexts. device_bounds are the device path's bounds Draw::drawDevPath()
+// passes as the stage record's destination bounds.
+fn canvas_paint_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect) ?Blitter {
 	s := shader or { return canvas_blitter(mut pixels, row_bytes, color, alpha, mode) }
 	match s.kind {
 		.null_ {
@@ -156,6 +158,18 @@ fn canvas_paint_blitter(mut pixels []u8, row_bytes int, color u32, shader ?Canva
 	}
 	if s.kind == .color {
 		return new_color_shader_blitter(mut pixels, row_bytes, s.color, alpha, mode)
+	}
+	if s.kind == .image {
+		// UseLegacyBlitter() for source-over, then the legacy shader context
+		// when the image shader can make one.
+		if mode == .src_over {
+			if state := legacy_image_context(s.image, paint_alpha_byte(alpha)) {
+				return new_legacy_shader_blitter(mut pixels, row_bytes, state)
+			}
+		}
+		mut image := s.image
+		image.check_device_bounds(device_bounds)
+		return new_image_blitter(mut pixels, row_bytes, image, alpha, mode)
 	}
 	return new_gradient_blitter(mut pixels, row_bytes, s.gradient, alpha, mode)
 }
@@ -178,10 +192,12 @@ pub struct PipelineBlitter {
 	fg f32
 	fb f32
 	fa f32
-	// A gradient source instead of the constant color, and the paint
-	// alpha's scale_1_float after it.
+	// A gradient or image source instead of the constant color, and the
+	// paint alpha's scale_1_float after it.
 	shaded bool
 	shader GradientShader
+	imaged bool
+	image  ImageShader
 	scaled bool
 	scale  f32
 mut:
@@ -283,6 +299,24 @@ fn new_gradient_blitter(mut pixels []u8, row_bytes int, shader GradientShader, a
 		row_bytes: row_bytes
 		shaded:    true
 		shader:    shader
+		scaled:    alpha != 1
+		scale:     alpha
+		pixels:    pixels
+	}
+}
+
+// new_image_blitter is Create() for an image shader at paint alpha alpha:
+// lowp unless the blend mode or a sampling stage needs floats. Image
+// shaders never report opacity here: Canvas2D images are not kOpaque and
+// decal tiles are transparent outside them.
+fn new_image_blitter(mut pixels []u8, row_bytes int, shader ImageShader, alpha f32, mode BlendMode) PipelineBlitter {
+	return PipelineBlitter{
+		mode:      mode
+		lowp:      blend_has_lowp(mode) && !shader.needs_highp()
+		prescale:  blend_prescales_coverage(mode)
+		row_bytes: row_bytes
+		imaged:    true
+		image:     shader
 		scaled:    alpha != 1
 		scale:     alpha
 		pixels:    pixels
@@ -514,7 +548,13 @@ fn lowp_alpha_is_srcover(mode BlendMode) bool {
 
 fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, coverage u8) {
 	// The color or shader, scale_1_float, and clamp_01: min(v, 255).
-	mut src := if b.shaded { b.shader.shade_lowp(px, py) } else { [b.lr, b.lg, b.lb, b.la]! }
+	mut src := if b.imaged {
+		b.image.shade_lowp(px, py)
+	} else if b.shaded {
+		b.shader.shade_lowp(px, py)
+	} else {
+		[b.lr, b.lg, b.lb, b.la]!
+	}
 	if b.scaled {
 		alpha := lowp_from_float(b.scale)
 		for i in 0 .. 4 {
@@ -870,7 +910,13 @@ fn highp_channel(mode BlendMode, s f32, d f32, sa f32, da f32) f32 {
 
 fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, coverage u8) {
 	// The color or shader, scale_1_float, and clamp_01.
-	mut src := if b.shaded { b.shader.shade_highp(px, py) } else { [b.fr, b.fg, b.fb, b.fa]! }
+	mut src := if b.imaged {
+		b.image.shade_highp(px, py)
+	} else if b.shaded {
+		b.shader.shade_highp(px, py)
+	} else {
+		[b.fr, b.fg, b.fb, b.fa]!
+	}
 	if b.scaled {
 		for i in 0 .. 4 {
 			src[i] = src[i] * b.scale

@@ -1,6 +1,7 @@
 module html
 
 import dom
+import geometry
 import math
 import skia
 
@@ -467,6 +468,96 @@ fn test_gradient_canvas_draws_match_skia() {
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		assert after.data == expected, 'gradient draw ${i} differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}
+
+// Pattern fills and strokes take the Skia-free rasterizer too: a
+// premultiplied repeating image under source-over uses Skia's legacy bitmap
+// shader context, other patterns the raster pipeline's image shader.
+fn test_pattern_canvas_draws_match_skia() {
+	mut pixels := []u8{len: 6 * 4 * 4}
+	for i in 0 .. 24 {
+		a := if i % 5 == 0 { 0 } else { (i * 41 + 30) % 256 }
+		for c in 0 .. 3 {
+			pixels[i * 4 + c] = u8(((i * 23 + c * 70) % 256) * a / 255)
+		}
+		pixels[i * 4 + 3] = u8(a)
+	}
+	mut premultiplied := ImageBitmap.create()
+	premultiplied.set_bitmap(&dom.Bitmap_{
+		width:      6
+		height:     4
+		pitch:      24
+		alpha_type: 2
+		data:       pixels
+	})
+	mut unpremultiplied := ImageBitmap.create()
+	unpremultiplied.set_bitmap(&dom.Bitmap_{
+		width:      6
+		height:     4
+		pitch:      24
+		alpha_type: 1
+		data:       pixels.map(if it == 0 { u8(90) } else { it })
+	})
+	sources := [premultiplied, unpremultiplied, premultiplied]
+	repetitions := ['repeat', 'no-repeat', 'repeat-y']
+	operations := [CompositingAndBlendingOperator.source_over, .source_over, .multiply]
+	mut context := cpu_raster_test_context()
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, source in sources {
+		result := CanvasPattern.create(CanvasImageSource(ImageBitmapCanvasSource{ value: source }),
+			repetitions[i]) or { panic(err) }
+		mut pattern := result.pattern or { panic('missing pattern') }
+		mut transform := geometry.DOMMatrix2DInit{
+			a: 2.5
+			b: 0.3
+			c: -0.2
+			d: 1.8
+			e: 7
+			f: 3
+		}
+		pattern.set_transform(mut transform) or { panic(err) }
+		stroke := i == 2
+		style := FillOrStrokeStyle.from_pattern(pattern)
+		if stroke {
+			context.drawing_state.stroke_style = style
+		} else {
+			context.drawing_state.fill_style = style
+		}
+		context.drawing_state.transform = CanvasAffineTransform{0.98, 0.08, -0.1, 1, 3, -1}
+		context.drawing_state.global_alpha = if i == 1 { 0.75 } else { 1 }
+		context.drawing_state.line_width = if stroke { 9 } else { 1 }
+		context.drawing_state.current_compositing_and_blending_operator = operations[i]
+		cpu_raster_test_path(mut context, i)
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut target := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		state := context.drawing_state
+		command := skia.Command{
+			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
+			style:        canvas_skia_style(style.to_gfx_paint_style())
+			transform:    canvas_skia_transform(state.transform)
+			stroke:       stroke
+			cap:          int(state.line_cap)
+			join:         int(state.line_join)
+			composite:    int(operations[i])
+			width:        f32(state.line_width)
+			miter:        f32(state.miter_limit)
+			global_alpha: f32(state.global_alpha)
+		}
+		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			command)
+		expected = target.clone()
+		expected_alpha_type = 2
+		if stroke {
+			context.stroke()
+		} else {
+			context.fill('nonzero')
+		}
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'pattern draw ${i} differs from Skia'
 	}
 	assert expected.any(it != 0 && it != 255)
 }
