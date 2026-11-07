@@ -515,6 +515,15 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	baseline_y := context.current_text_position.y + f64(dominant_baseline_offset(baseline_metric,
 		baseline_font.pixel_metrics()))
 	path := svg_adjusted_glyph_runs_outline_path(shaped.runs, x, baseline_y, adjustment)
+	if text.len > 0 {
+		graphics_state.set_svg_text_paint_origin(SVGTextPaintOrigin{
+			text:        text
+			x:           x
+			baseline_y:  baseline_y
+			text_length: adjustment.text_length
+			stretched:   adjustment.glyph_scale != 1
+		})
+	}
 	final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
 	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
 	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(final_local_bounds), stroke_width))
@@ -534,6 +543,18 @@ struct SVGTextLengthAdjustment {
 	character_delta f64
 	glyph_scale     f64 = 1
 	following_shift f64
+	text_length     ?f64
+}
+
+// The placement of a text element's own text in its user space. Painting
+// reshapes it at the screen-scaled font size, as Blink's scaled SVG fonts do.
+pub struct SVGTextPaintOrigin {
+pub:
+	text        string
+	x           f64
+	baseline_y  f64
+	text_length ?f64
+	stretched   bool
 }
 
 fn (adjustment SVGTextLengthAdjustment) advance(width f64) f64 {
@@ -572,6 +593,7 @@ fn svg_text_length_adjustment(element &dom.Element, shaped SVGShapedText, viewpo
 		return SVGTextLengthAdjustment{
 			glyph_scale:     f64(f32(text_length) / f32(shaped.width))
 			following_shift: delta
+			text_length:     text_length
 		}
 	}
 	characters := svg_shaped_character_count(shaped)
@@ -579,6 +601,7 @@ fn svg_text_length_adjustment(element &dom.Element, shaped SVGShapedText, viewpo
 	return SVGTextLengthAdjustment{
 		character_delta: character_delta
 		following_shift: character_delta * f64(characters)
+		text_length:     text_length
 	}
 }
 
@@ -759,6 +782,31 @@ fn svg_invisible_font(mut cascade SVGPlatformFontCascade, selected SVGSelectedFo
 // point, coalesces adjacent characters which use that face, and carries each
 // shaped run's advance into the next run's baseline origin.
 fn svg_shape_text(graphics_box &Node, text string) SVGShapedText {
+	return svg_shape_text_at_scale(graphics_box, text, 1)
+}
+
+// LayoutSVGInlineText::ComputeNewScaledFontForStyle(): Blink shapes and paints
+// SVG text with its font scaled to the screen.
+fn svg_scaled_platform_font(font &platform.Font, scale f32) &platform.Font {
+	if scale == 1 {
+		return font
+	}
+	return &platform.Font{
+		family:                  font.family.clone()
+		point_size:              font.point_size * scale
+		weight:                  font.weight
+		italic:                  font.italic
+		source_path:             font.source_path.clone()
+		requested_variations:    font.requested_variations.clone()
+		is_invisible:            font.is_invisible
+		font_rendering_policy:   font.font_rendering_policy
+		synthesize_ascii_caps:   font.synthesize_ascii_caps
+		font_synthesis_disabled: font.font_synthesis_disabled
+		system_face_override:    font.system_face_override
+	}
+}
+
+fn svg_shape_text_at_scale(graphics_box &Node, text string, scale f32) SVGShapedText {
 	if text.len == 0 {
 		return SVGShapedText{}
 	}
@@ -768,6 +816,7 @@ fn svg_shape_text(graphics_box &Node, text string) SVGShapedText {
 	mut runs := []&platform.GlyphRun{}
 	mut segment := ''
 	mut segment_font := &platform.Font(unsafe { nil })
+	mut previous_unscaled := &platform.Font(unsafe { nil })
 	mut x := f32(0)
 	for character in text.runes() {
 		selected := svg_font_for_code_point(font_list, cascade.fonts, cascade.last_resort,
@@ -778,13 +827,19 @@ fn svg_shape_text(graphics_box &Node, text string) SVGShapedText {
 		if font_computer.environment_generation() != font_generation {
 			// A synchronous lazy @font-face load invalidated the cascade. Shape
 			// again so the newly available author face participates immediately.
-			return svg_shape_text(graphics_box, text)
+			return svg_shape_text_at_scale(graphics_box, text, scale)
 		}
-		font := if fallback_is_invisible {
+		unscaled := if fallback_is_invisible {
 			svg_invisible_font(mut cascade, selected)
 		} else {
 			selected.font
 		}
+		font := if scale == 1 || voidptr(unscaled) != voidptr(previous_unscaled) {
+			svg_scaled_platform_font(unscaled, scale)
+		} else {
+			segment_font
+		}
+		previous_unscaled = unscaled
 		if segment.len > 0 && voidptr(font) != voidptr(segment_font) {
 			run := platform.shape_text(x, 0, segment, segment_font, .common)
 			runs << run

@@ -1,6 +1,8 @@
 module layout
 
+import css
 import painting
+import platform
 
 // These snapshots are replaced as a unit. Copying a BlockBox keeps the old
 // path and hit geometry valid for retained recordings.
@@ -13,6 +15,18 @@ pub:
 	fill_color   string
 	stroke_color string
 	stroke_width f64
+	// Solid-filled SVG text drawn as glyphs in page space instead of `path`.
+	text &BlockBoxSVGText = unsafe { nil }
+}
+
+pub struct BlockBoxSVGText {
+pub:
+	runs           []&platform.GlyphRun
+	x              f64
+	y              f64
+	text           string
+	color          &PaintSRGBColor = unsafe { nil }
+	font_smoothing css.FontSmoothing
 }
 
 __global empty_box_svg_path = &PaintSVGPathData{}

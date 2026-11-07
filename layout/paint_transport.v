@@ -2672,7 +2672,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		outline_end := commands.len
 		foreground_content_start := commands.len
 		append_chromium_menu_list_arrow(mut commands, box, border_rect, opacity)
-		if box.svg_data != unsafe { nil } && box.svg_path().path.len > 0 {
+		if box.svg_data != unsafe { nil } && box.svg_data.text != unsafe { nil } {
+			append_svg_text_glyph_commands(mut commands, box, opacity)
+		} else if box.svg_data != unsafe { nil } && box.svg_path().path.len > 0 {
 			commands << PaintCommand{
 				kind: 'draw_svg_path'
 				x: box.x

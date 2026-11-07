@@ -16,7 +16,7 @@ fn test_svg_filter_region_and_lengths_follow_the_user_space_transform() {
 	assert layers.len == 1
 	filter := layers[0].visual_layer().filter or { panic('no filter') }
 	bounds := filter.bounds or { panic('no filter region') }
-	paths := commands.filter(it.kind == 'draw_svg_path')
+	paths := commands.filter(it.kind in ['draw_svg_path', 'draw_text'])
 	assert paths.len == 1
 	// The region is the path's page-space visual bounds, not its user space.
 	assert math.abs(bounds.x - paths[0].x) < 0.01 && math.abs(bounds.width - paths[0].width) < 0.01,

@@ -3674,6 +3674,9 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
 	mut svg_points := []f64{}
 	mut svg_fill_color := ''
+	mut svg_text := SVGTextGlyphs{}
+	mut svg_text_content := ''
+	mut svg_text_color := &PaintSRGBColor(unsafe { nil })
 	mut svg_solid_color_data := &PaintSVGSolidColorData(unsafe { nil })
 	mut svg_fill_linear_gradient := ?painting.SVGLinearGradientPaintStyle(none)
 	mut svg_fill_radial_gradient := ?painting.SVGRadialGradientPaintStyle(none)
@@ -3871,6 +3874,15 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		svg_stroke_miterlimit = computed.stroke_miterlimit()
 		svg_fill_opacity = f64(computed.fill_opacity())
 		svg_stroke_opacity = f64(computed.stroke_opacity())
+		if svg_fill_color != '' && svg_stroke_color == '' {
+			if origin := used.svg_text_paint_origin() {
+				svg_text = chromium_svg_text_glyph_runs(node, computed, origin, to_page)
+				svg_text_content = origin.text
+				if fill := svg_fill_rgba {
+					svg_text_color = chromium_svg_text_fill_color(node, fill, svg_fill_opacity)
+				}
+			}
+		}
 	}
 	svg_clip = svg_url_clip_path_for_box(node, state, used)
 	svg_mask = svg_url_mask_for_box(node, state, used)
@@ -4334,6 +4346,16 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				fill_color: svg_fill_color
 				stroke_color: svg_stroke_color
 				stroke_width: svg_stroke_width
+				text: if svg_text.runs.len > 0 && svg_text_color != unsafe { nil } {
+					&BlockBoxSVGText{
+						runs: svg_text.runs
+						x: svg_text.x
+						y: svg_text.y
+						text: svg_text_content
+						color: svg_text_color
+						font_smoothing: chromium_glyph_font_smoothing(node, computed)
+					}
+				} else { unsafe { nil } }
 			}
 		} else { unsafe { nil } }
 		marker_shape: marker_shape

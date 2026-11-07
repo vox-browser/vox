@@ -46,6 +46,7 @@ mut:
 	used_grid_columns_are_subgrid bool
 	used_grid_rows_are_subgrid    bool
 	computed_svg_path_            ?svg.Path
+	svg_text_paint_origin_        ?SVGTextPaintOrigin
 	has_computed_svg_transforms   bool
 	svg_viewbox_transform_        svg.AffineTransform
 	svg_local_transform_          svg.AffineTransform
@@ -87,6 +88,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		used_grid_columns_are_subgrid: rare.used_grid_columns_are_subgrid
 		used_grid_rows_are_subgrid: rare.used_grid_rows_are_subgrid
 		computed_svg_path_: rare.computed_svg_path_
+		svg_text_paint_origin_: rare.svg_text_paint_origin_
 		has_computed_svg_transforms: rare.has_computed_svg_transforms
 		svg_viewbox_transform_: rare.svg_viewbox_transform_
 		svg_local_transform_: rare.svg_local_transform_
@@ -737,6 +739,18 @@ pub fn (mut u UsedValues) set_computed_svg_path(path svg.Path) {
 pub fn (u &UsedValues) computed_svg_path() ?svg.Path {
 	rare := u.rare_ or { return none }
 	return rare.computed_svg_path_
+}
+
+// Where SVGFormattingContext placed a text element's own text, in its user
+// space, so painting can draw the glyphs instead of their outline path.
+pub fn (mut u UsedValues) set_svg_text_paint_origin(origin SVGTextPaintOrigin) {
+	mut rare := u.ensure_rare_data()
+	rare.svg_text_paint_origin_ = origin
+}
+
+pub fn (u &UsedValues) svg_text_paint_origin() ?SVGTextPaintOrigin {
+	rare := u.rare_ or { return none }
+	return rare.svg_text_paint_origin_
 }
 
 pub fn (mut u UsedValues) set_computed_svg_transforms(viewbox_transform svg.AffineTransform, local_transform svg.AffineTransform, svg_transform svg.AffineTransform) {
