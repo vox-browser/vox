@@ -7011,10 +7011,14 @@ pub fn interpolate_discrete_style_value(from StyleValue, to StyleValue, delta f6
 }
 
 fn interpolate_raw_i64(from i64, to i64, delta f64, accepted_type_range ?AcceptedTypeRange) i64 {
-	min := if range := accepted_type_range { range.min } else { f64(-9223372036854775808) }
-	max := if range := accepted_type_range { range.max } else { f64(9223372036854775807) }
-	result := f64(round_to_nearest_integer(f64(from) + (f64(to) - f64(from)) * delta))
-	return i64(clamp_f64(result, min, max))
+	// Without an accepted range the result is not clamped. The previous
+	// default bounds, written as i64 literals, produced a lower bound above
+	// every result.
+	mut result := f64(round_to_nearest_integer(f64(from) + (f64(to) - f64(from)) * delta))
+	if range := accepted_type_range {
+		result = clamp_f64(result, range.min, range.max)
+	}
+	return i64(result)
 }
 
 fn normalized_superellipse_half_corner(parameter f64) f64 {
