@@ -709,7 +709,7 @@ fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
 		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
 		cap := rand.intn(3) or { 0 }
 		join := rand.intn(3) or { 0 }
-		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join},
+		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0},
 			'stroke ${i}')!
 		if is_hairline(transform, line_width) {
 			hairlines++
@@ -731,6 +731,8 @@ struct StrokeCase {
 	miter        f32
 	cap          int
 	join         int
+	dashes       []f32
+	dash_offset  f32
 }
 
 // SkDraw's DrawTreatAsHairline() test for a positive width.
@@ -757,8 +759,10 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 	mut floats := c.transform[..].clone()
 	floats << [c.global_alpha, c.line_width, c.miter]
 	floats << c.segments
+	floats << c.dash_offset
+	floats << c.dashes
 	values := [i32(c.width), c.height, c.pitch, c.alpha_type, c.segments.len / 12, i32(c.color),
-		c.cap, c.join]
+		c.cap, c.join, c.dashes.len]
 	if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
@@ -766,7 +770,7 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 	path := cpuraster.canvas_path(c.segments, false)
 	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
 		path, c.transform, c.color, c.global_alpha, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
-		c.miter) {
+		c.miter, c.dashes, c.dash_offset) {
 		return error('${label}: cpuraster declined')
 	}
 	for j in 0 .. expected.len {
@@ -1127,6 +1131,153 @@ fn main() {
 	check_stroke_cases(oracle, count)
 }
 
+fn random_dashes() []f32 {
+	mut dashes := []f32{}
+	n := match rand.intn(10) or { 0 } {
+		0 { 0 }
+		1 { 1 }
+		2 { 3 }
+		3, 4, 5 { 2 }
+		6, 7 { 4 }
+		else { 6 }
+	}
+	for _ in 0 .. n {
+		dashes << match rand.intn(12) or { 0 } {
+			0 { f32(0) }
+			1 { f32(rand.f64() * 0.5) }
+			2 { f32(rand.intn(10) or { 0 } + 1) }
+			else { f32(rand.f64() * 20 + 0.25) }
+		}
+	}
+	match rand.intn(40) or { 0 } {
+		0 {
+			if dashes.len > 0 {
+				dashes[0] = -1
+			}
+		}
+		1 {
+			if dashes.len > 0 {
+				dashes[dashes.len - 1] = f32(math.inf(1))
+			}
+		}
+		2 {
+			for i in 0 .. dashes.len {
+				dashes[i] = 0
+			}
+		}
+		else {}
+	}
+	return dashes
+}
+
+fn random_dash_offset() f32 {
+	return match rand.intn(8) or { 0 } {
+		0 { f32(0) }
+		1 { f32(rand.f64() * -60) }
+		2 { f32(rand.f64() * 600) }
+		3 { f32(rand.intn(20) or { 0 }) }
+		4 { if rand.intn(10) or { 0 } == 0 { f32(math.nan()) } else { f32(-1e7) } }
+		else { f32(rand.f64() * 40) }
+	}
+}
+
+// Lines along an axis that run past the device, which SkDashPath trims to
+// the cull rect, and rects, which it trims side by side.
+fn random_dash_shape(width int, height int) []f32 {
+	mut s := []f32{}
+	x0 := f32(rand.f64() * f64(width))
+	y0 := f32(rand.f64() * f64(height))
+	reach := f32(rand.f64() * 4000 + 10)
+	match rand.intn(4) or { 0 } {
+		0 {
+			s << segment(0, [x0 - reach, y0])
+			s << segment(1, [x0 + reach, y0])
+		}
+		1 {
+			s << segment(0, [x0, y0 + reach])
+			s << segment(1, [x0, y0 - reach])
+		}
+		2 {
+			// A zero-length line, which dashing bumps to draw its caps.
+			s << segment(0, [x0, y0])
+			s << segment(1, [x0, y0])
+		}
+		else {
+			x1 := x0 + f32(rand.f64() * 2 - 1) * reach
+			y1 := y0 + f32(rand.f64() * 2 - 1) * reach / 4
+			s << segment(0, [x0, y0])
+			s << segment(1, [x1, y0])
+			s << segment(1, [x1, y1])
+			s << segment(1, [x0, y1])
+			if rand.intn(4) or { 0 } != 0 {
+				s << segment(5, [])
+			}
+		}
+	}
+	return s
+}
+
+// Dashed Canvas2D strokes: SkDashPathEffect with random, degenerate and
+// invalid intervals and phases over random paths, the special contours
+// SkStroke handles, culled lines and rects, at hairline and wider widths.
+fn check_dashed_strokes(oracle Oracle, count int) !(int, int) {
+	mut hairlines := 0
+	for i in 0 .. count {
+		width := rand.intn(120) or { 0 } + 1
+		height := rand.intn(120) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		segments := match rand.intn(3) or { 0 } {
+			0 { random_stroke_shape(width, height) }
+			1 { random_dash_shape(width, height) }
+			else { random_canvas_segments(width, height) }
+		}
+		transform := if rand.intn(8) or { 0 } == 0 {
+			// A translation, whose inverse SkMatrix::invert() builds directly.
+			[f32(1), 0, 0, 1, f32(rand.f64() * 30 - 15), f32(rand.f64() * 30 - 15)]!
+		} else {
+			random_stroke_matrix()
+		}
+		line_width := match rand.intn(4) or { 0 } {
+			0 { f32(1) }
+			1 { f32(rand.f64()) }
+			else { random_wide_line_width() }
+		}
+		mut dashes := random_dashes()
+		mut segs := segments.clone()
+		if rand.intn(60) or { 0 } == 0 {
+			// Too many dashes on a diagonal line, which the cull rect cannot
+			// trim: SkDashPath gives up and strokes the undashed path.
+			segs = []f32{}
+			segs << segment(0, [f32(0), f32(height / 2)])
+			segs << segment(1, [f32(3e6), f32(height / 2) + 3000])
+			dashes = [f32(1), 1]
+		}
+		c := StrokeCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			segments:     segs
+			transform:    transform
+			color:        random_color()
+			global_alpha: random_global_alpha()
+			line_width:   line_width
+			miter:        if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 4) }
+			cap:          rand.intn(3) or { 0 }
+			join:         rand.intn(3) or { 0 }
+			dashes:       dashes
+			dash_offset:  random_dash_offset()
+		}
+		compare_canvas_stroke(oracle, random_canvas_bitmap(width, height, pitch, alpha_type),
+			c, 'dashed stroke ${i}')!
+		if is_hairline(transform, line_width) {
+			hairlines++
+		}
+	}
+	return count, hairlines
+}
+
 fn check_stroke_cases(oracle Oracle, count int) {
 	strokes, hairlines := check_canvas_strokes(oracle, count / 4) or {
 		eprintln(err.msg())
@@ -1138,4 +1289,9 @@ fn check_stroke_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('wide canvas strokes: ${wide} exact (${thin} hairlines)')
+	dashed, dashed_hairlines := check_dashed_strokes(oracle, count / 2) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('dashed canvas strokes: ${dashed} exact (${dashed_hairlines} hairlines)')
 }

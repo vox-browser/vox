@@ -188,13 +188,16 @@ ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
 }
 
 // arguments: width, height, pitch, alpha type, segment count, SkColor, cap,
-// join. floats: the transform, global alpha, line width, miter limit, then
-// 12 floats per segment.
+// join, dash count. floats: the transform, global alpha, line width, miter
+// limit, 12 floats per segment, then the dash offset and intervals.
 ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
     command.operation = 0;
     command.path = { f + 9, a[4], 0 };
+    command.dash_offset = f[9 + a[4] * 12];
+    command.dashes = f + 10 + a[4] * 12;
+    command.dash_count = a[8];
     command.style.kind = 0;
     command.style.color = uint32_t(a[5]);
     for (int i = 0; i < 6; ++i)
