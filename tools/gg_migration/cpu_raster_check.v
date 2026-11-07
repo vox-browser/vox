@@ -1372,6 +1372,10 @@ fn main() {
 		check_image_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'glyphs' {
+		check_glyph_cases(oracle, count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -1418,6 +1422,7 @@ fn main() {
 	check_pattern_cases(oracle, count / 2)
 	check_clear_cases(oracle, count / 2)
 	check_image_cases(oracle, count / 2)
+	check_glyph_cases(oracle, count / 2)
 }
 
 fn random_dashes() []f32 {
@@ -2451,4 +2456,215 @@ fn check_image_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('canvas images: ${images - declined} exact, ${declined} declined')
+}
+
+// Fonts for glyph runs: repository fonts (Latin, Cyrillic, Ahem's boxes,
+// KaTeX's math), macOS system fonts including collections (first face),
+// variable fonts (SF, New York), an OpenType CFF font and the color emoji
+// font (which cpuraster declines), when present.
+fn glyph_fonts(repo string) []string {
+	mut fonts := [
+		'Tests/Browser/Brave/resources/Ahem.ttf',
+		'Tests/Browser/Brave/resources/cyrillic-context.ttf',
+		'Tests/Browser/Brave/resources/glyph-origin.ttf',
+		'pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Regular-subset.ttf',
+		'pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Italic-subset.ttf',
+		'pixel_tests/sites/jvns/cdn.jsdelivr.net/npm/katex@0.16.4/dist/fonts/KaTeX_Main-Regular.ttf',
+	].map(os.join_path(repo, it))
+	for path in ['/System/Library/Fonts/Supplemental/Arial.ttf', '/System/Library/Fonts/Supplemental/Georgia.ttf',
+		'/System/Library/Fonts/Supplemental/Times New Roman.ttf', '/System/Library/Fonts/Helvetica.ttc',
+		'/System/Library/Fonts/Menlo.ttc', '/System/Library/Fonts/SFNS.ttf', '/System/Library/Fonts/NewYork.ttf',
+		'/System/Library/Fonts/Geneva.ttf', '/System/Library/Fonts/LastResort.otf',
+		'/System/Library/Fonts/Apple Color Emoji.ttc'] {
+		if os.is_file(path) {
+			fonts << path
+		}
+	}
+	return fonts.filter(os.is_file(it))
+}
+
+struct GlyphCase {
+	width        int
+	height       int
+	pitch        int
+	alpha_type   int
+	font_path    string
+	face_index   int
+	font_size    f32
+	glyphs       []u16
+	positions    []f32
+	translation  [2]f32
+	transform    [6]f32
+	color        u32
+	global_alpha f32
+	clips        []ClipCase
+	composite    int
+	style        ?cpuraster.CanvasPaintStyle
+}
+
+type OracleCanvasGlyphs = fn (pixels &u8, font_path &char, glyphs &u16, values &i32, floats &f32) i32
+
+// Returns whether cpuraster declined, and whether Skia changed the pixels
+// beyond premultiplying them.
+fn compare_canvas_glyphs(glyphs OracleCanvasGlyphs, oracle Oracle, initial []u8, c GlyphCase, label string) !(bool, bool) {
+	mut expected := initial.clone()
+	mut floats := c.transform[..].clone()
+	floats << [c.global_alpha, c.font_size, c.translation[0], c.translation[1]]
+	floats << c.positions
+	mut values := [i32(c.width), c.height, c.pitch, c.alpha_type, i32(c.color), c.glyphs.len, c.face_index]
+	clip_values, clip_floats := clip_arguments(c.clips)
+	values << clip_values
+	values << i32(c.composite)
+	floats << clip_floats
+	append_style(oracle, mut values, mut floats, c.style)
+	skia_ok := glyphs(expected.data, c.font_path.str, c.glyphs.data, values.data, floats.data) != 0
+	mut actual := initial.clone()
+	run := cpuraster.CanvasGlyphRun{
+		font_path:   c.font_path
+		face_index:  c.face_index
+		font_size:   c.font_size
+		glyphs:      c.glyphs
+		positions:   c.positions
+		translation: c.translation
+	}
+	if !cpuraster.fill_canvas_glyphs(mut actual, c.width, c.height, c.pitch, c.alpha_type, run,
+		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), clip_paths(c.clips)) {
+		if actual != initial {
+			return error('${label}: cpuraster declined after changing pixels')
+		}
+		return true, false
+	}
+	if !skia_ok {
+		return error('${label}: the Skia glyph run failed where cpuraster drew (${c})')
+	}
+	for j in 0 .. expected.len {
+		if expected[j] != actual[j] {
+			p := j - j % 4
+			save_failure(initial, expected, actual, '${c}')
+			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]}, from ${initial[p..p + 4]} (${c})')
+		}
+	}
+	mut premultiplied := initial.clone()
+	if c.alpha_type != 2 {
+		empty := cpuraster.CanvasGlyphRun{
+			font_path: c.font_path
+			font_size: 1
+			glyphs:    [u16(0)]
+			positions: [f32(0), 0]
+		}
+		cpuraster.fill_canvas_glyphs(mut premultiplied, c.width, c.height, c.pitch, c.alpha_type,
+			empty, [f32(1), 0, 0, 1, 0, 0]!, 0, none, 1, .src_over, [])
+	}
+	return false, expected != premultiplied
+}
+
+// Glyph runs as fillText() shapes them: a baseline of advancing glyphs with
+// fractional positions (every quarter-pixel phase), occasionally scattered
+// or repeated glyphs and vertical offsets; sizes from tiny to the 256-pixel
+// mask limit and past it; identity, translated, scaled, flipped, rotated and
+// skewed canvas transforms; solid colors, gradients and patterns, every
+// composite operation, global alpha and clips.
+fn check_glyph_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, count int) !(int, int, int) {
+	fonts := glyph_fonts(repo)
+	mut declined := 0
+	mut drawn := 0
+	for i in 0 .. count {
+		width := rand.intn(120) or { 0 } + 1
+		height := rand.intn(90) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		composite := if rand.intn(3) or { 0 } == 0 { rand.intn(28) or { 0 } } else { 0 }
+		clips := if rand.intn(5) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
+		initial := random_composite_bitmap(width, height, pitch, alpha_type)
+		font_size := match rand.intn(12) or { 0 } {
+			0 { f32(rand.f64() * 4) }
+			1 { f32(rand.intn(300) or { 0 } + 1) }
+			2 { f32(int(rand.f64() * 48) + 1) }
+			else { f32(rand.f64() * 60 + 4) }
+		}
+		n := match rand.intn(6) or { 0 } {
+			0 { 1 }
+			1 { 0 }
+			else { rand.intn(12) or { 0 } + 1 }
+		}
+		mut ids := []u16{}
+		mut positions := []f32{}
+		mut x := f32(rand.f64() * 4)
+		for _ in 0 .. n {
+			ids << u16(match rand.intn(10) or { 0 } {
+				0 { 0 }
+				1 { rand.intn(65536) or { 0 } }
+				else { rand.intn(120) or { 0 } + 1 }
+			})
+			y := if rand.intn(5) or { 0 } == 0 { f32(rand.f64() * 6 - 3) } else { f32(0) }
+			positions << [x, y]
+			x += match rand.intn(6) or { 0 } {
+				0 { f32(0) }
+				1 { f32(rand.f64() * 30 - 10) }
+				2 { f32(rand.intn(4) or { 0 }) / 4 * font_size }
+				else { font_size * f32(0.3 + rand.f64() * 0.5) }
+			}
+		}
+		transform := match rand.intn(10) or { 0 } {
+			0, 1, 2, 3 { [f32(1), 0, 0, 1, 0, 0]! }
+			4 {
+				s := f32(rand.f64() * 3 + 0.2)
+				[s, 0, 0, s, f32(rand.f64() * 10 - 5), f32(rand.f64() * 10 - 5)]!
+			}
+			5 {
+				[f32(rand.f64() * 2 - 1), 0, 0, f32(rand.f64() * 2 - 1), f32(rand.f64() * width), f32(rand.f64() * height)]!
+			}
+			6 {
+				angle := rand.f64() * 6.3
+				s := rand.f64() * 2 + 0.3
+				[f32(math.cos(angle) * s), f32(math.sin(angle) * s), f32(-math.sin(angle) * s), f32(math.cos(angle) * s),
+					f32(rand.f64() * width), f32(rand.f64() * height)]!
+			}
+			else {
+				random_stroke_matrix()
+			}
+		}
+		style := match rand.intn(8) or { 0 } {
+			0 { ?cpuraster.CanvasPaintStyle(random_gradient(width, height)) }
+			1 { ?cpuraster.CanvasPaintStyle(random_pattern(width, height)) }
+			else { ?cpuraster.CanvasPaintStyle(none) }
+		}
+		c := GlyphCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			font_path:    fonts[rand.intn(fonts.len) or { 0 }]
+			face_index:   if rand.intn(40) or { 0 } == 0 { 1 } else { 0 }
+			font_size:    font_size
+			glyphs:       ids
+			positions:    positions
+			translation:  [f32(rand.f64() * f64(width) - 4), f32(rand.f64() * f64(height) * 1.2)]!
+			transform:    transform
+			color:        random_composite_color()
+			global_alpha: random_composite_alpha()
+			clips:        clips
+			composite:    composite
+			style:        style
+		}
+		was_declined, changed := compare_canvas_glyphs(glyphs, oracle, initial, c, 'glyph run ${i}')!
+		if was_declined {
+			declined++
+		}
+		if changed {
+			drawn++
+		}
+	}
+	return count, declined, drawn
+}
+
+fn check_glyph_cases(oracle Oracle, count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	glyphs := unsafe { OracleCanvasGlyphs(oracle_symbol(library, 'oracle_canvas_glyphs')) }
+	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
+	runs, declined, drawn := check_glyph_draws(oracle, glyphs, repo, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('canvas glyph runs: ${runs - declined} exact (${drawn} changed pixels), ${declined} declined')
 }

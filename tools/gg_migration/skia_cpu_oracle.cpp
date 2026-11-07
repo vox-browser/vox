@@ -337,3 +337,34 @@ ORACLE int oracle_canvas_bitmap(uint8_t* pixels, int const* a, float const* f)
     }
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
+
+// A fillText() glyph run. arguments: width, height, pitch, alpha type, the
+// style's SkColor, glyph count, face index, the clips, the composite
+// operation, then the style's ints. floats: the transform, global alpha,
+// font size, the blob's origin, x and y per glyph, the clip segments, then
+// the style's floats.
+ORACLE int oracle_canvas_glyphs(uint8_t* pixels, char const* font_path, uint16_t const* glyphs, int const* a, float const* f)
+{
+    VoxCanvasCommand command {};
+    command.style.color = uint32_t(a[4]);
+    for (int i = 0; i < 6; ++i)
+        command.transform[i] = f[i];
+    command.global_alpha = f[6];
+    int count = a[5];
+    float const* positions = f + 10;
+    auto clips = oracle_clips(a + 7, positions + count * 2);
+    command.clips = clips.data();
+    command.clip_count = int(clips.size());
+    command.composite = a[8 + a[7] * 2];
+    oracle_style(command.style, a + 9 + a[7] * 2, positions + count * 2 + oracle_clip_floats(a + 7));
+    VoxCanvasGlyphRun run {};
+    run.font_path = font_path;
+    run.face_index = a[6];
+    run.count = count;
+    run.font_size = f[7];
+    run.translation[0] = f[8];
+    run.translation[1] = f[9];
+    run.glyphs = glyphs;
+    run.positions = positions;
+    return vox_skia_canvas_glyphs(pixels, a[0], a[1], a[2], a[3], &command, &run);
+}
