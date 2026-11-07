@@ -117,7 +117,17 @@ fn (mut builder LineBuilder) projected_text_sequence_width(item &InlineLevelItem
 	for next in following {
 		width = width.plus(projection.append(next))
 	}
-	return width.plus(projection.chromium_line_end_correction())
+	correction := projection.chromium_line_end_correction()
+	if correction.raw_value() != 0 {
+		// The line breaker tolerates one LayoutUnit of overflow (see
+		// available_width_to_fit()). A line end reshaped across an unsafe
+		// boundary must fit without it: Blink compares the reshaped tail against
+		// positions from the paragraph's original shape, which measure wider than
+		// this independent reshape. Brave breaks "THERE IS CURRENTLY" before the
+		// reshaped 291.34375 native-pixel advance, not at 291.328125.
+		return width.plus(correction).plus(CSSPixels.smallest_positive_value())
+	}
+	return width
 }
 
 // Intrinsic constraints decide soft wrapping without consulting a measured

@@ -376,7 +376,19 @@ fn (mut builder LineBuilder) remaining_width_on_current_line() ?CSSPixels {
 	if !builder.available_width_for_current_line.is_definite() {
 		return none
 	}
-	return builder.available_width_for_current_line.to_px_or_zero().minus(builder.ensure_last_line_box().width())
+	return builder.available_width_to_fit().minus(builder.ensure_last_line_box().width())
+}
+
+// Chromium accepts content that overflows the line by one LayoutUnit (1/64
+// CSS pixel): LineBreaker::AvailableWidthToFit() adds that epsilon to the
+// available width, absorbing rounding in summed glyph advances. A 4chan
+// teaser line measuring 150.015625px therefore stays on a 150px line.
+fn (builder &LineBuilder) available_width_to_fit() CSSPixels {
+	available := builder.available_width_for_current_line.to_px_or_zero()
+	if unsafe { &Node(builder.containing_block) }.document().font_rendering_policy() != .chromium {
+		return available
+	}
+	return available.plus(CSSPixels.smallest_positive_value())
 }
 
 pub fn (mut builder LineBuilder) remaining_width_for_overflow_break() ?CSSPixels {
@@ -459,6 +471,9 @@ fn (mut builder LineBuilder) should_break(next_item_width CSSPixels) bool {
 		}
 	}
 	current_line_width := builder.ensure_last_line_box().width()
+	if builder.available_width_for_current_line.is_definite() {
+		return builder.available_width_to_fit().raw_value() < current_line_width.plus(next_item_width).raw_value()
+	}
 	return builder.available_width_for_current_line.is_less_than_px(current_line_width.plus(next_item_width))
 }
 
