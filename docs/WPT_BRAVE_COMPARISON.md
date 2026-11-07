@@ -164,6 +164,57 @@ The process group exceeded 4 GiB on these tests:
 - Ladybird's import is a subset of WPT that tracks Ladybird's own work.
   Pass rates are not representative of all of WPT.
 
+## Vox progress, 2026-11-07
+
+A Vox-only rerun of the same 3,808 tests (Brave was not rerun), split into six
+parallel `--browsers vox` runs on bundle receipt `20261107-164307-dd221c8a`
+(executable `036077b9e1f6`). The 2026-11-06 Vox numbers were reproduced first
+on the earlier bundle: 62,431 / 131,135.
+
+| | 2026-11-06 | 2026-11-07 |
+|---|---:|---:|
+| Subtests passing | 62,431 / 131,135 (47.6%) | 112,788 / 162,930 (69.2%) |
+| Passing, over Brave's 182,388 subtests | 34.2% | 61.8% |
+| Harness OK | 3,415 | 3,470 |
+| Harness TIMEOUT | 228 | 215 |
+| Browser exited | 13 | 16 |
+
+More tests now get far enough to report their subtests, so the denominator
+grew by 31,795. The gains come from bindings to existing translated code:
+
+- `'prop' in getComputedStyle(el)`, used by every computed-value check, and
+  `el.style = text` forwarding to `cssText`.
+- Same-origin frames see each other's globals; `contentDocument`; iframes
+  delay their parent's `load` until their documents have loaded. Together
+  with `DOMParser` this passes the 12 XHTML entity tests (about 25,600
+  subtests).
+- `Node.normalize()`, `new Document()`, `createDocument`,
+  `createDocumentType`, `DocumentType`, `XMLDocument`, processing
+  instructions, CDATA sections, `NodeIterator`.
+- `Element.animate()` and `Animation` over the Animations module, including
+  shorthand keyframes.
+- `HTMLHyperlinkElementUtils`, `URLPattern`, `document.styleSheets`, the
+  CSSOM rule interfaces, `CSS.registerProperty()`, `CompressionStream` and
+  `DecompressionStream`, `internals.getComputedLabel/Role`, `document.evaluate`
+  and the XPath interfaces, text-control selection APIs, `scrollIntoView()`,
+  and the `TransitionEvent`, `AnimationEvent` and `CommandEvent` constructors.
+
+Open problems seen in these runs:
+
+- Some CSS transition/animation interpolation tests (for example
+  `line-height-interpolation`, `padding-interpolation`) crash in a rendering
+  update: layout reads an animated `line-height` value that has already been
+  released. The crash reproduces with `Element.animate` removed, and the
+  same tests passed on the 15:03 bundle; the cause is not yet identified.
+- `html5lib_url` results vary between runs: an iframe's `load` event
+  occasionally does not fire after it navigates to the next blob URL, and the
+  harness times out.
+- The XPath evaluator handles only a few expression forms, so
+  `domxpath/xml_xpath_runner` still fails.
+- Missing, by subtest count: a native `Range` and `execCommand` (editing,
+  `dom/ranges`), `document.open/write` for frames (html5lib `write`), relative
+  colour syntax, form constraint validation, and SVG/WebAudio interfaces.
+
 ## Rerun
 
 ```sh
