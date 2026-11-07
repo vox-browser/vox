@@ -351,9 +351,19 @@ fn (app &BrowserApp) mark_background_image_keys(mut keys []ScrollRasterCommandKe
 			begins << index
 			continue
 		}
-		if command.kind != 'draw_background_image' || command.image_data == unsafe { nil } { continue }
+		if command.image_data == unsafe { nil } { continue }
 		data := command.image_data
-		if data.background_svg_document != none || data.background_static_svg_resource != none {
+		if command.kind == 'draw_background_image' {
+			if data.background_svg_document != none || data.background_static_svg_resource != none {
+				continue
+			}
+		} else if command.kind == 'draw_replaced_image' {
+			// A replaced image recorded before its request completed carries no
+			// request pixels; replay resolves it by URL from the resource cache
+			// like a background, so its arrival must damage the retained rows.
+			native := app.ctx != unsafe { nil } && app.ctx.native_rendering
+			if replaced_image_bitmap_for_renderer(command, native) != none { continue }
+		} else {
 			continue
 		}
 		token := app.background_image_resource_token(data.image_url)
