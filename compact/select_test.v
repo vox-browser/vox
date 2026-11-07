@@ -65,3 +65,37 @@ fn test_compact_select_value_tracks_native_selection_and_updates_live_options() 
 	assert html.html_select_element_selected_index(select_element) == -1
 	assert messages == []
 }
+
+// jQuery's select val() setter assigns selected on every option; 2ch.su's
+// catalog restores its saved sort order that way.
+fn test_compact_option_selected_sets_the_native_selectedness() {
+	$if !darwin {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><select id="filter"><option value="standart">Bumps</option><option value="timestamp">Time</option><option value="posts_count">Posts</option></select>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'https://2ch.su/news/catalog.html', [r'
+		const filter = document.getElementById("filter"), options = filter.querySelectorAll("option");
+		const entries = [options[0].selected, options[1].selected];
+		for (const option of options) option.selected = option.value === "timestamp";
+		entries.push(filter.value, filter.selectedIndex, options[0].selected, options[1].selected);
+		const detached = document.createElement("option");
+		entries.push(detached.selected);
+		detached.selected = 1;
+		entries.push(detached.selected);
+		globalThis.result = entries.join("|");
+	'], runtime, mut messages)
+	assert messages == [], messages.str()
+	result := runtime.evaluate_host('result')!
+	assert result == 'true|false|timestamp|1|false|true|false|true', result
+	filter := document.get_element_by_id('filter') or { panic('missing filter') }
+	select_element := unsafe { &dom.HTMLSelectElement(filter) }
+	assert html.html_select_element_value(select_element) == 'timestamp'
+	html.set_html_select_element_selected_index(select_element, 2)
+	assert runtime.evaluate_host('[...filter.querySelectorAll("option")].map(o=>o.selected).join()')! == 'false,false,true'
+}

@@ -345,6 +345,27 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 		return if element := found { binding.encode_element_state(element) } else { 'null' }
 	}
+	if action in ['optionSelected', 'setOptionSelected'] {
+		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
+		if !element.is_html_element() || element.local_name() != 'option' {
+			return error('TypeError: Illegal HTMLOptionElement receiver')
+		}
+		option := unsafe { &dom.HTMLOptionElement(element) }
+		if select_element := html.html_option_element_nearest_select(option) {
+			// As for select values, initialize a select that layout has not
+			// prepared yet, preserving explicitly cleared selections.
+			select_node := unsafe { &dom.Element(select_element) }
+			if select_node.shadow_root() == none {
+				html.html_select_element_update_selectedness(select_element)
+			}
+			mut model := html.HTMLSelectElementModel.create(select_element)
+			model.create_shadow_tree_if_needed()
+		}
+		if action == 'setOptionSelected' {
+			html.html_option_element_set_selected(option, selector == 'true')
+		}
+		return json2.encode(html.html_option_element_selected(option))
+	}
 	if action in ['selectedIndex', 'setSelectedIndex', 'selectValue', 'setSelectValue'] {
 		// HTMLSelectElement value and selectedIndex over the live options.
 		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }

@@ -49,5 +49,18 @@ function __compactSelect(o,s){
   return options;
  }});
 }
+// HTMLOptionElement.selected sets the option selectedness and runs the
+// selectedness algorithm of its select; jQuery val() on a select assigns it on
+// every option. A detached script-created option keeps a local value.
+const __detachedOptionSelected=new WeakMap();
+function __compactOption(o,s){
+ Object.defineProperty(o,"selected",{configurable:true,enumerable:true,get:function(){
+  if(s.created&&!s.parentKey)return __detachedOptionSelected.get(s)===true;
+  return __queryElements(s.bridgeKey,"optionSelected","",true);
+ },set:function(value){
+  if(s.created&&!s.parentKey){__detachedOptionSelected.set(s,!!value);return;}
+  __queryElements(s.bridgeKey,"setOptionSelected",value?"true":"false",true);
+ }});
+}
 '
 }
