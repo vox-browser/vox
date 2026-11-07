@@ -18,15 +18,19 @@ __global viewport_visible_entries_scratch_ = &platform.Arena(unsafe { nil })
 // screen: a filter or mask can move or generate visible pixels from them.
 // The selection reuses the result's recording scratch until the next one.
 fn viewport_visible_paint_entries(mut result DocumentLayoutResult) []bool {
-	if !disable_viewport_ink_cache { refresh_viewport_entry_ink_cache(mut result) }
+	if !disable_viewport_ink_cache {
+		refresh_viewport_entry_ink_cache(mut result)
+		if !disable_viewport_entry_blocks { refresh_viewport_entry_blocks(mut result) }
+	}
 	count := result.paint_order.len
 	mut selected := unsafe { result.record_scratch.visible_entries }
 	if selected.cap < count {
 		selected = []bool{cap: count}
 	}
-	selected.clear()
-	for _ in 0 .. count {
-		selected << true
+	// Every entry starts selected; fill the reused storage in one pass.
+	unsafe {
+		selected.len = count
+		vmemset(selected.data, 1, count)
 	}
 	result.record_scratch.visible_entries = selected
 	viewport := result.document.viewport_rect()
@@ -56,36 +60,73 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 	// taking the address of a fresh local makes current V allocate a complete
 	// command for every box and text fragment, even in Boehm builds.
 	mut ink_probe := PaintCommand{}
-	for index, entry in result.paint_order {
-		box := entry.box
-		if !disable_viewport_ink_cache {
-			if !result.record_scratch.viewport_ink_cache.entries[index].bounded { continue }
-		} else if !viewport_entry_has_bounded_ink(box) { continue }
-		if box.paintable_with_lines && box.accumulated_visual_context_index
-			!= box.accumulated_visual_context_for_descendants_idx { continue }
-		slot := contexts.resolve(box.accumulated_visual_context_index)
-		context := unsafe { &contexts.contexts[slot] }
-		if context.layer_list != unsafe { nil } { continue }
-		prepaint := if disable_viewport_ink_cache {
-			viewport_entry_paints_images(box)
-		} else {
-			result.record_scratch.viewport_ink_cache.entries[index].prepaint
+	cache := &result.record_scratch.viewport_ink_cache
+	if !disable_viewport_ink_cache && !disable_viewport_entry_blocks && cache.blocks_valid
+		&& cache.blocks_revision == cache.revision && cache.testable.len == result.paint_order.len {
+		for block in cache.blocks {
+			if block.testable == 0 { continue }
+			if block.cullable && !disable_viewport_ink_bounds && !disable_direct_viewport_rect_culling {
+				slot := contexts.resolve(block.context)
+				context := unsafe { &contexts.contexts[slot] }
+				// The per-entry pass keeps every entry of a layered context.
+				if context.layer_list != unsafe { nil } { continue }
+				mut transform := context.transform
+				mut area_height := height
+				if block.prepaint {
+					transform = viewport_prepaint_transform(context.transform, height)
+					area_height = height * 3
+				}
+				if viewport_rect_is_outside(block.bounds, transform, width, area_height, mut ink_probe) {
+					for index in block.first .. block.first + block.count {
+						if cache.testable[index] { selected[index] = false }
+					}
+					continue
+				}
+			}
+			for index in block.first .. block.first + block.count {
+				mark_viewport_invisible_entry(result, index, mut contexts, mut selected, width,
+					height, mut ink_probe)
+			}
 		}
-		mut transform := context.transform
-		mut area_height := height
-		if prepaint {
-			transform = viewport_prepaint_transform(context.transform, height)
-			area_height = height * 3
-		}
-		outside := if disable_viewport_ink_cache {
-			viewport_box_ink_is_outside(box, transform, width, area_height, mut ink_probe)
-		} else {
-			viewport_cached_entry_ink_is_outside(&result.record_scratch.viewport_ink_cache,
-				index, transform, width, area_height, mut ink_probe)
-		}
-		if outside {
-			selected[index] = false
-		}
+		return
+	}
+	for index in 0 .. result.paint_order.len {
+		mark_viewport_invisible_entry(result, index, mut contexts, mut selected, width, height, mut
+			ink_probe)
+	}
+}
+
+fn mark_viewport_invisible_entry(result &DocumentLayoutResult, index int,
+	mut contexts CompatibilityVisualContextMemo, mut selected []bool, width f64, height f64,
+	mut ink_probe PaintCommand) {
+	box := result.paint_order[index].box
+	if !disable_viewport_ink_cache {
+		if !result.record_scratch.viewport_ink_cache.entries[index].bounded { return }
+	} else if !viewport_entry_has_bounded_ink(box) { return }
+	if box.paintable_with_lines && box.accumulated_visual_context_index
+		!= box.accumulated_visual_context_for_descendants_idx { return }
+	slot := contexts.resolve(box.accumulated_visual_context_index)
+	context := unsafe { &contexts.contexts[slot] }
+	if context.layer_list != unsafe { nil } { return }
+	prepaint := if disable_viewport_ink_cache {
+		viewport_entry_paints_images(box)
+	} else {
+		result.record_scratch.viewport_ink_cache.entries[index].prepaint
+	}
+	mut transform := context.transform
+	mut area_height := height
+	if prepaint {
+		transform = viewport_prepaint_transform(context.transform, height)
+		area_height = height * 3
+	}
+	outside := if disable_viewport_ink_cache {
+		viewport_box_ink_is_outside(box, transform, width, area_height, mut ink_probe)
+	} else {
+		viewport_cached_entry_ink_is_outside(&result.record_scratch.viewport_ink_cache,
+			index, transform, width, area_height, mut ink_probe)
+	}
+	if outside {
+		selected[index] = false
 	}
 }
 

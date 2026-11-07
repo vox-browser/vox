@@ -150,3 +150,32 @@ fn test_viewport_recording_culls_image_rows_beyond_one_viewport_of_prepaint() {
 		assert visible > 0 && visible < full_replaced
 	}
 }
+
+fn test_viewport_entry_blocks_select_exactly_the_per_entry_entries() {
+	gif := 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+	mut rows := ''
+	for index in 0 .. 80 {
+		rows += '<tr><td><img src="${gif}" width="${(index % 7) * 10}" height="1"></td><td><div class="arrow" style="background-image:url(http://example.test/a.svg),linear-gradient(red,blue)"></div><span class="c"><a href="#">user${index}</a> | <u>reply</u></span><div>comment ${index} with words</div></td></tr>'
+	}
+	source := '<!doctype html><style>html,body{margin:0}.arrow{width:10px;height:10px}#scroller{height:60px;overflow:scroll}#scroller p{margin:0;height:20px}#turned{transform:rotate(8deg);width:120px}#fixed{position:fixed;top:5px;left:200px;width:20px;height:20px;background:blue}</style><div id="scroller">' + '<p>row</p>'.repeat(6) + '</div><div id="turned">turned text</div><div id="fixed"></div><table>${rows}</table><p style="filter:blur(1px)">filtered</p>'
+	mut document := html.parse_document(source)
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 120)
+	mut culled_by_blocks := 0
+	for y in [f64(0), 37.5, 400, 1210.25, 2600, 4000] {
+		document.set_viewport_rect(dom.Rect{0, y, 320, 120})
+		_ = viewport_test_commands(mut document)
+		mut result := document_layout_result(document)?
+		blocks := viewport_visible_paint_entries(mut result).clone()
+		assert result.record_scratch.viewport_ink_cache.blocks_valid
+		cullable := result.record_scratch.viewport_ink_cache.blocks.filter(it.cullable).len
+		assert cullable > 0
+		result.record_scratch.viewport_ink_cache.blocks_valid = false
+		mut per_entry := []bool{len: result.paint_order.len, init: true}
+		viewport := document.viewport_rect()
+		mark_viewport_invisible_entries(result, mut per_entry, viewport.width, viewport.height)
+		assert blocks == per_entry, 'y=${y}'
+		culled_by_blocks += blocks.filter(!it).len
+	}
+	assert culled_by_blocks > 0
+}

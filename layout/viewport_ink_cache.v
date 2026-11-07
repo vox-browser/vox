@@ -33,6 +33,13 @@ mut:
 	rects []LayoutRect
 	// Network background images of every entry, including culled ones.
 	background_urls []string
+	// Runs of entries culled together (viewport_entry_blocks.v).
+	testable             []bool
+	blocks               []ViewportEntryBlock
+	blocks_valid         bool
+	blocks_revision      u64
+	blocks_contexts_data voidptr
+	blocks_contexts_len  int
 }
 
 fn (mut cache ViewportEntryInkCache) invalidate() {
@@ -41,6 +48,9 @@ fn (mut cache ViewportEntryInkCache) invalidate() {
 	cache.entries.clear()
 	cache.rects.clear()
 	cache.background_urls.clear()
+	cache.testable.clear()
+	cache.blocks.clear()
+	cache.blocks_valid = false
 }
 
 fn refresh_viewport_entry_ink_cache(mut result DocumentLayoutResult) {
