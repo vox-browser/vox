@@ -389,9 +389,9 @@ Focused checks:
 v -old-compiler -enable-globals test adblock browsernet
 v -old-compiler -enable-globals test fetch/adblock_test.v requestserver/adblock_transport_test.v
 v -old-compiler -enable-globals test fetch/adblock_response_test.v
-v -old-compiler -enable-globals test main_adblock_test.v main_adblock_storage_test.v main_adblock_network_test.v
-v -old-compiler -enable-globals test main_adblock_pikabu_test.v main_adblock_response_test.v
-v -old-compiler -enable-globals test main_compact_selector_scope_test.v main_compact_computed_style_test.v main_navigation_encoding_test.v
+v -old-compiler -enable-globals test blocking/adblock_test.v blocking/adblock_storage_test.v blocking/adblock_network_test.v
+v -old-compiler -enable-globals test sites/adblock_pikabu_test.v blocking/adblock_response_test.v
+v -old-compiler -enable-globals test compact/selector_scope_test.v compact/computed_style_test.v navigation/encoding_test.v
 v -old-compiler -enable-globals test html/adblock_navigation_type_test.v
 v -old-compiler -enable-globals test css/container_rule_test.v layout/container_query_stabilization_test.v layout/dom_layout_bridge_test.v
 ```
@@ -490,7 +490,7 @@ the Russian advertising disclosure matched by a procedural filter, and a
 sidebar removed procedurally. In full Brave + uBO, all five slots were hidden
 or removed and both controls remained visible, recorded in
 `Build/comparisons/adblock-pikabu-slots.json`. Vox passes the same five-slot,
-two-control fixture in `sites/main_adblock_pikabu_test.v`, including actual JSON-prune
+two-control fixture in `sites/adblock_pikabu_test.v`, including actual JSON-prune
 and `Ya` property-abort scriptlet effects. The HTML and probe hashes match the
 full-uBO report. All 34 focused native regression functions passed together,
 covering existing sites, scoped queries, live computed styles, procedural error

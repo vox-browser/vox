@@ -112,7 +112,7 @@ GC-none manifest SHA256:
 Implementation: [native media host](../../browserjs/media_element_host_darwin.c.v)
 and [page bootstrap](../../main.v).
 Focused tests: [host states](../../browserjs/media_element_state_host_test.v)
-and [page owners](../../media/main_media_element_state_owner_test.v).
+and [page owners](../../media/element_state_owner_test.v).
 Existing [buffered owner evidence](NATIVE_MEDIA_ELEMENT_BUFFERED_OWNER.md)
 records the preceding range and DOM-identity prerequisites.
 

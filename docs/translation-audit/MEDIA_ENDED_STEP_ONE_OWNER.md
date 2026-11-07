@@ -133,7 +133,7 @@ Implementation: [event loop](../../html/event_loop.v) and
 [media lifecycle](../../html/html_media_element.v).
 Focused tests: [step-1 queue](../../html/event_loop_step_one_test.v),
 [media cache](../../html/media_ended_step_one_test.v) and
-[native page owner](../../media/main_media_ended_step_one_owner_test.v).
+[native page owner](../../media/ended_step_one_owner_test.v).
 [Native state-owner evidence](NATIVE_MEDIA_ELEMENT_STATE_OWNER.md) records
 its separate generated-getter/DOM-owner prerequisite.
 

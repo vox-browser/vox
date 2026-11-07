@@ -11,7 +11,7 @@ to 64 MiB; the decoder also enforces its sample limit. The caller must release t
 buffer with the returned pitch times height. Panics cannot unwind into V/C.
 
 `python3 tools/test_jpegxl.py` runs an ASan/UBSan native driver under memory guards.
-The native test uses libjxl only to encode its known test vectors. `main_jpegxl_test.v`
+The native test uses libjxl only to encode its known test vectors. `images/jpegxl_test.v`
 checks request/model/paint-cache alpha handling, and `jpegxl-image-paths.html` covers
 image elements, CSS backgrounds, orientation, transparency, clipping and a lossy
 Guardian photograph against an independently captured Brave reference.

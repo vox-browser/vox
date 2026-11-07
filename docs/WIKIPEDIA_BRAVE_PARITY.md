@@ -1,7 +1,7 @@
 # Wikipedia rendering against Brave
 
 Vox renders https://www.wikipedia.org/ as HTML and CSS only (`wikipedia.org`
-is in `html_css_only_sites` in `script/main_script_policy.v`). The comparison target
+is in `html_css_only_sites` in `script/policy.v`). The comparison target
 is Brave with page JavaScript disabled.
 
 **Exact equality has not been reached.** From the frozen benchmark cache, at a

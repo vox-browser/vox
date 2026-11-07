@@ -129,7 +129,7 @@ to use JavaScriptCore.
 
 Implementation: [native media host](../../browserjs/media_element_host_darwin.c.v).
 Tests: [native rate accessors](../../browserjs/media_element_rate_host_test.v),
-[public page owner](../../media/main_media_rate_property_owner_test.v).
+[public page owner](../../media/rate_property_owner_test.v).
 
 No module-owned implementation or test file changed. The existing 78-owner
 inventory remains 432,331 implementation / 154,721 test V LOC across 2,187 owned

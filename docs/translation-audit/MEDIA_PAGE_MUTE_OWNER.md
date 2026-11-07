@@ -195,7 +195,7 @@ Implementation: [media](../../html/html_media_element.v),
 [DOM Page bridge](../../dom/document.v), [Page](../../page/page.v),
 [audibility query](../../page/composited_resource_lifecycle.v).
 Tests: [model](../../html/media_page_mute_owner_test.v),
-[native page](../../media/main_media_page_mute_owner_test.v).
+[native page](../../media/page_mute_owner_test.v).
 [Prior wake-lock evidence](MEDIA_SCREEN_WAKE_LOCK_OWNER.md) retains its snapshot.
 
 ## Subsequent media CSS slice

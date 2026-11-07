@@ -4,7 +4,7 @@ Wikipedia's cached 1024×768 first document frame now takes **301 ms median**, w
 
 The initial JavaScript policy experiment reduced median document-installation-to-first-frame time from **859 ms to 694 ms**, saving **165 ms (19.21%)**, in five alternating pairs on this Mac. The same rendering interval used **33.83% fewer CPU instructions**. JavaScript startup fell from 147 ms to zero; every disabled sample confirmed no runtime, source collection, or script preloads.
 
-Vox renders HTTP(S) pages on `wikipedia.org` and its subdomains using HTML and CSS by default. The site list in `script/main_script_policy.v` is explicit; other sites retain their normal JavaScript behavior. The policy belongs to each navigation document, so leaving Wikipedia restores the destination site's policy.
+Vox renders HTTP(S) pages on `wikipedia.org` and its subdomains using HTML and CSS by default. The site list in `script/policy.v` is explicit; other sites retain their normal JavaScript behavior. The policy belongs to each navigation document, so leaving Wikipedia restores the destination site's policy.
 
 The policy is installed before HTML parsing. Disabled documents do not create HTML/SVG script models, inline event-handler records, script-source collections, the JavaScriptCore runtime, or its host bindings. Script fetching, JavaScript parsing/evaluation, import-map processing, and script-driven rendering callbacks are skipped. HTML parsing still retains ordinary `<script>` elements and their raw text in the DOM. This does not claim zero HTML allocation or zero process memory.
 
@@ -88,7 +88,7 @@ python3 tools/measure_browser_render_test.py
   changed.
 
 The selected browser batch excludes the pre-existing
-`document/main_document_creation_test.v` fixture, which still calls a removed four-argument
+`document/creation_test.v` fixture, which still calls a removed four-argument
 browsing-context creation API. This is selected regression coverage rather than
 a claim that every repository test was run. Receipts and exact combined test
 inputs are retained under `Build/wikipedia-html-css/` alongside

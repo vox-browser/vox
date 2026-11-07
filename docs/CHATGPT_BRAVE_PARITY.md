@@ -1746,7 +1746,7 @@ parent element listeners do not. `custom-event-baseline/` preserves its input,
 hash, failed exits and the test-file rename receipt. An existing CustomEvent
 test filename was initially reused by mistake; its original contents were
 restored unchanged, and the new regression lives separately in
-`compact/main_compact_custom_element_event_test.v`.
+`compact/custom_element_event_test.v`.
 
 Propagation, event identity, cancellation, once/duplicate handling, removal,
 AbortSignal cleanup, case sensitivity, created-element identity and retained
@@ -2179,7 +2179,7 @@ strings escape both that document and a temporary caller. The previous ordinary
 storage entry preserved an already-entered caller, which let asynchronous
 preload state retain temporary allocations.
 
-The new `resources/main_preload_identity_storage_test.v` first fails because the Document
+The new `resources/preload_identity_storage_test.v` first fails because the Document
 itself belongs to the caller arena. After correcting document ownership, its
 second case exposes the separately retained URL vector in the caller arena.
 Both cases now release the caller before using the retained state and pass.

@@ -37,7 +37,7 @@ and negative fixtures when extending recognition.
 
 `blocking/cookie_blocker_test.v` covers detection, localized roots, policy-content
 exclusions, CSS preservation, dynamic insertion, repair/idempotency, and the
-environment override. `blocking/main_adblock_cookie_blocker_test.v` covers the refresh
+environment override. `blocking/adblock_cookie_blocker_test.v` covers the refresh
 integration with adblock disabled, preserved user CSS, and the override.
 
 With the normal Vox build dependencies installed, run the selected tests using
@@ -49,7 +49,7 @@ python3 tools/run_memory_bounded.py \
   --lock Build/cookie-blocker-tests.lock \
   --report Build/cookie-blocker-tests.json -- \
   v -enable-globals -memory-limit 10G test \
-    cookie_blocker_test.v main_adblock_cookie_blocker_test.v
+    blocking/cookie_blocker_test.v blocking/adblock_cookie_blocker_test.v
 ```
 
 ## Change audit

@@ -128,7 +128,7 @@ Implementation: [model](../../html/html_media_element.v),
 [native binding](../../browserjs/media_element_host_darwin.c.v).
 Tests: [model caller](../../html/media_pause_caller_test.v),
 [native](../../browserjs/media_element_pause_host_test.v),
-[public page](../../media/main_media_pause_owner_test.v).
+[public page](../../media/pause_owner_test.v).
 
 The subsequent [pause-task slice](MEDIA_PAUSE_TASK_OWNER.md) queues explicit
 pause's timeupdate/pause/rejection body and uses one shared AbortError record

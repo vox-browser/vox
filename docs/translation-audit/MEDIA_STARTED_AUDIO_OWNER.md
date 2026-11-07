@@ -130,7 +130,7 @@ Physical LOC does not measure parity. The ledger stays 32 fixed / 25 partial /
 Implementation: [media](../../html/html_media_element.v),
 [DOM Page bridge](../../dom/document.v), [Page owner](../../page/page.v).
 Tests: [model](../../html/media_started_audio_owner_test.v),
-[native page](../../media/main_media_started_audio_owner_test.v).
+[native page](../../media/started_audio_owner_test.v).
 [Prior internal-play evidence](MEDIA_PLAY_TASK_OWNER.md) retains its earlier snapshot.
 
 Follow-up: [media screen wake locks](MEDIA_SCREEN_WAKE_LOCK_OWNER.md) translates

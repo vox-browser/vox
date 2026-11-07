@@ -2936,7 +2936,7 @@ interval diagnostics, hashes and refresh audit are in
 `Build/v/instruction-opt14-30-comparison-evidence.json`.
 
 The control is a fresh C capture before the change; runtime source manifests
-show only `main.v` and the new `paint/main_frame_paint.v` differ. Both captures remained
+show only `main.v` and the new `paint/frame_paint.v` differ. Both captures remained
 stable during generation, and native commands match except for their C input
 and binary output. All 120 shared object/archive inputs retain their recorded
 hashes. The control binary SHA-256 is

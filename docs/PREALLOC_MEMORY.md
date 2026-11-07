@@ -149,7 +149,7 @@ frame: each arena is reset only after its last reader has let go.
   reuses sampled stops, GPU stops and clip-path vectors across commands and
   frames, and color-only gradients no longer materialize fallback stop arrays
   for each interpolation sample.
-- **Native replay** (`native/main_native_replay_scratch.v`). Command replay enters a
+- **Native replay** (`native/replay_scratch.v`). Command replay enters a
   reusable arena after frame preparation and MSAA planning. The enclosing
   compositing layer and deferred rounded-rectangle underlay finish before reset.
   Nested SVG replay shares that frame lifetime. Image/color caches, gradient

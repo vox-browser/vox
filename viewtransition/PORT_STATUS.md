@@ -46,7 +46,7 @@ JavaScript callback rejection identity. The browser replays callback mutations
 into the actual document before new-state capture resumes. Skip and visibility
 failures use the translated native WebIDL `DOMException` binding.
 
-Four fixtures in `../main_view_transition_test.v` exercise those public JSC APIs,
+Four fixtures in `../paint/view_transition_test.v` exercise those public JSC APIs,
 including a pending callback, cyclic rejection values, callback throws, receiver
 branding, source property descriptors, hidden documents, omitted callbacks and
 transitions first started through the typed DOM API. These bindings preserve the

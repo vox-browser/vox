@@ -107,7 +107,7 @@ a corpus with different engine/list identities.
 
 ```sh
 v -old-compiler -enable-globals test adblock
-v -old-compiler -enable-globals test main_adblock_popular_test.v
+v -old-compiler -enable-globals test blocking/adblock_popular_test.v
 node --test tools/adblock/navigation.test.mjs tools/adblock/popular_sites_test.mjs
 ```
 
@@ -1179,7 +1179,7 @@ frame is identical to the preceding successful retry while its Brave frame
 changes at 66 pixels. Those reference changes receive no native improvement or
 regression credit. Lobsters' live-to-frozen difference remains 44, so it still
 cannot count as an accepted live match. Concurrent changes to `main.v` and
-`paint/main_frame_paint.v` after the checked build are excluded from this feature's
+`paint/frame_paint.v` after the checked build are excluded from this feature's
 validation claims and commit.
 
 Evidence is under `Build/forum-news-nested-svg-isolation-20261030/`, especially

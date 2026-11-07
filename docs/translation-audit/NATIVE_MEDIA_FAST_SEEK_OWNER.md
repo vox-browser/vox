@@ -129,4 +129,4 @@ Implementation: [model caller](../../html/html_media_element.v),
 [native operation](../../browserjs/media_element_host_darwin.c.v).
 Tests: [model](../../html/media_fast_seek_caller_test.v),
 [host](../../browserjs/media_element_fast_seek_host_test.v),
-[public page](../../media/main_media_fast_seek_owner_test.v).
+[public page](../../media/fast_seek_owner_test.v).

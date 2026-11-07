@@ -39,6 +39,11 @@
 - From those directories, reach root files through `@VMODROOT`
   (`#include "@VMODROOT/native_x.h"`, `$embed_file('@VMODROOT/Tests/...')`);
   `@DIR` and relative includes resolve against the subdirectory.
+- Name files in those directories without a `main_` or directory prefix:
+  `chromium/caret_paint.v`, not `chromium/main_chromium_caret_paint.v`. Keep
+  a name before platform suffixes; V only honors `_linux.v` or `_darwin.v`
+  after another word (`native/browser_linux.v`), so a bare `linux.v` would
+  compile on every platform.
 
 ## Commits
 

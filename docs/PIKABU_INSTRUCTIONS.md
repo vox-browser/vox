@@ -584,8 +584,8 @@ Focused checks:
 
 ```sh
 python3 -m unittest discover -s tools -p pikabu_browser_instructions_test.py -v
-v -old-compiler -enable-globals test main_capture_audit_test.v
-v -old-compiler -enable-globals -gc none test main_capture_audit_test.v
+v -old-compiler -enable-globals test capture/audit_test.v
+v -old-compiler -enable-globals -gc none test capture/audit_test.v
 ```
 
 Broad regressions follow the repository's instruction-optimization cadence:

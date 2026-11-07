@@ -140,7 +140,7 @@ model fixes do not establish whole-browser currentTime or HTML parity.
 Implementation: [native accessors](../../browserjs/media_element_host_darwin.c.v),
 [page bridge](../../main.v).
 Tests: [native host](../../browserjs/media_element_current_time_host_test.v),
-[public page owner](../../media/main_media_current_time_property_owner_test.v).
+[public page owner](../../media/current_time_property_owner_test.v).
 
 The 78-owner inventory stays at 432,348 implementation / 154,939 test V LOC
 across 2,188 owned files. All owned hashes match this frozen snapshot; the two

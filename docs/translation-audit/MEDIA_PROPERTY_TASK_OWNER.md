@@ -133,7 +133,7 @@ WrapperWorlds, IPC and physical GC remain open. The browser uses JavaScriptCore.
 Implementation: [media lifecycle](../../html/html_media_element.v).
 Focused tests: [duration](../../html/media_duration_task_owner_test.v),
 [volume](../../html/media_volume_task_owner_test.v),
-[native MediaSource](../../media/main_media_duration_task_owner_test.v).
+[native MediaSource](../../media/duration_task_owner_test.v).
 [Completion and DOM target evidence](MEDIA_END_TASK_DOM_OWNER.md) records the
 prerequisite slice and its historical snapshot.
 
