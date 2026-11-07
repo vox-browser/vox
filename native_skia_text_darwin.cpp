@@ -801,14 +801,20 @@ class GlyphRasterCache {
     size_t byte_limit, entry_limit, max_entry_bytes;
 public:
     explicit GlyphRasterCache(size_t limit = 64 * 1024 * 1024, size_t count = 4096,
-        size_t single_limit = 256 * 1024)
+        size_t single_limit = 2 * 1024 * 1024)
         : byte_limit(limit), entry_limit(count), max_entry_bytes(single_limit) { }
     struct Request {
         CGImageRef image {nullptr};
         std::unique_ptr<Entry> pending;
     };
+    // Whether the latest miss found an entry whose key matched but whose
+    // backdrop pixels differed.
+    bool last_key_matched = false;
+    // `writable`, when given, bounds the raster pixels this draw can change.
+    // Only those backdrop pixels must match: a hit composites the cached image
+    // under the same clip, and each output pixel blends over its own backdrop.
     Request prepare(std::vector<uint8_t> key, int width, int height,
-        uint8_t const* background, size_t pitch)
+        uint8_t const* background, size_t pitch, VoxRasterSnapshot::Rect const* writable = nullptr)
     {
 #ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
         if (++requests % 1000 == 0)
@@ -817,6 +823,8 @@ public:
                 entries.size(), bytes);
 #endif
         if (width <= 0 || height <= 0 || (background && pitch < size_t(width) * 4)) return {};
+        if (writable && (writable->left >= writable->right || writable->top >= writable->bottom
+                || writable->right > size_t(width) || writable->bottom > size_t(height))) writable = nullptr;
         size_t row_bytes = size_t(width) * 4;
         if (row_bytes > byte_limit / size_t(height)) return {};
         size_t pixel_bytes = row_bytes * size_t(height);
@@ -825,12 +833,17 @@ public:
         uint64_t hash = 14695981039346656037ull;
         for (auto value : key) hash = (hash ^ value) * 1099511628211ull;
         auto candidates = index.equal_range(hash);
+        last_key_matched = false;
         for (auto candidate = candidates.first; candidate != candidates.second; ++candidate) {
             auto it = candidate->second;
             auto const& entry = **it;
             if (entry.hash != hash || entry.key != key || entry.width != width || entry.height != height
-                || entry.has_background != (background != nullptr)
-                || (background && !entry.background.equal(background, row_bytes, pitch, height))) continue;
+                || entry.has_background != (background != nullptr)) continue;
+            last_key_matched = true;
+            if (background && !(writable
+                    ? entry.background.equal_region(background + writable->top * pitch + writable->left * 4,
+                        size_t(width), size_t(height), pitch, *writable)
+                    : entry.background.equal(background, row_bytes, pitch, height))) continue;
 #ifdef VOX_GLYPH_CACHE_DIAGNOSTICS
             ++hits;
 #endif
@@ -875,6 +888,7 @@ public:
         index.emplace(entries.front()->hash, entries.begin());
     }
     void clear() { index.clear(); entries.clear(); bytes = 0; }
+    size_t size() const { return entries.size(); }
 };
 GlyphRasterCache s_glyph_raster_cache;
 GlyphRasterCache s_gradient_text_raster_cache(16 * 1024 * 1024, 64, 4 * 1024 * 1024);
@@ -1590,6 +1604,11 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
 }
 static bool visible_raster_region(CGContextRef destination, float canvas_height,
     RasterRegion const& region, RasterRegion& visible);
+// The pixels of `region`'s raster that a draw can change: the clip bounding
+// box and published scroll damage, widened to whole raster pixels.
+static bool writable_raster_rect(CGContextRef destination, float canvas_height,
+    RasterRegion const& region, float scale_x, float scale_y, int raster_width,
+    int raster_height, VoxRasterSnapshot::Rect& writable);
 
 // The CPU blitter blends a run's glyphs one after another, rounding the
 // destination between glyphs whose antialiased pixels overlap; Blink's GPU
@@ -1864,7 +1883,11 @@ static int draw_retained_glyph_run(CGContextRef destination,
         return 1;
     }
     GlyphRasterCache::Request cached;
-    if (glyph_count <= 4096 && pixel_count <= 32768) {
+    // Blurred and fractional-color runs rasterize through a GPU picture or the
+    // float CPU blitter, both far costlier than a lookup; cache larger ones.
+    static bool const exact_keys = std::getenv("VOX_EXACT_GLYPH_RASTER_KEYS") != nullptr;
+    size_t const cached_pixel_limit = (blur > 0 || has_float_color) && !exact_keys ? 262144 : 32768;
+    if (glyph_count <= 4096 && pixel_count <= cached_pixel_limit) {
         std::vector<uint8_t> key;
         uint32_t font_key[] {typeface->uniqueID(), uint32_t(font.getEdging()), uint32_t(font.getHinting()),
             uint32_t(font_smoothing), uint32_t(font.isEmbolden()), SkColorSetARGB(alpha, red, green, blue),
@@ -1886,11 +1909,38 @@ static int draw_retained_glyph_run(CGContextRef destination,
         } else {
             float geometry[] {font_size, baseline_x, baseline_y, blur, font.getSkewX()};
             append_glyph_key(key, geometry, 5);
-            SkScalar values[9]; draw_matrix.get9(values); append_glyph_key(key, values, 9);
+            SkScalar values[9]; draw_matrix.get9(values);
+            // Scrolling by whole device pixels shifts the run and its integer
+            // raster region together, but the composed f32 page/scroll offset
+            // leaves a different rounding residue in the region-relative
+            // translation on every frame. Quantize that residue so a blurred
+            // or fractional-color run (Old Reddit's text-shadowed header)
+            // reuses its raster instead of a GPU picture readback per frame.
+            if (!exact_keys) {
+                values[SkMatrix::kMTransX] = std::round(values[SkMatrix::kMTransX] * 1024.0f) / 1024.0f;
+                values[SkMatrix::kMTransY] = std::round(values[SkMatrix::kMTransY] * 1024.0f) / 1024.0f;
+            }
+            append_glyph_key(key, values, 9);
             append_glyph_key(key, glyphs, glyph_count);
             append_glyph_key(key, packed_positions, size_t(glyph_count) * 2);
         }
-        cached = s_glyph_raster_cache.prepare(std::move(key), raster_width, raster_height, backdrop.pixels, backdrop.pitch);
+        VoxRasterSnapshot::Rect writable {};
+        bool const partial = has_background && !exact_keys
+            && writable_raster_rect(destination, canvas_height, region, raster_scale_x, raster_scale_y,
+                raster_width, raster_height, writable);
+        cached = s_glyph_raster_cache.prepare(std::move(key), raster_width, raster_height, backdrop.pixels,
+            backdrop.pitch, partial ? &writable : nullptr);
+        static bool const miss_diagnostics = std::getenv("VOX_GLYPH_CACHE_MISS_DIAGNOSTICS") != nullptr;
+        if (miss_diagnostics && (blur > 0 || has_float_color)) {
+            SkScalar values[9]; draw_matrix.get9(values);
+            std::fprintf(stderr, "VOX_GLYPH_CACHE_REQUEST hit=%d key_matched=%d blur=%g float=%d size=%dx%d"
+                " background=%d tx=%.9g ty=%.9g\n", cached.image != nullptr,
+                s_glyph_raster_cache.last_key_matched, blur, has_float_color, raster_width, raster_height,
+                has_background, values[SkMatrix::kMTransX], values[SkMatrix::kMTransY]);
+        }
+    } else if (std::getenv("VOX_GLYPH_CACHE_MISS_DIAGNOSTICS") && (blur > 0 || has_float_color)) {
+        std::fprintf(stderr, "VOX_GLYPH_CACHE_REQUEST uncached glyphs=%d blur=%g float=%d size=%dx%d\n",
+            glyph_count, blur, has_float_color, raster_width, raster_height);
     }
     if (cached.image) {
         return composite_image(destination, cached.image, destination_rect, has_background);
@@ -3818,6 +3868,36 @@ static bool visible_raster_region(CGContextRef destination, float canvas_height,
     };
     return visible.width() > 0 && visible.height() > 0
         && size_t(visible.width()) * visible.height() * 2 <= size_t(region.width()) * region.height();
+}
+
+static bool writable_raster_rect(CGContextRef destination, float canvas_height,
+    RasterRegion const& region, float scale_x, float scale_y, int raster_width,
+    int raster_height, VoxRasterSnapshot::Rect& writable)
+{
+    auto clip = CGContextGetClipBoundingBox(destination);
+    if (CGRectIsEmpty(clip) || CGRectIsInfinite(clip) || CGRectIsNull(clip)) return false;
+    double left = CGRectGetMinX(clip), top = double(canvas_height) - CGRectGetMaxY(clip);
+    double right = CGRectGetMaxX(clip), bottom = double(canvas_height) - CGRectGetMinY(clip);
+    if (destination == s_scroll_damage_canvas && !s_scroll_damage_rects.empty()) {
+        SkRect hit = SkRect::MakeEmpty();
+        auto leaf = SkRect::MakeLTRB(region.left, region.top, region.right, region.bottom);
+        for (auto const& rect : s_scroll_damage_rects)
+            if (SkRect part; part.intersect(rect, leaf)) hit.join(part);
+        if (hit.isEmpty()) return false;
+        left = std::max(left, double(hit.left()));
+        top = std::max(top, double(hit.top()));
+        right = std::min(right, double(hit.right()));
+        bottom = std::min(bottom, double(hit.bottom()));
+    }
+    if (!std::isfinite(left) || !std::isfinite(top) || !std::isfinite(right) || !std::isfinite(bottom)
+        || !(scale_x > 0 && scale_y > 0) || raster_width <= 0 || raster_height <= 0) return false;
+    double x0 = std::floor(std::clamp((left - region.left) * scale_x, 0.0, double(raster_width)));
+    double y0 = std::floor(std::clamp((top - region.top) * scale_y, 0.0, double(raster_height)));
+    double x1 = std::ceil(std::clamp((right - region.left) * scale_x, 0.0, double(raster_width)));
+    double y1 = std::ceil(std::clamp((bottom - region.top) * scale_y, 0.0, double(raster_height)));
+    if (!(x1 > x0 && y1 > y0)) return false;
+    writable = {size_t(x0), size_t(y0), size_t(x1), size_t(y1)};
+    return true;
 }
 
 static bool s_direct_image_layer = false;

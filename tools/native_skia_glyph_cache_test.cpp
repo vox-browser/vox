@@ -194,6 +194,87 @@ int main()
         assert(!rows.prepare(key, width, height, nullptr, 0).image);
         CGImageRelease(output);
     }
+    // A strip repaint can change only the clipped pixels. Outside them the
+    // backdrop still holds the previous frame (including this very run), so a
+    // restricted comparison ignores those pixels and nothing else.
+    {
+        GlyphRasterCache strips;
+        std::vector<uint32_t> backdrop(8 * 6, 0xff336699u);
+        auto output = create_pixel_image(context, std::vector<uint32_t>(8 * 6, 0xff4d3721), 8, 6);
+        std::vector<uint8_t> strip_key {41};
+        VoxRasterSnapshot::Rect rows {0, 2, 8, 4};
+        auto bytes = [&] { return reinterpret_cast<uint8_t const*>(backdrop.data()); };
+        auto pending = strips.prepare(strip_key, 8, 6, bytes(), 32, &rows);
+        assert(pending.pending && !pending.image);
+        strips.finish(std::move(pending), output);
+        backdrop[1] = 0xff000000u; backdrop[8 * 5 + 7] = 0xff000000u;
+        assert(strips.prepare(strip_key, 8, 6, bytes(), 32, &rows).image);
+        assert(!strips.prepare(strip_key, 8, 6, bytes(), 32).image);
+        backdrop[8 * 3 + 4] = 0xff000000u;
+        assert(!strips.prepare(strip_key, 8, 6, bytes(), 32, &rows).image);
+        backdrop[8 * 3 + 4] = 0xff336699u;
+        VoxRasterSnapshot::Rect invalid {0, 4, 8, 9};
+        assert(!strips.prepare(strip_key, 8, 6, bytes(), 32, &invalid).image);
+        CGImageRelease(output);
+    }
+    // Old Reddit's header text has a blurred text-shadow. Scrolling moves a
+    // run and its integer raster region together by whole device pixels, but
+    // the composed f32 page/scroll translation leaves a different rounding
+    // residue on each frame. Those frames reuse the run's raster; a genuine
+    // subpixel move still rasterizes again.
+    {
+        int width = 256, height = 96, pitch = width * 4;
+        std::vector<uint8_t> first(size_t(pitch) * height), second(first.size());
+        auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto make = [&](std::vector<uint8_t>& pixels) {
+            auto context = CGBitmapContextCreate(pixels.data(), width, height, 8, pitch, space,
+                static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
+                    | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
+            assert(context);
+            CGContextScaleCTM(context, 2, 2);
+            return context;
+        };
+        auto fill = [&](std::vector<uint8_t>& pixels) {
+            for (size_t i = 0; i < pixels.size(); i += 4) {
+                pixels[i] = 52; pixels[i + 1] = 61; pixels[i + 2] = 140; pixels[i + 3] = 255;
+            }
+        };
+        auto first_context = make(first), second_context = make(second);
+        CGColorSpaceRelease(space);
+        uint16_t glyphs[5] {36, 37, 38, 39, 40};
+        double positions[10] {0, 0, 9.5, 0, 19, 0, 28.25, 0, 37.5, 0};
+        GlyphRasterCache shadow_cache;
+        std::swap(s_glyph_raster_cache, shadow_cache);
+        auto shadow = [&](CGContextRef context, float scroll_y, float transform_f) {
+            return ladybird_v_skia_draw_glyph_shadow_run(context, "/System/Library/Fonts/HelveticaNeue.ttc",
+                0, glyphs, positions, 5, 13, 400, 0, 21.25, 20.5, 1, 0, 0, 1, 0.5f, transform_f,
+                0, 0, scroll_y, 128, 48, 0, 0, 0, 255, 48, 4);
+        };
+        fill(first);
+        assert(shadow(first_context, 0, 4));
+        CGContextFlush(first_context);
+        assert(s_glyph_raster_cache.size() == 1);
+        // The same device position composed through a fractional scroll.
+        float scroll_y = 13.7f, transform_f = 17.7f;
+        float composed = 0 - scroll_y + transform_f;
+        assert(composed != 4.0f && std::abs(composed - 4.0f) < 1e-5f);
+        fill(second);
+        assert(shadow(second_context, scroll_y, transform_f));
+        CGContextFlush(second_context);
+        assert(s_glyph_raster_cache.size() == 1);
+        assert(first == second);
+        // Leaf regions are whole canvas units: scrolling one of them (two
+        // device pixels at 2x) reuses the raster too.
+        fill(second);
+        assert(shadow(second_context, 1, 4));
+        assert(s_glyph_raster_cache.size() == 1);
+        // A quarter device pixel is a different raster.
+        fill(second);
+        assert(shadow(second_context, 0.125f, 4));
+        assert(s_glyph_raster_cache.size() == 2);
+        std::swap(s_glyph_raster_cache, shadow_cache);
+        CGContextRelease(first_context); CGContextRelease(second_context);
+    }
     assert(s_glyph_text_blob_cache.size() > 0);
     ladybird_v_skia_release_unused_graphics_memory();
     assert(s_glyph_text_blob_cache.size() == 0);
