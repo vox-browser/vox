@@ -5367,7 +5367,7 @@ pub mut:
 	media_element_source_attribute_changed_hook_   ?MediaElementSourceAttributeChangedHook
 	media_element_controls_attribute_changed_hook_ ?MediaElementControlsAttributeChangedHook
 	media_element_inserted_hook_                   ?MediaElementInsertedHook
-	layout_engine_handle_                          voidptr = unsafe { nil }
+	layout_engine_handle_                         voidptr = unsafe { nil }
 	// Rendering-update generations that tell the CSS animation sampler when
 	// none of its retained sample storage can be reached any longer (see
 	// css/animation_samples.v). Layout publishes the scene numbers.
@@ -9365,9 +9365,10 @@ pub fn (d &Document) schedule_html_parser_end_check() {
 	}
 }
 
+// C++: void Document::detach_parser(). A parser that ran to completion was
+// not aborted: a later document.open() must still create a new one.
 pub fn (mut d Document) detach_parser() {
 	d.parser = unsafe { nil }
-	d.active_parser_was_aborted = true
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#active-parser

@@ -168,3 +168,21 @@ fn test_document_open_cancels_pending_and_ongoing_navigation_without_spinning() 
 	assert !model.has_pending_navigations()
 	assert model.ongoing_navigation().kind == .empty
 }
+
+fn test_document_reopens_after_its_scripting_parser_completes() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	install_document_fragment_parsing_hook(document)
+	document.open()!
+	document.write_strings(['<p id="first">first</p>'])!
+	document.close()!
+	assert document.get_element_by_id('first') != none
+	// The parser's end steps detach a parser that ran to completion; that is
+	// not an aborted parser, so the next open() starts another stream.
+	document.detach_parser()
+	document.open()!
+	document.write_strings(['<p id="second">second</p>'])!
+	document.close()!
+	assert document.get_element_by_id('first') == none
+	assert document.get_element_by_id('second') != none
+}
