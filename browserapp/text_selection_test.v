@@ -91,6 +91,20 @@ fn test_native_double_click_selects_word_and_triple_click_selects_paragraph() {
 	assert clicks.doubles == 1
 }
 
+fn test_native_double_click_inside_text_node_paints_only_the_highlight() {
+	mut app := text_selection_app('<p>we do the same in western</p>')
+	defer { app.document.finalize() }
+	point := text_selection_point(app, 'we do the same in western', 11)
+	text_selection_click(mut app, point)
+	text_selection_click(mut app, point)
+	assert text_selection_string(app) == 'same'
+	// The unselected spans before and after the word must not paint a fill.
+	fills := app.paint_commands.filter(it.kind == 'fill_rect' && it.force_dark_role == .selection)
+	assert fills.len == 1
+	assert fills[0].color != 'rgb(0 0 0)'
+	assert fills[0].width > 0
+}
+
 fn test_native_triple_click_stops_at_nested_breaks_and_includes_wrapped_lines() {
 	mut app := text_selection_app('<p style="width:170px">before<span><br><i>several wrapped words</i><br></span>after</p>')
 	defer { app.document.finalize() }

@@ -3904,6 +3904,8 @@ fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalid
 		}
 	}
 	assert background_index >= 0
+	// The unselected spans before and after "ell" paint no selection fill.
+	assert commands.filter(it.kind == 'fill_rect' && it.force_dark_role == .selection).len == 1
 	assert selection_shadow_index > background_index
 	assert selected_text_index > selection_shadow_index
 	selection_shadow_run := commands[selection_shadow_index].glyph_run or {

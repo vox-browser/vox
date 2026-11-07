@@ -3407,7 +3407,9 @@ struct TextRenderSpan {
 	start_code_unit   int
 	end_code_unit     int
 	text_color        css.Color
-	background_color  css.Color
+	// Gfx::Color defaults to transparent; css.Color defaults to opaque black.
+	// Unselected spans of a partly selected fragment must not paint a fill.
+	background_color  css.Color = css.Color{a: 0}
 	shadow_layers     []BoxShadow
 	shadow_layers_set bool
 	decoration        string
