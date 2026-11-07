@@ -70,6 +70,8 @@ mut:
 	doc_x     f64
 	doc_y     f64
 	parts     [8]u64
+	transform [6]f64
+	scroll    f64
 }
 
 const scroll_raster_key_part_names = ['geometry', 'paint', 'text', 'shape', 'payload', 'transform',
@@ -672,6 +674,8 @@ fn scroll_raster_frame_keys_with_scrollbars(commands []layout.PaintCommand, scro
 		}
 		if scroll_raster_damage_diagnostics {
 			key.parts = scroll_raster_command_hash_parts(command, scroll)
+			key.transform = command.transform
+			key.scroll = scroll
 		}
 		if scroll_raster_viewport_filling_solid(command, width, height) {
 			// A uniform fill covering the whole viewport paints the same pixels
@@ -1237,11 +1241,17 @@ fn scroll_raster_report_fill_flags(command &layout.PaintCommand) {
 }
 
 fn scroll_raster_report_unmatched(previous &ScrollRasterKeyFrame, key ScrollRasterCommandKey, delta f64) {
+	// Repeated boxes share local document coordinates; prefer the retained
+	// key whose ink lands where this one does after the scroll.
 	mut nearest := -1
+	mut distance := math.inf(1)
 	for index, candidate in previous.keys {
 		if candidate.kind == key.kind && candidate.doc_x == key.doc_x && candidate.doc_y == key.doc_y {
-			nearest = index
-			break
+			gap := math.abs(candidate.ink.x - key.ink.x) + math.abs(candidate.ink.y - delta - key.ink.y)
+			if gap < distance {
+				nearest = index
+				distance = gap
+			}
 		}
 	}
 	if nearest < 0 {
@@ -1252,7 +1262,8 @@ fn scroll_raster_report_unmatched(previous &ScrollRasterKeyFrame, key ScrollRast
 	for part in 0 .. 8 {
 		if previous.keys[nearest].parts[part] != key.parts[part] { differing << scroll_raster_key_part_names[part] }
 	}
-	eprintln('VOX_SCROLL_RASTER_UNMATCHED kind=${key.kind} doc=${key.doc_x},${key.doc_y} ink=${key.ink.x},${key.ink.y},${key.ink.width},${key.ink.height} delta=${delta} differs=${differing.join(',')}')
+	old := previous.keys[nearest]
+	eprintln('VOX_SCROLL_RASTER_UNMATCHED kind=${key.kind} doc=${key.doc_x},${key.doc_y} ink=${key.ink.x},${key.ink.y},${key.ink.width},${key.ink.height} delta=${delta} differs=${differing.join(',')} transform=${key.transform[..]} scroll=${key.scroll} previous_transform=${old.transform[..]} previous_scroll=${old.scroll}')
 }
 
 // Component hashes mirroring scroll_raster_command_hash's field groups.
