@@ -175,10 +175,11 @@
   bounded `v_realloc` copy under `-prealloc`. Under current V, `int` is 64-bit:
   hand native code `i32` data, and compare references with
   `voidptr(a) == voidptr(b)` (`==` compares the referenced values).
-- `VOX_JS_ENGINE=v8 sh build-prod-browser.sh` builds an experimental bundle
-  whose JavaScriptCore C API is implemented on V8 (Homebrew node's libnode);
-  the default stays JavaScriptCore. Check backend changes with
-  `sh tools/test_jsc_on_v8.sh`. See [the V8 backend](docs/V8_ENGINE.md).
+- The experimental compile-time `-d vox_v8` backend (`VOX_V8=1` in a
+  supervised build) implements the JavaScriptCore C API on V8 (Homebrew
+  node's libnode); the default build uses JavaScriptCore. Build it as a
+  private bundle, never the shared `Build/v/Vox.app`, and check backend
+  changes with `sh tools/test_jsc_on_v8.sh`. See [the V8 backend](docs/V8_ENGINE.md).
 - Launch the browser with `open Build/v/Vox.app`, or pass a URL, an HTML
   file, or literal HTML directly to its executable:
 

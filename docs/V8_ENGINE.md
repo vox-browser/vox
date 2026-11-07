@@ -1,18 +1,33 @@
 # Experimental V8 backend
 
 Vox runs page script on JavaScriptCore. Its bindings (about 150 V/C files) call
-the JavaScriptCore C API directly. `VOX_JS_ENGINE=v8` builds the same browser
-against an implementation of that C API on V8, so no binding changes. The
-default build is unchanged and still uses JavaScriptCore.
+the JavaScriptCore C API directly. The compile-time define `-d vox_v8` builds
+the same browser against an implementation of that C API on V8, so no binding
+changes. There is no runtime engine switch: the default build uses
+JavaScriptCore, and a `vox_v8` build uses V8 wherever it would.
 
 ## Build, run and test
 
+Build a private bundle; never publish a V8 build as the shared
+`Build/v/Vox.app`. The production worker does not see `VOX_V8`, so run the
+supervised build directly (the protocol value is `BUILD_PROTOCOL` in
+`tools/rebuild_browser.py`):
+
 ```sh
-brew install node          # V8 14.6 headers and libnode.147.dylib
-VOX_JS_ENGINE=v8 sh build-prod-browser.sh
-VOX_V8_DIAGNOSTICS=1 Build/v/Vox.app/Contents/MacOS/Vox https://chatgpt.com/
-sh tools/test_jsc_on_v8.sh  # JavaScriptCore vs V8 differential check
+brew install node   # V8 14.6 headers and libnode.147.dylib
+stage=$PWD/Build/v8-app receipt=$PWD/Build/v8-receipt
+mkdir -p "$stage" "$receipt"
+python3 -c "import json, sys; sys.path.insert(0, 'tools'); import rebuild_browser as r; \
+from pathlib import Path; json.dump(r.repository_state(Path('.')), open('$receipt/inputs-before.json', 'w'))"
+VOX_V8=1 VOX_BUILD_SUPERVISED=1 VOX_BUILD_COMPILE_PROTOCOL=bundle-lease-v4 \
+VOX_BUILD_OUTPUT_DIR="$stage" VOX_BUILD_RECEIPT_DIR="$receipt" VOX_BUILD_C_MODE=single \
+  python3 tools/run_memory_bounded.py --lock Build/v8-build.lock --report "$receipt/memory.json" \
+  --timeout 5400 -- sh -c 'exec sh -c "$(cat)" "$0"' build-prod-browser.sh < build-prod-browser.sh
+VOX_V8_DIAGNOSTICS=1 "$stage/Vox.app/Contents/MacOS/Vox" https://chatgpt.com/
+sh tools/test_jsc_on_v8.sh   # JavaScriptCore vs V8 differential check
 ```
+
+Do not edit repository files while it builds; the build rejects changed inputs.
 
 The build compiles `browserjs/v8/jsc_on_v8.cpp` into `libVoxJSCOnV8.dylib`,
 adds `-d vox_v8`, puts `browserjs/v8/include` ahead of the system framework

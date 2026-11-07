@@ -6,10 +6,14 @@ import libjs
 import platform
 
 
-// `-d vox_v8` compiles the same bindings against the JavaScriptCore C API
-// implemented on V8 (v8/jsc_on_v8.cpp). Its headers shadow the framework's;
-// build-prod-browser.sh links the backend library when VOX_JS_ENGINE=v8.
+// The experimental compile-time `-d vox_v8` backend builds the same bindings
+// against the JavaScriptCore C API implemented on V8 (v8/jsc_on_v8.cpp). Its
+// headers shadow the framework's; build-prod-browser.sh builds and links the
+// library for VOX_V8=1.
 $if vox_v8 ? {
+	$if !macos {
+		$compile_error('-d vox_v8 is only supported on macOS')
+	}
 	#flag -I@DIR/v8/include
 } $else {
 	#flag darwin -framework JavaScriptCore
