@@ -3726,7 +3726,15 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		border_colors = computed_border_colors(computed)
 		border_color = border_colors.top
 		border_styles = computed_border_styles(computed)
-		border_radii = paintable_box_normalized_border_radii_data(paintable_box_border_radii_data(computed, used.border_box_width(), used.border_box_height()), computed, .no)
+		raw_radii := if computed.has_noninitial_border_radii() && node.document().font_rendering_policy() == .chromium {
+			snapped := pixel_snapped_layout_rect_at_scale(LayoutRect{border_box_bounds.x,
+				border_box_bounds.y, border_box_bounds.width, border_box_bounds.height}, chromium_paint_pixel_scale(voidptr(node)))
+			chromium_paintable_box_border_radii_constrained(computed, css.LengthResolutionContext.for_computed_properties(computed),
+				used.border_box_width(), used.border_box_height(), f32(snapped.width), f32(snapped.height))
+		} else {
+			paintable_box_border_radii_data(computed, used.border_box_width(), used.border_box_height())
+		}
+		border_radii = paintable_box_normalized_border_radii_data(raw_radii, computed, .no)
 		border_radius = border_radii.top_left.x
 		if outline := paintable_box_outline_data(computed) {
 			outline_width = outline.top.width

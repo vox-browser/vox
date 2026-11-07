@@ -33,6 +33,16 @@ fn chromium_scale_paint_corner_radius(radius CornerRadius, factor f32) CornerRad
 }
 
 fn chromium_paintable_box_border_radii(computed &css.ComputedValues, context css.LengthResolutionContext, width CSSPixels, height CSSPixels) BoxRadii {
+	return chromium_paintable_box_border_radii_constrained(computed, context, width, height,
+		f32(width.to_double()), f32(height.to_double()))
+}
+
+// Blink's ComputeContouredBorderFromStyle resolves radius lengths against the
+// layout size but runs ConstrainRadii against the rect it paints, which for
+// backgrounds and borders is the pixel-snapped border box. GitHub's 25.5px
+// topic pills keep their 13px radius on the 26px snapped box.
+fn chromium_paintable_box_border_radii_constrained(computed &css.ComputedValues, context css.LengthResolutionContext,
+	width CSSPixels, height CSSPixels, constraint_width f32, constraint_height f32) BoxRadii {
 	top_left := chromium_paint_corner_radius(computed.border_top_left_radius(), context, width, height)
 	top_right := chromium_paint_corner_radius(computed.border_top_right_radius(), context, width, height)
 	bottom_right := chromium_paint_corner_radius(computed.border_bottom_right_radius(), context, width, height)
@@ -41,11 +51,11 @@ fn chromium_paintable_box_border_radii(computed &css.ComputedValues, context css
 	horizontal := f32(math.max(f32(top_left.x) + f32(top_right.x), f32(bottom_left.x) + f32(bottom_right.x)))
 	vertical := f32(math.max(f32(top_left.y) + f32(bottom_left.y), f32(top_right.y) + f32(bottom_right.y)))
 	mut factor := f32(1)
-	if horizontal > f32(width.to_double()) {
-		factor = f32(math.min(f32(width.to_double()) / horizontal, factor))
+	if horizontal > constraint_width {
+		factor = f32(math.min(constraint_width / horizontal, factor))
 	}
-	if vertical > f32(height.to_double()) {
-		factor = f32(math.min(f32(height.to_double()) / vertical, factor))
+	if vertical > constraint_height {
+		factor = f32(math.min(constraint_height / vertical, factor))
 	}
 	return BoxRadii{
 		top_left: chromium_scale_paint_corner_radius(top_left, factor)

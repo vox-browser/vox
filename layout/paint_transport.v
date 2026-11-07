@@ -2207,7 +2207,13 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 
 		// All four radii have already undergone CSS overlap reduction; the scalar is retained for the
 		// compact uniform-circle renderer path.
-		box_radii := effective_box_radii(box.decorations().border_radii, box.decorations().border_radius, border_width, border_height)
+		// Blink constrains radii against the pixel-snapped rect it paints.
+		radii_width, radii_height := if box.snaps_background_rect && !box.canvas().paints_canvas_background {
+			background_border_rect.width, background_border_rect.height
+		} else {
+			border_width, border_height
+		}
+		box_radii := effective_box_radii(box.decorations().border_radii, box.decorations().border_radius, radii_width, radii_height)
 		uniform_circle_radii := box_radii_are_uniform_circles(box_radii)
 		radius := if uniform_circle_radii { box_radii.top_left.x } else { 0.0 }
 		rounded_points := if !box_radii_are_zero(box_radii) && !uniform_circle_radii {
