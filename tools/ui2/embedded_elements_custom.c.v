@@ -22,6 +22,14 @@ $if (linux || ((macos || windows) && ui2_custom_rendering ?)) && !ui2_headless ?
 		editor.select_all()
 		replace_text_editor('address', editor)
 	}
+	// Select a rune range of a focused embedded field, as address completion does.
+	pub fn select_embedded_text_range(id string, start int, end int) {
+		mut editor := g_text_editors[id] or { text_editor(text(id).clone()) }
+		editor.set_selection(start, end)
+		replace_text_editor(id, editor)
+	}
+	// The custom renderer inserts committed characters only.
+	pub fn embedded_text_composing(_ string) bool { return false }
 	pub fn blur_embedded_textbox() { g_focused_field = '' }
 	fn collect_embedded_readonly(elements []Element) {
 		for element in elements {

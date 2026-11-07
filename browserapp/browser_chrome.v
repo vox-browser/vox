@@ -164,9 +164,19 @@ fn chrome_history_text_style() ui2.TextStyle {
 	}
 }
 
+// The address field's toolbar geometry, shared with its suggestion dropdown.
+const address_field_left = 98.0
+const address_field_top = 5.0
+const address_field_height = 20.0
+
+fn browser_address_field_width(window_width int) f64 {
+	width := f64(window_width)
+	return if width > 162 { width - 138 } else { 24.0 }
+}
+
 fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 	width := f64(chrome.width)
-	address_width := if width > 162 { width - 138 } else { 24.0 }
+	address_width := browser_address_field_width(chrome.width)
 	footer_width := if width > 224 { width - 224 } else { 0.0 }
 	memory := if chrome.memory != '' { chrome.memory } else { ui2.text('memory') }
 	return [
@@ -187,7 +197,8 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 				hint_text:   'Enter a URL'
 				multiline:   false
 				autocorrect: false
-				frame:       ui2.rect(98, tab_strip_height + 5, address_width, 20)
+				frame:       ui2.rect(address_field_left, tab_strip_height + address_field_top, address_width,
+					address_field_height)
 				text_style:  ui2.TextStyle{ size: 12 }
 			) or { panic(err) },
 			ui2.Element{
@@ -255,6 +266,10 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 }
 
 fn (mut app BrowserApp) activate_browser_chrome(action string) {
+	if action.starts_with('address-suggestion:') {
+		app.activate_address_suggestion(action)
+		return
+	}
 	if action.starts_with('tab-rename:') {
 		app.show_browser_tab_title_editor(action.all_after(':'))
 		return

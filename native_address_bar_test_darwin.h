@@ -107,6 +107,20 @@ static unsigned long native_test_address_selection(void *field) {
 	return [(NSTextView *)[(__bridge NSTextField *)field currentEditor] selectedRange].length;
 }
 
+// Deliver an unmodified key through the window's UI2 key monitor, as AppKit
+// does before the field editor sees it. Returns whether UI2 consumed it.
+static int native_test_address_key(void *field, unsigned short key) {
+	NSWindow *window = [(__bridge NSTextField *)field window];
+	NSEvent *event = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint
+		modifierFlags:0 timestamp:0 windowNumber:window.windowNumber context:nil
+		characters:@"" charactersIgnoringModifiers:@"" isARepeat:NO keyCode:key];
+	return ui2_embedded_key_event((__bridge void *)event) != 0;
+}
+
+static unsigned long native_test_address_selection_location(void *field) {
+	return [(NSTextView *)[(__bridge NSTextField *)field currentEditor] selectedRange].location;
+}
+
 static void native_test_address_backspace(void *field) {
 	[[(__bridge NSTextField *)field currentEditor] deleteBackward:nil];
 }

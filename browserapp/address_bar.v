@@ -65,6 +65,8 @@ fn (mut app BrowserApp) resize_address_bar(width int) {
 }
 
 fn (app &BrowserApp) sync_address_bar() {
+	// The field now shows an address the user did not type.
+	app.close_address_suggestions()
 	$if linux || ui2_custom_rendering ? {
 		if app.is_active_browser_tab() { ui2.set_text('address', app.address) }
 	}
@@ -93,8 +95,14 @@ fn (mut app BrowserApp) blur_address_bar() {
 	}
 	app.address_active = false
 	app.address_select = false
+	app.close_address_suggestions()
 	$if vox_ui2 ? {
 		if app.native_address_bar { ui2.blur_embedded_textbox() }
+	}
+	// Remove a closed dropdown now rather than at the next frame.
+	if app.browser_ui_ != unsafe { nil } && app.browser_chrome.ui_version != app.browser_ui_.version
+		&& app.is_active_browser_tab() {
+		app.update_browser_chrome(app.browser_chrome.width, app.browser_chrome.height)
 	}
 }
 
@@ -107,8 +115,10 @@ fn (mut app BrowserApp) submit_address_bar() {
 	}
 	destination := app.address.trim_space()
 	if destination == '' { return }
+	// A completed or selected suggestion opens its own destination.
+	target := app.address_suggestion_target(app.address) or { destination }
 	app.blur_address_bar()
-	app.navigate(destination, true)
+	app.navigate(target, true)
 	request_browser_frame()
 }
 

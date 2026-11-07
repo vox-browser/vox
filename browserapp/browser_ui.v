@@ -34,6 +34,9 @@ mut:
 	tab_title_focus_pending bool
 	find_bar        ?browserui.FindBar
 	find_focus_pending bool
+	address_dropdown ?browserui.AddressDropdown
+	// The next address edit came from a deletion, cut, paste or undo.
+	address_inline_blocked bool
 	devtools_panel  &devtools.DevTools = unsafe { nil }
 	// UI2 control to focus once the panel has rendered.
 	devtools_focus  string
@@ -196,7 +199,7 @@ fn browser_ui_event(event string) {
 		return
 	}
 	if event == 'address-change' {
-		app.address = ui2.text('address')
+		app.update_address_suggestions(ui2.text('address'))
 		return
 	}
 	if event == 'panel-close:settings' {
@@ -270,6 +273,11 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		return
 	}
 	if settings_keys { return }
+	app.note_address_key(event)
+	if app.handle_address_suggestion_key(event) {
+		ui2.consume_key()
+		return
+	}
 	if app.handle_devtools_key(event) {
 		ui2.consume_key()
 		return

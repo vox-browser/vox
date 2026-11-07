@@ -149,6 +149,31 @@ pub fn select_embedded_textbox() {
 	macos.msg_void1(field, 'selectText:', native_nil_view())
 }
 
+// Select a rune range of a focused embedded field, as address completion does.
+// AppKit's field editor counts UTF-16 units; the browser counts runes.
+pub fn select_embedded_text_range(id string, start int, end int) {
+	field := embedded_browser_control(id)
+	if native_is_nil(field) { return }
+	editor := macos.msg_id(field, 'currentEditor')
+	if native_is_nil(editor) { return }
+	runes := native_text(field).runes()
+	mut location := u64(0)
+	mut length := u64(0)
+	for index, character in runes {
+		units := if u32(character) > 0xffff { u64(2) } else { u64(1) }
+		if index < start { location += units } else if index < end { length += units }
+	}
+	macos.msg_void_range(editor, 'setSelectedRange:', macos.range(location, length))
+}
+
+// An input method is composing marked text in the field; leave its text alone.
+pub fn embedded_text_composing(id string) bool {
+	field := embedded_browser_control(id)
+	if native_is_nil(field) { return false }
+	editor := macos.msg_id(field, 'currentEditor')
+	return !native_is_nil(editor) && macos.msg_bool(editor, 'hasMarkedText')
+}
+
 pub fn blur_embedded_textbox() {
 	st := state()
 	// AppKit can temporarily detach its field editor during a submit action.

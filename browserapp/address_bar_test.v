@@ -1,5 +1,7 @@
 module main
 
+import browserbookmarks
+import browserhistory
 import dom
 import gg
 
@@ -48,6 +50,97 @@ fn test_address_bar_escape_restores_current_history_url() {
 	assert !app.address_active
 	assert !app.address_select
 	assert app.navigation_generation == 0
+}
+
+// Visits are recorded oldest first; history lists the newest first.
+fn address_suggestion_test_history() &browserhistory.Store {
+	now := browserhistory.now()
+	mut history := browserhistory.open('', now) or { panic(err) }
+	history.record('https://gitlab.com/explore', 'GitLab', now - 86400) or { panic(err) }
+	history.record('https://github.com/', 'GitHub', now - 600) or { panic(err) }
+	history.record('https://github.com/vlang/v', 'vlang/v', now - 300) or { panic(err) }
+	history.record('https://github.com/vlang/v', 'vlang/v: fast language', now - 60) or { panic(err) }
+	return history
+}
+
+fn test_address_suggestions_merge_history_and_bookmarks_into_candidates() {
+	mut app := BrowserApp{ browsing_history: address_suggestion_test_history() }
+	app.bookmarks = &browserbookmarks.Store{
+		items: [
+			browserbookmarks.Bookmark{ url: 'https://github.com/', title: 'Bookmarked GitHub' },
+			browserbookmarks.Bookmark{ url: 'https://docs.example.org/guide', title: 'Guide' },
+		]
+	}
+	candidates := app.browser_address_candidates()
+	assert candidates.len == 4
+	assert candidates[0].url == 'https://github.com/vlang/v'
+	assert candidates[0].visits == 2
+	assert candidates[0].title == 'vlang/v: fast language'
+	assert candidates[1].url == 'https://github.com/' && candidates[1].bookmarked
+	assert candidates[1].title == 'GitHub'
+	assert candidates[3].url == 'https://docs.example.org/guide'
+	assert candidates[3].bookmarked && candidates[3].visits == 0
+}
+
+fn test_address_suggestions_complete_inline_open_rows_and_close_with_the_field() {
+	mut app := BrowserApp{
+		address:          'https://current.example/page'
+		history:          [HistoryEntry{ url: 'https://current.example/page' }]
+		history_index:    0
+		browsing_history: address_suggestion_test_history()
+		// Queue navigations instead of fetching them.
+		navigation_work_depth: 1
+	}
+	app.focus_address_bar()
+	app.update_address_suggestions('gi')
+	assert app.address == 'github.com'
+	assert app.address_suggestions_open()
+	elements := app.address_suggestion_elements(BrowserChromeState{ width: 800, height: 600 })
+	assert elements.len == 1
+	assert elements[0].frame.x == address_field_left
+	assert elements[0].frame.y == tab_strip_height + address_field_top + address_field_height + 2
+	assert elements[0].frame.width == browser_address_field_width(800)
+	app.submit_address_bar()
+	completed := app.deferred_navigation_input or { panic('Enter did not open the completion') }
+	assert completed.address == 'https://github.com/' && completed.add_history
+	app.deferred_navigation_input = none
+	assert !app.address_suggestions_open()
+	assert !app.address_active
+	// A deletion keeps the typed text, and Enter searches for it.
+	app.focus_address_bar()
+	mut state := app.browser_ui()
+	state.address_inline_blocked = true
+	app.update_address_suggestions('gi')
+	assert app.address == 'gi'
+	assert !state.address_inline_blocked
+	app.submit_address_bar()
+	searched := app.deferred_navigation_input or { panic('Enter did not search') }
+	assert searched.address == 'https://duckduckgo.com/html/?q=gi'
+	app.deferred_navigation_input = none
+	// Rows open their own destination; stale dropdown actions are ignored.
+	app.focus_address_bar()
+	app.update_address_suggestions('vlang')
+	stale := app.browser_ui().address_dropdown or { panic('missing dropdown') }
+	app.update_address_suggestions('vlang ')
+	app.activate_browser_chrome(stale.action(1))
+	assert app.deferred_navigation_input == none
+	dropdown := app.browser_ui().address_dropdown or { panic('missing dropdown') }
+	assert dropdown.suggestions[1].url == 'https://github.com/vlang/v'
+	app.activate_browser_chrome(dropdown.action(1))
+	clicked := app.deferred_navigation_input or { panic('the row did not navigate') }
+	assert clicked.address == 'https://github.com/vlang/v'
+	assert app.address == 'github.com/vlang/v'
+	app.deferred_navigation_input = none
+	assert !app.address_suggestions_open()
+	// Restoring the page address and empty text both close the dropdown.
+	app.focus_address_bar()
+	app.update_address_suggestions('gitl')
+	assert app.address == 'gitlab.com'
+	app.cancel_address_bar()
+	assert !app.address_suggestions_open()
+	assert app.address == 'https://current.example/page'
+	app.update_address_suggestions('  ')
+	assert !app.address_suggestions_open()
 }
 
 fn test_browser_debug_uses_command_on_macos_and_control_on_windows() {
@@ -113,6 +206,8 @@ $if vox_ui2 ? {
 	fn C.native_test_address_geometry(field voidptr, width int) int
 	fn C.native_test_address_selection(field voidptr) uint
 	fn C.native_test_address_backspace(field voidptr)
+	fn C.native_test_address_key(field voidptr, key u16) int
+	fn C.native_test_address_selection_location(field voidptr) uint
 	fn C.native_test_address_clipboard_begin()
 	fn C.native_test_address_clipboard_matches() int
 	fn C.native_test_address_clipboard_end()
@@ -161,6 +256,67 @@ $if vox_ui2 ? {
 		assert app.navigation_generation == 1
 		assert ui2.focused_id() == ''
 		assert !app.address_active
+	}
+
+	fn test_ui2_address_bar_completes_hosts_inline_and_drives_suggestions_with_keys() {
+		window := C.native_test_address_window()
+		mut app, field := address_bar_test_app(C.native_test_address_parent(window))
+		defer {
+			app.unmount_address_bar()
+			C.native_test_address_close(window)
+		}
+		app.browsing_history = address_suggestion_test_history()
+		app.focus_address_bar()
+		address_bar_test_insert(field, 'gi')
+		assert app.address == 'github.com'
+		assert ui2.text('address') == 'github.com'
+		assert C.native_test_address_selection_location(field) == 2
+		assert C.native_test_address_selection(field) == 8
+		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('address-suggestions')) == 0
+		assert ui2.focused_id() == 'address'
+		// Typing the completion's next character keeps completing.
+		address_bar_test_insert(field, 't')
+		assert app.address == 'github.com'
+		assert C.native_test_address_selection_location(field) == 3
+		assert C.native_test_address_selection(field) == 7
+		// Backspace removes the selected completion without restoring it.
+		assert C.native_test_address_key(field, 51) == 0
+		C.native_test_address_backspace(field)
+		assert app.address == 'git'
+		assert ui2.text('address') == 'git'
+		assert C.native_test_address_selection(field) == 0
+		// Down shows the next row in the field; Escape returns to the typed text.
+		assert C.native_test_address_key(field, 125) == 1
+		assert app.address == 'github.com/vlang/v'
+		assert ui2.text('address') == app.address
+		assert C.native_test_address_selection_location(field) == 18
+		assert C.native_test_address_key(field, 53) == 1
+		assert app.address == 'git'
+		assert ui2.text('address') == 'git'
+		assert ui2.focused_id() == 'address'
+		assert C.native_test_address_key(field, 126) == 1
+		assert app.address == 'gitlab.com/explore'
+		assert C.native_test_address_key(field, 125) == 1
+		assert app.address == 'git'
+		assert C.native_test_address_key(field, 125) == 1
+		C.native_test_address_submit(field)
+		pending := app.pending_navigation or { panic('Enter did not open the selected row') }
+		assert pending.resolved == 'https://github.com/vlang/v'
+		assert ui2.embedded_browser_control('address-suggestions') == unsafe { nil }
+		assert ui2.focused_id() == ''
+		// A native row click opens its destination.
+		app.focus_address_bar()
+		address_bar_test_insert(field, 'explore')
+		C.native_test_chrome_click(ui2.embedded_browser_control('address-suggestion-row-1'))
+		clicked := app.pending_navigation or { panic('the row did not navigate') }
+		assert clicked.resolved == 'https://gitlab.com/explore'
+		assert ui2.embedded_browser_control('address-suggestions') == unsafe { nil }
+		// Escape with the default row keeps restoring the page address.
+		app.focus_address_bar()
+		address_bar_test_insert(field, 'gi')
+		assert C.native_test_address_key(field, 53) == 1
+		assert app.address == 'https://current.example/page'
+		assert ui2.embedded_browser_control('address-suggestions') == unsafe { nil }
 	}
 
 	fn test_ui2_zoom_shortcuts_preserve_native_address_text_selection_and_focus() {
