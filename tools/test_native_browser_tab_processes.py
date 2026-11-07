@@ -32,6 +32,9 @@ def main():
     subprocess.run(['clang', '-dynamiclib', '-fobjc-arc', '-fblocks', '-framework', 'Cocoa',
                     '-framework', 'QuartzCore', str(repo / 'tools/native_browser_tab_process_test.m'),
                     '-o', str(library)], check=True)
+    sampler = output / 'tab-switch-sampler'
+    subprocess.run(['clang', '-O2', '-framework', 'ApplicationServices',
+                    str(repo / 'tools/native_tab_switch_sampler.c'), '-o', str(sampler)], check=True)
     page = output / 'first.html'
     page.write_text('<!doctype html><title>Process First</title><body style="background:#159b53">'
                     '<input id="retained" value="Keep this document">'
@@ -127,6 +130,40 @@ def main():
                 application_types(pids) == {pid: 'Foreground' if pid == shown else 'UIElement'
                                             for pid in pids})
 
+    switches = []
+
+    def without_blank(description, source, target, pids, act, done, settle=.3):
+        # Every tab owns its own window. A switch or close must never leave the
+        # screen without one of the group's windows: that reads as the browser
+        # blinking.
+        sampling = subprocess.Popen([str(sampler), '30000', *map(str, pids)],
+                                    stdout=subprocess.PIPE, text=True)
+        time.sleep(.3)
+        act()
+        wait(description, done)
+        time.sleep(settle)
+        sampling.terminate()
+        lines = sampling.communicate(timeout=10)[0].splitlines()
+        (output / f'switch-{len(switches)}.jsonl').write_text(''.join(line + '\n' for line in lines))
+        samples = [json.loads(line) for line in lines]
+        assert samples and samples[0]['windows'] and samples[0]['windows'][0][0] == source, samples[:3]
+        size = samples[0]['windows'][0][3:]
+        # Each sample lasts until the next change.
+        blank = [(sample['t'], following['t']) for sample, following in zip(samples, samples[1:])
+                 if not any(window[3:] == size for window in sample['windows'])]
+        if samples and not any(window[3:] == size for window in samples[-1]['windows']):
+            blank.append((samples[-1]['t'], None))
+        switches.append({'check': description, 'source': source, 'target': target,
+                         'samples': len(samples), 'blank_ns': blank})
+        assert not blank, f'no tab window on screen (ns intervals): {blank}; {samples}'
+        assert {window[0] for window in samples[-1]['windows']} == {target}, samples[-1]
+
+    def switch_without_blank(source, index, target, pids):
+        without_blank(f'switch from {source} to {target} completes', source, target, pids,
+                      lambda: command(source, 'select', index=index),
+                      lambda s: selected(s) == target and report(target).get('visible') and
+                      not any(report(pid).get('visible') for pid in pids if pid != target))
+
     try:
         wait('initial page rendered', lambda s: report(root.pid).get('painted') and
              report(root.pid).get('title', '').startswith('Process First'))
@@ -163,6 +200,10 @@ def main():
              not report(second).get('visible'))
         wait('switching tabs moves the application switcher entry', lambda s:
              selected(s) == root.pid and single_switcher_entry(s))
+        for source, index, target in [(root.pid, 1, second), (second, 0, root.pid)] * 2:
+            switch_without_blank(source, index, target, [root.pid, second])
+        wait('the shown tab keeps the single switcher entry', lambda s:
+             selected(s) == root.pid and single_switcher_entry(s))
         command(root.pid, 'new')
         data = wait('third tab has a third PID', lambda s: len(s['tabs']) == 3 and selected(s) not in (root.pid, second)
                     and report(selected(s)).get('visible'))
@@ -170,6 +211,15 @@ def main():
         assert len({root.pid, second, third}) == 3
         wait('only the shown tab is in the Dock and application switcher', lambda s:
              len(s['tabs']) == 3 and selected(s) == third and single_switcher_entry(s))
+        # Closing the shown tab hands the window to its neighbour the same way.
+        command(third, 'new')
+        data = wait('fourth tab is shown', lambda s: len(s['tabs']) == 4 and
+                    selected(s) not in (root.pid, second, third) and report(selected(s)).get('visible'))
+        fourth = selected(data)
+        without_blank('closing the shown tab shows its neighbour', fourth, third,
+                      [root.pid, second, third, fourth], lambda: command(fourth, 'close', index=3),
+                      lambda s: len(s['tabs']) == 3 and selected(s) == third and
+                      report(third).get('visible'), settle=1.5)
         # Kill an inactive page. The selected document must survive and the
         # dead process must disappear from every responsive tab's chrome.
         os.kill(second, signal.SIGKILL)
@@ -197,7 +247,7 @@ def main():
             time.sleep(.05)
         assert not folder.exists(), 'closing the visible window did not end the group'
         snapshots.append({'check': 'closing the window ends the group', 'pid': replacement})
-        print('PASS native tab processes: unique PIDs, selection, navigation, reopen, one switcher entry, crashes, parent exit, last-tab replacement, window close')
+        print('PASS native tab processes: unique PIDs, selection, navigation, reopen, one switcher entry, switches and closes without a blank screen, crashes, parent exit, last-tab replacement, window close')
     finally:
         state()
         for pid in known:
@@ -213,7 +263,7 @@ def main():
         log.close()
         (output / 'results.json').write_text(json.dumps(dict(binary=str(binary),
              sha256=identities[str(binary)], identities=identities,
-             pids=sorted(known), checks=snapshots), indent=2))
+             pids=sorted(known), checks=snapshots, switches=switches), indent=2))
         if folder and folder.exists():
             import shutil
             shutil.rmtree(folder)
