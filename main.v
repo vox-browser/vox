@@ -1980,7 +1980,7 @@ fn javascript_bootstrap() string {
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video")Object.defineProperties(o,{width:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageWidth"):__canvasDimension(s,"width");},set:function(v){s.width=String(Number(v)>>>0);__setAttribute(s,"width",s.width);},configurable:true}, height:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageHeight"):__canvasDimension(s,"height");},set:function(v){s.height=String(Number(v)>>>0);__setAttribute(s,"height",s.height);},configurable:true}});',
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video")Object.defineProperties(o,{videoWidth:{get:function(){return +s.videoWidth||0;},configurable:true}, videoHeight:{get:function(){return +s.videoHeight||0;},configurable:true}});',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"readyState",{get:function(){return +s.readyState||0;},configurable:true});',
-		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.insertBefore=function(child,reference){return __compactInsertNode(o,child,reference,true);};',
+		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});__compactMutationFlush(true);};o.blur=function(){__state.operations.push({op:"blur",target:s.bridgeKey});__compactMutationFlush(true);};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.insertBefore=function(child,reference){return __compactInsertNode(o,child,reference,true);};',
 		'    const __styleObject=__styleProxy(s); Object.defineProperty(o,"style",{get:function(){return __styleObject;},set:function(v){__styleObject.cssText=v;},enumerable:true,configurable:true}); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__ladybirdImageBind(o,s.bridgeKey);delete o.addEventListener;delete o.removeEventListener;} if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__reflectMediaAttribute);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="script"||s.tagName==="link"||s.tagName==="iframe"))__bindScriptElement(o);if(__isTrackElementState(s)){__bindTrackElement(o,s.bridgeKey);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;delete o.dispatchEvent;}}',
 		'    __compactDocumentElementBindings(o,s);',
 		'  } return s.__object;',
@@ -2783,8 +2783,20 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 						selection.select_all_children(target.as_node()) or { continue }
 					}
 				} else if kind == 'focus' {
-					mut mutable_document := unsafe { &dom.Document(document) }
-					mutable_document.set_focused_area(target.as_node())
+					// HTMLElement.focus() runs the focusing steps, which fire blur,
+					// focusout, focus and focusin. An element that is not yet a
+					// focusable area (before layout, for example) keeps the forced focus.
+					dom.run_focusing_steps_for_node(target.as_node(), none, .script)
+					focused := document.focused_area() or { unsafe { nil } }
+					if voidptr(focused) != voidptr(target.as_node()) {
+						mut mutable_document := unsafe { &dom.Document(document) }
+						mutable_document.set_focused_area(target.as_node())
+					}
+				} else if kind == 'blur' {
+					// HTMLElement.blur() runs the unfocusing steps if this element has focus.
+					mut manager := html.FocusManager.create()
+					manager.currently_focused_area = document.focused_area()
+					html.run_unfocusing_steps(mut manager, target.as_node())
 				} else if kind == 'selectTextControl' && target.local_name() == 'input' {
 					input := unsafe { &dom.HTMLInputElement(target) }
 					mut model := html.HTMLInputElementModel.create(input)

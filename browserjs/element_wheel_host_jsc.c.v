@@ -238,11 +238,11 @@ fn (mut host ElementWheelHost) resolve_wheel_element_wrapper(target &dom.EventTa
 }
 
 fn element_wheel_host_bootstrap() string {
-	// Existing built-in event adapters still own their compact resource/UI
-	// delivery. Arbitrary author event names must share the native listener
-	// list with dispatchEvent, including capture, cancellation and options.
-	pointer_types := native_pointer_event_names()
-	legacy_types := window_event_handler_names().filter(it.event !in pointer_types).map(it.event)
+	// Only load and error keep compact delivery: object, script, link and
+	// iframe adapters fire them. Every other event, including focus, blur,
+	// scroll, toggle and transition events that native code fires, shares the
+	// native listener list with dispatchEvent, capture, cancellation and options.
+	legacy_types := ['load', 'error']
 	return r'(function(bind,type,setResolver,getHandler,setHandler,getScrollEnd,setScrollEnd,inlineHandler){
  "use strict";
  const apply=Reflect.apply,define=Object.defineProperty,wrapped=new WeakSet(),has=WeakSet.prototype.has,add=WeakSet.prototype.add;
