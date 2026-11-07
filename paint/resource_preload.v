@@ -41,6 +41,13 @@ fn (mut app BrowserApp) prime_document_paint_resources() {
 			app.request_background_resource(address)
 		}
 	}
+	// Viewport recording leaves offscreen backgrounds out; request them as if
+	// recorded, so they arrive before scrolling reaches them.
+	if app.document != unsafe { nil } {
+		for address in layout.document_background_image_urls(app.document) {
+			app.request_background_resource(address)
+		}
+	}
 	if paint_resource_prefetch_diagnostics && app.background_resource_pending.len > before {
 		eprintln('VOX_PAINT_RESOURCE_PREFETCH requests=${app.background_resource_pending.len - before}')
 	}

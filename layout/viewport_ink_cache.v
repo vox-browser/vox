@@ -1,5 +1,6 @@
 module layout
 
+import dom
 import math
 import os
 import platform
@@ -17,6 +18,7 @@ struct ViewportCachedEntryInk {
 	// documents reject almost every entry with this one test.
 	has_bounds bool
 	bounds     LayoutRect
+	prepaint   bool
 }
 
 // Private recording workspace. Rectangles contain no paint-tree or glyph roots.
@@ -29,6 +31,8 @@ mut:
 	order voidptr
 	entries []ViewportCachedEntryInk
 	rects []LayoutRect
+	// Network background images of every entry, including culled ones.
+	background_urls []string
 }
 
 fn (mut cache ViewportEntryInkCache) invalidate() {
@@ -36,6 +40,7 @@ fn (mut cache ViewportEntryInkCache) invalidate() {
 	cache.order = unsafe { nil }
 	cache.entries.clear()
 	cache.rects.clear()
+	cache.background_urls.clear()
 }
 
 fn refresh_viewport_entry_ink_cache(mut result DocumentLayoutResult) {
@@ -50,7 +55,9 @@ fn refresh_viewport_entry_ink_cache(mut result DocumentLayoutResult) {
 	defer { platform.leave_persistent(persistent) }
 	mut cache := &result.record_scratch.viewport_ink_cache
 	cache.invalidate()
+	mut seen_urls := map[string]bool{}
 	for entry in result.paint_order {
+		collect_viewport_entry_background_urls(entry.box, mut seen_urls, mut cache.background_urls)
 		first := cache.rects.len
 		bounded := append_viewport_entry_ink(entry.box, mut cache.rects)
 		bounds, has_bounds := viewport_ink_component_bounds(cache.rects, first)
@@ -60,11 +67,42 @@ fn refresh_viewport_entry_ink_cache(mut result DocumentLayoutResult) {
 			bounded:    bounded
 			has_bounds: bounded && has_bounds
 			bounds:     bounds
+			prepaint:   viewport_entry_paints_images(entry.box)
 		}
 	}
 	cache.revision = revision
 	cache.order = result.paint_order.data
 	cache.valid = true
+}
+
+// Mirrors the shell's prefetch of recorded backgrounds: network URLs that are
+// not SVG documents, from boxes with a non-empty painting area.
+fn collect_viewport_entry_background_urls(box &BlockBox, mut seen map[string]bool, mut urls []string) {
+	layers := box.decorations().background_images
+	if layers.len == 0 { return }
+	border := box.border_box()
+	if !(border.width > 0 && border.height > 0) { return }
+	for layer in layers {
+		if layer.svg_document != none || layer.static_svg_resource != none { continue }
+		if !layer.url.starts_with('http://') && !layer.url.starts_with('https://') { continue }
+		if layer.url in seen { continue }
+		owned := layer.url.clone()
+		seen[owned] = true
+		urls << owned
+	}
+}
+
+// Network background images of every painted entry, also those the latest
+// viewport recording left out, while its entry cache is current. Empty when
+// no viewport recording has validated the cache for this paint revision.
+pub fn document_background_image_urls(document &dom.Document) []string {
+	result := document_layout_result(document) or { return []string{} }
+	cache := &result.record_scratch.viewport_ink_cache
+	if !cache.valid || cache.revision != document.paint_content_revision()
+		|| cache.order != result.paint_order.data || cache.entries.len != result.paint_order.len {
+		return []string{}
+	}
+	return cache.background_urls
 }
 
 fn viewport_ink_component_bounds(rects []LayoutRect, first int) (LayoutRect, bool) {

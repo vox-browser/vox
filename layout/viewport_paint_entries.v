@@ -5,6 +5,7 @@ import os
 import platform
 
 const disable_direct_viewport_rect_culling = os.getenv('VOX_DISABLE_DIRECT_VIEWPORT_RECT_CULLING') != ''
+const disable_bounded_image_entries = os.getenv('VOX_DISABLE_BOUNDED_IMAGE_ENTRIES') != ''
 
 // Culling resolves a flattened visual context for every bounded entry on each
 // viewport recording. Those temporaries live in this arena, reset as soon as
@@ -65,11 +66,22 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 		slot := contexts.resolve(box.accumulated_visual_context_index)
 		context := unsafe { &contexts.contexts[slot] }
 		if context.layer_list != unsafe { nil } { continue }
+		prepaint := if disable_viewport_ink_cache {
+			viewport_entry_paints_images(box)
+		} else {
+			result.record_scratch.viewport_ink_cache.entries[index].prepaint
+		}
+		mut transform := context.transform
+		mut area_height := height
+		if prepaint {
+			transform = viewport_prepaint_transform(context.transform, height)
+			area_height = height * 3
+		}
 		outside := if disable_viewport_ink_cache {
-			viewport_box_ink_is_outside(box, context.transform, width, height, mut ink_probe)
+			viewport_box_ink_is_outside(box, transform, width, area_height, mut ink_probe)
 		} else {
 			viewport_cached_entry_ink_is_outside(&result.record_scratch.viewport_ink_cache,
-				index, context.transform, width, height, mut ink_probe)
+				index, transform, width, area_height, mut ink_probe)
 		}
 		if outside {
 			selected[index] = false
@@ -81,8 +93,7 @@ fn viewport_entry_has_bounded_ink(box &BlockBox) bool {
 	return !box.has_svg_path() && box.clips().svg_mask == none && box.clips().svg_clip == none
 		&& !box.filters().filter.has_filters() && !box.filters().backdrop_filter.has_filters()
 		&& box.decorations().shadow == none && box.decorations().shadows.len == 0
-		&& box.decorations().background_images.len == 0 && box.decorations().background_gradient == none
-		&& box.media().replaced_image_url == '' && box.media().replaced_image_paintable == none
+		&& viewport_entry_background_is_bounded(box) && viewport_entry_replaced_image_is_bounded(box)
 		&& box.media().canvas_bitmap == none && box.media().canvas_paintable == none
 		&& box.media().video_bitmap == none && box.media().video_paintable == none
 		&& box.media().nested_viewport_document == none && box.media().nested_viewport_paintable == none
@@ -90,6 +101,50 @@ fn viewport_entry_has_bounded_ink(box &BlockBox) bool {
 		&& !box.table_inside && !box.uses_collapsed_borders
 		&& box.overlay == none && box.marker_shape == ''
 		&& box.fixed_background_visual_context == none
+}
+
+// Backgrounds paint inside their background painting area, which never
+// extends beyond the border box, so its cached ink bounds them. Comment
+// trees use a background arrow and a spacer image on every row; keeping each
+// one recorded made long threads replay thousands of offscreen commands per
+// scrolled frame. Fixed attachment (excluded above) and the propagated canvas
+// background keep the complete path.
+fn viewport_entry_background_is_bounded(box &BlockBox) bool {
+	if box.decorations().background_images.len == 0 && box.decorations().background_gradient == none {
+		return true
+	}
+	return !disable_bounded_image_entries && !box.canvas().paints_canvas_background
+}
+
+// An <img> paints its bitmap clipped to the content box (image_clip_*), and the
+// element fetches its own source. Broken-image fallbacks and SVG documents
+// keep the complete path.
+fn viewport_entry_replaced_image_is_bounded(box &BlockBox) bool {
+	media := box.media()
+	if media.replaced_image_url == '' && media.replaced_image_paintable == none { return true }
+	if disable_bounded_image_entries || media.is_svg_image || media.nested_viewport_document != none {
+		return false
+	}
+	if paintable := media.replaced_image_paintable {
+		if paintable.broken_image_fallback_scale > 0 { return false }
+	}
+	return true
+}
+
+// Background images are requested and images decoded when first replayed.
+// Like Chromium's interest area beyond the viewport, keep such entries
+// recorded within one viewport height above and below it so their pixels are
+// ready before they scroll in.
+fn viewport_entry_paints_images(box &BlockBox) bool {
+	return box.decorations().background_images.len > 0 || box.media().replaced_image_url != ''
+		|| box.media().replaced_image_paintable != none
+}
+
+// Map into a canvas extended by `margin` above and below the viewport.
+fn viewport_prepaint_transform(transform [6]f64, margin f64) [6]f64 {
+	mut matrix := normalized_affine(transform)
+	matrix[5] += margin
+	return matrix
 }
 
 fn viewport_rect_is_outside(rect LayoutRect, transform [6]f64, width f64, height f64,

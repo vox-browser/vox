@@ -99,3 +99,54 @@ fn test_viewport_ink_probes_reuse_storage_for_rectangles_and_glyph_bounds() {
 	assert viewport_rect_is_outside(LayoutRect{10, 1000, 20, 20}, identity, 320, 100, mut ink_probe)
 	assert !viewport_fragment_ink_is_outside(&fragment, [f64(1), 0, 0, 1, 0, -1000]!, 320, 100, mut ink_probe)
 }
+
+fn test_viewport_recording_culls_image_rows_beyond_one_viewport_of_prepaint() {
+	// Comment threads repeat a background arrow and a spacer image on every row.
+	// Entries whose pixels stay inside their border box are culled once they
+	// are more than one viewport height away; their backgrounds are still listed
+	// for the shell's prefetch.
+	gif := 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+	mut rows := ''
+	for index in 0 .. 60 {
+		rows += '<div class="row" style="background-image:url(http://example.test/r${index}.png),linear-gradient(red,blue)"><img src="${gif}" width="10" height="10"></div>'
+	}
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}.row{height:50px;background-size:10px}img{display:block}</style>${rows}')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	near_list := document.record_viewport_display_list()?
+	near_scene := retain_display_list_scene(near_list)
+	defer { release_display_list_scene(near_scene) }
+	near := display_list_commands(near_list)
+	near_urls := near.filter(it.kind == 'draw_background_image' && it.image_data != unsafe { nil }).map(it.image_data.image_url)
+	assert 'http://example.test/r0.png' in near_urls
+	assert 'http://example.test/r4.png' in near_urls
+	assert 'http://example.test/r5.png' !in near_urls
+	assert 'http://example.test/r59.png' !in near_urls
+	urls := document_background_image_urls(document)
+	assert urls.len == 60
+	for index in 0 .. 60 {
+		assert 'http://example.test/r${index}.png' in urls
+	}
+	document.set_viewport_rect(dom.Rect{0, 1500, 320, 100})
+	scrolled_list := document.record_viewport_display_list()?
+	scrolled_scene := retain_display_list_scene(scrolled_list)
+	defer { release_display_list_scene(scrolled_scene) }
+	scrolled := display_list_commands(scrolled_list)
+	scrolled_urls := scrolled.filter(it.kind == 'draw_background_image' && it.image_data != unsafe { nil }).map(it.image_data.image_url)
+	for index in 28 .. 33 {
+		assert 'http://example.test/r${index}.png' in scrolled_urls
+	}
+	assert 'http://example.test/r0.png' !in scrolled_urls
+	assert 'http://example.test/r40.png' !in scrolled_urls
+	full_list := document.record_display_list()?
+	full_scene := retain_display_list_scene(full_list)
+	defer { release_display_list_scene(full_scene) }
+	full := display_list_commands(full_list)
+	images := ['draw_replaced_image', 'draw_background_image', 'fill_gradient']
+	assert full.filter(it.kind in images).len > scrolled.filter(it.kind in images).len * 5
+	full_replaced := full.filter(it.kind == 'draw_replaced_image').len
+	if full_replaced > 0 {
+		visible := scrolled.filter(it.kind == 'draw_replaced_image').len
+		assert visible > 0 && visible < full_replaced
+	}
+}
