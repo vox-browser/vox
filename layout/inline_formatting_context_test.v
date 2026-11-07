@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import html
 import math
 import platform
 
@@ -299,4 +300,22 @@ fn test_chromium_text_overflow_hides_items_that_cannot_keep_a_character() {
 	assert voidptr(ellipsis.style_source()) == voidptr(unsafe { &Node(container) })
 	assert ellipsis.inline_offset() == text.inline_offset().plus(text.inline_length())
 	assert ellipsis.inline_offset().plus(ellipsis.inline_length()).raw_value() <= CSSPixels.new(width).raw_value()
+}
+
+// Brave 156: GitHub's language list puts inline-flex links with a 12px end
+// margin in a 272px sidebar. "Shell" fits by its border box but not with its
+// margin, and Blink's line breaker moves it to the next line.
+fn test_chromium_atomic_inlines_fit_by_their_margin_box() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}
+		ul{width:100px;margin:0;padding:0;list-style:none;font:10px/12px Arial}
+		li{display:inline} a{display:inline-flex;width:40px;margin-right:12px}</style>
+		<ul><li><a id="first">a</a></li><li><a id="second">b</a></li></ul>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	run_document_layout(document, 400, 300) or { panic('layout') }
+	first := (document.get_element_by_id('first') or { panic('first') }).get_bounding_client_rect()
+	second := (document.get_element_by_id('second') or { panic('second') }).get_bounding_client_rect()
+	// 52 + 40 = 92 fits 100px, but 52 + 52 does not.
+	assert second.x == 0
+	assert second.y > first.y
 }

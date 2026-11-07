@@ -241,11 +241,18 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 				box := node.as_box() or { continue }
 				if containing_block.computed_values().text_wrap_mode() == .wrap {
 					mut minimum_space := item.border_box_width()
-					if item.margin_start.raw_value() < 0 {
-						minimum_space = minimum_space.plus(item.margin_start)
-					}
-					if item.margin_end.raw_value() < 0 {
-						minimum_space = minimum_space.plus(item.margin_end)
+					if node.document().font_rendering_policy() == .chromium {
+						// Blink's line breaker fits an atomic inline's whole margin box:
+						// GitHub's language links wrap when only their 12px end margin
+						// overflows the sidebar.
+						minimum_space = minimum_space.plus(item.margin_start).plus(item.margin_end)
+					} else {
+						if item.margin_start.raw_value() < 0 {
+							minimum_space = minimum_space.plus(item.margin_start)
+						}
+						if item.margin_end.raw_value() < 0 {
+							minimum_space = minimum_space.plus(item.margin_end)
+						}
 					}
 					line_builder.note_soft_wrap_opportunity()
 					line_builder.break_if_needed(minimum_space)
