@@ -3,13 +3,12 @@
 The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
 The measured production bundles **exceed this limit**. The latest valid
-five-minute observation settles at **308,660,288 B** and peaks at **550,815,808 B**
-on executable `8f1ee6b0…`, with shared Dawn picture transport installed. A
-65-second observation of the same executable peaks at **544,181,008 B** and
-settles at **255,543,336 B**. Memory still grows while idle. All twelve canonical
-visual comparisons pass on this production bundle. The later cached-view
-retirement fix has focused and explicit-library checks but awaits installed
-production validation.
+five-minute production observation settles at **281,839,608 B** and peaks at
+**534,039,264 B** on executable `f4d96cb8…`, containing both the coordinate-query
+and icon-export fixes below. Memory still grows while idle. The earlier
+`6638f91b…` observation peaks at **546,670,608 B** and settles at
+**292,472,848 B**. These successive builds also contain other shared changes;
+no isolated whole-page saving is attributed to these differences.
 
 The earlier five-minute `c9ff98ac…` observation settles at 329,418,840 B and
 peaks at 729,827,464 B. A 65-second production observation peaks at
@@ -1507,3 +1506,88 @@ These differing diagnostics establish no GC optimization or passing cap. The [po
 preserves source/build hashes, focused checks, pixel results, raw trial values,
 commands, host contention and rejected attempts under
 `Build/reddit-comment-memory-20261103-idle-followup/`.
+
+## Coordinate queries and bookmark icon export
+
+Commit `08f79ce22` borrows the retained visual-context tree through coordinate,
+range, caret, scrollbar and hit-test helpers. Previously, invoking the tree's
+reference-receiver methods heap-promoted a value parameter even on the identity
+fast path. Rectangle mapping now keeps its four transformed corners on the
+stack. The 4,096-round identity control retains **983,048 B**. Borrowing alone
+still leaves **393,223 B** in the transformed-rectangle case; the fixed-size
+corner array removes that remaining temporary vector. The final regression
+retains **less than 1,024 B per 4,096 rounds**, in both identity and transformed
+contexts. Eleven focused cases pass in prealloc, poisoned prealloc and Boehm
+modes, covering clipping, scrolling, device scale, inverse transforms, rotated
+and sheared rectangles, fragment hits, caret geometry and viewport scrollbars.
+
+Commit `50322f08b` gives bookmark icon export disposable decoding/encoding
+storage and returns the path owned by its persistent cache. Previously, 1,024
+warm exports retain **4,030,464 B**, and the first export can return a path inside
+its caller's arena. Both regressions now pass: warm exports retain **less than
+1,024 B**, and the first path survives caller retirement. Eleven focused cases
+pass in prealloc, poisoned prealloc and Boehm modes. All fourteen selected native
+UI2 cases pass normally and with poisoning, including icon completion, existing
+button identity, overflow clicks and settings policy. The existing resource
+filtering path is unchanged. These are component retained-allocation results,
+not whole-page memory savings.
+
+The allocation profile that motivated these fixes uses frozen production input
+from `928ebab1…`. Its endpoint window is hidden, so it supplies no page-memory
+or performance acceptance. Its sampled function stacks identify retained visual
+tree copies and repeated bookmark image decoding during chrome interactions;
+the independent failing controls above establish the corrected allocations and
+lifetimes.
+
+The completed production observations use the same sealed thread, normal author
+scripts, an empty private profile/cache and a **1708 × 953** document viewport.
+All retain 49 comments, two images, complete/visible/fully active document
+identity, the existing badge-fetch JavaScript diagnostic and zero native errors.
+Executable, native-library, tool and fixture identities remain stable, with
+zero browser and guard exits.
+
+| Production observation | Observed simultaneous peak | Final two-second median |
+| --- | ---: | ---: |
+| `928ebab1…`, 65 seconds, polling/readback fixes | 529,205,984 B | 276,760,568 B |
+| `8cce637a…`, 300 seconds, polling/readback fixes | 552,224,784 B | 299,042,832 B |
+| `6638f91b…`, 300 seconds, coordinate-query fix | 546,670,608 B | 292,472,848 B |
+| `f4d96cb8…`, 300 seconds, both fixes | 534,039,264 B | 281,839,608 B |
+
+These are successive production observations, with other shared changes between
+builds, rather than an isolated optimization cohort. The `6638f91b…` peak occurs during
+a later timestamp refresh; the `f4d96cb8…` simultaneous peak occurs about 1.54
+seconds after launch. Their main processes report 575,735,872 B and 556,927,064 B
+lifetime physical-footprint peaks respectively; the simultaneous sampler can
+miss short spikes. Idle growth and the **500,000,000 B cap remain open**. All
+twelve canonical SVG, image-source mutation, paint-server identity and
+rounded-border comparisons are pixel-exact on both builds, with unchanged
+references.
+
+Two additional rendering investigations are rejected. A shared-IOSurface frame
+prototype passes its small native pixel check but raises the matched private
+page peak from **511,347,496 B** to **685,689,688 B**. All prototype source is
+removed. A shared build picked up that experimental header and failed on an ARC
+cast; it did not install a bundle. The retained patch, failed build receipt and
+rejected trials receive no optimization credit. A later standalone O0 source
+browser uses a full browser as its filter worker, making its **882,542,752 B**
+observation incomparable with the production helper policy.
+
+A separate native diagnostic observes only **69,632 B** of budgeted cache on
+each GPU context and at most **215,040 B** on a retained recorder. These counters
+do not cover all GPU/driver storage and do not justify lowering resource-cache
+budgets. Another O0 diagnostic normalizes its helper to the canonical production
+worker, then samples footprint immediately before and after prepaint retirement.
+Its largest inline reduction is **2,834,432 B**. Its lower externally sampled
+peak is not production acceptance: the executable is unoptimized and instrumented,
+and per-task lifetime peaks do not establish a simultaneous bound. Cache budgets
+and prepaint cleanup timing remain unchanged. All diagnostic and setup failures
+remain in the raw evidence.
+
+A fresh live request redirects to Reddit's login URL, which returns **HTTP 403**.
+The frozen thread therefore remains the reproducible workload; successful live
+validation is still unavailable. The
+[coordinate/export receipt](benchmark-results/reddit-comment-memory-2026-11-03-coordinate-exports.json)
+records commits, source hashes, expected failing controls, final tests, build
+identities, raw observations, visual checks and rejected experiments. Raw data
+is private under `Build/reddit-comment-memory-20261103-visual-borrow/` and
+`Build/reddit-comment-memory-20261103-frame-copies/`.

@@ -398,6 +398,14 @@ Stack Overflow's
 [Linux optimization](docs/STACKOVERFLOW_LINUX_PERFORMANCE.md) compares two Vox
 versions using Cachegrind instruction references, rather than Vox against Brave.
 
+[ChatGPT](docs/CHATGPT_BRAVE_INSTRUCTIONS.md) (chatgpt.com) has not established
+lower instruction counts than Brave. The latest complete seven-pair cohort on the
+frozen homepage records median observed counts of **30,006,382,557 for Vox** and
+**16,334,249,687 for Brave** (lower bound): the conservative ratio is **1.8651×**
+and the 5% advantage target fails. All fourteen captures match the retained
+document PNG exactly. The current target is 20B instructions; see the
+[sealed-profile receipt](docs/performance/chatgpt-sealed-profile-20261105.json).
+
 ## Forum/news rendering coverage
 
 All 15 sites from the forum/news session, plus Discord, are in the
