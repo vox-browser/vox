@@ -224,6 +224,12 @@ static int vox_ct_collection_index(const char *path, CTFontRef font) {
 VOX_NATIVE_STATE os_unfair_lock vox_ct_cache_lock VOX_NATIVE_STATE_INIT(OS_UNFAIR_LOCK_INIT);
 VOX_NATIVE_STATE CFMutableDictionaryRef vox_ct_selection_cache;
 VOX_NATIVE_STATE CFMutableDictionaryRef vox_ct_collection_cache;
+// The family name and the `wght` axis range belong to the face file and its
+// PostScript name, not to the point size. CoreText derives both from the
+// localized 'name' table: about 3M instructions for the family name of each
+// new system-font size and 30M for CTFontCopyVariationAxes().
+VOX_NATIVE_STATE CFMutableDictionaryRef vox_ct_family_name_cache;
+VOX_NATIVE_STATE CFMutableDictionaryRef vox_ct_weight_axis_cache;
 
 static const void *vox_ct_cache_copy(CFMutableDictionaryRef *cache, CFStringRef key) {
 	os_unfair_lock_lock(&vox_ct_cache_lock);
@@ -242,6 +248,90 @@ static void vox_ct_cache_store(CFMutableDictionaryRef *cache, CFStringRef key, c
 	if (*cache)
 		CFDictionarySetValue(*cache, key, value);
 	os_unfair_lock_unlock(&vox_ct_cache_lock);
+}
+
+// "file\x1fPostScript name" for a font, or NULL when either is unavailable.
+static CFStringRef vox_ct_face_cache_key(CTFontRef font) {
+	CFURLRef url = (CFURLRef)CTFontCopyAttribute(font, kCTFontURLAttribute);
+	CFStringRef file = url ? CFURLCopyFileSystemPath(url, kCFURLPOSIXPathStyle) : NULL;
+	CFStringRef postscript = CTFontCopyPostScriptName(font);
+	CFStringRef key = file && postscript
+		? CFStringCreateWithFormat(NULL, NULL, CFSTR("%@\x1f%@"), file, postscript) : NULL;
+	if (url)
+		CFRelease(url);
+	if (file)
+		CFRelease(file);
+	if (postscript)
+		CFRelease(postscript);
+	return key;
+}
+
+static CFStringRef vox_ct_cached_family_name(CTFontRef font) {
+	CFStringRef key = vox_ct_face_cache_key(font);
+	if (!key)
+		return CTFontCopyFamilyName(font);
+	CFStringRef family = (CFStringRef)vox_ct_cache_copy(&vox_ct_family_name_cache, key);
+	if (!family) {
+		family = CTFontCopyFamilyName(font);
+		if (family)
+			vox_ct_cache_store(&vox_ct_family_name_cache, key, family);
+	}
+	CFRelease(key);
+	return family;
+}
+
+// The font's `wght` axis range. Returns 0 when the face has no such axis.
+static int vox_ct_weight_axis_range(CTFontRef font, double *minimum, double *maximum) {
+	const int tag = 0x77676874; // wght
+	CFStringRef key = vox_ct_face_cache_key(font);
+	CFArrayRef cached = key ? (CFArrayRef)vox_ct_cache_copy(&vox_ct_weight_axis_cache, key) : NULL;
+	if (cached) {
+		int found = 0;
+		if (CFGetTypeID(cached) == CFArrayGetTypeID() && CFArrayGetCount(cached) == 2) {
+			CFNumberGetValue((CFNumberRef)CFArrayGetValueAtIndex(cached, 0), kCFNumberDoubleType, minimum);
+			CFNumberGetValue((CFNumberRef)CFArrayGetValueAtIndex(cached, 1), kCFNumberDoubleType, maximum);
+			found = 1;
+		}
+		CFRelease(cached);
+		CFRelease(key);
+		return found;
+	}
+	int found = 0;
+	CFArrayRef axes = CTFontCopyVariationAxes(font);
+	for (CFIndex index = 0; axes && index < CFArrayGetCount(axes); ++index) {
+		CFDictionaryRef axis = (CFDictionaryRef)CFArrayGetValueAtIndex(axes, index);
+		if ((int)vox_ct_number(axis, kCTFontVariationAxisIdentifierKey) == tag) {
+			*minimum = vox_ct_number(axis, kCTFontVariationAxisMinimumValueKey);
+			*maximum = vox_ct_number(axis, kCTFontVariationAxisMaximumValueKey);
+			found = 1;
+			break;
+		}
+	}
+	if (axes)
+		CFRelease(axes);
+	if (key) {
+		CFTypeRef value = kCFNull;
+		CFArrayRef range = NULL;
+		if (found) {
+			CFNumberRef numbers[2] = {
+				CFNumberCreate(NULL, kCFNumberDoubleType, minimum),
+				CFNumberCreate(NULL, kCFNumberDoubleType, maximum),
+			};
+			if (numbers[0] && numbers[1])
+				range = CFArrayCreate(NULL, (const void **)numbers, 2, &kCFTypeArrayCallBacks);
+			if (numbers[0])
+				CFRelease(numbers[0]);
+			if (numbers[1])
+				CFRelease(numbers[1]);
+			value = range;
+		}
+		if (value)
+			vox_ct_cache_store(&vox_ct_weight_axis_cache, key, value);
+		if (range)
+			CFRelease(range);
+		CFRelease(key);
+	}
+	return found;
 }
 
 static int vox_ct_cached_collection_index(const char *path, CTFontRef font) {
@@ -279,7 +369,7 @@ static int vox_ct_fill(CTFontRef font, vox_ct_face *face) {
 	int ok = CFURLGetFileSystemRepresentation(url, true, (UInt8 *)face->path, sizeof(face->path));
 	face->face_index = ok ? vox_ct_cached_collection_index(face->path, font) : 0;
 	face->family[0] = 0;
-	CFStringRef family = CTFontCopyFamilyName(font);
+	CFStringRef family = vox_ct_cached_family_name(font);
 	if (family) {
 		CFStringGetCString(family, face->family, sizeof(face->family), kCFStringEncodingUTF8);
 		CFRelease(family);
@@ -363,16 +453,9 @@ static CTFontRef vox_ct_system_font(int weight, int italic, double size) {
 	if (weight != 400) {
 		double value = weight;
 		const int tag = 0x77676874; // wght
-		CFArrayRef axes = CTFontCopyVariationAxes(font);
-		for (CFIndex index = 0; axes && index < CFArrayGetCount(axes); ++index) {
-			CFDictionaryRef axis = (CFDictionaryRef)CFArrayGetValueAtIndex(axes, index);
-			if ((int)vox_ct_number(axis, kCTFontVariationAxisIdentifierKey) == tag) {
-				value = fmax(vox_ct_number(axis, kCTFontVariationAxisMinimumValueKey),
-					fmin(vox_ct_number(axis, kCTFontVariationAxisMaximumValueKey), value));
-				break;
-			}
-		}
-		if (axes) CFRelease(axes);
+		double minimum = 0.0, maximum = 0.0;
+		if (vox_ct_weight_axis_range(font, &minimum, &maximum))
+			value = fmax(minimum, fmin(maximum, value));
 		CFNumberRef axis_tag = CFNumberCreate(NULL, kCFNumberIntType, &tag);
 		CFNumberRef coordinate = CFNumberCreate(NULL, kCFNumberDoubleType, &value);
 		const void *keys[] = { axis_tag };
