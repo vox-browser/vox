@@ -282,6 +282,7 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	$if linux || ui2_custom_rendering ? { app.stop_browser_memory_chrome() }
 	app.dismiss_browser_popup()
 	app.release_native_replay_scratch()
+	app.clear_back_forward_cache()
 	mut retiring := app.document
 	layout_handle := if retiring != unsafe { nil } {
 		retiring.layout_engine_handle()

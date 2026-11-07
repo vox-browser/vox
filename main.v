@@ -469,6 +469,8 @@ mut:
 	adblock_tokens                      BrowserAdblockTokenCache
 	history                             []HistoryEntry
 	history_index                       int = -1
+	// Recently left pages, kept alive so back/forward shows them at once.
+	back_forward_cache                  BrowserBackForwardCache
 	history_scroll_restoration          ?HistoryScrollRestoration
 	hovered_link                        string
 	navigation_results                  chan NavigationResult
@@ -2025,6 +2027,8 @@ fn javascript_bootstrap() string {
 		// task's own consumer and is not a DOM replay failure.
 		'window.__ladybirdFinalize = function (withoutLogs) { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)},withoutLogs===true?{logs:[]}:{})); __state.operations=[]; __clearPendingElementEdits(); return snapshot; };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; __clearPendingElementEdits(); };',
+		// The back/forward cache keeps a realm whose navigation request was consumed.
+		'window.__ladybirdClearNavigation = function () { __state.navigate = ""; };',
 		compact_event_dispatch_bootstrap(),
 		compact_mutation_observer_bootstrap(),
 		// Initialization has no replay consumer; explicit snapshots remain available.
@@ -3862,6 +3866,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(heap_scripting_enabled)
 	defer { heap_scope.finish() }
+	// A page the back/forward cache keeps leaves with its realm and loaders.
+	back_forward_cached := app.suspend_displayed_page_for_back_forward_cache(add_history)
 	app.markup = loaded.markup
 	app.content_type = loaded.content_type
 	app.source_label = loaded.url
@@ -3920,13 +3926,18 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	}
 	if previous := previous_document {
 		app.close_media_playback()
-		app.retire_native_document_rendering(previous)
-		if previous.native_storage() != unsafe { nil } {
-			mut outgoing := unsafe { &dom.Document(previous) }
-			outgoing.destroy_a_document_and_its_descendants()
-			outgoing.finalize()
-			layout.retire_native_document_layout(previous_layout)
-			outgoing.release_native_storage()
+		if back_forward_cached {
+			// The cached page keeps its document, styles and layout.
+			app.release_document_rendering()
+		} else {
+			app.retire_native_document_rendering(previous)
+			if previous.native_storage() != unsafe { nil } {
+				mut outgoing := unsafe { &dom.Document(previous) }
+				outgoing.destroy_a_document_and_its_descendants()
+				outgoing.finalize()
+				layout.retire_native_document_layout(previous_layout)
+				outgoing.release_native_storage()
+			}
 		}
 	}
 	install_browser_adblock_styles_with_tokens(app.document, '', mut app.adblock_tokens) or { app.js_messages << 'Adblock styles: ${err.msg()}' }
@@ -4236,6 +4247,7 @@ fn (mut app BrowserApp) history_go(delta int) {
 	entry := app.history[target]
 	app.page_model.traverse_the_history_by_delta(delta)
 	if app.traverse_to_a_fragment(from_index, target) { return }
+	if app.restore_back_forward_cached_page(target - delta, target) { return }
 	app.start_history_scroll_restoration(voidptr(app.document))
 	app.install_loaded_page(LoadedPage{
 		url: entry.url
