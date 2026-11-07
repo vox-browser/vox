@@ -79,3 +79,25 @@ console.log("computed style validation passed");
 '], runtime, mut messages)
 	assert messages == ['computed style validation passed']
 }
+
+fn test_compact_computed_style_reports_supported_properties_with_in() {
+	$if !darwin {
+		return
+	}
+	mut document := parse_browser_navigation_document('<!doctype html><div id="target"></div>',
+		dom.URL{ value: 'https://example.test/' }, none)
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+const declaration=getComputedStyle(document.getElementById("target"));
+for(const name of ["color","backgroundImage","background-image","cssFloat","gridTemplateColumns"])if(!(name in declaration))throw new Error(name+" is not reported as supported");
+for(const name of ["notAProperty","--custom","9999"])if(name in declaration)throw new Error(name+" is reported as supported");
+if(!("0" in declaration)||!("getPropertyValue" in declaration))throw new Error("indexed and prototype members");
+console.log("computed in passed");
+'], runtime, mut messages)
+	assert messages == ['computed in passed']
+}

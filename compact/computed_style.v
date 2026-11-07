@@ -27,6 +27,9 @@ fn compact_computed_style_query(root &dom.Node, source string) !string {
 	declaration := window.get_computed_style(element, query.pseudo)
 	match query.op {
 		'access' { return 'true' }
+		'supported' {
+			return if css.property_id_from_string(query.name) != none { 'true' } else { 'false' }
+		}
 		'value' { return json2.encode(declaration.get_property_value(query.name), escape_unicode: true) }
 		'named' {
 			if css.property_id_from_string(query.name) == none && !query.name.starts_with('--') {
@@ -61,6 +64,11 @@ const __computedStyleOwner=receiver=>{
 };
 const __computedStyleString=value=>{if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return String(value);};
 const __computedStyleRead=(owner,op,name="",index=0)=>__queryElements(owner.key,"computedStyle",JSON.stringify({op,name,index,pseudo:owner.pseudo}));
+const __computedStyleProperties=new Map();
+const __computedStyleSupported=(owner,property)=>{
+ if(!__computedStyleProperties.has(property))__computedStyleProperties.set(property,!property.startsWith("--")&&__computedStyleRead(owner,"supported",property==="cssFloat"?"float":__styleName(property))===true);
+ return __computedStyleProperties.get(property);
+};
 const __computedStyleReadonly=receiver=>{__computedStyleOwner(receiver);throw new DOMException("Computed style is read-only","NoModificationAllowedError");};
 class CSSStyleDeclaration {
  constructor(){throw new TypeError("Illegal CSSStyleDeclaration constructor");}
@@ -95,6 +103,7 @@ Object.defineProperty(globalThis,"getComputedStyle",{writable:true,configurable:
    const name=property==="cssFloat"?"float":__styleName(property);
    const value=__computedStyleRead(owner,"named",name);return value===null?undefined:value;
   },
+  has(target,property){return Reflect.has(target,property)||typeof property==="string"&&(__computedStyleSupported(owner,property)||/^(0|[1-9][0-9]*)$/.test(property)&&!!__computedStyleRead(owner,"item","",Number(property)>>>0));},
   set(){__computedStyleReadonly(proxy);},
   deleteProperty(){__computedStyleReadonly(proxy);},
   defineProperty(){__computedStyleReadonly(proxy);}
