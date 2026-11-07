@@ -175,3 +175,70 @@ fn test_canvas_strokes_match_skia() {
 	}
 	assert expected.any(it != 0 && it != 255)
 }
+
+// Fills and strokes inside canvas clips take the Skia-free rasterizer with
+// its anti-aliased clip; they must match skia.draw_path() with the same
+// device-space clip paths.
+fn test_clipped_canvas_draws_match_skia() {
+	mut context := cpu_raster_test_context()
+	context.begin_path()
+	context.arc(150, 80, 70.5, 0, 6.283, false) or { panic(err) }
+	context.clip('nonzero')
+	context.begin_path()
+	context.rect(40.25, 20.5, 230.5, 110.75)
+	context.rect(120, 60, 30, 30)
+	context.clip('evenodd')
+	widths := [f64(0), 1, 7, 3]
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, width in widths {
+		stroke := width > 0
+		color := dom.Color{
+			r: u8(30 + i * 60)
+			g: 90
+			b: u8(210 - i * 50)
+			a: if i == 2 { u8(180) } else { u8(255) }
+		}
+		if stroke {
+			context.drawing_state.stroke_style = FillOrStrokeStyle.from_color(color)
+		} else {
+			context.drawing_state.fill_style = FillOrStrokeStyle.from_color(color)
+		}
+		context.drawing_state.transform = CanvasAffineTransform{1, 0, 0, 1, 0, 0}
+		context.drawing_state.line_width = if stroke { width } else { 1 }
+		context.drawing_state.line_cap = if i == 2 { CanvasLineCap.round } else { .butt }
+		context.drawing_state.dash_list = if i == 3 { [f64(9), 4] } else { []f64{} }
+		cpu_raster_test_path(mut context, i % 3)
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		state := context.drawing_state
+		style := if stroke { state.stroke_style } else { state.fill_style }
+		command := skia.Command{
+			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
+			style:        canvas_skia_style(style.to_gfx_paint_style())
+			transform:    canvas_skia_transform(state.transform)
+			clips:        state.clip_paths.map(canvas_skia_path(it.path, it.fill_rule))
+			stroke:       stroke
+			cap:          int(state.line_cap)
+			join:         int(state.line_join)
+			width:        f32(state.line_width)
+			miter:        f32(state.miter_limit)
+			global_alpha: f32(state.global_alpha)
+			dashes:       state.dash_list.map(f32(it))
+			dash_offset:  f32(state.line_dash_offset)
+		}
+		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			command)
+		expected = pixels.clone()
+		expected_alpha_type = 2
+		if stroke {
+			context.stroke()
+		} else {
+			context.fill('nonzero')
+		}
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'clipped draw ${i} differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}

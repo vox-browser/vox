@@ -39,16 +39,19 @@ const max_untiled_dimension = 8191
 // transform ([a b c d e f]) into width x height RGBA_8888 pixels, which are
 // premultiplied when alpha_type is 2 and premultiplied first otherwise.
 // Returns false without changing pixels for devices Skia would tile.
-pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32) bool {
+// clips are the Canvas2D clip paths in device space, applied anti-aliased in
+// order (canvas_raster_clip()).
+pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, clips []Path) bool {
 	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
 	if alpha_type != 2 {
 		premultiply_rows(mut pixels, width, height, pitch)
 	}
+	rc := canvas_raster_clip(width, height, clips)
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
 	mut blitter := new_solid_blitter(mut pixels, pitch, color)
-	return anti_fill_path(path.transform(matrix), IRect{0, 0, width, height}, mut blitter)
+	return anti_fill_path_clip(path.transform(matrix), false, &rc, mut blitter)
 }
 
 fn untiled_device(pixels []u8, width int, height int, pitch int) bool {
@@ -71,9 +74,10 @@ pub enum StrokeJoin {
 // strokes are outlined by SkStroke in source space and the outline is filled
 // in device space. dashes and dash_offset are the SkDashPathEffect intervals
 // and phase, which cut the path into dashes first; Skia ignores an empty or
-// invalid list. color is the style's SkColor before global_alpha. Returns
-// false without changing pixels for devices Skia would tile.
-pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32) bool {
+// invalid list. clips are the device-space clip paths, as for
+// fill_canvas_path(). color is the style's SkColor before global_alpha.
+// Returns false without changing pixels for devices Skia would tile.
+pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path) bool {
 	if !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
@@ -122,10 +126,20 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		|| !is_finite_f32(device.bottom) {
 		return true
 	}
-	reject_left := fmax(device.left, -1)
-	reject_right := fmin(device.right, f32(width) + 1)
-	reject_top := fmax(device.top, -1)
-	reject_bottom := fmin(device.bottom, f32(height) + 1)
+	// fQuickRejectBounds: the clip bounds outset by a pixel, empty for an
+	// empty clip.
+	rc := canvas_raster_clip(width, height, clips)
+	clip_bounds := rc.bounds()
+	reject_bounds := if rc.is_empty {
+		Rect{}
+	} else {
+		Rect{f32(clip_bounds.left) - 1, f32(clip_bounds.top) - 1, f32(clip_bounds.right) + 1, f32(clip_bounds.bottom) +
+			1}
+	}
+	reject_left := fmax_std(device.left, reject_bounds.left)
+	reject_right := fmin_std(device.right, reject_bounds.right)
+	reject_top := fmax_std(device.top, reject_bounds.top)
+	reject_bottom := fmin_std(device.bottom, reject_bounds.bottom)
 	if !(reject_left < reject_right && reject_top < reject_bottom) {
 		return true
 	}
@@ -144,7 +158,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			miter_limit: miter_limit
 			res_scale:   res_scale
 		}
-		result := dash_path(path, dash, stroke, local_clip_bounds(matrix, width, height))
+		result := dash_path(path, dash, stroke, local_clip_bounds(matrix, clip_bounds))
 		fill_dashes = result.fill
 		if result.applied {
 			source = result.path
@@ -174,8 +188,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		}
 		device_path, known_convex := outline.transformed(matrix)
 		mut blitter := new_solid_blitter(mut pixels, pitch, canvas_fill_color(color, global_alpha))
-		anti_fill_path_convexity(device_path, known_convex, IRect{0, 0, width, height}, mut
-			blitter)
+		anti_fill_path_clip(device_path, known_convex, &rc, mut blitter)
 		return true
 	}
 	if dashed {
@@ -193,7 +206,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	}
 	hair_color := (canvas_fill_color(color, global_alpha) & 0xffffff) | (color4f_byte(hair_alpha) << 24)
 	mut blitter := new_solid_blitter(mut pixels, pitch, hair_color)
-	anti_hair_path(source.transform(matrix), cap, IRect{0, 0, width, height}, mut blitter)
+	anti_hair_path_clip(source.transform(matrix), cap, &rc, mut blitter)
 	return true
 }
 

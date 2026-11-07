@@ -24,6 +24,14 @@ const fdot6_half = 32
 // cap, clipped to clip: SkScan::AntiHairPath, AntiHairSquarePath and
 // AntiHairRoundPath behind Draw::drawDevPath().
 pub fn anti_hair_path(path Path, cap StrokeCap, clip IRect, mut blitter Blitter) {
+	rc := new_raster_clip(clip)
+	anti_hair_path_clip(path, cap, &rc, mut blitter)
+}
+
+// anti_hair_path_clip is anti_hair_path() through a raster clip: hair_path()
+// draws unclipped when the clip is opaque over the path's bounds, and
+// otherwise clips to its bounds, through SkAAClipBlitter for an SkAAClip.
+fn anti_hair_path_clip(path Path, cap StrokeCap, rc &RasterClip, mut blitter Blitter) {
 	// SkPathPriv::Raw() refuses non-finite points; drawDevPath() skips paths
 	// too big for math.
 	bounds := path.bounds() or { return }
@@ -32,29 +40,43 @@ pub fn anti_hair_path(path Path, cap StrokeCap, clip IRect, mut blitter Blitter)
 		&& bounds.bottom <= limit) {
 		return
 	}
-	if path.verbs.len == 0 || clip.is_empty() {
+	clip := rc.bounds()
+	if path.verbs.len == 0 || rc.is_empty {
 		return
-	}
-	mut scratch := HairScratch{
-		aa:   []u8{len: hline_stack_buffer}
-		runs: []i16{len: hline_stack_buffer + 1}
 	}
 	cap_out := if cap == .butt { 1 } else { 2 }
 	rounded := round_out(bounds)
 	ibounds := IRect{saturate_i32(rounded.left - cap_out), saturate_i32(rounded.top - cap_out), saturate_i32(rounded.right +
 		cap_out), saturate_i32(rounded.bottom + cap_out)}
 	_ := ibounds.intersect(clip) or { return }
-	mut clipped := false
-	mut inset := Rect{}
-	mut outset := Rect{}
-	if !clip.contains(ibounds) {
-		clipped = true
-		inset = Rect{f32(clip.left), f32(clip.top), f32(clip.right), f32(clip.bottom)}
-		outset = Rect{inset.left - 1, inset.top - 1, inset.right + 1, inset.bottom + 1}
-		inset = Rect{inset.left + 1, inset.top + 1, inset.right - 1, inset.bottom - 1}
-		if inset.left > inset.right || inset.top > inset.bottom {
-			inset = Rect{}
-		}
+	quick_contains := if rc.is_bw {
+		clip.contains(ibounds)
+	} else {
+		rc.aa.quick_contains(ibounds.left, ibounds.top, ibounds.right, ibounds.bottom)
+	}
+	if quick_contains {
+		hair_path_walk(path, cap, clip, false, Rect{}, Rect{}, mut blitter)
+		return
+	}
+	mut inset := Rect{f32(clip.left), f32(clip.top), f32(clip.right), f32(clip.bottom)}
+	outset := Rect{inset.left - 1, inset.top - 1, inset.right + 1, inset.bottom + 1}
+	inset = Rect{inset.left + 1, inset.top + 1, inset.right - 1, inset.bottom - 1}
+	if inset.left > inset.right || inset.top > inset.bottom {
+		inset = Rect{}
+	}
+	if rc.is_bw {
+		hair_path_walk(path, cap, clip, true, inset, outset, mut blitter)
+	} else {
+		mut aa := new_aaclip_blitter(blitter, &rc.aa)
+		hair_path_walk(path, cap, clip, true, inset, outset, mut aa)
+	}
+}
+
+// hair_path()'s segment loop.
+fn hair_path_walk(path Path, cap StrokeCap, clip IRect, clipped bool, inset Rect, outset Rect, mut blitter Blitter) {
+	mut scratch := HairScratch{
+		aa:   []u8{len: hline_stack_buffer}
+		runs: []i16{len: hline_stack_buffer + 1}
 	}
 	mut pts := [4]Point{}
 	mut first_pt := Point{}

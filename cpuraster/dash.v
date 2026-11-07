@@ -229,10 +229,12 @@ fn sort_as_rect(r Rect) Rect {
 		r.bottom)}
 }
 
-// skcpu::Draw::computeConservativeLocalClipBounds() for an unclipped device.
-fn local_clip_bounds(m Matrix, width int, height int) ?Rect {
+// skcpu::Draw::computeConservativeLocalClipBounds(): the raster clip's
+// bounds outset by a pixel, mapped into source space.
+fn local_clip_bounds(m Matrix, clip IRect) ?Rect {
 	inv := invert_matrix(m)?
-	return inv.map_rect(Rect{-1, -1, f32(width + 1), f32(height + 1)})
+	return inv.map_rect(Rect{f32(clip.left - 1), f32(clip.top - 1), f32(clip.right + 1), f32(clip.bottom +
+		1)})
 }
 
 // The SkStrokeRec InternalFilter() sees: width 0 for a hairline.
