@@ -36,7 +36,28 @@ function __compactHrefText(value,base){
  }
  return text;
 }
+// https://html.spec.whatwg.org/multipage/links.html#htmlhyperlinkelementutils
+// Each component reads the element URL, and each setter changes a copy of it
+// through the URL setters and stores the serialization in the href attribute.
+const __hyperlinkURL=globalThis.URL,__hyperlinkParts=["protocol","username","password","host","hostname","port","pathname","search","hash"];
+function __compactHyperlinkParse(object,state){
+ if(!__hrefTextHasOwn.call(state.attributes,"href"))return null;
+ try{return new __hyperlinkURL(object.href);}catch(error){return null;}
+}
+function __compactHyperlinkBindings(object,state){
+ if(state.namespaceURI!=="http://www.w3.org/1999/xhtml"||(state.tagName!=="a"&&state.tagName!=="area"))return;
+ __hrefTextDefine(object,"origin",{configurable:true,enumerable:true,get:function(){const url=__compactHyperlinkParse(this,state);return url?url.origin:"";}});
+ for(const name of __hyperlinkParts)__hrefTextDefine(object,name,{configurable:true,enumerable:true,
+  get:function(){const url=__compactHyperlinkParse(this,state);return url?url[name]:name==="protocol"?":":"";},
+  set:function(value){
+   const url=__compactHyperlinkParse(this,state);if(!url)return;
+   if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");
+   url[name]=String(value);__setAttribute(state,"href",url.href);
+  }});
+ if(!__hrefTextHasOwn.call(object,"toString"))__hrefTextDefine(object,"toString",{configurable:true,enumerable:true,writable:true,value:function toString(){return this.href;}});
+}
 function __compactHrefTextBindings(object,state){
+ __compactHyperlinkBindings(object,state);
  if(typeof __hrefTextNative!=="function"||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||!["a","area","link","base"].includes(state.tagName))return;
  const original=__hrefTextDescriptor(object,"href");if(!original||typeof original.get!=="function")return;
  __hrefTextDefine(object,"href",{configurable:original.configurable,enumerable:original.enumerable,set:original.set,get:function(){
