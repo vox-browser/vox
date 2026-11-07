@@ -2461,8 +2461,11 @@ fn check_image_cases(oracle Oracle, count int) {
 // Fonts for glyph runs: repository fonts (Latin, Cyrillic, Ahem's boxes,
 // KaTeX's math), macOS system fonts including collections (first face),
 // variable fonts (SF, New York), an OpenType CFF font and the color emoji
-// font (which cpuraster declines), when present.
+// font, when present. CPU_RASTER_GLYPH_FONT selects one font file instead.
 fn glyph_fonts(repo string) []string {
+	if only := os.getenv_opt('CPU_RASTER_GLYPH_FONT') {
+		return [only]
+	}
 	mut fonts := [
 		'Tests/Browser/Brave/resources/Ahem.ttf',
 		'Tests/Browser/Brave/resources/cyrillic-context.ttf',
