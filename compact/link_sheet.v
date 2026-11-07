@@ -35,6 +35,7 @@ fn (mut binding CompactElementQueryBinding) rule_key(rule &css.CSSRule) json2.An
 			return json2.Any({
 				'id':   json2.Any(key)
 				'type': json2.Any(int(rule.type_for_bindings()))
+				'kind': json2.Any(rule.type_.str())
 			})
 		}
 	}
@@ -44,6 +45,7 @@ fn (mut binding CompactElementQueryBinding) rule_key(rule &css.CSSRule) json2.An
 	return json2.Any({
 		'id':   json2.Any(key)
 		'type': json2.Any(int(rule.type_for_bindings()))
+		'kind': json2.Any(rule.type_.str())
 	})
 }
 
@@ -167,6 +169,34 @@ fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !stri
 			'rules' {
 				if list := rule.css_rules() { result = binding.rule_list_key(list) }
 			}
+			'conditionText' { result = rule.condition_text() }
+			'insert' { result = int(rule.insert_rule(request.value.clone(), request.index)!) }
+			'delete' { rule.delete_rule(request.index)! }
+			'keyText' { result = rule.key_text() }
+			'setKeyText' { rule.set_key_text(request.value.clone()) }
+			'name' {
+				result = if rule.type_ == .keyframes { rule.keyframes_name() } else { rule.layer_name() or { '' } }
+			}
+			'setName' { rule.set_keyframes_name(request.value.clone()) }
+			'prefix' { result = rule.namespace_rule_prefix() }
+			'namespaceURI' { result = rule.namespace_rule_namespace_uri() }
+			'href' { result = rule.href() }
+			'importSheet' {
+				if sheet := rule.loaded_style_sheet_for_bindings() { result = binding.sheet_key(sheet) }
+			}
+			'media', 'mediaLength', 'mediaItem', 'setMedia', 'appendMedium', 'deleteMedium' {
+				mut media := rule.media_list_for_bindings() or { return error('TypeError: This CSS rule has no media list') }
+				match request.op {
+					'media' { result = media.media_text() }
+					'mediaLength' { result = media.length() }
+					'mediaItem' {
+						if item := media.item(request.index) { result = item }
+					}
+					'setMedia' { media.set_media_text(request.value.clone()) }
+					'appendMedium' { media.append_medium(request.value.clone()) }
+					else { media.delete_medium(request.value.clone())! }
+				}
+			}
 			'hasStyle' { result = rule.style() != none }
 			else {
 				mut declaration := rule.style() or { return error('TypeError: This CSS rule has no declaration') }
@@ -254,7 +284,55 @@ Object.defineProperties(CSSStyleRule.prototype,{
  cssRules:{get(){return __cssList(__cssCall(__cssId(__cssRuleRecords,this),"rules"));},configurable:true},
  style:{get(){const id=__cssId(__cssRuleRecords,this),entry=__cssRuleCache.get(id);if(!entry.style)entry.style=__cssDeclaration(id,this);return entry.style;},set(value){__cssCall(__cssId(__cssRuleRecords,this),"styleReplace",{value:__cssString(value)});},configurable:true}
 });
-function __cssRule(record){if(record===null)return null;if(!__cssRuleCache.has(record.id)){const rule=Object.create(record.type===1?CSSStyleRule.prototype:CSSRule.prototype);__cssRuleRecords.set(rule,record.id);__cssRuleCache.set(record.id,{rule,type:record.type});}return __cssRuleCache.get(record.id).rule;}
+function __cssRule(record){if(record===null)return null;if(!__cssRuleCache.has(record.id)){const rule=Object.create(__cssRulePrototype(record));__cssRuleRecords.set(rule,record.id);__cssRuleCache.set(record.id,{rule,type:record.type});}return __cssRuleCache.get(record.id).rule;}
+// CSSOM rule interfaces other than CSSStyleRule. Each wrapper reads its
+// native rule; grouping rules share CSSRuleList wrappers and media rules
+// share the MediaList wrapper keyed by the rule.
+const __cssRuleInterfaces={};
+function __cssRuleInterface(name,parent,properties){
+ const constructor={[name]:function(){throw new TypeError("Illegal "+name+" constructor");}}[name];
+ Object.setPrototypeOf(constructor,parent);Object.setPrototypeOf(constructor.prototype,parent.prototype);
+ Object.defineProperty(constructor,"prototype",{writable:false});
+ Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
+ for(const [key,descriptor] of Object.entries(properties))Object.defineProperty(constructor.prototype,key,Object.assign({enumerable:true,configurable:true},descriptor));
+ Object.defineProperty(globalThis,name,{value:constructor,writable:true,configurable:true});
+ __cssRuleInterfaces[name]=constructor;return constructor;
+}
+const __cssRuleId=receiver=>__cssId(__cssRuleRecords,receiver);
+const __cssRuleStyle={get(){const id=__cssRuleId(this),entry=__cssRuleCache.get(id);if(!entry.style)entry.style=__cssDeclaration(id,this);return entry.style;},set(value){__cssCall(__cssRuleId(this),"styleReplace",{value:__cssString(value)});}};
+const __cssRuleMedia={get(){const id=__cssRuleId(this);if(!__cssMediaCache.has(id)){const media=Object.create(MediaList.prototype);__cssMediaRecords.set(media,id);__cssMediaCache.set(id,media);}return __cssMediaCache.get(id);},set(value){__cssCall(__cssRuleId(this),"setMedia",{value:__cssString(value)});}};
+const __cssGrouping=__cssRuleInterface("CSSGroupingRule",CSSRule,{
+ cssRules:{get(){return __cssList(__cssCall(__cssRuleId(this),"rules"));}},
+ insertRule:{value:function insertRule(rule,index=0){const id=__cssRuleId(this);if(!arguments.length)throw new TypeError("insertRule requires a rule");return __cssCall(id,"insert",{value:__cssString(rule),index:(+index)>>>0});},writable:true},
+ deleteRule:{value:function deleteRule(index){const id=__cssRuleId(this);if(!arguments.length)throw new TypeError("deleteRule requires an index");__cssCall(id,"delete",{index:(+index)>>>0});},writable:true}
+});
+const __cssCondition=__cssRuleInterface("CSSConditionRule",__cssGrouping,{conditionText:{get(){return __cssCall(__cssRuleId(this),"conditionText");}}});
+__cssRuleInterface("CSSMediaRule",__cssCondition,{media:__cssRuleMedia});
+__cssRuleInterface("CSSSupportsRule",__cssCondition,{});
+__cssRuleInterface("CSSContainerRule",__cssCondition,{});
+__cssRuleInterface("CSSLayerBlockRule",__cssGrouping,{name:{get(){return __cssCall(__cssRuleId(this),"name");}}});
+__cssRuleInterface("CSSLayerStatementRule",CSSRule,{});
+__cssRuleInterface("CSSScopeRule",__cssGrouping,{});
+__cssRuleInterface("CSSPageRule",__cssGrouping,{style:__cssRuleStyle,selectorText:{get(){return __cssCall(__cssRuleId(this),"selector");},set(value){__cssCall(__cssRuleId(this),"setSelector",{value:__cssString(value)});}}});
+__cssRuleInterface("CSSFontFaceRule",CSSRule,{style:{get:__cssRuleStyle.get}});
+__cssRuleInterface("CSSKeyframeRule",CSSRule,{style:__cssRuleStyle,keyText:{get(){return __cssCall(__cssRuleId(this),"keyText");},set(value){__cssCall(__cssRuleId(this),"setKeyText",{value:__cssString(value)});}}});
+__cssRuleInterface("CSSKeyframesRule",CSSRule,{
+ name:{get(){return __cssCall(__cssRuleId(this),"name");},set(value){__cssCall(__cssRuleId(this),"setName",{value:__cssString(value)});}},
+ cssRules:{get(){return __cssList(__cssCall(__cssRuleId(this),"rules"));}},
+ length:{get(){return this.cssRules.length;}}
+});
+__cssRuleInterface("CSSNamespaceRule",CSSRule,{prefix:{get(){return __cssCall(__cssRuleId(this),"prefix");}},namespaceURI:{get(){return __cssCall(__cssRuleId(this),"namespaceURI");}}});
+__cssRuleInterface("CSSImportRule",CSSRule,{href:{get(){return __cssCall(__cssRuleId(this),"href");}},media:__cssRuleMedia,styleSheet:{get(){return __cssSheet(__cssCall(__cssRuleId(this),"importSheet"));}}});
+__cssRuleInterface("CSSNestedDeclarations",CSSRule,{style:{get:__cssRuleStyle.get}});
+__cssRuleInterface("CSSPropertyRule",CSSRule,{});
+__cssRuleInterface("CSSCounterStyleRule",CSSRule,{});
+__cssRuleInterface("CSSFontFeatureValuesRule",CSSRule,{});
+const __cssRuleKinds={style:CSSStyleRule,media:"CSSMediaRule",supports:"CSSSupportsRule",container_rule:"CSSContainerRule",layer_block:"CSSLayerBlockRule",layer_statement:"CSSLayerStatementRule",scope:"CSSScopeRule",page:"CSSPageRule",font_face:"CSSFontFaceRule",keyframe:"CSSKeyframeRule",keyframes:"CSSKeyframesRule",namespace_rule:"CSSNamespaceRule",import_rule:"CSSImportRule",nested_declarations:"CSSNestedDeclarations",property:"CSSPropertyRule",counter_style:"CSSCounterStyleRule",font_feature_values:"CSSFontFeatureValuesRule"};
+function __cssRulePrototype(record){
+ const kind=__cssRuleKinds[record.kind];
+ if(kind===undefined)return record.type===1?CSSStyleRule.prototype:CSSRule.prototype;
+ return (typeof kind==="string"?__cssRuleInterfaces[kind]:kind).prototype;
+}
 function __cssDeclaration(id,rule){const query=(op,fields={})=>__cssCall(id,op,fields),target={
  get cssText(){return query("styleText");},set cssText(value){query("styleReplace",{value:__cssString(value)});},
  get parentRule(){return rule;},get length(){return query("styleLength");},
