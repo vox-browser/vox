@@ -181,7 +181,9 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		eligible = true
 		return true
 	}
-	if retained_flow_element_has_generated_pseudo_style(element) { return false }
+	if retained_flow_element_has_generated_pseudo_style_except_static_marker(element, computed) {
+		return false
+	}
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
 		|| (computed.position() !in [.static_, .relative]
@@ -240,7 +242,7 @@ fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 	if (node.is_svg_box() || node.is_svg_svg_box()) && !retained_flow_svg_node_is_ordinary(node) { return false }
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| (node.is_replaced_element() && !node.is_svg_box() && !node.is_svg_svg_box() && !retained_flow_raster_image_is_ordinary(node))
-		|| node.is_list_item_box()
+		|| (node.is_list_item_box() && !retained_flow_list_item_box_is_static(node))
 		|| (node.is_absolutely_positioned() && !node.is_image_box()) {
 		return false
 	}
@@ -280,6 +282,7 @@ fn report_retained_flow_item(node &Node) {
 }
 
 fn retained_flow_anonymous_layout_is_ordinary(node &Node) bool {
+	if node.is_list_item_marker_box() { return retained_flow_marker_box_is_static(node) }
 	// DOM children are checked in DOM tree order, which counter resolution also
 	// consumes. Anonymous flow wrappers belong to this same retained branch.
 	if !retained_flow_layout_node_is_ordinary(node) { return false }
