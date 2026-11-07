@@ -34,23 +34,28 @@ by [prepare_ui2.py](../tools/prepare_ui2.py) from [tools/ui2](../tools/ui2).
 
 ## Retained native boundaries
 
-Ten production `.m`/`.mm` wrappers remain. Their included headers were inspected
-as well as their wrappers. They provide these OS/engine operations:
+Four production `.m`/`.mm` wrappers remain. Their included headers were inspected
+as well as their wrappers. They provide these engine operations:
 
-- `native_browser_chrome_style_darwin.m`: configure and restore the host window.
-- `native_history_swipe_darwin.m`: normalize OS phases/modifiers/coordinates and
-  invoke AppKit's asynchronous gesture tracker, forwarding policy to V.
-- `native_browser_window_state_darwin.m`: window snapshots, screen enumeration,
-  notifications, frame/fullscreen operations and legacy plist conversion.
-- `native_browser_tab_detach_darwin.m`: process launch, pointer/window coordinates
-  and setting the window frame selected by V.
-- `native_browser_tab_process_darwin.m`: native visibility/activation and AppKit
-  lifetime integration for hidden process-tab windows. Session membership,
-  selection, close and replacement decisions remain in the V tab owner.
 - `native_capture_darwin.m`, `native_graphite_darwin.mm` and
   `native_graphite_dawn_darwin.mm`: document graphics, capture and presentation.
-- `native_navigation_work_darwin.m`: native event-loop/presentation delivery.
 - `browserjs/module_loader_darwin.m`: JavaScript runtime bridge.
+
+The host-window operations are V, in the [`browserwindow`](../browserwindow)
+module, using the `macos` module's Objective-C runtime senders:
+
+- `chrome_style_darwin.v`: configure and restore the title-bar-less UI2 host.
+- `history_swipe_darwin.v`: normalize OS phases/modifiers/coordinates and invoke
+  AppKit's asynchronous gesture tracker, forwarding policy to V.
+- `window_state_darwin.v`: window snapshots, screen enumeration, notifications,
+  frame/fullscreen operations and legacy plist conversion.
+- `detach_darwin.v`: process launch, pointer/window coordinates and setting the
+  window frame selected by V.
+- `tab_window_darwin.v`: native visibility/activation and AppKit lifetime
+  integration for hidden process-tab windows. Session membership, selection,
+  close and replacement decisions remain in the V tab owner.
+- `event_pump_darwin.v`: native event delivery during long document work; the
+  presentation redraw state it reports stays in `native_layer_presentation_darwin.h`.
 
 AVFoundation playback and other native rendering/media helpers remain engine
 services. Their use of an NSView does not make them application widgets. Native

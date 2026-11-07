@@ -74,7 +74,6 @@ v -enable-globals -memory-limit 10G -cc clang -d ui2_custom_rendering \
 
 The mounted test drives real UI2 controls through AppKit. The custom test uses a
 CPU command recorder, verifying read-only focus and mutation handling. Native
-host-only checks remain in `tools/native_browser_chrome_test.m`,
-`tools/native_browser_window_state_test.m`, and
-`tools/test_native_history_swipe.py`; application policy is tested in V.
+host-only checks are the [`browserwindow`](../../browserwindow) module tests
+(`v test browserwindow/`); application policy is tested in V.
 Linux window validation uses `tools/test_linux_browser.py` on Linux.
