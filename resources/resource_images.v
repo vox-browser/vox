@@ -44,7 +44,7 @@ fn (preload &BrowserPreloadedImageFetch) callback() browserjs.ImageRequestFetchH
 					if resource.error != '' {
 						return error(resource.error)
 					}
-					return browser_decoded_image_data(address, resource.body.bytes())
+					return browser_decoded_resource_image(address, resource)
 				}
 			}
 		}

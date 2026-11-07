@@ -1659,7 +1659,29 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 
 
 fn browser_fetch_image_resource_for_document(resource_url dom.URL, source_url string) !html.DecodedImageData {
+	serialized := resource_url.serialize()
+	if serialized.starts_with('http://') || serialized.starts_with('https://') {
+		resource := fetch_browser_resource(serialized, '', source_url, 'image')!
+		return browser_decoded_resource_image(resource_url, resource)
+	}
 	return browser_decoded_image_data(resource_url, browser_image_resource_bytes_for_document(resource_url, source_url)!)
+}
+
+// The essence of a response's Content-Type, or '' without one.
+fn browser_response_mime_essence(headers []adblock.ResponseHeader) string {
+	for header in headers {
+		if header.name.to_lower() == 'content-type' {
+			return header.value.all_before(';').trim_space().to_lower()
+		}
+	}
+	return ''
+}
+
+// Chromium selects its SVG image decoder from the response's image/svg+xml
+// type, not the URL: GitHub's camo and shields.io badge URLs have no .svg name.
+fn browser_decoded_resource_image(resource_url dom.URL, resource PreloadedResource) !html.DecodedImageData {
+	return browser_decoded_image_data_for_type(resource_url, resource.body.bytes(),
+		browser_response_mime_essence(resource.response_headers))
 }
 
 fn browser_raster_can_share_native_pixels(bytes []u8) bool {
@@ -1673,7 +1695,11 @@ fn browser_raster_can_share_native_pixels(bytes []u8) bool {
 }
 
 fn browser_decoded_image_data(resource_url dom.URL, bytes []u8) !html.DecodedImageData {
-	if browser_image_resource_is_svg(resource_url) {
+	return browser_decoded_image_data_for_type(resource_url, bytes, '')
+}
+
+fn browser_decoded_image_data_for_type(resource_url dom.URL, bytes []u8, mime_essence string) !html.DecodedImageData {
+	if mime_essence == 'image/svg+xml' || browser_image_resource_is_svg(resource_url) {
 		return browser_decode_svg_image(resource_url, bytes)
 	}
 	mut bitmap := browser_decode_raster_image_bytes(bytes)!

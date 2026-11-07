@@ -179,7 +179,7 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 					source_url: source_url
 					request_type: 'image'
 				}, resource.response_headers) or { finish_browser_image_request(complete, none); return }
-				decoded := browser_decoded_image_data(address, resource.body.bytes()) or { finish_browser_image_request(complete, none); return }
+				decoded := browser_decoded_resource_image(address, resource) or { finish_browser_image_request(complete, none); return }
 				finish_browser_image_request(complete, decoded)
 				return
 			}
@@ -192,7 +192,7 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 	// This helper never performs network I/O, including for a cached redirect.
 	// Available pixels keep their natural size in the very first layout.
 	if resource := disk_cached_browser_resource(resource_url, source_url, 'image') {
-		decoded := browser_decoded_image_data(address, resource.body.bytes()) or { finish_browser_image_request(complete, none); return }
+		decoded := browser_decoded_resource_image(address, resource) or { finish_browser_image_request(complete, none); return }
 		finish_browser_image_request(complete, decoded)
 		return
 	}
@@ -217,7 +217,7 @@ fn (mut app BrowserApp) poll_browser_image_requests() {
 				mut decoded := ?html.DecodedImageData(none)
 				if resource.error == '' {
 					if address := dom.dom_url_parse(resource.url, loader.document.base_url(), 'UTF-8') {
-						if data := browser_decoded_image_data(address, resource.body.bytes()) { decoded = data }
+						if data := browser_decoded_resource_image(address, resource) { decoded = data }
 					}
 					app.retain_navigation_resource(resource.url, resource)
 				}

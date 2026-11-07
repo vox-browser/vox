@@ -124,7 +124,8 @@ fn (mut pending BrowserCORSImageRequest) finish(response &fetch.Response, bytes 
 	mut result := ?html.DecodedImageData(none)
 	if !response.is_network_error() && response.response_type !in [.opaque, .opaque_redirect] && bytes.kind == .bytes {
 		address := response.url() or { pending.address }
-		if mut decoded := browser_decoded_image_data(address, bytes.bytes) {
+		mime_essence := (response.header_list.get('Content-Type') or { '' }).all_before(';').trim_space().to_lower()
+		if mut decoded := browser_decoded_image_data_for_type(address, bytes.bytes, mime_essence) {
 			// A successful CORS Fetch has checked every redirect and response.
 			decoded.set_is_cors_cross_origin(false)
 			result = decoded

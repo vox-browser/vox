@@ -1,5 +1,6 @@
 module main
 
+import adblock
 import dom
 import encoding.base64
 import html
@@ -54,4 +55,25 @@ fn test_native_svg_decode_validates_root_and_keeps_cors_and_absolute_dimensions(
 			assert false, 'Invalid SVG was accepted: ${invalid}'
 		}
 	}
+}
+
+// GitHub README badges come from camo.githubusercontent.com and shields.io
+// URLs without a .svg name; the image/svg+xml response type selects SVG.
+fn test_native_svg_decode_follows_the_response_content_type() {
+	address := dom.URL{value: 'https://camo.githubusercontent.com/8a2a9f/68747470733a2f2f696d672e736869656c64732e696f'}
+	assert !browser_image_resource_is_svg(address)
+	badge := '<svg xmlns="http://www.w3.org/2000/svg" width="99" height="20"><rect width="99" height="20" fill="#555"/></svg>'
+	if _ := browser_decoded_image_data(address, badge.bytes()) {
+		assert false, 'An untyped extensionless SVG must not reach the raster decoders as SVG'
+	}
+	resource := PreloadedResource{
+		url:              address.serialize()
+		body:             badge
+		response_headers: [adblock.ResponseHeader{name: 'Content-Type', value: 'image/svg+xml;charset=utf-8'}]
+	}
+	decoded := browser_decoded_resource_image(address, resource)!
+	assert decoded is html.SVGDecodedImageData
+	assert decoded.intrinsic_width()? == 99
+	assert decoded.intrinsic_height()? == 20
+	assert browser_response_mime_essence([adblock.ResponseHeader{name: 'content-type', value: ' Image/SVG+XML ; charset=utf-8'}]) == 'image/svg+xml'
 }
