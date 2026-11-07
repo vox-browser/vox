@@ -238,6 +238,14 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'isEqualNode' { return binding.equal_node_query(key, selector) }
 	if action == 'compareDocumentPosition' { return binding.node_position_query(key, selector) }
 	if action == 'replaceChild' { return binding.replace_child_query(key, selector) }
+	if action == 'normalize' {
+		normalize_request := json2.decode[map[string]json2.Any](selector)!
+		mut node := binding.equality_node(key, normalize_request['ownState'] or { json2.Any(json2.Null{}) })!
+		connected := node.is_connected()
+		node.normalize()!
+		if connected { binding.note_node_tree_mutation() }
+		return 'null'
+	}
 	if action == 'attachShadow' { return binding.attach_shadow_query(key, selector) }
 	if key.starts_with('__created_') && action in ['shadowRoot', 'setMarkup', 'getRootNode'] {
 		if binding.node_for_key(key) == none {

@@ -30,6 +30,11 @@ Object.defineProperty(Node.prototype,"compareDocumentPosition",{value:{compareDo
  const target=__compactEqualityState(other);
  return __queryElements(own.bridgeKey,"compareDocumentPosition",JSON.stringify({otherKey:target.bridgeKey,ownState:own.created?own:undefined,otherState:target.created?target:undefined}));
 }}.compareDocumentPosition,writable:true,enumerable:true,configurable:true});
+Object.defineProperty(Node.prototype,"normalize",{value:{normalize(){
+ "use strict";const own=__compactEqualityState(this);
+ __queryElements(own.bridgeKey,"normalize",JSON.stringify({ownState:own.created?own:undefined}));
+ if(own.bridgeKey!==""&&typeof __compactInvalidateContent==="function")__compactInvalidateContent(own);
+}}.normalize,writable:true,enumerable:true,configurable:true});
 Object.defineProperty(Node.prototype,"replaceChild",{value:{replaceChild(node,child){
  "use strict";const own=__compactEqualityState(this);
  if(arguments.length<2)throw new TypeError("replaceChild requires two arguments");
