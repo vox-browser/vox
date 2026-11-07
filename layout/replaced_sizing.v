@@ -402,6 +402,29 @@ fn percentage_height_containing_block_used_values(state &LayoutState, node &Node
 	return state.try_get(containing_styled)
 }
 
+// A percentage height that is not treated as auto resolves against its
+// containing block's definite height, even when the replaced box's own
+// available space carries none: inside a button's anonymous wrappers during
+// intrinsic measurement, for instance, an `height:100%` icon must still
+// transfer the button's height into its width.
+fn replaced_available_space_with_percentage_height_basis(state &LayoutState, box &Box, available_space AvailableSpace) AvailableSpace {
+	node := unsafe { &Node(box) }
+	if available_space.height.is_definite() || node.is_absolutely_positioned()
+		|| !node.computed_values().size_value(.height).contains_percentage() {
+		return available_space
+	}
+	if should_treat_height_as_auto(state, box, available_space) {
+		return available_space
+	}
+	containing := percentage_height_containing_block_used_values(state, node) or {
+		return available_space
+	}
+	if !containing.has_definite_height() {
+		return available_space
+	}
+	return AvailableSpace.new(available_space.width, AvailableSize.make_definite(containing.content_height()))
+}
+
 // FormattingContext::should_treat_height_as_auto()
 fn should_treat_height_as_auto(state &LayoutState, box &Box, available_space AvailableSpace) bool {
 	node := unsafe { &Node(box) }

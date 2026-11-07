@@ -943,7 +943,8 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 		&& auto_size.height == none
 	if !ratio_only_auto_box && (box_node.is_replaced_box() || box.has_auto_content_box_size()
 		|| box.preferred_aspect_ratio() != none) {
-		size := compute_replaced_size(box, iterator.available_space)
+		size := compute_replaced_size(box, replaced_available_space_with_percentage_height_basis(iterator.state,
+			box, iterator.available_space))
 		state.set_content_width(size.width())
 		state.set_content_height(size.height())
 		computed := styled.computed_values()

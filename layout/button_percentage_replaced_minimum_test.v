@@ -38,3 +38,27 @@ fn test_button_flex_item_keeps_width_transferred_from_percentage_height_content(
 	fill := button_replaced_minimum_used(document, result, 'fill')
 	assert fill.content_width().to_double() == 82
 }
+
+// The fullscreen button's icon is an inline-level replaced box: the inline
+// formatting context sizes it with its own (indefinite) available height
+// during intrinsic measurement. Its percentage height still resolves against
+// the button.
+fn test_button_flex_item_keeps_width_transferred_from_inline_replaced_content() {
+	mut document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.row { display:flex; width:100px }
+		.fill { width:200px; height:10px }
+		button { width:18px; height:18px; padding:0; border:0; margin:0 }
+		svg { width:auto; height:100% }
+	</style><div class="row"><button id="button"><svg id="svg" viewBox="0 0 20 20"><path d="M2 2h16v16H2z"/></svg></button><div class="fill" id="fill"></div></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	result := run_document_layout(document, 400, 300) or { panic('layout failed') }
+	button := button_replaced_minimum_used(document, result, 'button')
+	assert button.content_width().to_double() == 18
+	svg := button_replaced_minimum_used(document, result, 'svg')
+	assert svg.content_width().to_double() == 18
+	assert svg.content_height().to_double() == 18
+	fill := button_replaced_minimum_used(document, result, 'fill')
+	assert fill.content_width().to_double() == 82
+}
