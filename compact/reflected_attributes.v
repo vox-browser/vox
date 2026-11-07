@@ -120,3 +120,65 @@ fn compact_dom_token_list_bootstrap() string {
 })();
 '
 }
+
+// Element-reflecting IDL attributes:
+// https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#reflecting-content-attributes-in-idl-attributes
+// An explicitly set element is returned while it is in a shadow-including
+// ancestor tree scope; otherwise the content attribute holds IDs resolved
+// in the element tree scope.
+fn compact_element_reflection_bootstrap() string {
+	return r'
+(function(){
+ const explicit=new WeakMap();
+ function own(element){let values=explicit.get(element);if(!values){values={};explicit.set(element,values);}return values;}
+ function inScope(element,candidate){
+  const root=candidate.getRootNode();
+  for(let current=element.getRootNode();current;){
+   if(current===root)return true;
+   if(current.nodeType===11&&current.host)current=current.host.getRootNode();else break;
+  }
+  return false;
+ }
+ function lookup(element,id){const root=element.getRootNode();return typeof root.getElementById==="function"?root.getElementById(id):null;}
+ function single(prototype,name,attribute){
+  if(!prototype||Object.prototype.hasOwnProperty.call(prototype,name))return;
+  Object.defineProperty(prototype,name,{enumerable:true,configurable:true,
+   get(){
+    const set=explicit.get(this);
+    if(set&&Object.prototype.hasOwnProperty.call(set,name)){const value=set[name];return value&&inScope(this,value)?value:null;}
+    const id=this.getAttribute(attribute);
+    return id===null?null:lookup(this,id);
+   },
+   set(value){
+    if(value===null||value===undefined){if(explicit.get(this))delete own(this)[name];this.removeAttribute(attribute);return;}
+    if(!(value instanceof Element))throw new TypeError("The value must be an Element or null");
+    own(this)[name]=value;this.setAttribute(attribute,"");
+   }});
+ }
+ function list(prototype,name,attribute){
+  if(!prototype||Object.prototype.hasOwnProperty.call(prototype,name))return;
+  Object.defineProperty(prototype,name,{enumerable:true,configurable:true,
+   get(){
+    const set=explicit.get(this);
+    if(set&&Object.prototype.hasOwnProperty.call(set,name))return Object.freeze(set[name].filter(element=>inScope(this,element)));
+    const value=this.getAttribute(attribute);
+    if(value===null)return null;
+    const elements=[];
+    for(const id of value.split(/[\t\n\f\r ]+/))if(id){const element=lookup(this,id);if(element)elements.push(element);}
+    return Object.freeze(elements);
+   },
+   set(value){
+    if(value===null||value===undefined){if(explicit.get(this))delete own(this)[name];this.removeAttribute(attribute);return;}
+    const elements=Array.from(value);
+    for(const element of elements)if(!(element instanceof Element))throw new TypeError("The values must be Elements");
+    own(this)[name]=elements;this.setAttribute(attribute,"");
+   }});
+ }
+ single(Element.prototype,"ariaActiveDescendantElement","aria-activedescendant");
+ for(const [name,attribute] of [["ariaControlsElements","aria-controls"],["ariaDescribedByElements","aria-describedby"],["ariaDetailsElements","aria-details"],["ariaErrorMessageElements","aria-errormessage"],["ariaFlowToElements","aria-flowto"],["ariaLabelledByElements","aria-labelledby"],["ariaOwnsElements","aria-owns"]])list(Element.prototype,name,attribute);
+ for(const name of ["HTMLButtonElement","HTMLInputElement"])if(typeof globalThis[name]==="function")single(globalThis[name].prototype,"popoverTargetElement","popovertarget");
+ if(typeof globalThis.HTMLButtonElement==="function")single(HTMLButtonElement.prototype,"commandForElement","commandfor");
+})();
+'
+}
+
