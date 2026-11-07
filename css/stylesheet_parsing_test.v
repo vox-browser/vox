@@ -585,6 +585,29 @@ fn test_numeric_escapes_decode_in_selectors() {
 	assert selector_text_of('.\\@x')? == '.\\@x'
 }
 
+// Only an unescaped trailing combinator or comma leaves a selector incomplete.
+// An escaped one ends the final identifier, as in cybersport.ru's
+// `@media (min-width:1024px) { .mobileOnly_lQe6\+ { display: none !important } }`.
+fn test_escaped_trailing_combinators_end_the_final_identifier() {
+	assert selector_text_of('.mobileOnly_lQe6\\+')? == '.mobileOnly_lQe6\\+'
+	assert selector_text_of('#a\\+')? == '#a\\+'
+	assert selector_text_of('.a\\>')? == '.a\\>'
+	assert selector_text_of('.a\\~')? == '.a\\~'
+	assert selector_text_of('.a\\,')? == '.a\\,'
+	assert selector_text_of('.a\\+ b')? == '.a\\+ b'
+	// Escaped brackets and commas are identifier code points as well.
+	assert selector_text_of('.a\\(')? == '.a\\('
+	assert selector_text_of('.a\\,b, .c')? == '.a\\,b, .c'
+	// An escaped reverse solidus leaves the combinator unescaped.
+	assert selector_text_of('.a\\\\+') == none
+	assert selector_text_of('.a +') == none
+	assert selector_text_of('.a >') == none
+	assert selector_text_of('.a,') == none
+	rules := parse_rules('@media (min-width: 1px) { .a\\+ { display: none } }')
+	assert rules.len == 1
+	assert rules[0].css_text().contains('.a\\+ { display: none; }')
+}
+
 fn css_text_of(rule_text string) ?string {
 	rules := parse_rules(rule_text)
 	if rules.len < 1 {

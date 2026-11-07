@@ -2992,6 +2992,13 @@ fn selector_text_has_bad_top_level_combinators(text string, relative bool) bool 
 				squares--
 				i++
 			}
+			`\\` {
+				// An escaped code point belongs to an identifier, even when it
+				// spells a combinator or bracket (`.mobileOnly\+`).
+				saw_compound_token = true
+				expecting_compound_after_combinator = false
+				i += if i + 1 < text.len { 2 } else { 1 }
+			}
 			else {
 				if parens == 0 && squares == 0 && is_combinator_start(text, i) {
 					if (!relative && !saw_compound_token) || expecting_compound_after_combinator {
@@ -3962,6 +3969,11 @@ fn split_selector_list_text(text string) []string {
 				quote = 0
 			}
 			i++
+			continue
+		}
+		if ch == `\\` && i + 1 < text.len {
+			// An escaped comma is part of an identifier, not a separator.
+			i += 2
 			continue
 		}
 		if ch == `"` || ch == `'` {

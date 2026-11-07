@@ -3276,6 +3276,20 @@ fn parser_is_valid_layer_name_part(token ComponentValue) bool {
 	return token.is(.ident) && !is_css_wide_keyword_local(token.token().ident())
 }
 
+// A trailing combinator or comma leaves a selector incomplete, but an escaped
+// one is part of the final identifier: `.mobileOnly\+` names class `mobileOnly+`.
+// The character is escaped when an odd number of reverse solidi precede it.
+fn selector_text_ends_with_unescaped_separator(text string) bool {
+	if text.len == 0 || text[text.len - 1] !in [`>`, `+`, `~`, `,`] {
+		return false
+	}
+	mut solidi := 0
+	for index := text.len - 2; index >= 0 && text[index] == `\\`; index-- {
+		solidi++
+	}
+	return solidi % 2 == 0
+}
+
 fn parser_parse_validated_selector(selector_text string, mode ParserSelectorType, declared_namespaces map[string]bool) ?Selector {
 	trimmed := selector_text.trim_space()
 	if trimmed.len == 0 {
@@ -3285,8 +3299,7 @@ fn parser_parse_validated_selector(selector_text string, mode ParserSelectorType
 		|| trimmed.starts_with('~')) {
 		return none
 	}
-	if trimmed.ends_with('>') || trimmed.ends_with('+') || trimmed.ends_with('~')
-		|| trimmed.ends_with(',') {
+	if selector_text_ends_with_unescaped_separator(trimmed) {
 		return none
 	}
 	if !parser_balanced_selector_text(trimmed) {
@@ -3324,6 +3337,11 @@ fn parser_balanced_selector_text(text string) bool {
 				quote = 0
 			}
 			i++
+			continue
+		}
+		if ch == `\\` && i + 1 < text.len {
+			// Escaped brackets are identifier code points.
+			i += 2
 			continue
 		}
 		match ch {
