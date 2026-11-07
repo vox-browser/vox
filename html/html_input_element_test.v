@@ -41,7 +41,7 @@ fn test_input_type_sanitization_number_range_and_stepping() {
 	assert math.is_nan(number.value_as_number())
 
 	range := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
-	assert range.value() == '10.0'
+	assert range.value() == '10'
 	color := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[2]) })
 	assert color.value() == '#aabbcc'
 }

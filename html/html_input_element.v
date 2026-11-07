@@ -14,6 +14,7 @@ import css
 import dom
 import fileapi
 import math
+import strconv
 import mimesniff
 import libregex
 import libjs
@@ -1935,10 +1936,32 @@ fn iso_week_from_days(days i64) (i64, i64) {
 	return week_year, (days - week_one_monday) / 7 + 1
 }
 
+// https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#best-representation-of-the-number-as-a-floating-point-number
+// That is ECMAScript Number::toString: V's shortest round-tripping digits
+// placed by its decimal/exponent thresholds (V would print 7 as "7.0").
+fn best_representation_of_number(value f64) string {
+	if math.is_nan(value) { return 'NaN' }
+	if math.is_inf(value, 0) { return if value > 0 { 'Infinity' } else { '-Infinity' } }
+	if value == 0 { return '0' }
+	sign := if value < 0 { '-' } else { '' }
+	scientific := strconv.ftoa_64(math.abs(value))
+	digits := scientific.all_before('e').replace('.', '').trim_right('0')
+	exponent := scientific.all_after('e').int()
+	point := exponent + 1
+	if point > 0 && point <= 21 {
+		if point >= digits.len { return sign + digits + '0'.repeat(point - digits.len) }
+		return sign + digits[..point] + '.' + digits[point..]
+	}
+	if point > -6 && point <= 0 { return sign + '0.' + '0'.repeat(-point) + digits }
+	mantissa := if digits.len == 1 { digits } else { digits[..1] + '.' + digits[1..] }
+	exponent_sign := if exponent >= 0 { '+' } else { '' }
+	return '${sign}${mantissa}e${exponent_sign}${exponent}'
+}
+
 fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 	match model.type_state_ {
 		.number, .range {
-			return value.str()
+			return best_representation_of_number(value)
 		}
 		.month {
 			months := i64(math.floor(value))
