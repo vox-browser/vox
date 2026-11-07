@@ -1,5 +1,11 @@
 # Recorded Old Reddit Linux measurement protocol
 
+**Scripts removed 2026-11-07.** The copied observer, capture, build and
+correction scripts (and their before/after snapshots and patches) generated
+the evidence archive that was committed into history. They are no longer in
+the tree; recover them from commit `adbe53812` if needed. The JSON contracts,
+receipts and results below remain. The original description follows.
+
 This directory preserves the exact observer scripts, contracts, observer
 corrections and build receipts used for the 2026-11-02 Vox typeface-cache
 experiment. `manifest.json` identifies every copied file by its original

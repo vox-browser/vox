@@ -93,7 +93,7 @@ python3 tools/run_memory_bounded.py --lock Build/reddit-repeat.lock \
     --output Build/reddit-repeat
 ```
 
-The [durable protocol snapshots](benchmark-results/old-reddit-typeface-cache-protocol/README.md) and [compressed raw evidence](benchmark-results/old-reddit-linux-typeface-cache-2026-11-02-evidence.tar.gz) accompany the [tracked ledger](benchmark-results/old-reddit-linux-typeface-cache-2026-11-02.json). Scripts expect their original `Build/reddit-optimization` location; historical contracts contain absolute paths. A different checkout requires prospectively repinning paths/build identities and sealing a fresh control reference before measuring candidates. The protocol README explains restoration and verification; copied scripts are not a path-independent replay.
+The [durable protocol snapshots](benchmark-results/old-reddit-typeface-cache-protocol/README.md) and [compressed raw evidence](benchmark-results/old-reddit-linux-typeface-cache-2026-11-02-evidence.tar.gz) accompany the [tracked ledger](benchmark-results/old-reddit-linux-typeface-cache-2026-11-02.json). Scripts expect their original `Build/reddit-optimization` location; historical contracts contain absolute paths. A different checkout requires prospectively repinning paths/build identities and sealing a fresh control reference before measuring candidates. The protocol README explains restoration and verification; copied scripts are not a path-independent replay. The copied scripts were removed from the tree on 2026-11-07 (recover them from commit `adbe53812`), and the compressed raw evidence archive was removed from git history; it is kept only locally.
 
 ## Limits on the conclusion
 
