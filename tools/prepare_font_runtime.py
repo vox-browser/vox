@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Stage a glyph-index-only x.ttf initializer without editing V's checkout."""
+"""Stage a glyph-index-only x.ttf initializer, and widen its short loca
+offsets, without editing V's checkout."""
 
 import hashlib
 import json
@@ -38,6 +39,24 @@ def glyph_index_initializer(source):
             "fn (mut tf TTF_File) read_normalized_offset_tables() {" + directory + "}\n")
 
 
+# x.ttf shifts short-format loca entries in 16-bit arithmetic, so every glyph
+# stored beyond the first 64 KiB of `glyf` resolves to a truncated offset. Its
+# outline is then parsed from another glyph's bytes: wrong ink extents, or an
+# out-of-range read that panics (Roboto's Cyrillic, for example).
+SHORT_LOCA_ENTRIES = ("offset = tf.get_u16() << 1", "next = tf.get_u16() << 1")
+
+
+def widen_short_loca_offsets(source):
+    counts = [source.count(entry) for entry in SHORT_LOCA_ENTRIES]
+    if counts == [0, 0]:
+        return source
+    if counts != [1, 1]:
+        raise RuntimeError("Unsupported x.ttf loca reader: expected one offset and one next entry")
+    for entry in SHORT_LOCA_ENTRIES:
+        source = source.replace(entry, entry.replace("tf.get_u16() << 1", "u32(tf.get_u16()) << 1"))
+    return source
+
+
 def prepare(compiler, output_root=None):
     with tempfile.TemporaryDirectory(prefix="vox-font-root-") as temporary:
         vlib = compiler_vlib(compiler, Path(temporary))
@@ -46,6 +65,7 @@ def prepare(compiler, output_root=None):
         raise RuntimeError("The active V library has no x.ttf reader")
     inputs = {p.relative_to(source).as_posix(): p.read_bytes()
               for p in source.rglob("*") if p.is_file()}
+    inputs["ttf.v"] = widen_short_loca_offsets(inputs["ttf.v"].decode()).encode()
     generated = glyph_index_initializer(inputs["ttf.v"].decode()).encode()
     inputs["vox_glyph_index_init.v"] = generated
     digest = hashlib.sha256(Path(__file__).read_bytes())

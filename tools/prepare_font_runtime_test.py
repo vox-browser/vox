@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from prepare_font_runtime import glyph_index_initializer, prepare
+from prepare_font_runtime import glyph_index_initializer, prepare, widen_short_loca_offsets
 
 
 DIRECTORY = """fn (mut tf TTF_File) read_offset_tables() {
@@ -92,6 +92,51 @@ pub fn (mut tf TTF_File) init() {
                 revised = prepare("/moved/compiler/v", work / "output")
                 self.assertNotEqual(root, revised)
                 self.assertEqual((root / "x/ttf/common.v").read_text(), "module ttf\n")
+
+
+LOCA = """fn (mut tf TTF_File) get_glyph_offset(index u32) u32 {
+    if tf.index_to_loc_format == 1 {
+        tf.pos = table.offset + (index << 2)
+        offset = tf.get_u32()
+        next = tf.get_u32()
+    } else {
+        tf.pos = table.offset + (index << 1)
+        offset = tf.get_u16() << 1
+        next = tf.get_u16() << 1
+    }
+}
+"""
+
+
+class ShortLocaOffsetTest(unittest.TestCase):
+    def test_short_entries_are_widened_before_the_shift(self):
+        widened = widen_short_loca_offsets(LOCA)
+        self.assertIn("offset = u32(tf.get_u16()) << 1", widened)
+        self.assertIn("next = u32(tf.get_u16()) << 1", widened)
+        self.assertEqual(widened.replace("u32(tf.get_u16())", "tf.get_u16()"), LOCA)
+
+    def test_a_fixed_or_different_reader_is_unchanged(self):
+        fixed = widen_short_loca_offsets(LOCA)
+        self.assertEqual(widen_short_loca_offsets(fixed), fixed)
+        self.assertEqual(widen_short_loca_offsets("module ttf\n"), "module ttf\n")
+
+    def test_rejects_an_ambiguous_reader(self):
+        for source in [LOCA * 2, LOCA.replace("next = tf.get_u16() << 1", "")]:
+            with self.assertRaisesRegex(RuntimeError, "Unsupported x.ttf loca reader"):
+                widen_short_loca_offsets(source)
+
+    def test_staged_runtime_is_widened_and_the_compiler_library_is_not(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            source = work / "vlib/x/ttf"
+            source.mkdir(parents=True)
+            original = ("module ttf\npub fn (mut tf TTF_File) init() {\n"
+                        "tf.read_offset_tables()\ntf.read_cmap_table()\n}\n" + DIRECTORY + LOCA)
+            (source / "ttf.v").write_text(original)
+            with patch("prepare_font_runtime.compiler_vlib", return_value=work / "vlib"):
+                root = prepare("/moved/compiler/v", work / "output")
+            self.assertEqual((source / "ttf.v").read_text(), original)
+            self.assertEqual((root / "x/ttf/ttf.v").read_text(), widen_short_loca_offsets(original))
 
 
 if __name__ == "__main__":

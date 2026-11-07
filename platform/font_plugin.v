@@ -477,7 +477,7 @@ pub fn (font &Font) contains_glyph(code_point u32) bool {
 // the text baseline.
 pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 	face := font_face(font) or { return FontGlyphBounds{} }
-	if glyph_index < 0 || glyph_index > 0xffff || !font_face_has_truetype_outlines(face) {
+	if glyph_index < 0 || glyph_index >= int(face.length) || !font_face_has_truetype_outlines(face) {
 		return FontGlyphBounds{}
 	}
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
@@ -496,7 +496,9 @@ pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 // callers position them relative to the CSS baseline and invert Y there.
 pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 	face := font_face(font)?
-	if glyph_index < 0 || glyph_index > 0xffff || !font_face_has_truetype_outlines(face) {
+	// x.ttf reads loca without a bounds check, so an index past the face's
+	// glyph count would parse unrelated table bytes as an outline.
+	if glyph_index < 0 || glyph_index >= int(face.length) || !font_face_has_truetype_outlines(face) {
 		return none
 	}
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
