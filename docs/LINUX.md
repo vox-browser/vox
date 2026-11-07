@@ -2,6 +2,8 @@
 
 The Linux executable uses the translated V engine, JavaScriptCoreGTK, GLib event
 sources, Fontconfig/HarfBuzz, Skia CPU services, and GG/Sokol's OpenGL window.
+JavaScriptCore's C API is supplied by the `javascriptcoregtk-4.1` pkg-config
+package on Linux.
 The desktop path is X11, including XWayland. Headless modes need no display.
 
 ## Build
@@ -11,7 +13,7 @@ On Ubuntu 24.04 or newer, install the following packages:
 ```sh
 sudo apt-get update
 sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config \
-    python3 curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
+    python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
     libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev libcurl4-openssl-dev \
     libssl-dev libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev libxi-dev \
     libxcursor-dev libxrandr-dev libx11-dev libasound2-dev libgc-dev \
@@ -19,9 +21,25 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
     fonts-liberation2 fonts-dejavu-core
 ```
 
-You also need a current V checkout, a Rust compiler with edition 2024 support,
-and Python 3.12 or newer. Set `V_BIN` if V is outside
-`PATH` and `~/code/v/v`.
+You also need current [V](https://github.com/vlang/v) and
+[UI2](https://github.com/vlang/ui2) checkouts, a Rust compiler with edition 2024
+support, and Python 3.12 or newer. For a fresh setup, run these commands from
+the Vox checkout:
+
+```sh
+git clone --depth 1 https://github.com/vlang/v.git ../v
+make -C ../v
+git clone --depth 1 https://github.com/vlang/ui2.git ../ui2
+export V_BIN="$(cd ../v && pwd)/v"
+export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
+```
+
+For existing checkouts, set `V_BIN` if V is outside `PATH` and `~/code/v/v`,
+and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`).
+The build stages UI2 with Vox's embedding adapter without changing its checkout.
+Put `rustc` on `PATH` or set `RUSTC` to the compiler executable. When Cargo is
+available, the build also compiles the optional JPEG XL helper from its lockfile;
+that helper requires Rust 1.89 or newer.
 On Linux, `V_BIN` accepts a command on `PATH` (for example, `V_BIN=v`), an
 absolute executable path, or a path relative to the directory from which you
 invoke the build script. The build resolves that path before changing directories.
@@ -47,6 +65,10 @@ needed by the browser. Linux uses the distribution's threaded Boehm
 collector; `LADYBIRD_V_GC=none` remains available for ownership diagnostics. Native
 bridges and image-codec archives stay under `Build/linux/native`, separate from macOS
 objects. The browser embeds its adblock assets and needs no Ladybird checkout.
+Run the production entrypoint from a regular Git checkout on `master`, as
+required by the shared build supervisor. It runs `--headless-smoke` before
+publishing the executable and records compiler and smoke logs under
+`Build/production-build/receipts/`.
 The default build optimizes with `-O2`; use `VOX_LINUX_CFLAGS=-O0` for a faster
 diagnostic build. Allow at least 8 GB of RAM or additional swap for the large
 single-file C compilation.
@@ -65,6 +87,16 @@ instead. Skia's [build documentation](https://skia.org/docs/user/build/) describ
 its GN/Ninja build and dependency options.
 
 ## Run and check
+
+The [Linux build workflow](../.github/workflows/linux-build.yml) installs the
+system dependencies on Ubuntu 24.04, builds pinned V/UI2 and Skia sources, and
+runs the normal supervised build and headless smoke test on pushes to `master`
+and on pull requests. It also runs the Linux entrypoint regression tests, which
+can be checked without a compiler or native development packages:
+
+```sh
+python3 tools/build_linux_browser_test.py
+```
 
 ```sh
 Build/linux/vox ./page.html

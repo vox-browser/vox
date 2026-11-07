@@ -8,6 +8,8 @@ import tempfile
 import textwrap
 import unittest
 
+from rebuild_browser import BUILD_PROTOCOL
+
 
 class LinuxCompilerSelectionTest(unittest.TestCase):
     def setUp(self):
@@ -32,13 +34,18 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.helper_log = self.root / 'helpers.jsonl'
         self.environment = dict(os.environ)
         self.environment.pop('V_BIN', None)
+        self.environment.pop('VOX_BUILD_OUTPUT_DIR', None)
         self.environment.update(
             PATH=str(self.helpers),
             HOME=str(self.test_home),
             LADYBIRD_V_GC='boehm',
+            VOX_BUILD_SUPERVISED='1',
+            VOX_BUILD_COMPILE_PROTOCOL=BUILD_PROTOCOL,
             VOX_BUILD_TEST_COMPILER_LOG=str(self.compiler_log),
             VOX_BUILD_TEST_HELPER_LOG=str(self.helper_log),
             VOX_BUILD_TEST_MODULES=str(self.root / 'modules'),
+            VOX_BUILD_TEST_SHELL=self.shell,
+            VOX_BUILD_TEST_REENTER='0',
         )
         # Run the real shell entrypoint, replacing only its external tools.
         # No native dependencies, compiler installation, or browser build is needed.
@@ -48,10 +55,21 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             import json
             import os
             from pathlib import Path
+            import subprocess
             import sys
 
             with open(os.environ['VOX_BUILD_TEST_HELPER_LOG'], 'a') as log:
-                log.write(json.dumps({'argv': sys.argv[1:], 'cwd': os.getcwd()}) + '\\n')
+                log.write(json.dumps({'argv': sys.argv[1:], 'cwd': os.getcwd(),
+                                      'v_bin': os.environ.get('V_BIN')}) + '\\n')
+            if (Path(sys.argv[1]).name == 'rebuild_browser.py'
+                    and sys.argv[2:] == ['--build']
+                    and os.environ['VOX_BUILD_TEST_REENTER'] == '1'):
+                # Model the supervisor's reentry from the repository directory.
+                repo = Path(sys.argv[1]).parent.parent
+                result = subprocess.run(
+                    [os.environ['VOX_BUILD_TEST_SHELL'], str(repo / 'build-linux-browser.sh')],
+                    cwd=repo, env=dict(os.environ, VOX_BUILD_SUPERVISED='1'))
+                raise SystemExit(result.returncode)
             if Path(sys.argv[1]).name.startswith('prepare_'):
                 print(os.environ['VOX_BUILD_TEST_MODULES'])
         ''')
@@ -74,18 +92,19 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             }))
         ''')
 
-    def run_build(self, v_bin=None, path=None):
+    def run_build(self, v_bin=None, path=None, overrides=None):
         environment = dict(self.environment)
         if v_bin is not None:
             environment['V_BIN'] = str(v_bin)
         if path is not None:
             environment['PATH'] = path
+        environment.update(overrides or {})
         return subprocess.run([self.shell, str(self.repo / 'build-linux-browser.sh')],
                               cwd=self.caller, env=environment, text=True,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=10)
 
-    def assert_compiler_selected(self, result, compiler):
+    def assert_compiler_selected(self, result, compiler, helper_cwd=None):
         self.assertEqual(result.returncode, 0, result.stdout)
         recorded = json.loads(self.compiler_log.read_text())
         self.assertEqual(recorded['executable'], str(compiler))
@@ -95,10 +114,50 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
         preparations = [item for item in helpers
                         if Path(item['argv'][0]).name.startswith('prepare_')]
-        self.assertEqual(len(preparations), 2)
+        self.assertEqual([Path(item['argv'][0]).name for item in preparations],
+                         ['prepare_http_compat.py', 'prepare_ui2.py', 'prepare_linux_modules.py'])
         for preparation in preparations:
             self.assertEqual(preparation['argv'][1], str(compiler))
-            self.assertEqual(preparation['cwd'], str(self.caller))
+            self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
+
+    def test_unsupervised_build_delegates_to_supervisor(self):
+        compiler = self.compiler(self.helpers / 'v')
+        result = self.run_build(overrides={'VOX_BUILD_SUPERVISED': '0'})
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertFalse(self.compiler_log.exists())
+        helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
+        self.assertEqual([item['argv'] for item in helpers],
+                         [[str(self.repo / 'tools/rebuild_browser.py'), '--build']])
+        self.assertEqual(helpers[0]['v_bin'], str(compiler))
+
+    def test_unsupervised_relative_compiler_survives_supervisor_directory_change(self):
+        compiler = self.compiler(self.caller / 'toolchain/v')
+        result = self.run_build(v_bin='toolchain/v', overrides={
+            'VOX_BUILD_SUPERVISED': '0', 'VOX_BUILD_TEST_REENTER': '1'})
+        self.assert_compiler_selected(result, compiler, helper_cwd=self.repo)
+
+    def test_unsupervised_relative_path_survives_supervisor_directory_change(self):
+        compiler = self.compiler(self.caller / 'toolchain/v')
+        result = self.run_build(path='toolchain' + os.pathsep + self.environment['PATH'],
+                                overrides={'VOX_BUILD_SUPERVISED': '0',
+                                           'VOX_BUILD_TEST_REENTER': '1'})
+        self.assert_compiler_selected(result, compiler, helper_cwd=self.repo)
+
+    def test_stale_supervisor_requests_upgrade_without_compiling(self):
+        self.compiler(self.helpers / 'v')
+        for protocol in ('', 'bundle-lease-v1'):
+            with self.subTest(protocol=protocol):
+                self.helper_log.unlink(missing_ok=True)
+                result = self.run_build(overrides={'VOX_BUILD_COMPILE_PROTOCOL': protocol})
+                self.assertEqual(result.returncode, 75, result.stdout)
+                self.assertFalse(self.compiler_log.exists())
+                helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
+                self.assertEqual([item['argv'] for item in helpers],
+                                 [[str(self.repo / 'tools/rebuild_browser.py'), '--upgrade-worker']])
+
+    def test_current_supervisor_protocol_reaches_compiler(self):
+        compiler = self.compiler(self.helpers / 'v')
+        self.assert_compiler_selected(self.run_build(), compiler)
 
     def test_explicit_compiler_name_is_found_on_path(self):
         compiler = self.compiler(self.helpers / 'v')

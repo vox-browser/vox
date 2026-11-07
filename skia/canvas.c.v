@@ -1,6 +1,11 @@
 // CanvasCommandPlayer/PainterSkia native ABI service.
 module skia
 
+$if linux {
+	// Static bridge references must reach the linker before Skia's libraries.
+	#flag @DIR/../Build/linux/native/skia.a
+}
+
 $if macos {
 	$if arm64 {
 		#flag -I @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia
@@ -20,9 +25,7 @@ $if macos {
 	#flag -lstdc++
 }
 
-$if linux {
-	#flag @DIR/../Build/linux/native/skia.a
-} $else {
+$if !linux {
 	#flag @DIR/canvas_raster.o
 }
 // Older cached skia.pc files omit this direct dependency of the static library.

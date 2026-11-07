@@ -10,15 +10,11 @@ if [ "$#" -ne 0 ]; then
     exit 2
 fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
-if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build
-fi
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v1 ]; then
+# Match the supervisor's protocol; stale workers hand off before compiling.
+if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v4 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
-build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/linux"}
-cache_dir="$repo_dir/Build/linux"
 v_compiler=${V_BIN:-}
 if [ -z "$v_compiler" ]; then
     v_compiler=$(command -v v || true)
@@ -30,12 +26,19 @@ if [ ! -x "$v_compiler" ]; then
     echo "V compiler not found. Set V_BIN to an executable V compiler." >&2
     exit 1
 fi
-# Resolve the caller's relative path before helpers or the build change directory.
+# Resolve the caller's relative path before the supervisor or helpers change directory.
 # Keep the executable name intact: a symlink may select a compiler wrapper.
 case "$v_compiler" in
     /*) ;;
     *) v_compiler="$(pwd -P)/$v_compiler" ;;
 esac
+if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
+    V_BIN=$v_compiler
+    export V_BIN
+    exec python3 "$repo_dir/tools/rebuild_browser.py" --build
+fi
+build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/linux"}
+cache_dir="$repo_dir/Build/linux"
 gc_mode=${LADYBIRD_V_GC:-boehm}
 case "$gc_mode" in
     boehm|boehm_full|none) ;;

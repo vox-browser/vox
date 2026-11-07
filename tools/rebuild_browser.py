@@ -209,6 +209,18 @@ def publish_unlocked(root, stage):
 
 def run_build(root, stage, receipt, environment):
     environment = {k: v for k, v in environment.items() if not k.startswith('GIT_')}
+    if sys.platform == 'linux':
+        # The public entrypoint can run outside the checkout. Preserve its
+        # compiler selection before the guarded build changes to root; abspath
+        # keeps a compiler-wrapper symlink's own executable name intact.
+        selected = environment.get('V_BIN')
+        compiler = shutil.which(selected or 'v', path=environment.get('PATH'))
+        if compiler:
+            environment['V_BIN'] = os.path.abspath(compiler)
+        elif selected:
+            raise RuntimeError('V compiler not found. Set V_BIN to an executable V compiler.')
+        else:
+            environment['V_BIN'] = str(Path(environment.get('HOME') or Path.home()) / 'code/v/v')
     environment.update(VOX_BUILD_SUPERVISED='1', VOX_BUILD_OUTPUT_DIR=str(stage),
                        VOX_BUILD_COMPILE_PROTOCOL=BUILD_PROTOCOL,
                        VOX_BUILD_RECEIPT_DIR=str(receipt))

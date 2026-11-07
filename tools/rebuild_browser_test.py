@@ -1,4 +1,5 @@
 from pathlib import Path
+from contextlib import chdir
 import hashlib
 import json
 import os
@@ -438,6 +439,46 @@ class ProductionBuildTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'Existing pre-commit hook retained'):
                     build.install_hook(root)
                 self.assertEqual(check.read_text(), 'custom check\n')
+
+    @unittest.skipUnless(sys.platform == 'linux', 'Linux compiler selection')
+    def test_linux_supervisor_resolves_compiler_before_repository_directory_change(self):
+        with tempfile.TemporaryDirectory(prefix="vox compiler's path ") as directory:
+            root = Path(directory)
+            caller, repo = root / 'caller', root / 'project'
+            caller.mkdir()
+            repo.mkdir()
+            receipt = repo / 'receipt'
+            receipt.mkdir()
+            (repo / 'build-linux-browser.sh').write_text('exit 0\n')
+            target = root / 'compiler-target'
+            target.write_text('#!/bin/sh\nexit 0\n')
+            target.chmod(0o755)
+            compiler = caller / 'toolchain/v'
+            compiler.parent.mkdir()
+            compiler.symlink_to(target)
+            for environment in [dict(V_BIN='toolchain/v', PATH=''),
+                                dict(V_BIN='v', PATH='toolchain'),
+                                dict(PATH='toolchain')]:
+                with self.subTest(environment=environment), chdir(caller), \
+                        patch.object(build.subprocess, 'run', return_value=SimpleNamespace(returncode=0)) as run:
+                    self.assertEqual(build.run_build(repo, repo / 'stage', receipt, environment), 0)
+                first, second = run.call_args_list
+                self.assertEqual(first.kwargs['cwd'], repo)
+                self.assertEqual(first.kwargs['env']['V_BIN'], str(compiler))
+                self.assertEqual(second.kwargs['env']['V_BIN'], str(compiler))
+
+    @unittest.skipUnless(sys.platform == 'linux', 'Linux compiler selection')
+    def test_linux_supervisor_does_not_fall_back_from_missing_explicit_compiler(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            compiler = root / 'v'
+            compiler.write_text('#!/bin/sh\nexit 0\n')
+            compiler.chmod(0o755)
+            environment = dict(V_BIN='missing-v', PATH=str(root))
+            with patch.object(build.subprocess, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'V compiler not found'):
+                    build.run_build(root, root / 'stage', root / 'receipt', environment)
+            run.assert_not_called()
 
     def test_build_and_fresh_smoke_run_through_separate_memory_guards(self):
         with tempfile.TemporaryDirectory() as directory:

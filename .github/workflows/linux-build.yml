@@ -1,0 +1,141 @@
+name: Linux build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-build-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      V_REVISION: 4460fc9de18bdc7b2b77ee5ef7e4ab44ab99a28e
+      UI2_REVISION: 96f5924d73f69c0302de3c5c31d9964d4d11f573
+      RUSTUP_TOOLCHAIN: stable
+      JOBS: '2'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prepare the reviewed checkout
+        run: |
+          # The supervisor requires a regular checkout on master. Keep the
+          # checked-out push/PR commit; never replace it with origin/master.
+          git checkout -B master
+          git rev-parse HEAD
+
+      - name: Check the Linux build entrypoint
+        run: |
+          python3 tools/build_linux_browser_test.py
+          python3 tools/rebuild_browser_test.py
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang ninja-build generate-ninja pkg-config \
+            python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev \
+            libglib2.0-dev libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev \
+            libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
+            libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
+            libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
+            libwebp-dev libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core
+          pkg-config --modversion javascriptcoregtk-4.1
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustc --version
+
+      - name: Add swap for the C compilation
+        run: |
+          # Standard private-repository runners have less RAM than the large
+          # single-file C build needs. The 12 GiB process-tree guard stays on.
+          sudo fallocate -l 8G "$RUNNER_TEMP/vox.swap"
+          sudo chmod 600 "$RUNNER_TEMP/vox.swap"
+          sudo mkswap "$RUNNER_TEMP/vox.swap"
+          sudo swapon "$RUNNER_TEMP/vox.swap"
+
+      - name: Build pinned V and fetch UI2
+        timeout-minutes: 25
+        run: |
+          git init "$RUNNER_TEMP/v"
+          git -C "$RUNNER_TEMP/v" remote add origin https://github.com/vlang/v.git
+          git -C "$RUNNER_TEMP/v" fetch --depth 1 origin "$V_REVISION"
+          git -C "$RUNNER_TEMP/v" checkout --detach FETCH_HEAD
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-v-build.lock" \
+            --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
+            make -C "$RUNNER_TEMP/v" -j2 VFLAGS='-memory-limit 10G'
+          "$RUNNER_TEMP/v/v" version
+          git init "$RUNNER_TEMP/ui2"
+          git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
+          git -C "$RUNNER_TEMP/ui2" fetch --depth 1 origin "$UI2_REVISION"
+          git -C "$RUNNER_TEMP/ui2" checkout --detach FETCH_HEAD
+          printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
+            "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
+
+      - name: Cache pinned Skia
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: Build/deps
+          key: linux-skia-ubuntu24-${{ runner.arch }}-${{ hashFiles('tools/build_linux_skia.py') }}
+
+      - name: Build Skia
+        timeout-minutes: 45
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-skia-build.lock" \
+            --report "$RUNNER_TEMP/vox-skia-build.json" --timeout 2400 -- \
+            python3 tools/build_linux_skia.py
+
+      - name: Check native Skia linking and rendering
+        timeout-minutes: 10
+        run: |
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-native-build.lock" \
+            --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
+            python3 tools/build_linux_native.py
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-skia-test.lock" \
+            --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
+            python3 tools/test_linux_native.py skia/shadow_test.v
+
+      - name: Build Vox and run the headless smoke test
+        timeout-minutes: 50
+        run: |
+          # The normal supervisor applies the build memory guard and runs
+          # --headless-smoke before publishing Build/linux/vox.
+          sh build-prod-browser.sh
+          test -x Build/linux/vox
+
+      - name: Show build and smoke receipts
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          temporary = Path(os.environ['RUNNER_TEMP'])
+          paths = [temporary / name for name in ('vox-v-build.json', 'vox-skia-build.json',
+                                                    'vox-native-build.json', 'vox-skia-test.json')]
+          paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
+          receipts = sorted(Path('Build/production-build/receipts').glob('*'))
+          for receipt in receipts[-1:]:
+              paths.extend(receipt / name for name in (
+                  'build.log', 'smoke.log', 'memory.json', 'smoke-memory.json', 'result.json'))
+          for path in paths:
+              if path.is_file():
+                  print(f'::group::{path}')
+                  print(path.read_text(errors='replace')[-30000:])
+                  print('::endgroup::')
+          PY
