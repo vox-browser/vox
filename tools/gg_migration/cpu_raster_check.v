@@ -709,7 +709,7 @@ fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
 		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
 		cap := rand.intn(3) or { 0 }
 		join := rand.intn(3) or { 0 }
-		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}, 0},
+		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}, 0, 0},
 			'stroke ${i}')!
 		if is_hairline(transform, line_width) {
 			hairlines++
@@ -735,6 +735,7 @@ struct StrokeCase {
 	dash_offset  f32
 	clips        []ClipCase
 	composite    int
+	blur         f32
 }
 
 // A device-space clip path in skia.Path's segment encoding.
@@ -854,6 +855,14 @@ fn is_hairline(transform [6]f32, line_width f32) bool {
 // Strokes one case through vox_skia_canvas_path() and stroke_canvas_path()
 // and compares every byte.
 fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string) ! {
+	if compare_canvas_stroke_or_decline(oracle, initial, c, label)! {
+		return error('${label}: cpuraster declined')
+	}
+}
+
+// compare_canvas_stroke_or_decline() returns true when cpuraster declined,
+// which must leave the pixels untouched.
+fn compare_canvas_stroke_or_decline(oracle Oracle, initial []u8, c StrokeCase, label string) !bool {
 	mut expected := initial.clone()
 	mut floats := c.transform[..].clone()
 	floats << [c.global_alpha, c.line_width, c.miter]
@@ -866,15 +875,19 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 	values << clip_values
 	values << i32(c.composite)
 	floats << clip_floats
+	floats << c.blur
 	if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, false)
 	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
-		path, c.transform, c.color, c.global_alpha, canvas_mode(c.composite), c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
+		path, c.transform, c.color, c.global_alpha, canvas_mode(c.composite), c.blur, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
 		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips)) {
-		return error('${label}: cpuraster declined')
+		if actual != initial {
+			return error('${label}: cpuraster declined after changing pixels')
+		}
+		return true
 	}
 	for j in 0 .. expected.len {
 		if expected[j] != actual[j] {
@@ -883,6 +896,7 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]}, from ${initial[p..p + 4]} (${c})')
 		}
 	}
+	return false
 }
 
 fn segment(kind int, values []f32) []f32 {
@@ -1163,7 +1177,7 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		color := random_color()
 		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
 		global_alpha := random_global_alpha()
-		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}, 0},
+		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}, 0, 0},
 			'canvas ${i}')!
 	}
 	return count
@@ -1181,9 +1195,16 @@ struct FillCase {
 	global_alpha f32
 	clips        []ClipCase
 	composite    int
+	blur         f32
 }
 
 fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! {
+	if compare_canvas_fill_or_decline(oracle, initial, c, label)! {
+		return error('${label}: cpuraster declined')
+	}
+}
+
+fn compare_canvas_fill_or_decline(oracle Oracle, initial []u8, c FillCase, label string) !bool {
 	mut expected := initial.clone()
 	mut floats := c.transform[..].clone()
 	floats << c.global_alpha
@@ -1194,14 +1215,18 @@ fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! 
 	values << clip_values
 	values << i32(c.composite)
 	floats << clip_floats
+	floats << c.blur
 	if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, c.even_odd)
 	if !cpuraster.fill_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type, path,
-		c.transform, c.color, c.global_alpha, canvas_mode(c.composite), clip_paths(c.clips)) {
-		return error('${label}: cpuraster declined')
+		c.transform, c.color, c.global_alpha, canvas_mode(c.composite), c.blur, clip_paths(c.clips)) {
+		if actual != initial {
+			return error('${label}: cpuraster declined after changing pixels')
+		}
+		return true
 	}
 	for j in 0 .. expected.len {
 		if expected[j] != actual[j] {
@@ -1210,6 +1235,7 @@ fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! 
 			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]}, from ${initial[p..p + 4]} (${c})')
 		}
 	}
+	return false
 }
 
 // Fills, hairlines, wide and dashed strokes inside anti-aliased and
@@ -1227,7 +1253,7 @@ fn check_clipped_draws(oracle Oracle, count int) !(int, int) {
 			m := random_matrix()
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
 				0
-			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips, 0},
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips, 0, 0},
 				'clipped fill ${i}')!
 			continue
 		}
@@ -1281,6 +1307,10 @@ fn main() {
 		check_composite_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'shadows' {
+		check_shadow_cases(oracle, count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -1316,6 +1346,8 @@ fn main() {
 	}
 	println('canvas fills: ${canvas} exact')
 	check_stroke_cases(oracle, count)
+	check_composite_cases(oracle, count / 2)
+	check_shadow_cases(oracle, count / 2)
 }
 
 fn random_dashes() []f32 {
@@ -1486,11 +1518,6 @@ fn check_stroke_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('clipped canvas draws: ${clipped} exact (${clipped_strokes} strokes)')
-	composites, composite_strokes := check_composite_draws(oracle, count / 2) or {
-		eprintln(err.msg())
-		exit(1)
-	}
-	println('composited canvas draws: ${composites} exact (${composite_strokes} strokes)')
 }
 
 fn check_composite_cases(oracle Oracle, count int) {
@@ -1579,7 +1606,7 @@ fn check_composite_draws(oracle Oracle, count int) !(int, int) {
 			m := random_matrix()
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
 				0
-			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, color, global_alpha, clips, composite},
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, color, global_alpha, clips, composite, 0},
 				'composite fill ${i}')!
 			continue
 		}
@@ -1633,4 +1660,177 @@ fn save_failure(initial []u8, expected []u8, actual []u8, description string) {
 	os.write_file_array(os.join_path(dir, 'expected.bin'), expected) or {}
 	os.write_file_array(os.join_path(dir, 'actual.bin'), actual) or {}
 	os.write_file(os.join_path(dir, 'case.txt'), description) or {}
+}
+
+// A rect as Canvas2D's rect() or a lineTo outline builds it, integral or
+// fractional, small or large, sometimes past the device.
+fn random_shadow_rect(width int, height int) Rect4 {
+	scale := match rand.intn(4) or { 0 } {
+		0 { f64(0.2) }
+		1 { f64(1) }
+		2 { f64(3) }
+		else { f64(rand.intn(300) or { 0 } + 1) / 100 }
+	}
+	mut x0 := f32((rand.f64() * 1.4 - 0.2) * f64(width))
+	mut y0 := f32((rand.f64() * 1.4 - 0.2) * f64(height))
+	mut x1 := x0 + f32(rand.f64() * f64(width) * scale)
+	mut y1 := y0 + f32(rand.f64() * f64(height) * scale)
+	if rand.intn(3) or { 0 } == 0 {
+		x0 = f32(int(x0))
+		y0 = f32(int(y0))
+		x1 = f32(int(x1))
+		y1 = f32(int(y1))
+	}
+	return Rect4{x0, y0, x1, y1}
+}
+
+struct Rect4 {
+	l f32
+	t f32
+	r f32
+	b f32
+}
+
+fn rect_segments(r Rect4, reverse bool) []f32 {
+	mut s := []f32{}
+	s << segment(0, [r.l, r.t])
+	if reverse {
+		s << segment(1, [r.l, r.b])
+		s << segment(1, [r.r, r.b])
+		s << segment(1, [r.r, r.t])
+	} else {
+		s << segment(1, [r.r, r.t])
+		s << segment(1, [r.r, r.b])
+		s << segment(1, [r.l, r.b])
+	}
+	s << segment(5, [])
+	return s
+}
+
+fn random_shadow_blur() f32 {
+	return match rand.intn(9) or { 0 } {
+		0 { f32(rand.f64() * 0.8) }
+		1, 2 { f32(rand.f64() * 3.4 + 0.6) }
+		3 { f32(2.0 / 3.0) }
+		4 { f32(4) }
+		5, 6 { f32(rand.f64() * 36 + 4) }
+		7 { f32(rand.f64() * 260 + 40) }
+		else { f32(rand.intn(20) or { 0 } + 1) }
+	}
+}
+
+// Shapes Skia's blur mask filter treats specially: lone rects (the analytic
+// nine-patch), nested rect pairs (the blurred ring nine-patch), rects too
+// small or too large for a nine-patch, and other paths blurred as masks.
+fn random_shadow_shape(width int, height int) []f32 {
+	return match rand.intn(6) or { 0 } {
+		0, 1 {
+			if rand.intn(10) or { 0 } == 0 {
+				rect_segments(Rect4{-40000, f32(rand.intn(height) or { 0 }), f32(rand.intn(width) or { 0 } + 1), f32(height + 5)},
+					false)
+			} else {
+				rect_segments(random_shadow_rect(width, height), rand.intn(2) or { 0 } == 0)
+			}
+		}
+		2 {
+			mut outer := random_shadow_rect(width, height)
+			if rand.intn(8) or { 0 } == 0 {
+				// Past the 32767 limit of the nine-patch.
+				outer = Rect4{-20000, -20000, 20000, f32(rand.intn(30000) or { 0 } + 10)}
+			}
+			mut s := rect_segments(outer, rand.intn(2) or { 0 } == 0)
+			if rand.intn(4) or { 0 } == 0 {
+				// An open first contour, which the second contour's move closes.
+				s = s[..s.len - 12].clone()
+			}
+			mut inner := random_shadow_rect(width, height)
+			if rand.intn(3) or { 0 } != 0 {
+				// Inset inside the outer rect.
+				w := outer.r - outer.l
+				h := outer.b - outer.t
+				inner = Rect4{outer.l + w * f32(rand.f64() * 0.4), outer.t + h * f32(rand.f64() * 0.4), outer.r - w * f32(rand.f64() * 0.4), outer.b - h * f32(rand.f64() * 0.4)}
+			}
+			s << rect_segments(inner, rand.intn(2) or { 0 } == 0)
+			s
+		}
+		3 {
+			random_stroke_shape(width, height)
+		}
+		else {
+			random_canvas_segments(width, height)
+		}
+	}
+}
+
+// Canvas2D shadows: fills, hairlines and wide and dashed strokes with a
+// shadow blur, through vox_skia_canvas_path()'s SkBlurMaskFilter, with every
+// composite operation and inside random clips. Returns the comparisons, how
+// many were strokes and how many cpuraster declined (masks that Skia fills
+// with SkScan::FillPath()), which must leave the pixels untouched.
+fn check_shadow_draws(oracle Oracle, count int) !(int, int, int) {
+	mut strokes := 0
+	mut declined := 0
+	for i in 0 .. count {
+		width := rand.intn(100) or { 0 } + 1
+		height := rand.intn(100) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		composite := if rand.intn(3) or { 0 } == 0 { rand.intn(26) or { 0 } } else { 0 }
+		clips := if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
+		initial := random_composite_bitmap(width, height, pitch, alpha_type)
+		blur := random_shadow_blur()
+		transform := match rand.intn(4) or { 0 } {
+			0 { [f32(1), 0, 0, 1, 0, 0]! }
+			1 { [f32(1), 0, 0, 1, f32(rand.f64() * 20 - 10), f32(rand.f64() * 20 - 10)]! }
+			else { random_stroke_matrix() }
+		}
+		segments := random_shadow_shape(width, height)
+		if rand.intn(2) or { 0 } == 0 {
+			if compare_canvas_fill_or_decline(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, rand.intn(4) or {
+				0
+			} == 0, transform, random_composite_color(), random_composite_alpha(), clips, composite, blur},
+				'shadow fill ${i}')!
+			{
+				declined++
+			}
+			continue
+		}
+		line_width := match rand.intn(4) or { 0 } {
+			0 { f32(1) }
+			1 { f32(rand.f64()) }
+			else { random_wide_line_width() }
+		}
+		c := StrokeCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			segments:     segments
+			transform:    transform
+			color:        random_composite_color()
+			global_alpha: random_composite_alpha()
+			line_width:   line_width
+			miter:        if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 4) }
+			cap:          rand.intn(3) or { 0 }
+			join:         rand.intn(3) or { 0 }
+			dashes:       if rand.intn(5) or { 0 } == 0 { random_dashes() } else { []f32{} }
+			dash_offset:  random_dash_offset()
+			clips:        clips
+			composite:    composite
+			blur:         blur
+		}
+		if compare_canvas_stroke_or_decline(oracle, initial, c, 'shadow stroke ${i}')! {
+			declined++
+		}
+		strokes++
+	}
+	return count, strokes, declined
+}
+
+fn check_shadow_cases(oracle Oracle, count int) {
+	shadows, shadow_strokes, shadow_declined := check_shadow_draws(oracle, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('blurred canvas shadows: ${shadows - shadow_declined} exact, ${shadow_declined} declined (${shadow_strokes} strokes)')
 }

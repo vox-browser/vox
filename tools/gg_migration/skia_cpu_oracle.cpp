@@ -176,6 +176,15 @@ ORACLE void oracle_fill_path(uint8_t* pixels, int const* a, float const* f)
 
 // Device-space clip paths: ints hold the clip count, then a segment count and
 // even-odd flag per clip; floats hold their segments back to back.
+// The number of floats the clips' segments take.
+static int oracle_clip_floats(int const* a)
+{
+    int count = 0;
+    for (int i = 0; i < a[0]; ++i)
+        count += a[1 + i * 2] * 12;
+    return count;
+}
+
 static std::vector<VoxCanvasPath> oracle_clips(int const* a, float const* f)
 {
     std::vector<VoxCanvasPath> clips;
@@ -188,7 +197,7 @@ static std::vector<VoxCanvasPath> oracle_clips(int const* a, float const* f)
 
 // arguments: width, height, pitch, alpha type, even-odd, segment count,
 // SkColor, the clips, then the composite operation. floats: the transform,
-// global alpha, 12 floats per segment, then the clip segments.
+// global alpha, 12 floats per segment, the clip segments, then the shadow blur.
 ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -203,13 +212,14 @@ ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
     command.clips = clips.data();
     command.clip_count = int(clips.size());
     command.composite = a[8 + a[7] * 2];
+    command.blur = f[7 + a[5] * 12 + oracle_clip_floats(a + 7)];
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
 
 // arguments: width, height, pitch, alpha type, segment count, SkColor, cap,
 // join, dash count, the clips, then the composite operation. floats: the
 // transform, global alpha, line width, miter limit, 12 floats per segment, the
-// dash offset and intervals, then the clip segments.
+// dash offset and intervals, the clip segments, then the shadow blur.
 ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -232,5 +242,6 @@ ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
     command.cap = a[6];
     command.join = a[7];
     command.composite = a[10 + a[9] * 2];
+    command.blur = f[10 + a[4] * 12 + a[8] + oracle_clip_floats(a + 9)];
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
