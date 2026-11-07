@@ -395,4 +395,11 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
 	})
 	loads := runtime.evaluate_host('loads')!
 	assert loads == '2', loads
+	// The frame's load event has not been claimed by a host poll yet, so the
+	// host keeps asking for polls until it has.
+	assert host.has_pending_work()
+	for _ in 0 .. 3 {
+		host.poll(mut messages)
+	}
+	assert !host.has_pending_work(), messages.join('\n')
 }

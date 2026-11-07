@@ -8,6 +8,7 @@ import html
 import layout
 import platform
 import requestserver
+import time
 
 @[heap]
 struct BrowserChildDocument {
@@ -61,6 +62,8 @@ mut:
 	children []&BrowserChildDocument
 	scanned  map[dom.UniqueNodeID]BrowserChildDocumentRevision
 	closed   bool
+	// Monotonic time at which the children last started needing polls.
+	pending_since i64
 }
 
 struct BrowserChildDocumentRevision {
@@ -441,6 +444,21 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 	return changed
 }
 
+// Navigation, initialization and the load event of a child advance only in
+// host polls. A hidden frame paints nothing, so its progress requests no frame.
+fn (host &BrowserChildDocumentHost) has_pending_work() bool {
+	for child in host.children {
+		if child.closed { continue }
+		if child.navigable.ongoing_navigation().kind == .navigation { return true }
+		active := child.navigable.active_document() or { continue }
+		service := child.service or { return true }
+		if voidptr(service.document) != voidptr(active) || !service.initialized || !service.load_fired {
+			return true
+		}
+	}
+	return false
+}
+
 fn (mut app BrowserApp) poll_browser_child_documents() {
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil } { return }
 	if app.child_document_host == none {
@@ -454,5 +472,16 @@ fn (mut app BrowserApp) poll_browser_child_documents() {
 		app.document.set_needs_repaint()
 		app.synchronize_javascript_task_paint(false)
 		app.request_document_frame()
+	}
+	if host.has_pending_work() {
+		// Poll at frame rate while the work is fresh, then back off so a child
+		// that never finishes loading does not keep the browser awake.
+		now := i64(time.sys_mono_now())
+		if host.pending_since == 0 { host.pending_since = now }
+		$if macos {
+			C.native_wake_browser_after(if now - host.pending_since < 2 * time.second { 16 } else { 200 })
+		}
+	} else {
+		host.pending_since = 0
 	}
 }
