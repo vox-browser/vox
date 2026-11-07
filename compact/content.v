@@ -241,6 +241,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'webAnimation' { return binding.web_animation_query(key, selector) }
 	if action == 'nodeIterator' { return binding.node_iterator_query(key, selector) }
 	if action == 'registerProperty' { return binding.register_property_query(selector) }
+	if action == 'xpath' { return binding.xpath_query(key, selector) }
 	if action == 'compressionTransform' { return compact_compression_query(selector) }
 	if action == 'isEqualNode' { return binding.equal_node_query(key, selector) }
 	if action == 'compareDocumentPosition' { return binding.node_position_query(key, selector) }
