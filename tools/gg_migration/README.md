@@ -102,12 +102,14 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   quarter-pixel phase, mask and path sizes, flipped, rotated and skewed
   transforms, styles, composites and clips) through
   `vox_skia_canvas_glyphs()`, and all three under canvas filter lists of
-  color matrices (`oracle_filters()`); declined draws must leave the pixels
-  untouched.
+  color matrices and blurs (`oracle_filters()`), plus image filter blurs
+  through `SkImages::MakeWithFilter()` (`oracle_image_blur()`); declined
+  draws must leave the pixels untouched.
   Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes`, `composites`, `shadows`,
-  `gradients`, `patterns`, `clears`, `images`, `bwfills`, `glyphs` or
-  `colorfilters` to run only those comparisons (`CPU_RASTER_GLYPH_FONT` limits the glyph runs
+  `gradients`, `patterns`, `clears`, `images`, `bwfills`, `glyphs`,
+  `colorfilters`, `filterlayers` or `imageblur` to run only those
+  comparisons (`CPU_RASTER_GLYPH_FONT` limits the glyph runs
   to one font file); a `-gc none` binary never frees, so run its
   categories in separate processes. The driver takes an optional seed after `COUNT`; with
   `CPU_RASTER_FAILURE_DIR` set it saves a failing case's starting, Skia and
