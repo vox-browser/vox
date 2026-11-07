@@ -24,6 +24,8 @@ mut:
 	css_rule_lists map[string]&css.CSSRuleList
 	radio_lists map[string]&html.RadioNodeList
 	web_animations map[string]voidptr
+	// KeyframeEffects created by script, by key.
+	web_effects map[string]voidptr
 	node_iterators map[string]&dom.NodeIterator
 	ranges map[string]&dom.Range
 	range_keys map[voidptr]string

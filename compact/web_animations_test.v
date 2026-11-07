@@ -118,3 +118,38 @@ console.log("delayed "+getComputedStyle(delayed).width);
 	// transition keeps its start value through its delay.
 	assert messages == ['width 15px', 'delayed 10px']
 }
+
+fn test_compact_keyframe_effects_construct_and_report_their_keyframes() {
+	$if !darwin {
+		return
+	}
+	mut document := parse_browser_navigation_document('<!doctype html><div id="target"></div>',
+		dom.URL{ value: 'https://example.test/' }, none)
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+const fail=message=>{throw new Error(message);};
+const target=document.getElementById("target");
+const effect=new KeyframeEffect(target,{left:["10px","20px"]},{duration:1000,easing:"ease-in"});
+if(!(effect instanceof AnimationEffect)||effect.target!==target)fail("interface");
+const frames=effect.getKeyframes();
+if(frames.length!==2||frames[0].left!=="10px"||frames[1].left!=="20px"||frames[0].computedOffset!==0||frames[1].computedOffset!==1||frames[0].offset!==null||frames[0].easing!=="linear"||frames[0].composite!=="auto")fail("keyframes "+JSON.stringify(frames));
+const timing=effect.getTiming();
+if(timing.duration!==1000||timing.easing!=="ease-in"||timing.fill!=="auto")fail("timing "+JSON.stringify(timing));
+effect.setKeyframes([{marginLeft:"1px"},{marginLeft:"2px",offset:0.5},{marginLeft:"3px"}]);
+const updated=effect.getKeyframes();
+if(updated.length!==3||updated[1].marginLeft!=="2px"||updated[1].offset!==0.5)fail("setKeyframes "+JSON.stringify(updated));
+if(new KeyframeEffect(null,null).getKeyframes().length!==0)fail("empty");
+if(new KeyframeEffect(effect).getKeyframes().length!==3)fail("copy");
+let threw=false;try{new KeyframeEffect(target,null,{easing:"invalid"});}catch(error){threw=error instanceof TypeError;}
+if(!threw)fail("invalid easing");
+const animation=target.animate({opacity:[0,1]},{duration:100});
+if(animation.effect.getKeyframes()[1].opacity!=="1")fail("animation effect");
+console.log("keyframe effects passed");
+'], runtime, mut messages)
+	assert messages == ['keyframe effects passed'], messages.str()
+}

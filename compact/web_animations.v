@@ -1,6 +1,7 @@
 module main
 
 import animations
+import math
 import css
 import dom
 import x.json2
@@ -161,6 +162,78 @@ fn compact_web_animation_refresh(mut animation animations.Animation, document &d
 	owner.update_animated_style_if_needed()
 }
 
+fn compact_effect_timing_json(timing animations.EffectTiming) json2.Any {
+	duration := match timing.duration {
+		f64 { json2.Any(timing.duration) }
+		string { json2.Any(timing.duration) }
+	}
+	return json2.Any({
+		'delay':          json2.Any(timing.delay)
+		'endDelay':       json2.Any(timing.end_delay)
+		'fill':           json2.Any(match timing.fill {
+			.none_ { 'none' }
+			.forwards { 'forwards' }
+			.backwards { 'backwards' }
+			.both { 'both' }
+			.auto_ { 'auto' }
+		})
+		'iterationStart': json2.Any(timing.iteration_start)
+		'iterations':     if math.is_inf(timing.iterations, 1) { json2.Any('Infinity') } else { json2.Any(timing.iterations) }
+		'duration':       duration
+		'direction':      json2.Any(match timing.direction {
+			.normal { 'normal' }
+			.reverse { 'reverse' }
+			.alternate { 'alternate' }
+			.alternate_reverse { 'alternate-reverse' }
+		})
+		'easing':         json2.Any(timing.easing)
+	})
+}
+
+fn compact_keyframe_composite_name(composite animations.CompositeOperationOrAuto) string {
+	return match composite {
+		.replace { 'replace' }
+		.add { 'add' }
+		.accumulate { 'accumulate' }
+		.auto_ { 'auto' }
+	}
+}
+
+fn compact_keyframes_json(effect &animations.KeyframeEffect) json2.Any {
+	mut frames := []json2.Any{}
+	for keyframe in effect.get_keyframes() {
+		mut properties := map[string]json2.Any{}
+		for name, value in keyframe.properties {
+			properties[name] = json2.Any(value)
+		}
+		frames << json2.Any({
+			'offset':         if offset := keyframe.offset { json2.Any(offset) } else { json2.Any(json2.Null{}) }
+			'computedOffset': if offset := keyframe.computed_offset { json2.Any(offset) } else { json2.Any(json2.Null{}) }
+			'easing':         json2.Any(keyframe.easing)
+			'composite':      json2.Any(compact_keyframe_composite_name(keyframe.composite))
+			'properties':     json2.Any(properties)
+		})
+	}
+	return json2.Any(frames)
+}
+
+// The KeyframeEffect a request names: one created by script, or the effect
+// of a script-created Animation.
+fn (binding &CompactElementQueryBinding) compact_request_effect(request map[string]json2.Any) !&animations.KeyframeEffect {
+	if key := json_string_property(request, 'effect') {
+		handle := binding.web_effects[key] or { return error('TypeError: Illegal KeyframeEffect receiver') }
+		return unsafe { &animations.KeyframeEffect(handle) }
+	}
+	key := json_string_property(request, 'animation') or { return error('TypeError: Illegal KeyframeEffect receiver') }
+	handle := binding.web_animations[key] or { return error('TypeError: Illegal KeyframeEffect receiver') }
+	animation := unsafe { &animations.Animation(handle) }
+	effect := animation.effect_ or { return error('TypeError: The animation has no effect') }
+	if !effect.is_keyframe_effect_ {
+		return error('TypeError: The animation effect is not a KeyframeEffect')
+	}
+	return unsafe { &animations.KeyframeEffect(effect) }
+}
+
 fn compact_css_animation_key(handle voidptr) string {
 	return '__css_${u64(handle):x}'
 }
@@ -183,6 +256,60 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 		binding.web_animations[animation_key] = voidptr(animation)
 		compact_web_animation_refresh(mut animation, element.document())
 		return json2.encode(compact_web_animation_state(animation_key, animation))
+	}
+	// https://drafts.csswg.org/web-animations-1/#the-keyframeeffect-interface
+	if op == 'effectCreate' {
+		mut target := ?&dom.Element(none)
+		if target_key := json_string_property(request, 'target') {
+			node := binding.equality_node(target_key, request['targetState'] or { json2.Any(json2.Null{}) })!
+			target = node.as_element() or { return error('TypeError: The target must be an Element') }
+		}
+		effect := if source_key := json_string_property(request, 'source') {
+			source_handle := binding.web_effects[source_key] or { return error("TypeError: Illegal KeyframeEffect source") }
+			animations.KeyframeEffect.copy(unsafe { &animations.KeyframeEffect(source_handle) })
+		} else {
+			keyframes := compact_web_animation_keyframes(request['keyframes'] or { json2.Any([]json2.Any{}) })!
+			options := compact_web_animation_options(request['options'] or { json2.Any(json2.Null{}) })!
+			animations.KeyframeEffect.construct_impl(target, keyframes, options.KeyframeEffectOptions) or {
+				message := err.msg()
+				return error(if message.starts_with('TypeError:') || message.starts_with('SyntaxError:') { message } else { 'TypeError: ${message}' })
+			}
+		}
+		binding.next_key++
+		effect_key := '__effect_${binding.next_key}'
+		binding.web_effects[effect_key] = voidptr(effect)
+		return json2.encode({ 'key': json2.Any(effect_key) })
+	}
+	if op in ['effectKeyframes', 'effectSetKeyframes', 'effectTiming', 'effectComputedTiming', 'effectUpdateTiming'] {
+		mut effect := binding.compact_request_effect(request)!
+		match op {
+			'effectSetKeyframes' {
+				keyframes := compact_web_animation_keyframes(request['keyframes'] or { json2.Any([]json2.Any{}) })!
+				effect.set_keyframes_from_js(keyframes) or {
+					message := err.msg()
+					return error(if message.starts_with('TypeError:') || message.starts_with('SyntaxError:') { message } else { 'TypeError: ${message}' })
+				}
+			}
+			'effectUpdateTiming' {
+				options := compact_web_animation_options(request['timing'] or { json2.Any(json2.Null{}) })!
+				effect.update_timing(options.timing) or {
+					message := err.msg()
+					return error(if message.starts_with('TypeError:') { message } else { 'TypeError: ${message}' })
+				}
+			}
+			'effectTiming' {
+				return json2.encode(compact_effect_timing_json(effect.get_timing()))
+			}
+			'effectComputedTiming' {
+				computed := effect.get_computed_timing()
+				mut result := compact_effect_timing_json(computed.EffectTiming).as_map()
+				result['progress'] = if progress := computed.progress { json2.Any(progress) } else { json2.Any(json2.Null{}) }
+				result['currentIteration'] = if iteration := computed.current_iteration { json2.Any(iteration) } else { json2.Any(json2.Null{}) }
+				return json2.encode(result)
+			}
+			else {}
+		}
+		return json2.encode(compact_keyframes_json(effect))
 	}
 	if op == 'documentList' {
 		// https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations
@@ -332,7 +459,56 @@ fn compact_web_animations_bootstrap() string {
   return result;
  }
  function Animation(){throw new TypeError("Illegal Animation constructor");}
- function KeyframeEffect(){throw new TypeError("Illegal KeyframeEffect constructor");}
+ // https://drafts.csswg.org/web-animations-1/#the-keyframeeffect-interface
+ const effects=new WeakMap();
+ function AnimationEffect(){throw new TypeError("Illegal AnimationEffect constructor");}
+ function KeyframeEffect(target,frames,settings){
+  if(new.target===undefined)throw new TypeError("Constructor KeyframeEffect requires new");
+  if(arguments.length<1)throw new TypeError("KeyframeEffect requires a target");
+  const source=target!==null&&typeof target==="object"?__elementApply(get,effects,[target]):undefined;
+  let created,owner=null;
+  if(source&&source.effect&&arguments.length===1){
+   created=call("",{op:"effectCreate",source:source.effect});owner=source.target;
+  }else{
+   let element=null;
+   if(target!==null){
+    element=__elementApply(__elementRecordGet,__elementRecords,[target]);
+    if(!element)throw new TypeError("The KeyframeEffect target must be an Element or null");
+    owner=target;
+   }
+   const request={op:"effectCreate",keyframes:keyframes(frames),options:typeof settings==="number"?{duration:settings}:options(settings)};
+   if(element){request.target=element.bridgeKey;request.targetState=element.created?element:undefined;}
+   created=call("",request);
+  }
+  const object=Object.create(new.target.prototype);
+  __elementApply(set,effects,[object,{effect:created.key,target:owner}]);
+  return object;
+ }
+ Object.setPrototypeOf(KeyframeEffect,AnimationEffect);
+ Object.setPrototypeOf(KeyframeEffect.prototype,AnimationEffect.prototype);
+ function effectRecord(receiver){const own=__elementApply(get,effects,[receiver]);if(!own)throw new TypeError("Illegal KeyframeEffect receiver");return own;}
+ function effectCall(receiver,op,fields){const own=effectRecord(receiver);return call("",Object.assign({op},own.effect?{effect:own.effect}:{animation:own.animation},fields||{}));}
+ // CSS property names become their IDL attribute names; custom properties keep theirs.
+ function idlName(name){if(name.startsWith("--"))return name;if(name==="float")return "cssFloat";return name.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase());}
+ const timingNumber=value=>value==="Infinity"?Infinity:value;
+ const effectMembers={
+  getKeyframes(){
+   return effectCall(this,"effectKeyframes").map(frame=>{
+    const result={offset:frame.offset,computedOffset:frame.computedOffset,easing:frame.easing,composite:frame.composite};
+    for(const [name,value] of Object.entries(frame.properties))result[idlName(name)]=value;
+    return result;
+   });
+  },
+  setKeyframes(frames){effectCall(this,"effectSetKeyframes",{keyframes:keyframes(frames)});},
+  getTiming(){const timing=effectCall(this,"effectTiming");timing.iterations=timingNumber(timing.iterations);return timing;},
+  getComputedTiming(){const timing=effectCall(this,"effectComputedTiming");timing.iterations=timingNumber(timing.iterations);return timing;},
+  updateTiming(timing){effectCall(this,"effectUpdateTiming",{timing:options(timing===undefined?{}:timing)});}
+ };
+ for(const [name,value] of Object.entries(effectMembers))Object.defineProperty(name.endsWith("Keyframes")?KeyframeEffect.prototype:AnimationEffect.prototype,name,{value,writable:true,enumerable:true,configurable:true});
+ Object.defineProperty(KeyframeEffect.prototype,"target",{get:Object.getOwnPropertyDescriptor({get target(){return effectRecord(this).target;}},"target").get,set:Object.getOwnPropertyDescriptor({set target(value){effectRecord(this).target=value;}},"target").set,enumerable:true,configurable:true});
+ Object.defineProperty(KeyframeEffect.prototype,"pseudoElement",{get:Object.getOwnPropertyDescriptor({get pseudoElement(){effectRecord(this);return null;}},"pseudoElement").get,enumerable:true,configurable:true});
+ Object.defineProperty(AnimationEffect.prototype,Symbol.toStringTag,{value:"AnimationEffect",configurable:true});
+ Object.defineProperty(globalThis,"AnimationEffect",{value:AnimationEffect,writable:true,configurable:true});
  Object.setPrototypeOf(Animation.prototype,EventTarget.prototype);
  function record(receiver){const own=__elementApply(get,records,[receiver]);if(!own)throw new TypeError("Illegal Animation receiver");return own;}
  function wrap(state,target){
@@ -340,7 +516,7 @@ fn compact_web_animations_bootstrap() string {
   if(!object){
    object=Object.create(Animation.prototype);
    const effect=Object.create(KeyframeEffect.prototype);
-   Object.defineProperty(effect,"target",{value:target,enumerable:true});
+   __elementApply(set,effects,[effect,{animation:state.key,target}]);
    __elementApply(set,records,[object,{key:state.key,target,owner:target.__state?target.__state.bridgeKey:"",effect,state,finished:null}]);
    wrappers.set(state.key,object);
   }
