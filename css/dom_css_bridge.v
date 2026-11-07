@@ -1220,6 +1220,66 @@ pub fn document_css_animations(document &dom.Document) []DocumentCSSAnimation {
 	return result
 }
 
+fn document_css_transition_for_handle(style_computer &StyleComputer, handle voidptr) ?&CSSTransition {
+	if style_computer.css_transition_storage_ == unsafe { nil } { return none }
+	for _, bucket in style_computer.css_transition_storage_.associated_transitions {
+		for entry in bucket.entries {
+			if voidptr(entry.transition) == handle { return entry.transition }
+		}
+	}
+	return none
+}
+
+fn document_css_animation_for_handle(style_computer &StyleComputer, handle voidptr) ?&CSSAnimation {
+	if style_computer.css_animation_storage_ == unsafe { nil } { return none }
+	for entry in style_computer.css_animation_storage_.entries {
+		if voidptr(entry.animation) == handle { return entry.animation }
+	}
+	return none
+}
+
+// https://drafts.csswg.org/web-animations-1/#dom-animation-currenttime for a
+// CSS transition or animation listed by document_css_animations().
+pub fn document_css_animation_current_time(document &dom.Document, handle voidptr) ?f64 {
+	dom_style_computer := document.style_computer
+	if dom_style_computer == unsafe { nil } || dom_style_computer.css_handle == unsafe { nil } { return none }
+	style_computer := unsafe { &StyleComputer(dom_style_computer.css_handle) }
+	now := style_computer.animation_time_ms_
+	if transition := document_css_transition_for_handle(style_computer, handle) {
+		if transition.play_state_ == .idle { return none }
+		delay := if transition.keyframe_effect_ != unsafe { nil } { transition.keyframe_effect_.specified_start_delay } else { 0.0 }
+		return now - (transition.start_time_ - delay)
+	}
+	animation := document_css_animation_for_handle(style_computer, handle) or { return none }
+	if animation.play_state_ == .idle || animation.paused_progress_ != none { return none }
+	return now - animation.start_time_
+}
+
+// Seeks a running CSS transition or animation; the next style update samples it there.
+pub fn document_css_animation_set_current_time(document &dom.Document, handle voidptr, time_ms f64) bool {
+	dom_style_computer := document.style_computer
+	if dom_style_computer == unsafe { nil } || dom_style_computer.css_handle == unsafe { nil } { return false }
+	style_computer := unsafe { &StyleComputer(dom_style_computer.css_handle) }
+	now := style_computer.animation_time_ms_
+	if found := document_css_transition_for_handle(style_computer, handle) {
+		mut transition := unsafe { &CSSTransition(found) }
+		if transition.play_state_ == .idle { return false }
+		delay := if transition.keyframe_effect_ != unsafe { nil } { transition.keyframe_effect_.specified_start_delay } else { 0.0 }
+		shift := (now - time_ms + delay) - transition.start_time_
+		transition.start_time_ += shift
+		transition.end_time_ += shift
+		if transition.play_state_ == .finished && now < transition.end_time_ {
+			transition.play_state_ = .running
+		}
+		return true
+	}
+	found := document_css_animation_for_handle(style_computer, handle) or { return false }
+	mut animation := unsafe { &CSSAnimation(found) }
+	if animation.play_state_ != .running || animation.paused_progress_ != none { return false }
+	animation.start_time_ = now - time_ms
+	return true
+}
+
 // Whether the browser host needs to schedule another rendering update for a
 // running CSS animation or transition owned by this document.
 pub fn document_has_running_css_animations(document &dom.Document) bool {

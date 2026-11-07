@@ -80,6 +80,9 @@ if(transition.effect.target!==target||transition.effect.pseudoElement!==null)fai
 if(document.getAnimations()[0]!==transition)fail("identity");
 if(target.getAnimations().length!==1||target.getAnimations()[0]!==transition)fail("element list");
 if(document.getElementById("other").getAnimations().length!==0)fail("other element");
+transition.currentTime=5000;
+if(getComputedStyle(target).width!=="15px")fail("seek "+getComputedStyle(target).width);
+if(Math.abs(transition.currentTime-5000)>1)fail("current time "+transition.currentTime);
 let threw=false;try{new CSSTransition();}catch(error){threw=error instanceof TypeError;}
 if(!threw)fail("constructor");
 console.log("css transitions listed");

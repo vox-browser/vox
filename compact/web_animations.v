@@ -3,6 +3,7 @@ module main
 import animations
 import css
 import dom
+import strconv
 import x.json2
 
 // https://drafts.csswg.org/web-animations-1/
@@ -202,6 +203,24 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 		}
 		return json2.encode(items)
 	}
+	if op == 'cssCurrentTime' {
+		css_key := json_string_property(request, 'animation') or { return error('TypeError: Illegal Animation receiver') }
+		handle := voidptr(usize(strconv.parse_uint(css_key.all_after('__css_'), 16, 64) or {
+			return error('TypeError: Illegal Animation receiver')
+		}))
+		if value := request['value'] {
+			if time := compact_web_animation_number(value) {
+				if css.document_css_animation_set_current_time(binding.document, handle, time) {
+					mut owner := unsafe { &dom.Document(binding.document) }
+					owner.needs_animated_style_update = true
+					owner.update_animated_style_if_needed()
+				}
+			}
+		}
+		return json2.encode({
+			'value': if time := css.document_css_animation_current_time(binding.document, handle) { json2.Any(time) } else { json2.Any(json2.Null{}) }
+		})
+	}
 	if op == 'list' {
 		node := binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 		element := node.as_element() or { return error('TypeError: Invalid Element receiver') }
@@ -388,6 +407,10 @@ fn compact_web_animations_bootstrap() string {
   Object.defineProperty(constructor.prototype,member,{get(){return cssState(this).name;},enumerable:true,configurable:true});
   Object.defineProperties(constructor.prototype,{
    playState:{get(){return cssState(this).playState;},enumerable:true,configurable:true},
+   currentTime:{get(){return call("",{op:"cssCurrentTime",animation:cssState(this).key}).value;},set(value){
+    const own=cssState(this);if(value===null)return;const number=Number(value);if(!isFinite(number))throw new TypeError("Animation times must be finite");
+    call("",{op:"cssCurrentTime",animation:own.key,value:number});
+   },enumerable:true,configurable:true},
    effect:{get(){return cssState(this).effect;},enumerable:true,configurable:true},
    pending:{get(){cssState(this);return false;},enumerable:true,configurable:true},
    id:{get(){cssState(this);return "";},set(value){},enumerable:true,configurable:true}
@@ -403,7 +426,7 @@ fn compact_web_animations_bootstrap() string {
    const effect=Object.create(KeyframeEffect.prototype);
    Object.defineProperty(effect,"target",{value:__queryElement(item.target),enumerable:true});
    Object.defineProperty(effect,"pseudoElement",{value:item.pseudoElement||null,enumerable:true});
-   own={effect};
+   own={effect,key:item.key};
    __elementApply(set,cssStates,[object,own]);
    cssWrappers.set(item.key,object);
   }
