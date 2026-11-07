@@ -15,3 +15,33 @@ fn test_aria_and_html_element_attributes_reflect_their_content_attributes() {
 	assert messages == ['button Go null rtl 7 0 -1 false true false null inherit',
 		'true false auto true', 'SyntaxError', 'plaintext-only plaintext-only  ', '[object DOMTokenList] true [object DOMTokenList]']
 }
+
+// Form control IDL attributes reflect their content attributes, which
+// constraint validation then reads.
+fn test_form_control_attributes_reflect_into_constraint_validation() {
+	$if !darwin {
+		return
+	}
+	document := html.parse_document('<!doctype html><body><form id=f></form></body>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/', [r'
+const fail=message=>{throw new Error(message);};
+const input=document.createElement("input");
+input.pattern="[A-Z]";input.value="abc";
+if(input.getAttribute("pattern")!=="[A-Z]"||input.checkValidity()||!input.validity.patternMismatch)fail("pattern");
+input.pattern="";input.required=true;input.value="";
+if(!input.hasAttribute("required")||input.checkValidity()||!input.validity.valueMissing)fail("required");
+if(input.maxLength!==-1||input.size!==20)fail("defaults");
+input.maxLength=4;if(input.getAttribute("maxlength")!=="4")fail("maxLength");
+let threw=false;try{input.maxLength=-1;}catch(error){threw=error instanceof DOMException&&error.name==="IndexSizeError";}
+if(!threw)fail("negative maxLength");
+const area=document.createElement("textarea");
+if(area.rows!==2||area.cols!==20)fail("textarea defaults");
+area.readOnly=true;if(!area.hasAttribute("readonly"))fail("readOnly");
+const form=document.getElementById("f");form.noValidate=true;if(!form.hasAttribute("novalidate"))fail("noValidate");
+console.log("form reflections passed");
+'], runtime, mut messages)
+	assert messages == ['form reflections passed'], messages.str()
+}

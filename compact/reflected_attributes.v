@@ -95,6 +95,51 @@ fn compact_reflected_attributes_bootstrap() string {
   else if(lower==="true"||lower==="false"||lower==="plaintext-only")this.setAttribute("contenteditable",lower);
   else throw new DOMException("The value must be true, false, plaintext-only or inherit","SyntaxError");
  });
+ // Form controls: https://html.spec.whatwg.org/multipage/input.html#the-input-element
+ const integer=/^[\t\n\f\r ]*([+-]?[0-9]+)/;
+ // long limited to only non-negative numbers, -1 when missing or invalid.
+ function nonNegative(prototype,name,attribute){
+  define(prototype,name,function(){
+   const value=this.getAttribute(attribute),match=value===null?null:integer.exec(value);
+   if(match){const parsed=parseInt(match[1],10);if(parsed>=0&&parsed<=2147483647)return parsed;}
+   return -1;
+  },function(value){
+   const converted=Number(value)|0;
+   if(converted<0)throw new DOMException("The value must not be negative","IndexSizeError");
+   this.setAttribute(attribute,String(converted));
+  });
+ }
+ // unsigned long limited to only positive numbers, with a default.
+ function positive(prototype,name,attribute,fallback){
+  define(prototype,name,function(){
+   const value=this.getAttribute(attribute),match=value===null?null:integer.exec(value);
+   if(match){const parsed=parseInt(match[1],10);if(parsed>0&&parsed<=2147483647)return parsed;}
+   return fallback;
+  },function(value){
+   let converted=Number(value)>>>0;
+   if(converted===0)throw new DOMException("The value must be positive","IndexSizeError");
+   if(converted>2147483647)converted=fallback;
+   this.setAttribute(attribute,String(converted));
+  });
+ }
+ const input=typeof HTMLInputElement==="function"?HTMLInputElement.prototype:null;
+ if(input){
+  for(const [name,attribute] of [["accept","accept"],["alt","alt"],["dirName","dirname"],["formTarget","formtarget"],["max","max"],["min","min"],["pattern","pattern"],["placeholder","placeholder"],["step","step"]])plainString(input,name,attribute);
+  for(const [name,attribute] of [["formNoValidate","formnovalidate"],["multiple","multiple"],["readOnly","readonly"],["required","required"]])boolean(input,name,attribute);
+  nonNegative(input,"maxLength","maxlength");nonNegative(input,"minLength","minlength");
+  positive(input,"size","size",20);
+ }
+ const textarea=typeof HTMLTextAreaElement==="function"?HTMLTextAreaElement.prototype:null;
+ if(textarea){
+  for(const [name,attribute] of [["dirName","dirname"],["placeholder","placeholder"],["wrap","wrap"]])plainString(textarea,name,attribute);
+  for(const [name,attribute] of [["readOnly","readonly"],["required","required"]])boolean(textarea,name,attribute);
+  nonNegative(textarea,"maxLength","maxlength");nonNegative(textarea,"minLength","minlength");
+  positive(textarea,"cols","cols",20);positive(textarea,"rows","rows",2);
+ }
+ const select=typeof HTMLSelectElement==="function"?HTMLSelectElement.prototype:null;
+ if(select){boolean(select,"multiple","multiple");boolean(select,"required","required");}
+ const form=typeof HTMLFormElement==="function"?HTMLFormElement.prototype:null;
+ if(form){boolean(form,"noValidate","novalidate");plainString(form,"acceptCharset","accept-charset");plainString(form,"target","target");}
 })();
 '
 }
