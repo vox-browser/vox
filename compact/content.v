@@ -292,6 +292,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'insertAdjacentHTML' { return binding.insert_adjacent_html_query(root, selector) }
 	if action == 'characterData' { return binding.character_data_query(root, selector) }
 	if action == 'documentStyleSheets' { return binding.document_style_sheets_query(root) }
+	if action == 'computedAccessibility' { return compact_accessibility_query(root, selector) }
 	if action == 'doctypeValue' {
 		if !root.is_document_type() { return error('TypeError: Illegal DocumentType receiver') }
 		doctype := unsafe { &dom.DocumentType(root) }
