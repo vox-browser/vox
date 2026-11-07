@@ -496,9 +496,10 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	text := svg_direct_text_contents(element)
 	computed := graphics_box.computed_values()
 	shaped := svg_shape_text(graphics_box, text)
+	adjustment := svg_text_length_adjustment(element, shaped, context.viewport_size.width())
 	mut x := context.current_text_position.x
 	if svg_text_box_starts_text_chunk(graphics_box) {
-		chunk := measure_svg_text_chunk(graphics_box)
+		chunk := measure_svg_text_chunk(graphics_box, context.viewport_size.width())
 		match chunk.anchor {
 			.middle {
 				x -= chunk.advance / 2
@@ -513,16 +514,80 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	baseline_font := graphics_box.first_available_font()
 	baseline_y := context.current_text_position.y + f64(dominant_baseline_offset(baseline_metric,
 		baseline_font.pixel_metrics()))
-	path := svg_glyph_runs_outline_path(shaped.runs, x, baseline_y)
+	path := svg_adjusted_glyph_runs_outline_path(shaped.runs, x, baseline_y, adjustment)
 	final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
 	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
 	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(final_local_bounds), stroke_width))
 	graphics_state.set_computed_svg_path(path)
 	context.current_text_position = svg.Point{
-		x: f64(f32(x + shaped.width))
+		x: f64(f32(x + adjustment.advance(shaped.width)))
 		y: f64(f32(context.current_text_position.y))
 	}
 	return final_local_bounds
+}
+
+// SvgTextLayoutAlgorithm::ResolveTextLength() for an element whose text is
+// all its own. `spacing` adds delta/(n-1) after each of its n characters;
+// `spacingAndGlyphs` stretches positions and glyphs. Later characters in the
+// chunk move by the final shift: n gaps for spacing, delta for glyphs.
+struct SVGTextLengthAdjustment {
+	character_delta f64
+	glyph_scale     f64 = 1
+	following_shift f64
+}
+
+fn (adjustment SVGTextLengthAdjustment) advance(width f64) f64 {
+	return width + adjustment.following_shift
+}
+
+// The element's own adjusted extent, from its first character's start to its
+// last character's end.
+fn (adjustment SVGTextLengthAdjustment) extent(width f64, characters int) f64 {
+	return width * adjustment.glyph_scale + adjustment.character_delta * f64(characters - 1)
+}
+
+fn svg_text_length_adjustment(element &dom.Element, shaped SVGShapedText, viewport_width CSSPixels) SVGTextLengthAdjustment {
+	attribute := element.get_attribute_value('textLength')
+	if attribute.len == 0 || shaped.runs.len == 0 {
+		return SVGTextLengthAdjustment{}
+	}
+	// Text in descendant tspans is laid out by those elements, which keep the
+	// unadjusted flow.
+	for child in element.as_node().children_as_vector() {
+		if child.is_element() {
+			return SVGTextLengthAdjustment{}
+		}
+	}
+	text_length := first_svg_text_position(attribute, viewport_width) or {
+		return SVGTextLengthAdjustment{}
+	}
+	if text_length < 0 {
+		return SVGTextLengthAdjustment{}
+	}
+	delta := f64(f32(text_length) - f32(shaped.width))
+	if element.get_attribute_value('lengthAdjust').trim_space() == 'spacingAndGlyphs' {
+		if shaped.width <= 0 {
+			return SVGTextLengthAdjustment{}
+		}
+		return SVGTextLengthAdjustment{
+			glyph_scale:     f64(f32(text_length) / f32(shaped.width))
+			following_shift: delta
+		}
+	}
+	characters := svg_shaped_character_count(shaped)
+	character_delta := if characters > 1 { f64(f32(delta) / f32(characters - 1)) } else { 0.0 }
+	return SVGTextLengthAdjustment{
+		character_delta: character_delta
+		following_shift: character_delta * f64(characters)
+	}
+}
+
+fn svg_shaped_character_count(shaped SVGShapedText) int {
+	mut count := 0
+	for run in shaped.runs {
+		count += run.glyphs().len
+	}
+	return count
 }
 
 struct SVGShapedText {
@@ -533,6 +598,9 @@ struct SVGShapedText {
 struct SVGTextChunkMeasurement {
 mut:
 	advance             f64
+	// Spacing that textLength adds after an element's last character applies
+	// only when more text follows in the chunk.
+	pending_gap         f64
 	anchor              css.TextAnchor
 	found_chunk_start   bool
 	found_rendered_text bool
@@ -548,7 +616,7 @@ fn svg_text_box_starts_text_chunk(text_box &Node) bool {
 		|| first_svg_text_position(element.get_attribute_value('y'), CSSPixels.new(1)) != none
 }
 
-fn measure_svg_text_chunk_subtree(node &Node, chunk_start &Node,
+fn measure_svg_text_chunk_subtree(node &Node, chunk_start &Node, viewport_width CSSPixels,
 	mut measurement SVGTextChunkMeasurement) {
 	if measurement.finished || node.is_svg_text_path_box() {
 		return
@@ -568,20 +636,25 @@ fn measure_svg_text_chunk_subtree(node &Node, chunk_start &Node,
 						measurement.anchor = node.computed_values().text_anchor()
 						measurement.found_rendered_text = true
 					}
-					measurement.advance += svg_shape_text(node, text).width
+					shaped := svg_shape_text(node, text)
+					adjustment := svg_text_length_adjustment(element, shaped, viewport_width)
+					measurement.advance += measurement.pending_gap
+						+ adjustment.extent(shaped.width, svg_shaped_character_count(shaped))
+					measurement.pending_gap = adjustment.advance(shaped.width)
+						- adjustment.extent(shaped.width, svg_shaped_character_count(shaped))
 				}
 			}
 		}
 	}
 	for child in node.children() {
-		measure_svg_text_chunk_subtree(child, chunk_start, mut measurement)
+		measure_svg_text_chunk_subtree(child, chunk_start, viewport_width, mut measurement)
 		if measurement.finished {
 			return
 		}
 	}
 }
 
-fn measure_svg_text_chunk(chunk_start &Node) SVGTextChunkMeasurement {
+fn measure_svg_text_chunk(chunk_start &Node, viewport_width CSSPixels) SVGTextChunkMeasurement {
 	mut subtree_root := unsafe { chunk_start }
 	mut ancestor := chunk_start.parent()
 	for {
@@ -593,7 +666,7 @@ fn measure_svg_text_chunk(chunk_start &Node) SVGTextChunkMeasurement {
 		ancestor = candidate.parent()
 	}
 	mut measurement := SVGTextChunkMeasurement{}
-	measure_svg_text_chunk_subtree(subtree_root, chunk_start, mut measurement)
+	measure_svg_text_chunk_subtree(subtree_root, chunk_start, viewport_width, mut measurement)
 	return measurement
 }
 
@@ -823,19 +896,34 @@ fn append_svg_glyph_contour(mut instructions []svg.PathInstruction, contour []pl
 }
 
 fn svg_glyph_runs_outline_path(runs []&platform.GlyphRun, x f64, baseline_y f64) svg.Path {
+	return svg_adjusted_glyph_runs_outline_path(runs, x, baseline_y, SVGTextLengthAdjustment{})
+}
+
+fn svg_adjusted_glyph_runs_outline_path(runs []&platform.GlyphRun, x f64, baseline_y f64,
+	adjustment SVGTextLengthAdjustment) svg.Path {
 	mut instructions := []svg.PathInstruction{}
+	mut character := 0
 	for run in runs {
 		font := run.font()
 		if font.is_invisible {
+			character += run.glyphs().len
 			continue
 		}
 		for glyph in run.glyphs() {
+			index := character
+			character++
 			if !glyph.should_paint {
 				continue
 			}
 			if outline := font.glyph_outline(glyph.glyph_index) {
+				mut origin_x := f64(f32(x) + glyph.position.x)
+				if adjustment.glyph_scale != 1 || adjustment.character_delta != 0 {
+					origin_x = f64(f32(x) + f32(glyph.position.x * adjustment.glyph_scale
+						+ adjustment.character_delta * f64(index)))
+				}
 				transform := svg.AffineTransform{
-					e: f64(f32(x) + glyph.position.x)
+					a: adjustment.glyph_scale
+					e: origin_x
 					f: f64(f32(baseline_y) + glyph.position.y)
 				}
 				for contour in outline.contours {
