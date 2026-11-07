@@ -242,3 +242,73 @@ fn test_clipped_canvas_draws_match_skia() {
 	}
 	assert expected.any(it != 0 && it != 255)
 }
+
+struct CpuRasterTestComposite {
+	operation CompositingAndBlendingOperator
+	width     f64
+	alpha     f64
+	color     dom.Color
+}
+
+// Fills and strokes with composite operations take the Skia-free raster
+// pipeline blitter, except the runtime-effect plus-lighter and plus-darker
+// blenders, which stay on Skia; all must match skia.draw_path() with the same
+// composite operation.
+fn test_composited_canvas_draws_match_skia() {
+	draws := [
+		CpuRasterTestComposite{.source_over, 0, 1, dom.Color{200, 60, 40, 255}},
+		CpuRasterTestComposite{.multiply, 0, 0.8, dom.Color{40, 140, 220, 255}},
+		CpuRasterTestComposite{.color_dodge, 6, 0.9, dom.Color{230, 200, 30, 210}},
+		CpuRasterTestComposite{.destination_out, 0.6, 1, dom.Color{0, 0, 0, 255}},
+		CpuRasterTestComposite{.source_in, 0.6, 0.7, dom.Color{90, 220, 120, 255}},
+		CpuRasterTestComposite{.copy, 0, 0.5, dom.Color{250, 250, 250, 160}},
+		CpuRasterTestComposite{.hue, 3, 1, dom.Color{30, 60, 250, 255}},
+		CpuRasterTestComposite{.plus_lighter, 0, 0.6, dom.Color{120, 30, 90, 255}},
+		CpuRasterTestComposite{.soft_light, 0, 1, dom.Color{255, 255, 255, 255}},
+	]
+	mut context := cpu_raster_test_context()
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, draw in draws {
+		stroke := draw.width > 0
+		if stroke {
+			context.drawing_state.stroke_style = FillOrStrokeStyle.from_color(draw.color)
+		} else {
+			context.drawing_state.fill_style = FillOrStrokeStyle.from_color(draw.color)
+		}
+		context.drawing_state.transform = CanvasAffineTransform{0.97, 0.1, -0.12, 1.02, 4, -2}
+		context.drawing_state.global_alpha = draw.alpha
+		context.drawing_state.line_width = if stroke { draw.width } else { 1 }
+		context.drawing_state.current_compositing_and_blending_operator = draw.operation
+		cpu_raster_test_path(mut context, i % 3)
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		state := context.drawing_state
+		style := if stroke { state.stroke_style } else { state.fill_style }
+		command := skia.Command{
+			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
+			style:        canvas_skia_style(style.to_gfx_paint_style())
+			transform:    canvas_skia_transform(state.transform)
+			stroke:       stroke
+			cap:          int(state.line_cap)
+			join:         int(state.line_join)
+			composite:    int(draw.operation)
+			width:        f32(state.line_width)
+			miter:        f32(state.miter_limit)
+			global_alpha: f32(state.global_alpha)
+		}
+		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			command)
+		expected = pixels.clone()
+		expected_alpha_type = 2
+		if stroke {
+			context.stroke()
+		} else {
+			context.fill('nonzero')
+		}
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'composited draw ${i} (${draw.operation}) differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}

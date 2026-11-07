@@ -2,11 +2,12 @@ module cpuraster
 
 import math
 
-// Canvas2D path fills, as skia/canvas_raster.cpp's vox_skia_canvas_path()
-// draws them with LibWeb Skia for a solid source-over fill without clips,
+// Canvas2D path fills and strokes, as skia/canvas_raster.cpp's
+// vox_skia_canvas_path() draws them with LibWeb Skia for a solid color without
 // filters or shadows: writePixels() premultiplies the bitmap,
-// SkCanvas::drawPath() fills the path anti-aliased, and readPixels() returns
-// the premultiplied surface.
+// SkCanvas::drawPath() fills or strokes the path anti-aliased inside the clip
+// with the composite operation's blender, and readPixels() returns the
+// premultiplied surface.
 
 // Segments use skia.Path's encoding: 12 floats per segment, kind (0 move,
 // 1 line, 2 quad, 3 cubic, 4 SVG arc, 5 close), point, two control points,
@@ -35,22 +36,27 @@ pub fn canvas_path(segments []f32, even_odd bool) Path {
 // SkDrawTiler splits devices wider or taller than this into translated tiles.
 const max_untiled_dimension = 8191
 
-// fill_canvas_path fills path with color (an SkColor, 0xAARRGGBB) through
-// transform ([a b c d e f]) into width x height RGBA_8888 pixels, which are
-// premultiplied when alpha_type is 2 and premultiplied first otherwise.
+// fill_canvas_path fills path with color (an SkColor, 0xAARRGGBB) at
+// global_alpha through transform ([a b c d e f]) into width x height RGBA_8888
+// pixels, which are premultiplied when alpha_type is 2 and premultiplied first
+// otherwise. mode is the composite operation's blend mode (canvas_blend_mode()).
 // Returns false without changing pixels for devices Skia would tile.
 // clips are the Canvas2D clip paths in device space, applied anti-aliased in
 // order (canvas_raster_clip()).
-pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, clips []Path) bool {
+pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, mode BlendMode, clips []Path) bool {
 	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
 	if alpha_type != 2 {
 		premultiply_rows(mut pixels, width, height, pitch)
 	}
+	alpha := canvas_paint_alpha(color, global_alpha)
+	if blend_draws_nothing(mode, paint_alpha_byte(alpha)) {
+		return true
+	}
 	rc := canvas_raster_clip(width, height, clips)
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
-	mut blitter := new_solid_blitter(mut pixels, pitch, color)
+	mut blitter := canvas_blitter(mut pixels, pitch, color, alpha, mode) or { return true }
 	return anti_fill_path_clip(path.transform(matrix), false, &rc, mut blitter)
 }
 
@@ -68,16 +74,18 @@ pub enum StrokeJoin {
 }
 
 // stroke_canvas_path strokes path the way vox_skia_canvas_path() does for a
-// solid source-over stroke without clips, filters or shadows. When line_width
+// solid stroke without filters or shadows. When line_width
 // mapped through transform is at most one device pixel along both axes,
 // SkDraw draws a one-pixel hairline with alpha scaled by the width; wider
 // strokes are outlined by SkStroke in source space and the outline is filled
 // in device space. dashes and dash_offset are the SkDashPathEffect intervals
 // and phase, which cut the path into dashes first; Skia ignores an empty or
 // invalid list. clips are the device-space clip paths, as for
-// fill_canvas_path(). color is the style's SkColor before global_alpha.
+// fill_canvas_path(). color is the style's SkColor before global_alpha, and
+// mode the composite operation's blend mode: a thin stroke stays an outline
+// unless the mode supports coverage as alpha or the stroke is a full pixel.
 // Returns false without changing pixels for devices Skia would tile.
-pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path) bool {
+pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, mode BlendMode, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path) bool {
 	if !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
@@ -91,7 +99,9 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	// values; the defaults are 0 (a hairline) and 4.
 	stroke_width := if line_width >= 0 { line_width } else { f32(0) }
 	miter_limit := if miter >= 0 { miter } else { f32(4) }
-	// DrawTreatAsHairline(): the stroke width's device vectors.
+	// DrawTreatAsHairline(): the stroke width's device vectors. Then
+	// modifyPaintForHairlines() draws a hairline at full coverage, or with
+	// the coverage in its alpha when the blend mode supports that.
 	mut coverage := f32(1)
 	mut hairline := true
 	if stroke_width != 0 {
@@ -99,6 +109,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		len1 := fast_len(stroke_width * matrix.c, stroke_width * matrix.d)
 		if len0 <= 1 && len1 <= 1 {
 			coverage = float_midpoint(len0, len1)
+			hairline = coverage == 1 || blend_prescales_coverage(mode)
 		} else {
 			hairline = false
 		}
@@ -115,7 +126,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	// SkCanvas::onDrawPath(): non-finite paths, SkPaint::nothingToDraw() and
 	// internalQuickReject().
 	bounds := path.bounds() or { return true }
-	if alpha == 0 || path.is_inverse_fill() {
+	if blend_draws_nothing(mode, alpha) || path.is_inverse_fill() {
 		return true
 	}
 	radius := inflation_radius(stroke_width, cap, join, miter_limit)
@@ -187,7 +198,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			}
 		}
 		device_path, known_convex := outline.transformed(matrix)
-		mut blitter := new_solid_blitter(mut pixels, pitch, canvas_fill_color(color, global_alpha))
+		mut blitter := canvas_blitter(mut pixels, pitch, color, paint_alpha, mode) or { return true }
 		anti_fill_path_clip(device_path, known_convex, &rc, mut blitter)
 		return true
 	}
@@ -204,8 +215,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		scale := int(saturate_to_i32(coverage * f32(256)))
 		hair_alpha = tpin(f32((alpha * scale) >> 8) * inv_255, 0, 1)
 	}
-	hair_color := (canvas_fill_color(color, global_alpha) & 0xffffff) | (color4f_byte(hair_alpha) << 24)
-	mut blitter := new_solid_blitter(mut pixels, pitch, hair_color)
+	mut blitter := canvas_blitter(mut pixels, pitch, color, hair_alpha, mode) or { return true }
 	anti_hair_path_clip(source.transform(matrix), cap, &rc, mut blitter)
 	return true
 }
@@ -293,16 +303,4 @@ fn premultiply_rows(mut pixels []u8, width int, height int, pitch int) {
 			}
 		}
 	}
-}
-
-// canvas_fill_color returns the 8-bit SkColor the legacy blitter receives
-// for color (0xAARRGGBB) after SkPaint::setAlphaf(getAlphaf() * global_alpha):
-// SkColor4f stores byte * (1/255), and SkColor4f::toSkColor() rounds with
-// trunc(pin(v * 255 + 0.5, 0, 255)).
-pub fn canvas_fill_color(color u32, global_alpha f32) u32 {
-	mut result := color4f_byte(canvas_paint_alpha(color, global_alpha)) << 24
-	for shift in [u32(0), 8, 16] {
-		result |= color4f_byte(f32((color >> shift) & 0xff) * inv_255) << shift
-	}
-	return result
 }
