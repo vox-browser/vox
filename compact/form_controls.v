@@ -40,6 +40,21 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 			binding.encode_element_state(unsafe { &dom.Element(owner) })
 		} else { 'null' }
 	}
+	// click() reads the checkedness its native activation behavior produced.
+	if query.op == 'activationState' {
+		node := binding.node_for_key(key) or {
+			binding.materialize_shadow_host(key, json2.Any(query.state))!
+		}
+		element := node.as_element() or { return error('TypeError: Invalid HTMLInputElement receiver') }
+		if !element.is_html_element() || element.local_name() != 'input' {
+			return error('TypeError: Invalid HTMLInputElement receiver')
+		}
+		input := unsafe { &dom.HTMLInputElement(element) }
+		return json2.encode({
+			'checked':       json2.Any(input.checked())
+			'indeterminate': json2.Any(input.indeterminate())
+		})
+	}
 	if query.op in ['radioItems', 'radioValue', 'setRadioValue'] {
 		mut list := binding.radio_lists[query.id] or { return error('TypeError: Invalid RadioNodeList receiver') }
 		if query.op == 'radioValue' { return json2.encode(list.value()) }
