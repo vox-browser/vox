@@ -39,34 +39,76 @@ fn (fragment &LineBoxFragment) chromium_visible_line_end(at_break bool) ?string 
 	}
 	if covered != fragment.length_in_code_units_ || !has_glyph_indices { return none }
 	text := fragment.text() or { return none }
-	visible := utf16_substring_for_line_box(text, 0, length)
-	if fragment.chromium_line_end_crosses_script_run(visible) { return none }
-	return visible
+	return utf16_substring_for_line_box(text, 0, length)
 }
 
 // Blink reshapes a line end within its script runs: spaces, digits and
-// punctuation keep the script of the letter before them. A fragment merged
+// punctuation keep the script of the letter before them. Returns the UTF-16
+// offset in `visible` where its final script run begins. A fragment merged
 // from same-font chunks, such as the Latin-subset " VK" after Cyrillic text,
-// must not reshape its leading space with "VK" and take their kern.
-fn (fragment &LineBoxFragment) chromium_line_end_crosses_script_run(visible string) bool {
+// keeps its leading space, shaped in the Cyrillic run, and reshapes only "VK".
+fn (fragment &LineBoxFragment) chromium_line_end_script_tail(visible string) int {
+	if visible.len == 0 { return 0 }
+	if visible.is_ascii() {
+		// Every ASCII letter is Latin: only leading common characters that
+		// continue a preceding Cyrillic run can split this line end.
+		for index in 0 .. visible.len {
+			character := visible[index]
+			if (character >= `A` && character <= `Z`) || (character >= `a` && character <= `z`) {
+				return if index > 0 && fragment.chromium_script_before_fragment() == .cyrillic {
+					index
+				} else {
+					0
+				}
+			}
+		}
+		return 0
+	}
 	mut script := ChromiumContextScript.common
-	mut leading_common := false
+	mut known := false
+	mut start := 0
+	mut offset := 0
 	for character in visible.runes() {
 		current := chromium_context_code_point_script(u32(character))
-		if current == .common {
-			if script == .common { leading_common = true }
-			continue
-		}
-		if script == .common {
-			if leading_common && fragment.chromium_script_before_fragment() !in [.common, current] {
-				return true
+		if current != .common {
+			if !known {
+				// Leading common characters continue the run before the
+				// fragment, or join this letter's run at the text start.
+				known = true
+				if offset > 0 {
+					script = fragment.chromium_script_before_fragment()
+				}
 			}
-		} else if current != script {
-			return true
+			if script != .common && current != script { start = offset }
+			script = current
 		}
-		script = current
+		offset += if u32(character) > 0xffff { 2 } else { 1 }
 	}
-	return false
+	return start
+}
+
+// The exact pen of the glyph that begins `tail_start` code units into a
+// fragment's merged run, as Blink sums its item advances. None unless a glyph
+// starts there and the run's placement agrees with that pen.
+fn (fragment &LineBoxFragment) chromium_line_end_prefix(run &platform.GlyphRun, tail_start int) ?ChromiumLineEndPrefix {
+	mut covered := 0
+	mut pen := f64(0)
+	for index, glyph in run.glyphs_ {
+		if covered == tail_start {
+			placed := f64(glyph.position.x) - f64(glyph.offset_x) - f64(fragment.glyph_remainder_)
+			if math.abs(placed - pen) > 0.01 { return none }
+			return ChromiumLineEndPrefix{ glyphs: index, pen: pen }
+		}
+		if covered > tail_start { return none }
+		covered += glyph.length_in_code_units
+		pen += f64(glyph.advance)
+	}
+	return none
+}
+
+struct ChromiumLineEndPrefix {
+	glyphs int
+	pen    f64
 }
 
 // The script of the last Latin or Cyrillic letter before this fragment in its
@@ -97,13 +139,46 @@ fn (fragment &LineBoxFragment) chromium_script_before_fragment() ChromiumContext
 fn (fragment &LineBoxFragment) chromium_shape_without_trailing_whitespace(at_break bool) ?&platform.GlyphRun {
 	visible := fragment.chromium_visible_line_end(at_break) or { return none }
 	run := fragment.glyph_run_ or { return none }
-	return chromium_shape_line_end(fragment.layout_node_, visible, run, fragment.glyph_remainder_)
+	tail_start := fragment.chromium_line_end_script_tail(visible)
+	if tail_start == 0 {
+		return chromium_shape_line_end(fragment.layout_node_, visible, run, fragment.glyph_remainder_)
+	}
+	prefix := fragment.chromium_line_end_prefix(run, tail_start) or { return none }
+	tail_text := utf16_substring_for_line_box(visible, tail_start,
+		utf16_length_for_line_box(visible) - tail_start)
+	tail := chromium_shape_line_end(fragment.layout_node_, tail_text, run, 0) or { return none }
+	if tail.glyphs_.len == 0 { return none }
+	// The tail slice starts at its first glyph's placement; restore its pen.
+	origin := f64(tail.glyphs_[0].offset_x)
+	base := prefix.pen + f64(fragment.glyph_remainder_) + origin
+	mut glyphs := run.glyphs_[..prefix.glyphs].clone()
+	for glyph in tail.glyphs_ {
+		mut placed := glyph
+		placed.position.x = f32(base + f64(glyph.position.x))
+		glyphs << placed
+	}
+	return &platform.GlyphRun{
+		font_:              run.font()
+		text_type_:         .ltr
+		face_:              run.face()
+		width_:             f32(prefix.pen + f64(tail.width()))
+		glyphs_:            glyphs
+		space_width:        run.space_width
+		replay_data_dirty_: true
+	}
 }
 
 fn (fragment &LineBoxFragment) chromium_width_without_trailing_whitespace(at_break bool) ?f32 {
 	visible := fragment.chromium_visible_line_end(at_break) or { return none }
 	run := fragment.glyph_run_ or { return none }
 	visible_length := fragment.length_in_code_units_ - fragment.trailing_whitespace_.length_in_code_units
+	tail_start := fragment.chromium_line_end_script_tail(visible)
+	if tail_start > 0 {
+		prefix := fragment.chromium_line_end_prefix(run, tail_start) or { return none }
+		tail_text := utf16_substring_for_line_box(visible, tail_start, visible_length - tail_start)
+		tail_width := chromium_line_end_width(fragment.layout_node_, tail_text, run) or { return none }
+		return f32(prefix.pen + f64(tail_width))
+	}
 	if width := chromium_cached_safe_line_end(fragment.layout_node_, fragment.start_, visible_length, run) {
 		return width
 	}
