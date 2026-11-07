@@ -37,6 +37,9 @@ fn window_proxy_binding_factory() string {
  }
  return function(){
   let proxy;
+  // Functions read through the proxy run with the frame global as receiver
+  // when called on the proxy, as Window methods brand-check their receiver.
+  const functions=new WeakMap();
   const target=create(WindowPrototype),methods={
    postMessage(message,targetOrigin){return apply(post,this,arguments)},
    close(){return operate("close",this)},focus(){return operate("focus",this)},blur(){return operate("blur",this)},
@@ -51,7 +54,14 @@ fn window_proxy_binding_factory() string {
     if(Object.prototype.hasOwnProperty.call(methods,key))return methods[key];
     if(key==="parent"||key==="top"||key==="opener"||key==="length"||key==="closed")return operate(key,proxy);
     if(/^(0|[1-9][0-9]*)$/.test(key))return operate("index",proxy,key);
-    return operate("get",proxy,key);
+    const value=operate("get",proxy,key);
+    if(typeof value!=="function")return value;
+    let wrapped=functions.get(value);
+    if(!wrapped){
+     wrapped=new Proxy(value,{apply(callee,receiver,args){return apply(callee,receiver===proxy?operate("realmGlobal",proxy):receiver,args)}});
+     functions.set(value,wrapped);
+    }
+    return wrapped;
    },
    set(target,key,value){return typeof key==="string"?operate("set",proxy,key,value):operate("write",proxy)},
    defineProperty(){return operate("write",proxy)},

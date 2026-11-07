@@ -176,6 +176,10 @@ fn (mut runtime Runtime) window_proxy_operation(binding &WindowProxyBinding, arg
 			}
 			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
+		'realmGlobal' {
+			if !same_origin { return runtime.window_proxy_security_error() }
+			return runtime.window_proxy_realm_global(binding, window) or { C.vox_jsc_JSValueMakeUndefined(runtime.context) }
+		}
 		'set' {
 			if !same_origin || args.len < 4 { return runtime.window_proxy_security_error() }
 			global := runtime.window_proxy_realm_global(binding, window) or {

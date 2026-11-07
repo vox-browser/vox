@@ -393,6 +393,8 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
  win.document.open();win.document.write("<p id=target>t</p>");win.document.close();
  win.target=win.document.getElementById("target");
  globalThis.proxied=win.target.textContent+" "+(other.contentWindow.target===win.target);
+ const computed=win.getComputedStyle(win.target);
+ globalThis.proxyCalls=[typeof computed.getPropertyValue,win.getComputedStyle===win.getComputedStyle,new win.Event("x").type].join(" ");
 '], runtime, mut messages)
 	assert runtime.evaluate_host('initial')! == 'true', messages.join('\n')
 	assert runtime.evaluate_host('typeof written')! == 'string', messages.join('\n')
@@ -407,6 +409,8 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
 	assert moved == '<i>moved</i> true', moved
 	proxied := runtime.evaluate_host('proxied')!
 	assert proxied == 't true', proxied
+	proxy_calls := runtime.evaluate_host('proxyCalls')!
+	assert proxy_calls == 'function true x', proxy_calls
 	mut loop := html.main_thread_event_loop()
 	deadline := time.sys_mono_now() + 5 * time.second
 	loop.spin_until(fn [runtime, deadline] () bool {
