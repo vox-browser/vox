@@ -524,7 +524,24 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 			stretched:   adjustment.glyph_scale != 1
 		})
 	}
-	final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
+	mut final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
+	if text.len > 0 && graphics_box.document().font_rendering_policy() == .chromium {
+		// Blink's text object bounding box is the union of its character
+		// cells, from the ascent to the descent across the advance; filter
+		// regions and objectBoundingBox units resolve against it.
+		metrics := baseline_font.pixel_metrics()
+		cells := svg.Rect{
+			x:      x
+			y:      baseline_y - f64(metrics.ascent)
+			width:  adjustment.extent(shaped.width, svg_shaped_character_count(shaped))
+			height: f64(metrics.ascent + metrics.descent)
+		}
+		final_local_bounds = if path.instructions.len > 0 {
+			union_svg_rect(final_local_bounds, cells)
+		} else {
+			cells
+		}
+	}
 	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
 	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(final_local_bounds), stroke_width))
 	graphics_state.set_computed_svg_path(path)
