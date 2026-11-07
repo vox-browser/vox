@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import os
 import browsernet
 import adblock
 import dom
@@ -9,6 +10,15 @@ import platform
 import painting
 
 const max_browser_image_fetches = 8
+
+// Diagnostic: VOX_TRACE_IMAGE_FAILURES=1 reports image fetches that complete
+// without decoded pixels, with their transport error, so a broken image in a
+// capture can be traced to its request.
+const trace_image_failures = os.getenv('VOX_TRACE_IMAGE_FAILURES') != ''
+
+fn trace_image_failure(url string, reason string) {
+	if trace_image_failures { eprintln('Vox image request failed: ${url} ${reason}') }
+}
 
 fn (app &BrowserApp) can_load_images_asynchronously() bool {
 	return !app.layout_tree_only && app.page_model != unsafe { nil }
@@ -151,6 +161,7 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 		return
 	}
 	if !browser_image_request_allows_cached_bytes(image, model, address) {
+		trace_image_failure(address.serialize(), 'request policy rejected cached bytes')
 		finish_browser_image_request(complete, none)
 		return
 	}
@@ -159,6 +170,7 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 	resource_url := address.serialize()
 	key := source_url + '\n' + resource_url
 	filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: source_url, request_type: 'image'}) or {
+		trace_image_failure(resource_url, 'filter: ${err.msg()}')
 		finish_browser_image_request(complete, none)
 		return
 	}
@@ -173,13 +185,21 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 				&& !resource.adblock_replacement
 				&& (resource.error == '' || (resource.source_url == source_url && resource.request_type == 'image'))
 				&& (resource.final_url in ['', resource_url] || resource.source_url == source_url) {
-				if resource.error != '' { finish_browser_image_request(complete, none); return }
+				if resource.error != '' {
+					trace_image_failure(resource_url, 'initial response: ${resource.error}')
+					finish_browser_image_request(complete, none)
+					return
+				}
 				filter_browser_response_headers(adblock.Request{
 					url: if resource.final_url == '' { resource_url } else { resource.final_url }
 					source_url: source_url
 					request_type: 'image'
 				}, resource.response_headers) or { finish_browser_image_request(complete, none); return }
-				decoded := browser_decoded_resource_image(address, resource) or { finish_browser_image_request(complete, none); return }
+				decoded := browser_decoded_resource_image(address, resource) or {
+					trace_image_failure(resource_url, 'initial response decode: ${err.msg()}')
+					finish_browser_image_request(complete, none)
+					return
+				}
 				finish_browser_image_request(complete, decoded)
 				return
 			}
@@ -220,6 +240,9 @@ fn (mut app BrowserApp) poll_browser_image_requests() {
 						if data := browser_decoded_resource_image(address, resource) { decoded = data }
 					}
 					app.retain_navigation_resource(resource.url, resource)
+				}
+				if decoded == none {
+					trace_image_failure(resource.url, 'fetch: error=${resource.error} bytes=${resource.body.len}')
 				}
 				for callback in callbacks { finish_browser_image_request(callback, decoded) }
 				completed = true
