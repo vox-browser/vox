@@ -13,10 +13,27 @@ pub enum Engine {
 }
 
 pub fn parse_engine(name string) !Engine {
+	// `.javascriptcore` selects the native C-API engine. A `-d vox_v8` build
+	// implements that API on V8, so both names select it there.
+	if name == 'v8' {
+		$if vox_v8 ? {
+			return .javascriptcore
+		}
+		return error('This build uses JavaScriptCore; rebuild with VOX_JS_ENGINE=v8 for V8')
+	}
 	return match name {
 		'javascriptcore' { .javascriptcore }
 		'libjs' { .libjs }
-		else { return error('Unknown JavaScript engine "${name}"; expected javascriptcore or libjs') }
+		else { return error('Unknown JavaScript engine "${name}"; expected javascriptcore, v8 or libjs') }
+	}
+}
+
+// The engine behind the native JavaScript C API in this build.
+pub fn native_engine_name() string {
+	$if vox_v8 ? {
+		return 'v8'
+	} $else {
+		return 'javascriptcore'
 	}
 }
 

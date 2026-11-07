@@ -6,7 +6,14 @@ import libjs
 import platform
 
 
-#flag darwin -framework JavaScriptCore
+// `-d vox_v8` compiles the same bindings against the JavaScriptCore C API
+// implemented on V8 (v8/jsc_on_v8.cpp). Its headers shadow the framework's;
+// build-prod-browser.sh links the backend library when VOX_JS_ENGINE=v8.
+$if vox_v8 ? {
+	#flag -I@DIR/v8/include
+} $else {
+	#flag darwin -framework JavaScriptCore
+}
 #flag darwin -framework CoreFoundation
 $if linux {
 	#pkgconfig javascriptcoregtk-4.1

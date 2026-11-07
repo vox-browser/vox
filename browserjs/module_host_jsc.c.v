@@ -10,8 +10,12 @@ import platform
 import processmetrics
 
 $if darwin {
-	#flag darwin -framework Foundation
-	#flag darwin @DIR/module_loader_darwin.m
+	// The V8 backend implements this interface itself (v8/jsc_on_v8.cpp);
+	// the Objective-C loader uses JavaScriptCore's JSScript SPI.
+	$if !vox_v8 ? {
+		#flag darwin -framework Foundation
+		#flag darwin @DIR/module_loader_darwin.m
+	}
 	#include "module_loader_darwin.h"
 }
 

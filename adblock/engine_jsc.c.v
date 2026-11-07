@@ -8,7 +8,9 @@ $if prealloc {
 import time
 
 
-#flag darwin -framework JavaScriptCore
+$if !vox_v8 ? {
+	#flag darwin -framework JavaScriptCore
+}
 #flag darwin -framework CoreFoundation
 #flag darwin -lz
 $if linux {

@@ -25,6 +25,8 @@ set -eu
 #   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
 #   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
 #   VOX_BUILD_C_MODE          parallel (default) or single; set by the build supervisor
+#   VOX_JS_ENGINE             javascriptcore (default) or v8 (experimental backend)
+#   VOX_V8_ROOT               V8 headers/library prefix (default: Homebrew node's libnode)
 
 single_c_unit_flag=
 v_prod=${VOX_BUILD_V_PROD:-0}
@@ -263,6 +265,37 @@ if [ -f "$skia_root/lib/libavformat.dylib" ] && [ -f "$skia_root/include/libavfo
     extra_ldflags="$extra_ldflags $skia_root/lib/libicuuc.dylib -Wl,-rpath,$skia_root/lib"
 fi
 
+# The experimental V8 backend implements the JavaScriptCore C API that every
+# binding uses (browserjs/v8/jsc_on_v8.cpp). Homebrew's node exports V8's API
+# from libnode; VOX_V8_ROOT selects another prefix with include/node and lib.
+js_engine=${VOX_JS_ENGINE:-javascriptcore}
+v8_library=
+case "$js_engine" in
+    javascriptcore) ;;
+    v8)
+        v8_root=${VOX_V8_ROOT:-/opt/homebrew}
+        v8_runtime=
+        for candidate in "$v8_root"/lib/libnode.*.dylib; do
+            if [ -f "$candidate" ]; then v8_runtime=$candidate; fi
+        done
+        if [ -z "$v8_runtime" ] || [ ! -f "$v8_root/include/node/v8.h" ]; then
+            echo "VOX_JS_ENGINE=v8 needs V8 headers and libnode under $v8_root (brew install node)" >&2
+            exit 2
+        fi
+        v8_library="$build_dir/libVoxJSCOnV8.dylib"
+        clang++ -std=c++20 -O3 -fPIC -dynamiclib -fvisibility=hidden \
+            -I"$v8_root/include/node" -I"$repo_dir/browserjs/v8/include" \
+            "$repo_dir/browserjs/v8/jsc_on_v8.cpp" "$v8_runtime" \
+            -framework CoreFoundation -Wl,-rpath,"$v8_root/lib" \
+            -Wl,-install_name,@rpath/libVoxJSCOnV8.dylib -o "$v8_library"
+        extra_ldflags="$extra_ldflags -L$build_dir -lVoxJSCOnV8 -Wl,-rpath,@executable_path"
+        ;;
+    *)
+        echo "VOX_JS_ENGINE must be javascriptcore or v8" >&2
+        exit 2
+        ;;
+esac
+
 # This V checkout currently selects both the C and native `time.zoneinfo`
 # backends for this large single-file build. Excluding the native backend keeps
 # the normal macOS C implementation and avoids duplicate method definitions.
@@ -308,6 +341,9 @@ if [ "${VOX_USE_SKIA:-0}" != 1 ]; then
 fi
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
+fi
+if [ "$js_engine" = v8 ]; then
+    set -- "$@" -d vox_v8
 fi
 if [ "${VOX_DOCUMENT_RETENTION_DIAGNOSTICS:-0}" = 1 ]; then
     set -- "$@" -d vox_document_retention_diagnostics
@@ -514,6 +550,18 @@ if [ -n "$dawn_library" ]; then
     fi
 else
     rm -f "$binary_dir/libVoxGraphiteDawn.dylib"
+fi
+
+if [ -n "$v8_library" ]; then
+    v8_resource_tmp=$(mktemp "$binary_dir/.v8-backend.XXXXXX")
+    cp "$v8_library" "$v8_resource_tmp"
+    chmod 755 "$v8_resource_tmp"
+    mv -f "$v8_resource_tmp" "$binary_dir/libVoxJSCOnV8.dylib"
+    if command -v codesign >/dev/null 2>&1; then
+        codesign --force --sign - "$binary_dir/libVoxJSCOnV8.dylib" >/dev/null
+    fi
+else
+    rm -f "$binary_dir/libVoxJSCOnV8.dylib"
 fi
 
 if command -v codesign >/dev/null 2>&1; then

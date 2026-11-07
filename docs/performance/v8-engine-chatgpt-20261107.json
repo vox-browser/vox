@@ -1,0 +1,1330 @@
+{
+ "date": "2026-11-07",
+ "commit": "c311b8215",
+ "diagnostic_live_comparison": true,
+ "instruction_acceptance": false,
+ "question": "JavaScriptCore vs V8 in Vox: chatgpt.com load and the answer to \"capital of italy\"",
+ "builds": {
+  "mode": "single C unit, V -prod, prealloc allocator, GG renderer; both from the same clean commit and build-input hash",
+  "build_inputs_sha256": "6534cca1144ca6f0 (prefix; receipts in Build/receipt-{jsc,v8})",
+  "jsc": {
+   "executable_sha256": "d878b73dc03af88f784db6d3450556b3790b2b2f476e051fbcb09f4be84ac5d4",
+   "engine": "system JavaScriptCore 22625.2.8.11.9 (macOS 27.2 26B123)"
+  },
+  "v8": {
+   "executable_sha256": "6d913c1cda294648ecf56cf61b4eee83a1d613a74adb6ccd6e2fd7bf27f2fbb5",
+   "backend_sha256": "5c9b1f167af6d0e017db2f993636c264a2717736a7e252a915597201604654e6",
+   "engine": "V8 14.6.202.34-node.28 from Homebrew node 26.8.1 libnode.147.dylib",
+   "libnode_sha256": "464d7a228d7201426b2c01ce99cb56455a21ace6326c1f2b016c033b8ab65fb1"
+  }
+ },
+ "host": {
+  "cpu": "Apple M5 Max",
+  "logical_cpus": 18,
+  "note": "Shared host; other sessions active. One-minute load averages per trial are recorded below (10.5-18.1)."
+ },
+ "protocol": {
+  "url": "https://chatgpt.com/",
+  "prompt": "capital of italy",
+  "anonymous": true,
+  "proxy": "socks5h://127.0.0.1:1337",
+  "window": "1024x880 (768 px document viewport), test display, scale of that display",
+  "profiles": "fresh empty private profile and cache per trial",
+  "order": "alternating pairs, jsc first in odd pairs",
+  "input": "native key events into the sokol input view (no app activation)",
+  "observation": "driver probe in the top-level page realm every 100 ms; geometry only after readyState complete",
+  "launch_to_composer": "process start to readyState complete with a laid-out composer",
+  "bootstrap_marker": "process start to html[data-octane-home-behavior-ready=1]; cohort 1 waited only 3 s for it, so only cohort 2 is comparable",
+  "settle": "5 s after the marker (or its timeout) before typing",
+  "submit_to_rome": "Return key delivery to the first probe whose assistant text contains Rome",
+  "counters": "proc_pid_rusage of the browser process only; worker and adblock helper processes are excluded",
+  "tool_revisions": {
+   "cohort_1": "tools/measure_chatgpt_engines.py at c311b8215 (3 s marker wait, single focus attempt)",
+   "cohort_2": "tools/measure_chatgpt_engines.py as committed in 962456f4f (20 s marker wait, up to 3 focus attempts before Return)"
+  },
+  "instructions_at_composer_plus_settle": "Browser-process counters read after the marker wait and the 5 s settle, before typing"
+ },
+ "summary": {
+  "jsc": {
+   "launch_to_composer_s": {
+    "n": 14,
+    "median": 2.957,
+    "min": 1.895,
+    "max": 5.051
+   },
+   "launch_to_bootstrap_marker_s": {
+    "n": 9,
+    "median": 10.963,
+    "min": 4.955,
+    "max": 13.677
+   },
+   "submit_to_user_message_s": {
+    "n": 11,
+    "median": 2.145,
+    "min": 1.132,
+    "max": 7.603
+   },
+   "submit_to_rome_s": {
+    "n": 11,
+    "median": 10.3,
+    "min": 5.487,
+    "max": 14.375
+   },
+   "instructions_at_composer_plus_settle": {
+    "n": 14,
+    "median": 34375470045.5,
+    "min": 24126345963,
+    "max": 40620199929
+   },
+   "cpu_seconds_at_composer_plus_settle": {
+    "n": 14,
+    "median": 5.541,
+    "min": 4.012,
+    "max": 9.139
+   },
+   "query_instructions": {
+    "n": 11,
+    "median": 42728583976,
+    "min": 34525236462,
+    "max": 53835616356
+   },
+   "query_cpu_seconds": {
+    "n": 11,
+    "median": 6.595,
+    "min": 5.115,
+    "max": 9.932
+   },
+   "peak_footprint_mib": {
+    "n": 11,
+    "median": 2291.2,
+    "min": 2185.3,
+    "max": 2620.2
+   }
+  },
+  "v8": {
+   "launch_to_composer_s": {
+    "n": 14,
+    "median": 2.748,
+    "min": 2.05,
+    "max": 4.7
+   },
+   "launch_to_bootstrap_marker_s": {
+    "n": 7,
+    "median": 12.433,
+    "min": 7.301,
+    "max": 17.287
+   },
+   "submit_to_user_message_s": {
+    "n": 11,
+    "median": 1.464,
+    "min": 1.258,
+    "max": 7.293
+   },
+   "submit_to_rome_s": {
+    "n": 11,
+    "median": 8.7,
+    "min": 5.842,
+    "max": 13.216
+   },
+   "instructions_at_composer_plus_settle": {
+    "n": 14,
+    "median": 34464467004.0,
+    "min": 21407828282,
+    "max": 47041782193
+   },
+   "cpu_seconds_at_composer_plus_settle": {
+    "n": 14,
+    "median": 5.382,
+    "min": 3.402,
+    "max": 8.325
+   },
+   "query_instructions": {
+    "n": 11,
+    "median": 36960035819,
+    "min": 34200541644,
+    "max": 48223738291
+   },
+   "query_cpu_seconds": {
+    "n": 11,
+    "median": 6.781,
+    "min": 4.897,
+    "max": 9.173
+   },
+   "peak_footprint_mib": {
+    "n": 11,
+    "median": 2604.0,
+    "min": 2204.1,
+    "max": 2704.5
+   }
+  },
+  "bootstrap_marker_cohort_2_only": {
+   "jsc": {
+    "n": 7,
+    "median": 11.048,
+    "min": 6.625,
+    "max": 13.677
+   },
+   "v8": {
+    "n": 7,
+    "median": 12.433,
+    "min": 7.301,
+    "max": 17.287
+   }
+  }
+ },
+ "trials": [
+  {
+   "cohort": 1,
+   "trial": "pair-1-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    10.84,
+    11.84,
+    14.51
+   ],
+   "launch_to_composer_s": 4.21,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 1.212,
+   "submit_to_rome_s": 5.487,
+   "instructions_at_composer_plus_settle": 32870175224,
+   "cpu_seconds_at_composer_plus_settle": 4.824,
+   "query_instructions": 36471630229,
+   "query_cpu_seconds": 5.115,
+   "peak_footprint_mib": 2185.3,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-1-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    10.95,
+    11.8,
+    14.43
+   ],
+   "launch_to_composer_s": 2.195,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 1.408,
+   "submit_to_rome_s": 6.149,
+   "instructions_at_composer_plus_settle": 34162884910,
+   "cpu_seconds_at_composer_plus_settle": 5.006,
+   "query_instructions": 36805345297,
+   "query_cpu_seconds": 5.785,
+   "peak_footprint_mib": 2238.4,
+   "answer": "The capital of Italy is Rome (Roma in Italian). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-2-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    13.03,
+    12.28,
+    14.5
+   ],
+   "launch_to_composer_s": 2.054,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 1.738,
+   "submit_to_rome_s": 6.937,
+   "instructions_at_composer_plus_settle": 33277309878,
+   "cpu_seconds_at_composer_plus_settle": 4.429,
+   "query_instructions": 40309000194,
+   "query_cpu_seconds": 5.666,
+   "peak_footprint_mib": 2549.5,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-2-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    13.79,
+    12.35,
+    14.58
+   ],
+   "launch_to_composer_s": 2.086,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 1.443,
+   "submit_to_rome_s": 6.623,
+   "instructions_at_composer_plus_settle": 32931431384,
+   "cpu_seconds_at_composer_plus_settle": 5.196,
+   "query_instructions": 39308086788,
+   "query_cpu_seconds": 5.566,
+   "peak_footprint_mib": 2606.6,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-3-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    12.13,
+    12.13,
+    14.4
+   ],
+   "launch_to_composer_s": 1.895,
+   "launch_to_bootstrap_marker_s": 4.955,
+   "submit_to_user_message_s": 1.587,
+   "submit_to_rome_s": 12.238,
+   "instructions_at_composer_plus_settle": 33666293850,
+   "cpu_seconds_at_composer_plus_settle": 4.034,
+   "query_instructions": 48479860099,
+   "query_cpu_seconds": 6.595,
+   "peak_footprint_mib": 2291.2,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-3-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    11.42,
+    11.96,
+    14.28
+   ],
+   "launch_to_composer_s": 2.05,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 1.313,
+   "submit_to_rome_s": 6.836,
+   "instructions_at_composer_plus_settle": 33013921234,
+   "cpu_seconds_at_composer_plus_settle": 4.468,
+   "query_instructions": 36407785878,
+   "query_cpu_seconds": 6.153,
+   "peak_footprint_mib": 2602.4,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-4-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    10.49,
+    11.65,
+    14.06
+   ],
+   "launch_to_composer_s": 4.291,
+   "launch_to_bootstrap_marker_s": 7.455,
+   "submit_to_user_message_s": 1.132,
+   "submit_to_rome_s": 6.022,
+   "instructions_at_composer_plus_settle": 33630104036,
+   "cpu_seconds_at_composer_plus_settle": 5.357,
+   "query_instructions": 34525236462,
+   "query_cpu_seconds": 5.664,
+   "peak_footprint_mib": 2185.5,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-4-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    10.73,
+    11.75,
+    14.15
+   ],
+   "launch_to_composer_s": 2.667,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 1.445,
+   "submit_to_rome_s": 6.338,
+   "instructions_at_composer_plus_settle": 34102303141,
+   "cpu_seconds_at_composer_plus_settle": 5.246,
+   "query_instructions": 35995727085,
+   "query_cpu_seconds": 4.897,
+   "peak_footprint_mib": 2604.0,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-5-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    11.99,
+    11.88,
+    14.08
+   ],
+   "launch_to_composer_s": 2.134,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 1.49,
+   "submit_to_rome_s": 6.873,
+   "instructions_at_composer_plus_settle": 32510940333,
+   "cpu_seconds_at_composer_plus_settle": 5.088,
+   "query_instructions": 36014971907,
+   "query_cpu_seconds": 6.338,
+   "peak_footprint_mib": 2522.0,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-5-v8",
+   "engine": "v8",
+   "failure": "RuntimeError: Composer text differs from the prompt: ''",
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    13.57,
+    12.23,
+    14.16
+   ],
+   "launch_to_composer_s": 2.256,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": null,
+   "submit_to_rome_s": null,
+   "instructions_at_composer_plus_settle": 21407828282,
+   "cpu_seconds_at_composer_plus_settle": 3.402,
+   "query_instructions": null,
+   "query_cpu_seconds": null,
+   "peak_footprint_mib": null,
+   "answer": null
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-6-jsc",
+   "engine": "jsc",
+   "failure": "RuntimeError: Composer text differs from the prompt: ''",
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    12.94,
+    12.2,
+    14.07
+   ],
+   "launch_to_composer_s": 4.504,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": null,
+   "submit_to_rome_s": null,
+   "instructions_at_composer_plus_settle": 24126345963,
+   "cpu_seconds_at_composer_plus_settle": 4.012,
+   "query_instructions": null,
+   "query_cpu_seconds": null,
+   "peak_footprint_mib": null,
+   "answer": null
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-6-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    13.1,
+    12.2,
+    14.1
+   ],
+   "launch_to_composer_s": 2.528,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 2.09,
+   "submit_to_rome_s": 5.842,
+   "instructions_at_composer_plus_settle": 33866627775,
+   "cpu_seconds_at_composer_plus_settle": 5.256,
+   "query_instructions": 34200541644,
+   "query_cpu_seconds": 5.429,
+   "peak_footprint_mib": 2204.1,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-7-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    14.26,
+    12.56,
+    14.14
+   ],
+   "launch_to_composer_s": 4.913,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": 5.2,
+   "submit_to_rome_s": 11.798,
+   "instructions_at_composer_plus_settle": 29462558753,
+   "cpu_seconds_at_composer_plus_settle": 5.672,
+   "query_instructions": 46009912606,
+   "query_cpu_seconds": 8.25,
+   "peak_footprint_mib": 2558.3,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 1,
+   "trial": "pair-7-v8",
+   "engine": "v8",
+   "failure": "RuntimeError: Composer text differs from the prompt: ''",
+   "exit": 0,
+   "typing_attempts": null,
+   "load_average_before": [
+    17.55,
+    13.49,
+    14.43
+   ],
+   "launch_to_composer_s": 4.356,
+   "launch_to_bootstrap_marker_s": null,
+   "submit_to_user_message_s": null,
+   "submit_to_rome_s": null,
+   "instructions_at_composer_plus_settle": 22597724783,
+   "cpu_seconds_at_composer_plus_settle": 4.04,
+   "query_instructions": null,
+   "query_cpu_seconds": null,
+   "peak_footprint_mib": null,
+   "answer": null
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-1-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    15.06,
+    13.97,
+    14.53
+   ],
+   "launch_to_composer_s": 2.323,
+   "launch_to_bootstrap_marker_s": 11.267,
+   "submit_to_user_message_s": 2.145,
+   "submit_to_rome_s": 10.116,
+   "instructions_at_composer_plus_settle": 40620199929,
+   "cpu_seconds_at_composer_plus_settle": 6.385,
+   "query_instructions": 42728583976,
+   "query_cpu_seconds": 7.204,
+   "peak_footprint_mib": 2289.6,
+   "answer": "The capital of Italy is Rome (Roma in Italian). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-1-v8",
+   "engine": "v8",
+   "failure": "RuntimeError: No answer containing Rome",
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    17.24,
+    14.52,
+    14.7
+   ],
+   "launch_to_composer_s": 4.68,
+   "launch_to_bootstrap_marker_s": 17.287,
+   "submit_to_user_message_s": 4.229,
+   "submit_to_rome_s": null,
+   "instructions_at_composer_plus_settle": 47041782193,
+   "cpu_seconds_at_composer_plus_settle": 7.858,
+   "query_instructions": null,
+   "query_cpu_seconds": null,
+   "peak_footprint_mib": null,
+   "answer": null
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-2-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    14.86,
+    14.78,
+    14.79
+   ],
+   "launch_to_composer_s": 2.468,
+   "launch_to_bootstrap_marker_s": 11.048,
+   "submit_to_user_message_s": 3.552,
+   "submit_to_rome_s": 10.3,
+   "instructions_at_composer_plus_settle": 40361587840,
+   "cpu_seconds_at_composer_plus_settle": 6.877,
+   "query_instructions": 40642104790,
+   "query_cpu_seconds": 6.397,
+   "peak_footprint_mib": 2592.2,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-2-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    16.95,
+    15.13,
+    14.91
+   ],
+   "launch_to_composer_s": 2.646,
+   "launch_to_bootstrap_marker_s": 9.715,
+   "submit_to_user_message_s": 7.293,
+   "submit_to_rome_s": 13.216,
+   "instructions_at_composer_plus_settle": 39466315988,
+   "cpu_seconds_at_composer_plus_settle": 6.519,
+   "query_instructions": 45631461394,
+   "query_cpu_seconds": 7.541,
+   "peak_footprint_mib": 2324.7,
+   "answer": "The capital of Italy is Rome (Roma in Italian). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-3-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    14.22,
+    14.62,
+    14.73
+   ],
+   "launch_to_composer_s": 2.163,
+   "launch_to_bootstrap_marker_s": 6.625,
+   "submit_to_user_message_s": 7.603,
+   "submit_to_rome_s": 14.097,
+   "instructions_at_composer_plus_settle": 35084646241,
+   "cpu_seconds_at_composer_plus_settle": 5.41,
+   "query_instructions": 47713768814,
+   "query_cpu_seconds": 7.631,
+   "peak_footprint_mib": 2620.2,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-3-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    13.25,
+    14.34,
+    14.62
+   ],
+   "launch_to_composer_s": 3.365,
+   "launch_to_bootstrap_marker_s": 7.301,
+   "submit_to_user_message_s": 1.258,
+   "submit_to_rome_s": 11.669,
+   "instructions_at_composer_plus_settle": 34766049098,
+   "cpu_seconds_at_composer_plus_settle": 5.508,
+   "query_instructions": 46686275131,
+   "query_cpu_seconds": 7.668,
+   "peak_footprint_mib": 2661.6,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-4-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    15.29,
+    14.62,
+    14.7
+   ],
+   "launch_to_composer_s": 2.765,
+   "launch_to_bootstrap_marker_s": 10.817,
+   "submit_to_user_message_s": 2.695,
+   "submit_to_rome_s": 14.375,
+   "instructions_at_composer_plus_settle": 38966553837,
+   "cpu_seconds_at_composer_plus_settle": 6.478,
+   "query_instructions": 53835616356,
+   "query_cpu_seconds": 9.932,
+   "peak_footprint_mib": 2282.4,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-4-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    13.05,
+    14.19,
+    14.56
+   ],
+   "launch_to_composer_s": 4.7,
+   "launch_to_bootstrap_marker_s": 12.433,
+   "submit_to_user_message_s": 1.464,
+   "submit_to_rome_s": 11.801,
+   "instructions_at_composer_plus_settle": 40804466617,
+   "cpu_seconds_at_composer_plus_settle": 6.438,
+   "query_instructions": 48223738291,
+   "query_cpu_seconds": 7.765,
+   "peak_footprint_mib": 2704.5,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-5-jsc",
+   "engine": "jsc",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    16.35,
+    14.91,
+    14.8
+   ],
+   "launch_to_composer_s": 5.051,
+   "launch_to_bootstrap_marker_s": 10.963,
+   "submit_to_user_message_s": 3.66,
+   "submit_to_rome_s": 11.181,
+   "instructions_at_composer_plus_settle": 37274927657,
+   "cpu_seconds_at_composer_plus_settle": 7.291,
+   "query_instructions": 45193439295,
+   "query_cpu_seconds": 7.834,
+   "peak_footprint_mib": 2265.7,
+   "answer": "The capital of Italy is Rome (Roma in Italian). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-5-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    16.47,
+    15.09,
+    14.87
+   ],
+   "launch_to_composer_s": 2.83,
+   "launch_to_bootstrap_marker_s": 12.539,
+   "submit_to_user_message_s": 2.153,
+   "submit_to_rome_s": 8.799,
+   "instructions_at_composer_plus_settle": 41958498863,
+   "cpu_seconds_at_composer_plus_settle": 7.667,
+   "query_instructions": 36960035819,
+   "query_cpu_seconds": 6.781,
+   "peak_footprint_mib": 2673.3,
+   "answer": "The capital of Italy is Rome (Italian: Roma). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-6-jsc",
+   "engine": "jsc",
+   "failure": "RuntimeError: No answer containing Rome",
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    18.03,
+    15.8,
+    15.15
+   ],
+   "launch_to_composer_s": 4.329,
+   "launch_to_bootstrap_marker_s": 13.677,
+   "submit_to_user_message_s": null,
+   "submit_to_rome_s": null,
+   "instructions_at_composer_plus_settle": 40334571562,
+   "cpu_seconds_at_composer_plus_settle": 9.139,
+   "query_instructions": null,
+   "query_cpu_seconds": null,
+   "peak_footprint_mib": null,
+   "answer": null
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-6-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    18.14,
+    15.6,
+    15.06
+   ],
+   "launch_to_composer_s": 3.036,
+   "launch_to_bootstrap_marker_s": 12.686,
+   "submit_to_user_message_s": 2.786,
+   "submit_to_rome_s": 11.981,
+   "instructions_at_composer_plus_settle": 41018009500,
+   "cpu_seconds_at_composer_plus_settle": 8.325,
+   "query_instructions": 43761101353,
+   "query_cpu_seconds": 9.173,
+   "peak_footprint_mib": 2664.9,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-7-jsc",
+   "engine": "jsc",
+   "failure": "RuntimeError: No answer containing Rome",
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    20.22,
+    17.65,
+    15.99
+   ],
+   "launch_to_composer_s": 3.149,
+   "launch_to_bootstrap_marker_s": 11.388,
+   "submit_to_user_message_s": null,
+   "submit_to_rome_s": null,
+   "instructions_at_composer_plus_settle": 38448525184,
+   "cpu_seconds_at_composer_plus_settle": 8.408,
+   "query_instructions": null,
+   "query_cpu_seconds": null,
+   "peak_footprint_mib": null,
+   "answer": null
+  },
+  {
+   "cohort": 2,
+   "trial": "pair-7-v8",
+   "engine": "v8",
+   "failure": null,
+   "exit": 0,
+   "typing_attempts": 1,
+   "load_average_before": [
+    19.41,
+    18.26,
+    16.43
+   ],
+   "launch_to_composer_s": 4.522,
+   "launch_to_bootstrap_marker_s": 8.731,
+   "submit_to_user_message_s": 2.443,
+   "submit_to_rome_s": 8.7,
+   "instructions_at_composer_plus_settle": 35658213016,
+   "cpu_seconds_at_composer_plus_settle": 7.606,
+   "query_instructions": 36191271464,
+   "query_cpu_seconds": 8.303,
+   "peak_footprint_mib": 2246.7,
+   "answer": "The capital of Italy is Rome (Roma). 🇮🇹"
+  }
+ ],
+ "engine_microbenchmark": {
+  "tool": "tools/compare_js_engine_microbench.sh 4 5",
+  "rows": [
+   {
+    "round": 1,
+    "engine": "javascriptcore",
+    "workload": "objects",
+    "first_ms": 29.785,
+    "warm_median_ms": 25.311,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 1,
+    "engine": "javascriptcore",
+    "workload": "strings_regexp",
+    "first_ms": 52.249,
+    "warm_median_ms": 25.245,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 1,
+    "engine": "javascriptcore",
+    "workload": "json",
+    "first_ms": 135.982,
+    "warm_median_ms": 124.451,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 1,
+    "engine": "javascriptcore",
+    "workload": "sort_closures",
+    "first_ms": 96.416,
+    "warm_median_ms": 93.486,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 1,
+    "engine": "javascriptcore",
+    "workload": "classes_maps",
+    "first_ms": 6.63,
+    "warm_median_ms": 6.634,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 1,
+    "engine": "javascriptcore",
+    "workload": "parse_compile",
+    "first_ms": 43.325,
+    "warm_median_ms": 2.365,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 1,
+    "engine": "javascriptcore",
+    "workload": "native_calls",
+    "first_ms": 35.621,
+    "warm_median_ms": 36.407,
+    "runs": 5,
+    "result": 45000150000
+   },
+   {
+    "round": 1,
+    "engine": "v8",
+    "workload": "objects",
+    "first_ms": 9.14,
+    "warm_median_ms": 7.549,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 1,
+    "engine": "v8",
+    "workload": "strings_regexp",
+    "first_ms": 50.231,
+    "warm_median_ms": 31.936,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 1,
+    "engine": "v8",
+    "workload": "json",
+    "first_ms": 174.31,
+    "warm_median_ms": 171.313,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 1,
+    "engine": "v8",
+    "workload": "sort_closures",
+    "first_ms": 123.468,
+    "warm_median_ms": 125.859,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 1,
+    "engine": "v8",
+    "workload": "classes_maps",
+    "first_ms": 7.433,
+    "warm_median_ms": 5.169,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 1,
+    "engine": "v8",
+    "workload": "parse_compile",
+    "first_ms": 46.183,
+    "warm_median_ms": 0.782,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 1,
+    "engine": "v8",
+    "workload": "native_calls",
+    "first_ms": 43.746,
+    "warm_median_ms": 44.357,
+    "runs": 5,
+    "result": 45000150000
+   },
+   {
+    "round": 2,
+    "engine": "v8",
+    "workload": "objects",
+    "first_ms": 8.309,
+    "warm_median_ms": 8.365,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 2,
+    "engine": "v8",
+    "workload": "strings_regexp",
+    "first_ms": 50.268,
+    "warm_median_ms": 32.533,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 2,
+    "engine": "v8",
+    "workload": "json",
+    "first_ms": 176.019,
+    "warm_median_ms": 170.143,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 2,
+    "engine": "v8",
+    "workload": "sort_closures",
+    "first_ms": 126.974,
+    "warm_median_ms": 123.288,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 2,
+    "engine": "v8",
+    "workload": "classes_maps",
+    "first_ms": 6.009,
+    "warm_median_ms": 5.808,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 2,
+    "engine": "v8",
+    "workload": "parse_compile",
+    "first_ms": 43.59,
+    "warm_median_ms": 0.614,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 2,
+    "engine": "v8",
+    "workload": "native_calls",
+    "first_ms": 42.996,
+    "warm_median_ms": 44.408,
+    "runs": 5,
+    "result": 45000150000
+   },
+   {
+    "round": 2,
+    "engine": "javascriptcore",
+    "workload": "objects",
+    "first_ms": 26.568,
+    "warm_median_ms": 25.661,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 2,
+    "engine": "javascriptcore",
+    "workload": "strings_regexp",
+    "first_ms": 67.402,
+    "warm_median_ms": 25.443,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 2,
+    "engine": "javascriptcore",
+    "workload": "json",
+    "first_ms": 134.75,
+    "warm_median_ms": 129.752,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 2,
+    "engine": "javascriptcore",
+    "workload": "sort_closures",
+    "first_ms": 101.084,
+    "warm_median_ms": 97.361,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 2,
+    "engine": "javascriptcore",
+    "workload": "classes_maps",
+    "first_ms": 7.27,
+    "warm_median_ms": 7.125,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 2,
+    "engine": "javascriptcore",
+    "workload": "parse_compile",
+    "first_ms": 42.204,
+    "warm_median_ms": 2.689,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 2,
+    "engine": "javascriptcore",
+    "workload": "native_calls",
+    "first_ms": 40.905,
+    "warm_median_ms": 36.966,
+    "runs": 5,
+    "result": 45000150000
+   },
+   {
+    "round": 3,
+    "engine": "javascriptcore",
+    "workload": "objects",
+    "first_ms": 27.129,
+    "warm_median_ms": 24.504,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 3,
+    "engine": "javascriptcore",
+    "workload": "strings_regexp",
+    "first_ms": 45.659,
+    "warm_median_ms": 40.589,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 3,
+    "engine": "javascriptcore",
+    "workload": "json",
+    "first_ms": 133.487,
+    "warm_median_ms": 123.937,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 3,
+    "engine": "javascriptcore",
+    "workload": "sort_closures",
+    "first_ms": 93.751,
+    "warm_median_ms": 91.804,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 3,
+    "engine": "javascriptcore",
+    "workload": "classes_maps",
+    "first_ms": 7.172,
+    "warm_median_ms": 6.709,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 3,
+    "engine": "javascriptcore",
+    "workload": "parse_compile",
+    "first_ms": 42.098,
+    "warm_median_ms": 2.133,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 3,
+    "engine": "javascriptcore",
+    "workload": "native_calls",
+    "first_ms": 34.27,
+    "warm_median_ms": 33.581,
+    "runs": 5,
+    "result": 45000150000
+   },
+   {
+    "round": 3,
+    "engine": "v8",
+    "workload": "objects",
+    "first_ms": 8.488,
+    "warm_median_ms": 7.182,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 3,
+    "engine": "v8",
+    "workload": "strings_regexp",
+    "first_ms": 46.449,
+    "warm_median_ms": 30.251,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 3,
+    "engine": "v8",
+    "workload": "json",
+    "first_ms": 173.816,
+    "warm_median_ms": 171.471,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 3,
+    "engine": "v8",
+    "workload": "sort_closures",
+    "first_ms": 125.435,
+    "warm_median_ms": 123.691,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 3,
+    "engine": "v8",
+    "workload": "classes_maps",
+    "first_ms": 5.345,
+    "warm_median_ms": 5.067,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 3,
+    "engine": "v8",
+    "workload": "parse_compile",
+    "first_ms": 40.19,
+    "warm_median_ms": 0.646,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 3,
+    "engine": "v8",
+    "workload": "native_calls",
+    "first_ms": 43.452,
+    "warm_median_ms": 42.634,
+    "runs": 5,
+    "result": 45000150000
+   },
+   {
+    "round": 4,
+    "engine": "v8",
+    "workload": "objects",
+    "first_ms": 8.615,
+    "warm_median_ms": 7.964,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 4,
+    "engine": "v8",
+    "workload": "strings_regexp",
+    "first_ms": 47.615,
+    "warm_median_ms": 30.919,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 4,
+    "engine": "v8",
+    "workload": "json",
+    "first_ms": 170.757,
+    "warm_median_ms": 166.169,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 4,
+    "engine": "v8",
+    "workload": "sort_closures",
+    "first_ms": 122.864,
+    "warm_median_ms": 122.259,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 4,
+    "engine": "v8",
+    "workload": "classes_maps",
+    "first_ms": 5.664,
+    "warm_median_ms": 4.877,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 4,
+    "engine": "v8",
+    "workload": "parse_compile",
+    "first_ms": 39.495,
+    "warm_median_ms": 0.804,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 4,
+    "engine": "v8",
+    "workload": "native_calls",
+    "first_ms": 42.628,
+    "warm_median_ms": 43.715,
+    "runs": 5,
+    "result": 45000150000
+   },
+   {
+    "round": 4,
+    "engine": "javascriptcore",
+    "workload": "objects",
+    "first_ms": 26.569,
+    "warm_median_ms": 24.737,
+    "runs": 5,
+    "result": 17999994000000
+   },
+   {
+    "round": 4,
+    "engine": "javascriptcore",
+    "workload": "strings_regexp",
+    "first_ms": 83.96,
+    "warm_median_ms": 23.206,
+    "runs": 5,
+    "result": 20000
+   },
+   {
+    "round": 4,
+    "engine": "javascriptcore",
+    "workload": "json",
+    "first_ms": 141.109,
+    "warm_median_ms": 128.351,
+    "runs": 5,
+    "result": 300000
+   },
+   {
+    "round": 4,
+    "engine": "javascriptcore",
+    "workload": "sort_closures",
+    "first_ms": 98.884,
+    "warm_median_ms": 94.372,
+    "runs": 5,
+    "result": 8617601
+   },
+   {
+    "round": 4,
+    "engine": "javascriptcore",
+    "workload": "classes_maps",
+    "first_ms": 7.259,
+    "warm_median_ms": 6.633,
+    "runs": 5,
+    "result": 1000977
+   },
+   {
+    "round": 4,
+    "engine": "javascriptcore",
+    "workload": "parse_compile",
+    "first_ms": 44.541,
+    "warm_median_ms": 2.589,
+    "runs": 5,
+    "result": 9
+   },
+   {
+    "round": 4,
+    "engine": "javascriptcore",
+    "workload": "native_calls",
+    "first_ms": 35.113,
+    "warm_median_ms": 33.734,
+    "runs": 5,
+    "result": 45000150000
+   }
+  ]
+ }
+}
