@@ -48,11 +48,14 @@ for(const [name,tags] of [["HTMLAnchorElement","a"],["HTMLAreaElement","area"],[
  for(const tag of tags.split(" "))__compactHTMLInterfaces[tag]=constructor;
 }
 function __compactElementPrototype(state){
- if(state.namespaceURI==="http://www.w3.org/2000/svg")return SVGElement.prototype;
+ if(state.namespaceURI==="http://www.w3.org/2000/svg"){
+  const name=String(state.tagName),constructor=__compactSVGInterfaces[name.slice(name.indexOf(":")+1)];
+  return constructor?constructor.prototype:SVGElement.prototype;
+ }
  if(state.namespaceURI!=="http://www.w3.org/1999/xhtml")return Element.prototype;
  const name=String(state.tagName),local=name.slice(name.indexOf(":")+1);
  const constructor=__compactHTMLInterfaces[local];
  return constructor?constructor.prototype:HTMLElement.prototype;
 }
-' + compact_template_bootstrap() + compact_iframe_reflection_bootstrap() + compact_toggle_attribute_bootstrap() + compact_html_language_bootstrap() + compact_native_state_bootstrap()
+' + compact_svg_interfaces_bootstrap() + compact_template_bootstrap() + compact_iframe_reflection_bootstrap() + compact_toggle_attribute_bootstrap() + compact_html_language_bootstrap() + compact_native_state_bootstrap()
 }
