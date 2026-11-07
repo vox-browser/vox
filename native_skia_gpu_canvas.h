@@ -64,6 +64,10 @@ struct GpuCanvasFrame {
     int leaf_error = 0;
     std::chrono::steady_clock::time_point command_started;
     char timed_command[96] {};
+    // VOX_GPU_CANVAS_START_DIAGNOSTICS: the approved command whose leaf first
+    // uploads this frame's CPU pixels, i.e. what made the frame a GPU frame.
+    char approved_command[48] {};
+    int approved_flags = 0;
 };
 std::unique_ptr<GpuCanvasFrame> s_gpu_canvas;
 std::vector<std::unique_ptr<GpuCanvasFrame>> s_gpu_canvas_layers;
@@ -411,6 +415,9 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
     auto* api = gpu_canvas_api();
     auto* data = static_cast<uint8_t const*>(CGBitmapContextGetData(frame.destination));
     if (!api || !data) return false;
+    if (!frame.begun && std::getenv("VOX_GPU_CANVAS_START_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_GPU_CANVAS_START kind=%s flags=%d\n", frame.approved_command,
+            frame.approved_flags);
     if (!frame.begun) {
         gpu_canvas_native_grid(frame);
         auto begin = frame.native_grid ? api->begin_native_grid : api->begin;
@@ -844,7 +851,15 @@ extern "C" int ladybird_v_skia_gpu_canvas_command(char const* kind, int length, 
     if (!frame) return 0;
     std::string_view name(kind ? kind : "", kind && length > 0 ? size_t(length) : 0);
     frame->in_gpu_command = !s_gpu_canvas_read_failed && gpu_canvas_kind_supported(name, flags);
-    if (frame->in_gpu_command) return 1;
+    if (frame->in_gpu_command) {
+        static bool const start_diagnostics = std::getenv("VOX_GPU_CANVAS_START_DIAGNOSTICS") != nullptr;
+        if (start_diagnostics) {
+            std::snprintf(frame->approved_command, sizeof frame->approved_command, "%.*s",
+                int(name.size()), name.data());
+            frame->approved_flags = flags;
+        }
+        return 1;
+    }
     if (frame->cpu_stale && gpu_canvas_diagnostics()) ++frame->flush_reasons[std::string(name)];
     gpu_canvas_flush();
     return 0;
