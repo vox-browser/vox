@@ -30,7 +30,7 @@ fn chromium_save_layer_image_bounds(commands []layout.PaintCommand,
 	}
 	for command_index in layer.command_indices {
 		if command_index < 0 || command_index >= commands.len { return none }
-		command := commands[command_index]
+		command := unsafe { &commands[command_index] }
 		if command.fixed_to_viewport || command.kind in ['begin_css_filter_layer',
 			'end_css_filter_layer', 'begin_backdrop_filter_layer', 'end_backdrop_filter_layer'] {
 			return none

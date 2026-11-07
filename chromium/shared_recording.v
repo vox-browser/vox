@@ -167,7 +167,7 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 // Full-opacity compositor boundaries may span raster layers. Genuine effects
 // still require one complete isolated run.
 fn chromium_shared_recording_css_boundary(commands []layout.PaintCommand, index int) bool {
-	command := commands[index]
+	command := unsafe { &commands[index] }
 	data := command.visual_layer_data or { return false }
 	if command.kind !in ['begin_css_effect_layer', 'end_css_effect_layer']
 		|| data.kind != .css_effect || data.blend_mode != .normal || data.scope_id == 0
@@ -178,7 +178,7 @@ fn chromium_shared_recording_css_boundary(commands []layout.PaintCommand, index 
 	expected := if step == 1 { 'end_css_effect_layer' } else { 'begin_css_effect_layer' }
 	mut other := index + step
 	for other >= 0 && other < commands.len {
-		partner := commands[other]
+		partner := unsafe { &commands[other] }
 		if partner_data := partner.visual_layer_data {
 			if partner_data.scope_id == data.scope_id {
 				return partner.kind == expected
@@ -202,7 +202,7 @@ fn chromium_shared_recording_child_gap_supported(commands []layout.PaintCommand,
 	for command_index in start .. end {
 		owner := plan.command_layers[command_index]
 		if owner <= 0 || owner >= plan.layers.len || owner == parent { return false }
-		command := commands[command_index]
+		command := unsafe { &commands[command_index] }
 		if command.kind == 'begin_css_effect_layer' {
 			data := command.visual_layer_data or { return false }
 			if data.kind != .css_effect || data.scope_id == 0 { return false }
@@ -242,10 +242,12 @@ fn chromium_shared_recording_layer_supported(commands []layout.PaintCommand,
 		|| (last + 1 < commands.len && plan.command_layers[last + 1] == index) { return false }
 	// Only CSS scopes install the native destination/backdrop policy used by
 	// these pictures. A scroll or sparsity layer alone must keep leaf replay.
+	// Borrow each prior command: this scan runs per selected layer and frame,
+	// and a by-value command copies its whole wide record.
 	mut closed_scopes := 0
 	mut scope_depth := 0
 	for prior := first - 1; prior >= 0; prior-- {
-		command := commands[prior]
+		command := unsafe { &commands[prior] }
 		if command.kind == 'end_css_effect_layer' { closed_scopes++ }
 		if command.kind != 'begin_css_effect_layer' { continue }
 		if closed_scopes > 0 {
