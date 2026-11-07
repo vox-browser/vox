@@ -20,6 +20,7 @@ fn test_compact_iframe_reflects_presentational_properties() {
 		gate.loading = "eager";
 		gate.allow = "autoplay";
 		gate.allowFullscreen = 1;
+		gate.srcdoc = "<b>inline</b>";
 		gate.id = "gate";
 		document.getElementById("slot").appendChild(gate);
 		const parsed = document.getElementById("parsed");
@@ -29,9 +30,10 @@ fn test_compact_iframe_reflects_presentational_properties() {
 			gate.loading, gate.allow, gate.allowFullscreen, parsed.frameBorder, parsed.loading,
 			JSON.stringify(parsed.referrerPolicy), parsed.allowFullscreen, symbolError,
 			"frameBorder" in document.createElement("div"),
-			Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "frameBorder").enumerable].join("|");
+			Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "frameBorder").enumerable,
+			gate.srcdoc, JSON.stringify(parsed.srcdoc)].join("|");
 	'], runtime, mut messages)
-	assert runtime.evaluate_host('result')! == '0|0||no|eager|autoplay|true|0|lazy|""|false|TypeError|false|true'
+	assert runtime.evaluate_host('result')! == '0|0||no|eager|autoplay|true|0|lazy|""|false|TypeError|false|true|<b>inline</b>|""'
 	state := runtime.evaluate_host('__ladybirdFinalize()')!
 	apply_javascript_state(document, state, runtime.canvas_elements_for_binding(), mut messages)
 	gate := document.get_element_by_id('gate') or { panic('missing inserted iframe') }
@@ -43,5 +45,6 @@ fn test_compact_iframe_reflects_presentational_properties() {
 	assert gate.get_attribute_value('loading') == 'eager'
 	assert gate.get_attribute_value('allow') == 'autoplay'
 	assert gate.has_attribute('allowfullscreen')
+	assert gate.get_attribute_value('srcdoc') == '<b>inline</b>'
 	assert messages == []
 }

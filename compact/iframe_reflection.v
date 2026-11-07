@@ -16,7 +16,7 @@ function __compactIFrameString(value,nullToEmpty){
  if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol value to a string");
  return nullToEmpty&&value===null?"":String(value);
 }
-for(const [property,attribute,nullToEmpty] of [["frameBorder","frameborder",false],["marginHeight","marginheight",true],["marginWidth","marginwidth",true],["scrolling","scrolling",false],["allow","allow",false],["align","align",false]])Object.defineProperty(HTMLIFrameElement.prototype,property,{get:function(){
+for(const [property,attribute,nullToEmpty] of [["frameBorder","frameborder",false],["marginHeight","marginheight",true],["marginWidth","marginwidth",true],["scrolling","scrolling",false],["allow","allow",false],["align","align",false],["srcdoc","srcdoc",false]])Object.defineProperty(HTMLIFrameElement.prototype,property,{get:function(){
  const state=__compactIFrameState(this);return Object.prototype.hasOwnProperty.call(state.attributes,attribute)?String(state.attributes[attribute]):"";
 },set:function(value){
  const state=__compactIFrameState(this);__setAttribute(state,attribute,__compactIFrameString(value,nullToEmpty));
