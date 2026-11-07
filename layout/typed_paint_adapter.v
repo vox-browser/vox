@@ -3783,6 +3783,16 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		if !has_svg_transform_attribute && !computed_transform_is_none(computed) {
 			reference_box := paintable_box_transform_reference_box(node, computed, used, position, state)
 			paint_transform_4x4 = resolved_computed_transform_4x4_matrix(computed, reference_box.x, reference_box.y, reference_box.width, reference_box.height)
+			if node.is_svg_svg_box() && node.document().font_rendering_policy() == .chromium {
+				dx, dy := chromium_discarded_transform_subpixel_offset(paint_transform_4x4,
+					position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double(),
+					position.y().to_double() - used.padding_top.to_double() - used.border_top.to_double(),
+					chromium_paint_pixel_scale(voidptr(node)))
+				if dx != 0 || dy != 0 {
+					paint_transform_4x4 = resolved_computed_transform_4x4_matrix(computed, reference_box.x + dx,
+						reference_box.y + dy, reference_box.width, reference_box.height)
+				}
+			}
 			uses_paint_transform_4x4 = true
 			paint_transform = css.project_plane_to_affine_transform(paint_transform_4x4) or {
 				[f64(0), 0, 0, 0, 0, 0]!
