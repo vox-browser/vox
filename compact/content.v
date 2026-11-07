@@ -255,6 +255,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'nodeMember' { return binding.node_member_query(key, selector) }
 	if action == 'formValidation' { return binding.form_validation_query(key, selector) }
 	if action == 'origin' { return binding.origin_query(selector) }
+	if action == 'domMatrix' { return binding.dom_matrix_query(selector) }
 	if action == 'inputNumber' { return binding.input_number_query(key, selector) }
 	if action == 'selection' { return binding.selection_query(key, selector) }
 	if action == 'editing' { return binding.editing_query(key, selector) }
