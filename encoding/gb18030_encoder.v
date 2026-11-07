@@ -13,6 +13,27 @@ fn init() {
 	})
 }
 
+const gb18030_legacy_pua_bytes = {
+	u32(0xE78D): [u8(0xA6), 0xD9]
+	0xE78E:      [u8(0xA6), 0xDA]
+	0xE78F:      [u8(0xA6), 0xDB]
+	0xE790:      [u8(0xA6), 0xDC]
+	0xE791:      [u8(0xA6), 0xDD]
+	0xE792:      [u8(0xA6), 0xDE]
+	0xE793:      [u8(0xA6), 0xDF]
+	0xE794:      [u8(0xA6), 0xEC]
+	0xE795:      [u8(0xA6), 0xED]
+	0xE796:      [u8(0xA6), 0xF3]
+	0xE81E:      [u8(0xFE), 0x59]
+	0xE826:      [u8(0xFE), 0x61]
+	0xE82B:      [u8(0xFE), 0x66]
+	0xE82C:      [u8(0xFE), 0x67]
+	0xE832:      [u8(0xFE), 0x6D]
+	0xE843:      [u8(0xFE), 0x7E]
+	0xE854:      [u8(0xFE), 0x90]
+	0xE864:      [u8(0xFE), 0xA0]
+}
+
 // https://encoding.spec.whatwg.org/#index-pointer for index gb18030.
 fn gb18030_index_pointer(code_point u32) ?int {
 	if code_point > 0xFFFF {
@@ -67,6 +88,11 @@ fn gb18030_encode(code_point u32, is_gbk bool) ?[]u8 {
 	}
 	if is_gbk && code_point == 0x20AC {
 		return [u8(0x80)]
+	}
+	// The PUA code points GB18030-2005 used for these sequences, which the
+	// standard's encoder still maps to them.
+	if bytes := gb18030_legacy_pua_bytes[code_point] {
+		return bytes.clone()
 	}
 	if pointer := gb18030_index_pointer(code_point) {
 		lead := pointer / 190 + 0x81
