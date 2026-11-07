@@ -58,24 +58,22 @@ fn (mut binding CompactElementQueryBinding) node_member_query(key string, source
 				'hasAttributeNS' { result['value'] = json2.Any(element.has_attribute_ns(first, second or { '' })) }
 				'setAttributeNS' {
 					element.set_attribute_ns_for_bindings(first, second or { '' }, compact_member_string(arguments, 2) or { '' })!
-					result['refresh'] = binding.mutation_refresh(node.root())
+					result['refresh'] = binding.element_attribute_refresh(element)
 				}
 				'removeAttributeNS' {
 					element.remove_attribute_ns(first, second or { '' })
-					result['refresh'] = binding.mutation_refresh(node.root())
+					result['refresh'] = binding.element_attribute_refresh(element)
 				}
 				'insertAdjacentElement' {
 					other := binding.member_node(arguments[1] or { json2.Any(json2.Null{}) })!
 					inserted_element := other.as_element() or { return error('TypeError: Expected an Element') }
-					scope := node.root()
 					inserted := element.insert_adjacent_element(first or { '' }, inserted_element)!
 					result['value'] = binding.node_state(inserted.as_node())
-					result['refresh'] = binding.mutation_refresh(scope)
+					result['refresh'] = binding.structure_refresh()
 				}
 				'insertAdjacentText' {
-					scope := node.root()
 					element.insert_adjacent_text(first or { '' }, second or { '' })!
-					result['refresh'] = binding.mutation_refresh(scope)
+					result['refresh'] = binding.structure_refresh()
 				}
 				else { return error('Invalid Node operation') }
 			}

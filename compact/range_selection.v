@@ -79,15 +79,35 @@ fn (mut binding CompactElementQueryBinding) mutation_refresh(scope &dom.Node) js
 	if element := scope.as_element() { elements << element }
 	elements << css.query_selector_all(scope, '*')
 	for element in elements {
-		key := binding.keys[voidptr(element)] or { continue }
-		records, attributes := browserjs.compact_attribute_state(element)
-		refreshed << json2.Any({
-			'key':              json2.Any(key)
-			'attributes':       json2.Any(attributes)
-			'attributeRecords': json2.Any(records)
-		})
+		if entry := binding.attribute_refresh_entry(element) { refreshed << entry }
 	}
 	return json2.Any(refreshed)
+}
+
+fn (mut binding CompactElementQueryBinding) attribute_refresh_entry(element &dom.Element) ?json2.Any {
+	key := binding.keys[voidptr(element)] or { return none }
+	records, attributes := browserjs.compact_attribute_state(element)
+	return json2.Any({
+		'key':              json2.Any(key)
+		'attributes':       json2.Any(attributes)
+		'attributeRecords': json2.Any(records)
+	})
+}
+
+// A mutation that moves, inserts or removes nodes but changes no existing
+// element's attributes: the realm only drops the content it had cached.
+// Serializing every element's attributes per operation made range-heavy
+// pages allocate without bound.
+fn (mut binding CompactElementQueryBinding) structure_refresh() json2.Any {
+	binding.note_node_tree_mutation()
+	return json2.Any([]json2.Any{})
+}
+
+// The attributes of one changed element.
+fn (mut binding CompactElementQueryBinding) element_attribute_refresh(element &dom.Element) json2.Any {
+	binding.note_node_tree_mutation()
+	if entry := binding.attribute_refresh_entry(element) { return json2.Any([entry]) }
+	return json2.Any([]json2.Any{})
 }
 
 fn (mut binding CompactElementQueryBinding) range_query(key string, source string) !string {
@@ -136,7 +156,6 @@ fn (mut binding CompactElementQueryBinding) range_query(key string, source strin
 			result['value'] = binding.node_state(unsafe { &dom.Node(fragment) })
 		}
 		'deleteContents', 'extractContents', 'cloneContents', 'insertNode', 'surroundContents' {
-			scope := range.common_ancestor_container()
 			match op {
 				'deleteContents' { range.delete_contents()! }
 				'extractContents' { result['value'] = binding.node_state(unsafe { &dom.Node(range.extract_contents()!) }) }
@@ -144,7 +163,7 @@ fn (mut binding CompactElementQueryBinding) range_query(key string, source strin
 				'insertNode' { range.insert_node(binding.range_node_argument(request, 'node')!)! }
 				else { range.surround_contents(binding.range_node_argument(request, 'node')!)! }
 			}
-			if op != 'cloneContents' { result['refresh'] = binding.mutation_refresh(scope.root()) }
+			if op != 'cloneContents' { result['refresh'] = binding.structure_refresh() }
 		}
 		else { return error('Invalid Range operation') }
 	}
@@ -210,7 +229,7 @@ fn (mut binding CompactElementQueryBinding) selection_query(key string, source s
 		}
 		'deleteFromDocument' {
 			selection.delete_from_document()!
-			result['refresh'] = binding.mutation_refresh(document.as_node())
+			result['refresh'] = binding.structure_refresh()
 		}
 		else { return error('Invalid Selection operation') }
 	}

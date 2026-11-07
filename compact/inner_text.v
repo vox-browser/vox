@@ -19,15 +19,14 @@ fn (mut binding CompactElementQueryBinding) inner_text_query(key string, source 
 		'get' { return json2.encode({ 'value': json2.Any(html.html_element_inner_text(html_element)) }) }
 		'set' {
 			html.html_element_set_inner_text(html_element, value)
-			return json2.encode({ 'refresh': binding.mutation_refresh(node.root()) })
+			return json2.encode({ 'refresh': binding.structure_refresh() })
 		}
 		'setOuter' {
 			parent := node.parent() or {
 				return error('NoModificationAllowedError: The element has no parent')
 			}
-			scope := node.root()
 			compact_set_outer_text(node, parent, value)!
-			return json2.encode({ 'refresh': binding.mutation_refresh(scope) })
+			return json2.encode({ 'refresh': binding.structure_refresh() })
 		}
 		else { return error('Invalid innerText operation') }
 	}

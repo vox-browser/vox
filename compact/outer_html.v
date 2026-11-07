@@ -9,10 +9,10 @@ fn (mut binding CompactElementQueryBinding) outer_html_query(key string, source 
 	node := binding.equality_node(key, request['state'] or { json2.Any(json2.Null{}) })!
 	mut element := node.as_element() or { return error('TypeError: Illegal Element receiver') }
 	value := request['value'] or { return json2.encode({ 'value': json2.Any(element.outer_html()!) }) }
-	parent := node.parent() or { return '{}' }
+	if node.parent() == none { return '{}' }
 	element.set_outer_html(value.str())!
 	return json2.encode({
-		'refresh': binding.mutation_refresh(parent.root())
+		'refresh': binding.structure_refresh()
 	})
 }
 
