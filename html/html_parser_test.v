@@ -625,3 +625,14 @@ fn test_cdata_sections_are_text_only_in_foreign_content() {
 	comment := children[2].first_child() or { panic('missing div child') }
 	assert comment.is_comment()
 }
+
+fn test_cdata_sections_are_not_allowed_in_integration_points() {
+	document := parse_document('<svg><foreignObject>x<![CDATA[y]]></foreignObject><desc>x<![CDATA[y]]></desc></svg><math><mi>x<![CDATA[y]]></mi></math>')
+	body := document.body() or { panic('missing body') }
+	svg := body.as_node().children[0]
+	for container in [svg.children[0], svg.children[1], body.as_node().children[1].children[0]] {
+		assert container.children.len == 2
+		assert container.children[1].is_comment()
+	}
+}
+

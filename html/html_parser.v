@@ -976,10 +976,13 @@ fn (p &HTMLParser) current_node() ?&dom.Element {
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#markup-declaration-open-state
-// "the adjusted current node ... is not an element in the HTML namespace".
+// CDATA sections are allowed when the adjusted current node is a foreign
+// element whose content is parsed as foreign content: integration points
+// take HTML content, as WPT's cdata-in-integration-point-fragment requires.
 fn (p &HTMLParser) adjusted_current_node_is_foreign() bool {
 	node := p.adjusted_current_node() or { return false }
-	return !node.is_html_element()
+	return !node.is_html_element() && !is_mathml_text_integration_point(node)
+		&& !is_html_integration_point(node)
 }
 
 fn (p &HTMLParser) adjusted_current_node() ?&dom.Element {
