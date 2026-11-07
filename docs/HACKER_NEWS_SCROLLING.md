@@ -262,3 +262,70 @@ Remaining per-frame cost on this page: the single coalesced hit test still
 walks every retained step (no spatial culling of hit-test steps), and the
 scroll ring's row restore and `CGBitmapContextCreateImage` copy remain from
 the earlier profiles.
+
+### Toward 120 Hz on long threads (2026-11-07, later)
+
+After the round above, the shared bundle scrolled the same thread at 48–56 FPS
+under a 120 Hz input schedule, with 17–20 ms median intervals. Profiles and
+publication logs showed four main-thread costs outside the culled recording:
+
+- Once frames were short, wheels arrived between frames and each ran a
+  full hit test on arrival (`wheel_us` ≈ 4 ms) over ~209,000 retained steps.
+- Recording still visited all ~35,000 paint entries for culling,
+  fixed-background invalidation and the raster layer plan.
+- 15–20% of publications carried no new input. Replayed input requested
+  its repaint with an ordinary wake before frame preparation began. Every
+  wheel also scheduled a 600 ms overlay-scrollbar wake. Each such frame cost
+  ~6 ms and delayed the next wheel.
+- Each AppKit pump at a cooperative checkpoint ran two `dlsym` lookups.
+
+| Commit | Change | Control |
+| --- | --- | --- |
+| `98a823b4d` | Hold page wheels for the next native frame and merge them (Chromium's rAF-aligned input); other input dispatches a held wheel first | `VOX_DISABLE_FRAME_ALIGNED_WHEELS=1` |
+| `c2d9f16ee` | Per-step and per-run hit bounds by paint revision; exact queries skip runs that miss (Blink's `MayIntersect`) | `VOX_DISABLE_HIT_TEST_CULLING=1` |
+| `83e38801e` | Cull runs of 32 entries with one union test | `VOX_DISABLE_VIEWPORT_ENTRY_BLOCKS=1` |
+| `90797a664` | Read the clock only for entries that record commands | none |
+| `41e99fcee` | Cache fixed-background and raster-plan candidates per revision | `VOX_DISABLE_VIEWPORT_ENTRY_CANDIDATES=1` |
+| `5ffe909b7` | Resolve the event pump's `NSApp` and run-loop mode once | none |
+| `a36f70e59` | Stamp repaints requested by replayed input into that frame | `VOX_DISABLE_REPLAYED_INPUT_FRAME_STAMP=1` |
+| `03305b5e2` | One pending overlay-scrollbar fade wake | `VOX_DISABLE_OVERLAY_SCROLLBAR_WAKE_COALESCING=1` |
+
+On a saved copy of the thread, one exact hit test takes 45 µs instead of
+2.7–3.2 ms (`-prod` layout probe).
+
+Protocol: as above, except that the budget is 120 Hz (8.33 ms) and
+`--target-hz 120`. Host: 18 CPUs shared with other sessions; one-minute
+load averages were 20–34 during the b5 cohort, and every trial records it.
+All browser and guard exits were 0.
+
+| Bundle / arm (alternating, same executable) | Mean scroll FPS | Median / p95 interval (ms) | Input-free publications |
+| --- | --- | --- | --- |
+| Shared bundle `c22eae1c…` (previous round) | 55.6, 47.5, 47.7 | 16.9–19.6 / 25–32 | — |
+| b5 `12dc39c1…`, last two switches set | 92.2, 94.6, 83.0 | 9.7–10.5 / 18.2–22.1 | 134, 121, 91 |
+| b5, default | 113.7, 110.8, 97.0 | 9.0–9.4 / 12.0–16.5 | 7, 5, 1 |
+| b5, default, later at load 28–34 | 99.3, 96.6, 110.7, 87.7, 76.3 | 9.1–11.3 / 12.3–23.8 | 1–6 |
+
+b5 is a private single-C bundle of the dirty canonical tree, so it includes
+other sessions' uncommitted work. The earlier b3/b4 cohorts are kept in the
+receipt: without the frame-aligned wheels, hit-test culling and entry blocks,
+b3 measured 50.6–70.3 FPS against 95.6–99.6 with them.
+
+Retained experiments: disabling the GPU canvas (47.5–73.4 FPS) and the GPU
+scrollbar batch (51.9–57.7) are slower. The CPU scroll-tile compositor
+(`VOX_SCROLL_TILE_COMPOSITOR=1`) lowers preparation time, but its matched
+FPS is lower in all three b5 pairs (84.0, 62.6, 68.4).
+
+Pixels: on the local copy, the final frame after 3,600 CSS px of incremental
+scrolling differs in 0 of 7,212,240 pixels between all seven switches on and
+off. Captures at offsets 0, 2500, 20000 and 61000 are byte-identical with
+hit/entry culling and candidates on and off. Focused layout tests pass under
+Boehm and no-GC; the navigation, frame-request, overlay and raster suites
+pass apart from pre-existing cases. `test_overlay_scrollbar_input_reveals_and_releases_the_live_thumb`
+and the six wheel cases listed above fail identically with this round's
+changes removed.
+
+The mean now exceeds 100 FPS at ordinary load, but 56–72% of intervals are
+still over 8.33 ms. At this size, the largest remaining cost is restoring the
+retained 26 MB viewport ring into each fresh frame buffer (~31% of the
+frame). Presenting the ring through Core Animation without that copy is the
+next step for a steady 120 Hz. Receipt: [`docs/performance/hn-item-scroll-120hz-20261107.json`](performance/hn-item-scroll-120hz-20261107.json).

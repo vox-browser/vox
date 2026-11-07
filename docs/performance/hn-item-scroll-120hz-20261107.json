@@ -1,0 +1,2094 @@
+{
+  "date": "2026-11-07",
+  "page": "https://news.ycombinator.com/item?id=50391456 (live, ~1,940 comments)",
+  "protocol": {
+    "tool": "tools/measure_precise_scroll.py",
+    "viewport": [
+      1701,
+      948
+    ],
+    "chrome_height": 112,
+    "backing_scale": 2,
+    "inputs": 600,
+    "input_hz": 120,
+    "delta_css_px": 6,
+    "reverse_every": 300,
+    "settle_seconds": 10,
+    "required_title": "Cybertruck",
+    "target_hz": 120,
+    "network": "Live HTTPS; fresh private profile/cache; OS caches retained. ff-* trials: local file fixture (CSS inlined, scripts removed), 600 inputs without reversal. samp-* trials: 1500 inputs with /usr/bin/sample attached (diagnostic only).",
+    "endpoint": "completed native frame installation after outer view paint; not physical scanout"
+  },
+  "builds": {
+    "shared_baseline": "Build/v/Vox.app c22eae1c4518808cd58564e43aee022671fc54bbf293ad5a68054a22f8716add (contains the previous round)",
+    "b3": "private single-C bundle: frame-aligned wheels, hit-test culling, entry blocks (dirty tree incl. other sessions)",
+    "b4": "b3 + candidates, checkpoint, event pump cache",
+    "b5": "b4 + replayed-input frame stamp, overlay wake coalescing"
+  },
+  "trials": [
+    {
+      "trial": "samp-base",
+      "executable_sha256": "c22eae1c4518808cd58564e43aee022671fc54bbf293ad5a68054a22f8716add",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-base/profile",
+        "VOX_PRECISE_INPUTS": "1500",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-base/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 52.08,
+      "median_interval_ms": 17.39,
+      "p95_interval_ms": 29.92,
+      "max_interval_ms": 68.53,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 11.84,
+      "input_delivery_hz": 64.1,
+      "completed_inputs": 1500,
+      "completed_publications": 1230,
+      "input_free_publications": 10,
+      "moving_intervals": 1218,
+      "first_counted_scroll_delay_ms": 88.0,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          10.6171875,
+          10.15576171875,
+          10.2685546875
+        ],
+        "load_average_after": [
+          10.8984375,
+          10.2900390625,
+          10.3115234375
+        ]
+      }
+    },
+    {
+      "trial": "b3-new-1",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 99.6,
+      "median_interval_ms": 9.35,
+      "p95_interval_ms": 16.99,
+      "max_interval_ms": 64.88,
+      "fraction_over_8_33ms": 0.617,
+      "preparation_median_ms": 6.32,
+      "input_delivery_hz": 105.2,
+      "completed_inputs": 600,
+      "completed_publications": 653,
+      "input_free_publications": 84,
+      "moving_intervals": 567,
+      "first_counted_scroll_delay_ms": 32.6,
+      "last_scroll_publication_gap_ms": 4.7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          9.16943359375,
+          10.00634765625,
+          11.30615234375
+        ],
+        "load_average_after": [
+          9.56103515625,
+          10.02294921875,
+          11.27294921875
+        ]
+      }
+    },
+    {
+      "trial": "b3-off-1",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_FRAME_ALIGNED_WHEELS": "1",
+        "VOX_DISABLE_HIT_TEST_CULLING": "1",
+        "VOX_DISABLE_VIEWPORT_ENTRY_BLOCKS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-off-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-off-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 70.28,
+      "median_interval_ms": 13.56,
+      "p95_interval_ms": 19.66,
+      "max_interval_ms": 25.94,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 7.96,
+      "input_delivery_hz": 87.3,
+      "completed_inputs": 600,
+      "completed_publications": 493,
+      "input_free_publications": 9,
+      "moving_intervals": 482,
+      "first_counted_scroll_delay_ms": 39.4,
+      "last_scroll_publication_gap_ms": 3.7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          9.56103515625,
+          10.02294921875,
+          11.27294921875
+        ],
+        "load_average_after": [
+          9.67578125,
+          10.03076171875,
+          11.23974609375
+        ]
+      }
+    },
+    {
+      "trial": "b3-nogpu-1",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_GPU_CANVAS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nogpu-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nogpu-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 73.42,
+      "median_interval_ms": 13.18,
+      "p95_interval_ms": 18.05,
+      "max_interval_ms": 27.08,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 11.81,
+      "input_delivery_hz": 77.3,
+      "completed_inputs": 600,
+      "completed_publications": 579,
+      "input_free_publications": 8,
+      "moving_intervals": 569,
+      "first_counted_scroll_delay_ms": 46.1,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          9.67578125,
+          10.03076171875,
+          11.23974609375
+        ],
+        "load_average_after": [
+          9.916015625,
+          10.03173828125,
+          11.19580078125
+        ]
+      }
+    },
+    {
+      "trial": "b3-tile-1",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-tile-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-tile-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 99.29,
+      "median_interval_ms": 9.4,
+      "p95_interval_ms": 15.73,
+      "max_interval_ms": 30.9,
+      "fraction_over_8_33ms": 0.765,
+      "preparation_median_ms": 4.53,
+      "input_delivery_hz": 106.0,
+      "completed_inputs": 600,
+      "completed_publications": 611,
+      "input_free_publications": 47,
+      "moving_intervals": 561,
+      "first_counted_scroll_delay_ms": 38.6,
+      "last_scroll_publication_gap_ms": 6.9,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          9.916015625,
+          10.03173828125,
+          11.19580078125
+        ],
+        "load_average_after": [
+          11.486328125,
+          10.37060546875,
+          11.28173828125
+        ]
+      }
+    },
+    {
+      "trial": "b3-new-2",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 95.63,
+      "median_interval_ms": 9.78,
+      "p95_interval_ms": 17.29,
+      "max_interval_ms": 38.97,
+      "fraction_over_8_33ms": 0.67,
+      "preparation_median_ms": 6.24,
+      "input_delivery_hz": 97.9,
+      "completed_inputs": 600,
+      "completed_publications": 667,
+      "input_free_publications": 80,
+      "moving_intervals": 585,
+      "first_counted_scroll_delay_ms": 39.0,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.486328125,
+          10.37060546875,
+          11.28173828125
+        ],
+        "load_average_after": [
+          12.0546875,
+          10.54443359375,
+          11.314453125
+        ]
+      }
+    },
+    {
+      "trial": "b3-off-2",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_FRAME_ALIGNED_WHEELS": "1",
+        "VOX_DISABLE_HIT_TEST_CULLING": "1",
+        "VOX_DISABLE_VIEWPORT_ENTRY_BLOCKS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-off-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-off-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 50.56,
+      "median_interval_ms": 17.55,
+      "p95_interval_ms": 28.98,
+      "max_interval_ms": 102.05,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 11.27,
+      "input_delivery_hz": 60.8,
+      "completed_inputs": 600,
+      "completed_publications": 507,
+      "input_free_publications": 6,
+      "moving_intervals": 498,
+      "first_counted_scroll_delay_ms": 165.2,
+      "last_scroll_publication_gap_ms": 26.4,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          12.0546875,
+          10.54443359375,
+          11.314453125
+        ],
+        "load_average_after": [
+          21.68017578125,
+          13.0107421875,
+          12.18017578125
+        ]
+      }
+    },
+    {
+      "trial": "b3-nogpu-2",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_GPU_CANVAS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nogpu-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nogpu-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 47.47,
+      "median_interval_ms": 19.66,
+      "p95_interval_ms": 27.38,
+      "max_interval_ms": 81.67,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 17.85,
+      "input_delivery_hz": 51.4,
+      "completed_inputs": 600,
+      "completed_publications": 563,
+      "input_free_publications": 8,
+      "moving_intervals": 553,
+      "first_counted_scroll_delay_ms": 278.8,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          22.34619140625,
+          13.29248046875,
+          12.2841796875
+        ],
+        "load_average_after": [
+          25.3251953125,
+          14.7451171875,
+          12.8369140625
+        ]
+      }
+    },
+    {
+      "trial": "b3-tile-2",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-tile-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-tile-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 93.84,
+      "median_interval_ms": 9.39,
+      "p95_interval_ms": 15.91,
+      "max_interval_ms": 120.01,
+      "fraction_over_8_33ms": 0.809,
+      "preparation_median_ms": 4.8,
+      "input_delivery_hz": 94.3,
+      "completed_inputs": 600,
+      "completed_publications": 618,
+      "input_free_publications": 20,
+      "moving_intervals": 596,
+      "first_counted_scroll_delay_ms": 120.5,
+      "last_scroll_publication_gap_ms": 3.8,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          27.220703125,
+          15.3134765625,
+          13.04833984375
+        ],
+        "load_average_after": [
+          28.875,
+          16.62890625,
+          13.58544921875
+        ]
+      }
+    },
+    {
+      "trial": "samp-b3",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-b3/profile",
+        "VOX_PRECISE_INPUTS": "1500",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-b3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 69.98,
+      "median_interval_ms": 11.45,
+      "p95_interval_ms": 30.98,
+      "max_interval_ms": 123.94,
+      "fraction_over_8_33ms": 0.776,
+      "preparation_median_ms": 7.52,
+      "input_delivery_hz": 78.2,
+      "completed_inputs": 1500,
+      "completed_publications": 1449,
+      "input_free_publications": 106,
+      "moving_intervals": 1341,
+      "first_counted_scroll_delay_ms": 47.1,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          29.681640625,
+          17.2275390625,
+          13.833984375
+        ],
+        "load_average_after": [
+          30.74462890625,
+          18.89990234375,
+          14.59130859375
+        ]
+      }
+    },
+    {
+      "trial": "samp-b3t",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-b3t/profile",
+        "VOX_PRECISE_INPUTS": "1500",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-b3t/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 72.93,
+      "median_interval_ms": 11.82,
+      "p95_interval_ms": 25.11,
+      "max_interval_ms": 112.98,
+      "fraction_over_8_33ms": 0.953,
+      "preparation_median_ms": 6.31,
+      "input_delivery_hz": 77.4,
+      "completed_inputs": 1500,
+      "completed_publications": 1436,
+      "input_free_publications": 21,
+      "moving_intervals": 1412,
+      "first_counted_scroll_delay_ms": 45.2,
+      "last_scroll_publication_gap_ms": 5.7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          31.3818359375,
+          20.0498046875,
+          15.1328125
+        ],
+        "load_average_after": [
+          27.38818359375,
+          20.34814453125,
+          15.4609375
+        ]
+      }
+    },
+    {
+      "trial": "b3-gdiag",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_DIAGNOSTICS": "1",
+        "VOX_SCROLL_RASTER_DAMAGE_DIAGNOSTICS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-gdiag/profile",
+        "VOX_PRECISE_INPUTS": "360",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-gdiag/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 87.49,
+      "median_interval_ms": 10.05,
+      "p95_interval_ms": 19.36,
+      "max_interval_ms": 22.29,
+      "fraction_over_8_33ms": 0.719,
+      "preparation_median_ms": 6.53,
+      "input_delivery_hz": 101.3,
+      "completed_inputs": 360,
+      "completed_publications": 365,
+      "input_free_publications": 53,
+      "moving_intervals": 310,
+      "first_counted_scroll_delay_ms": 93.6,
+      "last_scroll_publication_gap_ms": 1.0,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          22.94921875,
+          20.03515625,
+          15.5439453125
+        ],
+        "load_average_after": [
+          22.80419921875,
+          20.25244140625,
+          15.7529296875
+        ]
+      }
+    },
+    {
+      "trial": "b3-new-a1",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-a1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-a1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 88.45,
+      "median_interval_ms": 9.9,
+      "p95_interval_ms": 19.21,
+      "max_interval_ms": 108.38,
+      "fraction_over_8_33ms": 0.712,
+      "preparation_median_ms": 6.3,
+      "input_delivery_hz": 95.3,
+      "completed_inputs": 600,
+      "completed_publications": 643,
+      "input_free_publications": 85,
+      "moving_intervals": 556,
+      "first_counted_scroll_delay_ms": 90.9,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          19.20703125,
+          19.64306640625,
+          15.7587890625
+        ],
+        "load_average_after": [
+          18.08740234375,
+          19.32275390625,
+          15.75341796875
+        ]
+      }
+    },
+    {
+      "trial": "b3-nosb-1",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_GPU_SCROLLBAR_BATCH": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 51.95,
+      "median_interval_ms": 17.95,
+      "p95_interval_ms": 25.24,
+      "max_interval_ms": 146.39,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 16.42,
+      "input_delivery_hz": 55.6,
+      "completed_inputs": 600,
+      "completed_publications": 571,
+      "input_free_publications": 9,
+      "moving_intervals": 560,
+      "first_counted_scroll_delay_ms": 72.9,
+      "last_scroll_publication_gap_ms": 5.7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          18.08740234375,
+          19.32275390625,
+          15.75341796875
+        ],
+        "load_average_after": [
+          24.2216796875,
+          20.56201171875,
+          16.31884765625
+        ]
+      }
+    },
+    {
+      "trial": "b3-new-a2",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-a2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-a2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 88.59,
+      "median_interval_ms": 9.45,
+      "p95_interval_ms": 18.92,
+      "max_interval_ms": 59.79,
+      "fraction_over_8_33ms": 0.7,
+      "preparation_median_ms": 6.74,
+      "input_delivery_hz": 98.8,
+      "completed_inputs": 600,
+      "completed_publications": 624,
+      "input_free_publications": 85,
+      "moving_intervals": 537,
+      "first_counted_scroll_delay_ms": 136.0,
+      "last_scroll_publication_gap_ms": 5.8,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          24.28369140625,
+          20.63525390625,
+          16.36962890625
+        ],
+        "load_average_after": [
+          22.76318359375,
+          20.56787109375,
+          16.4677734375
+        ]
+      }
+    },
+    {
+      "trial": "b3-nosb-2",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_GPU_SCROLLBAR_BATCH": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 57.7,
+      "median_interval_ms": 16.46,
+      "p95_interval_ms": 21.58,
+      "max_interval_ms": 63.75,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 15.72,
+      "input_delivery_hz": 57.9,
+      "completed_inputs": 600,
+      "completed_publications": 607,
+      "input_free_publications": 8,
+      "moving_intervals": 597,
+      "first_counted_scroll_delay_ms": 80.4,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          22.76318359375,
+          20.56787109375,
+          16.4677734375
+        ],
+        "load_average_after": [
+          22.1376953125,
+          20.61181640625,
+          16.6240234375
+        ]
+      }
+    },
+    {
+      "trial": "b3-new-a3",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-a3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-new-a3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 90.18,
+      "median_interval_ms": 10.11,
+      "p95_interval_ms": 19.33,
+      "max_interval_ms": 23.11,
+      "fraction_over_8_33ms": 0.681,
+      "preparation_median_ms": 6.7,
+      "input_delivery_hz": 96.3,
+      "completed_inputs": 600,
+      "completed_publications": 639,
+      "input_free_publications": 76,
+      "moving_intervals": 561,
+      "first_counted_scroll_delay_ms": 78.6,
+      "last_scroll_publication_gap_ms": 1.1,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          21.32568359375,
+          20.46875,
+          16.5966796875
+        ],
+        "load_average_after": [
+          19.97265625,
+          20.24658203125,
+          16.62890625
+        ]
+      }
+    },
+    {
+      "trial": "b3-nosb-3",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_GPU_SCROLLBAR_BATCH": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 53.97,
+      "median_interval_ms": 17.8,
+      "p95_interval_ms": 24.58,
+      "max_interval_ms": 34.15,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 15.97,
+      "input_delivery_hz": 58.0,
+      "completed_inputs": 600,
+      "completed_publications": 567,
+      "input_free_publications": 8,
+      "moving_intervals": 557,
+      "first_counted_scroll_delay_ms": 65.4,
+      "last_scroll_publication_gap_ms": 5.1,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          19.97265625,
+          20.24658203125,
+          16.62890625
+        ],
+        "load_average_after": [
+          17.423828125,
+          19.58447265625,
+          16.53271484375
+        ]
+      }
+    },
+    {
+      "trial": "b3-nosb-diag",
+      "executable_sha256": "1686a6ccdeb9cfdb3522ec4f94c6e32d548290e23956075420b3cb2f1890d61e",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_GPU_SCROLLBAR_BATCH": "1",
+        "VOX_GPU_CANVAS_DIAGNOSTICS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-diag/profile",
+        "VOX_PRECISE_INPUTS": "240",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b3-nosb-diag/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 55.88,
+      "median_interval_ms": 17.35,
+      "p95_interval_ms": 22.55,
+      "max_interval_ms": 24.59,
+      "fraction_over_8_33ms": 1.0,
+      "preparation_median_ms": 15.52,
+      "input_delivery_hz": 61.5,
+      "completed_inputs": 240,
+      "completed_publications": 226,
+      "input_free_publications": 7,
+      "moving_intervals": 217,
+      "first_counted_scroll_delay_ms": 65.6,
+      "last_scroll_publication_gap_ms": 7.1,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          17.423828125,
+          19.58447265625,
+          16.53271484375
+        ],
+        "load_average_after": [
+          16.8251953125,
+          19.3037109375,
+          16.50146484375
+        ]
+      }
+    },
+    {
+      "trial": "b4-new-1",
+      "executable_sha256": "adc68c03f8dd8088620153801721f8defbbbe9f6243a7888237410ce8cd54b94",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-new-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-new-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 94.91,
+      "median_interval_ms": 9.7,
+      "p95_interval_ms": 18.08,
+      "max_interval_ms": 28.28,
+      "fraction_over_8_33ms": 0.636,
+      "preparation_median_ms": 6.06,
+      "input_delivery_hz": 99.6,
+      "completed_inputs": 600,
+      "completed_publications": 679,
+      "input_free_publications": 106,
+      "moving_intervals": 571,
+      "first_counted_scroll_delay_ms": 56.9,
+      "last_scroll_publication_gap_ms": 1.5,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.771484375,
+          12.548828125,
+          13.89013671875
+        ],
+        "load_average_after": [
+          14.48974609375,
+          13.103515625,
+          14.04931640625
+        ]
+      }
+    },
+    {
+      "trial": "b4-tile-1",
+      "executable_sha256": "adc68c03f8dd8088620153801721f8defbbbe9f6243a7888237410ce8cd54b94",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-tile-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-tile-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 75.49,
+      "median_interval_ms": 11.64,
+      "p95_interval_ms": 22.28,
+      "max_interval_ms": 115.43,
+      "fraction_over_8_33ms": 0.956,
+      "preparation_median_ms": 5.89,
+      "input_delivery_hz": 80.5,
+      "completed_inputs": 600,
+      "completed_publications": 577,
+      "input_free_publications": 13,
+      "moving_intervals": 562,
+      "first_counted_scroll_delay_ms": 95.3,
+      "last_scroll_publication_gap_ms": 4.7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          14.9306640625,
+          13.2177734375,
+          14.083984375
+        ],
+        "load_average_after": [
+          15.2119140625,
+          13.4228515625,
+          14.1318359375
+        ]
+      }
+    },
+    {
+      "trial": "b4-new-2",
+      "executable_sha256": "adc68c03f8dd8088620153801721f8defbbbe9f6243a7888237410ce8cd54b94",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-new-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-new-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 93.42,
+      "median_interval_ms": 10.01,
+      "p95_interval_ms": 18.66,
+      "max_interval_ms": 25.22,
+      "fraction_over_8_33ms": 0.67,
+      "preparation_median_ms": 6.09,
+      "input_delivery_hz": 97.7,
+      "completed_inputs": 600,
+      "completed_publications": 668,
+      "input_free_publications": 93,
+      "moving_intervals": 573,
+      "first_counted_scroll_delay_ms": 70.6,
+      "last_scroll_publication_gap_ms": 1.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          15.2119140625,
+          13.4228515625,
+          14.1318359375
+        ],
+        "load_average_after": [
+          16.90771484375,
+          14.001953125,
+          14.31640625
+        ]
+      }
+    },
+    {
+      "trial": "b4-tile-2",
+      "executable_sha256": "adc68c03f8dd8088620153801721f8defbbbe9f6243a7888237410ce8cd54b94",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-tile-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-tile-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 92.44,
+      "median_interval_ms": 10.22,
+      "p95_interval_ms": 16.15,
+      "max_interval_ms": 40.66,
+      "fraction_over_8_33ms": 0.824,
+      "preparation_median_ms": 4.5,
+      "input_delivery_hz": 98.7,
+      "completed_inputs": 600,
+      "completed_publications": 592,
+      "input_free_publications": 28,
+      "moving_intervals": 561,
+      "first_counted_scroll_delay_ms": 87.0,
+      "last_scroll_publication_gap_ms": 3.9,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          16.90771484375,
+          14.001953125,
+          14.31640625
+        ],
+        "load_average_after": [
+          17.54296875,
+          14.4111328125,
+          14.45556640625
+        ]
+      }
+    },
+    {
+      "trial": "b4-new-3",
+      "executable_sha256": "adc68c03f8dd8088620153801721f8defbbbe9f6243a7888237410ce8cd54b94",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-new-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-new-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 93.32,
+      "median_interval_ms": 10.07,
+      "p95_interval_ms": 18.53,
+      "max_interval_ms": 21.51,
+      "fraction_over_8_33ms": 0.629,
+      "preparation_median_ms": 5.89,
+      "input_delivery_hz": 99.3,
+      "completed_inputs": 600,
+      "completed_publications": 705,
+      "input_free_publications": 140,
+      "moving_intervals": 563,
+      "first_counted_scroll_delay_ms": 56.5,
+      "last_scroll_publication_gap_ms": 1.0,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          17.54296875,
+          14.4111328125,
+          14.45556640625
+        ],
+        "load_average_after": [
+          16.982421875,
+          14.6279296875,
+          14.53466796875
+        ]
+      }
+    },
+    {
+      "trial": "b4-tile-3",
+      "executable_sha256": "adc68c03f8dd8088620153801721f8defbbbe9f6243a7888237410ce8cd54b94",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-tile-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-tile-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 89.95,
+      "median_interval_ms": 10.68,
+      "p95_interval_ms": 15.79,
+      "max_interval_ms": 44.88,
+      "fraction_over_8_33ms": 0.889,
+      "preparation_median_ms": 5.52,
+      "input_delivery_hz": 96.4,
+      "completed_inputs": 600,
+      "completed_publications": 580,
+      "input_free_publications": 19,
+      "moving_intervals": 559,
+      "first_counted_scroll_delay_ms": 44.4,
+      "last_scroll_publication_gap_ms": 3.9,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          16.982421875,
+          14.6279296875,
+          14.53466796875
+        ],
+        "load_average_after": [
+          15.76708984375,
+          14.54150390625,
+          14.505859375
+        ]
+      }
+    },
+    {
+      "trial": "b4-nocand-1",
+      "executable_sha256": "adc68c03f8dd8088620153801721f8defbbbe9f6243a7888237410ce8cd54b94",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_VIEWPORT_ENTRY_CANDIDATES": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-nocand-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b4-nocand-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 91.54,
+      "median_interval_ms": 9.84,
+      "p95_interval_ms": 19.11,
+      "max_interval_ms": 31.07,
+      "fraction_over_8_33ms": 0.701,
+      "preparation_median_ms": 6.72,
+      "input_delivery_hz": 96.0,
+      "completed_inputs": 600,
+      "completed_publications": 656,
+      "input_free_publications": 83,
+      "moving_intervals": 571,
+      "first_counted_scroll_delay_ms": 45.2,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          15.76708984375,
+          14.54150390625,
+          14.505859375
+        ],
+        "load_average_after": [
+          15.79638671875,
+          14.689453125,
+          14.5615234375
+        ]
+      }
+    },
+    {
+      "trial": "b5-new-1",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 113.72,
+      "median_interval_ms": 9.03,
+      "p95_interval_ms": 12.02,
+      "max_interval_ms": 20.42,
+      "fraction_over_8_33ms": 0.563,
+      "preparation_median_ms": 4.9,
+      "input_delivery_hz": 114.5,
+      "completed_inputs": 600,
+      "completed_publications": 604,
+      "input_free_publications": 7,
+      "moving_intervals": 595,
+      "first_counted_scroll_delay_ms": 63.3,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          23.98828125,
+          17.22412109375,
+          16.70947265625
+        ],
+        "load_average_after": [
+          23.99951171875,
+          17.83203125,
+          16.94677734375
+        ]
+      }
+    },
+    {
+      "trial": "b5-off-1",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_REPLAYED_INPUT_FRAME_STAMP": "1",
+        "VOX_DISABLE_OVERLAY_SCROLLBAR_WAKE_COALESCING": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-off-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-off-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 92.18,
+      "median_interval_ms": 9.88,
+      "p95_interval_ms": 18.16,
+      "max_interval_ms": 73.17,
+      "fraction_over_8_33ms": 0.672,
+      "preparation_median_ms": 5.18,
+      "input_delivery_hz": 97.9,
+      "completed_inputs": 600,
+      "completed_publications": 700,
+      "input_free_publications": 134,
+      "moving_intervals": 564,
+      "first_counted_scroll_delay_ms": 153.1,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          23.99951171875,
+          17.83203125,
+          16.94677734375
+        ],
+        "load_average_after": [
+          25.90869140625,
+          18.8134765625,
+          17.328125
+        ]
+      }
+    },
+    {
+      "trial": "b5-new-2",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 110.76,
+      "median_interval_ms": 8.96,
+      "p95_interval_ms": 12.89,
+      "max_interval_ms": 25.65,
+      "fraction_over_8_33ms": 0.6,
+      "preparation_median_ms": 4.7,
+      "input_delivery_hz": 111.9,
+      "completed_inputs": 600,
+      "completed_publications": 600,
+      "input_free_publications": 5,
+      "moving_intervals": 593,
+      "first_counted_scroll_delay_ms": 60.4,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          25.90869140625,
+          18.8134765625,
+          17.328125
+        ],
+        "load_average_after": [
+          26.6650390625,
+          19.63623046875,
+          17.6748046875
+        ]
+      }
+    },
+    {
+      "trial": "b5-off-2",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_REPLAYED_INPUT_FRAME_STAMP": "1",
+        "VOX_DISABLE_OVERLAY_SCROLLBAR_WAKE_COALESCING": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-off-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-off-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 94.56,
+      "median_interval_ms": 9.71,
+      "p95_interval_ms": 18.33,
+      "max_interval_ms": 46.15,
+      "fraction_over_8_33ms": 0.693,
+      "preparation_median_ms": 4.9,
+      "input_delivery_hz": 102.2,
+      "completed_inputs": 600,
+      "completed_publications": 677,
+      "input_free_publications": 121,
+      "moving_intervals": 554,
+      "first_counted_scroll_delay_ms": 78.3,
+      "last_scroll_publication_gap_ms": 1.0,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          26.6650390625,
+          19.63623046875,
+          17.6748046875
+        ],
+        "load_average_after": [
+          26.7578125,
+          20.25146484375,
+          17.95361328125
+        ]
+      }
+    },
+    {
+      "trial": "b5-new-3",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 96.99,
+      "median_interval_ms": 9.4,
+      "p95_interval_ms": 16.52,
+      "max_interval_ms": 46.94,
+      "fraction_over_8_33ms": 0.65,
+      "preparation_median_ms": 6.5,
+      "input_delivery_hz": 99.3,
+      "completed_inputs": 600,
+      "completed_publications": 589,
+      "input_free_publications": 1,
+      "moving_intervals": 585,
+      "first_counted_scroll_delay_ms": 54.9,
+      "last_scroll_publication_gap_ms": 19.0,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          26.7578125,
+          20.25146484375,
+          17.95361328125
+        ],
+        "load_average_after": [
+          28.91748046875,
+          21.27587890625,
+          18.396484375
+        ]
+      }
+    },
+    {
+      "trial": "b5-off-3",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_REPLAYED_INPUT_FRAME_STAMP": "1",
+        "VOX_DISABLE_OVERLAY_SCROLLBAR_WAKE_COALESCING": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-off-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-off-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 83.03,
+      "median_interval_ms": 10.48,
+      "p95_interval_ms": 22.11,
+      "max_interval_ms": 62.5,
+      "fraction_over_8_33ms": 0.684,
+      "preparation_median_ms": 6.45,
+      "input_delivery_hz": 88.2,
+      "completed_inputs": 600,
+      "completed_publications": 657,
+      "input_free_publications": 91,
+      "moving_intervals": 564,
+      "first_counted_scroll_delay_ms": 76.6,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          28.91748046875,
+          21.27587890625,
+          18.396484375
+        ],
+        "load_average_after": [
+          31.27392578125,
+          22.49267578125,
+          18.92041015625
+        ]
+      }
+    },
+    {
+      "trial": "b5-new-4",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-4/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-4/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 99.26,
+      "median_interval_ms": 9.85,
+      "p95_interval_ms": 15.5,
+      "max_interval_ms": 29.77,
+      "fraction_over_8_33ms": 0.66,
+      "preparation_median_ms": 5.79,
+      "input_delivery_hz": 100.6,
+      "completed_inputs": 600,
+      "completed_publications": 599,
+      "input_free_publications": 5,
+      "moving_intervals": 591,
+      "first_counted_scroll_delay_ms": 58.0,
+      "last_scroll_publication_gap_ms": 18.6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          33.98974609375,
+          23.71484375,
+          19.4423828125
+        ],
+        "load_average_after": [
+          32.52978515625,
+          24.21240234375,
+          19.74609375
+        ]
+      }
+    },
+    {
+      "trial": "b5-new-5",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-5/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-new-5/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 96.57,
+      "median_interval_ms": 10.08,
+      "p95_interval_ms": 14.21,
+      "max_interval_ms": 68.92,
+      "fraction_over_8_33ms": 0.717,
+      "preparation_median_ms": 5.48,
+      "input_delivery_hz": 98.0,
+      "completed_inputs": 600,
+      "completed_publications": 594,
+      "input_free_publications": 2,
+      "moving_intervals": 590,
+      "first_counted_scroll_delay_ms": 82.1,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          32.6474609375,
+          24.37451171875,
+          19.82958984375
+        ],
+        "load_average_after": [
+          30.4765625,
+          24.521484375,
+          20.013671875
+        ]
+      }
+    },
+    {
+      "trial": "samp-b5",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-b5/profile",
+        "VOX_PRECISE_INPUTS": "1500",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/samp-b5/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 102.92,
+      "median_interval_ms": 8.75,
+      "p95_interval_ms": 15.27,
+      "max_interval_ms": 85.13,
+      "fraction_over_8_33ms": 0.644,
+      "preparation_median_ms": 5.12,
+      "input_delivery_hz": 103.9,
+      "completed_inputs": 1500,
+      "completed_publications": 1492,
+      "input_free_publications": 5,
+      "moving_intervals": 1485,
+      "first_counted_scroll_delay_ms": 118.9,
+      "last_scroll_publication_gap_ms": 0.3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          30.03759765625,
+          24.529296875,
+          20.04248046875
+        ],
+        "load_average_after": [
+          31.1748046875,
+          25.380859375,
+          20.52978515625
+        ]
+      }
+    },
+    {
+      "trial": "b5-def-1",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-def-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-def-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 110.73,
+      "median_interval_ms": 9.14,
+      "p95_interval_ms": 12.26,
+      "max_interval_ms": 19.17,
+      "fraction_over_8_33ms": 0.624,
+      "preparation_median_ms": 4.78,
+      "input_delivery_hz": 111.5,
+      "completed_inputs": 600,
+      "completed_publications": 603,
+      "input_free_publications": 6,
+      "moving_intervals": 595,
+      "first_counted_scroll_delay_ms": 38.8,
+      "last_scroll_publication_gap_ms": 0.2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          28.607421875,
+          25.42529296875,
+          20.7197265625
+        ],
+        "load_average_after": [
+          24.052734375,
+          24.658203125,
+          20.60595703125
+        ]
+      }
+    },
+    {
+      "trial": "b5-tile-1",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-tile-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-tile-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 83.98,
+      "median_interval_ms": 11.06,
+      "p95_interval_ms": 17.95,
+      "max_interval_ms": 70.46,
+      "fraction_over_8_33ms": 0.884,
+      "preparation_median_ms": 4.7,
+      "input_delivery_hz": 85.8,
+      "completed_inputs": 600,
+      "completed_publications": 592,
+      "input_free_publications": 4,
+      "moving_intervals": 586,
+      "first_counted_scroll_delay_ms": 94.0,
+      "last_scroll_publication_gap_ms": 7.0,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          24.052734375,
+          24.658203125,
+          20.60595703125
+        ],
+        "load_average_after": [
+          20.169921875,
+          23.68994140625,
+          20.373046875
+        ]
+      }
+    },
+    {
+      "trial": "b5-def-2",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-def-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-def-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 87.7,
+      "median_interval_ms": 10.34,
+      "p95_interval_ms": 18.93,
+      "max_interval_ms": 50.42,
+      "fraction_over_8_33ms": 0.722,
+      "preparation_median_ms": 7.15,
+      "input_delivery_hz": 91.2,
+      "completed_inputs": 600,
+      "completed_publications": 582,
+      "input_free_publications": 3,
+      "moving_intervals": 576,
+      "first_counted_scroll_delay_ms": 134.1,
+      "last_scroll_publication_gap_ms": 20.8,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          20.716796875,
+          23.74462890625,
+          20.41162109375
+        ],
+        "load_average_after": [
+          21.40966796875,
+          23.615234375,
+          20.4580078125
+        ]
+      }
+    },
+    {
+      "trial": "b5-tile-2",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-tile-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-tile-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 62.61,
+      "median_interval_ms": 14.32,
+      "p95_interval_ms": 28.15,
+      "max_interval_ms": 138.62,
+      "fraction_over_8_33ms": 0.978,
+      "preparation_median_ms": 6.53,
+      "input_delivery_hz": 67.3,
+      "completed_inputs": 600,
+      "completed_publications": 561,
+      "input_free_publications": 1,
+      "moving_intervals": 557,
+      "first_counted_scroll_delay_ms": 176.8,
+      "last_scroll_publication_gap_ms": 3.9,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          21.40966796875,
+          23.615234375,
+          20.4580078125
+        ],
+        "load_average_after": [
+          27.82275390625,
+          24.90576171875,
+          21.05029296875
+        ]
+      }
+    },
+    {
+      "trial": "b5-def-3",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-def-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-def-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 76.3,
+      "median_interval_ms": 11.29,
+      "p95_interval_ms": 23.82,
+      "max_interval_ms": 124.24,
+      "fraction_over_8_33ms": 0.785,
+      "preparation_median_ms": 8.2,
+      "input_delivery_hz": 80.5,
+      "completed_inputs": 600,
+      "completed_publications": 576,
+      "input_free_publications": 5,
+      "moving_intervals": 568,
+      "first_counted_scroll_delay_ms": 197.7,
+      "last_scroll_publication_gap_ms": 22.6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          27.82275390625,
+          24.90576171875,
+          21.05029296875
+        ],
+        "load_average_after": [
+          30.3515625,
+          25.77783203125,
+          21.498046875
+        ]
+      }
+    },
+    {
+      "trial": "b5-tile-3",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_SCROLL_TILE_COMPOSITOR": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-tile-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/b5-tile-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "https://news.ycombinator.com/item?id=50391456",
+      "target_hz": 120.0,
+      "mean_scroll_fps": 68.43,
+      "median_interval_ms": 13.38,
+      "p95_interval_ms": 22.46,
+      "max_interval_ms": 128.47,
+      "fraction_over_8_33ms": 0.988,
+      "preparation_median_ms": 6.04,
+      "input_delivery_hz": 71.3,
+      "completed_inputs": 600,
+      "completed_publications": 578,
+      "input_free_publications": 1,
+      "moving_intervals": 575,
+      "first_counted_scroll_delay_ms": 101.6,
+      "last_scroll_publication_gap_ms": 6.7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          30.2431640625,
+          25.8310546875,
+          21.5419921875
+        ],
+        "load_average_after": [
+          30.26904296875,
+          26.259765625,
+          21.84521484375
+        ]
+      }
+    },
+    {
+      "trial": "ff-new",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PRECISE_FINAL_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/ff-new-final.png",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/ff-new/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "100000",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "6.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/ff-new/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "file:///Users/alex/code/vox2/Build/hn-120-20261107/fixture/item-inline.html",
+      "target_hz": 60,
+      "mean_scroll_fps": 102.52,
+      "median_interval_ms": 9.85,
+      "p95_interval_ms": 13.42,
+      "max_interval_ms": 24.08,
+      "fraction_over_8_33ms": 0.012,
+      "preparation_median_ms": 5.49,
+      "input_delivery_hz": 103.6,
+      "completed_inputs": 600,
+      "completed_publications": 598,
+      "input_free_publications": 3,
+      "moving_intervals": 593,
+      "first_counted_scroll_delay_ms": 51.3,
+      "last_scroll_publication_gap_ms": 0.5,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          61.67236328125,
+          66.78515625,
+          51.759765625
+        ],
+        "load_average_after": [
+          58.31591796875,
+          65.72119140625,
+          51.72802734375
+        ]
+      }
+    },
+    {
+      "trial": "ff-off",
+      "executable_sha256": "12dc39c1ac10ffde92a82643e553c29fc1accd88fd981caceb5b2b101acd2827",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PRECISE_FINAL_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/ff-off-final.png",
+        "VOX_DISABLE_FRAME_ALIGNED_WHEELS": "1",
+        "VOX_DISABLE_HIT_TEST_CULLING": "1",
+        "VOX_DISABLE_VIEWPORT_ENTRY_BLOCKS": "1",
+        "VOX_DISABLE_VIEWPORT_ENTRY_CANDIDATES": "1",
+        "VOX_DISABLE_REPLAYED_INPUT_FRAME_STAMP": "1",
+        "VOX_DISABLE_OVERLAY_SCROLLBAR_WAKE_COALESCING": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120-20261107/ff-off/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "100000",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "6.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120-20261107/ff-off/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "url": "file:///Users/alex/code/vox2/Build/hn-120-20261107/fixture/item-inline.html",
+      "target_hz": 60,
+      "mean_scroll_fps": 55.75,
+      "median_interval_ms": 15.48,
+      "p95_interval_ms": 23.94,
+      "max_interval_ms": 265.91,
+      "fraction_over_8_33ms": 0.401,
+      "preparation_median_ms": 9.29,
+      "input_delivery_hz": 69.7,
+      "completed_inputs": 600,
+      "completed_publications": 489,
+      "input_free_publications": 8,
+      "moving_intervals": 479,
+      "first_counted_scroll_delay_ms": 45.5,
+      "last_scroll_publication_gap_ms": 6.6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          57.72998046875,
+          65.4765625,
+          51.7236328125
+        ],
+        "load_average_after": [
+          59.32080078125,
+          65.267578125,
+          51.96337890625
+        ]
+      }
+    }
+  ],
+  "pixel_checks": {
+    "final_frames": "b5 fixture after 3,600 CSS px incremental scroll, all seven switches on vs off: 0 of 7,212,240 pixels differ",
+    "screenshots": "b5 fixture --screenshot-scroll-y 0/2500/20000/61000, culling blocks/candidates/hit culling on vs off: byte-identical PNGs"
+  }
+}
