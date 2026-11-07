@@ -3350,6 +3350,10 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 				runtime.evaluate_host('__ladybirdFlushPendingScriptMutations()') or { messages << 'JavaScript script preparation: ${err.msg()}' }
 				loader.discover()
 			}
+			// Iframes delay this load event until their documents have loaded.
+			if document.has_page() {
+				start_browser_child_navigations(document, runtime.engine, mut messages)
+			}
 		}
 		if name == 'load' && (image_async_fetch != none || script_loader != none) && document.anything_is_delaying_the_load_event() { continue }
 		runtime.dispatch_document_readiness_event(name) or {

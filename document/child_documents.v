@@ -19,6 +19,22 @@ mut:
 	observed bool
 	service  ?&BrowserHostedDocument
 	closed   bool
+	// Held on the container document from the start of a navigation until
+	// the hosted document has run its scripts and fired its load event.
+	load_delay ?dom.DocumentLoadEventDelayer
+}
+
+fn (mut child BrowserChildDocument) hold_load_delay() {
+	if child.load_delay != none { return }
+	mut owner := unsafe { &dom.Document(child.element.document()) }
+	child.load_delay = dom.DocumentLoadEventDelayer.new(mut owner)
+}
+
+fn (mut child BrowserChildDocument) release_load_delay() {
+	mut delay := child.load_delay or { return }
+	child.load_delay = none
+	delay.finish()
+	child.element.document().request_frame()
 }
 
 @[heap]
@@ -131,6 +147,7 @@ fn (mut service BrowserHostedDocument) close() {
 fn (mut child BrowserChildDocument) close() {
 	if child.closed { return }
 	child.closed = true
+	child.release_load_delay()
 	mut navigable := unsafe { &html.NavigableModel(child.navigable) }
 	context := navigable.active_browsing_context()
 	if mut document := navigable.active_document() {
@@ -219,7 +236,28 @@ fn (mut child BrowserChildDocument) process_attributes(mut messages []string) {
 		document_resource: resource
 		initial_insertion: if initial { .yes } else { .no }
 		referrer_policy:   html.referrer_policy_from_string(child.element.get_attribute_value('referrerpolicy')) or { html.ReferrerPolicy.empty_string }
-	}) or { messages << 'Child navigation: ${err.msg()}' }
+	}) or {
+		messages << 'Child navigation: ${err.msg()}'
+		return
+	}
+	child.hold_load_delay()
+}
+
+// Start the navigations of a document's iframes before its load event is
+// considered. Each one then delays its container's load event until the
+// hosted document has run its scripts and fired its own load event.
+fn start_browser_child_navigations(document &dom.Document, engine browserjs.Engine, mut messages []string) {
+	mut host := browser_child_document_host(document, engine)
+	if host.closed { return }
+	host.discover(document, mut messages)
+	for index in 0 .. host.children.len {
+		mut child := host.children[index]
+		if child.closed || child.observed || voidptr(child.element.document()) != voidptr(document) {
+			continue
+		}
+		if !child.element.as_node().is_connected() { continue }
+		child.process_attributes(mut messages)
+	}
 }
 
 fn (mut service BrowserHostedDocument) start_resources() {
@@ -366,6 +404,8 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 			if service.initialized && !service.load_fired && !active.anything_is_delaying_the_load_event() {
 				service.load_fired = true
 				html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), child.element.document(), fn [child, active] () {
+					mut owner := unsafe { &BrowserChildDocument(child) }
+					defer { owner.release_load_delay() }
 					if child.closed || !child.navigable.host_navigable().active_document_is(active) {
 						return
 					}

@@ -788,8 +788,19 @@ fn (mut state HTMLParserEndState) complete() {
 		if mutable_document.get_browsing_context() == none {
 			return
 		}
-		if mutable_document.claim_readiness_event('load') {
-			mutable_document.dispatch_event_simple('load', false)
+		// The browser starts iframe navigations after parsing, so a child can
+		// begin delaying the load event after the end check queued this task.
+		// The scripting runtime then fires load once nothing delays it.
+		if !mutable_document.anything_is_delaying_the_load_event()
+			&& mutable_document.claim_readiness_event('load') {
+			// Fire load at the Document's relevant global object, where the
+			// scripting runtime's readiness dispatch also delivers it.
+			if window := mutable_document.get_window() {
+				target := unsafe { &dom.EventTarget(window) }
+				target.dispatch_event(dom.Event.create('load', dom.EventInit{}))
+			} else {
+				mutable_document.dispatch_event_simple('load', false)
+			}
 		}
 		mutable_document.set_page_showing(true)
 		mutable_document.completely_finish_loading()
