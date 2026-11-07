@@ -195,6 +195,37 @@ ORACLE void oracle_pattern(uint8_t const* pixels)
     oracle_pattern_pixels = pixels;
 }
 
+static std::vector<VoxCanvasFilter> oracle_filter_list;
+
+// The canvas filters of the next fill, stroke or glyph run: per filter its
+// kind, clamp flag and SkColor in values, and its radius, offsets and 20
+// matrix entries in floats.
+ORACLE void oracle_filters(int count, int const* values, float const* floats)
+{
+    oracle_filter_list.clear();
+    for (int i = 0; i < count; ++i) {
+        VoxCanvasFilter filter {};
+        filter.kind = values[i * 3];
+        filter.clamp = values[i * 3 + 1];
+        filter.color = uint32_t(values[i * 3 + 2]);
+        filter.radius = floats[i * 23];
+        filter.offset_x = floats[i * 23 + 1];
+        filter.offset_y = floats[i * 23 + 2];
+        for (int j = 0; j < 20; ++j)
+            filter.matrix[j] = floats[i * 23 + 3 + j];
+        oracle_filter_list.push_back(filter);
+    }
+}
+
+// Installs and consumes the pending filters.
+static void oracle_take_filters(VoxCanvasCommand& command, std::vector<VoxCanvasFilter>& storage)
+{
+    storage = std::move(oracle_filter_list);
+    oracle_filter_list.clear();
+    command.filters = storage.data();
+    command.filter_count = int(storage.size());
+}
+
 // An optional style after the other arguments: ints are its kind (0 for the
 // solid color), then a gradient's stop count, with floats x0, y0, r0, x1,
 // y1, r1, the angle and 5 floats per stop, or a pattern's width, height,
@@ -268,6 +299,8 @@ ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
     command.composite = a[8 + a[7] * 2];
     command.blur = f[7 + a[5] * 12 + oracle_clip_floats(a + 7)];
     oracle_style(command.style, a + 9 + a[7] * 2, f + 8 + a[5] * 12 + oracle_clip_floats(a + 7));
+    std::vector<VoxCanvasFilter> filters;
+    oracle_take_filters(command, filters);
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
 
@@ -300,6 +333,8 @@ ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
     command.composite = a[10 + a[9] * 2];
     command.blur = f[10 + a[4] * 12 + a[8] + oracle_clip_floats(a + 9)];
     oracle_style(command.style, a + 11 + a[9] * 2, f + 11 + a[4] * 12 + a[8] + oracle_clip_floats(a + 9));
+    std::vector<VoxCanvasFilter> filters;
+    oracle_take_filters(command, filters);
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
 
@@ -366,5 +401,7 @@ ORACLE int oracle_canvas_glyphs(uint8_t* pixels, char const* font_path, uint16_t
     run.translation[1] = f[9];
     run.glyphs = glyphs;
     run.positions = positions;
+    std::vector<VoxCanvasFilter> filters;
+    oracle_take_filters(command, filters);
     return vox_skia_canvas_glyphs(pixels, a[0], a[1], a[2], a[3], &command, &run);
 }

@@ -27,6 +27,8 @@ type OraclePattern = fn (pixels &u8)
 
 type OracleCanvasBitmap = fn (pixels &u8, values &i32, floats &f32) i32
 
+type OracleFilters = fn (count i32, values &i32, floats &f32)
+
 struct Oracle {
 	read_pixels            OracleReadPixels          = unsafe { nil }
 	font_typeface_is_valid OracleFontTypefaceIsValid = unsafe { nil }
@@ -37,6 +39,7 @@ struct Oracle {
 	canvas_stroke          OracleCanvasStroke        = unsafe { nil }
 	pattern                OraclePattern             = unsafe { nil }
 	canvas_bitmap          OracleCanvasBitmap        = unsafe { nil }
+	filters                OracleFilters             = unsafe { nil }
 }
 
 fn load_oracle(path string) Oracle {
@@ -65,6 +68,7 @@ fn load_oracle(path string) Oracle {
 		canvas_bitmap:          unsafe {
 			OracleCanvasBitmap(oracle_symbol(library, 'oracle_canvas_bitmap'))
 		}
+		filters:                unsafe { OracleFilters(oracle_symbol(library, 'oracle_filters')) }
 	}
 }
 
@@ -742,7 +746,7 @@ fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
 		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
 		cap := rand.intn(3) or { 0 }
 		join := rand.intn(3) or { 0 }
-		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}, 0, 0, none},
+		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}, 0, 0, none, []},
 			'stroke ${i}')!
 		if is_hairline(transform, line_width) {
 			hairlines++
@@ -770,6 +774,7 @@ struct StrokeCase {
 	composite    int
 	blur         f32
 	style        ?cpuraster.CanvasPaintStyle
+	filters      []cpuraster.MatrixColorFilter
 }
 
 // A device-space clip path in skia.Path's segment encoding.
@@ -911,6 +916,7 @@ fn compare_canvas_stroke_or_decline(oracle Oracle, initial []u8, c StrokeCase, l
 	floats << clip_floats
 	floats << c.blur
 	append_style(oracle, mut values, mut floats, c.style)
+	send_filters(oracle, c.filters)
 	if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
@@ -918,7 +924,7 @@ fn compare_canvas_stroke_or_decline(oracle Oracle, initial []u8, c StrokeCase, l
 	path := cpuraster.canvas_path(c.segments, false)
 	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
 		path, c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), c.blur, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
-		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips)) {
+		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips), cpuraster.new_color_filter(c.filters)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
 		}
@@ -1212,7 +1218,7 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		color := random_color()
 		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
 		global_alpha := random_global_alpha()
-		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}, 0, 0, none},
+		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}, 0, 0, none, []},
 			'canvas ${i}')!
 	}
 	return count
@@ -1232,6 +1238,7 @@ struct FillCase {
 	composite    int
 	blur         f32
 	style        ?cpuraster.CanvasPaintStyle
+	filters      []cpuraster.MatrixColorFilter
 }
 
 fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! {
@@ -1253,13 +1260,14 @@ fn compare_canvas_fill_or_decline(oracle Oracle, initial []u8, c FillCase, label
 	floats << clip_floats
 	floats << c.blur
 	append_style(oracle, mut values, mut floats, c.style)
+	send_filters(oracle, c.filters)
 	if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, c.even_odd)
 	if !cpuraster.fill_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type, path,
-		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), c.blur, clip_paths(c.clips)) {
+		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), c.blur, clip_paths(c.clips), cpuraster.new_color_filter(c.filters)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
 		}
@@ -1290,7 +1298,7 @@ fn check_clipped_draws(oracle Oracle, count int) !(int, int) {
 			m := random_matrix()
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
 				0
-			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips, 0, 0, none},
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips, 0, 0, none, []},
 				'clipped fill ${i}')!
 			continue
 		}
@@ -1376,6 +1384,10 @@ fn main() {
 		check_glyph_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'colorfilters' {
+		check_color_filter_cases(oracle, count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -1423,6 +1435,7 @@ fn main() {
 	check_clear_cases(oracle, count / 2)
 	check_image_cases(oracle, count / 2)
 	check_glyph_cases(oracle, count / 2)
+	check_color_filter_cases(oracle, count / 2)
 }
 
 fn random_dashes() []f32 {
@@ -1681,7 +1694,7 @@ fn check_composite_draws(oracle Oracle, count int) !(int, int) {
 			m := random_matrix()
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
 				0
-			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, color, global_alpha, clips, composite, 0, none},
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, color, global_alpha, clips, composite, 0, none, []},
 				'composite fill ${i}')!
 			continue
 		}
@@ -1863,7 +1876,7 @@ fn check_shadow_draws(oracle Oracle, count int) !(int, int, int) {
 		if rand.intn(2) or { 0 } == 0 {
 			if compare_canvas_fill_or_decline(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, rand.intn(4) or {
 				0
-			} == 0, transform, random_composite_color(), random_composite_alpha(), clips, composite, blur, none},
+			} == 0, transform, random_composite_color(), random_composite_alpha(), clips, composite, blur, none, []},
 				'shadow fill ${i}')!
 			{
 				declined++
@@ -2089,7 +2102,7 @@ fn check_style_draws(oracle Oracle, count int, label string, make_style fn (int,
 		if rand.intn(3) or { 0 } != 0 {
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, rand.intn(4) or {
 				0
-			} == 0, transform, 0, random_composite_alpha(), clips, composite, 0, style},
+			} == 0, transform, 0, random_composite_alpha(), clips, composite, 0, style, []},
 				'${label} fill ${i}')!
 			continue
 		}
@@ -2503,6 +2516,7 @@ struct GlyphCase {
 	clips        []ClipCase
 	composite    int
 	style        ?cpuraster.CanvasPaintStyle
+	filters      []cpuraster.MatrixColorFilter
 }
 
 type OracleCanvasGlyphs = fn (pixels &u8, font_path &char, glyphs &u16, values &i32, floats &f32) i32
@@ -2520,6 +2534,7 @@ fn compare_canvas_glyphs(glyphs OracleCanvasGlyphs, oracle Oracle, initial []u8,
 	values << i32(c.composite)
 	floats << clip_floats
 	append_style(oracle, mut values, mut floats, c.style)
+	send_filters(oracle, c.filters)
 	skia_ok := glyphs(expected.data, c.font_path.str, c.glyphs.data, values.data, floats.data) != 0
 	mut actual := initial.clone()
 	run := cpuraster.CanvasGlyphRun{
@@ -2531,7 +2546,7 @@ fn compare_canvas_glyphs(glyphs OracleCanvasGlyphs, oracle Oracle, initial []u8,
 		translation: c.translation
 	}
 	if !cpuraster.fill_canvas_glyphs(mut actual, c.width, c.height, c.pitch, c.alpha_type, run,
-		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), clip_paths(c.clips)) {
+		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), clip_paths(c.clips), cpuraster.new_color_filter(c.filters)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
 		}
@@ -2556,7 +2571,7 @@ fn compare_canvas_glyphs(glyphs OracleCanvasGlyphs, oracle Oracle, initial []u8,
 			positions: [f32(0), 0]
 		}
 		cpuraster.fill_canvas_glyphs(mut premultiplied, c.width, c.height, c.pitch, c.alpha_type,
-			empty, [f32(1), 0, 0, 1, 0, 0]!, 0, none, 1, .src_over, [])
+			empty, [f32(1), 0, 0, 1, 0, 0]!, 0, none, 1, .src_over, [], none)
 	}
 	return false, expected != premultiplied
 }
@@ -2680,4 +2695,225 @@ fn check_glyph_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('canvas glyph runs: ${runs - declined} exact (${drawn} changed pixels), ${declined} declined')
+}
+
+// send_filters() hands the oracle the next draw's canvas filters, as
+// make_filter()'s color matrices (kind 2) with their clamp flags.
+fn send_filters(oracle Oracle, filters []cpuraster.MatrixColorFilter) {
+	mut values := []i32{}
+	mut floats := []f32{}
+	for f in filters {
+		values << [i32(2), i32(int(f.clamp)), 0]
+		floats << [f32(0), 0, 0]
+		floats << f.matrix[..]
+	}
+	values << 0
+	floats << 0
+	oracle.filters(i32(filters.len), values.data, floats.data)
+}
+
+// The CSS filter functions as canvas_skia_filter() builds their matrices,
+// with random amounts (sometimes out of range), and occasionally a random
+// matrix: some move alpha off transparent black or are not finite.
+fn random_color_matrix() cpuraster.MatrixColorFilter {
+	a := match rand.intn(5) or { 0 } {
+		0 { f32(0) }
+		1 { f32(1) }
+		2 { f32(rand.f64() * 3) }
+		else { f32(rand.f64()) }
+	}
+	one := f32(1) - a
+	return match rand.intn(10) or { 0 } {
+		0 {
+			radians := f32(f64(a) * 360 * math.pi / 180)
+			c := f32(math.cos(radians))
+			sn := f32(math.sin(radians))
+			cpuraster.MatrixColorFilter{
+				matrix: [f32(.213) + c * .787 - sn * .213, .715 - c * .715 - sn * .715, .072 - c * .072 +
+					sn * .928, 0, 0, .213 - c * .213 + sn * .143, .715 + c * .285 + sn * .140, .072 - c * .072 - sn * .283,
+					0, 0, .213 - c * .213 - sn * .787, .715 - c * .715 + sn * .715, .072 + c * .928 +
+					sn * .072, 0, 0, 0, 0, 0, 1, 0]!
+			}
+		}
+		1 {
+			cpuraster.MatrixColorFilter{
+				matrix: [a, f32(0), 0, 0, 0, 0, a, 0, 0, 0, 0, 0, a, 0, 0, 0, 0, 0, 1, 0]!
+			}
+		}
+		2 {
+			i := f32(-(.5 * a) + .5)
+			cpuraster.MatrixColorFilter{
+				matrix: [a, f32(0), 0, 0, i, 0, a, 0, 0, i, 0, 0, a, 0, i, 0, 0, 0, 1, 0]!
+			}
+		}
+		3 {
+			cpuraster.MatrixColorFilter{
+				matrix: [f32(1) - 2 * a, 0, 0, 0, a, 0, 1 - 2 * a, 0, 0, a, 0, 0, 1 - 2 * a, 0, a, 0,
+					0, 0, 1, 0]!
+				clamp:  true
+			}
+		}
+		4 {
+			cpuraster.MatrixColorFilter{
+				matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, a, 0]!
+				clamp:  true
+			}
+		}
+		5 {
+			cpuraster.MatrixColorFilter{
+				matrix: [f32(.2126) + .7874 * one, .7152 - .7152 * one, .0722 - .0722 * one, 0, 0,
+					.2126 - .2126 * one, .7152 + .2848 * one, .0722 - .0722 * one, 0, 0, .2126 - .2126 * one,
+					.7152 - .7152 * one, .0722 + .9278 * one, 0, 0, 0, 0, 0, 1, 0]!
+				clamp:  true
+			}
+		}
+		6 {
+			cpuraster.MatrixColorFilter{
+				matrix: [f32(.393) + .607 * one, .769 - .769 * one, .189 - .189 * one, 0, 0, .349 - .349 * one,
+					.686 + .314 * one, .168 - .168 * one, 0, 0, .272 - .272 * one, .534 - .534 * one,
+					.131 + .869 * one, 0, 0, 0, 0, 0, 1, 0]!
+				clamp:  true
+			}
+		}
+		7 {
+			cpuraster.MatrixColorFilter{
+				matrix: [f32(.213) + .787 * a, .715 - .715 * a, .072 - .072 * a, 0, 0, .213 - .213 * a,
+					.715 + .285 * a, .072 - .072 * a, 0, 0, .213 - .213 * a, .715 - .715 * a, .072 +
+					.928 * a, 0, 0, 0, 0, 0, 1, 0]!
+			}
+		}
+		else {
+			mut m := [20]f32{}
+			for k in 0 .. 20 {
+				m[k] = f32(rand.f64() * 2.4 - 1.2)
+			}
+			if rand.intn(3) or { 0 } != 0 {
+				m[15], m[16], m[17], m[18], m[19] = 0, 0, 0, f32(rand.f64() * 1.5), 0
+			}
+			if rand.intn(30) or { 0 } == 0 {
+				m[rand.intn(20) or { 0 }] = f32(math.inf(1))
+			}
+			cpuraster.MatrixColorFilter{
+				matrix: m
+				clamp:  rand.intn(2) or { 0 } == 0
+			}
+		}
+	}
+}
+
+fn random_color_filters() []cpuraster.MatrixColorFilter {
+	mut filters := []cpuraster.MatrixColorFilter{}
+	for _ in 0 .. rand.intn(3) or { 0 } + 1 {
+		filters << random_color_matrix()
+	}
+	return filters
+}
+
+// Fills, strokes (hairlines, thin and wide) and glyph runs under canvas
+// filter lists that reduce to color matrices: solid colors (filtered once,
+// then legacy or pipeline blitters), gradients and patterns (filter stages
+// after the shader), every composite operation and clips. Filters that
+// change transparent black need an image filter layer and must decline.
+fn check_color_filter_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, count int) !(int, int) {
+	fonts := glyph_fonts(repo)
+	mut declined := 0
+	for i in 0 .. count {
+		width := rand.intn(80) or { 0 } + 1
+		height := rand.intn(80) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		composite := if rand.intn(2) or { 0 } == 0 { rand.intn(28) or { 0 } } else { 0 }
+		clips := if rand.intn(5) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
+		initial := random_composite_bitmap(width, height, pitch, alpha_type)
+		style := match rand.intn(6) or { 0 } {
+			0 { ?cpuraster.CanvasPaintStyle(random_gradient(width, height)) }
+			1 { ?cpuraster.CanvasPaintStyle(random_pattern(width, height)) }
+			else { ?cpuraster.CanvasPaintStyle(none) }
+		}
+		filters := random_color_filters()
+		color := random_composite_color()
+		global_alpha := random_composite_alpha()
+		transform := if rand.intn(2) or { 0 } == 0 { [f32(1), 0, 0, 1, 0, 0]! } else { random_stroke_matrix() }
+		match rand.intn(3) or { 0 } {
+			0 {
+				if compare_canvas_fill_or_decline(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
+					0
+				} == 0, transform, color, global_alpha, clips, composite, 0, style, filters},
+					'filtered fill ${i}')!
+				{
+					declined++
+				}
+			}
+			1 {
+				c := StrokeCase{
+					width:        width
+					height:       height
+					pitch:        pitch
+					alpha_type:   alpha_type
+					segments:     random_canvas_segments(width, height)
+					transform:    transform
+					color:        color
+					global_alpha: global_alpha
+					line_width:   match rand.intn(3) or { 0 } {
+						0 { f32(1) }
+						1 { f32(rand.f64()) }
+						else { random_wide_line_width() }
+					}
+					miter:        10
+					cap:          rand.intn(3) or { 0 }
+					join:         rand.intn(3) or { 0 }
+					clips:        clips
+					composite:    composite
+					style:        style
+					filters:      filters
+				}
+				if compare_canvas_stroke_or_decline(oracle, initial, c, 'filtered stroke ${i}')! {
+					declined++
+				}
+			}
+			else {
+				size := if rand.intn(8) or { 0 } == 0 { f32(rand.f64() * 400 + 200) } else { f32(rand.f64() * 40 + 6) }
+				mut ids := []u16{}
+				mut positions := []f32{}
+				for k in 0 .. rand.intn(6) or { 0 } + 1 {
+					ids << u16(rand.intn(120) or { 0 } + 1)
+					positions << [f32(k) * size * 0.6 + f32(rand.f64()), 0]
+				}
+				c := GlyphCase{
+					width:        width
+					height:       height
+					pitch:        pitch
+					alpha_type:   alpha_type
+					font_path:    fonts[rand.intn(fonts.len) or { 0 }]
+					font_size:    size
+					glyphs:       ids
+					positions:    positions
+					translation:  [f32(rand.f64() * f64(width) - 4), f32(rand.f64() * f64(height) * 1.2)]!
+					transform:    transform
+					color:        color
+					global_alpha: global_alpha
+					clips:        clips
+					composite:    composite
+					style:        style
+					filters:      filters
+				}
+				was_declined, _ := compare_canvas_glyphs(glyphs, oracle, initial, c, 'filtered glyph run ${i}')!
+				if was_declined {
+					declined++
+				}
+			}
+		}
+	}
+	return count, declined
+}
+
+fn check_color_filter_cases(oracle Oracle, count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	glyphs := unsafe { OracleCanvasGlyphs(oracle_symbol(library, 'oracle_canvas_glyphs')) }
+	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
+	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('color-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
 }
