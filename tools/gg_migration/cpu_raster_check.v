@@ -2568,6 +2568,7 @@ fn check_glyph_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, coun
 	fonts := glyph_fonts(repo)
 	mut declined := 0
 	mut drawn := 0
+	mut paths := 0
 	for i in 0 .. count {
 		width := rand.intn(120) or { 0 } + 1
 		height := rand.intn(90) or { 0 } + 1
@@ -2580,6 +2581,7 @@ fn check_glyph_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, coun
 			0 { f32(rand.f64() * 4) }
 			1 { f32(rand.intn(300) or { 0 } + 1) }
 			2 { f32(int(rand.f64() * 48) + 1) }
+			3 { f32(rand.f64() * 400 + 200) }
 			else { f32(rand.f64() * 60 + 4) }
 		}
 		n := match rand.intn(6) or { 0 } {
@@ -2653,8 +2655,16 @@ fn check_glyph_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, coun
 		}
 		if changed {
 			drawn++
+			// SkStrikeSpec::ShouldDrawAsPath(), approximately.
+			t := c.transform
+			x_axis := math.sqrt(f64(t[0]) * t[0] + f64(t[1]) * t[1]) * c.font_size
+			y_axis := math.sqrt(f64(t[2]) * t[2] + f64(t[3]) * t[3]) * c.font_size
+			if x_axis > 256 || y_axis > 256 {
+				paths++
+			}
 		}
 	}
+	println('glyph runs that changed pixels as paths: about ${paths}')
 	return count, declined, drawn
 }
 
