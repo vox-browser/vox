@@ -54,5 +54,5 @@ function __compactElementPrototype(state){
  const constructor=__compactHTMLInterfaces[local];
  return constructor?constructor.prototype:HTMLElement.prototype;
 }
-' + compact_template_bootstrap() + compact_toggle_attribute_bootstrap() + compact_html_language_bootstrap()
+' + compact_template_bootstrap() + compact_iframe_reflection_bootstrap() + compact_toggle_attribute_bootstrap() + compact_html_language_bootstrap()
 }
