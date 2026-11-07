@@ -62,6 +62,25 @@ fn window_model_for_proxy(proxy &dom.WindowProxy) !&html.WindowModel {
 	return error('InvalidStateError: WindowProxy has no HTML owner')
 }
 
+// Every Window realm on this thread shares the agent's JSC context group, so
+// a same-origin-domain WindowProxy can expose the other realm's global object
+// itself: its document, functions and globals then behave as one agent.
+fn (runtime &Runtime) same_agent_window_global(window &html.WindowModel) ?voidptr {
+	settings := runtime.scripting_settings_ or { return none }
+	if !window.associated_document().origin().is_same_origin_domain(settings.origin()) { return none }
+	group := C.JSContextGetGroup(runtime.context)
+	for owner, _ in window_proxy_bindings_ {
+		if owner == voidptr(runtime) { continue }
+		other := unsafe { &Runtime(owner) }
+		if other.closed || other.context == unsafe { nil } { continue }
+		other_settings := other.scripting_settings_ or { continue }
+		if voidptr(other_settings.global_object()) != voidptr(window) { continue }
+		if C.JSContextGetGroup(other.context) != group { return none }
+		return C.JSContextGetGlobalObject(other.context)
+	}
+	return none
+}
+
 fn (mut runtime Runtime) javascript_window_proxy(proxy &dom.WindowProxy) !voidptr {
 	window := window_model_for_proxy(proxy)!
 	if settings := runtime.scripting_settings_ {
@@ -69,6 +88,7 @@ fn (mut runtime Runtime) javascript_window_proxy(proxy &dom.WindowProxy) !voidpt
 			return C.JSContextGetGlobalObject(runtime.context)
 		}
 	}
+	if global := runtime.same_agent_window_global(window) { return global }
 	mut binding := window_proxy_bindings_[voidptr(runtime)] or {
 		return runtime.javascript_event_target(unsafe { &dom.EventTarget(window) }, none)
 	}

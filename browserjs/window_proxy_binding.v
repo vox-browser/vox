@@ -16,6 +16,13 @@ fn window_proxy_binding_factory() string {
  const post=global.postMessage,apply=Reflect.apply,WindowPrototype=global.Window.prototype;
  const frame=descriptor({get contentWindow(){return operate("frame",this)}},"contentWindow").get;
  define(global.HTMLIFrameElement.prototype,"contentWindow",{get:frame,enumerable:true,configurable:true});
+ // A same-origin child WindowProxy is its global; other proxies throw or
+ // expose no document, and both mean the content document is unavailable.
+ const content=descriptor({get contentDocument(){
+  const view=apply(frame,this,[]);if(view===null||view===undefined)return null;
+  try{const value=view.document;return value===undefined?null:value;}catch(error){return null;}
+ }},"contentDocument").get;
+ define(global.HTMLIFrameElement.prototype,"contentDocument",{get:content,enumerable:true,configurable:true});
  for(const name of ["parent","top","frames","length"]){
   const accessors=descriptor({
    get [name](){const receiver=this==null?global:this;return name==="frames"?(operate("brand",receiver),receiver):operate(name,receiver)},
