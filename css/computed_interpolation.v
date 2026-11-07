@@ -6419,24 +6419,18 @@ pub fn InterpolationCalculationContext.for_property(property PropertyID) Interpo
 	calculation_context := CalculationContext.for_property(PropertyNameAndID.from_id(property))
 	mut accepted_type_ranges := map[InterpolableValueType]AcceptedTypeRange{}
 	for value_type, accepted_range in calculation_context.accepted_type_ranges {
-		match value_type {
-			.angle {
-				accepted_type_ranges[.angle] = accepted_range
-			}
-			.length {
-				accepted_type_ranges[.length] = accepted_range
-			}
-			.percentage {
-				accepted_type_ranges[.percentage] = accepted_range
-			}
-			.number {
-				accepted_type_ranges[.number] = accepted_range
-			}
-			.integer {
-				accepted_type_ranges[.integer] = accepted_range
-			}
-			else {}
+		// The keys name InterpolableValueType explicitly: inside a match on
+		// ValueType, the compiler resolved enum shorthands in the index
+		// expression to the wrong enum, so no range was ever found.
+		key := match value_type {
+			.angle { InterpolableValueType.angle }
+			.length { InterpolableValueType.length }
+			.percentage { InterpolableValueType.percentage }
+			.number { InterpolableValueType.number }
+			.integer { InterpolableValueType.integer }
+			else { continue }
 		}
+		accepted_type_ranges[key] = accepted_range
 	}
 	return InterpolationCalculationContext{
 		property: property

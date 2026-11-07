@@ -20,3 +20,18 @@ fn test_integer_interpolation_extrapolates_and_honors_accepted_ranges() {
 		StyleValue(IntegerStyleValue.create(20)), -3, .no) or { panic('not interpolated') }
 	assert clamped.serialize(.normal) == '1'
 }
+
+// A property's accepted ranges reach its interpolation: widows stays at least
+// one and opacity at most one when a transition or animation extrapolates.
+fn test_property_interpolation_contexts_carry_accepted_ranges() {
+	widows := interpolate_style_value_impl(InterpolationCalculationContext.for_property(.widows),
+		StyleValue(IntegerStyleValue.create(10)), StyleValue(IntegerStyleValue.create(20)), -3, .no) or {
+		panic('not interpolated')
+	}
+	assert widows.serialize(.normal) == '1'
+	opacity := interpolate_style_value_impl(InterpolationCalculationContext.for_property(.opacity),
+		StyleValue(NumberStyleValue.create(0.5)), StyleValue(NumberStyleValue.create(1)), 3, .no) or {
+		panic('not interpolated')
+	}
+	assert opacity.serialize(.normal) == '1'
+}
