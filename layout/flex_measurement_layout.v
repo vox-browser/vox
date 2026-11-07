@@ -128,6 +128,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		report_absolute_measurement_reuse(cached.inputs)
 		report_absolute_root_measurement_reuse(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
+		pool.note_measurement(container, false, true)
 		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		if committed && committed_flex_measurement_diagnostics && !committed_flex_measurement_reported {
 			committed_flex_measurement_reported = true
@@ -136,7 +137,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		return cached.result
 	}
 	// A final-layout miss must neither populate nor evict disposable entries.
-	if committed {
+	if committed || !pool.allows_measurement_recording(container, false) {
 		return run_uncached_flex_formatting_context_with_mode(mut state, container, mut used, mode, space)
 	}
 	mut retained_inputs := platform.enter_retained_allocations()
@@ -202,5 +203,6 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	if entries.len == 4 { entries.delete(0) }
 	entries << cached
 	pool.flex_measurements_[node_key] = entries
+	pool.note_measurement(container, false, false)
 	return result
 }

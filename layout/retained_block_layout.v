@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 struct RetainedBlockValues {
 	node       &NodeWithStyle
@@ -197,8 +198,8 @@ fn retained_inline_backoff_key(root &Node) ?i64 {
 }
 
 fn (mut table RetainedBlockBackoffTable) escalate(key i64) {
-	// The table outlives this pass's geometry workspace.
-	mut retained := retain_geometry_allocations()
+	// The table outlives this pass, including probe scratch it is used from.
+	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	mut record := table.entries[key] or { RetainedBlockBackoff{} }
 	// A box laid out several times in one pass counts one miss.
@@ -217,8 +218,8 @@ fn (mut table RetainedBlockBackoffTable) escalate(key i64) {
 }
 
 fn (mut table RetainedBlockBackoffTable) note_reuse(key i64) {
-	// The table outlives this pass's geometry workspace.
-	mut retained := retain_geometry_allocations()
+	// The table outlives this pass, including probe scratch it is used from.
+	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	if record := table.entries[key] {
 		if record.misses != 0 || record.pending {
@@ -229,8 +230,8 @@ fn (mut table RetainedBlockBackoffTable) note_reuse(key i64) {
 
 // Whether a box without a reusable snapshot should record a new one.
 fn (mut table RetainedBlockBackoffTable) allows_recording(key i64) bool {
-	// The table outlives this pass's geometry workspace.
-	mut retained := retain_geometry_allocations()
+	// The table outlives this pass, including probe scratch it is used from.
+	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	mut record := table.entries[key] or { return true }
 	if record.pending && record.recorded_pass != table.pass {
@@ -253,8 +254,8 @@ fn (mut table RetainedBlockBackoffTable) allows_collecting(key i64) bool {
 	mut record := table.entries[key] or { return true }
 	if record.skips == 0 { return true }
 	if record.last_skip != table.pass {
-		// The table outlives this pass's geometry workspace.
-		mut retained := retain_geometry_allocations()
+		// The table outlives this pass, including probe scratch it is used from.
+		mut retained := platform.enter_retained_allocations()
 		defer { retained.finish() }
 		record.skips--
 		record.last_skip = table.pass
@@ -264,8 +265,8 @@ fn (mut table RetainedBlockBackoffTable) allows_collecting(key i64) bool {
 }
 
 fn (mut table RetainedBlockBackoffTable) note_recorded(key i64) {
-	// The table outlives this pass's geometry workspace.
-	mut retained := retain_geometry_allocations()
+	// The table outlives this pass, including probe scratch it is used from.
+	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	mut record := table.entries[key] or { RetainedBlockBackoff{} }
 	record.pending = true

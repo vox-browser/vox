@@ -256,11 +256,12 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		report_absolute_measurement_reuse(cached.inputs)
 		report_absolute_root_measurement_reuse(cached.inputs)
 		if unused_heights { report_unused_measurement_heights() }
+		pool.note_measurement(container, false, true)
 		if !committed { retain_recent_measurement(mut previous, cache_index, container) }
 		return cached.result
 	}
 	// A committed miss must not populate, reject or evict disposable entries.
-	if committed {
+	if committed || !pool.allows_measurement_recording(container, false) {
 		return run_uncached_grid_formatting_context_internal(mut state, container, mut used,
 			mode, space, width_only)
 	}
@@ -317,5 +318,6 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	if entries.len == 4 { entries.delete(0) }
 	entries << cached
 	pool.grid_measurements_[node_key] = entries
+	pool.note_measurement(container, false, false)
 	return result
 }

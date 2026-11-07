@@ -140,13 +140,14 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 				eprintln('Vox inline measurement: reused closed text layout within pass')
 			}
 			if committed { report_committed_inline_measurement_reuse() }
+			pool.note_measurement(root, true, true)
 			if !committed { retain_recent_measurement(mut previous, cache_index, root) }
 			return cached.result
 		}
 	}
 	// Final layout may consume an already retained measurement, but never
 	// populates the disposable measurement cache or changes its eviction order.
-	if committed {
+	if committed || !pool.allows_measurement_recording(root, true) {
 		return run_uncached_inline_formatting_context_for_width(mut state, containing_block,
 			mut used, mode, space, context, width_only)
 	}
@@ -183,5 +184,6 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	if entries.len == 4 { entries.delete(0) }
 	entries << cached
 	pool.inline_measurements_[node_key] = entries
+	pool.note_measurement(root, true, false)
 	return result
 }

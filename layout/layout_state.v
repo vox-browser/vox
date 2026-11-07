@@ -1016,6 +1016,10 @@ mut:
 	grid_track_resolutions_ map[u64][]&GridTrackResolutionCache
 	opacity_measurement_seen_ map[u64]bool
 	absolute_measurement_seen_ map[u64]bool
+	// Whether each container's recorded measurements were reused in this pass
+	// (measurement_backoff.v), and the document's history across passes.
+	measurement_usage_ map[i64]bool
+	backoff_ &RetainedBlockBackoffTable = unsafe { nil }
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -1039,6 +1043,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) put(chunk &MeasurementUsedValuesChu
 
 fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	assert pool.active_arenas == 0
+	pool.settle_measurement_backoff()
 	pool.release_scratch()
 	pool.closed = true
 	// In preallocated document layout the vector belongs to the enclosing
@@ -1336,7 +1341,9 @@ pub fn LayoutState.new_for_subtree(subtree_root &NodeWithStyle) &LayoutState {
 fn (mut state LayoutState) enable_measurement_chunk_pool() {
 	assert state.used_values_store.measurement_arena == none
 	assert state.measurement_chunk_pool_ == unsafe { nil }
-	state.measurement_chunk_pool_ = &MeasurementUsedValuesChunkPool{}
+	state.measurement_chunk_pool_ = &MeasurementUsedValuesChunkPool{
+		backoff_: state.block_layout_backoff_
+	}
 }
 
 fn (mut state LayoutState) release_measurement_chunk_pool() {
