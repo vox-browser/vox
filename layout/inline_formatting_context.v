@@ -978,6 +978,12 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 			continue
 		}
 
+		if ellipsis_font := block_ellipsis_font_ {
+			if line_box.direction_ == .ltr {
+				chromium_truncate_line_with_ellipsis(mut line_box, style_node, ellipsis_font, available_width)
+				continue
+			}
+		}
 		mut line_has_visible_content := false
 		for fragment_index in 0 .. line_box.fragments_.len {
 			mut fragment := &line_box.fragments_[fragment_index]
@@ -994,16 +1000,7 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 				continue
 			}
 			font := run_pointer.font()
-			mut block_ellipsis_run := ?&platform.GlyphRun(none)
-			if ellipsis_font := block_ellipsis_font_ {
-				shaped_ellipsis := platform.shape_text(0, 0, '…', ellipsis_font, .common)
-				block_ellipsis_run = ?&platform.GlyphRun(shaped_ellipsis)
-			}
-			ellipsis_width := if ellipsis_run := block_ellipsis_run {
-				f32(shaped_inline_width(ellipsis_run, 0).to_double())
-			} else {
-				font.glyph_width(ellipsis_code_point)
-			}
+			ellipsis_width := font.glyph_width(ellipsis_code_point)
 			available_in_fragment := f32(available_width.minus(fragment_start).to_double())
 			max_text_width := available_in_fragment - ellipsis_width
 			mut keep_count := 0
@@ -1022,34 +1019,6 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 			mut run := unsafe { &platform.GlyphRun(run_pointer) }
 			run.invalidate_replay_data()
 			run.glyphs_ = run.glyphs_[..keep_count].clone()
-			if ellipsis_run := block_ellipsis_run {
-				run.width_ = last_kept_end
-				fragment.set_inline_length(CSSPixels.nearest_value_for(f64(last_kept_end)))
-				ellipsis_font := ellipsis_run.font()
-				mut ellipsis_offset := fragment.block_offset()
-				mut ellipsis_length := fragment.block_length()
-				mut ellipsis_baseline := fragment.baseline()
-				if ellipsis_font.point_size != font.point_size || ellipsis_font.family != font.family {
-					// Align the block font's rounded ascent to the line's baseline.
-					metrics := ellipsis_font.pixel_metrics()
-					ascent := CSSPixels.nearest_value_for(math.round(f64(metrics.ascent)))
-					descent := CSSPixels.nearest_value_for(math.round(f64(metrics.descent)))
-					ellipsis_offset = fragment.block_offset().plus(fragment.baseline()).minus(ascent)
-					ellipsis_length = ascent.plus(descent)
-					ellipsis_baseline = ascent
-				}
-				line_box.fragments_.insert(fragment_index + 1, LineBoxFragment.new_block_ellipsis(fragment.layout_node_,
-					style_node, '…', fragment.start_ + fragment.length_in_code_units_,
-					fragment_start.plus(CSSPixels.nearest_value_for(f64(last_kept_end))), ellipsis_offset,
-					CSSPixels.nearest_value_for(f64(ellipsis_width)), ellipsis_length, ellipsis_baseline,
-					line_box.direction_, line_box.writing_mode_, ellipsis_run))
-				for later_index := fragment_index + 2; later_index < line_box.fragments_.len; later_index++ {
-					line_box.fragments_[later_index].set_fully_truncated(true)
-				}
-				line_box.inline_length_ = available_width
-				line_box.clamp_static_position_markers_to_inline_length()
-				break
-			}
 			ellipsis_run := platform.shape_text(0, 0, '…', font, .common)
 			if ellipsis_run.glyphs_.len > 0 {
 				mut ellipsis_glyph := ellipsis_run.glyphs_[0]
@@ -1073,6 +1042,112 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 			break
 		}
 	}
+}
+
+// Blink's LineTruncator::TruncateLine() for a left-to-right line. Items are
+// visited from the last: one that fits together with the ellipsis keeps it, a
+// text item that keeps at least one character is truncated, and any other item
+// is hidden so an earlier sibling takes the ellipsis. The first item is
+// clipped rather than hidden. The ellipsis uses the block's style and sits on
+// the line's baseline after the ellipsized item.
+fn chromium_truncate_line_with_ellipsis(mut line_box LineBox, style_node &Node, ellipsis_font &platform.Font,
+	available_width CSSPixels) {
+	ellipsis_run := platform.shape_text(0, 0, '…', ellipsis_font, .common)
+	ellipsis_width := css_pixels_ceil(f64(shaped_inline_width(ellipsis_run, 0).to_double()))
+	mut first_index := -1
+	for index in 0 .. line_box.fragments_.len {
+		if !line_box.fragments_[index].is_fully_truncated() {
+			first_index = index
+			break
+		}
+	}
+	mut ellipsized := -1
+	for index := line_box.fragments_.len - 1; index >= 0; index-- {
+		mut fragment := &line_box.fragments_[index]
+		if fragment.is_fully_truncated() { continue }
+		is_first := index == first_index
+		mut space := available_width.minus(fragment.inline_offset())
+		if space.raw_value() <= 0 {
+			if !is_first { fragment.set_fully_truncated(true) }
+			continue
+		}
+		space = space.minus(ellipsis_width)
+		if space.raw_value() >= fragment.inline_length().raw_value() {
+			ellipsized = index
+			break
+		}
+		if space.raw_value() <= 0 && !is_first {
+			fragment.set_fully_truncated(true)
+			continue
+		}
+		run_pointer := fragment.glyph_run() or {
+			if is_first {
+				ellipsized = index
+				break
+			}
+			fragment.set_fully_truncated(true)
+			continue
+		}
+		limit := f32(space.to_double())
+		mut keep_count := 0
+		mut kept_end := f32(0)
+		for glyph in run_pointer.glyphs_ {
+			glyph_end := glyph.position.x + glyph.advance
+			if glyph_end > limit { break }
+			keep_count++
+			kept_end = glyph_end
+		}
+		if keep_count == 0 || keep_count == run_pointer.glyphs_.len {
+			if !is_first {
+				fragment.set_fully_truncated(true)
+				continue
+			}
+			keep_count = if keep_count == 0 { 1 } else { keep_count - 1 }
+			kept_end = if keep_count == 0 {
+				f32(0)
+			} else {
+				run_pointer.glyphs_[keep_count - 1].position.x + run_pointer.glyphs_[keep_count - 1].advance
+			}
+		}
+		mut run := unsafe { &platform.GlyphRun(run_pointer) }
+		run.invalidate_replay_data()
+		run.glyphs_ = run.glyphs_[..keep_count].clone()
+		run.width_ = kept_end
+		fragment.set_inline_length(css_pixels_ceil(f64(kept_end)))
+		ellipsized = index
+		break
+	}
+	if ellipsized < 0 { return }
+	for later := ellipsized + 1; later < line_box.fragments_.len; later++ {
+		line_box.fragments_[later].set_fully_truncated(true)
+	}
+	child := line_box.fragments_[ellipsized]
+	font := (child.glyph_run() or { ellipsis_run }).font()
+	mut ellipsis_offset := child.block_offset()
+	mut ellipsis_length := child.block_length()
+	mut ellipsis_baseline := child.baseline()
+	if ellipsis_font.point_size != font.point_size || ellipsis_font.family != font.family
+		|| child.glyph_run() == none {
+		// Align the block font's rounded ascent to the line's baseline.
+		metrics := ellipsis_font.pixel_metrics()
+		ascent := CSSPixels.nearest_value_for(math.round(f64(metrics.ascent)))
+		descent := CSSPixels.nearest_value_for(math.round(f64(metrics.descent)))
+		ellipsis_offset = child.block_offset().plus(child.baseline()).minus(ascent)
+		ellipsis_length = ascent.plus(descent)
+		ellipsis_baseline = ascent
+	}
+	line_box.fragments_.insert(ellipsized + 1, LineBoxFragment.new_block_ellipsis(child.layout_node_,
+		style_node, '…', child.start_ + child.length_in_code_units_,
+		child.inline_offset().plus(child.inline_length()), ellipsis_offset, ellipsis_width,
+		ellipsis_length, ellipsis_baseline, line_box.direction_, line_box.writing_mode_,
+		ellipsis_run))
+	line_box.inline_length_ = available_width
+	line_box.clamp_static_position_markers_to_inline_length()
+}
+
+// LayoutUnit::FromFloatCeil() at CSSPixels precision.
+fn css_pixels_ceil(value f64) CSSPixels {
+	return CSSPixels.from_raw(int(math.ceil(value * 64)))
 }
 
 fn apply_justification_to_line(text_justify css.TextJustify, mut line_box LineBox, is_last_line bool) {

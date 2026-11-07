@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import math
 import platform
 
 fn inline_context_test_style(document &dom.Document, declarations string) &css.ComputedProperties {
@@ -250,4 +251,52 @@ fn test_chromium_text_overflow_ellipsis_is_a_block_styled_item_after_the_truncat
 	assert ellipsis.inline_offset().plus(ellipsis.inline_length()).raw_value() <= CSSPixels.new(75).raw_value()
 	// Both items share the line's baseline.
 	assert ellipsis.block_offset().plus(ellipsis.baseline()) == text_fragment.block_offset().plus(text_fragment.baseline())
+}
+
+fn chromium_ellipsis_test_line(width int) (LineBox, &BlockContainer) {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_font_rendering_policy(.chromium)
+	container_style := inline_context_test_style(document,
+		'display:block; width:${width}px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font:16px/16px SerenitySans; color:rgb(255,0,0)')
+	inline_style := inline_context_test_style(document,
+		'display:inline; white-space:nowrap; font:16px/16px SerenitySans; color:rgb(0,0,255)')
+	mut container := BlockContainer.new(document, none, container_style)
+	container.set_children_are_inline(true)
+	for text in ['and uint (', '#31234)'] {
+		mut inline_node := InlineNode.new(document, none, inline_style)
+		dom_text := document.create_text_node(text)
+		text_node := TextNode.new(document, dom_text.as_node(), text)
+		inline_node.append_child(unsafe { &Node(text_node) })
+		container.append_child(unsafe { &Node(inline_node) })
+	}
+	assign_layout_indexes(unsafe { &Node(container) })
+	mut state := LayoutState.new()
+	styled := unsafe { &Node(container) }.as_node_with_style() or { panic('style') }
+	mut used := state.get_mutable(styled)
+	used.set_content_width(CSSPixels.new(width))
+	run_inline_formatting_context(mut state, container, mut used, .normal, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)),
+		AvailableSize.make_indefinite()))
+	return used.line_boxes[0], container
+}
+
+// GitHub's file rows: when the overflowing link cannot keep a character next
+// to the ellipsis, Blink hides it and truncates the preceding text so the
+// ellipsis fits after it, instead of keeping that text whole.
+fn test_chromium_text_overflow_hides_items_that_cannot_keep_a_character() {
+	wide, _ := chromium_ellipsis_test_line(1000)
+	first_width := wide.fragments_[0].inline_length().to_double()
+	width := int(math.ceil(first_width)) + 4
+	line, container := chromium_ellipsis_test_line(width)
+	desc := line.fragments_.map('${it.text() or { "" }}@${it.inline_offset().to_double()}+${it.inline_length().to_double()} hidden=${it.is_fully_truncated()} ell=${it.is_block_ellipsis()}').join(' | ')
+	assert line.fragments_.len == 3, 'width ${width} first ${first_width}: ${desc}'
+	text := line.fragments_[0]
+	ellipsis := line.fragments_[1]
+	link := line.fragments_[2]
+	assert !text.is_fully_truncated()
+	assert link.is_fully_truncated(), 'width ${width} first ${first_width}: ${desc}'
+	assert text.inline_length().to_double() < first_width
+	assert ellipsis.is_block_ellipsis()
+	assert voidptr(ellipsis.style_source()) == voidptr(unsafe { &Node(container) })
+	assert ellipsis.inline_offset() == text.inline_offset().plus(text.inline_length())
+	assert ellipsis.inline_offset().plus(ellipsis.inline_length()).raw_value() <= CSSPixels.new(width).raw_value()
 }
