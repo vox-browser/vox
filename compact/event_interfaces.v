@@ -35,6 +35,12 @@ fn compact_event_interfaces_bootstrap() string {
   Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
   Object.defineProperty(globalThis,name,{value:constructor,writable:true,configurable:true});
  }
+ // Natively dispatched CSS transition and animation events carry their
+ // members from the native event.
+ Object.defineProperty(globalThis,"__compactAdoptEventMembers",{value:function(event,name,elapsedTime,pseudoElement){
+  const values=event instanceof globalThis.TransitionEvent?{propertyName:name,elapsedTime,pseudoElement}:{animationName:name,elapsedTime,pseudoElement};
+  __elementApply(set,records,[event,values]);
+ }});
 })();
 '
 }

@@ -62,6 +62,10 @@ pub enum EventInterface {
 	buffered_change_event
 	// Speech/SpeechRecognitionEvent extends DOM::Event.
 	speech_recognition_event
+	// CSS/TransitionEvent and CSS/AnimationEvent extend DOM::Event; their
+	// members travel with the base Event as CSSEventMembers.
+	transition_event
+	animation_event
 }
 
 // UIEvents/KeyCode.h: Key_Escape = 0x1B.

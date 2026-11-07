@@ -2797,9 +2797,20 @@ pub mut:
 	path_                       []EventPathEntry
 	touch_target_list_          TouchTargetList
 	time_stamp_                 DOMHighResTimeStamp
+	// The members of a CSS TransitionEvent or AnimationEvent, which the css
+	// module dispatches as this base Event.
+	css_event_members_ &CSSEventMembers = unsafe { nil }
 mut:
 	// Compact engine replay receipt; not a script-visible Event attribute.
 	processed_click_handler_targets_ []&EventTarget
+}
+
+pub struct CSSEventMembers {
+pub:
+	// propertyName of a TransitionEvent, animationName of an AnimationEvent.
+	name           string
+	elapsed_time   f64
+	pseudo_element string
 }
 
 @[heap]

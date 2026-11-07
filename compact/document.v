@@ -54,6 +54,7 @@ fn install_compact_document_binding(binding &CompactElementQueryBinding, mut run
 		mut owner := unsafe { &CompactElementQueryBinding(binding) }
 		return json2.encode(owner.node_state(node))
 	})!
+	runtime.install_css_event_wrappers() or {}
 	runtime.add_close_handler(fn [binding] () {
 		for _, document in binding.documents {
 			mut owner := unsafe { &dom.Document(document) }
