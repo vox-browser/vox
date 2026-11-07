@@ -274,6 +274,9 @@ pub mut:
 	// HSL conversion retains its float alpha in Chromium even when the
 	// computed RGB value uses the legacy serialization syntax.
 	preserve_float_alpha_ bool
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
 }
 
 pub fn RGBColorStyleValue.create(r StyleValue, g StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax, name ?string) RGBColorStyleValue {
@@ -312,6 +315,9 @@ pub fn (style_value RGBColorStyleValue) alpha() StyleValue {
 }
 
 pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	resolve_rgb_to_u8 := fn (component &StyleValue) ?u8 {
 		// <number> | <percentage> | none
 		normalized := fn (number_ f64) u8 {
@@ -371,6 +377,10 @@ pub fn (style_value RGBColorStyleValue) absolutized(context ComputationContext) 
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
 pub fn (style_value RGBColorStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
 	if mode != .resolved_value {
 		if name := style_value.name_ {
 			return to_ascii_lowercase(name)
@@ -404,6 +414,12 @@ pub mut:
 	l_            []StyleValue = [StyleValue(KeywordStyleValue{})]
 	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
 	color_syntax_ ColorSyntax
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
+	// A computed relative color with missing components keeps its own
+	// function, serialized with plain numbers.
+	missing_component_form_ bool
 }
 
 pub fn HSLColorStyleValue.create(h StyleValue, s StyleValue, l StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HSLColorStyleValue {
@@ -421,6 +437,9 @@ pub fn (style_value HSLColorStyleValue) color_type() ConcreteColorType {
 }
 
 pub fn (style_value HSLColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	_ = color_resolution_context
 	h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
 	s_val := resolve_with_reference_value(style_value.s_[0], 100.0, CalculationResolutionContext{}) or {
@@ -470,6 +489,14 @@ pub fn (style_value HSLColorStyleValue) absolutized(context ComputationContext) 
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
 pub fn (style_value HSLColorStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
+	if style_value.missing_component_form_ {
+		return serialize_missing_component_form('hsl', [style_value.h_[0], style_value.s_[0],
+			style_value.l_[0]], style_value.alpha_[0], mode)
+	}
 	if color := style_value.to_color(ColorResolutionContext{}) {
 		return color.serialize_a_srgb_value()
 	}
@@ -497,6 +524,12 @@ pub mut:
 	b_            []StyleValue = [StyleValue(KeywordStyleValue{})]
 	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
 	color_syntax_ ColorSyntax
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
+	// A computed relative color with missing components keeps its own
+	// function, serialized with plain numbers.
+	missing_component_form_ bool
 }
 
 pub fn HWBColorStyleValue.create(h StyleValue, w StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HWBColorStyleValue {
@@ -514,6 +547,9 @@ pub fn (style_value HWBColorStyleValue) color_type() ConcreteColorType {
 }
 
 pub fn (style_value HWBColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	_ = color_resolution_context
 	h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
 	raw_w_value := resolve_with_reference_value(style_value.w_[0], 100.0, CalculationResolutionContext{}) or {
@@ -588,6 +624,14 @@ pub fn (style_value HWBColorStyleValue) absolutized(context ComputationContext) 
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
 pub fn (style_value HWBColorStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
+	if style_value.missing_component_form_ {
+		return serialize_missing_component_form('hwb', [style_value.h_[0], style_value.w_[0],
+			style_value.b_[0]], style_value.alpha_[0], mode)
+	}
 	if color := style_value.to_color(ColorResolutionContext{}) {
 		return color.serialize_a_srgb_value()
 	}
@@ -614,6 +658,9 @@ pub mut:
 	a_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	b_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
 }
 
 pub struct OKLabColorStyleValue {
@@ -622,6 +669,9 @@ pub mut:
 	a_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	b_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
 }
 
 pub fn LabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alpha ?StyleValue) LabColorStyleValue {
@@ -651,6 +701,9 @@ pub fn (style_value LabColorStyleValue) absolutized(context ComputationContext) 
 }
 
 pub fn (style_value OKLabColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	_ = color_resolution_context
 	l_val := resolve_with_reference_value(style_value.l_[0], 1.0, CalculationResolutionContext{}) or {
 		return none
@@ -670,6 +723,10 @@ pub fn (style_value OKLabColorStyleValue) to_color(color_resolution_context Colo
 
 // https://www.w3.org/TR/css-color-4/#serializing-oklab-oklch
 pub fn (style_value OKLabColorStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
 	mut result := 'oklab('
 	result += serialize_color_component(style_value.l_[0], mode, 1.0, 0, 1)
 	result += ' '
@@ -685,6 +742,9 @@ pub fn (style_value OKLabColorStyleValue) serialize(mode SerializationMode) stri
 }
 
 pub fn (style_value LabColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	_ = color_resolution_context
 	l_val := resolve_with_reference_value(style_value.l_[0], 100, CalculationResolutionContext{}) or {
 		return none
@@ -704,6 +764,10 @@ pub fn (style_value LabColorStyleValue) to_color(color_resolution_context ColorR
 
 // https://www.w3.org/TR/css-color-4/#serializing-lab-lch
 pub fn (style_value LabColorStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
 	mut result := 'lab('
 	result += serialize_color_component(style_value.l_[0], mode, 100, 0, 100)
 	result += ' '
@@ -726,6 +790,9 @@ pub mut:
 	c_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	h_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
 }
 
 pub struct OKLCHColorStyleValue {
@@ -734,6 +801,9 @@ pub mut:
 	c_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	h_     []StyleValue = [StyleValue(KeywordStyleValue{})]
 	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
 }
 
 pub fn LCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alpha ?StyleValue) LCHColorStyleValue {
@@ -763,6 +833,9 @@ pub fn (style_value OKLCHColorStyleValue) absolutized(context ComputationContext
 }
 
 pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	_ = color_resolution_context
 	raw_l_val := resolve_with_reference_value(style_value.l_[0], 100, CalculationResolutionContext{}) or {
 		return none
@@ -783,6 +856,10 @@ pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorR
 
 // https://www.w3.org/TR/css-color-4/#serializing-lab-lch
 pub fn (style_value LCHColorStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
 	mut result := 'lch('
 	result += serialize_color_component(style_value.l_[0], mode, 100, 0, 100)
 	result += ' '
@@ -798,6 +875,9 @@ pub fn (style_value LCHColorStyleValue) serialize(mode SerializationMode) string
 }
 
 pub fn (style_value OKLCHColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	_ = color_resolution_context
 	raw_l_val := resolve_with_reference_value(style_value.l_[0], 1.0, CalculationResolutionContext{}) or {
 		return none
@@ -819,6 +899,10 @@ pub fn (style_value OKLCHColorStyleValue) to_color(color_resolution_context Colo
 
 // https://www.w3.org/TR/css-color-4/#serializing-oklab-oklch
 pub fn (style_value OKLCHColorStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
 	mut result := 'oklch('
 	result += serialize_color_component(style_value.l_[0], mode, 1.0, 0, 1)
 	result += ' '
@@ -846,6 +930,9 @@ pub mut:
 	color_type_ ConcreteColorType
 	channels_   []StyleValue
 	alpha_      []StyleValue = [StyleValue(KeywordStyleValue{})]
+	// A relative color's origin (css-color-5) and whether its alpha was given.
+	relative_origin_ []StyleValue
+	relative_alpha_  bool
 }
 
 fn color_type_from_color_space(color_space string) ConcreteColorType {
@@ -945,6 +1032,10 @@ pub fn (style_value ColorFunctionStyleValue) absolutized(context ComputationCont
 
 // https://www.w3.org/TR/css-color-4/#serializing-color-function-values
 pub fn (style_value ColorFunctionStyleValue) serialize(mode SerializationMode) string {
+	if style_value.relative_origin_.len > 0 {
+		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
+		return serialize_relative_color(parts, mode)
+	}
 	mut alpha := color_function_convert_percentage(style_value.alpha_[0], mode)
 	is_alpha_required := if alpha.is_number() {
 		alpha.as_number().number() < 1
@@ -971,6 +1062,9 @@ pub fn (style_value ColorFunctionStyleValue) serialize(mode SerializationMode) s
 }
 
 pub fn (style_value ColorFunctionStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
+	if style_value.relative_origin_.len > 0 {
+		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
+	}
 	properties := style_value.resolve_properties(color_resolution_context.calculation_resolution_context) or {
 		return none
 	}

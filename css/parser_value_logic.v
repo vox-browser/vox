@@ -22,6 +22,9 @@ pub mut:
 	context               ParsingParams
 	value_context         []ValueParsingContext
 	random_function_index uint
+	// The channel keywords of the relative color being parsed, which its
+	// components and their math functions may reference.
+	relative_color_channels []string
 }
 
 pub fn Parser.from_component_values(component_values []ComponentValue) Parser {
@@ -11839,6 +11842,9 @@ fn (mut parser Parser) parse_opacity_value(mut tokens ComponentValueStream) ?Sty
 
 fn (mut parser Parser) parse_number_percentage_none_value(mut tokens ComponentValueStream) ?StyleValue {
 	// Parses [<percentage> | <number> | none] (which is equivalent to [<alpha-value> | none])
+	if channel := parser.parse_relative_color_channel_keyword(mut tokens) {
+		return channel
+	}
 	if value := parser.parse_number_value(mut tokens) {
 		return value
 	}
@@ -12827,6 +12833,9 @@ fn (mut parser Parser) parse_easing_value(mut tokens ComponentValueStream) ?Styl
 fn (mut parser Parser) parse_hue_none_value(mut tokens ComponentValueStream) ?StyleValue {
 	// Parses [<hue> | none]
 	//   <hue> = <number> | <angle>
+	if channel := parser.parse_relative_color_channel_keyword(mut tokens) {
+		return channel
+	}
 	if angle := parser.parse_angle_value(mut tokens) {
 		return angle
 	}
@@ -13372,6 +13381,10 @@ fn (mut parser Parser) parse_color_from_component_value(component_value Componen
 		}))
 		defer {
 			parser.pop_temporary_value_parsing_context()
+		}
+
+		if relative := parser.parse_relative_color_function(component_value) {
+			return relative
 		}
 
 		if color := parser.parse_color_function(component_value) {

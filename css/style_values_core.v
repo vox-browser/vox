@@ -8928,7 +8928,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		BorderRadiusRectStyleValue { style_value.absolutized(context) }
 		BorderRadiusStyleValue { style_value.absolutized(context) }
 		CalculatedStyleValue { style_value.absolutized(context) }
-		ColorFunctionStyleValue { style_value.absolutized(context) }
+		ColorFunctionStyleValue { absolutize_relative_color(style_value, context) or { style_value.absolutized(context) } }
 		ColorInterpolationMethodStyleValue { StyleValue(style_value.absolutized(context)) }
 		ColorMixStyleValue { style_value.absolutized(context) }
 		ConicGradientStyleValue { StyleValue(style_value.absolutized(context)) }
@@ -8940,18 +8940,18 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		FontStyleStyleValue { style_value.absolutized(context) }
 		GridTrackPlacementStyleValue { StyleValue(style_value.absolutized(context)) }
 		GridTrackSizeListStyleValue { StyleValue(style_value.absolutized(context)) }
-		HSLColorStyleValue { StyleValue(style_value.absolutized(context)) }
-		HWBColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		HSLColorStyleValue { absolutize_relative_color(style_value, context) or { StyleValue(style_value.absolutized(context)) } }
+		HWBColorStyleValue { absolutize_relative_color(style_value, context) or { StyleValue(style_value.absolutized(context)) } }
 		ImageStyleValue { StyleValue(style_value.absolutized(context)) }
 		ImageSetStyleValue { StyleValue(style_value.absolutized(context)) }
 		LengthStyleValue { StyleValue(style_value.absolutized(context)) }
-		LabColorStyleValue { StyleValue(style_value.absolutized(context)) }
-		LCHColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		LabColorStyleValue { absolutize_relative_color(style_value, context) or { StyleValue(style_value.absolutized(context)) } }
+		LCHColorStyleValue { absolutize_relative_color(style_value, context) or { StyleValue(style_value.absolutized(context)) } }
 		LightDarkStyleValue { style_value.absolutized(context) }
 		LinearGradientStyleValue { StyleValue(style_value.absolutized(context)) }
 		KeywordStyleValue { style_value.absolutized(context) }
-		OKLabColorStyleValue { StyleValue(style_value.absolutized(context)) }
-		OKLCHColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		OKLabColorStyleValue { absolutize_relative_color(style_value, context) or { StyleValue(style_value.absolutized(context)) } }
+		OKLCHColorStyleValue { absolutize_relative_color(style_value, context) or { StyleValue(style_value.absolutized(context)) } }
 		OpenTypeTaggedStyleValue { style_value.absolutized(context) }
 		PositionStyleValue { style_value.absolutized(context) }
 		RadialGradientStyleValue { StyleValue(style_value.absolutized(context)) }
@@ -8959,7 +8959,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		RandomValueSharingStyleValue { style_value.absolutized(context) }
 		RatioStyleValue { style_value.absolutized(context) }
 		RectStyleValue { style_value.absolutized(context) }
-		RGBColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		RGBColorStyleValue { absolutize_relative_color(style_value, context) or { StyleValue(style_value.absolutized(context)) } }
 		ScrollbarColorStyleValue { style_value.absolutized(context) }
 		ShadowStyleValue { style_value.absolutized(context) }
 		StyleValueList { style_value.absolutized(context) }
@@ -11077,7 +11077,7 @@ fn reify_calc_node(node CalcNode) !CSSNumericValue {
 				}
 			}
 		}
-		CalcAnchor, CalcRandom, CalcTreeCounting {
+		CalcAnchor, CalcRandom, CalcTreeCounting, CalcChannel {
 			return error('Unable to reify this math function.')
 		}
 	}

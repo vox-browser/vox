@@ -2663,6 +2663,8 @@ pub mut:
 	abstract_element          ?dom.AbstractElement
 	anchor_resolver           ?AnchorResolverCallback
 	anchor_resolver_context   voidptr
+	// Channel values of a relative color's origin, for its channel keywords.
+	relative_color_channels []RelativeColorChannel
 }
 
 pub fn (context CalculationResolutionContext) percentage_basis_angle() ?Angle {

@@ -655,6 +655,10 @@ fn style_value_from_polar_color_space(components InterpolationColorComponents, s
 }
 
 fn style_value_to_color_components(style_value StyleValue, context CalculationResolutionContext) ?InterpolationColorComponents {
+	// Relative colors have channel keywords; they resolve through to_color().
+	if is_relative_color(style_value) {
+		return none
+	}
 	return match style_value {
 		ColorStyleValue { interpolation_color_components(f64(style_value.color_.r) / 255, f64(style_value.color_.g) / 255, f64(style_value.color_.b) / 255, f64(style_value.color_.a) / 255) }
 		HSLColorStyleValue { interpolation_color_components(resolve_hue(style_value.h_[0], context)?, resolve_with_reference_value(style_value.s_[0], 100, context)? / 100, resolve_with_reference_value(style_value.l_[0], 100, context)? / 100, resolve_alpha(style_value.alpha_[0], context)?) }

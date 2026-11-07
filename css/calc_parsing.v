@@ -23,6 +23,7 @@ type CalcNode = CalcNumeric
 	| CalcRandom
 	| CalcAnchor
 	| CalcTreeCounting
+	| CalcChannel
 
 // The kind of a numeric leaf, mirroring the C++ NumericValue variant.
 enum CalcNumericKind {
@@ -88,6 +89,13 @@ struct CalcRandom {
 // value resolution.
 struct CalcTreeCounting {
 	style_value TreeCountingFunctionStyleValue
+}
+
+// A channel keyword of a relative color (`r`, `h`, `alpha`, ...). It is a
+// <number> whose value comes from the origin color when the color resolves.
+// https://drafts.csswg.org/css-color-5/#relative-colors
+struct CalcChannel {
+	name string
 }
 
 // anchor() is a non-math calculation leaf whose length is supplied by layout
@@ -560,6 +568,14 @@ fn (mut parser Parser) convert_calc_leaf(component_value ComponentValue, allow_t
 		return parser.parse_calc_function_node(component_value.function(), allow_tree_counting_functions)
 	}
 	if component_value.is(.ident) {
+		if parser.relative_color_channels.len > 0 {
+			name := to_ascii_lowercase(component_value.token().ident())
+			if name in parser.relative_color_channels {
+				return CalcNode(CalcChannel{
+					name: name
+				})
+			}
+		}
 		return calc_constant_from_ident(component_value.token().ident())
 	}
 	if component_value.is(.number) {
@@ -634,7 +650,7 @@ fn apply_calculation_context_to_calc_node(node CalcNode, context CalculationCont
 			}
 			return node
 		}
-		CalcTreeCounting {
+		CalcTreeCounting, CalcChannel {
 			return node
 		}
 		CalcAnchor {
@@ -722,7 +738,7 @@ fn (node CalcNode) numeric_type() ?NumericType {
 		CalcNumeric {
 			return node.type_
 		}
-		CalcTreeCounting {
+		CalcTreeCounting, CalcChannel {
 			return NumericType.new()
 		}
 		CalcAnchor {
@@ -863,6 +879,9 @@ fn serialize_a_calculation_tree(node CalcNode, emit_outer_parentheses bool) stri
 		}
 		CalcTreeCounting {
 			return node.style_value.serialize(.normal)
+		}
+		CalcChannel {
+			return node.name
 		}
 		CalcAnchor {
 			return node.style_value.serialize(.normal)

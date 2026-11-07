@@ -47,7 +47,7 @@ fn simplify_calc(node CalcNode, calculation_context CalculationContext) CalcNode
 		CalcNumeric {
 			return canonicalize_calc_leaf(node)
 		}
-		CalcTreeCounting {
+		CalcTreeCounting, CalcChannel {
 			return node
 		}
 		CalcAnchor {
@@ -113,6 +113,14 @@ fn simplify_calc_with_resolution(node CalcNode, calculation_context CalculationC
 			abstract_element := context.abstract_element or { return node }
 			value := node.style_value.resolve_for_dom_abstract_element(&abstract_element)
 			return calc_canonical_leaf(.number, f64(value))
+		}
+		CalcChannel {
+			for channel in context.relative_color_channels {
+				if channel.name == node.name {
+					return calc_canonical_leaf(.number, channel.value)
+				}
+			}
+			return node
 		}
 		CalcAnchor {
 			if resolved := resolve_calc_anchor(node, calculation_context, context) {

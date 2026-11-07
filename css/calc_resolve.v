@@ -31,6 +31,17 @@ fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx 
 		CalcAnchor {
 			return resolve_calc_anchor(node, calculation_context, ctx)
 		}
+		CalcChannel {
+			for channel in ctx.relative_color_channels {
+				if channel.name == node.name {
+					return CalcResult{
+						value: channel.value
+						type_: NumericType.new()
+					}
+				}
+			}
+			return none
+		}
 		CalcSum {
 			mut accumulated := resolve_calc_node(node.children[0], calculation_context, ctx) or {
 				return none
