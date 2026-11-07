@@ -566,6 +566,8 @@ static void native_trace_browser_redraw(const char *point) {
 }
 
 static void native_mark_browser_redraw(void) {
+	if (native_frame_timeline_enabled())
+		fprintf(stderr, "VOX_TIMELINE mark t=%.6f\n", native_frame_timeline_now());
 	// An asynchronous resource can complete while the application has no main
 	// or key window. Keep redrawing the window that owns our retained drawable.
 	NSWindow *window = [native_browser_view() window];
@@ -635,6 +637,8 @@ int native_browser_window_is_active(void) {
 
 void native_wake_browser(void) {
 	native_trace_browser_redraw("request");
+	if (native_frame_timeline_enabled())
+		fprintf(stderr, "VOX_TIMELINE wake t=%.6f\n", native_frame_timeline_now());
 	// Style and layout can request thousands of frames before the main queue
 	// runs. One wake covers all work already queued; keep later requests able
 	// to schedule another wake once this delivery begins.
@@ -674,6 +678,8 @@ void native_wake_browser_during_preparation(void) {
 
 void native_wake_browser_after(int milliseconds) {
 	native_trace_browser_redraw("schedule timer");
+	if (native_frame_timeline_enabled())
+		fprintf(stderr, "VOX_TIMELINE wake_after t=%.6f ms=%d\n", native_frame_timeline_now(), milliseconds);
 	int64_t delay = (int64_t)MAX(milliseconds, 0) * NSEC_PER_MSEC;
 	dispatch_time_t when = dispatch_time(DISPATCH_TIME_NOW, delay);
 	// Sampling after constructing the dispatch deadline gives a conservative

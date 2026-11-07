@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <time.h>
 #include "zero_timer_dispatch.h"
 
 static bool libweb_v_is_main_thread(void) { return pthread_main_np() != 0; }
@@ -23,7 +25,15 @@ static void libweb_v_timer_context_release(const void* context)
 
 static void libweb_v_timer_callback(CFRunLoopTimerRef timer, void* context)
 {
-    (void)timer;
+    static int timeline = -1;
+    if (timeline < 0) {
+        const char* value = getenv("VOX_FRAME_TIMELINE_DIAGNOSTICS");
+        timeline = value && *value;
+    }
+    if (timeline)
+        fprintf(stderr, "VOX_TIMELINE timer t=%.6f interval=%g context=%p\n",
+            (double)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / 1e9, CFRunLoopTimerGetInterval(timer),
+            ((LibWebVTimerContext*)context)->context);
     LibWebVTimerContext* state = context;
     state->timeout(state->context);
 }

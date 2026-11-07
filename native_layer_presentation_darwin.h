@@ -54,6 +54,31 @@ VOX_NATIVE_STATE double native_layer_preparation_started;
 VOX_NATIVE_STATE double native_layer_last_preparation_started;
 VOX_NATIVE_STATE uintptr_t native_layer_preparation_view;
 VOX_NATIVE_STATE uintptr_t native_layer_last_preparation_view;
+// VOX_FRAME_TIMELINE_DIAGNOSTICS: timestamped display passes and in-process
+// Core Animation animations, on the CLOCK_UPTIME_RAW base of CACurrentMediaTime.
+#include <execinfo.h>
+#include <time.h>
+static int native_frame_timeline_enabled(void) {
+	static int enabled = -1;
+	if (enabled < 0) {
+		const char *value = getenv("VOX_FRAME_TIMELINE_DIAGNOSTICS");
+		enabled = value && *value;
+	}
+	return enabled;
+}
+static double native_frame_timeline_now(void) {
+	return (double)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / 1e9;
+}
+static IMP native_timeline_original_add_animation;
+static void native_timeline_add_animation(id self, SEL command, CAAnimation *animation, NSString *key) {
+	fprintf(stderr, "VOX_TIMELINE animation t=%.6f layer=%s key=%s class=%s duration=%g\n",
+		native_frame_timeline_now(), object_getClassName(self), key ? key.UTF8String : "",
+		object_getClassName(animation), (double)animation.duration);
+	void *frames[10];
+	int count = backtrace(frames, 10);
+	backtrace_symbols_fd(frames, count, STDERR_FILENO);
+	((void (*)(id, SEL, CAAnimation *, NSString *))native_timeline_original_add_animation)(self, command, animation, key);
+}
 static char native_layer_frame_generation_key;
 static char native_layer_frame_bounds_key;
 static char native_layer_frame_image_key;
@@ -762,6 +787,9 @@ static BOOL native_layer_wants_update(id self, SEL command) {
 
 static void native_layer_update(id self, SEL command) {
     (void)command;
+    if (native_frame_timeline_enabled())
+        fprintf(stderr, "VOX_TIMELINE update t=%.6f presenting=%d work=%d dirty=%d\n", native_frame_timeline_now(),
+            native_layer_presenting, native_layer_document_work_active, ((NSView *)self).needsDisplay);
     if (native_layer_presenting || native_layer_document_work_active) return;
     // AppKit may dirty layers as part of cacheDisplayInRect:. Their document
     // input has not changed; keep the immutable pixels prepared for this copy.
@@ -780,6 +808,8 @@ static void native_layer_update(id self, SEL command) {
         native_layer_presenting = NO;
         native_frame_publication_flush_notifications();
     }
+    if (native_frame_timeline_enabled())
+        fprintf(stderr, "VOX_TIMELINE updated t=%.6f\n", native_frame_timeline_now());
     // AppKit clears needsDisplay after updateLayer returns. Input or timers
     // serviced during replay can dirty this very layer, then lose that dirty
     // bit at the end of the current display pass. Deliver the retained request
@@ -851,6 +881,9 @@ static BOOL native_layer_parent_wants_update(id self, SEL command) {
 }
 
 static void native_layer_parent_update(id self, SEL command) {
+    if (native_frame_timeline_enabled())
+        fprintf(stderr, "VOX_TIMELINE parent_update t=%.6f child=%d\n", native_frame_timeline_now(),
+            native_layer_has_browser_child(self));
     if (!native_layer_has_browser_child(self)) {
         if (native_layer_original_parent_update)
             ((void (*)(id, SEL))native_layer_original_parent_update)(self, command);
@@ -903,6 +936,11 @@ static void native_install_browser_layer_presentation(void) {
             @selector(wantsUpdateLayer), (IMP)native_layer_parent_wants_update, "B@:");
         native_layer_original_parent_update = native_layer_replace_method(parent,
             @selector(updateLayer), (IMP)native_layer_parent_update, "v@:");
+        if (native_frame_timeline_enabled()) {
+            Method add = class_getInstanceMethod(CALayer.class, @selector(addAnimation:forKey:));
+            native_timeline_original_add_animation = method_setImplementation(add,
+                (IMP)native_timeline_add_animation);
+        }
     });
 }
 
