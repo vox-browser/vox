@@ -709,7 +709,7 @@ fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
 		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
 		cap := rand.intn(3) or { 0 }
 		join := rand.intn(3) or { 0 }
-		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}},
+		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}, 0},
 			'stroke ${i}')!
 		if is_hairline(transform, line_width) {
 			hairlines++
@@ -734,6 +734,7 @@ struct StrokeCase {
 	dashes       []f32
 	dash_offset  f32
 	clips        []ClipCase
+	composite    int
 }
 
 // A device-space clip path in skia.Path's segment encoding.
@@ -863,6 +864,7 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 		c.cap, c.join, c.dashes.len]
 	clip_values, clip_floats := clip_arguments(c.clips)
 	values << clip_values
+	values << i32(c.composite)
 	floats << clip_floats
 	if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
@@ -870,13 +872,15 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, false)
 	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
-		path, c.transform, c.color, c.global_alpha, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
+		path, c.transform, c.color, c.global_alpha, canvas_mode(c.composite), c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
 		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips)) {
 		return error('${label}: cpuraster declined')
 	}
 	for j in 0 .. expected.len {
 		if expected[j] != actual[j] {
-			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (${c})')
+			p := j - j % 4
+			save_failure(initial, expected, actual, '${c}')
+			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]}, from ${initial[p..p + 4]} (${c})')
 		}
 	}
 }
@@ -1159,7 +1163,7 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		color := random_color()
 		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
 		global_alpha := random_global_alpha()
-		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}},
+		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}, 0},
 			'canvas ${i}')!
 	}
 	return count
@@ -1176,6 +1180,7 @@ struct FillCase {
 	color        u32
 	global_alpha f32
 	clips        []ClipCase
+	composite    int
 }
 
 fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! {
@@ -1187,6 +1192,7 @@ fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! 
 		i32(c.color)]
 	clip_values, clip_floats := clip_arguments(c.clips)
 	values << clip_values
+	values << i32(c.composite)
 	floats << clip_floats
 	if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
@@ -1194,12 +1200,14 @@ fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! 
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, c.even_odd)
 	if !cpuraster.fill_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type, path,
-		c.transform, cpuraster.canvas_fill_color(c.color, c.global_alpha), clip_paths(c.clips)) {
+		c.transform, c.color, c.global_alpha, canvas_mode(c.composite), clip_paths(c.clips)) {
 		return error('${label}: cpuraster declined')
 	}
 	for j in 0 .. expected.len {
 		if expected[j] != actual[j] {
-			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (${c})')
+			p := j - j % 4
+			save_failure(initial, expected, actual, '${c}')
+			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]}, from ${initial[p..p + 4]} (${c})')
 		}
 	}
 }
@@ -1219,7 +1227,7 @@ fn check_clipped_draws(oracle Oracle, count int) !(int, int) {
 			m := random_matrix()
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
 				0
-			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips},
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips, 0},
 				'clipped fill ${i}')!
 			continue
 		}
@@ -1267,6 +1275,10 @@ fn main() {
 	rand.seed([seed, 7])
 	if os.getenv('CPU_RASTER_CHECKS') == 'strokes' {
 		check_stroke_cases(oracle, count)
+		return
+	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'composites' {
+		check_composite_cases(oracle, count)
 		return
 	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
@@ -1474,4 +1486,151 @@ fn check_stroke_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('clipped canvas draws: ${clipped} exact (${clipped_strokes} strokes)')
+	composites, composite_strokes := check_composite_draws(oracle, count / 2) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('composited canvas draws: ${composites} exact (${composite_strokes} strokes)')
+}
+
+fn check_composite_cases(oracle Oracle, count int) {
+	composites, composite_strokes := check_composite_draws(oracle, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('composited canvas draws: ${composites} exact (${composite_strokes} strokes)')
+}
+
+fn canvas_mode(composite int) cpuraster.BlendMode {
+	return cpuraster.canvas_blend_mode(composite) or { panic('composite ${composite}') }
+}
+
+// Canvas bitmaps whose pixels reach the blend modes' branches: transparent and
+// opaque pixels and channels at zero or at their alpha, among random ones.
+fn random_composite_bitmap(width int, height int, pitch int, alpha_type int) []u8 {
+	mut bitmap := random_canvas_bitmap(width, height, pitch, alpha_type)
+	if rand.intn(4) or { 0 } == 0 {
+		return bitmap
+	}
+	for y in 0 .. height {
+		for x in 0 .. width {
+			o := y * pitch + x * 4
+			match rand.intn(6) or { 0 } {
+				0 {
+					for c in 0 .. 4 {
+						bitmap[o + c] = 0
+					}
+				}
+				1 {
+					bitmap[o + 3] = 255
+				}
+				2 {
+					bitmap[o + rand.intn(3) or { 0 }] = bitmap[o + 3]
+				}
+				3 {
+					bitmap[o + rand.intn(3) or { 0 }] = 0
+				}
+				else {}
+			}
+		}
+	}
+	return bitmap
+}
+
+fn random_composite_color() u32 {
+	return match rand.intn(8) or { 0 } {
+		0 { u32(0xff000000) }
+		1 { u32(0xffffffff) }
+		2 { u32(0) }
+		3 { u32(0xff000000) | (rand.u32() & 0xffffff) }
+		else { rand.u32() }
+	}
+}
+
+fn random_composite_alpha() f32 {
+	return match rand.intn(6) or { 0 } {
+		0 { f32(1) }
+		1 { f32(0) }
+		// Alphas whose byte is 255 or 0 while the float is not.
+		2 { f32(0.999) }
+		3 { f32(0.0015) }
+		else { f32(rand.f64()) }
+	}
+}
+
+// Fills and strokes (hairlines at full and partial coverage, thin outlines
+// for modes without coverage as alpha, wide and dashed strokes, clipped or
+// not) with every SkBlendMode composite operation, through the lowp and
+// highp pipeline blitters and the fast paths that keep the legacy blitter.
+// Returns the comparisons and how many were strokes.
+fn check_composite_draws(oracle Oracle, count int) !(int, int) {
+	mut strokes := 0
+	for i in 0 .. count {
+		width := rand.intn(100) or { 0 } + 1
+		height := rand.intn(100) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		composite := rand.intn(26) or { 0 }
+		clips := if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
+		initial := random_composite_bitmap(width, height, pitch, alpha_type)
+		color := random_composite_color()
+		global_alpha := random_composite_alpha()
+		if rand.intn(2) or { 0 } == 0 {
+			m := random_matrix()
+			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
+				0
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, color, global_alpha, clips, composite},
+				'composite fill ${i}')!
+			continue
+		}
+		mut segments := if rand.intn(2) or { 0 } == 0 {
+			random_stroke_shape(width, height)
+		} else {
+			random_canvas_segments(width, height)
+		}
+		if rand.intn(3) or { 0 } == 0 {
+			align_canvas_lines(mut segments)
+		}
+		line_width := match rand.intn(4) or { 0 } {
+			0 { f32(1) }
+			1 { f32(rand.f64()) }
+			2 { f32(rand.f64() * 0.3) }
+			else { random_wide_line_width() }
+		}
+		c := StrokeCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			segments:     segments
+			transform:    random_stroke_matrix()
+			color:        color
+			global_alpha: global_alpha
+			line_width:   line_width
+			miter:        if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 4) }
+			cap:          rand.intn(3) or { 0 }
+			join:         rand.intn(3) or { 0 }
+			dashes:       if rand.intn(4) or { 0 } == 0 { random_dashes() } else { []f32{} }
+			dash_offset:  random_dash_offset()
+			clips:        clips
+			composite:    composite
+		}
+		compare_canvas_stroke(oracle, initial, c, 'composite stroke ${i}')!
+		strokes++
+	}
+	return count, strokes
+}
+
+// save_failure writes a mismatching case's bitmaps and parameters to
+// CPU_RASTER_FAILURE_DIR, when set, for offline probing.
+fn save_failure(initial []u8, expected []u8, actual []u8, description string) {
+	dir := os.getenv('CPU_RASTER_FAILURE_DIR')
+	if dir == '' {
+		return
+	}
+	os.mkdir_all(dir) or { return }
+	os.write_file_array(os.join_path(dir, 'initial.bin'), initial) or {}
+	os.write_file_array(os.join_path(dir, 'expected.bin'), expected) or {}
+	os.write_file_array(os.join_path(dir, 'actual.bin'), actual) or {}
+	os.write_file(os.join_path(dir, 'case.txt'), description) or {}
 }

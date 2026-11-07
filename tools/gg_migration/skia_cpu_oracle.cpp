@@ -187,8 +187,8 @@ static std::vector<VoxCanvasPath> oracle_clips(int const* a, float const* f)
 }
 
 // arguments: width, height, pitch, alpha type, even-odd, segment count,
-// SkColor, then the clips. floats: the transform, global alpha, 12 floats per
-// segment, then the clip segments.
+// SkColor, the clips, then the composite operation. floats: the transform,
+// global alpha, 12 floats per segment, then the clip segments.
 ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -202,13 +202,14 @@ ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
     auto clips = oracle_clips(a + 7, f + 7 + a[5] * 12);
     command.clips = clips.data();
     command.clip_count = int(clips.size());
+    command.composite = a[8 + a[7] * 2];
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
 
 // arguments: width, height, pitch, alpha type, segment count, SkColor, cap,
-// join, dash count, then the clips. floats: the transform, global alpha, line
-// width, miter limit, 12 floats per segment, the dash offset and intervals,
-// then the clip segments.
+// join, dash count, the clips, then the composite operation. floats: the
+// transform, global alpha, line width, miter limit, 12 floats per segment, the
+// dash offset and intervals, then the clip segments.
 ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -230,5 +231,6 @@ ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
     command.miter = f[8];
     command.cap = a[6];
     command.join = a[7];
+    command.composite = a[10 + a[9] * 2];
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
