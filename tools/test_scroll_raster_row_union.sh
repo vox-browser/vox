@@ -29,6 +29,10 @@ clang -O2 -framework Cocoa -framework QuartzCore -framework IOSurface \
 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
     --lock "$output_dir/scroll-regression.lock" --report "$output_dir/scroll-regression.json" -- \
     "$output_dir/scroll-regression"
+# Split every ring copy across cores, including the small regression frames.
+VOX_SCROLL_RASTER_PARALLEL_COPY_BYTES=1 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
+    --lock "$output_dir/scroll-regression-parallel.lock" --report "$output_dir/scroll-regression-parallel.json" -- \
+    "$output_dir/scroll-regression"
 VOX_SKIP_OVERWRITTEN_SCROLL_COPY=1 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
     --lock "$output_dir/scroll-regression-visible.lock" --report "$output_dir/scroll-regression-visible.json" -- \
     "$output_dir/scroll-regression"
