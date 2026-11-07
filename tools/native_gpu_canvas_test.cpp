@@ -123,6 +123,46 @@ static void draw_text_mask_leaves(CGContextRef context, bool canvas)
     }
 }
 
+// A tall run that only grazes the repainted strip, as when a heading scrolls
+// out of a zoomed viewport. The canvas rasterizes and uploads only the part
+// of its coverage near the strip, shifted by whole device pixels, so the
+// result stays identical to the CPU leaf.
+static decltype(&vox_graphite_canvas_draw_mask) s_backend_draw_mask;
+static int s_largest_mask_height;
+static int recorded_draw_mask(uint8_t const* coverage, int width, int height, int pitch,
+    int layers, int device_x, int device_y, float const* color,
+    VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    s_largest_mask_height = std::max(s_largest_mask_height, height);
+    return s_backend_draw_mask(coverage, width, height, pitch, layers, device_x, device_y, color,
+        clips, clip_count);
+}
+static void draw_grazing_text_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 20, 80, 360, 140, 4, 4, 4, 4, 4, 4, 4, 4,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 221, 221, 221, 255, 1, 0, 1, 1));
+    // Its glyph bounds reach from about CSS row 157 past the canvas bottom;
+    // the strip ends at row 184.5.
+    char const* path = "/System/Library/Fonts/HelveticaNeue.ttc";
+    auto* face = select_typeface(path, 0, 400, 0);
+    assert(face);
+    SkFont font(sk_ref_sp(face), 140);
+    char const* text = "Hjgy";
+    int count = font.countText(text, 4, SkTextEncoding::kUTF8);
+    std::vector<uint16_t> glyphs(count);
+    assert(font.textToGlyphs(text, 4, SkTextEncoding::kUTF8, SkSpan<SkGlyphID>(glyphs.data(), count)) == count);
+    std::vector<float> widths(count);
+    font.getWidths(SkSpan<SkGlyphID const>(glyphs.data(), count), widths);
+    std::vector<double> positions(size_t(count) * 2);
+    double advance = 0;
+    for (int i = 0; i < count; ++i) { positions[size_t(i) * 2] = advance; advance += widths[i]; }
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_text", 9, 0) == 1);
+    assert(ladybird_v_skia_draw_glyph_run(context, path, 0, glyphs.data(), positions.data(),
+        count, 140, 400, 0, 30.25f, 310, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+        css_width, css_height, 51, 51, 51, 255, 16 | 32 | 2 | VOX_GLYPH_PRIVATE_BITMAP));
+}
+
 // At scale 1 the ordinary root leaf replays an SVG gradient in each Chromium
 // raster tile's own coordinates, keeping Blink's ordered-dither phase. The
 // canvas's eight-pixel-aligned surfaces would shift that phase when the
@@ -1371,6 +1411,27 @@ int main(int argc, char** argv)
         if (different) { std::cerr << "Scale-1 root gradient differs in " << different << " bytes\n"; return 1; }
         assert(declined == 1);
         std::cout << "Scale-1 root gradient: declined by the canvas, per-tile dither phase exact\n";
+        return 0;
+    }
+    if (argc == 2 && !std::strcmp(argv[1], "--grazing-text-mask")) {
+        auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        assert(api && api->draw_mask && api->read);
+        s_backend_read = api->read; api->read = counted_read;
+        s_backend_draw_mask = api->draw_mask; api->draw_mask = recorded_draw_mask;
+        auto reference = render(false, false, draw_grazing_text_leaves);
+        auto candidate = render(true, false, draw_grazing_text_leaves);
+        assert(s_draws == 2 && !s_declined && !s_cpu_leaves);
+        size_t different = 0;
+        for (size_t at = 0; at < reference.size(); ++at) different += reference[at] != candidate[at];
+        bool cropped = !std::getenv("VOX_DISABLE_CLIPPED_TEXT_MASKS");
+        // The visible run is over 250 device rows; the strip and fringe need
+        // about 60.
+        if (different || (cropped ? s_largest_mask_height > 80 : s_largest_mask_height < 250)) {
+            std::cerr << "Grazing text differs in " << different << " bytes; mask height "
+                << s_largest_mask_height << '\n';
+            return 1;
+        }
+        std::cout << "Grazing text mask: exact, " << s_largest_mask_height << " mask rows\n";
         return 0;
     }
     if (argc == 2 && !std::strcmp(argv[1], "--text-mask")) {

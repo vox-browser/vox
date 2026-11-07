@@ -823,6 +823,11 @@ bool gpu_canvas_cpu_leaf_stays_on_cpu(CGContextRef destination)
     return true;
 }
 
+bool gpu_canvas_targets(CGContextRef destination)
+{
+    return s_gpu_canvas && s_gpu_canvas->destination == destination;
+}
+
 // A leaf of an approved command that must draw on the CPU canvas.
 void gpu_canvas_decline(CGContextRef destination)
 {

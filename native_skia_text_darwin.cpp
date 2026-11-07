@@ -1578,6 +1578,8 @@ int gpu_canvas_draw_cpu_mask(CGContextRef destination, int width, int height,
     int region_left, int region_top, char const* name, SkColor4f const& color,
     std::function<int()> const& prepare_layers, std::function<bool(uint8_t*, int)> const& raster);
 void gpu_canvas_decline(CGContextRef destination);
+// Whether the active GPU canvas paints into `destination`.
+bool gpu_canvas_targets(CGContextRef destination);
 void gpu_canvas_note_miss(CGContextRef destination, char const* leaf, bool msaa);
 // Whether a root-layer leaf's region overlaps a Chromium MSAA raster tile.
 bool gpu_canvas_root_msaa_overlap(CGContextRef destination, RasterRegion const& region,
@@ -1586,6 +1588,8 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
     VoxGraphiteImage const& descriptor, SkRect device_bounds, RasterRegion const& region,
     float page_x, float page_y, float scroll_y, bool rounded_mask);
 }
+static bool visible_raster_region(CGContextRef destination, float canvas_height,
+    RasterRegion const& region, RasterRegion& visible);
 
 // The CPU blitter blends a run's glyphs one after another, rounding the
 // destination between glyphs whose antialiased pixels overlap; Blink's GPU
@@ -1794,18 +1798,34 @@ static int draw_retained_glyph_run(CGContextRef destination,
             return true;
         };
         int canvas_result = -1;
+        // A reused frame repaints only its exposed strip and damage. Raster and
+        // upload just that part of a run's coverage: the cropped raster is the
+        // same one shifted by whole device pixels, so glyph coverage is equal.
+        static bool const full_text_masks = std::getenv("VOX_DISABLE_CLIPPED_TEXT_MASKS") != nullptr;
+        RasterRegion mask_region = region;
+        int mask_width = raster_width, mask_height = raster_height;
+        RasterRegion visible;
+        if (!full_text_masks && gpu_canvas_targets(destination)
+            && destination_scale >= 1 && destination_scale == std::round(destination_scale)
+            && raster_scale_x == destination_scale && raster_scale_y == destination_scale
+            && visible_raster_region(destination, canvas_height, region, visible)) {
+            mask_region = visible;
+            mask_width = raster_dimension(visible.width(), destination_scale);
+            mask_height = raster_dimension(visible.height(), destination_scale);
+        }
+        auto mask_matrix = raster_matrix(matrix, mask_region, raster_scale_x, raster_scale_y);
         if (backdrop_blend && alpha == 255 && !typeface_has_color_glyphs(*typeface))
-            canvas_result = gpu_canvas_draw_cpu_mask(destination, raster_width, raster_height,
-                region.left, region.top, "text-mask", paint.getColor4f(), prepare_layers,
+            canvas_result = gpu_canvas_draw_cpu_mask(destination, mask_width, mask_height,
+                mask_region.left, mask_region.top, "text-mask", paint.getColor4f(), prepare_layers,
                 [&](uint8_t* coverage, int layer) {
-                    auto info = SkImageInfo::MakeA8(raster_width, raster_height);
+                    auto info = SkImageInfo::MakeA8(mask_width, mask_height);
                     SkSurfaceProps properties(0, kUnknown_SkPixelGeometry, 0.0f,
                         (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
-                    auto surface = SkSurfaces::WrapPixels(info, coverage, size_t(raster_width), &properties);
+                    auto surface = SkSurfaces::WrapPixels(info, coverage, size_t(mask_width), &properties);
                     if (!surface) return false;
                     auto* mask_canvas = surface->getCanvas();
                     mask_canvas->clear(SK_ColorTRANSPARENT);
-                    mask_canvas->setMatrix(text_matrix);
+                    mask_canvas->setMatrix(mask_matrix);
                     if (layers[layer]) mask_canvas->drawTextBlob(layers[layer], blob_x, blob_y, paint);
                     return true;
                 });
