@@ -2807,7 +2807,11 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			active << desired[index]
 		}
 		if step.command == unsafe { nil } { continue }
-		mut command := *step.command
+		// Copy the cached command once, straight into its output slot, and
+		// resolve it there: a wide local copy plus the push copied it twice.
+		// Nothing else is appended before the next step, so the slot is stable.
+		result << *step.command
+		mut command := unsafe { &result[result.len - 1] }
 		command.transform = chromium_border_replay_transform(step.command, context.transform, tree)
 		command.fixed_to_viewport = step.box.fixed_to_viewport
 		if recording_clip := command.recording_clip {
@@ -2854,7 +2858,6 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			}
 		}
 		command.visual_layer_list = unsafe { nil }
-		result << command
 	}
 	for index := active.len - 1; index >= 0; index-- {
 		result << PaintCommand{
