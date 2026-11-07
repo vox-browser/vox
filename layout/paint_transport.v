@@ -2156,10 +2156,12 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 	mut commands := []PaintCommand{}
 	metrics := painting.new_chrome_metrics(1.0) or { return commands }
 	for entry_index, entry in entries {
-		platform.cooperative_work_checkpoint()
+		// Refreshing a viewport selection visits every entry of a long page;
+		// only entries that record commands are work worth yielding around.
 		if selected.len > 0 && !selected[entry_index] {
 			continue
 		}
+		platform.cooperative_work_checkpoint()
 		box := entry.box
 		// A `visibility: hidden` box takes up space but paints nothing (its visible descendants are
 		// separate paint-order entries and still paint).
