@@ -153,3 +153,28 @@ console.log("keyframe effects passed");
 '], runtime, mut messages)
 	assert messages == ['keyframe effects passed'], messages.str()
 }
+
+fn test_compact_inherited_transition_value_starts_no_descendant_transition() {
+	$if !darwin {
+		return
+	}
+	mut document := parse_browser_navigation_document('<!doctype html><style>.c{width:10px}.c.to{width:20px}.c.how{transition:width 2s linear}.t{width:inherit}.t.how{transition:width 2s linear}</style><div id="container" class="c"><div id="target" class="t"></div></div>',
+		dom.URL{ value: 'https://example.test/' }, none)
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+const container=document.getElementById("container"),target=document.getElementById("target");
+getComputedStyle(target).width;
+container.classList.add("how");target.classList.add("how");getComputedStyle(target).width;
+container.classList.add("to");target.classList.add("to");
+console.log("start "+getComputedStyle(target).width+" "+document.getAnimations().map(animation=>animation.effect.target.id).join(","));
+document.getAnimations()[0].currentTime=1000;
+console.log("half "+getComputedStyle(container).width+" "+getComputedStyle(target).width+" "+target.getAnimations().length);
+'], runtime, mut messages)
+	// The descendant follows its parent through the parent's transition.
+	assert messages == ['start 10px container', 'half 15px 15px 0']
+}

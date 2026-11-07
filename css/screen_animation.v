@@ -1633,6 +1633,15 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 			continue
 		}
 
+		// AD-HOC: Like Blink and Gecko, a value that is inherited from a
+		// parent's running transition does not start or change a transition
+		// of its own; the element follows the parent's animated value.
+		if new_style.is_property_inherited(property_id)
+			&& new_style.is_animated_property_inherited(property_id)
+			&& new_style.is_animated_property_result_of_transition(property_id) {
+			continue
+		}
+
 		before_change_value := previous_style.property(property_id, .yes) or { continue }
 		after_change_value := new_style.property(property_id, .no) or { continue }
 
