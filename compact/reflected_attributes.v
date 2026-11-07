@@ -16,7 +16,7 @@ fn compact_reflected_attributes_bootstrap() string {
  }
  // Nullable DOMString reflection: a missing attribute is null, null removes it.
  function nullableString(prototype,name,attribute){
-  define(prototype,name,function(){return this.getAttribute(attribute);},function(value){if(value===null)this.removeAttribute(attribute);else this.setAttribute(attribute,string(value));});
+  define(prototype,name,function(){return this.getAttribute(attribute);},function(value){if(value===null||value===undefined)this.removeAttribute(attribute);else this.setAttribute(attribute,string(value));});
  }
  function plainString(prototype,name,attribute){
   define(prototype,name,function(){const value=this.getAttribute(attribute);return value===null?"":value;},function(value){this.setAttribute(attribute,string(value));});
