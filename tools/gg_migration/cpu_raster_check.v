@@ -32,6 +32,7 @@ struct Oracle {
 	font_typeface_is_valid OracleFontTypefaceIsValid = unsafe { nil }
 	bitmap_export          OracleBitmapExport        = unsafe { nil }
 	fill_path              OracleFillPath            = unsafe { nil }
+	fill_path_bw           OracleFillPath            = unsafe { nil }
 	canvas_fill            OracleCanvasFill          = unsafe { nil }
 	canvas_stroke          OracleCanvasStroke        = unsafe { nil }
 	pattern                OraclePattern             = unsafe { nil }
@@ -53,6 +54,9 @@ fn load_oracle(path string) Oracle {
 			OracleBitmapExport(oracle_symbol(library, 'oracle_bitmap_export'))
 		}
 		fill_path:              unsafe { OracleFillPath(oracle_symbol(library, 'oracle_fill_path')) }
+		fill_path_bw:           unsafe {
+			OracleFillPath(oracle_symbol(library, 'oracle_fill_path_bw'))
+		}
 		canvas_fill:            unsafe { OracleCanvasFill(oracle_symbol(library, 'oracle_canvas_fill')) }
 		canvas_stroke:          unsafe {
 			OracleCanvasStroke(oracle_symbol(library, 'oracle_canvas_stroke'))
@@ -569,6 +573,16 @@ fn random_premultiplied(count int) []u8 {
 // Anti-aliased solid path fills, through Skia's mask and run-length additive
 // blitters, its convex and general edge walkers and every solid blitter.
 fn check_fill_paths(oracle Oracle, count int) !(int, int) {
+	return check_path_fills(oracle, count, true)
+}
+
+// Random paths filled without anti-aliasing: SkScan::FillPath's edges,
+// walkers and clipping.
+fn check_bw_fill_paths(oracle Oracle, count int) !(int, int) {
+	return check_path_fills(oracle, count, false)
+}
+
+fn check_path_fills(oracle Oracle, count int, anti_alias bool) !(int, int) {
 	mut declined := 0
 	for i in 0 .. count {
 		small := rand.intn(2) or { 0 } == 0
@@ -588,19 +602,28 @@ fn check_fill_paths(oracle Oracle, count int) !(int, int) {
 			}
 		}
 		values := [i32(width), height, int(even_odd), ops.len, i32(color)]
-		oracle.fill_path(expected.data, values.data, floats.data)
+		if anti_alias {
+			oracle.fill_path(expected.data, values.data, floats.data)
+		} else {
+			oracle.fill_path_bw(expected.data, values.data, floats.data)
+		}
 		mut actual := initial.clone()
 		path := build_path(ops, even_odd)
 		mut blitter := cpuraster.new_solid_blitter(mut actual, width * 4, color)
-		if !cpuraster.anti_fill_path(path.transform(matrix), cpuraster.IRect{0, 0, width, height}, mut
-			blitter)
-		{
+		drawn := if anti_alias {
+			cpuraster.anti_fill_path(path.transform(matrix), cpuraster.IRect{0, 0, width, height}, mut
+				blitter)
+		} else {
+			cpuraster.fill_path(path.transform(matrix), cpuraster.IRect{0, 0, width, height}, mut
+				blitter)
+		}
+		if !drawn {
 			declined++
 			continue
 		}
 		for j in 0 .. expected.len {
 			if expected[j] != actual[j] {
-				return error('fill ${i}: pixel (${j / 4 % width}, ${j / 4 / width}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (size ${width}x${height}, even-odd ${even_odd}, color ${color:08x}, matrix ${matrix}, ops ${ops})')
+				return error('${if anti_alias { 'fill' } else { 'bw fill' }} ${i}: pixel (${j / 4 % width}, ${j / 4 / width}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (size ${width}x${height}, even-odd ${even_odd}, color ${color:08x}, matrix ${matrix}, ops ${ops})')
 			}
 		}
 	}
@@ -1337,6 +1360,14 @@ fn main() {
 		check_clear_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'bwfills' {
+		fills, declined := check_bw_fill_paths(oracle, count) or {
+			eprintln(err.msg())
+			exit(1)
+		}
+		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'images' {
 		check_image_cases(oracle, count)
 		return
@@ -1370,6 +1401,11 @@ fn main() {
 		exit(1)
 	}
 	println('path fills: ${fills - declined} exact, ${declined} declined')
+	bw_fills, bw_declined := check_bw_fill_paths(oracle, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('non-anti-aliased path fills: ${bw_fills - bw_declined} exact, ${bw_declined} declined')
 	canvas := check_canvas_fills(oracle, count / 4) or {
 		eprintln(err.msg())
 		exit(1)

@@ -144,7 +144,20 @@ ORACLE int oracle_bitmap_export(uint8_t const* pixels, uint8_t* output, int cons
 // arguments: width, height, even-odd, op count, SkColor. floats: the affine
 // matrix (a b c d e f), then 7 floats per op: kind (0 move, 1 line, 2 quad,
 // 3 conic, 4 cubic, 5 close) and its coordinates (conic weight last).
+static void oracle_draw_path(uint8_t* pixels, int const* a, float const* f, bool anti_alias);
+
 ORACLE void oracle_fill_path(uint8_t* pixels, int const* a, float const* f)
+{
+    oracle_draw_path(pixels, a, f, true);
+}
+
+// The same, without anti-aliasing: SkScan::FillPath.
+ORACLE void oracle_fill_path_bw(uint8_t* pixels, int const* a, float const* f)
+{
+    oracle_draw_path(pixels, a, f, false);
+}
+
+static void oracle_draw_path(uint8_t* pixels, int const* a, float const* f, bool anti_alias)
 {
     SkPathBuilder builder;
     float const* op = f + 6;
@@ -164,7 +177,7 @@ ORACLE void oracle_fill_path(uint8_t* pixels, int const* a, float const* f)
     auto* canvas = surface->getCanvas();
     canvas->setMatrix(SkMatrix::MakeAll(f[0], f[2], f[4], f[1], f[3], f[5], 0, 0, 1));
     SkPaint paint;
-    paint.setAntiAlias(true);
+    paint.setAntiAlias(anti_alias);
     paint.setColor(SkColor(uint32_t(a[4])));
     canvas->drawPath(builder.detach(), paint);
 }
