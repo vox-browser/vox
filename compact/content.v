@@ -253,6 +253,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'outerHTML' { return binding.outer_html_query(key, selector) }
 	if action == 'innerText' { return binding.inner_text_query(key, selector) }
 	if action == 'nodeMember' { return binding.node_member_query(key, selector) }
+	if action == 'formValidation' { return binding.form_validation_query(key, selector) }
 	if action == 'selection' { return binding.selection_query(key, selector) }
 	if action == 'editing' { return binding.editing_query(key, selector) }
 	if action == 'compressionTransform' { return compact_compression_query(selector) }
