@@ -5,6 +5,35 @@ import dom
 import html
 
 
+// GlobalEventHandlers event names; the WindowEventHandlers that follow them in
+// the source table belong to Window (and forward from body and frameset).
+const element_inline_handler_events = element_global_event_handler_events()
+
+fn element_global_event_handler_events() map[string]bool {
+	mut events := map[string]bool{}
+	for name in window_event_handler_names() {
+		if name.attribute == 'onafterprint' { break }
+		events[name.event] = true
+	}
+	return events
+}
+
+// Ordinary HTML elements own every inline handler natively, so script-dispatched
+// and natively fired events run content attributes and on* properties alike.
+// Media and track elements keep their dedicated owners; image, object,
+// fieldset, output and form-associated custom elements keep compact replay.
+fn element_owns_native_inline_handlers(element &dom.Element) bool {
+	return element.is_html_element()
+		&& element.local_name() !in ['img', 'object', 'fieldset', 'output', 'audio', 'video', 'track']
+		&& !element.is_form_associated_custom_element()
+}
+
+fn event_target_owns_native_inline_handler(target &dom.EventTarget, name string) bool {
+	if name !in element_inline_handler_events || !event_target_is_element(target) { return false }
+	element := unsafe { &dom.Node(target) }.as_element() or { return false }
+	return element_owns_native_inline_handlers(element)
+}
+
 fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 	settings := host.settings
 	owner := voidptr(&host)
@@ -13,6 +42,8 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 		supports_handler: fn [owner, settings] (target &dom.EventTarget, name string) bool {
 			if name in ['wheel', 'scrollend'] || (target.data.kind == .window
 				&& voidptr(target) == voidptr(settings.global_object())) { return true }
+			// Decided without resolving the element through the provider registry.
+			if event_target_owns_native_inline_handler(target, name) { return true }
 			// Most native pointer/focus dispatches query ordinary raw handlers.
 			// Reject unsupported names before resolving an element: resolution
 			// refreshes the complete provider registry for media/track ownership.
@@ -37,6 +68,9 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			if element.local_name() in ['audio', 'video'] {
 				return host.live_raw_media_wheel_hosts().len != 0
 			}
+			// The form owner is part of a control's handler scope. Create the control
+			// model, which resets its form owner, rather than leaving the handler raw.
+			raw_handler_ensure_control(element)
 			if !raw_wheel_handler_form_owner_available(element) { return false }
 			if control := raw_wheel_handler_control(element) {
 				if form := control.form() {
@@ -55,7 +89,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 				|| (element.local_name() == 'track' && name in ['load', 'error']) {
 				return host.raw_media_or_track_handler_available(target, element, name)
 			}
-			return name in ['wheel', 'scrollend']
+			return name in ['wheel', 'scrollend'] || event_target_owns_native_inline_handler(target, name)
 		}
 		compile: fn [owner, settings] (target &dom.EventTarget, name string, body string, source string) ?&dom.CallbackType {
 			mut host := unsafe { &ElementWheelHost(owner) }
@@ -108,6 +142,19 @@ fn raw_wheel_handler_control(element &dom.Element) ?&html.FormAssociatedElement 
 	}
 }
 
+fn raw_handler_ensure_control(element &dom.Element) {
+	match element.local_name() {
+		'input' { _ = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) }) }
+		'button' { _ = html.HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(element) }) }
+		'select' { _ = html.HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(element) }) }
+		'textarea' { _ = html.HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(element) }) }
+		else { return }
+	}
+	if mut control := raw_wheel_handler_control(element) {
+		if control.form() == none { control.reset_form_owner() }
+	}
+}
+
 fn raw_wheel_handler_form_owner_available(element &dom.Element) bool {
 	return element.local_name() !in ['input', 'button', 'select', 'textarea']
 		|| raw_wheel_handler_control(element) != none
@@ -130,7 +177,8 @@ fn (runtime &Runtime) raw_wheel_handler_body_is_valid(handler_name string, body 
 
 fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget, name string, body string, source string) ?&dom.CallbackType {
 	mut runtime := host.runtime
-	if name !in ['wheel', 'scrollend', 'load', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
+	if (name !in ['wheel', 'scrollend', 'load', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error']
+		&& !event_target_owns_native_inline_handler(target, name)) || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
 	element := host.raw_wheel_handler_element(target) or { return none }
 	mut vm := runtime.agent_vm
 	mut context := runtime.realm_context

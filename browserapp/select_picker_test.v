@@ -114,8 +114,10 @@ document.addEventListener("change",function(e){events.push("document:"+e.target.
 		select_picker_test_drain(app)
 		assert app.js_runtime.evaluate_host('document.getElementById("sorted").textContent')! == 'r'
 		// Page listeners register before the test's native listeners; both fire once.
+		// Content attributes activate their handlers at parse time, ahead of the
+		// script's listeners, and assigning onchange keeps that position.
 		observed_events := app.js_runtime.evaluate_host('events.join("|")')!
-		assert observed_events == 'input:r|native-input|inline:r|change:r:3|native-change|property:r|parent:r:true:false|document:order-ctrl', observed_events
+		assert observed_events == 'inline:r|input:r|native-input|property:r|change:r:3|native-change|parent:r:true:false|document:order-ctrl', observed_events
 		select_ui_test_choose(1)
 		// The chevron must target the host just like the selected label.
 		select_picker_test_click_at(mut app, 'order-ctrl', 0.95)

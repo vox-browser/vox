@@ -22,7 +22,9 @@ fn test_unsupported_element_raw_handlers_do_not_enumerate_document_providers() {
 		counter.calls++
 		return map[string]&dom.Element{}
 	})
-	mut target := fixture.document.get_element_by_id('handlerDiv')?
+	// Ordinary elements compile natively; a fieldset keeps compact replay.
+	mut document := fixture.document
+	mut target := document.create_element('fieldset')!
 	native_target := unsafe { &dom.EventTarget(target) }
 	for name in ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'focus', 'blur', 'keydown'] {
 		target.set_attribute_value('on' + name, 'globalThis.rawRuns++')
@@ -156,9 +158,11 @@ fn test_raw_element_wheel_function_body_gate_csp_and_unsupported_handlers_keep_n
 		assert voidptr(slot.listener or { panic('retained listener') }) == voidptr(listener)
 		assert target.get_attribute_value('onwheel') == body
 	}
+	// Every GlobalEventHandlers attribute of an ordinary element compiles natively.
 	target.set_attribute_value('onclick', 'globalThis.rawRuns++')
-	assert native_target.get_current_value_of_event_handler('click') == none
-	assert (native_target.data.event_handler('click') or { panic('unsupported click') }).value.kind == .string
+	assert native_target.get_current_value_of_event_handler('click') != none
+	assert (native_target.data.event_handler('click') or { panic('compiled click') }).value.kind == .object
+	assert runtime.evaluate_host('rawRuns')! == '0'
 	target.set_attribute_value('onwheel', 'return false;')
 	callback := native_target.get_current_value_of_event_handler('wheel') or { panic('valid callback') }
 	mut document := fixture.document

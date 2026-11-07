@@ -29,12 +29,13 @@ document.addEventListener("click",event=>order.push("doc-capture:"+event.isTrust
 link.addEventListener("click",()=>order.push("link-listener"));
 outer.addEventListener("click",()=>order.push("outer-listener"));
 if(link.click()!==undefined)throw new Error("click returns undefined");
-const expected=["doc-capture:false:true:true:true","link-listener","link-raw:clicktrue","outer-listener","outer-raw:true"].join();
+// Content attributes are listeners registered at parse time, ahead of addEventListener.
+const expected=["doc-capture:false:true:true:true","link-raw:clicktrue","link-listener","outer-raw:true","outer-listener"].join();
 if(order.join()!==expected)throw new Error("click order "+order.join());
 order=[];count.click();
 if(order.join()!==expected)throw new Error("descendant click "+order.join());
 order=[];const stop=event=>{event.stopPropagation();order.push("stopped")};link.addEventListener("click",stop);link.click();link.removeEventListener("click",stop);
-if(order.join()!==["doc-capture:false:true:true:true","link-listener","stopped","link-raw:clicktrue"].join())throw new Error("native stopPropagation "+order.join());
+if(order.join()!==["doc-capture:false:true:true:true","link-raw:clicktrue","link-listener","stopped"].join())throw new Error("native stopPropagation "+order.join());
 order=[];link.onclick=function(event){order.push("property:"+(this===link));};link.click();
 if(order.filter(item=>item==="property:true").length!==1||order.some(item=>item.indexOf("link-raw")===0))throw new Error("on* property replaces the attribute "+order.join());
 order=[];off.addEventListener("click",()=>order.push("disabled-listener"));off.click();

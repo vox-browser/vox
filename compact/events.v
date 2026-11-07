@@ -1,9 +1,11 @@
 module main
 
+import browserjs
+
 // Compact listeners use the same stable element identity as DOM mutation replay.
 // Capture the path before callbacks can remove or move the control.
 fn compact_event_dispatch_bootstrap() string {
-	return r'
+	return compact_inline_handler_bootstrap() + r'
 function __compactEventPath(s, bubbles) {
  const path = [s];
  if (s && bubbles) {
@@ -32,11 +34,13 @@ function __compactRunEventHandlers(s, name, event, path, replay) {
   }
   const nativeMedia = current && current.namespaceURI === "http://www.w3.org/1999/xhtml" &&
    (current.tagName === "audio" || current.tagName === "video");
+  // Native dispatch already ran the content attributes and on* properties of these elements.
+  const nativeHandlers = current && !nativeMedia && __compactNativeInlineHandlers(receiver);
   const raw = current === s && replay && Object.prototype.hasOwnProperty.call(replay, "raw") ? replay.raw :
-   (current && !nativeMedia ? (current.attributes["on" + name] || "") : "");
+   (current && !nativeMedia && !nativeHandlers ? (current.attributes["on" + name] || "") : "");
   if (!event.immediateStopped) {
    try {
-    if (current) {
+    if (current && !nativeHandlers) {
      const handler = !nativeMedia && receiver["on" + name];
      if (typeof handler === "function") {
       if (handler.call(receiver, event) === false) event.preventDefault();
@@ -77,6 +81,38 @@ window.__ladybirdDispatch = function (name, id, replay) {
 };
 ' +
 		compact_element_click_bootstrap()
+}
+
+// HTMLElement's GlobalEventHandlers (on* IDL attributes). Ordinary HTML elements
+// read and write their native handler slots, which also hold the compiled
+// content attributes, so every native dispatch runs them. Elements whose inline
+// handlers the compact layer still replays (image, object, media, ...) keep an
+// own property, exactly like the expando these accessors replace.
+fn compact_inline_handler_bootstrap() string {
+	return r'
+const __compactInlineHandler=globalThis.__ladybirdElementInlineHandler;delete globalThis.__ladybirdElementInlineHandler;
+function __compactNativeInlineHandlers(receiver){
+ return typeof __compactInlineHandler==="function"&&Reflect.apply(__compactInlineHandler,undefined,[2,receiver,""])===true;
+}
+(function(pairs){
+ if(typeof __compactInlineHandler!=="function")return;
+ const apply=Reflect.apply,define=Object.defineProperty,getOwn=Object.getOwnPropertyDescriptor,native=__compactInlineHandler;
+ function check(receiver){
+  const s=__elementApply(__elementRecordGet,__elementRecords,[receiver]);
+  if(!s||s.namespaceURI!=="http://www.w3.org/1999/xhtml")throw new TypeError("Illegal HTMLElement receiver");
+ }
+ for(const [attribute,event] of pairs){
+  // Bound elements already expose these two as native own accessors.
+  if(event==="wheel"||event==="scrollend")continue;
+  const accessors={
+   get [attribute](){check(this);const value=apply(native,undefined,[0,this,event]);return value===undefined?null:value;},
+   set [attribute](value){check(this);if(apply(native,undefined,[1,this,event,value])!==true)define(this,attribute,{value:value,writable:true,enumerable:true,configurable:true});}
+  };
+  const descriptor=getOwn(accessors,attribute);
+  define(HTMLElement.prototype,attribute,{get:descriptor.get,set:descriptor.set,enumerable:true,configurable:true});
+ }
+})(' + browserjs.element_inline_handler_pairs_json() + r');
+'
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#dom-click

@@ -33,6 +33,12 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 	})!
 	get_handler, set_handler := host.element_event_handler_accessors('wheel')!
 	get_scrollend, set_scrollend := host.element_event_handler_accessors('scrollend')!
+	inline_handler := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &ElementWheelHost(handle) }
+		return host.inline_handler_operation(args) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	factory := runtime.evaluate_host_value(element_wheel_host_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
 	runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
@@ -43,6 +49,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		set_handler,
 		get_scrollend,
 		set_scrollend,
+		inline_handler,
 	])!
 	runtime.add_canvas_element_provider_with_merge(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &ElementWheelHost(handle) }
@@ -107,6 +114,39 @@ fn (mut host ElementWheelHost) element_event_handler_accessors(name string) !(vo
 		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
 	})!
 	return get_handler, set_handler
+}
+
+// HTMLElement's GlobalEventHandlers accessors: 0 gets and 1 sets a handler,
+// 2 reports whether the receiver's inline handlers are native. Get and set
+// return undefined when the compact layer still owns the receiver's handlers.
+fn (mut host ElementWheelHost) inline_handler_operation(args []voidptr) !voidptr {
+	if host.closed || args.len < 3 { return error('TypeError: Invalid Element handler operation') }
+	mut exception := voidptr(0)
+	operation := int(C.vox_jsc_JSValueToNumber(host.runtime.context, args[0], &exception))
+	element := host.records[args[1]] or { return C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+	if !element_owns_native_inline_handlers(element) {
+		if operation == 2 { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, false) }
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
+	}
+	if operation == 2 { return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, true) }
+	name := host.runtime.binding_dom_string(args[2])!
+	if name !in element_inline_handler_events { return error('TypeError: Unknown event handler') }
+	target := unsafe { &dom.EventTarget(element) }
+	if operation == 0 {
+		if replay := host.replay { replay(host.runtime)! }
+		return host.runtime.javascript_event_handler(target, name)!
+	}
+	value := if args.len > 3 { args[3] } else { C.vox_jsc_JSValueMakeUndefined(host.runtime.context) }
+	// Capture callback settings before flushing queued content attributes;
+	// an earlier raw content-attribute write must not overwrite this later IDL write.
+	callback := host.runtime.event_callback(value, true)!
+	if replay := host.replay { replay(host.runtime)! }
+	target.set_event_handler_attribute(name, if callback != unsafe { nil } {
+		?&dom.CallbackType(callback)
+	} else {
+		?&dom.CallbackType(none)
+	})
+	return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, true)
 }
 
 fn element_exposes_wheel_handler(element &dom.Element) bool {
@@ -203,13 +243,14 @@ fn element_wheel_host_bootstrap() string {
 	// list with dispatchEvent, including capture, cancellation and options.
 	pointer_types := native_pointer_event_names()
 	legacy_types := window_event_handler_names().filter(it.event !in pointer_types).map(it.event)
-	return r'(function(bind,type,setResolver,getHandler,setHandler,getScrollEnd,setScrollEnd){
+	return r'(function(bind,type,setResolver,getHandler,setHandler,getScrollEnd,setScrollEnd,inlineHandler){
  "use strict";
  const apply=Reflect.apply,define=Object.defineProperty,wrapped=new WeakSet(),has=WeakSet.prototype.has,add=WeakSet.prototype.add;
  const legacyTypes=new Set(' + json2.encode(legacy_types) + r'),legacyHas=Set.prototype.has;
  const nativeAdd=EventTarget.prototype.addEventListener,nativeRemove=EventTarget.prototype.removeEventListener,nativeDispatch=EventTarget.prototype.dispatchEvent;
  function nativeEvent(name){return name==="wheel"||name==="scrollend"||name==="beforeinput"||name==="input"||name==="change"||name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid"||!apply(legacyHas,legacyTypes,[name]);}
  define(globalThis,"__ladybirdElementWheelSetResolver",{value:setResolver,configurable:true});
+ define(globalThis,"__ladybirdElementInlineHandler",{value:inlineHandler,configurable:true});
  define(globalThis,"__ladybirdElementWheelBind",{value:function(o,key,tag,namespace){
   const exposesHandler=apply(bind,undefined,[o,key,tag,namespace]);
   if(apply(has,wrapped,[o]))return;

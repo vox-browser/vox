@@ -22,7 +22,7 @@ fn track_raw_fixture(install_media bool, install_document bool) !&TrackRawFixtur
 	url := dom.URL{value: 'https://track-raw.example/base/'}
 	mut document := html.create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
-	html.parse_html_from_a_string(document, '<form id="form"><track id="track" onload="${track_raw_body}" onerror="${track_raw_body}"><track data-probe="lazy" onload="${track_raw_body}" onerror="return ("><track data-probe="invalid" onload="return ("><track data-probe="generic" onload="return false;"></form><div id="ordinary" onload="return false;"></div><video id="video" onload="return false;"></video>')
+	html.parse_html_from_a_string(document, '<form id="form"><track id="track" onload="${track_raw_body}" onerror="${track_raw_body}"><track data-probe="lazy" onload="${track_raw_body}" onerror="return ("><track data-probe="invalid" onload="return ("><track data-probe="generic" onload="return false;"></form><fieldset id="ordinary" onload="return false;"></fieldset><video id="video" onload="return false;"></video>')
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()
 	mut wheel := ElementWheelHost.create(document)!

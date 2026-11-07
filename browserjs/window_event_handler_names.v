@@ -130,6 +130,17 @@ fn window_event_handler_names() []WindowEventHandlerName {
 	]
 }
 
+// [attribute, event] pairs for HTMLElement's GlobalEventHandlers accessors:
+// the source table lists them before the WindowEventHandlers.
+pub fn element_inline_handler_pairs_json() string {
+	mut pairs := []string{}
+	for name in window_event_handler_names() {
+		if name.attribute == 'onafterprint' { break }
+		pairs << '["${name.attribute}","${name.event}"]'
+	}
+	return '[' + pairs.join(',') + ']'
+}
+
 // Native accessor validation does not allocate a temporary name vector.
 fn is_window_event_handler_name(value string) bool {
 	return match value {
