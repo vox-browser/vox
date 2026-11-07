@@ -29,5 +29,7 @@ fn history_binding_factory() string {
  define(global,"history",getOwn(attribute,"history"));
  define(global,"History",{value:History,writable:true,configurable:true});
  define(global,"__ladybirdObserveHistoryURL",{value:function(callback){observer=callback;},configurable:true});
+ // The shell reports same-document navigations (fragments) through the same observer.
+ define(global,"__ladybirdHistoryURLChanged",{value:function(){if(observer)observer(operate("url"));},configurable:true});
 })'
 }

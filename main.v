@@ -587,6 +587,8 @@ struct HistoryEntry {
 	url    string
 	markup string
 	content_type string = 'text/html'
+	// Saved when a same-document (fragment) navigation leaves this entry.
+	scroll_y ?f64
 }
 
 struct LoadedPage {
@@ -4110,6 +4112,10 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 			return
 		}
 	}
+	// Reloads and history traversal (add_history false) still fetch the page.
+	if add_history && app.navigate_to_a_fragment(resolved) {
+		return
+	}
 	app.paint_timing.begin_navigation()
 	app.paint_timing.submission.begin_navigation(app.navigation_generation + 1, app.paint_timing.navigation_instructions)
 	app.load_status = 'Loading ${resolved}'
@@ -4219,12 +4225,14 @@ fn (mut app BrowserApp) history_go(delta int) {
 	if target < 0 || target >= app.history.len {
 		return
 	}
+	from_index := app.history_index
 	app.history_index = target
 	app.navigation_generation++
 	app.cancel_page_preload()
 	app.pending_native_navigation = none
 	entry := app.history[target]
 	app.page_model.traverse_the_history_by_delta(delta)
+	if app.traverse_to_a_fragment(from_index, target) { return }
 	app.install_loaded_page(LoadedPage{
 		url: entry.url
 		markup: entry.markup
