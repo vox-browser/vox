@@ -207,6 +207,11 @@ pub struct PipelineBlitter {
 	image  ImageShader
 	scaled bool
 	scale  f32
+	// An SkColorFilterShader's filter stages after the scale, and whether
+	// the shaded color is known opaque when they start.
+	filtered      bool
+	filter        ColorFilter
+	filter_opaque bool
 mut:
 	pixels []u8
 }
@@ -266,14 +271,20 @@ fn new_constant_blitter(mut pixels []u8, row_bytes int, premul [4]f32, alpha f32
 			lanes[i] = u32(u16(biased))
 		}
 	}
+	// appendConstantColor(): uniform_color, with lowp, only for a color in
+	// premultiplied range; a filtered color can leave it (a channel above
+	// alpha), and unbounded_uniform_color runs in highp.
+	bounded := c[0] >= 0 && c[0] <= c[3] && c[1] >= 0 && c[1] <= c[3] && c[2] >= 0
+		&& c[2] <= c[3]
 	// A constant Src color is memset; store_8888 clamps its lanes to 255.
 	mut memset_color := u32(0)
 	for i in 0 .. 4 {
-		memset_color |= lowp_min(lanes[i], 255) << (8 * u32(i))
+		lane := if bounded { lowp_min(lanes[i], 255) } else { to_unorm(c[i], 255) }
+		memset_color |= lane << (8 * u32(i))
 	}
 	return PipelineBlitter{
 		mode:         mode
-		lowp:         blend_has_lowp(mode)
+		lowp:         blend_has_lowp(mode) && bounded
 		prescale:     blend_prescales_coverage(mode)
 		memset:       mode == .src
 		row_bytes:    row_bytes
@@ -934,6 +945,9 @@ fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, 
 		for i in 0 .. 4 {
 			src[i] = src[i] * b.scale
 		}
+	}
+	if b.filtered {
+		src = b.filter.apply(src, b.filter_opaque)
 	}
 	mut r := neon_min(neon_max(0, src[0]), 1)
 	mut g := neon_min(neon_max(0, src[1]), 1)

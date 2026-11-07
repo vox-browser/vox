@@ -79,7 +79,7 @@ fn glyph_test_draw(c GlyphTestCase, mut px []u8) bool {
 		?CanvasPaintStyle(none)
 	}
 	return fill_canvas_glyphs(mut px, 48, 40, 192, c.alpha_type, glyph_test_run(c), transform,
-		c.color, style, c.alpha, c.mode, clips)
+		c.color, style, c.alpha, c.mode, clips, none)
 }
 
 // The hash of the pixels after the run, which must have drawn something.
@@ -250,7 +250,7 @@ fn test_unported_glyph_runs_decline() {
 			[f32(1), 0, 0, 1, 0, 0]!
 		} else {
 			c.transform
-		}, c.color, none, 1, .src_over, [])
+		}, c.color, none, 1, .src_over, [], none)
 		assert px == before
 	}
 	mut px := glyph_test_background()
@@ -262,7 +262,7 @@ fn test_unported_glyph_runs_decline() {
 			positions: [f32(0), 0]
 		})
 		face_index: 1
-	}, [f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, [])
+	}, [f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, [], none)
 	assert px == before
 }
 

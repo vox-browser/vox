@@ -52,14 +52,14 @@ const blur_test_identity = [f32(1), 0, 0, 1, 0, 0]!
 fn blur_fill_hash(segments []f32, transform [6]f32, color u32, mode BlendMode, blur f32, clips []Path) string {
 	mut px := blur_test_background(64, 56)
 	assert fill_canvas_path(mut px, 64, 56, 256, 2, canvas_path(segments, false), transform, color, none,
-		1, mode, blur, clips)
+		1, mode, blur, clips, none)
 	return sha256.sum(px).hex()[..16]
 }
 
 fn blur_stroke_hash(segments []f32, transform [6]f32, line_width f32, cap StrokeCap, blur f32) string {
 	mut px := blur_test_background(64, 56)
 	assert stroke_canvas_path(mut px, 64, 56, 256, 2, canvas_path(segments, false), transform,
-		0xc0306090, none, 1, .src_over, blur, line_width, cap, .miter, 10, [], 0, [])
+		0xc0306090, none, 1, .src_over, blur, line_width, cap, .miter, 10, [], 0, [], none)
 	return sha256.sum(px).hex()[..16]
 }
 
@@ -101,7 +101,7 @@ fn test_oversized_ring_mask_matches_skia() {
 	s << blur_test_rect(-100, -50, 100, 100)
 	mut px := blur_test_background(64, 56)
 	assert fill_canvas_path(mut px, 64, 56, 256, 1, canvas_path(s, false), blur_test_identity,
-		0xff204080, none, 1, .src_over, 12, [])
+		0xff204080, none, 1, .src_over, 12, [], none)
 	assert sha256.sum(px).hex()[..16] == '6c7f50d0617e3740'
 }
 

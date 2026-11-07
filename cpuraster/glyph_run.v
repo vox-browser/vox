@@ -32,12 +32,12 @@ pub:
 // without changing pixels for a draw it does not cover: devices Skia would
 // tile, faces Skia cannot open, color glyphs too wide for SkGlyph, and
 // non-finite glyph positions.
-pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path) bool {
+pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter ?ColorFilter) bool {
 	if run.glyphs.len == 0 {
 		return true
 	}
 	if !untiled_device(pixels, width, height, pitch) || !canvas_style_installs(style)
-		|| run.positions.len < run.glyphs.len * 2 {
+		|| run.positions.len < run.glyphs.len * 2 || !color_filter_moves_into_paint(filter) {
 		return false
 	}
 	for v in run.positions[..run.glyphs.len * 2] {
@@ -66,7 +66,7 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	// The mask strike: A8 with the paint's mask gamma, or ARGB for a color
 	// typeface, whose glyphs CoreText draws in the paint's opaque color.
 	mut strike := new_glyph_strike(face, run.font_size, position_matrix, paint_luminance(paint_color,
-		shader)) or { GlyphStrike{} }
+		alpha, shader, filter)) or { GlyphStrike{} }
 	defer {
 		strike.release()
 	}
@@ -101,7 +101,7 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	if !is_finite_f32(origin.x) || !is_finite_f32(origin.y) || run.glyphs.len > 1 << 21 {
 		return true
 	}
-	if blend_draws_nothing(mode, paint_alpha_byte(alpha)) {
+	if paint_draws_nothing(mode, paint_alpha_byte(alpha), filter) {
 		return true
 	}
 	rc := canvas_raster_clip(width, height, clips)
@@ -123,7 +123,8 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	if rc.is_empty {
 		return true
 	}
-	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode)
+	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
+		filter)
 	if strike.font == unsafe { nil } {
 		// A singular matrix zeroes fTransform: every mask is empty.
 		return true
@@ -133,12 +134,11 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	// SkNullBlitter still draws them.
 	if strike.color {
 		fill_color_glyphs(mut pixels, pitch, run, routes, mut strike, rounding, &rc, paint_color,
-			alpha, mode)
+			alpha, mode, filter)
 		return true
 	}
-	blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{}) or {
-		return true
-	}
+	blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{},
+		filter) or { return true }
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
@@ -175,7 +175,7 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 
 // Draw::paintMasks() for an ARGB32 strike: each glyph that survives the
 // position check and touches the clip bounds is drawn whole as a sprite.
-fn fill_color_glyphs(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []GlyphRoute, mut strike GlyphStrike, rounding SkAffine, rc &RasterClip, color u32, alpha f32, mode BlendMode) {
+fn fill_color_glyphs(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []GlyphRoute, mut strike GlyphStrike, rounding SkAffine, rc &RasterClip, color u32, alpha f32, mode BlendMode, filter ?ColorFilter) {
 	clip_bounds := rc.bounds()
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
@@ -195,15 +195,15 @@ fn fill_color_glyphs(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []Gl
 		if !irect_intersects(clip_bounds, IRect{x, y, x + glyph.width, y + glyph.height}) {
 			continue
 		}
-		draw_glyph_sprite(mut pixels, pitch, glyph, x, y, rc, color, alpha, mode)
+		draw_glyph_sprite(mut pixels, pitch, glyph, x, y, rc, color, alpha, mode, filter)
 	}
 }
 
 // Draw::drawSprite() of a color glyph's N32 premultiplied image at (x, y)
-// with the text paint: SkBlitter::ChooseSprite() when the clip handles the
-// sprite, otherwise Draw::drawRect() with the image as a nearest, clamped
-// shader translated to (x, y).
-fn draw_glyph_sprite(mut pixels []u8, pitch int, glyph StrikeGlyph, x int, y int, rc &RasterClip, color u32, alpha f32, mode BlendMode) {
+// with the text paint: SkBlitter::ChooseSprite() when the paint has no
+// color filter and the clip handles the sprite, otherwise Draw::drawRect()
+// with the image as a nearest, clamped shader translated to (x, y).
+fn draw_glyph_sprite(mut pixels []u8, pitch int, glyph StrikeGlyph, x int, y int, rc &RasterClip, color u32, alpha f32, mode BlendMode, filter ?ColorFilter) {
 	bounds := IRect{x, y, x + glyph.width, y + glyph.height}
 	if !irect_intersects(rc.bounds(), bounds) {
 		return
@@ -215,7 +215,9 @@ fn draw_glyph_sprite(mut pixels []u8, pitch int, glyph StrikeGlyph, x int, y int
 		pitch:         glyph.width * 4
 		premultiplied: true
 	}
-	if rc.is_bw || rc.aa.quick_contains(bounds.left, bounds.top, bounds.right, bounds.bottom) {
+	unfiltered := filter == none
+	if unfiltered && (rc.is_bw
+		|| rc.aa.quick_contains(bounds.left, bounds.top, bounds.right, bounds.bottom)) {
 		if mut sprite := choose_sprite(mut pixels, pitch, bitmap, x, y, paint_alpha_byte(alpha),
 			alpha, mode)
 		{
@@ -225,7 +227,7 @@ fn draw_glyph_sprite(mut pixels []u8, pitch int, glyph StrikeGlyph, x int, y int
 	}
 	shader := new_image_shader(bitmap, .clamp, .clamp, false, affine_translate(f32(x), f32(y)))
 	dev := Rect{f32(x), f32(y), f32(bounds.right), f32(bounds.bottom)}
-	mut blitter := canvas_paint_blitter(mut pixels, pitch, color, shader, alpha, mode, dev) or {
+	mut blitter := canvas_draw_blitter(mut pixels, pitch, color, shader, alpha, mode, dev, filter) or {
 		return
 	}
 	fill_irect(bounds, rc, mut blitter)
@@ -356,7 +358,7 @@ fn glyph_outline(font voidptr, id u16, transform [6]f64) ?Path {
 // translation are concatenated onto the canvas matrix (SkCanvas::concat(),
 // in SkM44's float arithmetic); with one the outline's points are mapped
 // first so the shader keeps the canvas matrix.
-fn fill_glyph_outlines(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []GlyphRoute, ctm SkAffine, rc &RasterClip, color u32, shader ?CanvasShader, alpha f32, mode BlendMode) {
+fn fill_glyph_outlines(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []GlyphRoute, ctm SkAffine, rc &RasterClip, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, filter ?ColorFilter) {
 	scale := run.font_size / glyph_path_size
 	exact_ctm := if s := shader { s.kind != .null_ } else { false }
 	ctm_matrix := Matrix{ctm.sx, ctm.ky, ctm.kx, ctm.sy, ctm.tx, ctm.ty}
@@ -382,8 +384,8 @@ fn fill_glyph_outlines(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []
 			}
 			outline.transform(Matrix{m.sx, m.ky, m.kx, m.sy, m.tx, m.ty})
 		}
-		mut blitter := canvas_paint_blitter(mut pixels, pitch, color, shader, alpha, mode,
-			device.bounds() or { Rect{} }) or { continue }
+		mut blitter := canvas_draw_blitter(mut pixels, pitch, color, shader, alpha, mode,
+			device.bounds() or { Rect{} }, filter) or { continue }
 		anti_fill_path_clip(device, false, rc, mut blitter)
 	}
 }
@@ -508,23 +510,39 @@ fn compute_luminance(r u32, g u32, b u32) u32 {
 }
 
 // The rec's luminance color for the paint (SkPaintPriv::
-// ComputeLuminanceColor(): the paint color, the shader's luminance color,
-// or 50% gray for a shader without one), canonicalized and reduced to gray
-// for A8 masks by SkScalerContext::PreprocessRec(); the mask gamma table it
-// selects.
-fn paint_luminance(color u32, shader ?CanvasShader) int {
-	mut c := color & 0xffffff
+// ComputeLuminanceColor(): the paint color, or the shader's luminance color
+// at full alpha, through the paint's color filter; 50% gray, unfiltered,
+// for a shader without one), canonicalized and reduced to gray for A8 masks
+// by SkScalerContext::PreprocessRec(); the mask gamma table it selects.
+fn paint_luminance(color u32, alpha f32, shader ?CanvasShader, filter ?ColorFilter) int {
+	mut c := [f32((color >> 16) & 0xff) * inv_255, f32((color >> 8) & 0xff) * inv_255,
+		f32(color & 0xff) * inv_255, alpha]!
+	mut has_luminance := true
 	if s := shader {
-		c = match s.kind {
-			.null_ { c }
-			.color { color4f_byte(s.color[0]) << 16 | color4f_byte(s.color[1]) << 8 | color4f_byte(s.color[2]) }
-			.gradient { s.gradient.luminance & 0xffffff }
-			else { u32(0x808080) }
+		match s.kind {
+			.null_ {}
+			.color {
+				c = [s.color[0], s.color[1], s.color[2], f32(1)]!
+			}
+			.gradient {
+				l := s.gradient.luminance
+				c = [l[0], l[1], l[2], f32(1)]!
+			}
+			else {
+				has_luminance = false
+			}
 		}
 	}
-	r := scale255_3((c >> 16 & 0xff) >> 5)
-	g := scale255_3((c >> 8 & 0xff) >> 5)
-	b := scale255_3((c & 0xff) >> 5)
+	mut rgb := u32(0x808080)
+	if has_luminance {
+		if f := filter {
+			c = f.filter_color4f(c)
+		}
+		rgb = color4f_byte(c[0]) << 16 | color4f_byte(c[1]) << 8 | color4f_byte(c[2])
+	}
+	r := scale255_3((rgb >> 16 & 0xff) >> 5)
+	g := scale255_3((rgb >> 8 & 0xff) >> 5)
+	b := scale255_3((rgb & 0xff) >> 5)
 	return int(compute_luminance(r, g, b) >> 5)
 }
 

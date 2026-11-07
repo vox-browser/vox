@@ -96,10 +96,10 @@ fn pattern_test_hash(c PatternTestCase) string {
 		b.move_to(4, 30)
 		b.quad_to(20, -6, 44, 26)
 		assert stroke_canvas_path(mut px, 48, 40, 192, 2, b.detach(), ctm, 0, pattern, c.alpha,
-			c.mode, 0, c.line_width, .round, .round, 10, [], 0, clips)
+			c.mode, 0, c.line_width, .round, .round, 10, [], 0, clips, none)
 	} else {
 		assert fill_canvas_path(mut px, 48, 40, 192, 2, pattern_test_rect(), ctm, 0, pattern,
-			c.alpha, c.mode, 0, clips)
+			c.alpha, c.mode, 0, clips, none)
 	}
 	return sha256.sum(px).hex()[..16]
 }
@@ -234,6 +234,6 @@ fn test_uninstallable_patterns_decline() {
 			height: 2
 			pitch:  4
 			pixels: []u8{len: 16}
-		}, 1, .src_over, 0, [])
+		}, 1, .src_over, 0, [], none)
 	assert px == before
 }

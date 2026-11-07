@@ -40,7 +40,7 @@ const gradient_test_identity = [f32(1), 0, 0, 1, 0, 0]!
 fn gradient_fill_hash(g CanvasGradient, transform [6]f32, alpha f32, mode BlendMode) string {
 	mut px := gradient_test_background(48, 40)
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, gradient_test_rect(), transform, 0, g, alpha,
-		mode, 0, [])
+		mode, 0, [], none)
 	return sha256.sum(px).hex()[..16]
 }
 
@@ -50,7 +50,7 @@ fn gradient_stroke_hash(g CanvasGradient, line_width f32, alpha f32, mode BlendM
 	b.quad_to(20, -6, 44, 26)
 	mut px := gradient_test_background(48, 40)
 	assert stroke_canvas_path(mut px, 48, 40, 192, 2, b.detach(), gradient_test_identity, 0, g,
-		alpha, mode, 0, line_width, .round, .round, 10, [], 0, [])
+		alpha, mode, 0, line_width, .round, .round, 10, [], 0, [], none)
 	return sha256.sum(px).hex()[..16]
 }
 
