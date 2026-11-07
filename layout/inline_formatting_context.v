@@ -5,6 +5,7 @@
 module layout
 
 import css
+import math
 import platform
 
 pub struct InlineFormattingResult {
@@ -949,15 +950,21 @@ fn apply_line_clamp(containing_block &BlockContainer, mut used UsedValues,
 // https://drafts.csswg.org/css-overflow-4/#text-overflow
 fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes []LineBox) {
 	block_node := unsafe { &Node(containing_block) }
-	block_values := if block_node.is_anonymous() {
+	style_node := if block_node.is_anonymous() {
 		block := block_node.non_anonymous_containing_block() or { return }
-		block.computed_values()
+		unsafe { &Node(block) }
 	} else {
-		containing_block.computed_values()
+		block_node
 	}
+	block_values := style_node.computed_values()
 	if block_values.text_overflow() != .ellipsis || block_values.overflow_x() == .visible {
 		return
 	}
+	// Blink's LineTruncator shapes the ellipsis with the block container's
+	// style and places it as its own item after the truncated text, so it
+	// keeps the block's color and font rather than the truncated inline's.
+	chromium := block_node.document().font_rendering_policy() == .chromium
+	block_ellipsis_font_ := if chromium { ?&platform.Font(block_ellipsis_font(style_node, '…')) } else { ?&platform.Font(none) }
 
 	ellipsis_code_point := u32(0x2026)
 	for line_index in 0 .. line_boxes.len {
@@ -987,7 +994,16 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 				continue
 			}
 			font := run_pointer.font()
-			ellipsis_width := font.glyph_width(ellipsis_code_point)
+			mut block_ellipsis_run := ?&platform.GlyphRun(none)
+			if ellipsis_font := block_ellipsis_font_ {
+				shaped_ellipsis := platform.shape_text(0, 0, '…', ellipsis_font, .common)
+				block_ellipsis_run = ?&platform.GlyphRun(shaped_ellipsis)
+			}
+			ellipsis_width := if ellipsis_run := block_ellipsis_run {
+				f32(shaped_inline_width(ellipsis_run, 0).to_double())
+			} else {
+				font.glyph_width(ellipsis_code_point)
+			}
 			available_in_fragment := f32(available_width.minus(fragment_start).to_double())
 			max_text_width := available_in_fragment - ellipsis_width
 			mut keep_count := 0
@@ -1006,6 +1022,34 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 			mut run := unsafe { &platform.GlyphRun(run_pointer) }
 			run.invalidate_replay_data()
 			run.glyphs_ = run.glyphs_[..keep_count].clone()
+			if ellipsis_run := block_ellipsis_run {
+				run.width_ = last_kept_end
+				fragment.set_inline_length(CSSPixels.nearest_value_for(f64(last_kept_end)))
+				ellipsis_font := ellipsis_run.font()
+				mut ellipsis_offset := fragment.block_offset()
+				mut ellipsis_length := fragment.block_length()
+				mut ellipsis_baseline := fragment.baseline()
+				if ellipsis_font.point_size != font.point_size || ellipsis_font.family != font.family {
+					// Align the block font's rounded ascent to the line's baseline.
+					metrics := ellipsis_font.pixel_metrics()
+					ascent := CSSPixels.nearest_value_for(math.round(f64(metrics.ascent)))
+					descent := CSSPixels.nearest_value_for(math.round(f64(metrics.descent)))
+					ellipsis_offset = fragment.block_offset().plus(fragment.baseline()).minus(ascent)
+					ellipsis_length = ascent.plus(descent)
+					ellipsis_baseline = ascent
+				}
+				line_box.fragments_.insert(fragment_index + 1, LineBoxFragment.new_block_ellipsis(fragment.layout_node_,
+					style_node, '…', fragment.start_ + fragment.length_in_code_units_,
+					fragment_start.plus(CSSPixels.nearest_value_for(f64(last_kept_end))), ellipsis_offset,
+					CSSPixels.nearest_value_for(f64(ellipsis_width)), ellipsis_length, ellipsis_baseline,
+					line_box.direction_, line_box.writing_mode_, ellipsis_run))
+				for later_index := fragment_index + 2; later_index < line_box.fragments_.len; later_index++ {
+					line_box.fragments_[later_index].set_fully_truncated(true)
+				}
+				line_box.inline_length_ = available_width
+				line_box.clamp_static_position_markers_to_inline_length()
+				break
+			}
 			ellipsis_run := platform.shape_text(0, 0, '…', font, .common)
 			if ellipsis_run.glyphs_.len > 0 {
 				mut ellipsis_glyph := ellipsis_run.glyphs_[0]

@@ -205,3 +205,49 @@ fn test_text_overflow_ellipsis_preserves_preceding_inline_fragments() {
 	assert !used.line_boxes[0].fragments_[1].is_fully_truncated()
 	assert used.line_boxes[0].fragments_[2].is_fully_truncated()
 }
+
+// Blink's LineTruncator styles the text-overflow ellipsis with the block
+// container: GitHub's gray commit links end in a dark ellipsis, and a block
+// with a larger font draws a larger ellipsis after smaller inline text.
+fn test_chromium_text_overflow_ellipsis_is_a_block_styled_item_after_the_truncated_text() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_font_rendering_policy(.chromium)
+	container_style := inline_context_test_style(document,
+		'display:block; width:75px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font:24px/30px SerenitySans; color:rgb(255,0,0)')
+	inline_style := inline_context_test_style(document,
+		'display:inline; white-space:nowrap; font:14px/16px SerenitySans; color:rgb(0,0,255)')
+	mut container := BlockContainer.new(document, none, container_style)
+	container.set_children_are_inline(true)
+	mut inline_node := InlineNode.new(document, none, inline_style)
+	dom_text := document.create_text_node('This text gets an ellipsis')
+	text_node := TextNode.new(document, dom_text.as_node(), 'This text gets an ellipsis')
+	inline_node.append_child(unsafe { &Node(text_node) })
+	container.append_child(unsafe { &Node(inline_node) })
+	assign_layout_indexes(unsafe { &Node(container) })
+
+	mut state := LayoutState.new()
+	styled := unsafe { &Node(container) }.as_node_with_style() or { panic('style') }
+	mut used := state.get_mutable(styled)
+	used.set_content_width(CSSPixels.new(75))
+	run_inline_formatting_context(mut state, container, mut used, .normal, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(75)),
+		AvailableSize.make_indefinite()))
+
+	assert used.line_boxes.len == 1
+	line := used.line_boxes[0]
+	assert line.inline_length().to_double() == 75
+	assert line.fragments_.len == 2
+	text_fragment := line.fragments_[0]
+	ellipsis := line.fragments_[1]
+	text_run := text_fragment.glyph_run() or { panic('text run') }
+	assert text_run.glyphs_.len > 1
+	assert text_run.glyphs_.last().code_point != u32(0x2026)
+	assert ellipsis.is_block_ellipsis()
+	assert ellipsis.text() or { '' } == '…'
+	assert voidptr(ellipsis.style_source()) == voidptr(unsafe { &Node(container) })
+	ellipsis_run := ellipsis.glyph_run() or { panic('ellipsis run') }
+	assert ellipsis_run.font().point_size == 24
+	assert ellipsis.inline_offset() == text_fragment.inline_offset().plus(text_fragment.inline_length())
+	assert ellipsis.inline_offset().plus(ellipsis.inline_length()).raw_value() <= CSSPixels.new(75).raw_value()
+	// Both items share the line's baseline.
+	assert ellipsis.block_offset().plus(ellipsis.baseline()) == text_fragment.block_offset().plus(text_fragment.baseline())
+}
