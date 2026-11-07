@@ -136,6 +136,81 @@ fn chromium_context_chunk_scripts(chunks []TextNodeChunk) []ChromiumContextScrip
 	return scripts
 }
 
+// The UTF-8 byte offsets at which a new Blink script run begins in `text`,
+// after its first run. Common characters continue the preceding letter's run;
+// leading ones join the first letter's run.
+fn chromium_script_run_starts(text string) []int {
+	mut starts := []int{}
+	// Only text holding both Latin and Cyrillic letters can change script.
+	mut has_latin := false
+	mut has_cyrillic := false
+	for byte_ in text {
+		has_latin = has_latin || (byte_ >= `A` && byte_ <= `Z`) || (byte_ >= `a` && byte_ <= `z`)
+			|| (byte_ >= 0xc3 && byte_ <= 0xcb)
+		has_cyrillic = has_cyrillic || (byte_ >= 0xd0 && byte_ <= 0xd4)
+	}
+	if !has_latin || !has_cyrillic { return starts }
+	mut script := ChromiumContextScript.common
+	mut offset := 0
+	for character in text.runes() {
+		current := chromium_context_code_point_script(u32(character))
+		if current != .common {
+			if script != .common && current != script { starts << offset }
+			script = current
+		}
+		offset += character.length_in_bytes()
+	}
+	return starts
+}
+
+// Blink itemizes text into script runs before shaping (ScriptRunIterator). A
+// chunk mixing Latin and Cyrillic letters, such as a preserved "й VK" or an
+// unbreakable "й,VK", shapes each run apart and never kerns across their
+// boundary. Each run starts at the exact sum of the advances before it.
+fn chromium_script_itemized_shape(initial_x f32, letter_spacing f32, word_spacing f32,
+	text string, font &platform.Font, text_type platform.GlyphRunTextType) ?platform.ShapedText {
+	if font.font_rendering_policy != .chromium || text_type != .ltr || text.is_ascii() { return none }
+	starts := chromium_script_run_starts(text)
+	if starts.len == 0 { return none }
+	mut glyphs := []platform.Glyph{}
+	mut pen := f64(initial_x)
+	mut face := platform.GlyphRunFace.document
+	mut trailing := platform.TrailingWhitespace{}
+	mut previous := 0
+	for index in 0 .. starts.len + 1 {
+		end := if index < starts.len { starts[index] } else { text.len }
+		shaped := platform.shape_text_with_spacing(0, letter_spacing, word_spacing, text[previous..end],
+			font, text_type)
+		run := shaped.glyph_run
+		if index == 0 {
+			face = run.face()
+		} else if run.face() != face {
+			return none
+		}
+		for glyph in run.glyphs_ {
+			mut placed := glyph
+			placed.position.x = f32(pen + f64(glyph.position.x))
+			glyphs << placed
+		}
+		for glyph in run.glyphs_ { pen += f64(glyph.advance) }
+		trailing = shaped.trailing_whitespace
+		previous = end
+	}
+	return platform.ShapedText{
+		glyph_run:           platform.GlyphRun.new_with_face(font, text_type, glyphs, face)
+		trailing_whitespace: trailing
+	}
+}
+
+fn chromium_shape_text_for_layout(initial_x f32, letter_spacing f32, word_spacing f32, text string,
+	font &platform.Font, text_type platform.GlyphRunTextType) platform.ShapedText {
+	if shaped := chromium_script_itemized_shape(initial_x, letter_spacing, word_spacing, text, font,
+		text_type) {
+		return shaped
+	}
+	return platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
+}
+
 // A fallback symbol must not remove the kerning context of later words in
 // the primary face. Keep each compatible, contiguous font segment independent;
 // unsupported scripts, bidi paths and multi-glyph clusters still fall back.

@@ -367,3 +367,57 @@ fn test_spaces_after_cyrillic_do_not_share_a_latin_words_context() {
 	assert chromium_segmented_context_slice_with_cursor(runs, chunks[3], mut cursor) == none
 	assert chromium_segmented_context_slice_with_cursor(runs, chunks[4], mut cursor) == none
 }
+
+// 2ch.su's catalog with white-space: pre keeps "й VK" in one chunk. Blink
+// itemizes it into the script runs "й " and "VK" before shaping, so the
+// face's space-V kern never applies; one-script text still shapes whole.
+fn test_mixed_script_chunks_shape_each_blink_script_run_apart() {
+	assert chromium_script_run_starts('й VK') == [3]
+	assert chromium_script_run_starts(' VK й,') == [4]
+	assert chromium_script_run_starts('й,VKи') == [3, 5]
+	for text in ['VK', 'Что-то', '42 й', 'Wé Pay', 'й 😀 й', ''] {
+		assert chromium_script_run_starts(text) == [], text
+	}
+	times := '/System/Library/Fonts/Supplemental/Times New Roman.ttf'
+	if !os.exists(times) { return }
+	mut document := html.parse_document('<!doctype html><style>@font-face { font-family:Fixture; src:url("file://${times}") }</style><div id="text" style="font:20px Fixture;white-space:pre">й VK</div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	element := css.query_selector(document.as_node(), '#text') or { panic('element') }
+	child := element.as_node().first_child() or { panic('text') }
+	bridge := child.layout_node() or { panic('layout') }
+	node := unsafe { &Node(bridge.real_layout_handle()) }
+	text_node := node.as_text_node() or { panic('text layout') }
+	mut splitter := TextNodeChunkIterator.new_with_direction(text_node, false, true, .unidirectional_left_to_right)
+	chunk := splitter.next() or { panic('chunk') }
+	assert chunk.view == 'й VK'
+	font := chunk.font
+	assert font.font_rendering_policy == .chromium
+	// The face kerns space-V when they share a shaping run.
+	whole := platform.shape_text(0, 0, 'й VK', font, .ltr)
+	cyrillic := platform.shape_text_with_spacing(0, 0, 0, 'й ', font, .ltr).glyph_run
+	latin := platform.shape_text_with_spacing(0, 0, 0, 'VK', font, .ltr).glyph_run
+	assert platform.shape_text(0, 0, ' V', font, .ltr).width() < platform.shape_text(0, 0, ' ', font, .ltr).width()
+		+ platform.shape_text(0, 0, 'V', font, .ltr).width()
+	iterator := InlineLevelIterator{ is_unidirectional_left_to_right: true }
+	for initial_x in [f32(0), f32(7.25)] {
+		shaped := iterator.shape_text_for_layout(text_node, initial_x, 0, 0, 'й VK', font, .ltr).glyph_run
+		assert shaped.glyphs_.len == cyrillic.glyphs_.len + latin.glyphs_.len
+		mut pen := f64(initial_x)
+		for glyph in cyrillic.glyphs_ { pen += f64(glyph.advance) }
+		for index, glyph in latin.glyphs_ {
+			placed := shaped.glyphs_[cyrillic.glyphs_.len + index]
+			assert placed.glyph_index == glyph.glyph_index
+			assert placed.advance == glyph.advance
+			assert placed.position.x == f32(pen + f64(glyph.position.x))
+		}
+		assert shaped.glyphs_[0].position.x == f32(f64(initial_x) + f64(cyrillic.glyphs_[0].position.x))
+		assert shaped.width() > whole.width()
+	}
+	// Other policies and right-to-left runs keep their single shaping run.
+	libweb := &platform.Font{ ...font, font_rendering_policy: .libweb }
+	assert chromium_script_itemized_shape(0, 0, 0, 'й VK', libweb, .ltr) == none
+	assert chromium_script_itemized_shape(0, 0, 0, 'й VK', font, .rtl) == none
+	assert chromium_script_itemized_shape(0, 0, 0, 'Что-то', font, .ltr) == none
+}

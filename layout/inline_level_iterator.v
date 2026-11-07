@@ -841,7 +841,7 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 		use_document := cache_uses_entered_document_storage(text_node.Node.document())
 		mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
 		persistent := platform.enter_persistent_if(!use_document)
-		shaped := platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
+		shaped := chromium_shape_text_for_layout(initial_x, letter_spacing, word_spacing, text, font, text_type)
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
 		mutable_text_node.cached_intrinsic_text_shapes_ << IntrinsicTextShapeCacheEntry{
 			initial_x: initial_x
@@ -861,7 +861,7 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 			trailing_whitespace: shaped.trailing_whitespace
 		}
 	}
-	return platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
+	return chromium_shape_text_for_layout(initial_x, letter_spacing, word_spacing, text, font, text_type)
 }
 
 fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
