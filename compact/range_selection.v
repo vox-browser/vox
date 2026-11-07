@@ -277,6 +277,7 @@ fn compact_range_selection_bootstrap() string {
   }
   return result;
  }
+ globalThis.__compactApplyMutationRefresh=refresh;
  function AbstractRange(){throw new TypeError("Illegal AbstractRange constructor");}
  function Range(){
   if(!new.target)throw new TypeError("Range constructor requires new");
