@@ -357,6 +357,10 @@ pub fn (media &HTMLMediaElement) media_element_event_task_source() TaskSource {
 
 // Return the HTMLMediaElement state associated with a concrete <audio> or
 // <video> DOM element, materializing the translated base-class state on first use.
+// https://html.spec.whatwg.org/multipage/media.html#dom-media-muted: a media
+// element created with a muted content attribute starts muted. Parsed owners
+// are materialized after their attributes were set, so apply it here (upstream
+// leaves m_muted false; `<video autoplay muted>` then never autoplays).
 pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaElement {
 	if !element.is_html_element() { return none }
 	if element.local_name() == 'audio' {
@@ -368,6 +372,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
+			model.muted_ = element.has_attribute_ns(none, 'muted')
 			audio.media_element_model_ = model
 			if element.has_attribute_ns(none, 'controls') { model.create_controls() }
 		}
@@ -382,6 +387,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
+			model.muted_ = element.has_attribute_ns(none, 'muted')
 			video.media_element_model_ = model
 			if element.has_attribute_ns(none, 'controls') { model.create_controls() }
 		}

@@ -110,7 +110,7 @@ fn test_media_inserted_by_markup_after_load_gets_native_playback() {
 	assert player.handle != unsafe { nil }
 }
 
-// End to end: a parsed muted autoplay video decodes frames without any script.
+// End to end: a parsed muted autoplay video plays without any script.
 fn test_parsed_autoplay_video_decodes_native_frames() {
 	$if !macos {
 		return
@@ -122,8 +122,10 @@ fn test_parsed_autoplay_video_decodes_native_frames() {
 	movie := os.join_path(directory, 'movie.mp4')
 	generated := os.execute('${os.quoted_path(ffmpeg)} -v error -y -f lavfi -i testsrc2=size=64x36:rate=24:duration=2 -c:v libx264 -pix_fmt yuv420p -movflags +faststart ${os.quoted_path(movie)}')
 	assert generated.exit_code == 0, generated.output
+	// An https document has no file-origin autoplay exception: the parsed muted
+	// attribute must make the element inaudible for autoplay to be permitted.
 	mut app := &BrowserApp{
-		document: parsed_media_document('file://${directory}/page.html', '<video id="v" autoplay muted src="movie.mp4"></video>')
+		document: parsed_media_document('https://parsed-media.example.test/', '<video id="v" autoplay muted src="file://${movie}"></video>')
 	}
 	defer { app.close_media_playback() }
 	app.install_document_media_playback()
@@ -132,7 +134,7 @@ fn test_parsed_autoplay_video_decodes_native_frames() {
 		return player.frame != none && player.media.current_time() > 0.1
 	})
 	player := parsed_media_player(app, 'v')
-	assert player.media.error() == none
+	assert player.media.error() == none && player.media.muted()
 	frame := player.frame or { panic('no decoded video frame') }
 	assert frame.width == 64 && frame.height == 36
 	assert !player.media.paused()
