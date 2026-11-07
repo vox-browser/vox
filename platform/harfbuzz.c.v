@@ -729,6 +729,35 @@ fn harfbuzz_face_is_bitmap_face(face voidptr) bool {
 	return is_bitmap
 }
 
+// Blink's SimpleFontData::WidthForGlyph(): the glyph's Skia strike advance
+// alone. Skia copies the CoreText font without AAT 'trak' tracking, which text
+// shaping adds back as a HarfBuzz adjustment. Text controls size from this
+// width: SF's 'x' is 7.35px at 14px, while shaped text advances 7.19px.
+pub fn (font &Font) chromium_strike_glyph_width(code_point u32) ?f32 {
+	if font.font_rendering_policy != .chromium { return none }
+	face := document_harfbuzz_face(font) or { return none }
+	resolution := font.shaping_resolution()
+	hb_font := scaled_harfbuzz_font_with_tracking(face, font.point_size, resolution,
+		font.variations(), system_font_matching_supported(), font.tracking_size()) or { return none }
+	mut glyph := u32(0)
+	if C.hb_font_get_nominal_glyph(hb_font, code_point, &glyph) == 0 { return none }
+	// Installed variable faces, such as SF with its optical size, keep
+	// HarfBuzz's interpolated advances, as their shaping does.
+	if !harfbuzz_face_is_bitmap_face(face) && !(font.source_path == '' && font.variations().len > 0) {
+		info := C.hb_glyph_info_t{
+			codepoint: glyph
+		}
+		widths := if font.replay_face() != none {
+			skia_system_face_widths(font, &info, 1)
+		} else {
+			skia_document_face_widths(font, &info, 1)
+		}
+		if widths.len == 1 { return widths[0] }
+	}
+	// HarfBuzz's nominal advance also excludes the shaping-time tracking.
+	return f32(f64(C.hb_font_get_glyph_h_advance(hb_font, glyph)) / f64(resolution))
+}
+
 // Blink's HarfBuzz font functions also take an outline face's advances from
 // its Skia strike, truncated to 16.16 fixed point, and HarfBuzz adds its GPOS
 // adjustments at the same scale. HarfBuzz's own scaling rounds the design

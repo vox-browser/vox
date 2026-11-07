@@ -7,14 +7,21 @@ import math
 // unrounded zero advance instead. The CJK heuristic applies to every face.
 pub fn (font &Font) form_control_character_widths(coordinate_scale f64) (f32, f32) {
 	zero := font.glyph_width(u32(`0`)) / f32(coordinate_scale)
+	// FontMetrics::ZeroWidth() is the unshaped strike advance.
+	zero_strike := (font.chromium_strike_glyph_width(u32(`0`)) or { font.glyph_width(u32(`0`)) }) / f32(coordinate_scale)
 	mut average := f32(0)
 	mut maximum := f32(0)
 	mut family := font.family
 	$if macos {
 		// SimpleFontData::PlatformInit uses the 'x' advance and ascent on Mac,
 		// because Skia's OS/2 average/maximum metrics are unsuitable there.
-		average = font.glyph_width(u32(`x`))
+		// WidthForGlyph excludes AAT tracking, and AscentDescentWithHacks
+		// rounds the ascent before it becomes the maximum character width.
+		average = font.chromium_strike_glyph_width(u32(`x`)) or { font.glyph_width(u32(`x`)) }
 		maximum = font.pixel_metrics().ascent
+		if font.font_rendering_policy == .chromium {
+			maximum = f32(math.floor(f64(maximum) + 0.5))
+		}
 		if face := font.system_face() {
 			family = face.family_name
 		}
@@ -34,7 +41,7 @@ pub fn (font &Font) form_control_character_widths(coordinate_scale f64) (f32, f3
 	}
 	average /= f32(coordinate_scale)
 	maximum /= f32(coordinate_scale)
-	if average <= 0 || average > zero * 1.7 || family in [
+	if average <= 0 || average > zero_strike * 1.7 || family in [
 		'American Typewriter',
 		'Arial Hebrew',
 		'Chalkboard',

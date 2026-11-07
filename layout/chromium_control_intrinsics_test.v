@@ -64,3 +64,50 @@ fn test_chromium_textarea_intrinsic_width_rounds_after_device_projection() {
 		assert search.get_bounding_client_rect().width == 149
 	}
 }
+
+// Brave 156 on macOS sizes text fields from SimpleFontData::WidthForGlyph('x'),
+// Skia's strike advance without SF's AAT 'trak' tracking, and from the rounded
+// ascent. Shaped SF text at 14px advances 7.19px per 'x'; the field uses 7.35px.
+// GitHub's "Go to file" input (borderless, padding 1px 0) is 154px wide.
+// At 18px HarfBuzz interpolates SF's optical size 0.002px wider than CoreText,
+// so only one column is compared there.
+fn test_chromium_system_font_text_fields_use_untracked_advance_and_rounded_ascent() {
+	$if !macos {
+		return
+	}
+	mut sizes := []string{}
+	for size in [10, 12, 13, 14, 16, 18, 20, 24, 28] {
+		sizes << '<input id="s${size}-1" size="1" style="font-size:${size}px"><input id="s${size}-201" size="201" style="font-size:${size}px">'
+	}
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0;font-family:system-ui}
+		input{display:block;margin:0;padding:0;border:0;font-family:system-ui}
+		#github{font:14px/20px "Mona Sans VF",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;padding:1px 0;appearance:none}
+	</style>' + sizes.join('') + '<input id="github">')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	run_document_layout(document, 2400, 768) or { panic('layout') }
+	for id, width in {
+		's10-1':   10.0
+		's10-201': 1059.0
+		's12-1':   12.0
+		's12-201': 1271.0
+		's13-1':   13.0
+		's13-201': 1413.0
+		's14-1':   14.0
+		's14-201': 1483.0
+		's16-1':   15.0
+		's16-201': 1694.0
+		's18-1':   17.0
+		's20-1':   19.0
+		's20-201': 2064.0
+		's24-1':   23.0
+		's24-201': 2320.0
+		's28-1':   27.0
+		's28-201': 2650.0
+		'github':  154.0
+	} {
+		element := document.get_element_by_id(id) or { panic(id) }
+		assert element.get_bounding_client_rect().width == width, '${id}: ${element.get_bounding_client_rect().width}'
+	}
+}
