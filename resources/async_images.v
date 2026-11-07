@@ -15,6 +15,10 @@ const max_browser_image_fetches = 8
 // without decoded pixels, with their transport error, so a broken image in a
 // capture can be traced to its request.
 const trace_image_failures = os.getenv('VOX_TRACE_IMAGE_FAILURES') != ''
+// Same-binary control: leave synchronous disk-cache responses out of the
+// shell's response cache, as before. Native replay then refetches JPEG/WebP
+// pixels and repaints the whole document when they arrive.
+const disable_image_disk_cache_retention = os.getenv('VOX_DISABLE_IMAGE_DISK_CACHE_RETENTION') != ''
 
 fn trace_image_failure(url string, reason string) {
 	if trace_image_failures { eprintln('Vox image request failed: ${url} ${reason}') }
@@ -46,6 +50,9 @@ mut:
 	lazy_image_queue_revision u64
 	lazy_image_probe DeferredLazyImageProbe
 	lazy_image_probe_offsets []painting.Point
+	// Responses read synchronously from the disk cache, retained by the shell
+	// on its next poll exactly like asynchronous completions.
+	disk_cache_responses []PreloadedResource
 }
 
 fn new_browser_image_request_loader(document &dom.Document, resources map[string]PreloadedResource) &BrowserImageRequestLoader {
@@ -84,6 +91,7 @@ fn (mut loader BrowserImageRequestLoader) cancel() {
 	}
 	loader.pending = map[string][]html.HTMLImageFetchCompletion{}
 	loader.resources = map[string]PreloadedResource{}
+	loader.disk_cache_responses = []PreloadedResource{}
 }
 
 // The loader owns each completion, a closure the image model made for one
@@ -213,6 +221,14 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 	// Available pixels keep their natural size in the very first layout.
 	if resource := disk_cached_browser_resource(resource_url, source_url, 'image') {
 		decoded := browser_decoded_resource_image(address, resource) or { finish_browser_image_request(complete, none); return }
+		// JPEG, WebP and color-managed PNG pixels replay from the response bytes
+		// rather than the decoded model. Without the response the first replay
+		// requests this image again and repaints the whole document on arrival.
+		if !disable_image_disk_cache_retention {
+			persistent := platform.enter_persistent()
+			loader.disk_cache_responses << persistent_preloaded_resource(resource)
+			platform.leave_persistent(persistent)
+		}
 		finish_browser_image_request(complete, decoded)
 		return
 	}
@@ -221,9 +237,34 @@ fn (mut loader BrowserImageRequestLoader) request_now(image &dom.HTMLImageElemen
 	loader.start_queued_fetches()
 }
 
+// The loader can run inside a document or frame arena. A response it keeps for
+// the shell's cache must outlive that scope; call inside a persistent entry.
+fn persistent_preloaded_resource(resource PreloadedResource) PreloadedResource {
+	mut headers := []adblock.ResponseHeader{cap: resource.response_headers.len}
+	for header in resource.response_headers {
+		headers << adblock.ResponseHeader{name: header.name.clone(), value: header.value.clone()}
+	}
+	return PreloadedResource{
+		...resource
+		url: resource.url.clone()
+		body: resource.body.clone()
+		error: resource.error.clone()
+		source_url: resource.source_url.clone()
+		final_url: resource.final_url.clone()
+		request_type: resource.request_type.clone()
+		response_headers: headers
+	}
+}
+
 fn (mut app BrowserApp) poll_browser_image_requests() {
 	mut loader := app.image_request_loader or { return }
 	if voidptr(loader.document) != voidptr(app.document) { return }
+	if loader.disk_cache_responses.len > 0 {
+		persistent := platform.enter_persistent()
+		for resource in loader.disk_cache_responses { app.retain_navigation_resource(resource.url, resource) }
+		loader.disk_cache_responses = []PreloadedResource{}
+		platform.leave_persistent(persistent)
+	}
 	mut completed := false
 	// Selecting builds temporary channel lists even when no response is ready.
 	// Producers buffer completions; a later frame polls anything arriving now.

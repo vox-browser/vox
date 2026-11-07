@@ -1,8 +1,10 @@
 module main
 
+import adblock
 import encoding.base64
 import html
 import net
+import os
 import page
 import time
 
@@ -91,6 +93,42 @@ fn test_cached_image_keeps_its_natural_dimensions_in_the_first_layout() {
 	assert app.js_runtime.evaluate_host('initialWidth===1&&thumbnail.complete')! == 'true'
 	assert app.document.get_element_by_id('thumbnail')?.get_bounding_client_rect().width == 1
 	assert !app.document.anything_is_delaying_the_load_event()
+}
+
+// JPEG and WebP replay decodes the response bytes, not the image model. A
+// synchronous disk-cache hit must leave them where replay looks, or the first
+// frame requests the image again and repaints the document when it arrives.
+fn test_static_disk_cached_image_response_reaches_the_replay_cache_before_paint() {
+	previous_cache := os.getenv_opt('LADYBIRD_CACHE_DIR')
+	cache := os.join_path(os.temp_dir(), 'vox-disk-image-retention-${os.getpid()}-${time.sys_mono_now()}')
+	os.setenv('LADYBIRD_CACHE_DIR', cache, true)
+	defer {
+		if value := previous_cache { os.setenv('LADYBIRD_CACHE_DIR', value, true) }
+		else { os.unsetenv('LADYBIRD_CACHE_DIR') }
+		os.rmdir_all(cache) or {}
+	}
+	resource_url := 'https://async-native-image.test/thumb.png?width=140&s=1'
+	pixels := base64.decode(async_browser_image_png).bytestr()
+	cache_resource_response_headers_with_status(resource_url, resource_url, pixels,
+		[adblock.ResponseHeader{name: 'content-type', value: 'image/png'}], 200)
+	owner := page.Page.create(1)!
+	mut app := &BrowserApp{page_model: owner, script_policy: .disabled, viewport_width: 320, viewport_height: 200}
+	app.install_loaded_page(LoadedPage{
+		url: 'https://async-native-image.test/listing'
+		markup: '<!doctype html><img id="thumb" src="/thumb.png?width=140&amp;s=1" width="1" height="1">'
+		content_type: 'text/html'
+	}, false)
+	defer { app.document.finalize() }
+	assert app.js_runtime == unsafe { nil }
+	loader := app.image_request_loader or { panic('missing native image loader') }
+	// The disk cache answered the request synchronously; nothing is in flight.
+	assert loader.pending.len == 0 && loader.queued.len == 0
+	assert app.document.get_element_by_id('thumb')?.get_bounding_client_rect().width == 1
+	app.poll_browser_image_requests()
+	retained := app.resource_cache[resource_url] or { panic('disk-cached image response was not retained') }
+	assert retained.body == pixels && retained.error == '' && retained.request_type == 'image'
+	assert loader.disk_cache_responses.len == 0
+	assert app.background_resource_pending.len == 0
 }
 
 fn test_superseded_native_image_completion_cannot_mutate_replacement_document() {
