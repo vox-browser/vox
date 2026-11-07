@@ -23,6 +23,8 @@ fn C.native_invalidate_video_backdrop(x f64, y f64, width f64, height f64)
 // Same-binary control: repaint everything beneath a video for each new frame.
 const disable_video_backdrops = os.getenv('VOX_DISABLE_VIDEO_BACKDROPS') != ''
 const bound_pointwise_filter_outputs = os.getenv('VOX_BOUND_POINTWISE_FILTER_OUTPUTS') != ''
+// Same-binary control: repaint the complete viewport on every zoomed frame.
+const disable_zoomed_scroll_raster = os.getenv('VOX_DISABLE_ZOOMED_SCROLL_RASTER') != ''
 
 fn C.native_bound_pointwise_filter_output(f64, f64, f64, f64)
 
@@ -85,13 +87,23 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 	$if macos {
 		C.native_scroll_tile_compositor_enabled(i32(!browsersettings.current().disable_gpu_canvas))
 		viewport := app.document.viewport_rect()
+		// Page zoom projects the CSS-pixel commands at replay. Keys, content
+		// damage and the skip plan stay in CSS pixels, exactly as without
+		// zoom; only the rectangles handed to the native ring are scaled.
+		zoom := app.page_zoom
+		css := scroll_raster_css_space(app.scroll_y, damage.width, damage.height, zoom)
+		// Keys remove the scroll translation the commands were recorded with,
+		// including its f32 rounding under zoom.
+		key_scroll := layout.scroll_raster_recorded_viewport_scroll(app.document)
 		// Shared SVG pictures finish after the font layer; their deferred
 		// pixels must not be captured before that layer has been published.
-		eligible := app.page_zoom == 1 && !app.paint_canvas_culling_disabled
-			&& viewport.x == 0 && viewport.y == app.scroll_y
-			&& !chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)
+		// Zoomed frames never use the shared recording.
+		eligible := zoom > 0 && (zoom == 1 || !disable_zoomed_scroll_raster)
+			&& !app.paint_canvas_culling_disabled
+			&& viewport.x == 0 && viewport.y == css.scroll
+			&& !(zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan))
 			&& layout.viewport_scroll_raster_reusable(app.document, app.paint_commands,
-				damage.width, damage.height)
+				css.width, css.height)
 		inline_scrollbars := eligible && C.native_gpu_tile_compositor_enabled() != 0
 		damage.separate_scrollbars = eligible && !inline_scrollbars
 		damage.scrollbar_start = scroll_raster_scrollbar_start(app.paint_commands)
@@ -115,13 +127,13 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		mut allow_reuse := 0
 		mut stats := ScrollRasterDiffStats{}
 		if ring_eligible {
-			keys = scroll_raster_frame_keys_with_scrollbars(app.paint_commands, app.scroll_y,
-				app.overlay_scrollbars.paint_opacity, damage.width, damage.height, inline_scrollbars)
+			keys = scroll_raster_frame_keys_with_scrollbars(app.paint_commands, key_scroll,
+				app.overlay_scrollbars.paint_opacity, css.width, css.height, inline_scrollbars)
 			app.mark_video_backdrop_keys(mut keys)
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'
 			} else if content := scroll_raster_content_damage(&app.scroll_raster_keys, keys,
-				document_id, app.scroll_y, damage.width, damage.height, mut stats)
+				document_id, key_scroll, css.width, css.height, mut stats)
 			{
 				rects = content.clone()
 				allow_reuse = 1
@@ -138,7 +150,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		}
 		mut clipped := rects.clone()
 		for restore in damage.restores { clipped << restore.rect }
-		flat := scroll_raster_flatten_rects(clipped)
+		flat := scroll_raster_flatten_rects(scroll_raster_view_rects(clipped, zoom))
 		flat_data := if flat.len > 0 { unsafe { &f64(flat.data) } } else { unsafe { &f64(nil) } }
 		// The draw loop immediately clears reused damage to opaque white before
 		// replay, so retained pixels wholly inside it need not be restored.
@@ -146,6 +158,11 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			app.page_top(), damage.width, damage.height, int(ring_eligible), &damage.delta, flat_data,
 			clipped.len, allow_reuse, i32(1)) != 0
 		if damage.reused {
+			// The ring shifts by whole view pixels; the replay decisions below
+			// read CSS-pixel commands.
+			damage.delta /= zoom
+			damage.width = css.width
+			damage.height = css.height
 			damage.rects = clipped
 			mut region := scroll_raster_strip_region(damage.delta, damage.width, damage.height)
 			region << rects
@@ -154,7 +171,8 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			// Leaf rasters crop to the clip rectangles they intersect rather
 			// than to the bounding box Quartz reports for all of them.
 			for restore in damage.restores { region << restore.rect }
-			canvas_rects := scroll_raster_canvas_rects(region, app.page_top())
+			canvas_rects := scroll_raster_canvas_rects(scroll_raster_view_rects(region, zoom),
+				app.page_top())
 			C.native_set_scroll_damage_rects(unsafe { &f32(canvas_rects.data) }, i32(region.len))
 		} else {
 			damage.restores = []ScrollRasterVideoRestore{}
@@ -181,9 +199,9 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 				valid:    true
 				document: document_id
 				paint_generation: app.paint_generation
-				scroll:   app.scroll_y
-				width:    damage.width
-				height:   damage.height
+				scroll:   key_scroll
+				width:    css.width
+				height:   css.height
 				keys:     keys
 			}
 		} else {
@@ -192,6 +210,44 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		}
 	}
 	return damage
+}
+
+// The viewport scroll and size in the CSS pixels of the recorded commands.
+struct ScrollRasterCssSpace {
+	scroll f64
+	width  f64
+	height f64
+}
+
+// The document viewport origin is the view scroll divided by the zoom, so the
+// same division yields an exactly equal CSS scroll offset. Without zoom the
+// values pass through unchanged.
+fn scroll_raster_css_space(scroll f64, width f64, height f64, zoom f64) ScrollRasterCssSpace {
+	if zoom == 1 || !(zoom > 0) { return ScrollRasterCssSpace{scroll, width, height} }
+	return ScrollRasterCssSpace{scroll / zoom, width / zoom, height / zoom}
+}
+
+// CSS-pixel viewport rectangles as view-pixel rectangles for the native ring,
+// widened to whole view pixels: GPU tiles accept only device-aligned damage,
+// and widening keeps every partly covered pixel inside the repainted area.
+fn scroll_raster_view_rects(rects []layout.LayoutRect, zoom f64) []layout.LayoutRect {
+	if zoom == 1 { return rects }
+	mut scaled := []layout.LayoutRect{cap: rects.len}
+	for rect in rects {
+		scaled << scroll_raster_snap_rect(layout.LayoutRect{rect.x * zoom, rect.y * zoom,
+			rect.width * zoom, rect.height * zoom})
+	}
+	return scaled
+}
+
+// Whether this frame may draw its repainted area on the GPU canvas. A zoomed
+// layout puts most rectangle edges on fractional device pixels, which the
+// canvas declines; each decline reads the canvas back and the next GPU leaf
+// uploads it again. Within a reused frame that traffic is limited to the
+// exposed strip, but a complete zoomed repaint would move the entire viewport
+// several times, so it rasterizes directly instead.
+fn (damage &ScrollRasterDamage) gpu_canvas_permitted(zoom f64) bool {
+	return zoom == 1 || damage.reused
 }
 
 fn (damage &ScrollRasterDamage) skips(command &layout.PaintCommand) bool {
@@ -233,7 +289,9 @@ fn (damage &ScrollRasterDamage) skips_index(commands []layout.PaintCommand, inde
 // every effect group, its raster layer draws immediately, and nothing later
 // in paint order touches its damage rectangle.
 fn (app &BrowserApp) mark_video_backdrop_keys(mut keys []ScrollRasterCommandKey) {
-	if disable_video_backdrops || keys.len != app.paint_commands.len { return }
+	// Backdrops are captured in view pixels from projected commands; zoomed
+	// frames repaint a changed video frame as ordinary damage instead.
+	if disable_video_backdrops || app.page_zoom != 1 || keys.len != app.paint_commands.len { return }
 	mut depth := 0
 	for index in 0 .. app.paint_commands.len {
 		command := unsafe { &app.paint_commands[index] }
@@ -356,18 +414,26 @@ fn (mut app BrowserApp) draw_scroll_raster_scrollbars(page_y f32, window_height 
 	} else {
 		scroll_raster_scrollbar_start(app.paint_commands)
 	}
+	// The document replay projected the bars by the page zoom; draw them at
+	// the same place and size.
+	mut indices := []int{}
+	mut commands := []layout.PaintCommand{}
+	for index in start .. app.paint_commands.len {
+		if app.paint_commands[index].scrollbar_axis == '' { continue }
+		indices << index
+		commands << app.zoomed_paint_command(app.paint_commands[index])
+	}
 	mut gpu_overlay := false
 	$if macos {
 		if app.ctx.native_rendering && gpu_scrollbar_batch_enabled {
-			gpu_overlay = gpu_canvas_overlay_begin(scrollbar_gpu_damage_rects(app.paint_commands, start, page_y))
+			gpu_overlay = gpu_canvas_overlay_begin(scrollbar_gpu_damage_rects(commands, 0, page_y))
 		}
 	}
 	defer {
 		$if macos { if gpu_overlay { C.native_gpu_canvas_end() } }
 	}
-	for index in start .. app.paint_commands.len {
-		command := app.paint_commands[index]
-		if command.scrollbar_axis == '' { continue }
+	for position, command in commands {
+		index := indices[position]
 		if index < app.chromium_raster_plan.command_layers.len {
 			app.select_chromium_raster_layer(app.chromium_raster_plan.command_layers[index])
 		}

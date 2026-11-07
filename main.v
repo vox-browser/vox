@@ -7656,7 +7656,8 @@ fn (mut app BrowserApp) draw() {
 			mut gpu_canvas := false
 			$if macos {
 				if app.ctx.native_rendering
-					&& !browsersettings.current().disable_gpu_canvas {
+					&& !browsersettings.current().disable_gpu_canvas
+					&& scroll_damage.gpu_canvas_permitted(app.page_zoom) {
 					gpu_canvas = C.native_gpu_canvas_begin() != 0
 				}
 			}

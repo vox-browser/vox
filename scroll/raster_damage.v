@@ -116,7 +116,10 @@ fn srk_mix(h u64, v u64) u64 {
 fn srk_f64(h u64, v f64) u64 {
 	if math.is_nan(v) { return srk_mix(h, u64(0xfffffffffffffff1)) }
 	if math.is_inf(v, 0) { return srk_mix(h, if v > 0 { u64(0xfffffffffffffff2) } else { u64(0xfffffffffffffff3) }) }
-	return srk_mix(h, math.f64_bits(math.round(v * 1024.0)))
+	// Quantization rounds tiny negative values to -0, which paints exactly like
+	// +0 but has other bits; hash both zeros alike.
+	bits := math.f64_bits(math.round(v * 1024.0))
+	return srk_mix(h, if bits == u64(0x8000000000000000) { u64(0) } else { bits })
 }
 
 @[inline]

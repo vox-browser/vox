@@ -317,3 +317,18 @@ pub fn scroll_raster_map_rect(transform [6]f64, rect LayoutRect) LayoutRect {
 pub fn scroll_raster_normalized_transform(transform [6]f64) [6]f64 {
 	return normalized_affine(transform)
 }
+
+// The viewport scroll offset in CSS pixels exactly as recorded commands apply
+// it. The scroll state snapshot stores each frame's layout-space offset in f32,
+// as upstream's Gfx float vectors do. An unzoomed viewport scrolls by whole
+// device pixels, which f32 represents exactly. Page zoom scrolls by fractional
+// CSS pixels, and their recorded translation keeps an f32 rounding. Retained
+// raster keys remove the scroll translation from each command; removing the
+// unrounded offset instead would leave a residue that changes every frame.
+pub fn scroll_raster_recorded_viewport_scroll(document &dom.Document) f64 {
+	scale := document.layout_coordinate_scale()
+	// viewport_rederive_scroll_state() negates the live layout-space offset
+	// and ScrollStateSnapshot.create() rounds it through f32 at scale 1.
+	recorded := f64(f32(-document.layout_viewport_rect().y) * f32(1.0))
+	return -recorded / scale
+}
