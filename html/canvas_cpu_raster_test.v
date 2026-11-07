@@ -819,3 +819,82 @@ fn test_color_filtered_canvas_draws_match_skia() {
 	}
 	assert expected.any(it != 0 && it != 255)
 }
+
+// A lone blur() draws through cpuraster's image filter layer: a scaled
+// fill, a stroke and text must match Skia with the same filter.
+fn test_blur_filtered_canvas_draws_match_skia() {
+	mut context := cpu_raster_test_context()
+	context.set_font('21px sans-serif')
+	filters := ['blur(3px)', 'blur(1.2px)', 'blur(6px)']
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, filter in filters {
+		context.set_filter(filter)
+		context.drawing_state.fill_style = FillOrStrokeStyle.from_color(dom.Color{
+			r: 200 - u8(i * 60)
+			g: 60 + u8(i * 50)
+			b: 120
+			a: 220
+		})
+		context.drawing_state.stroke_style = context.drawing_state.fill_style
+		context.drawing_state.transform = CanvasAffineTransform{1.2, 0, 0, 0.9, 4, 2}
+		context.drawing_state.line_width = 5
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		state := context.drawing_state
+		skia_filters := context.canvas_skia_filters()
+		assert skia_filters.len == 1
+		if i == 2 {
+			text := 'Blurred text'
+			run := canvas_text_run_for_canvas_state(&context.CanvasState, text, 0)
+			translation := canvas_text_transform(context.drawing_state, run.font(), f64(run.width()),
+				none).map(FloatPoint{30.5, 110.25})
+			command := skia.Command{
+				style:        canvas_skia_style(state.fill_style.to_gfx_paint_style())
+				transform:    canvas_skia_transform(state.transform)
+				global_alpha: f32(state.global_alpha)
+				filters:      skia_filters
+			}
+			glyphs := skia.GlyphRun{
+				font_path:   run.font().font_path() or { panic('missing font path') }
+				face_index:  run.font().face_index()
+				font_size:   run.font().point_size
+				glyphs:      run.glyph_indices()
+				positions:   run.glyph_positions().map(f32(it))
+				translation: [f32(translation.x), f32(translation.y)]!
+			}
+			assert skia.draw_glyph_run(mut pixels, bitmap.width, bitmap.height, bitmap.pitch,
+				alpha_type, command, glyphs)
+			expected = pixels.clone()
+			context.fill_text(text, 30.5, 110.25, none)
+		} else {
+			stroke := i == 1
+			cpu_raster_test_path(mut context, i)
+			command := skia.Command{
+				path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
+				style:        canvas_skia_style(state.fill_style.to_gfx_paint_style())
+				transform:    canvas_skia_transform(state.transform)
+				stroke:       stroke
+				cap:          int(state.line_cap)
+				join:         int(state.line_join)
+				width:        f32(state.line_width)
+				miter:        f32(state.miter_limit)
+				global_alpha: f32(state.global_alpha)
+				filters:      skia_filters
+			}
+			assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+				command)
+			expected = pixels.clone()
+			if stroke {
+				context.stroke()
+			} else {
+				context.fill('nonzero')
+			}
+		}
+		expected_alpha_type = 2
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'blurred draw ${i} differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}

@@ -93,10 +93,11 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	// any composite operation, including the runtime-effect plus-darker and
 	// plus-lighter blenders. A blurred shadow takes Skia's blur mask filter,
 	// which replaces the canvas filters; filter lists of color matrices
-	// become the paint's color filter, and other filtered draws stay on Skia.
+	// become the paint's color filter, a lone blur() draws through Skia's
+	// image filter layer, and other filtered draws stay on Skia.
 	solid := native_style.kind == 0
-	color_only, color_filter := canvas_cpu_color_filter(filters)
-	if native_style.kind <= 4 && ((solid && f32(blur) > 0) || color_only) {
+	supported, color_filter := canvas_cpu_filter(filters)
+	if native_style.kind <= 4 && ((solid && f32(blur) > 0) || supported) {
 		cpu_style := canvas_cpu_style(native_style)
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_path := cpuraster.canvas_path(native_path.segments, native_path.even_odd)
@@ -143,22 +144,36 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	mutable_bitmap.native_rows_are_top_down = true
 }
 
-// canvas_cpu_color_filter reports whether make_filter() reduces the filters
-// to color matrices: kinds 2 and 4 (opacity, outside Chromium's table)
-// with their clamp flags, composed in order. The filter is none for an
-// empty list or when every matrix is dropped as non-finite.
-fn canvas_cpu_color_filter(filters []skia.Filter) (bool, ?cpuraster.ColorFilter) {
-	mut matrices := []cpuraster.MatrixColorFilter{}
+// canvas_cpu_filter reports whether cpuraster can take the filter list:
+// blurs (kind 0) and color matrices (kind 2, and opacity's kind 4 outside
+// Chromium's table) with their clamp flags, in order. The filter is none
+// for an empty list. cpuraster itself declines the lists and draws it
+// does not reproduce yet.
+fn canvas_cpu_filter(filters []skia.Filter) (bool, ?cpuraster.CanvasFilter) {
+	mut steps := []cpuraster.CanvasFilterStep{}
 	for filter in filters {
-		if filter.kind != 2 && filter.kind != 4 {
-			return false, none
-		}
-		matrices << cpuraster.MatrixColorFilter{
-			matrix: filter.matrix
-			clamp:  filter.clamp
+		match filter.kind {
+			0 {
+				steps << cpuraster.CanvasFilterStep{
+					kind:  .blur
+					sigma: filter.radius
+				}
+			}
+			2, 4 {
+				steps << cpuraster.CanvasFilterStep{
+					kind:   .matrix
+					matrix: cpuraster.MatrixColorFilter{
+						matrix: filter.matrix
+						clamp:  filter.clamp
+					}
+				}
+			}
+			else {
+				return false, none
+			}
 		}
 	}
-	return true, cpuraster.new_color_filter(matrices)
+	return true, cpuraster.new_canvas_filter(steps)
 }
 
 // The cpuraster style for a native style of kind 0 to 4: none for the solid
@@ -241,10 +256,10 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 	// blit with the paint inside the anti-aliased clip. Glyphs over 256
 	// pixels per em fill their 64-point outlines instead, and color glyphs
 	// are CoreText's premultiplied images drawn as sprites. Filter lists of
-	// color matrices become the paint's color filter; other filtered draws
-	// stay on Skia.
-	color_only, color_filter := canvas_cpu_color_filter(filters)
-	if native_style.kind <= 4 && color_only {
+	// color matrices become the paint's color filter and a lone blur() draws
+	// through an image filter layer; other filtered draws stay on Skia.
+	supported, color_filter := canvas_cpu_filter(filters)
+	if native_style.kind <= 4 && supported {
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_run := cpuraster.CanvasGlyphRun{
 				font_path:   glyphs.font_path
