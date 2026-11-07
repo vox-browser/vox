@@ -98,7 +98,7 @@ fn chromium_assign_scroll_backgrounds(result &DocumentLayoutResult, commands []P
 	for layer_index, state in scratch.layer_states {
 		if state.scroll_frame <= 0 || state.legacy_effect { continue }
 		for command_index, command in commands {
-			if command.kind != 'fill_rect' || command.paint_phase != .background
+			if command.kind !in ['fill_rect', 'fill_rounded_rect'] || command.paint_phase != .background
 				|| command.opacity != 1 || command.group_opacity != 1
 				|| command.paint_box_index < 0 || command.paint_box_index >= result.paint_order.len {
 				continue
@@ -107,7 +107,6 @@ fn chromium_assign_scroll_backgrounds(result &DocumentLayoutResult, commands []P
 			if box.own_scroll_frame_index != state.scroll_frame { continue }
 			decoration := box.decorations()
 			if decoration.background_images.len > 0 || decoration.background_gradient != none
-				|| decoration.border_radius != 0 || !box_radii_are_zero(decoration.border_radii)
 				|| decoration.background_color_clip !in ['border-box', 'padding-box']
 				|| decoration.shadows.any(it.inset) {
 				continue
@@ -121,7 +120,13 @@ fn chromium_assign_scroll_backgrounds(result &DocumentLayoutResult, commands []P
 				&& command.srgb_color_data.components[3] != 1 {
 				continue
 			}
-			plan.layers[layer_index].scroll_background_command = command_index
+			plan.layers[layer_index].over_opaque_scroll_background = true
+			// Rounded backgrounds stay in the parent: painting them again in
+			// the contents picture would blend their antialiased corners twice.
+			if command.kind == 'fill_rect' && command.radius == 0
+				&& decoration.border_radius == 0 && box_radii_are_zero(decoration.border_radii) {
+				plan.layers[layer_index].scroll_background_command = command_index
+			}
 			break
 		}
 	}

@@ -67,7 +67,13 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int, command_inde
 		// retain the native parent's prefix in its GPU picture.
 		opaque_effect := recorded && chromium_compositor_opaque_effect_resume(app.paint_commands,
 			app.chromium_raster_plan, index, command_index)
-		resume := opaque_effect || (recorded && chromium_compositor_opaque_mask_resume(app.paint_commands,
+		// Glyphs over the scroller's own opaque background blend against the
+		// parent's already painted pixels, as in Blink's contents-space
+		// background, instead of through a transparent raster.
+		over_background := recorded && app.chromium_raster_plan.layers[index].over_opaque_scroll_background
+			&& chromium_text_scroll_layer_supported(app.paint_commands, app.chromium_raster_plan, index)
+		resume := opaque_effect || over_background || (recorded
+			&& chromium_compositor_opaque_mask_resume(app.paint_commands,
 			app.chromium_raster_plan, index, command_index))
 		C.native_set_chromium_opaque_layer_continuation(i32(resume))
 		C.native_set_chromium_layer_shared_recording(i32(resume))

@@ -170,6 +170,10 @@ fn test_scroll_background_duplication_rejects_images_transparency_and_inset_shad
 			LayoutRect{0, 0, 400, 300}, mut plan)
 		assert plan.layers.any(it.scroll_contents)
 		assert plan.layers.any(it.scroll_background_command >= 0) == (style == 'background:#123')
+		// Blink paints opaque solid scroller backgrounds, rounded or not, in
+		// contents space; the contents text then blends over them once.
+		assert plan.layers.any(it.over_opaque_scroll_background) == (style in ['background:#123',
+			'background:#123;border-radius:5px'])
 		update_chromium_raster_layer_plan(document, commands, 1, mut plan)
 		assert plan.layers.all(it.scroll_background_command == -1)
 	}

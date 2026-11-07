@@ -29,6 +29,10 @@ pub mut:
 	// An opaque, flat scrolling background also paints inside the contents
 	// picture. Its ordinary border-box paint remains in the parent layer.
 	scroll_background_command int = -1
+	// The scroller's own background is an opaque solid color, possibly
+	// rounded. Blink paints it in scrolling contents space, so its text
+	// blends once over that color rather than through a transparent raster.
+	over_opaque_scroll_background bool
 mut:
 	recorded_bounds LayoutRect
 	fixed_bounds_extended bool
@@ -177,6 +181,7 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 		plan.layer_storage[index].composited_contents = false
 		plan.layer_storage[index].picture_local_rounded_clip = false
 		plan.layer_storage[index].scroll_background_command = -1
+		plan.layer_storage[index].over_opaque_scroll_background = false
 		plan.layer_storage[index].unbounded_sticky_overlap = false
 		plan.layer_storage[index].unbounded_transform_overlap = false
 		plan.layer_storage[index].command_indices.clear()
