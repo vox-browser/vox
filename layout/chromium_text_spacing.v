@@ -23,6 +23,7 @@ fn resolved_text_spacing_for_shaping(node &Node, property_id css.PropertyID) f64
 	context.font_metrics.x_height_unrounded = f64(metrics.x_height)
 	context.font_metrics.cap_height = CSSPixels.nearest_value_for(font_size * .75)
 	context.font_metrics.zero_advance = CSSPixels.nearest_value_for(f64(metrics.advance_of_ascii_zero))
+	context.font_metrics.zero_advance_unrounded = f64(metrics.advance_of_ascii_zero)
 	context.font_metrics.line_height = computed.line_height()
 	return length.to_px_without_rounding(context)
 }

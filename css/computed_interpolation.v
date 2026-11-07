@@ -13196,6 +13196,7 @@ fn computed_interpolation_font_metrics_for_style(computed_properties &ComputedPr
 		x_height_unrounded: if font.font_rendering_policy == .chromium { ?f64(metrics.x_height) } else { none }
 		cap_height: CSSPixels.nearest_value_for(f64(metrics.ascent))
 		zero_advance: CSSPixels.nearest_value_for(f64(metrics.advance_of_ascii_zero))
+		zero_advance_unrounded: if font.font_rendering_policy == .chromium { ?f64(metrics.advance_of_ascii_zero) } else { none }
 		line_height: computed_properties.line_height()
 	}
 }

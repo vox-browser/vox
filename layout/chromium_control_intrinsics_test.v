@@ -111,3 +111,29 @@ fn test_chromium_system_font_text_fields_use_untracked_advance_and_rounded_ascen
 		assert element.get_bounding_client_rect().width == width, '${id}: ${element.get_bounding_client_rect().width}'
 	}
 }
+
+// Blink's ch is FontMetrics::ZeroWidth(), the zero glyph's untracked strike
+// advance, multiplied as a float before LayoutUnit truncation. Brave 156 sizes
+// 100ch in SF at 14px to 881.828125px; shaped SF text advances only 8.668px.
+fn test_chromium_ch_lengths_use_the_untracked_float_zero_advance() {
+	$if !macos {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}div{height:4px;width:100ch}</style>
+		<div id="c14" style="font:14px system-ui"></div><div id="c16" style="font:16px system-ui"></div>
+		<div id="c12" style="font:12px system-ui"></div><div id="a14" style="font:14px Arial"></div>
+		<div id="h14" style="font:14px Helvetica"></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	run_document_layout(document, 1600, 300) or { panic('layout') }
+	for id, width in {
+		'c14': 881.828125
+		'c16': 1007.8125
+		'c12': 755.859375
+		'a14': 778.609375
+		'h14': 778.609375
+	} {
+		element := document.get_element_by_id(id) or { panic(id) }
+		assert element.get_bounding_client_rect().width == width, '${id}: ${element.get_bounding_client_rect().width}'
+	}
+}

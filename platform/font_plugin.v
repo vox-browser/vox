@@ -257,8 +257,9 @@ fn (font &Font) system_face_pixel_metrics(face SystemFontFace) FontPixelMetrics 
 		size:                  font.point_size
 		x_height:              f32(face.metrics.x_height)
 		cap_height:            f32(face.metrics.cap_height)
-		// Blink's `ch` is the unrounded advance of the zero glyph.
-		advance_of_ascii_zero: font.glyph_width(u32(`0`))
+		// Blink's `ch` is the unrounded advance of the zero glyph,
+		// SimpleFontData::ZeroInlineSize(), without the tracking shaping adds.
+		advance_of_ascii_zero: font.chromium_strike_glyph_width(u32(`0`)) or { font.glyph_width(u32(`0`)) }
 		ascent:                f32(face.metrics.ascent)
 		descent:               f32(face.metrics.descent)
 		line_gap:              f32(face.metrics.leading)

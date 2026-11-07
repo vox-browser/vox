@@ -2126,6 +2126,9 @@ pub mut:
 	x_height_unrounded ?f64
 	cap_height   CSSPixels
 	zero_advance CSSPixels
+	// Blink's ch is the float advance of the zero glyph, multiplied before
+	// conversion into LayoutUnit geometry.
+	zero_advance_unrounded ?f64
 	line_height  CSSPixels
 }
 
@@ -2383,8 +2386,8 @@ pub fn ratio_between_font_relative_unit_and_px(unit LengthUnit, font_metrics Len
 		.rex { root_font_metrics.x_height_unrounded or { root_font_metrics.x_height.to_double() } }
 		.cap { font_metrics.cap_height.to_double() }
 		.rcap { root_font_metrics.cap_height.to_double() }
-		.ch { font_metrics.zero_advance.to_double() }
-		.rch { root_font_metrics.zero_advance.to_double() }
+		.ch { font_metrics.zero_advance_unrounded or { font_metrics.zero_advance.to_double() } }
+		.rch { root_font_metrics.zero_advance_unrounded or { root_font_metrics.zero_advance.to_double() } }
 		.ic {
 			// FIXME: Use the advance measure of the CJK water ideograph, U+6C34.
 			font_metrics.font_size.to_double()
