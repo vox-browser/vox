@@ -1388,6 +1388,10 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'imageblur' {
+		check_image_blur_cases(count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -2916,4 +2920,81 @@ fn check_color_filter_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('color-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
+}
+
+type OracleImageBlur = fn (pixels &u8, values &i32, floats &f32, out &u8, info &i32)
+
+// Image filter blurs through SkImages::MakeWithFilter(): random
+// premultiplied images, subsets and clips (inside, overlapping and
+// disjoint), and sigmas from effectively zero through the Gaussian pass
+// and the three-box pass up to the raster algorithm's 135.
+fn check_image_blurs(blur OracleImageBlur, count int) !(int, int) {
+	mut empty := 0
+	for i in 0 .. count {
+		width := rand.intn(48) or { 0 } + 1
+		height := rand.intn(48) or { 0 } + 1
+		pixels := random_premultiplied(width * height)
+		l := rand.intn(width) or { 0 }
+		t := rand.intn(height) or { 0 }
+		subset := [l, t, l + rand.intn(width - l) or { 0 } + 1, t + rand.intn(height - t) or { 0 } + 1]
+		clip := if rand.intn(4) or { 0 } == 0 {
+			cl := rand.intn(width + 40) or { 0 } - 20
+			ct := rand.intn(height + 40) or { 0 } - 20
+			[cl, ct, cl + rand.intn(width + 30) or { 0 }, ct + rand.intn(height + 30) or { 0 }]
+		} else {
+			// Around the subset, so the blurred edges show.
+			[subset[0] - rand.intn(30) or { 0 }, subset[1] - rand.intn(30) or { 0 }, subset[2] + rand.intn(30) or {
+				0
+			}, subset[3] + rand.intn(30) or { 0 }]
+		}
+		sigma := fn () f32 {
+			return match rand.intn(6) or { 0 } {
+				0 { f32(rand.f64() * 0.05) }
+				1, 2 { f32(rand.f64() * 2.2) }
+				3 { f32(rand.f64() * 135) }
+				4 { f32(0) }
+				else { f32(rand.f64() * 12) }
+			}
+		}
+		sx := sigma()
+		sy := if rand.intn(3) or { 0 } == 0 { sx } else { sigma() }
+		mut values := [i32(width), height]
+		values << subset.map(i32(it))
+		values << clip.map(i32(it))
+		floats := [sx, sy]
+		mut out := []u8{len: (clip[2] - clip[0] + 2) * (clip[3] - clip[1] + 2) * 4 + 16}
+		mut info := []i32{len: 5}
+		blur(pixels.data, values.data, floats.data, out.data, info.data)
+		src := cpuraster.BlurImage{pixels, width, height}
+		got, gx, gy := cpuraster.image_with_blur_filter(src, cpuraster.IRect{subset[0], subset[1], subset[2], subset[3]},
+			cpuraster.IRect{clip[0], clip[1], clip[2], clip[3]}, sx, sy) or {
+			if info[0] != 0 {
+				return error('image blur ${i}: cpuraster has no result, Skia ${info} (sigma ${sx} ${sy}, subset ${subset}, clip ${clip}, ${width}x${height})')
+			}
+			empty++
+			continue
+		}
+		if info[0] == 0 {
+			return error('image blur ${i}: Skia has no result, cpuraster ${got.width}x${got.height} at ${gx},${gy}')
+		}
+		if got.width != info[1] || got.height != info[2] || gx != info[3] || gy != info[4] {
+			return error('image blur ${i}: cpuraster ${got.width}x${got.height} at ${gx},${gy}, Skia ${info[1..]} (sigma ${sx} ${sy}, subset ${subset}, clip ${clip}, ${width}x${height})')
+		}
+		for j in 0 .. got.pixels.len {
+			if got.pixels[j] != out[j] {
+				return error('image blur ${i}: pixel ${j / 4} channel ${j % 4} is ${got.pixels[j]}, Skia wrote ${out[j]} (sigma ${sx} ${sy}, subset ${subset}, clip ${clip}, ${width}x${height})')
+			}
+		}
+	}
+	return count, empty
+}
+
+fn check_image_blur_cases(count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	blur := unsafe { OracleImageBlur(oracle_symbol(library, 'oracle_image_blur')) }
+	blurs, empty := check_image_blurs(blur, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('image filter blurs: ${blurs} exact (${empty} empty)')
 }

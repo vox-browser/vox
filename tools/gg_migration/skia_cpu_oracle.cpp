@@ -405,3 +405,37 @@ ORACLE int oracle_canvas_glyphs(uint8_t* pixels, char const* font_path, uint16_t
     oracle_take_filters(command, filters);
     return vox_skia_canvas_glyphs(pixels, a[0], a[1], a[2], a[3], &command, &run);
 }
+
+// SkImages::MakeWithFilter() with SkImageFilters::Blur() on a premultiplied
+// RGBA_8888 sRGB image. arguments: width, height, then the subset and clip
+// rects (left, top, right, bottom). floats: sigma x and y. info receives
+// whether a result came back, its width, height and offset; out its rows.
+#include "include/core/SkImageFilter.h"
+#include "include/effects/SkImageFilters.h"
+
+ORACLE void oracle_image_blur(uint8_t const* pixels, int const* a, float const* f, uint8_t* out, int* info)
+{
+    auto image_info = SkImageInfo::Make(a[0], a[1], kRGBA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto image = SkImages::RasterFromPixmapCopy(SkPixmap(image_info, pixels, size_t(a[0]) * 4));
+    auto filter = SkImageFilters::Blur(f[0], f[1], nullptr);
+    info[0] = 0;
+    if (!image || !filter)
+        return;
+    SkIRect out_subset;
+    SkIPoint offset;
+    auto result = SkImages::MakeWithFilter(image, filter.get(), SkIRect::MakeLTRB(a[2], a[3], a[4], a[5]),
+        SkIRect::MakeLTRB(a[6], a[7], a[8], a[9]), &out_subset, &offset);
+    if (!result)
+        return;
+    auto subset = result->makeSubset(nullptr, out_subset, {});
+    if (!subset)
+        return;
+    auto out_info = SkImageInfo::Make(subset->width(), subset->height(), kRGBA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    if (!subset->readPixels(nullptr, out_info, out, size_t(subset->width()) * 4, 0, 0))
+        return;
+    info[0] = 1;
+    info[1] = subset->width();
+    info[2] = subset->height();
+    info[3] = offset.x();
+    info[4] = offset.y();
+}
