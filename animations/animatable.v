@@ -290,7 +290,12 @@ fn default_timeline_for_animatable(animatable &Animatable) &AnimationTimeline {
 		document := element.document()
 		key := u64(voidptr(document))
 		if existing := document_animation_timelines[key] {
-			return existing
+			// A later document can reuse a destroyed document's address. Only
+			// a timeline still associated with this document is its own;
+			// the check does not read the possibly released timeline.
+			if document.associated_animation_timelines.any(it.target == voidptr(existing)) {
+				return existing
+			}
 		}
 		mut timeline := new_document_timeline(document, 0, 0)
 		timeline.set_document_active(document.is_active())
