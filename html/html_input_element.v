@@ -296,9 +296,16 @@ fn html_input_element_did_edit_callback(target voidptr, input_type string, data 
 	model.did_edit_text_node(input_type, data)
 }
 
+// Input.cpp fires these at the element itself: page listeners and inline
+// handlers observe a checkbox's change, a picker's input or a committed edit.
 fn (mut model HTMLInputElementModel) fire_event(name string) {
 	model.event_counts_[name]++
-	model.event_target_.dispatch_event(dom.Event.create(name, dom.EventInit{ bubbles: true }))
+	mut event := dom.Event.create(name, dom.EventInit{
+		bubbles: name !in ['load', 'error']
+		composed: name == 'input'
+	})
+	event.set_is_trusted(true)
+	unsafe { &dom.EventTarget(input_element(&model).as_node()) }.dispatch_event(event)
 }
 
 pub fn (model &HTMLInputElementModel) event_target() &dom.EventTarget {
