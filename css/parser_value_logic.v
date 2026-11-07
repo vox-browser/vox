@@ -15615,6 +15615,14 @@ pub fn parse_css_value_logic(property_id PropertyID, text string) ?StyleValue {
 	return parse_css_value_in_workspace(ParsingParams{}, property_id, text)
 }
 
+// A transform list for the DOMMatrix string constructor, parsed in its value
+// context, which rejects tree-counting functions.
+pub fn parse_dom_matrix_init_string_value_logic(text string) ?StyleValue {
+	return parse_css_value_in_workspace(ParsingParams{
+		value_context: [ValueParsingContext(SpecialContext.dom_matrix_init_string)]
+	}, .transform, text)
+}
+
 pub fn parse_css_image_value_logic(text string) ?CSSImageSourceStyleValue {
 	mut parser := Parser.from_css_text(text)
 	mut tokens := ComponentValueStream.new(parser.component_values)

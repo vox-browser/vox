@@ -30,7 +30,7 @@ fn transform_function_is_2d(function css.TransformFunction) bool {
 
 fn parse_dom_matrix_init_string(source string) !ParsedDOMMatrix {
 	text := if source == '' { 'matrix(1, 0, 0, 1, 0, 0)' } else { source }
-	parsed := css.parse_css_value_logic(.transform, text) or {
+	parsed := css.parse_dom_matrix_init_string_value_logic(text) or {
 		return error('SyntaxError: Failed to parse CSS transform string')
 	}
 	mut rows := diagonal_rows(1, 1, 1, 1)
@@ -53,6 +53,10 @@ fn parse_dom_matrix_init_string(source string) !ParsedDOMMatrix {
 			return error('SyntaxError: Failed to parse CSS transform string')
 		}
 		transformation := item as css.TransformationStyleValue
+		// Lengths without absolute units have no reference box to resolve against.
+		if !transformation.can_be_converted_to_matrix_without_reference_box() {
+			return error('SyntaxError: Failed to parse CSS transform string')
+		}
 		if !transform_function_is_2d(transformation.transform_function()) {
 			is_2d = false
 		}

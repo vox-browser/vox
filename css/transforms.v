@@ -2324,6 +2324,33 @@ pub fn (style_value TransformationStyleValue) transform_function() TransformFunc
 	return style_value.transform_function_
 }
 
+// TransformationStyleValue::can_be_converted_to_matrix_without_reference_box()
+pub fn (style_value TransformationStyleValue) can_be_converted_to_matrix_without_reference_box() bool {
+	metadata := transform_function_metadata(style_value.transform_function_)
+	for index, value in style_value.values_ {
+		if value is LengthStyleValue && !value.length().is_absolute() {
+			return false
+		}
+		// NB: The only calculated values that cannot be fully simplified contain relative
+		//     lengths or length-percentage mixes, both of which are disallowed.
+		if value is CalculatedStyleValue && (value.node.len != 1 || value.node[0] !is CalcNumeric) {
+			return false
+		}
+		if index < metadata.parameters.len && metadata.parameters[index].type_ == .length_percentage {
+			if value is PercentageStyleValue {
+				return false
+			}
+			if value is CalculatedStyleValue && value.node.len == 1 && value.node[0] is CalcNumeric {
+				leaf := value.node[0] as CalcNumeric
+				if leaf.kind == .percentage {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
 pub fn (style_value TransformationStyleValue) values() StyleValueVector {
 	return style_value.values_
 }

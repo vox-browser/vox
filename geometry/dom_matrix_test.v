@@ -158,3 +158,19 @@ fn test_from_matrix_matches_create_from_init() {
 	assert matrix.a() == 4.0
 	assert matrix.is_2d()
 }
+
+// Transform strings need absolute lengths: there is no element to resolve
+// relative units or percentages against, and tree-counting functions are not
+// allowed in this context.
+fn test_dom_matrix_string_rejects_relative_lengths_and_tree_counting() {
+	for source in ['translateX(5em)', 'translateX(5%)', 'translateX(calc(10px * sign(1em - 10px)))',
+		'scale(sibling-index())'] {
+		DOMMatrix.construct_from_string(source, true) or {
+			assert err.msg().starts_with('SyntaxError:'), source
+			continue
+		}
+		assert false, source
+	}
+	matrix := DOMMatrix.construct_from_string('scale(2) translateX(calc(2 * 2.5px))', true)!
+	assert matrix.e() == 10
+}
