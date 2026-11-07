@@ -77,7 +77,7 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   premultiplied channel/alpha pair, font validation over every installed font,
   WebGL bitmap export over every layout, alpha type, color space, format,
   premultiplication and flip, plus `COUNT` random cases each; random
-  anti-aliased path fills; and random Canvas2D fills, hairline strokes and
+  anti-aliased and non-anti-aliased path fills; and random Canvas2D fills, hairline strokes and
   wider `SkStroke` strokes (every cap and join, miter limits around their
   thresholds, closed rects, cusps, degenerate curves, zero-length contours and
   extreme widths), and `SkDashPathEffect` dashes (random, degenerate and
@@ -100,7 +100,7 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   `vox_skia_canvas_path()`; declined draws must leave the pixels untouched.
   Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes`, `composites`, `shadows`,
-  `gradients`, `patterns`, `clears` or `images`
+  `gradients`, `patterns`, `clears`, `images` or `bwfills`
   to run only those comparisons; a `-gc none` binary never frees, so run its
   categories in separate processes. The driver takes an optional seed after `COUNT`; with
   `CPU_RASTER_FAILURE_DIR` set it saves a failing case's starting, Skia and
