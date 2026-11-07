@@ -672,10 +672,12 @@ fn align_canvas_lines(mut segments []f32) {
 	}
 }
 
-// Canvas2D strokes through the production vox_skia_canvas_path(), which
-// SkDraw turns into hairlines when the line width is at most a device pixel.
+// Canvas2D strokes through the production vox_skia_canvas_path(): SkDraw
+// turns them into hairlines when the line width is at most a device pixel and
+// strokes the rest with SkStroke. Returns the comparisons and how many were
+// hairlines.
 fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
-	mut declined := 0
+	mut hairlines := 0
 	for i in 0 .. count {
 		width := rand.intn(120) or { 0 } + 1
 		height := rand.intn(120) or { 0 } + 1
@@ -707,32 +709,334 @@ fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
 		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
 		cap := rand.intn(3) or { 0 }
 		join := rand.intn(3) or { 0 }
-		mut expected := initial.clone()
-		mut floats := transform[..].clone()
-		floats << [global_alpha, line_width, miter]
-		floats << segments
-		values := [i32(width), height, pitch, alpha_type, segments.len / 12, i32(color), cap, join]
-		if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
-			return error('stroke ${i}: the Skia canvas path failed')
-		}
-		mut actual := initial.clone()
-		path := cpuraster.canvas_path(segments, false)
-		if !cpuraster.stroke_canvas_path(mut actual, width, height, pitch, alpha_type, path,
-			transform, color, global_alpha, line_width, unsafe { cpuraster.StrokeCap(cap) }, unsafe { cpuraster.StrokeJoin(join) },
-			miter) {
-			if actual != initial {
-				return error('stroke ${i}: cpuraster declined after changing pixels')
-			}
-			declined++
-			continue
-		}
-		for j in 0 .. expected.len {
-			if expected[j] != actual[j] {
-				return error('stroke ${i}: pixel (${j % pitch / 4}, ${j / pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (${width}x${height} pitch ${pitch} alpha ${alpha_type} width ${line_width} cap ${cap} join ${join} miter ${miter} color ${color:08x} global alpha ${global_alpha} transform ${transform} segments ${segments})')
-			}
+		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join},
+			'stroke ${i}')!
+		if is_hairline(transform, line_width) {
+			hairlines++
 		}
 	}
-	return count, declined
+	return count, hairlines
+}
+
+struct StrokeCase {
+	width        int
+	height       int
+	pitch        int
+	alpha_type   int
+	segments     []f32
+	transform    [6]f32
+	color        u32
+	global_alpha f32
+	line_width   f32
+	miter        f32
+	cap          int
+	join         int
+}
+
+// SkDraw's DrawTreatAsHairline() test for a positive width.
+fn is_hairline(transform [6]f32, line_width f32) bool {
+	if !(line_width > 0) {
+		return true
+	}
+	fast := fn (x f32, y f32) f32 {
+		mut ax := f32(math.abs(x))
+		mut ay := f32(math.abs(y))
+		if ax < ay {
+			ax, ay = ay, ax
+		}
+		return ax + ay * f32(0.5)
+	}
+	return fast(line_width * transform[0], line_width * transform[1]) <= 1
+		&& fast(line_width * transform[2], line_width * transform[3]) <= 1
+}
+
+// Strokes one case through vox_skia_canvas_path() and stroke_canvas_path()
+// and compares every byte.
+fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string) ! {
+	mut expected := initial.clone()
+	mut floats := c.transform[..].clone()
+	floats << [c.global_alpha, c.line_width, c.miter]
+	floats << c.segments
+	values := [i32(c.width), c.height, c.pitch, c.alpha_type, c.segments.len / 12, i32(c.color),
+		c.cap, c.join]
+	if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
+		return error('${label}: the Skia canvas path failed')
+	}
+	mut actual := initial.clone()
+	path := cpuraster.canvas_path(c.segments, false)
+	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
+		path, c.transform, c.color, c.global_alpha, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
+		c.miter) {
+		return error('${label}: cpuraster declined')
+	}
+	for j in 0 .. expected.len {
+		if expected[j] != actual[j] {
+			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (${c})')
+		}
+	}
+}
+
+fn segment(kind int, values []f32) []f32 {
+	mut s := [f32(kind)]
+	s << values
+	for s.len < 12 {
+		s << 0
+	}
+	return s
+}
+
+// Contours SkStroke treats specially: closed rects (strokeRect) in both
+// directions, as trivial four-point rects and with redundant points;
+// collinear and degenerate curves; cusps; zero-length contours, which only
+// round and square caps draw; and sharp turns that exceed miter limits.
+fn random_stroke_shape(width int, height int) []f32 {
+	mut x0 := f32(rand.f64() * f64(width))
+	mut y0 := f32(rand.f64() * f64(height))
+	x1 := f32(rand.f64() * f64(width))
+	y1 := f32(rand.f64() * f64(height))
+	mut s := []f32{}
+	match rand.intn(12) or { 0 } {
+		0 {
+			// A rect: moveTo, three lines, close.
+			cw := rand.intn(2) or { 0 } == 0
+			s << segment(0, [x0, y0])
+			if cw {
+				s << segment(1, [x1, y0])
+				s << segment(1, [x1, y1])
+				s << segment(1, [x0, y1])
+			} else {
+				s << segment(1, [x0, y1])
+				s << segment(1, [x1, y1])
+				s << segment(1, [x1, y0])
+			}
+			if rand.intn(3) or { 0 } == 0 {
+				// Back to the start before closing.
+				s << segment(1, [x0, y0])
+			}
+			if rand.intn(6) or { 0 } != 0 {
+				s << segment(5, [])
+			}
+		}
+		1 {
+			// A rect with a midpoint on one side.
+			s << segment(0, [x0, y0])
+			s << segment(1, [(x0 + x1) / 2, y0])
+			s << segment(1, [x1, y0])
+			s << segment(1, [x1, y1])
+			s << segment(1, [x0, y1])
+			s << segment(5, [])
+		}
+		2 {
+			// Collinear quads and cubics, with control points past the ends.
+			t := f32(rand.f64() * 3 - 1)
+			u := f32(rand.f64() * 3 - 1)
+			s << segment(0, [x0, y0])
+			s << segment(2, [x1, y1, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t])
+			s << segment(3, [x0, y0, x1 + (x0 - x1) * t, y1 + (y0 - y1) * t, x0 + (x1 - x0) * u,
+				y0 + (y1 - y0) * u])
+		}
+		3 {
+			// A cubic whose control polygon crosses itself: a cusp or loop.
+			s << segment(0, [x0, y0])
+			s << segment(3, [x1, y0, x1, y1, x0, y1])
+			s << segment(3, [x0, y1, x0, y0, x1, y0])
+		}
+		4 {
+			// Zero-length contours: a lone move and close, repeated points, and
+			// a degenerate quad.
+			s << segment(0, [x0, y0])
+			s << segment(5, [])
+			s << segment(0, [x1, y1])
+			s << segment(1, [x1, y1])
+			s << segment(1, [x1, y1])
+			if rand.intn(2) or { 0 } == 0 {
+				s << segment(5, [])
+			}
+			s << segment(0, [x0, y1])
+			s << segment(2, [x0, y1, x0, y1])
+		}
+		5 {
+			// A zigzag with sharp turns.
+			s << segment(0, [x0, y0])
+			for k in 0 .. rand.intn(6) or { 0 } + 2 {
+				dy := f32(rand.f64() * 8 + 1)
+				x := x0 + f32(k + 1) * (x1 - x0) / 6
+				y := if k % 2 == 0 { y0 + dy } else { y0 - dy }
+				s << segment(1, [x, y])
+			}
+			if rand.intn(2) or { 0 } == 0 {
+				s << segment(5, [])
+			}
+		}
+		6 {
+			// A U-turn: a line straight back along itself.
+			s << segment(0, [x0, y0])
+			s << segment(1, [x1, y1])
+			s << segment(1, [x0, y0])
+			if rand.intn(2) or { 0 } == 0 {
+				s << segment(1, [x1, y1])
+			}
+		}
+		8 {
+			// Nearly straight cubics, bending a fraction of a pixel, some only a
+			// fraction of a pixel long.
+			e := f32(rand.f64() * 0.02 - 0.01)
+			length := if rand.intn(2) or { 0 } == 0 { f32(1) } else { f32(rand.f64() * 0.01) }
+			dx := (x1 - x0) * length
+			dy := (y1 - y0) * length
+			s << segment(0, [x0, y0])
+			s << segment(3, [x1, y1, x0 + dx / 3 - dy * e, y0 + dy / 3 + dx * e, x0 + 2 * dx / 3 + dy * e,
+				y0 + 2 * dy / 3 - dx * e])
+		}
+		9 {
+			// A rect much smaller than the stroke width, sometimes so small near
+			// the origin that its outset collapses to a circle.
+			tiny := rand.intn(2) or { 0 } == 0
+			ox := if tiny { f32(rand.f64() * 0.001) } else { x0 }
+			oy := if tiny { f32(rand.f64() * 0.001) } else { y0 }
+			shrink := if tiny { f32(math.pow(10, -rand.f64() * 6)) } else { f32(1) }
+			w := f32(rand.f64() * 0.05) * shrink + f32(1e-12)
+			h := f32(rand.f64() * 0.05) * shrink + f32(1e-12)
+			x0 = ox
+			y0 = oy
+			s << segment(0, [x0, y0])
+			s << segment(1, [x0 + w, y0])
+			s << segment(1, [x0 + w, y0 + h])
+			s << segment(1, [x0, y0 + h])
+			s << segment(5, [])
+		}
+		10 {
+			// Cubics a fraction of a pixel across.
+			size := f32(rand.f64() * 0.5)
+			s << segment(0, [x0, y0])
+			mut c := []f32{}
+			for _ in 0 .. 6 {
+				c << f32(rand.f64() - 0.5) * size
+			}
+			s << segment(3, [x0 + c[4], y0 + c[5], x0 + c[0], y0 + c[1], x0 + c[2], y0 + c[3]])
+		}
+		7 {
+			// A tight quad and cubic, whose stroke folds over the curve.
+			s << segment(0, [x0, y0])
+			s << segment(2, [x0 + 2, y0, x1, y1])
+			s << segment(3, [x0, y0 + 1, x1 + 1, y1, x1, y1 + 1])
+		}
+		else {
+			// A circle from SVG arcs.
+			r := f32(rand.f64() * f64(width) / 3 + 1)
+			s << segment(0, [x0 + r, y0])
+			s << [f32(4), x0 - r, y0, 0, 0, 0, 0, r, r, 0, 0, 1]
+			s << [f32(4), x0 + r, y0, 0, 0, 0, 0, r, r, 0, 0, 1]
+			s << segment(5, [])
+		}
+	}
+	return s
+}
+
+fn random_stroke_matrix() [6]f32 {
+	match rand.intn(6) or { 0 } {
+		0 {
+			// Quarter turns keep rects axis aligned.
+			turn := rand.intn(4) or { 0 }
+			scale := f32(rand.f64() * 1.5 + 0.5)
+			c := [f32(1), 0, -1, 0]![turn] * scale
+			sn := [f32(0), 1, 0, -1]![turn] * scale
+			return [c, sn, -sn, c, f32(rand.f64() * 40), f32(rand.f64() * 40)]!
+		}
+		1 {
+			// Strong anisotropic scale, changing the resolution scale.
+			return [f32(rand.f64() * 4 + 0.1), 0, 0, f32(rand.f64() * 4 + 0.1), f32(rand.f64() * 20),
+				f32(rand.f64() * 20)]!
+		}
+		else {
+			m := random_matrix()
+			return [m.a, m.b, m.c, m.d, m.e, m.f]!
+		}
+	}
+}
+
+fn random_wide_line_width() f32 {
+	return match rand.intn(6) or { 0 } {
+		0 { f32(rand.f64() * 2 + 1) }
+		1 { f32(rand.intn(12) or { 0 } + 2) }
+		2 { f32(rand.f64() * 40) }
+		3 { f32(rand.f64() * 0.5 + 1) }
+		4 { f32(rand.f64() * 10) }
+		else { f32(rand.f64() * 6 + 0.5) }
+	}
+}
+
+// Wide Canvas2D strokes: random paths and the contours SkStroke treats
+// specially, under random transforms, with every cap and join and miter limits
+// around their thresholds.
+fn check_wide_strokes(oracle Oracle, count int) !(int, int) {
+	mut hairlines := 0
+	for i in 0 .. count {
+		width := rand.intn(120) or { 0 } + 1
+		height := rand.intn(120) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		mut segments := if rand.intn(2) or { 0 } == 0 {
+			random_stroke_shape(width, height)
+		} else {
+			random_canvas_segments(width, height)
+		}
+		if rand.intn(4) or { 0 } == 0 {
+			align_canvas_lines(mut segments)
+		}
+		transform := random_stroke_matrix()
+		miter := match rand.intn(5) or { 0 } {
+			0 { f32(10) }
+			1 { f32(rand.f64() * 2) }
+			2 { f32(1.41421356) }
+			3 { f32(rand.f64() * 0.5 + 1.2) }
+			else { f32(rand.f64() * 12) }
+		}
+		c := StrokeCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			segments:     segments
+			transform:    transform
+			color:        random_color()
+			global_alpha: random_global_alpha()
+			line_width:   random_wide_line_width()
+			miter:        miter
+			cap:          rand.intn(3) or { 0 }
+			join:         rand.intn(3) or { 0 }
+		}
+		mut stroke := c
+		if rand.intn(25) or { 0 } == 0 {
+			// Widths and coordinates far beyond the device, where the
+			// stroker's recursion limits and non-finite projections apply.
+			x := f32(rand.f64() * f64(width))
+			y := f32(rand.f64() * f64(height))
+			scale := f32(math.pow(10, rand.f64() * 38.5))
+			mut extreme := []f32{}
+			extreme << segment(0, [x, y + 1])
+			extreme << segment(2, [x, y + 3, x + 1, y + 6])
+			if rand.intn(2) or { 0 } == 0 {
+				extreme << segment(3, [x + scale, y - scale, x - scale, y, x, y + scale])
+			}
+			stroke = StrokeCase{
+				...c
+				segments:   extreme
+				line_width: f32(math.pow(10, rand.f64() * 9))
+				transform:  if rand.intn(2) or { 0 } == 0 {
+					[f32(1), 0, 0, 1, 0, 0]!
+				} else {
+					c.transform
+				}
+			}
+		}
+		compare_canvas_stroke(oracle, random_canvas_bitmap(width, height, pitch, alpha_type),
+			stroke, 'wide stroke ${i}')!
+		if is_hairline(transform, c.line_width) {
+			hairlines++
+		}
+	}
+	return count, hairlines
 }
 
 // Canvas2D solid fills through the production vox_skia_canvas_path(),
@@ -782,6 +1086,10 @@ fn main() {
 	count := if os.args.len > 2 { os.args[2].int() } else { 20000 }
 	seed := if os.args.len > 3 { u32(os.args[3].int()) } else { u32(20261106) }
 	rand.seed([seed, 7])
+	if os.getenv('CPU_RASTER_CHECKS') == 'strokes' {
+		check_stroke_cases(oracle, count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -816,9 +1124,18 @@ fn main() {
 		exit(1)
 	}
 	println('canvas fills: ${canvas} exact')
-	strokes, thick := check_canvas_strokes(oracle, count / 4) or {
+	check_stroke_cases(oracle, count)
+}
+
+fn check_stroke_cases(oracle Oracle, count int) {
+	strokes, hairlines := check_canvas_strokes(oracle, count / 4) or {
 		eprintln(err.msg())
 		exit(1)
 	}
-	println('canvas strokes: ${strokes - thick} hairlines exact, ${thick} wider strokes declined')
+	println('canvas strokes: ${strokes} exact (${hairlines} hairlines)')
+	wide, thin := check_wide_strokes(oracle, count / 2) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('wide canvas strokes: ${wide} exact (${thin} hairlines)')
 }

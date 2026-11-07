@@ -29,7 +29,7 @@ clang++ -std=c++20 -O2 -fno-rtti -dynamiclib \
     -Wl,-rpath,"$skia_root/lib" -o "$output_dir/skia_cpu_oracle.dylib"
 set --
 if [ "${CPU_RASTER_TEST_PROD:-0}" = 1 ]; then set -- -prod -gc none; fi
-"$v_compiler" -cc clang "$@" -path "$repo_dir|@vlib|@vmodules" \
+"$v_compiler" -cc clang -memory-limit 10G "$@" -path "$repo_dir|@vlib|@vmodules" \
     -o "$output_dir/cpu_raster_check" "$repo_dir/tools/gg_migration/cpu_raster_check.v"
 "$output_dir/cpu_raster_check" "$output_dir/skia_cpu_oracle.dylib" "$count"
 python3 - "$output_dir/inputs.json" <<'PY'
