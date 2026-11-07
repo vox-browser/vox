@@ -65,13 +65,15 @@ pub enum StrokeJoin {
 }
 
 // stroke_canvas_path strokes path the way vox_skia_canvas_path() does for a
-// solid source-over stroke without dashes, clips, filters or shadows. When
-// line_width mapped through transform is at most one device pixel along both
-// axes, SkDraw draws a one-pixel hairline with alpha scaled by the width;
-// wider strokes are outlined by SkStroke in source space and the outline is
-// filled in device space. color is the style's SkColor before global_alpha.
-// Returns false without changing pixels for devices Skia would tile.
-pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32) bool {
+// solid source-over stroke without clips, filters or shadows. When line_width
+// mapped through transform is at most one device pixel along both axes,
+// SkDraw draws a one-pixel hairline with alpha scaled by the width; wider
+// strokes are outlined by SkStroke in source space and the outline is filled
+// in device space. dashes and dash_offset are the SkDashPathEffect intervals
+// and phase, which cut the path into dashes first; Skia ignores an empty or
+// invalid list. color is the style's SkColor before global_alpha. Returns
+// false without changing pixels for devices Skia would tile.
+pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32) bool {
 	if !untiled_device(pixels, width, height, pitch) {
 		return false
 	}
@@ -127,11 +129,43 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	if !(reject_left < reject_right && reject_top < reject_bottom) {
 		return true
 	}
+	// skpathutils::FillPathWithPaint(): the dash path effect first, with the
+	// device clip mapped into source space as its cull rect, at the matrix's
+	// resolution scale. A hairline's stroke record has width 0.
+	res_scale := res_scale_for_stroking(matrix)
+	mut source := path
+	mut fill_dashes := false
+	mut dashed := false
+	if dash := new_dash_effect(dashes, dash_offset) {
+		stroke := DashStroke{
+			width:       if hairline { f32(0) } else { stroke_width }
+			cap:         cap
+			join:        join
+			miter_limit: miter_limit
+			res_scale:   res_scale
+		}
+		result := dash_path(path, dash, stroke, local_clip_bounds(matrix, width, height))
+		fill_dashes = result.fill
+		if result.applied {
+			source = result.path
+			dashed = true
+		}
+	}
 	if !hairline {
-		// skpathutils::FillPathWithPaint(): SkStrokeRec::applyToPath() at the
-		// matrix's resolution scale, an empty path when the outline is not
-		// finite, then SkPathBuilder::transform() and SkScan::AntiFillPath().
-		mut outline := stroke_path(path, stroke_width, cap, join, miter_limit, res_scale_for_stroking(matrix))
+		// SkStrokeRec::applyToPath(), unless the dashes are already outlines,
+		// an empty path when the result is not finite, then
+		// SkPathBuilder::transform() and SkScan::AntiFillPath().
+		mut outline := if fill_dashes {
+			StrokeOutline{
+				builder: PathBuilder{
+					verbs:   source.verbs
+					points:  source.points
+					weights: source.weights
+				}
+			}
+		} else {
+			stroke_path(source, stroke_width, cap, join, miter_limit, res_scale)
+		}
 		for p in outline.builder.points {
 			if !point_is_finite(p) {
 				outline = StrokeOutline{}
@@ -144,6 +178,13 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			blitter)
 		return true
 	}
+	if dashed {
+		for p in source.points {
+			if !point_is_finite(p) {
+				return true
+			}
+		}
+	}
 	// modifyPaintForHairlines(): partial coverage scales the paint's alpha.
 	mut hair_alpha := paint_alpha
 	if coverage != 1 {
@@ -152,7 +193,7 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	}
 	hair_color := (canvas_fill_color(color, global_alpha) & 0xffffff) | (color4f_byte(hair_alpha) << 24)
 	mut blitter := new_solid_blitter(mut pixels, pitch, hair_color)
-	anti_hair_path(path.transform(matrix), cap, IRect{0, 0, width, height}, mut blitter)
+	anti_hair_path(source.transform(matrix), cap, IRect{0, 0, width, height}, mut blitter)
 	return true
 }
 

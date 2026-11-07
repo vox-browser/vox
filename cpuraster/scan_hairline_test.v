@@ -30,7 +30,7 @@ fn hairline_segment(kind int, values []f32) []f32 {
 fn stroke_hash(segments []f32, width int, height int, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin) string {
 	mut pixels := hairline_background(width, height)
 	assert stroke_canvas_path(mut pixels, width, height, width * 4, 2, canvas_path(segments,
-		false), transform, color, global_alpha, line_width, cap, join, 10)
+		false), transform, color, global_alpha, line_width, cap, join, 10, [], 0)
 	return sha256.sum(pixels).hex()[..16]
 }
 
@@ -76,8 +76,8 @@ fn test_stroke_declines_devices_skia_tiles() {
 	before := pixels.clone()
 	path := canvas_path(hairline_segment(0, [f32(2), 0.5]), false)
 	assert !stroke_canvas_path(mut pixels, 8192, 1, 8192 * 4, 2, path, [f32(1), 0, 0, 1, 0, 0]!,
-		0xff000000, 1, 1, .butt, .miter, 10)
+		0xff000000, 1, 1, .butt, .miter, 10, [], 0)
 	assert !stroke_canvas_path(mut pixels, 8192, 1, 8192 * 4, 2, path, [f32(1), 0, 0, 1, 0, 0]!,
-		0xff000000, 1, 6, .butt, .miter, 10)
+		0xff000000, 1, 6, .butt, .miter, 10, [f32(3), 2], 0)
 	assert pixels == before
 }

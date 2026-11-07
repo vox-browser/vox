@@ -28,9 +28,14 @@ fn stroke_test_segment(kind int, values []f32) []f32 {
 }
 
 fn wide_stroke_hash(segments []f32, width int, height int, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32) string {
+	return dashed_stroke_hash(segments, width, height, transform, color, global_alpha, line_width,
+		cap, join, miter, [], 0)
+}
+
+fn dashed_stroke_hash(segments []f32, width int, height int, transform [6]f32, color u32, global_alpha f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32) string {
 	mut pixels := stroke_test_background(width, height)
 	assert stroke_canvas_path(mut pixels, width, height, width * 4, 2, canvas_path(segments,
-		false), transform, color, global_alpha, line_width, cap, join, miter)
+		false), transform, color, global_alpha, line_width, cap, join, miter, dashes, dash_offset)
 	assert pixels != stroke_test_background(width, height)
 	return sha256.sum(pixels).hex()[..16]
 }
