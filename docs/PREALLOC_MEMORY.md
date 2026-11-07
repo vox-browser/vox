@@ -1131,3 +1131,46 @@ source includes `14f8a892`, `e9a22493` and the exact implementation of
 builder already selects `-prealloc -gc none -d vox_sparse_ttf`. The canonical
 `Build/v/Vox.app` and its running instances are preserved. Launch the validated
 copy separately with `open -n Build/v/Vox-prealloc.app`.
+
+### Script-forced relayouts during video playback, 2026-11-07
+
+Old Reddit's video post
+(`/r/UkraineRussiaReport/comments/1xq4ryo/`) grows about 15 MiB/s of RSS while
+its 18.7 s clip plays, then levels off when the clip ends. The growth is
+untagged VM (new arena blocks), not decoding: the main thread's base arena
+grows about 12 KB per frame, and Reddit's own HLS stream played from a plain
+local page, a transformed `object-fit` video and a 1,500-comment page playing
+the video without layout-changing handlers all stay flat.
+
+A local replay of the page served from loopback reproduces the growth; removing
+the player's playback-controls controller removes it. Disabling one update at
+a time in `videoplayer.js` (RSS slope while playing, same bundle):
+
+| Variant | MiB/s |
+| --- | ---: |
+| Unmodified player | 14.6 |
+| No elapsed-time label update | 13.9 |
+| No buffered-range update | 14.3 |
+| No `getBoundingClientRect()` in `setProgress` | 8.3 |
+| `setProgress` disabled | 4.3 |
+
+`RedditVideoSeekBar.setProgress` runs on every `timeupdate` (250 ms): it writes
+two inline styles and reads the thumb's `getBoundingClientRect()`, forcing a
+document layout. Each layout pass allocates the whole page's `UsedValues` and
+retained block/inline layouts inside the document's native storage
+(`run_document_layout_with_renderer_mode` enters
+`Document.enter_native_storage()`), which is released only with the document.
+`RetainedUsedValuesArena` intentionally keeps committed slots for the document
+lifetime because their pointers escape into paintables, and later passes reuse
+`previous_block_layouts_`/`previous_inline_layouts_`. A module probe with a
+400-comment page measured about 11.5 MB of base arena per style write plus
+forced geometry read: about 7.4 MB in `paint_tree` and 4 MB in the layout pass.
+In the browser the paint tree is pooled and the remaining growth is about
+3.6 MB per pass, four passes per second.
+
+Bounding this needs per-pass retirement of layout storage: committed geometry
+must stop pointing paintables at slots owned by older passes, and reused
+retained layouts must be copied forward (or owned by a separate lifetime)
+before an older pass's storage can be released. Validate any such change with
+`VOX_ARENA_POISON=1`. Any page whose scripts change layout periodically grows
+the same way; video playback only made Reddit's case visible.
