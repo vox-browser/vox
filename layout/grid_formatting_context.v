@@ -2731,12 +2731,12 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		if subgridded_columns {
 			data.tracks.clone()
 		} else {
-			resolve_grid_tracks(container, template_columns, container.computed_values().grid_auto_columns(),
+			resolve_grid_axis_tracks_in_state(mut state, container, true,
 				container_width, column_gap, !width_is_intrinsic,
 				placement_result.implicit_columns_before, required_columns)
 		}
 	} else {
-		resolve_grid_tracks(container, template_columns, container.computed_values().grid_auto_columns(),
+		resolve_grid_axis_tracks_in_state(mut state, container, true,
 			container_width, column_gap, !width_is_intrinsic,
 			placement_result.implicit_columns_before, required_columns)
 	}
@@ -2884,12 +2884,12 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		if subgridded_rows {
 			data.tracks.clone()
 		} else {
-			resolve_grid_tracks(container, template_rows, container.computed_values().grid_auto_rows(),
+			resolve_grid_axis_tracks_in_state(mut state, container, false,
 				row_basis, row_gap, container_state.has_definite_height(),
 				placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
 		}
 	} else {
-		resolve_grid_tracks(container, template_rows, container.computed_values().grid_auto_rows(),
+		resolve_grid_axis_tracks_in_state(mut state, container, false,
 			row_basis, row_gap, container_state.has_definite_height(),
 			placement_result.implicit_rows_before, if required_rows > 0 { required_rows } else { 1 })
 	}

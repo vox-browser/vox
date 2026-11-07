@@ -999,6 +999,7 @@ mut:
 	grid_measurement_rejections_ map[u64]bool
 	flex_measurements_ map[u64][]&FlexMeasurementLayout
 	flex_measurement_rejections_ map[u64]bool
+	grid_track_resolutions_ map[u64][]&GridTrackResolutionCache
 	opacity_measurement_seen_ map[u64]bool
 	absolute_measurement_seen_ map[u64]bool
 }
@@ -1036,6 +1037,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.grid_measurement_rejections_ = map[u64]bool{}
 	pool.flex_measurements_ = map[u64][]&FlexMeasurementLayout{}
 	pool.flex_measurement_rejections_ = map[u64]bool{}
+	pool.grid_track_resolutions_ = map[u64][]&GridTrackResolutionCache{}
 	pool.opacity_measurement_seen_ = map[u64]bool{}
 	pool.absolute_measurement_seen_ = map[u64]bool{}
 	for chunk in pool.chunks {
