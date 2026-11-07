@@ -354,3 +354,37 @@ differ by up to 29 levels in about seven pixels of their clipped edge column.
 The remaining frame cost is shared with unzoomed scrolling at this window size:
 restoring the retained rows, copying the frame for AppKit and the per-leaf
 text pictures.
+
+### 120 Hz input at page zoom
+
+At 120 Hz precise input (3 px per input, 1,200 inputs, reversing every 600)
+the same 175% thread published about 80 frames per second. Main-thread
+samples put most of each frame into moving whole frames rather than drawing:
+
+- `1861dc494` stops retaining stationary snapshots of scrolled frames. Every
+  frame took a protected copy of its 3402×1896 bitmap (`CGBitmapContextCreateImage`)
+  that the next, again-moved frame released; per input, 56.5 → 42.5 M
+  instructions and 4.8 → 2.5 ms of system time. Control:
+  `VOX_SNAPSHOT_MOVING_STATIONARY_FRAMES=1`.
+- `3b381dcb7` rasterizes and uploads only the repainted part of GPU canvas text
+  masks (control `VOX_DISABLE_CLIPPED_TEXT_MASKS=1`).
+- `109ee2507` fills deferred viewport scrollbars with Quartz instead of a
+  second GPU canvas pass and readback (control `VOX_GPU_SCROLLBAR_LEAVES=1`).
+- `d58705ab1` splits ring row copies of at least 4 MB across four cores (control
+  `VOX_SERIAL_SCROLL_RASTER_COPY=1`).
+
+Same shared bundle (executable `90b49ce3e74d766d…`), three alternating
+unprofiled pairs at load average 22–28:
+
+| | Pair 1 | Pair 2 | Pair 3 |
+| --- | ---: | ---: | ---: |
+| All four controls set | 78.8 | 80.9 | 80.2 |
+| Default | 101.9 | 115.4 | 111.2 |
+
+Median publication intervals fall from 11.3–11.5 to 8.6–9.5 ms, p95 from
+17.4–17.9 to 12.2–13.4 ms, and input delivery recovers from 82–84 to
+104–116 Hz. The parallel copy alone measured 96.0/97.2/97.4 →
+103.5/105.4/107.9. Final frames, aligned by their end offsets, differ between
+the arms no more than repeated runs of one arm (live votes, thumb fade).
+The remaining cost is one synchronous GPU canvas readback per frame (about a
+fifth of the frame), leaf drawing, and the parallel ring restore.
