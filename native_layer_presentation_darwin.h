@@ -280,7 +280,7 @@ static CGFloat native_layer_effective_scale(NSView *view) {
 // been released. Generic callbacks start transparent; V's opaque-frame
 // contract can defer that clear until an incomplete callback returns.
 #define VOX_LAYER_FRAME_BUFFERS 3
-#define VOX_LAYER_FRAME_BUFFER_CAPACITY 4
+#define VOX_LAYER_FRAME_BUFFER_CAPACITY 6
 typedef struct {
     void *pixels;
     size_t bytes, width, height, pitch;
@@ -328,6 +328,22 @@ static void native_layer_unlock_frame_buffer(VoxLayerFrameBuffer *buffer) {
     }
 }
 
+// Shared IOSurface frames grow on demand. At 120 Hz Core Animation can still
+// hold three published surfaces when the next frame starts, and a frame without
+// a pooled surface becomes a CGImage that Core Animation copies in full while
+// committing. A slot is mapped only when every earlier one is busy, so a slower
+// display keeps using three. VOX_SHARED_FRAME_BUFFERS=N caps the pool.
+static int native_layer_shared_frame_buffer_limit(void) {
+    const char *value = getenv("VOX_SHARED_FRAME_BUFFERS");
+    int limit = value && *value ? atoi(value) : VOX_LAYER_FRAME_BUFFER_CAPACITY;
+    // The readiness mailbox keeps pending, in-flight and completed output
+    // alongside the installed frame.
+    if ((getenv("VOX_EXTRA_FRAME_BUFFER") || getenv("VOX_GPU_FRAME_READINESS_QUEUE")) && limit < 4)
+        limit = 4;
+    if (limit < 1) limit = 1;
+    return limit > VOX_LAYER_FRAME_BUFFER_CAPACITY ? VOX_LAYER_FRAME_BUFFER_CAPACITY : limit;
+}
+
 static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size_t height,
     BOOL defer_clear, BOOL shared) {
     static int disabled = -1;
@@ -338,10 +354,7 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
     if (disabled || !width || !height || width > SIZE_MAX / 4 / height) return NULL;
     size_t bytes = width * 4 * height;
     VoxLayerFrameBuffer *spare = NULL;
-    // The readiness mailbox may own pending, in-flight and completed output
-    // alongside the installed frame. Keep those four immutable bases mapped.
-    int count = shared && (getenv("VOX_EXTRA_FRAME_BUFFER") || getenv("VOX_GPU_FRAME_READINESS_QUEUE"))
-        ? VOX_LAYER_FRAME_BUFFER_CAPACITY : VOX_LAYER_FRAME_BUFFERS;
+    int count = shared ? native_layer_shared_frame_buffer_limit() : VOX_LAYER_FRAME_BUFFERS;
     for (int index = 0; index < count; ++index) {
         VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
         if (buffer->surface && IOSurfaceIsInUse(buffer->surface)) continue;

@@ -107,6 +107,9 @@ int main()
         auto partial_surface = render(view.layer.contents, 65, 49);
         assert(partial_reference == partial_surface);
         native_set_opaque_browser_frames(1);
+        // Exercise exhaustion with the historical three-slot pool; the default
+        // grows on demand (checked after this loop).
+        setenv("VOX_SHARED_FRAME_BUFFERS", "3", 1);
         for (int scale : {1, 2}) {
             native_layer_present_frame(view, scale, (IMP)paint);
             CGImageRef first = CGImageRetain(native_layer_frame_image(view));
@@ -185,6 +188,23 @@ int main()
                 assert(!memcmp(captured.pixels + y * captured.pitch,
                     (uint8_t const*)original.bytes + y * first_pitch, captured.width * 4));
         }
+        // By default the shared pool maps another surface while three
+        // published frames are still held, as at 120 Hz.
+        unsetenv("VOX_SHARED_FRAME_BUFFERS");
+        CGImageRef held[3];
+        for (auto& image : held) {
+            ++frame_value;
+            native_layer_present_frame(view, 2, (IMP)paint);
+            image = CGImageRetain(native_layer_frame_image(view));
+            assert(native_layer_surface_for_image(image));
+        }
+        ++frame_value;
+        native_layer_present_frame(view, 2, (IMP)paint);
+        assert(native_layer_surface_for_image(native_layer_frame_image(view)));
+        assert(CFGetTypeID((__bridge CFTypeRef)view.layer.contents) == IOSurfaceGetTypeID());
+        for (auto image : held) CGImageRelease(image);
+        objc_setAssociatedObject(view, &native_layer_frame_image_key, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        view.layer.contents = nil;
         [view setFrameSize:NSMakeSize(80, 40)];
         native_layer_present_frame(view, 2, (IMP)paint);
         CGImageRef resized = native_layer_frame_image(view);

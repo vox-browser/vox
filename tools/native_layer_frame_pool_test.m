@@ -96,6 +96,8 @@ int main(int argc, char **argv)
         if(argc==2 && (!strcmp(argv[1],"--spare") || !strcmp(argv[1],"--readiness"))) {
             const char *option=!strcmp(argv[1],"--spare")
                 ? "VOX_EXTRA_FRAME_BUFFER" : "VOX_GPU_FRAME_READINESS_QUEUE";
+            // Both options raise the historical three-slot pool to four.
+            setenv("VOX_SHARED_FRAME_BUFFERS","3",1);
             setenv(option,"1",1);
             MyView2* view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,64,48)];
             CGImageRef held[4];
@@ -123,6 +125,36 @@ int main(int argc, char **argv)
             CGImageRelease(reused);
             for(int index=0;index<3;++index)CGImageRelease(held[index]);
             puts("Spare IOSurface: four retained frames, bounded fallback, immutable images, explicit three-slot control and cleared reuse passed");
+            return 0;
+        }
+        if(argc==2 && !strcmp(argv[1],"--grow")) {
+            // Shared frames map further surfaces while earlier ones are held,
+            // up to the pool capacity, then fall back to a CGImage.
+            MyView2* view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,64,48)];
+            CGImageRef held[VOX_LAYER_FRAME_BUFFER_CAPACITY];
+            for(int index=0;index<VOX_LAYER_FRAME_BUFFER_CAPACITY;++index) {
+                held[index]=frame(view,60+index);
+                assert(native_layer_surface_for_image(held[index]));
+            }
+            assert(native_test_frame_buffer_maps==VOX_LAYER_FRAME_BUFFER_CAPACITY);
+            CGImageRef exhausted=frame(view,9);
+            assert(!native_layer_surface_for_image(exhausted));
+            CGImageRelease(exhausted);
+            CGImageRelease(held[4]);
+            CGImageRef reused=frame(view,10);
+            assert(native_layer_surface_for_image(reused));
+            assert(native_test_frame_buffer_maps==VOX_LAYER_FRAME_BUFFER_CAPACITY
+                && native_test_frame_buffer_reuses==1);
+            CGImageRelease(reused);
+            // An explicit cap below the held frames keeps the CGImage fallback.
+            setenv("VOX_SHARED_FRAME_BUFFERS","3",1);
+            CGImageRef capped=frame(view,11);
+            assert(!native_layer_surface_for_image(capped));
+            CGImageRelease(capped);
+            unsetenv("VOX_SHARED_FRAME_BUFFERS");
+            for(int index=0;index<VOX_LAYER_FRAME_BUFFER_CAPACITY;++index)
+                if(index!=4) CGImageRelease(held[index]);
+            puts("Growing IOSurface pool: maps on demand to capacity, bounded fallback, reuse and explicit cap passed");
             return 0;
         }
         NSView* view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 64, 48)];
