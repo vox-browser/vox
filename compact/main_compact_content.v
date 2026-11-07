@@ -52,6 +52,14 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		binding.keys[voidptr(element)] = key
 		binding.materialized[key] = policy == .all_elements || compact_initial_element_state_needed(element)
 	}
+	if runtime.engine == .javascriptcore {
+		runtime.install_node_event_target_binding(fn [binding] (key string) ?&dom.Node {
+			return binding.nodes[key] or { return none }
+		}, fn [binding] (node &dom.Node) ?string {
+			mut owner := unsafe { &CompactElementQueryBinding(binding) }
+			return owner.encode_node_state(node)
+		})!
+	}
 	runtime.add_canvas_element_provider_with_identity_lookup(fn [binding] () map[string]&dom.Element {
 		return binding.elements.clone()
 	}, fn [binding] (key string) ?&dom.Element {

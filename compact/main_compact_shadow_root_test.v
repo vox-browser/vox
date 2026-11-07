@@ -69,3 +69,28 @@ typeError(()=>ShadowRoot.prototype.setHTMLUnsafe.call(document.createDocumentFra
 '], runtime, mut messages)
 	assert messages == []string{}
 }
+
+// GitHub's invoker-commands polyfill adds a capture listener to every attached
+// shadow root; fragments and character data are EventTargets too.
+fn test_compact_shadow_roots_fragments_and_text_share_native_event_listeners() {
+	mut document := html.parse_document('<!doctype html><div id="host"></div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://shadow.test/', [r'
+const root=host.attachShadow({mode:"open"});root.innerHTML="<button id=inner>x</button>";
+const inner=root.getElementById("inner"),seen=[];
+function onRoot(event){seen.push(["root",this===root,event.currentTarget===root,event.target===inner,event.eventPhase]);}
+root.addEventListener("click",onRoot,true);
+host.addEventListener("click",event=>seen.push(["host",event.target===host,event.currentTarget===host]));
+inner.dispatchEvent(new MouseEvent("click",{bubbles:true,composed:true}));
+root.removeEventListener("click",onRoot,true);inner.dispatchEvent(new MouseEvent("click",{bubbles:true,composed:true}));
+root.addEventListener("custom",event=>seen.push(["custom",event.target===root]));
+if(!root.dispatchEvent(new Event("custom")))throw new Error("custom dispatch");
+const fragment=document.createDocumentFragment();fragment.addEventListener("x",event=>seen.push(["fragment",event.target===fragment]));fragment.dispatchEvent(new Event("x"));
+const text=document.createTextNode("t");text.addEventListener("y",event=>seen.push(["text",event.target===text]));text.dispatchEvent(new Event("y"));
+const expected=[["root",true,true,true,1],["host",true,true],["host",true,true],["custom",true],["fragment",true],["text",true]];
+if(JSON.stringify(seen)!==JSON.stringify(expected))throw new Error("listeners "+JSON.stringify(seen));
+'], runtime, mut messages)
+	assert messages == []string{}
+}

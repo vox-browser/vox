@@ -65,6 +65,8 @@ fn (mut binding CompactElementQueryBinding) node_value_query(root &dom.Node, act
 fn compact_last_child_bootstrap() string {
 	return r'
 const __compactNodeRecords=new WeakMap(),__compactNodeGet=WeakMap.prototype.get;
+const __compactBindNodeTarget=typeof globalThis.__ladybirdBindNodeEventTarget==="function"?globalThis.__ladybirdBindNodeEventTarget:null;
+if(typeof globalThis.__ladybirdNodeEventTargetSetResolver==="function")globalThis.__ladybirdNodeEventTargetSetResolver(function(json){return __queryElement(JSON.parse(json));});
 function DocumentFragment(){if(!new.target)throw new TypeError("DocumentFragment requires new");return __queryElements("","createFragment","");}
 Object.setPrototypeOf(DocumentFragment,Node);Object.setPrototypeOf(DocumentFragment.prototype,Node.prototype);
 Object.defineProperty(DocumentFragment,"prototype",{writable:false});
@@ -79,6 +81,7 @@ function __compactNodeWrapper(state){
  __compactInstallNodeProperties(node,state);
  __elementApply(__elementRecordSet,__compactNodeRecords,[node,state]);
  Object.defineProperty(state,"__object",{value:node});
+ if(__compactBindNodeTarget)__compactBindNodeTarget(node,state.bridgeKey);
  if([3,4,7,8,10].includes(state.nodeType))__compactBindChildNode(node);
  if(state.nodeType===11)for(const name of ["querySelector","querySelectorAll"]){
   Object.defineProperty(node,name,{value:function(selectors){const own=__compactSharedNodeRecord(this);if(arguments.length===0)throw new TypeError(name+" requires a selector");if(typeof selectors==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return __queryElements(own.bridgeKey,name,String(selectors));}});
