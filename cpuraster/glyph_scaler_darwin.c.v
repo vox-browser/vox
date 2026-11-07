@@ -10,7 +10,7 @@ fn C.cpuraster_ct_release(ref voidptr)
 fn C.cpuraster_ct_exact_copy(base voidptr, text_size f64) voidptr
 fn C.cpuraster_ct_bounding_box(font voidptr, out &f64)
 fn C.cpuraster_ct_glyph_metrics(font voidptr, glyph u16, transform &f64, out &f64) int
-fn C.cpuraster_ct_draw_glyph(font voidptr, glyph u16, transform &f64, invertible int, x f64, y f64, pixels voidptr, context_width int, context_height int, width int, height int) int
+fn C.cpuraster_ct_draw_glyph(font voidptr, glyph u16, transform &f64, invertible int, x f64, y f64, pixels voidptr, context_width int, context_height int, width int, height int, color int, foreground u32) int
 
 // GlyphFace is SkTypeface_Mac for a font file: its CTFont and whether it
 // has color glyphs or variation axes.
@@ -111,10 +111,10 @@ fn glyph_metrics(font voidptr, id u16, transform [6]f64) ?GlyphMetrics {
 	return GlyphMetrics{out[2], out[3], out[4], out[5]}
 }
 
-fn draw_glyph(font voidptr, id u16, transform [6]f64, invertible bool, x f64, y f64, context_width int, context_height int, width int, height int) ?[]u32 {
+fn draw_glyph(font voidptr, id u16, transform [6]f64, invertible bool, x f64, y f64, context_width int, context_height int, width int, height int, color bool, foreground u32) ?[]u32 {
 	mut pixels := []u32{len: context_width * context_height}
 	if C.cpuraster_ct_draw_glyph(font, id, &transform[0], int(invertible), x, y, pixels.data,
-		context_width, context_height, width, height) == 0 {
+		context_width, context_height, width, height, int(color), foreground) == 0 {
 		return none
 	}
 	return pixels

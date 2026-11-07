@@ -18,7 +18,12 @@ fn glyph_test_background() []u8 {
 	return px
 }
 
+const glyph_test_emoji = '/System/Library/Fonts/Apple Color Emoji.ttc'
+
 fn glyph_test_font(name string) string {
+	if name == 'emoji' {
+		return glyph_test_emoji
+	}
 	return os.join_path(@VMODROOT, match name {
 		'ahem' { 'Tests/Browser/Brave/resources/Ahem.ttf' }
 		else { 'pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Regular-subset.ttf' }
@@ -77,9 +82,15 @@ fn glyph_test_draw(c GlyphTestCase, mut px []u8) bool {
 		c.color, style, c.alpha, c.mode, clips)
 }
 
+// The hash of the pixels after the run, which must have drawn something.
 fn glyph_test_hash(c GlyphTestCase) string {
 	mut px := glyph_test_background()
 	assert glyph_test_draw(c, mut px)
+	mut untouched := glyph_test_background()
+	if c.alpha_type != 2 {
+		premultiply_rows(mut untouched, 48, 40, 192)
+	}
+	assert px != untouched
 	return sha256.sum(px).hex()[..16]
 }
 
@@ -125,21 +136,21 @@ fn test_glyph_runs_match_skia() {
 		size:        15
 		glyphs:      [u16(13), 16, 2, 19]
 		positions:   [f32(0), 0, 8, 0, 16, 0, 24, 0]
-		translation: [f32(30), 12]!
-		transform:   [f32(-1.2), 0.3, 0.2, 1.1, 0, 8]!
+		translation: [f32(2), 12]!
+		transform:   [f32(-1.2), 0.3, 0.2, 1.1, 46, 8]!
 		color:       0xff40c020
-	}) == 'f00be8e39ec6bc7f'
+	}) == '831c7b38d8ab6625'
 	// Ahem's boxes, half transparent, clipped.
 	assert glyph_test_hash(GlyphTestCase{
 		font:        'ahem'
 		size:        9.5
-		glyphs:      [u16(1), 2, 3]
+		glyphs:      [u16(40), 41, 42]
 		positions:   [f32(0), 0, 10.25, 0, 20.5, 0]
 		translation: [f32(5.6), 33.4]!
 		color:       0x80ff8000
 		clip:        true
 		alpha_type:  1
-	}) == '62cea4a16ecb51ad'
+	}) == '8c19c5f6d4f57022'
 }
 
 // Glyphs over 256 pixels per em are filled as their 64-point outlines:
@@ -167,6 +178,48 @@ fn test_path_glyph_runs_match_skia() {
 		clip:        true
 		gradient:    true
 	}) == '15ff405c7a9e0e08'
+}
+
+// Color glyphs are CoreText's premultiplied images drawn as sprites: through
+// Sprite_D32_S32, the raster pipeline sprite blitter for destination-in (an
+// opaque paint that leaves A8 masks a null blitter), and an image shader
+// where an anti-aliased clip cuts the sprite; past 256 pixels per em they
+// have no outline and stay masks.
+fn test_color_glyph_runs_match_skia() {
+	$if !macos {
+		return
+	}
+	if !os.is_file(glyph_test_emoji) {
+		return
+	}
+	assert glyph_test_hash(GlyphTestCase{
+		font:        'emoji'
+		size:        20
+		glyphs:      [u16(1500), 1700]
+		positions:   [f32(0), 0, 21.3, 0.5]
+		translation: [f32(2.5), 30]!
+	}) == 'e781cda46681481c'
+	assert glyph_test_hash(GlyphTestCase{
+		font:        'emoji'
+		size:        18
+		glyphs:      [u16(1600)]
+		positions:   [f32(0), 0]
+		translation: [f32(14.2), 28]!
+		alpha:       0.6
+		mode:        .dst_in
+		clip:        true
+		alpha_type:  1
+	}) == '015ba13270345fc7'
+	assert glyph_test_hash(GlyphTestCase{
+		font:        'emoji'
+		size:        300
+		glyphs:      [u16(1800)]
+		positions:   [f32(0), 0]
+		translation: [f32(-80), 120]!
+		color:       0xff3366cc
+		alpha:       0.9
+		gradient:    true
+	}) == 'e6ace4a9ca3c9dff'
 }
 
 // Faces past the first and missing files decline without touching the

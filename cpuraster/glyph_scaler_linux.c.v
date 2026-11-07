@@ -35,7 +35,7 @@ fn glyph_metrics(font voidptr, id u16, transform [6]f64) ?GlyphMetrics {
 	return none
 }
 
-fn draw_glyph(font voidptr, id u16, transform [6]f64, invertible bool, x f64, y f64, context_width int, context_height int, width int, height int) ?[]u32 {
+fn draw_glyph(font voidptr, id u16, transform [6]f64, invertible bool, x f64, y f64, context_width int, context_height int, width int, height int, color bool, foreground u32) ?[]u32 {
 	return none
 }
 

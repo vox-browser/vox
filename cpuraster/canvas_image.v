@@ -256,8 +256,8 @@ fn (mut b SpriteBlitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {}
 // unpremultiplied source; Memcpy for Src at full alpha and Sprite_D32_S32
 // for source-over in sRGB; otherwise SkRasterPipelineSpriteBlitter, whose
 // load_8888, color space steps and scale_1_float are the image shader's
-// nearest sampling at that offset.
-fn choose_sprite(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, top int, alpha_byte int, mode BlendMode) ?Blitter {
+// nearest sampling at that offset, scaled by the paint's float alpha.
+fn choose_sprite(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, top int, alpha_byte int, paint_alpha f32, mode BlendMode) ?Blitter {
 	if !source.premultiplied {
 		return none
 	}
@@ -283,7 +283,6 @@ fn choose_sprite(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, 
 			}
 		}
 	}
-	paint_alpha := f32(alpha_byte) * inv_255
 	if mode == .clear {
 		// The clear stage stores transparent black, as Src of it does.
 		return canvas_blitter(mut pixels, row_bytes, 0, 0, .clear)
@@ -375,7 +374,7 @@ pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alph
 			iy := int(saturate_to_i32(floor_f32(total.ty + f32(0.5))))
 			if rc.is_bw || rc.aa.quick_contains(ix, iy, ix + bitmap.width, iy + bitmap.height) {
 				if mut sprite := choose_sprite(mut pixels, pitch, bitmap, ix, iy, alpha_byte,
-					mode)
+					paint_alpha, mode)
 				{
 					target.ready()
 					fill_irect(IRect{ix, iy, ix + bitmap.width, iy + bitmap.height}, &rc, mut

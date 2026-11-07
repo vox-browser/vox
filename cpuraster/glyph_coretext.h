@@ -157,35 +157,54 @@ static int cpuraster_ct_glyph_metrics(void* font_ref, uint16_t glyph_id, double 
     return 0;
 }
 
-// SkScalerContext_Mac::Offscreen::getCG() for an A8 glyph: a BGRX
-// (kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Host) device RGB context
-// of context_width x context_height, the glyph's width x height rows at its
-// bottom erased to white, and the glyph drawn in black through the text
-// matrix at (x, y) mapped by its inverse. pixels receives the context's
-// rows; the glyph occupies the last height rows' first width pixels.
+// SkScalerContext_Mac::Offscreen::getCG(): a device RGB context of
+// context_width x context_height, BGRX (kCGImageAlphaNoneSkipFirst) for an
+// A8 glyph or premultiplied BGRA (kCGImageAlphaPremultipliedFirst) for a
+// color one, both kCGBitmapByteOrder32Host; the glyph's width x height rows
+// at its bottom erased to white (transparent black for color), and the
+// glyph drawn through the text matrix at (x, y) mapped by its inverse, in
+// black, or for color glyphs in the opaque foreground color (an SkColor's
+// RGB, as CGColorForSkColor() makes it). pixels receives the context's rows;
+// the glyph occupies the last height rows' first width pixels.
 static int cpuraster_ct_draw_glyph(void* font_ref, uint16_t glyph_id, double const* t, int invertible,
-    double x, double y, uint32_t* pixels, int context_width, int context_height, int width, int height) {
+    double x, double y, uint32_t* pixels, int context_width, int context_height, int width, int height,
+    int color, uint32_t foreground) {
     CGColorSpaceRef space = CGColorSpaceCreateDeviceRGB();
     size_t row_bytes = (size_t)context_width * 4;
-    CGBitmapInfo info = kCGBitmapByteOrder32Host | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst;
+    CGImageAlphaInfo alpha = color ? kCGImageAlphaPremultipliedFirst : kCGImageAlphaNoneSkipFirst;
+    CGBitmapInfo info = kCGBitmapByteOrder32Host | (CGBitmapInfo)alpha;
     CGContextRef cg = CGBitmapContextCreate(pixels, context_width, context_height, 8, row_bytes, space, info);
-    CGColorSpaceRelease(space);
-    if (!cg)
+    if (!cg) {
+        CGColorSpaceRelease(space);
         return 0;
+    }
     CGContextSetAllowsFontSubpixelQuantization(cg, false);
     CGContextSetShouldSubpixelQuantizeFonts(cg, false);
     CGContextSetAllowsFontSubpixelPositioning(cg, true);
     CGContextSetShouldSubpixelPositionFonts(cg, true);
     CGContextSetTextDrawingMode(cg, kCGTextFill);
-    CGContextSetGrayFillColor(cg, 0.0f, 1.0f);
+    if (!color) {
+        CGContextSetGrayFillColor(cg, 0.0f, 1.0f);
+    } else {
+        CGFloat components[4];
+        components[0] = (CGFloat)((foreground >> 16) & 0xFF) * (1 / 255.0f);
+        components[1] = (CGFloat)((foreground >> 8) & 0xFF) * (1 / 255.0f);
+        components[2] = (CGFloat)(foreground & 0xFF) * (1 / 255.0f);
+        components[3] = 1.0f;
+        CGColorRef fill = CGColorCreate(space, components);
+        CGContextSetFillColorWithColor(cg, fill);
+        CGColorRelease(fill);
+    }
+    CGColorSpaceRelease(space);
     CGAffineTransform transform = cpuraster_ct_transform(t);
     CGContextSetTextMatrix(cg, transform);
     CGContextSetShouldAntialias(cg, true);
     CGContextSetShouldSmoothFonts(cg, false);
     uint32_t* image = pixels + (size_t)(context_height - height) * context_width;
+    uint32_t background = color ? 0x00000000 : 0xFFFFFFFF;
     for (int row = 0; row < height; ++row)
         for (int column = 0; column < width; ++column)
-            image[(size_t)row * context_width + column] = 0xFFFFFFFF;
+            image[(size_t)row * context_width + column] = background;
     CGAffineTransform inverse = invertible ? CGAffineTransformInvert(transform) : transform;
     CGPoint point = cpuraster_ct_apply_point(CGPointMake(x, y), inverse);
     CGGlyph glyph = (CGGlyph)glyph_id;

@@ -30,8 +30,8 @@ pub:
 // pattern style when there is one, at global_alpha through transform and
 // the device-space clip paths, as for fill_canvas_path(). Returns false
 // without changing pixels for a draw it does not cover: devices Skia would
-// tile, faces Skia cannot open, color (ARGB) glyphs, path-sized glyphs
-// without an outline, and non-finite glyph positions.
+// tile, faces Skia cannot open, color glyphs too wide for SkGlyph, and
+// non-finite glyph positions.
 pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path) bool {
 	if run.glyphs.len == 0 {
 		return true
@@ -53,16 +53,46 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	defer {
 		face.release()
 	}
-	if face.color_glyphs {
-		return false
-	}
 	ctm := canvas_affine(transform)
 	origin := Point{run.translation[0], run.translation[1]}
 	position_matrix := pre_translate(ctm, origin.x, origin.y)
-	as_paths := glyphs_draw_as_paths(run.font_size, position_matrix)
-	mut outlines := []?Path{}
-	if as_paths {
-		outlines = glyph_outlines(face, run.glyphs) or { return false }
+	routes := glyph_routes(face, run.glyphs, glyphs_draw_as_paths(run.font_size, position_matrix)) or {
+		return false
+	}
+	paint_color, _ := canvas_paint_source(color, style, 0)
+	alpha := canvas_paint_alpha(paint_color, global_alpha)
+	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
+	shader := canvas_paint_shader(style, matrix)
+	// The mask strike: A8 with the paint's mask gamma, or ARGB for a color
+	// typeface, whose glyphs CoreText draws in the paint's opaque color.
+	mut strike := new_glyph_strike(face, run.font_size, position_matrix, paint_luminance(paint_color,
+		shader)) or { GlyphStrike{} }
+	defer {
+		strike.release()
+	}
+	if face.color_glyphs {
+		strike.color = true
+		strike.foreground = paint_color & 0xffffff
+	}
+	// prepare_for_direct_mask_drawing(): device positions plus half the
+	// quarter-pixel sample frequency, floored, with the fraction packed into
+	// the glyph's subpixel position.
+	rounding := SkAffine{
+		...position_matrix
+		tx: position_matrix.tx + glyph_subpixel_round
+		ty: position_matrix.ty + glyph_subpixel_round
+	}
+	if face.color_glyphs && strike.font != unsafe { nil } {
+		// Color glyphs too wide for SkGlyph go to a bitmap fallback that is
+		// not ported.
+		for i, id in run.glyphs {
+			if routes[i].kind == .mask {
+				mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
+				if strike.glyph_bounds(id, packed_subpixel(mapped.x), packed_subpixel(mapped.y)).width >= glyph_max_width {
+					return false
+				}
+			}
+		}
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	target.ready()
@@ -71,13 +101,10 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	if !is_finite_f32(origin.x) || !is_finite_f32(origin.y) || run.glyphs.len > 1 << 21 {
 		return true
 	}
-	paint_color, _ := canvas_paint_source(color, style, 0)
-	alpha := canvas_paint_alpha(paint_color, global_alpha)
 	if blend_draws_nothing(mode, paint_alpha_byte(alpha)) {
 		return true
 	}
 	rc := canvas_raster_clip(width, height, clips)
-	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
 	// SkCanvas::onDrawGlyphRunList()'s quick reject with the blob's
 	// conservative bounds: the glyph positions expanded by the typeface's
 	// bounds at the font size. Empty typeface bounds take the glyphs' own
@@ -96,36 +123,31 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	if rc.is_empty {
 		return true
 	}
-	shader := canvas_paint_shader(style, matrix)
-	if as_paths {
-		fill_glyph_outlines(mut pixels, pitch, run, outlines, ctm, &rc, paint_color, shader, alpha,
-			mode)
+	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode)
+	if strike.font == unsafe { nil } {
+		// A singular matrix zeroes fTransform: every mask is empty.
 		return true
 	}
-	mut strike := new_glyph_strike(face, run.font_size, position_matrix, paint_luminance(paint_color,
-		shader)) or { return true }
-	defer {
-		strike.release()
+	// SkBlitter::Choose() for the A8 masks. Color glyphs are sprites with
+	// blitters of their own, so a paint that leaves the masks an
+	// SkNullBlitter still draws them.
+	if strike.color {
+		fill_color_glyphs(mut pixels, pitch, run, routes, mut strike, rounding, &rc, paint_color,
+			alpha, mode)
+		return true
 	}
 	blitter := canvas_paint_blitter(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{}) or {
 		return true
 	}
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
-	// prepare_for_direct_mask_drawing(): device positions plus half the
-	// quarter-pixel sample frequency, floored, with the fraction packed into
-	// the glyph's subpixel position.
-	rounding := SkAffine{
-		...position_matrix
-		tx: position_matrix.tx + glyph_subpixel_round
-		ty: position_matrix.ty + glyph_subpixel_round
-	}
 	for i, id in run.glyphs {
+		if routes[i].kind != .mask {
+			continue
+		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		sub_x := packed_subpixel(mapped.x)
-		sub_y := packed_subpixel(mapped.y)
-		glyph := strike.glyph(id, sub_x, sub_y)
+		glyph := strike.glyph(id, packed_subpixel(mapped.x), packed_subpixel(mapped.y))
 		if glyph.width == 0 || glyph.height == 0 || glyph.width >= glyph_max_width {
-			// Empty glyphs are dropped; images too wide for SkGlyph are
+			// Empty glyphs are dropped; A8 images too wide for SkGlyph are
 			// rejected to a fallback that only draws color glyphs.
 			continue
 		}
@@ -151,34 +173,117 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	return true
 }
 
+// Draw::paintMasks() for an ARGB32 strike: each glyph that survives the
+// position check and touches the clip bounds is drawn whole as a sprite.
+fn fill_color_glyphs(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []GlyphRoute, mut strike GlyphStrike, rounding SkAffine, rc &RasterClip, color u32, alpha f32, mode BlendMode) {
+	clip_bounds := rc.bounds()
+	for i, id in run.glyphs {
+		if routes[i].kind != .mask {
+			continue
+		}
+		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
+		glyph := strike.glyph(id, packed_subpixel(mapped.x), packed_subpixel(mapped.y))
+		if glyph.width == 0 || glyph.height == 0 {
+			continue
+		}
+		pos := Point{floor_f32(mapped.x), floor_f32(mapped.y)}
+		if !check_glyph_position(pos) {
+			continue
+		}
+		x := float_saturate2int(pos.x) + glyph.left
+		y := float_saturate2int(pos.y) + glyph.top
+		if !irect_intersects(clip_bounds, IRect{x, y, x + glyph.width, y + glyph.height}) {
+			continue
+		}
+		draw_glyph_sprite(mut pixels, pitch, glyph, x, y, rc, color, alpha, mode)
+	}
+}
+
+// Draw::drawSprite() of a color glyph's N32 premultiplied image at (x, y)
+// with the text paint: SkBlitter::ChooseSprite() when the clip handles the
+// sprite, otherwise Draw::drawRect() with the image as a nearest, clamped
+// shader translated to (x, y).
+fn draw_glyph_sprite(mut pixels []u8, pitch int, glyph StrikeGlyph, x int, y int, rc &RasterClip, color u32, alpha f32, mode BlendMode) {
+	bounds := IRect{x, y, x + glyph.width, y + glyph.height}
+	if !irect_intersects(rc.bounds(), bounds) {
+		return
+	}
+	bitmap := CanvasBitmap{
+		pixels:        glyph.image
+		width:         glyph.width
+		height:        glyph.height
+		pitch:         glyph.width * 4
+		premultiplied: true
+	}
+	if rc.is_bw || rc.aa.quick_contains(bounds.left, bounds.top, bounds.right, bounds.bottom) {
+		if mut sprite := choose_sprite(mut pixels, pitch, bitmap, x, y, paint_alpha_byte(alpha),
+			alpha, mode)
+		{
+			fill_irect(bounds, rc, mut sprite)
+			return
+		}
+	}
+	shader := new_image_shader(bitmap, .clamp, .clamp, false, affine_translate(f32(x), f32(y)))
+	dev := Rect{f32(x), f32(y), f32(bounds.right), f32(bounds.bottom)}
+	mut blitter := canvas_paint_blitter(mut pixels, pitch, color, shader, alpha, mode, dev) or {
+		return
+	}
+	fill_irect(bounds, rc, mut blitter)
+}
+
+enum GlyphRouteKind {
+	mask
+	path
+	drop
+}
+
+struct GlyphRoute {
+	kind    GlyphRouteKind
+	outline Path
+}
+
 // SkFontPriv::kCanonicalTextSizeForPaths.
 const glyph_path_size = f32(64)
 
-// The 64-point path strike's outlines for each glyph, none for empty glyphs
-// (which are dropped). Fails when a glyph has bounds but no path: Skia
-// would draw it as a mask at the large size, which is not ported.
-fn glyph_outlines(face GlyphFace, ids []u16) ?[]?Path {
+// drawForBitmapDevice()'s routes for each glyph. Below the path size every
+// glyph is a mask. Otherwise the 64-point path strike decides: glyphs that
+// are empty there are dropped, glyphs with outlines are filled as paths,
+// and glyphs without (every glyph of a color typeface) become masks at the
+// full size.
+fn glyph_routes(face GlyphFace, ids []u16, as_paths bool) ?[]GlyphRoute {
+	if !as_paths {
+		return []GlyphRoute{len: ids.len}
+	}
 	mut strike := new_glyph_strike(face, glyph_path_size, SkAffine{}, 0) or { return none }
 	defer {
 		strike.release()
 	}
-	mut outlines := []?Path{}
-	mut cache := map[u16]?Path{}
+	mut routes := []GlyphRoute{}
+	mut cache := map[u16]GlyphRoute{}
 	for id in ids {
-		if id in cache {
-			outlines << cache[id]
+		if route := cache[id] {
+			routes << route
 			continue
 		}
 		bounds := strike.glyph_bounds(id, 0, 0)
-		outline := if bounds.width == 0 || bounds.height == 0 {
-			?Path(none)
+		route := if bounds.width == 0 || bounds.height == 0 {
+			GlyphRoute{
+				kind: .drop
+			}
+		} else if face.color_glyphs {
+			GlyphRoute{}
+		} else if outline := glyph_outline(strike.font, id, strike.transform) {
+			GlyphRoute{
+				kind:    .path
+				outline: outline
+			}
 		} else {
-			?Path(glyph_outline(strike.font, id, strike.transform) or { return none })
+			GlyphRoute{}
 		}
-		cache[id] = outline
-		outlines << outline
+		cache[id] = route
+		routes << route
 	}
-	return outlines
+	return routes
 }
 
 // SkScalerContext_Mac::generatePath() for an unsnapped subpixel strike:
@@ -251,12 +356,15 @@ fn glyph_outline(font voidptr, id u16, transform [6]f64) ?Path {
 // translation are concatenated onto the canvas matrix (SkCanvas::concat(),
 // in SkM44's float arithmetic); with one the outline's points are mapped
 // first so the shader keeps the canvas matrix.
-fn fill_glyph_outlines(mut pixels []u8, pitch int, run CanvasGlyphRun, outlines []?Path, ctm SkAffine, rc &RasterClip, color u32, shader ?CanvasShader, alpha f32, mode BlendMode) {
+fn fill_glyph_outlines(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []GlyphRoute, ctm SkAffine, rc &RasterClip, color u32, shader ?CanvasShader, alpha f32, mode BlendMode) {
 	scale := run.font_size / glyph_path_size
 	exact_ctm := if s := shader { s.kind != .null_ } else { false }
 	ctm_matrix := Matrix{ctm.sx, ctm.ky, ctm.kx, ctm.sy, ctm.tx, ctm.ty}
-	for i, outline_or_none in outlines {
-		outline := outline_or_none or { continue }
+	for i, route in routes {
+		if route.kind != .path {
+			continue
+		}
+		outline := route.outline
 		tx := run.translation[0] + run.positions[i * 2]
 		ty := run.translation[1] + run.positions[i * 2 + 1]
 		device := if exact_ctm {
@@ -631,7 +739,10 @@ struct GlyphStrike {
 	invertible bool
 	table      []u8
 mut:
-	glyphs map[u32]StrikeGlyph
+	// An ARGB32 strike of a color typeface, and its foreground color.
+	color      bool
+	foreground u32
+	glyphs     map[u32]StrikeGlyph
 }
 
 fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?GlyphStrike {
@@ -651,7 +762,9 @@ fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?G
 }
 
 fn (mut s GlyphStrike) release() {
-	release_glyph_font(s.font)
+	if s.font != unsafe { nil } {
+		release_glyph_font(s.font)
+	}
 }
 
 fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
@@ -681,10 +794,26 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 	x := f32(-g_left) + sub_x
 	y := f32(g_top + g_height) - sub_y
 	cg := draw_glyph(s.font, id, s.transform, s.invertible, f64(x), f64(y), context_width,
-		context_height, g_width, g_height) or { return StrikeGlyph{} }
+		context_height, g_width, g_height, s.color, s.foreground) or { return StrikeGlyph{} }
+	first := (context_height - g_height) * context_width
+	if s.color {
+		// cgpixels_to_pmcolor(): SkPackARGB32() of the premultiplied pixel,
+		// RGBA in memory.
+		mut image := []u8{len: g_width * g_height * 4}
+		for row in 0 .. g_height {
+			for column in 0 .. g_width {
+				p := cg[first + row * context_width + column]
+				o := (row * g_width + column) * 4
+				image[o] = u8(p >> 16)
+				image[o + 1] = u8(p >> 8)
+				image[o + 2] = u8(p)
+				image[o + 3] = u8(p >> 24)
+			}
+		}
+		return StrikeGlyph{g_left, g_top, g_width, g_height, image}
+	}
 	// RGBToA8<true>(): luminance of the inverted pixel through the table.
 	mut image := []u8{len: g_width * g_height}
-	first := (context_height - g_height) * context_width
 	for row in 0 .. g_height {
 		for column in 0 .. g_width {
 			p := cg[first + row * context_width + column]
