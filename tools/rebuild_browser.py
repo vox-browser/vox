@@ -15,6 +15,7 @@ import sys
 import tempfile
 import uuid
 from browser_bundle_lease import publication_lease
+import prune_build
 
 ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
@@ -245,6 +246,9 @@ def build_pending(root, runner=run_build, foreground=False):
             name = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-') + uuid.uuid4().hex[:8]
             receipt = state / 'receipts' / name
             receipt.mkdir(parents=True)
+            # Older attempts keep only their small records; the generated C and
+            # sealed compiler inputs stay with this and the published receipt.
+            prune_build.prune_receipts(root / 'Build')
             with tempfile.TemporaryDirectory(prefix='.production-output-', dir=root / 'Build') as temporary:
                 stage = Path(temporary)
                 write_json(receipt / 'inputs-before.json', before)
@@ -393,7 +397,12 @@ def main():
         enqueue(ROOT, background=False, c_mode='parallel' if args.parallel_cc else
                 'single' if args.no_parallel_cc or args.prod else 'parallel',
                 v_prod=args.prod, renderer='skia' if legacy == '1' else 'gg')
-    return build_pending(ROOT, foreground=args.build)
+    code = build_pending(ROOT, foreground=args.build)
+    try:
+        prune_build.prune(ROOT)
+    except Exception as error:
+        print('Build/ pruning skipped: ' + str(error), flush=True)
+    return code
 
 
 if __name__ == '__main__':

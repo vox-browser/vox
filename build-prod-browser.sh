@@ -153,6 +153,8 @@ mkdir -p "$binary_dir" "$resources_dir"
 compiler_output_root=${VOX_BUILD_SCRATCH_DIR:-$build_dir}
 mkdir -p "$compiler_output_root"
 compile_dir=$(mktemp -d "$compiler_output_root/compiler-output.XXXXXX")
+# Failed builds exit through set -e; remove their scratch as well.
+trap 'rm -rf "$compile_dir"' EXIT
 echo "Compiler outputs: $compile_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"

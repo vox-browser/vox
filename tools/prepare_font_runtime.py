@@ -3,6 +3,7 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -57,6 +58,8 @@ def prepare(compiler, output_root=None):
     root = base / digest.hexdigest()
     manifest = root / "manifest.json"
     if manifest.is_file() and json.loads(manifest.read_text()) == identity:
+        # Mark the reuse so tools/prune_build.py keeps a runtime in use.
+        os.utime(root)
         return root
     for name, data in inputs.items():
         target = root / "x/ttf" / name

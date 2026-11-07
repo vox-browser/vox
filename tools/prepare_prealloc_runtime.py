@@ -4,6 +4,7 @@
 import fcntl
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -121,6 +122,8 @@ def prepare(compiler, output_root=None):
                 and hashlib.sha256(staged_compiler.read_bytes()).hexdigest() == compiler_hash
                 and all((root / name).is_file() and hashlib.sha256((root / name).read_bytes()).hexdigest() == sha
                         for name, sha in identity["owned_files"].items())):
+            # Mark the reuse so tools/prune_build.py keeps a runtime in use.
+            os.utime(root)
             return root
         if root.exists():
             raise RuntimeError(f"Incomplete or modified staged V runtime: {root}")
