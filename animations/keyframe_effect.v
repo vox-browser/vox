@@ -454,6 +454,12 @@ pub fn process_property_indexed_keyframes(input BasePropertyIndexedKeyframe) ![]
 	return process_keyframes(merged)
 }
 
+@[heap]
+struct KeyframeLonghands {
+mut:
+	values map[css.PropertyID]&dom.StyleValue
+}
+
 fn (mut effect KeyframeEffect) install_processed_keyframes(input []BaseKeyframe) {
 	effect.keyframes_ = input.clone()
 	compute_missing_keyframe_offsets(mut effect.keyframes_)
@@ -465,13 +471,24 @@ fn (mut effect KeyframeEffect) install_processed_keyframes(input []BaseKeyframe)
 			composite: keyframe.composite
 			easing:    parse_easing_string(keyframe.easing)
 		}
-		for property_id, value in keyframe.parsed_properties {
+		// Keyframe values are sampled per longhand. Expand shorthands first, so
+		// that a longhand specified in the same keyframe takes precedence.
+		mut longhands := &KeyframeLonghands{}
+		for pass in 0 .. 2 {
+			for property_id, value in keyframe.parsed_properties {
+				if css.property_is_shorthand(property_id) != (pass == 0) { continue }
+				css.StyleComputer.for_each_property_expanding_shorthands_with_context(property_id, value,
+					voidptr(longhands), fn (context voidptr, id css.PropertyID, longhand &dom.StyleValue) {
+					mut target := unsafe { &KeyframeLonghands(context) }
+					target.values[id] = unsafe { longhand }
+				})
+			}
+		}
+		for property_id, value in longhands.values {
 			resolved.properties[property_id] = ResolvedProperty{
 				value: unsafe { value }
 			}
-			css.StyleComputer.for_each_property_expanding_shorthands(property_id, value, fn [mut effect] (id css.PropertyID, _ &dom.StyleValue) {
-				effect.target_properties_[id] = true
-			})
+			effect.target_properties_[property_id] = true
 		}
 		for name, value in keyframe.parsed_custom_properties {
 			resolved.custom_properties[name] = ResolvedProperty{ value: unsafe { value } }

@@ -34,6 +34,17 @@ indexed.pause();indexed.currentTime=50;
 if(style.opacity!=="0.4")fail("property-indexed "+style.opacity);
 indexed.cancel();animation.cancel();
 if(animation.playState!=="idle"||style.width!=="10px"||style.opacity!=="1")fail("cancel "+animation.playState+" "+style.width+" "+style.opacity);
+for(const [name,read] of [["padding","paddingLeft"],["borderWidth","borderTopWidth"],["paddingLeft","paddingLeft"]]){
+ target.style.border="1px solid black";
+ const shorthand=target.animate([{[name]:"0px"},{[name]:"10px"}],{duration:1000});
+ shorthand.pause();shorthand.currentTime=500;
+ if(style[read]!=="5px")fail(name+" interpolation "+style[read]);
+ shorthand.cancel();
+}
+const precedence=target.animate([{padding:"0px",paddingLeft:"20px"},{padding:"10px",paddingLeft:"40px"}],{duration:1000});
+precedence.pause();precedence.currentTime=500;
+if(style.paddingLeft!=="30px"||style.paddingTop!=="5px")fail("longhand precedence "+style.paddingLeft+" "+style.paddingTop);
+precedence.cancel();
 let threw=false;try{target.animate([{width:"0px"}],{duration:-1});}catch(error){threw=error instanceof TypeError;}
 if(!threw)fail("negative duration");
 console.log("web animations passed");
