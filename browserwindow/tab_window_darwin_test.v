@@ -96,6 +96,20 @@ fn test_joining_tab_launch_stays_out_of_the_dock_until_shown() {
 	assert macos.msg_i64(app, 'activationPolicy') == activation_policy_accessory
 }
 
+fn test_closing_a_tab_window_does_not_wait_for_a_frame() {
+	pool := macos.autorelease_pool_new()
+	defer { macos.release(pool) }
+	window := macos.msg_id_rect_u64_u64_bool(macos.alloc('NSWindow'),
+		'initWithContentRect:styleMask:backing:defer:', macos.rect(40, 50, 800, 600),
+		ns_window_style_titled | ns_window_style_closable, 2, false)
+	macos.msg_void_bool(window, 'setReleasedWhenClosed:', false)
+	defer { macos.release(window) }
+	macos.msg_void1(window, 'orderFront:', nil_id())
+	assert macos.msg_bool(window, 'isVisible')
+	close_tab_window(window)
+	assert !macos.msg_bool(window, 'isVisible')
+}
+
 fn test_detached_tab_process_launch() {
 	pool := macos.autorelease_pool_new()
 	defer { macos.release(pool) }

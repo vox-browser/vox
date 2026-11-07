@@ -32,3 +32,60 @@ static int vox_tabs_spawn(const char *exe, char **argv, char **env) {
 static int vox_tabs_alive(int pid) { return pid > 0 && (kill(pid, 0) == 0 || errno == EPERM); }
 static void vox_tabs_terminate(int pid) { if (pid > 0) kill(pid, SIGTERM); }
 static int vox_tabs_reap(int pid) { return waitpid(pid, NULL, WNOHANG) != 0; }
+
+#ifdef __APPLE__
+#include <dispatch/dispatch.h>
+
+// Every state save renames a new state.json into the session directory, which
+// reports a write on the directory itself.
+typedef struct {
+    void (*callback)(void *);
+    void *context;
+    int fd;
+} vox_tabs_watch_state;
+
+static dispatch_source_t vox_tabs_watcher;
+
+static void vox_tabs_watch_event(void *data) {
+    vox_tabs_watch_state *state = data;
+    state->callback(state->context);
+}
+
+static void vox_tabs_watch_cancel(void *data) {
+    vox_tabs_watch_state *state = data;
+    close(state->fd);
+    free(state);
+}
+
+static void vox_tabs_unwatch(void) {
+    if (!vox_tabs_watcher) return;
+    dispatch_source_cancel(vox_tabs_watcher);
+#if !__has_feature(objc_arc)
+    dispatch_release(vox_tabs_watcher);
+#endif
+    vox_tabs_watcher = NULL;
+}
+
+static int vox_tabs_watch(const char *folder, void (*callback)(void *), void *context) {
+    vox_tabs_unwatch();
+    int fd = open(folder, O_EVTONLY | O_CLOEXEC);
+    if (fd < 0) return -1;
+    vox_tabs_watch_state *state = malloc(sizeof *state);
+    if (!state) { close(fd); return -1; }
+    *state = (vox_tabs_watch_state){ callback, context, fd };
+    dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, (uintptr_t)fd,
+        DISPATCH_VNODE_WRITE, dispatch_get_main_queue());
+    if (!source) { vox_tabs_watch_cancel(state); return -1; }
+    dispatch_set_context(source, state);
+    dispatch_source_set_event_handler_f(source, vox_tabs_watch_event);
+    dispatch_source_set_cancel_handler_f(source, vox_tabs_watch_cancel);
+    dispatch_resume(source);
+    vox_tabs_watcher = source;
+    return 0;
+}
+#else
+static int vox_tabs_watch(const char *folder, void (*callback)(void *), void *context) {
+    (void)folder; (void)callback; (void)context;
+    return -1;
+}
+#endif

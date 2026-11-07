@@ -160,6 +160,13 @@ pub fn prepare_tab_window(window voidptr) {
 	macos.msg_void_bool(handle, 'setIgnoresMouseEvents:', true)
 }
 
+// close_tab_window closes a tab's window after its process was asked to quit
+// (sapp.quit). Sokol otherwise closes it from its next frame, which never
+// comes while the window is covered by the tab that replaced it.
+pub fn close_tab_window(window voidptr) {
+	macos.msg_void1(macos.Id(window), 'performClose:', nil_id())
+}
+
 pub fn tab_window_frame(window voidptr) Frame {
 	return frame_of(macos.msg_rect(macos.Id(window), 'frame'))
 }
@@ -191,4 +198,7 @@ pub fn show_tab_window(window voidptr, visible bool, frame Frame) {
 	}
 	macos.msg_void1(handle, 'makeKeyAndOrderFront:', nil_id())
 	macos.msg_void_bool(app, 'activateIgnoringOtherApps:', true)
+	// Commit the ordering now: the caller then tells the previously shown tab
+	// to hide its window, which must not happen before this one is on screen.
+	macos.msg_void(macos.get_class('CATransaction'), 'flush')
 }

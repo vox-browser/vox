@@ -22,6 +22,7 @@ mut:
 	process_visible         bool
 	process_initializing    bool
 	profile_refresh_at      i64
+	hold_window_until       i64
 	polling_process         bool
 	close_after_replacement bool
 	closing_process         bool

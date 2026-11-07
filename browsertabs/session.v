@@ -14,6 +14,7 @@ fn C.vox_tabs_alive(i32) i32
 fn C.vox_tabs_terminate(i32)
 fn C.vox_tabs_reap(i32) i32
 fn C.vox_tabs_create_directory(&char) i32
+fn C.vox_tabs_watch(&char, fn (voidptr), voidptr) i32
 
 pub struct Tab {
 pub mut:
@@ -43,6 +44,11 @@ pub mut:
 	version  int = 1
 	tabs     []Tab
 	selected string
+	// The tab whose window is on screen. A newly selected tab orders its window
+	// over the previous one before publishing itself here, and the previous
+	// tab hides only afterwards, so a switch never leaves the screen without a
+	// browser window.
+	shown    string
 	frame    Frame
 	reopen   u64
 }
@@ -74,7 +80,7 @@ pub fn create(frame Frame) !&Session {
 	mut session := &Session{ folder: folder.clone(), id: id.clone() }
 	fd := session.lock()!
 	defer { C.vox_tabs_unlock(fd) }
-	state := State{ tabs: [Tab{ id: id, pid: os.getpid(), ready: true }], selected: id, frame: frame }
+	state := State{ tabs: [Tab{ id: id, pid: os.getpid(), ready: true }], selected: id, shown: id, frame: frame }
 	session.save(state)!
 	session.remember(state)
 	return session
@@ -176,6 +182,29 @@ pub fn (session &Session) selected_index() int {
 }
 
 pub fn (session &Session) visible() bool { return session.state.selected == session.id }
+
+// replaced reports that another tab's window has been shown since this tab's.
+pub fn (session &Session) replaced() bool { return session.state.shown != session.id }
+
+// mark_shown publishes that this tab's window now covers the group's window
+// area, so the previously shown tab can hide its own.
+pub fn (mut session Session) mark_shown() ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	if state.shown == session.id || tab_index(state.tabs, session.id) < 0 { return }
+	state.shown = session.id
+	session.save(state)!
+	session.remember(state)
+}
+
+// watch calls `changed(context)` on the main thread soon after any process
+// saves the session state, so a tab reacts to a switch without waiting for
+// its next poll. A later call replaces the watched session. It is available
+// on macOS only; elsewhere tabs rely on polling.
+pub fn (session &Session) watch(changed fn (voidptr), context voidptr) bool {
+	return C.vox_tabs_watch(&char(session.folder.str), changed, context) == 0
+}
 
 // LaunchServices can reopen the original, now hidden tab process. Publish the
 // request to the group so its selected document keeps ownership of the window.

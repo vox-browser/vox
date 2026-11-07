@@ -93,6 +93,7 @@ fn (mut app BrowserApp) start_process_tabs() {
 		app.tabs.session.set_custom_title(app.tabs.session.id, app.browser_ui().custom_tab_title) or { eprintln(err) }
 	}
 	app.tabs.process_visible = folder == ''
+	app.watch_process_tabs()
 	if folder != '' {
 		app.tabs.process_initializing = true
 		$if macos {
@@ -102,6 +103,46 @@ fn (mut app BrowserApp) start_process_tabs() {
 	mut timer := platform.Timer.create_repeating(100, fn [mut app] () { app.poll_process_tabs() })
 	app.tabs.process_timer = timer
 	timer.start()
+}
+
+// Poll as soon as any tab saves the session, so a switch is shown at once.
+fn (mut app BrowserApp) watch_process_tabs() {
+	app.tabs.session.watch(process_tabs_changed, app)
+}
+
+fn process_tabs_changed(context voidptr) {
+	mut app := unsafe { &BrowserApp(context) }
+	if app.process_tabs() && !app.tabs.closing_process { app.poll_process_tabs() }
+}
+
+// A deselected or closed tab keeps its window on screen until the newly
+// selected tab has ordered its own window over it. Hiding first leaves the
+// screen without a browser window until the next tab notices the switch,
+// which reads as the whole browser blinking. A tab that does not appear in
+// time (for example because it hung) stops holding the old window up.
+fn (mut app BrowserApp) holds_replaced_tab_window() bool {
+	session := app.tabs.session
+	if !app.tabs.process_visible || app.tabs.process_initializing || session.visible()
+		|| session.replaced() || !session.state.tabs.any(it.id == session.state.selected) {
+		app.tabs.hold_window_until = 0
+		return false
+	}
+	now := time.sys_mono_now()
+	if app.tabs.hold_window_until == 0 { app.tabs.hold_window_until = now + 1_000_000_000 }
+	return now < app.tabs.hold_window_until
+}
+
+// Sokol carries out a quit in its next frame. A closed tab quits from a timer
+// or session wake, after the tab replacing it covered its window, and a
+// covered macOS window draws no frames: close that window directly.
+fn (mut app BrowserApp) quit_process_tab() {
+	app.tabs.closing_process = true
+	sapp.quit()
+	$if macos {
+		browserwindow.close_tab_window(sapp.macos_get_window())
+	} $else {
+		request_browser_frame()
+	}
 }
 
 fn (mut app BrowserApp) open_process_tab(address string, background bool) {
@@ -210,8 +251,8 @@ fn (mut app BrowserApp) poll_process_tabs() {
 	}
 	index := session.index()
 	if index < 0 {
-		app.tabs.closing_process = true
-		sapp.quit()
+		if app.holds_replaced_tab_window() { return }
+		app.quit_process_tab()
 		return
 	}
 	if session.state.tabs[index].detach {
@@ -224,20 +265,23 @@ fn (mut app BrowserApp) poll_process_tabs() {
 		}
 		session = app.tabs.session
 		app.tabs.process_initializing = true
+		app.watch_process_tabs()
 	}
-	if app.tabs.close_after_replacement && !session.visible() {
+	if app.tabs.close_after_replacement && !session.visible() && !app.holds_replaced_tab_window() {
 		app.tabs.close_after_replacement = false
-		app.tabs.closing_process = true
 		session.leave() or { eprintln(err) }
-		sapp.quit()
+		app.quit_process_tab()
 		return
 	}
-	visible := session.visible()
+	visible := session.visible() || app.holds_replaced_tab_window()
 	if visible != app.tabs.process_visible || (app.tabs.process_initializing && app.initial_window_frame_presented) {
 		app.tabs.process_initializing = false
 		app.tabs.process_visible = visible
 		if !visible { app.blur_address_bar() }
 		process_tab_window_show(visible, session.state.frame)
+		if visible {
+			session.mark_shown() or { eprintln('Vox: ${err}') }
+		}
 		if app.document != unsafe { nil } {
 			app.document.update_the_visibility_state(if visible { .visible } else { .hidden })
 			app.document.set_embedder_window_active(visible)
