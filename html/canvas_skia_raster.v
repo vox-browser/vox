@@ -218,8 +218,9 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 	// Unfiltered solid, gradient and pattern runs take the Skia-free glyph
 	// masks: CoreText rasterizes each glyph as Skia's unhinted A8 strike
 	// does, with its quarter-pixel positions and mask gamma, and the masks
-	// blit with the paint inside the anti-aliased clip. Runs Skia draws as
-	// paths, color glyphs and filtered draws stay on Skia.
+	// blit with the paint inside the anti-aliased clip. Glyphs over 256
+	// pixels per em fill their 64-point outlines instead. Color glyphs and
+	// filtered draws stay on Skia.
 	if native_style.kind <= 4 && filters.len == 0 {
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_run := cpuraster.CanvasGlyphRun{
