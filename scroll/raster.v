@@ -23,6 +23,11 @@ fn C.native_invalidate_video_backdrop(x f64, y f64, width f64, height f64)
 // Same-binary control: repaint everything beneath a video for each new frame.
 const disable_video_backdrops = os.getenv('VOX_DISABLE_VIDEO_BACKDROPS') != ''
 const bound_pointwise_filter_outputs = os.getenv('VOX_BOUND_POINTWISE_FILTER_OUTPUTS') != ''
+// Same-binary control: draw deferred viewport scrollbars through the GPU batch.
+const gpu_scrollbar_leaves = os.getenv('VOX_GPU_SCROLLBAR_LEAVES') != ''
+
+fn C.native_set_quartz_scrollbar_leaves(enabled int)
+
 // Same-binary control: repaint the complete viewport on every zoomed frame.
 const disable_zoomed_scroll_raster = os.getenv('VOX_DISABLE_ZOOMED_SCROLL_RASTER') != ''
 
@@ -459,13 +464,23 @@ fn (mut app BrowserApp) draw_scroll_raster_scrollbars(page_y f32, window_height 
 		commands << app.zoomed_paint_command(app.paint_commands[index])
 	}
 	mut gpu_overlay := false
+	mut quartz := false
 	$if macos {
-		if app.ctx.native_rendering && gpu_scrollbar_batch_enabled {
+		// Quartz fills these few pixels without a GPU round trip. The GPU
+		// batch remains for leaves Quartz does not handle, and as a control.
+		quartz = app.ctx.native_rendering && !gpu_scrollbar_leaves
+			&& scrollbar_leaves_quartz_drawable(commands)
+		if quartz {
+			C.native_set_quartz_scrollbar_leaves(1)
+		} else if app.ctx.native_rendering && gpu_scrollbar_batch_enabled {
 			gpu_overlay = gpu_canvas_overlay_begin(scrollbar_gpu_damage_rects(commands, 0, page_y))
 		}
 	}
 	defer {
-		$if macos { if gpu_overlay { C.native_gpu_canvas_end() } }
+		$if macos {
+			if gpu_overlay { C.native_gpu_canvas_end() }
+			if quartz { C.native_set_quartz_scrollbar_leaves(0) }
+		}
 	}
 	for position, command in commands {
 		index := indices[position]
@@ -475,6 +490,13 @@ fn (mut app BrowserApp) draw_scroll_raster_scrollbars(page_y f32, window_height 
 		if gpu_overlay { gpu_canvas_command_supported(&command) }
 		app.draw_command(command, 0, page_y, window_height)
 	}
+}
+
+// Rectangles, rounded rectangles and their outlines, which the native rounded
+// rectangle and solid fill draw with Quartz paths.
+fn scrollbar_leaves_quartz_drawable(commands []layout.PaintCommand) bool {
+	return commands.len > 0
+		&& commands.all(it.kind in ['fill_rect', 'fill_rounded_rect', 'stroke_rounded_rect'])
 }
 
 // Only the late scrollbar leaves enter this pass. Their conservative visual

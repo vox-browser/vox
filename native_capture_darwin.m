@@ -6307,6 +6307,14 @@ int native_finish_rect_prefetch_scratch(int commit) {
 
 #include "native_chromium_corner_shapes_darwin.h"
 
+// Deferred viewport scrollbars repaint a few pixels after the scroll raster
+// has stored the document. Quartz fills them directly; a Skia leaf would
+// rasterize on the GPU and wait for its readback.
+static int native_quartz_scrollbar_leaves;
+void native_set_quartz_scrollbar_leaves(int enabled) {
+	native_quartz_scrollbar_leaves = enabled != 0;
+}
+
 void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 	float top_left_x, float top_left_y, float top_right_x, float top_right_y,
 	float bottom_right_x, float bottom_right_y, float bottom_left_x, float bottom_left_y,
@@ -6322,7 +6330,7 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (ladybird_v_skia_draw_rounded_rect(context, x, y, width, height,
+	if (!native_quartz_scrollbar_leaves && ladybird_v_skia_draw_rounded_rect(context, x, y, width, height,
 		top_left_x, top_left_y, top_right_x, top_right_y, bottom_right_x,
 		bottom_right_y, bottom_left_x, bottom_left_y, transform_a, transform_b,
 		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
@@ -6344,6 +6352,11 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGPathRef canvas_path = CGPathCreateCopyByTransformingPath(local_path, &to_canvas);
 	CGColorRef cg_color = native_srgb_color(color);
+	// The Skia leaf honors the caller's coverage choice; keep it here too.
+	if (native_quartz_scrollbar_leaves) {
+		CGContextSaveGState(context);
+		CGContextSetShouldAntialias(context, anti_alias != 0);
+	}
 	CGContextAddPath(context, canvas_path);
 	if (fill) {
 		CGContextSetFillColorWithColor(context, cg_color);
@@ -6353,6 +6366,7 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		CGContextSetLineWidth(context, MAX(thickness, 0.0f));
 		CGContextStrokePath(context);
 	}
+	if (native_quartz_scrollbar_leaves) CGContextRestoreGState(context);
 	CGColorRelease(cg_color);
 	CGPathRelease(canvas_path);
 	CGPathRelease(local_path);
