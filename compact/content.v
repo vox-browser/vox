@@ -236,6 +236,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	if action == 'templateContent' { return binding.template_content_query(key, selector) }
 	if action == 'urlPattern' { return compact_url_pattern_query(selector) }
+	if action == 'compressionTransform' { return compact_compression_query(selector) }
 	if action == 'isEqualNode' { return binding.equal_node_query(key, selector) }
 	if action == 'compareDocumentPosition' { return binding.node_position_query(key, selector) }
 	if action == 'replaceChild' { return binding.replace_child_query(key, selector) }

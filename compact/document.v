@@ -362,5 +362,5 @@ function __compactDocumentElementBindings(object,state){
  object.appendChild=function appendChild(child){return __compactInsertNode(this,child,null,false);};
  object.insertBefore=function insertBefore(child,reference){return __compactInsertNode(this,child,reference,true);};
 }
-' + compact_url_pattern_bootstrap() + compact_document_owner_bootstrap() + compact_tree_walker_bootstrap() + compact_adopted_style_sheets_bootstrap() + compact_document_name_collection_bootstrap()
+' + compact_url_pattern_bootstrap() + compact_compression_streams_bootstrap() + compact_document_owner_bootstrap() + compact_tree_walker_bootstrap() + compact_adopted_style_sheets_bootstrap() + compact_document_name_collection_bootstrap()
 }
