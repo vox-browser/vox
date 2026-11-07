@@ -95,36 +95,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	// which replaces the canvas filters; other filtered draws stay on Skia.
 	solid := native_style.kind == 0
 	if native_style.kind <= 4 && ((solid && f32(blur) > 0) || filters.len == 0) {
-		cpu_style := match native_style.kind {
-			1, 2, 3 {
-				?cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
-					kind:  native_style.kind
-					x0:    native_style.x0
-					y0:    native_style.y0
-					r0:    native_style.r0
-					x1:    native_style.x1
-					y1:    native_style.y1
-					r1:    native_style.r1
-					angle: native_style.angle
-					stops: native_style.stops
-				})
-			}
-			4 {
-				?cpuraster.CanvasPaintStyle(cpuraster.CanvasPattern{
-					pixels:        native_style.pattern
-					width:         native_style.pattern_width
-					height:        native_style.pattern_height
-					pitch:         native_style.pattern_pitch
-					premultiplied: native_style.pattern_alpha == 2
-					display_p3:    native_style.pattern_color_space == 1
-					repetition:    native_style.repetition
-					transform:     native_style.pattern_transform
-				})
-			}
-			else {
-				?cpuraster.CanvasPaintStyle(none)
-			}
-		}
+		cpu_style := canvas_cpu_style(native_style)
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_path := cpuraster.canvas_path(native_path.segments, native_path.even_odd)
 			cpu_clips := clips.map(cpuraster.canvas_path(it.segments, it.even_odd))
@@ -170,6 +141,41 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	mutable_bitmap.native_rows_are_top_down = true
 }
 
+// The cpuraster style for a native style of kind 0 to 4: none for the solid
+// color, a gradient or a pattern.
+fn canvas_cpu_style(native_style skia.Style) ?cpuraster.CanvasPaintStyle {
+	return match native_style.kind {
+		1, 2, 3 {
+			?cpuraster.CanvasPaintStyle(cpuraster.CanvasGradient{
+				kind:  native_style.kind
+				x0:    native_style.x0
+				y0:    native_style.y0
+				r0:    native_style.r0
+				x1:    native_style.x1
+				y1:    native_style.y1
+				r1:    native_style.r1
+				angle: native_style.angle
+				stops: native_style.stops
+			})
+		}
+		4 {
+			?cpuraster.CanvasPaintStyle(cpuraster.CanvasPattern{
+				pixels:        native_style.pattern
+				width:         native_style.pattern_width
+				height:        native_style.pattern_height
+				pitch:         native_style.pattern_pitch
+				premultiplied: native_style.pattern_alpha == 2
+				display_p3:    native_style.pattern_color_space == 1
+				repetition:    native_style.repetition
+				transform:     native_style.pattern_transform
+			})
+		}
+		else {
+			?cpuraster.CanvasPaintStyle(none)
+		}
+	}
+}
+
 fn cpu_stroke_cap(cap CanvasLineCap) cpuraster.StrokeCap {
 	return match cap {
 		.butt { .butt }
@@ -198,14 +204,9 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 		run.font().font_path() or { return false }
 	}
 	clips := state.clip_paths.map(canvas_skia_path(it.path, it.fill_rule))
-	command := skia.Command{
-		style: canvas_skia_style(style)
-		transform: canvas_skia_transform(state.transform)
-		clips: clips
-		composite: int(state.current_compositing_and_blending_operator)
-		global_alpha: f32(state.global_alpha)
-		filters: context.canvas_skia_filters()
-	}
+	native_style := canvas_skia_style(style)
+	native_transform := canvas_skia_transform(state.transform)
+	filters := context.canvas_skia_filters()
 	glyphs := skia.GlyphRun{
 		font_path: font_path
 		face_index: run.font().face_index()
@@ -213,6 +214,39 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 		glyphs: run.glyph_indices()
 		positions: run.glyph_positions().map(f32(it))
 		translation: [f32(translation.x), f32(translation.y)]!
+	}
+	// Unfiltered solid, gradient and pattern runs take the Skia-free glyph
+	// masks: CoreText rasterizes each glyph as Skia's unhinted A8 strike
+	// does, with its quarter-pixel positions and mask gamma, and the masks
+	// blit with the paint inside the anti-aliased clip. Runs Skia draws as
+	// paths, color glyphs and filtered draws stay on Skia.
+	if native_style.kind <= 4 && filters.len == 0 {
+		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
+			cpu_run := cpuraster.CanvasGlyphRun{
+				font_path:   glyphs.font_path
+				face_index:  glyphs.face_index
+				font_size:   glyphs.font_size
+				glyphs:      glyphs.glyphs
+				positions:   glyphs.positions
+				translation: glyphs.translation
+			}
+			if cpuraster.fill_canvas_glyphs(mut mutable_bitmap.data, bitmap.width, bitmap.height,
+				bitmap.pitch, int(bitmap.alpha_type), cpu_run, native_transform, native_style.color,
+				canvas_cpu_style(native_style), f32(state.global_alpha), mode, clips.map(cpuraster.canvas_path(it.segments,
+				it.even_odd))) {
+				mutable_bitmap.alpha_type = 2
+				mutable_bitmap.native_rows_are_top_down = true
+				return true
+			}
+		}
+	}
+	command := skia.Command{
+		style: native_style
+		transform: native_transform
+		clips: clips
+		composite: int(state.current_compositing_and_blending_operator)
+		global_alpha: f32(state.global_alpha)
+		filters: filters
 	}
 	painted := skia.draw_glyph_run(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command, glyphs)
 	assert painted

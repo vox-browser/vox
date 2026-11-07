@@ -671,3 +671,69 @@ fn test_bitmap_commands_match_skia() {
 	}
 	assert expected.any(it != 0 && it != 255)
 }
+
+// fillText() runs without filters take the Skia-free glyph masks: solid
+// text, a rotated translucent color and a gradient under multiply must
+// match skia.draw_glyph_run() for the same glyph run.
+fn test_canvas_text_matches_skia() {
+	$if !macos {
+		return
+	}
+	mut linear := CanvasGradient.create_linear(20, 10, 260, 130)
+	linear.add_color_stop(0, 'rgb(220, 40, 60)') or { panic(err) }
+	linear.add_color_stop(1, 'rgb(20, 60, 230)') or { panic(err) }
+	styles := [FillOrStrokeStyle.from_color(dom.Color{
+		a: 255
+	}), FillOrStrokeStyle.from_color(dom.Color{
+		r: 30
+		g: 120
+		b: 220
+		a: 190
+	}), FillOrStrokeStyle.from_gradient(linear)]
+	transforms := [CanvasAffineTransform{1, 0, 0, 1, 0, 0}, CanvasAffineTransform{0.9, 0.35, -0.35, 0.9, 30, -10},
+		CanvasAffineTransform{1.3, 0, 0.2, 1.1, 0, 0}]
+	operations := [CompositingAndBlendingOperator.source_over, .source_over, .multiply]
+	mut context := cpu_raster_test_context()
+	context.set_font('17px sans-serif')
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, style in styles {
+		context.drawing_state.fill_style = style
+		context.drawing_state.transform = transforms[i]
+		context.drawing_state.global_alpha = if i == 1 { 0.8 } else { 1 }
+		context.drawing_state.current_compositing_and_blending_operator = operations[i]
+		text := 'Glyph run ${i}: fillText'
+		x := 10.25 + f64(i) * 3.5
+		y := 40.5 + f64(i) * 30
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		run := canvas_text_run_for_canvas_state(&context.CanvasState, text, 0)
+		translation := canvas_text_transform(context.drawing_state, run.font(), f64(run.width()),
+			none).map(FloatPoint{x, y})
+		state := context.drawing_state
+		font_path := run.font().font_path() or { panic('missing font path') }
+		command := skia.Command{
+			style:        canvas_skia_style(style.to_gfx_paint_style())
+			transform:    canvas_skia_transform(state.transform)
+			composite:    int(operations[i])
+			global_alpha: f32(state.global_alpha)
+		}
+		glyphs := skia.GlyphRun{
+			font_path:   font_path
+			face_index:  run.font().face_index()
+			font_size:   run.font().point_size
+			glyphs:      run.glyph_indices()
+			positions:   run.glyph_positions().map(f32(it))
+			translation: [f32(translation.x), f32(translation.y)]!
+		}
+		assert skia.draw_glyph_run(mut pixels, bitmap.width, bitmap.height, bitmap.pitch,
+			alpha_type, command, glyphs)
+		expected = pixels.clone()
+		expected_alpha_type = 2
+		context.fill_text(text, x, y, none)
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'glyph run ${i} differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}
