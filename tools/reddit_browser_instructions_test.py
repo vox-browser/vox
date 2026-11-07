@@ -37,6 +37,14 @@ class FrozenResponseTests(unittest.TestCase):
             self.assertEqual([h['value'] for h in headers if h['name']=='content-length'],['13'])
             self.assertIn({'name':'access-control-allow-origin','value':'https://old.reddit.com'},headers)
 
+    def test_query_urls_use_the_native_raw_request_uri_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);url='https://example.test/image?width=140&s=1'
+            self.put(root,url+'\nAccept: '+benchmark.IMAGE_ACCEPT,b'unprefixed',final=url)
+            self.assertIsNone(benchmark.frozen_response(root,url,'Image'))
+            path=self.put(root,'raw-request-uri-v1\n'+url+'\nAccept: '+benchmark.IMAGE_ACCEPT,final=url)
+            self.assertEqual(benchmark.frozen_response(root,url,'Image')[2],path)
+
     def test_redirects_errors_and_missing_responses_are_not_fabricated_as_success(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);url='https://example.test/image'

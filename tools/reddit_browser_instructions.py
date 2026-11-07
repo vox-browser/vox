@@ -42,7 +42,9 @@ def fingerprint_tree(directory):
 def frozen_response(cache, url, resource_type):
     variants = [url + '\nAccept: ' + (IMAGE_ACCEPT if resource_type == 'Image' else '*/*'), url]
     for variant in variants:
-        path = cache / 'resources' / hashlib.sha256(variant.encode()).hexdigest()
+        # Vox's browser_cache_entry_path() prefixes keys of URLs with queries.
+        key = 'raw-request-uri-v1\n' + variant if '?' in url else variant
+        path = cache / 'resources' / hashlib.sha256(key.encode()).hexdigest()
         header_path = path.with_name(path.name + '.headers.json')
         final_path = path.with_name(path.name + '.url')
         if not all(p.is_file() for p in [path, header_path, final_path]):
