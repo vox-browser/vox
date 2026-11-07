@@ -256,6 +256,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			}
 		}
 	}
+	mut backoff := state.block_layout_backoff_
+	backoff_key := if backoff != unsafe { nil } { retained_inline_backoff_key(root) } else { none }
 	if cached := state.previous_inline_layouts_[key] {
 		if cached.space == space
 			&& cached.font_policy == root.document().font_rendering_policy()
@@ -272,8 +274,16 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				context, key, cached)
 		}
 	}
+	// Contexts whose inputs keep being rejected skip collecting them for a
+	// growing number of passes (retained_block_layout.v); a reusable snapshot
+	// is cheaper than laying the lines out again, so misses do not back off.
+	mut collect := true
+	if collecting_key := backoff_key { collect = backoff.allows_collecting(collecting_key) }
 	mut inputs := []RetainedInlineInput{}
-	if !collect_retained_inline_inputs(root, true, mut inputs) {
+	if !collect || !collect_retained_inline_inputs(root, true, mut inputs) {
+		if collect {
+			if rejected_key := backoff_key { backoff.escalate(rejected_key) }
+		}
 		if inline_layout_workspace_is_closed(root, true) {
 			return run_closed_inline_layout(mut state, containing_block, mut used, mode,
 				space, context)
@@ -292,6 +302,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			append_retained_inline_snapshot(mut snapshots, styled, values)
 		}
 	}
+	if accepted_key := backoff_key { backoff.note_reuse(accepted_key) }
 	state.inline_layouts_[key] = &RetainedInlineLayout{
 		inputs:            inputs
 		values:            snapshots

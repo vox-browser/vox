@@ -157,11 +157,13 @@ mut:
 	recorded_pass u32
 }
 
-// Per-document history of retained independent layouts, keyed by DOM node.
+// Per-document history of retained independent and inline layouts, keyed by
+// DOM node.
 // A tree rebuild replaces the layout nodes on the path to each change, so
 // their snapshots, keyed by layout node, can never be reused. Recording one
 // costs a copy of the whole subtree; ancestors of content that keeps changing
-// would pay it on every pass. After a snapshot misses, or is never reused
+// would pay it on every pass, as would contexts whose inputs are rejected.
+// After a snapshot misses or its inputs are rejected, or it is never reused
 // before its element's next layout, twice in a row, each further miss doubles
 // the number of passes that run without recording one. Nested contexts keep
 // their own caches meanwhile.
@@ -185,6 +187,13 @@ fn retained_block_backoff_key(box &Node) ?i64 {
 	if box.is_generated_for_pseudo_element() { return none }
 	owner := box.dom_node() or { return none }
 	return owner.unique_id().value()
+}
+
+// The same element can root both an independent context and an inline
+// formatting context; its inline history uses the negative key space.
+fn retained_inline_backoff_key(root &Node) ?i64 {
+	id := retained_block_backoff_key(root) or { return none }
+	return -id - 1
 }
 
 fn (mut table RetainedBlockBackoffTable) escalate(key i64) {
@@ -237,6 +246,21 @@ fn (mut table RetainedBlockBackoffTable) allows_recording(key i64) bool {
 		return false
 	}
 	return true
+}
+
+// Whether a context whose inputs were rejected should collect them again.
+fn (mut table RetainedBlockBackoffTable) allows_collecting(key i64) bool {
+	mut record := table.entries[key] or { return true }
+	if record.skips == 0 { return true }
+	if record.last_skip != table.pass {
+		// The table outlives this pass's geometry workspace.
+		mut retained := retain_geometry_allocations()
+		defer { retained.finish() }
+		record.skips--
+		record.last_skip = table.pass
+		table.entries[key] = record
+	}
+	return false
 }
 
 fn (mut table RetainedBlockBackoffTable) note_recorded(key i64) {
@@ -335,6 +359,9 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	}
 	mut inputs := []RetainedInlineInput{}
 	if !collect_retained_block_inputs(box, mut inputs, mut state.block_layout_rejections_) {
+		// An ineligible subtree stays ineligible until it changes; repeated
+		// rejections back off like misses instead of collecting every pass.
+		if rejected_key := backoff_key { backoff.escalate(rejected_key) }
 		return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	}
 	width := used.content_width()
