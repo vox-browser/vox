@@ -7,7 +7,8 @@ from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
 from wpt_compare import (WARMUP, Limits, Runner, RunAborted, Server, Session, discover_tests,
-                         group_rss, make_handler, substitute, summarize, upstream_testharness)
+                         group_rss, make_handler, signal_process_group, substitute, summarize,
+                         upstream_testharness)
 
 HARNESS = ('var settings = { output: !(globalThis.internals && globalThis.internals.headless),\n'
            'harness_timeout:{ "normal":150000, "long":300000 } };\n'
@@ -133,6 +134,17 @@ class MemoryTests(unittest.TestCase):
         output = '  412  1000\n  412     24\n 4120  9999\n   41  7777\n'
         self.assertEqual(group_rss(output, 412), 1024 * 1024)
         self.assertEqual(group_rss(output, 9), 0)
+
+    def test_signalling_an_exited_process_group_is_not_an_error(self):
+        sent = []
+
+        def killpg(pid, number):
+            sent.append((pid, number))
+            raise PermissionError(1, 'Operation not permitted')
+
+        signal_process_group(412, 15, killpg=killpg)
+        signal_process_group(412, 9, killpg=lambda *_: (_ for _ in ()).throw(ProcessLookupError()))
+        self.assertEqual(sent, [(412, 15)])
 
 
 class ServerTests(unittest.TestCase):

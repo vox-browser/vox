@@ -512,19 +512,25 @@ def browser_rss(process):
     return group_rss(output, process.pid)
 
 
+def signal_process_group(pid, number, killpg=os.killpg):
+    """Signal a browser's process group that may already have exited.
+
+    macOS reports EPERM rather than ESRCH when the group's only remaining
+    member is the not-yet-reaped leader, so both mean there is nothing to stop.
+    """
+    try:
+        killpg(pid, number)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
 def stop_process_group(process, marker):
     if process.poll() is None:
-        try:
-            os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
+        signal_process_group(process.pid, signal.SIGTERM)
         try:
             process.wait(5)
         except subprocess.TimeoutExpired:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
+            signal_process_group(process.pid, signal.SIGKILL)
             process.wait(5)
     # Helpers that left the group still name the private profile directory.
     subprocess.run(['pkill', '-KILL', '-f', marker], stdout=subprocess.DEVNULL,
