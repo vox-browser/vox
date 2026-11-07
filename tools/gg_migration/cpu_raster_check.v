@@ -774,7 +774,7 @@ struct StrokeCase {
 	composite    int
 	blur         f32
 	style        ?cpuraster.CanvasPaintStyle
-	filters      []cpuraster.MatrixColorFilter
+	filters      []cpuraster.CanvasFilterStep
 }
 
 // A device-space clip path in skia.Path's segment encoding.
@@ -924,7 +924,7 @@ fn compare_canvas_stroke_or_decline(oracle Oracle, initial []u8, c StrokeCase, l
 	path := cpuraster.canvas_path(c.segments, false)
 	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
 		path, c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), c.blur, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
-		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips), cpuraster.new_color_filter(c.filters)) {
+		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips), cpuraster.new_canvas_filter(c.filters)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
 		}
@@ -1238,7 +1238,7 @@ struct FillCase {
 	composite    int
 	blur         f32
 	style        ?cpuraster.CanvasPaintStyle
-	filters      []cpuraster.MatrixColorFilter
+	filters      []cpuraster.CanvasFilterStep
 }
 
 fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! {
@@ -1267,7 +1267,7 @@ fn compare_canvas_fill_or_decline(oracle Oracle, initial []u8, c FillCase, label
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, c.even_odd)
 	if !cpuraster.fill_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type, path,
-		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), c.blur, clip_paths(c.clips), cpuraster.new_color_filter(c.filters)) {
+		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), c.blur, clip_paths(c.clips), cpuraster.new_canvas_filter(c.filters)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
 		}
@@ -1386,6 +1386,10 @@ fn main() {
 	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'colorfilters' {
 		check_color_filter_cases(oracle, count)
+		return
+	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'filterlayers' {
+		check_filter_layer_cases(oracle, count)
 		return
 	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'imageblur' {
@@ -2520,7 +2524,7 @@ struct GlyphCase {
 	clips        []ClipCase
 	composite    int
 	style        ?cpuraster.CanvasPaintStyle
-	filters      []cpuraster.MatrixColorFilter
+	filters      []cpuraster.CanvasFilterStep
 }
 
 type OracleCanvasGlyphs = fn (pixels &u8, font_path &char, glyphs &u16, values &i32, floats &f32) i32
@@ -2550,7 +2554,7 @@ fn compare_canvas_glyphs(glyphs OracleCanvasGlyphs, oracle Oracle, initial []u8,
 		translation: c.translation
 	}
 	if !cpuraster.fill_canvas_glyphs(mut actual, c.width, c.height, c.pitch, c.alpha_type, run,
-		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), clip_paths(c.clips), cpuraster.new_color_filter(c.filters)) {
+		c.transform, c.color, c.style, c.global_alpha, canvas_mode(c.composite), clip_paths(c.clips), cpuraster.new_canvas_filter(c.filters)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
 		}
@@ -2701,15 +2705,22 @@ fn check_glyph_cases(oracle Oracle, count int) {
 	println('canvas glyph runs: ${runs - declined} exact (${drawn} changed pixels), ${declined} declined')
 }
 
-// send_filters() hands the oracle the next draw's canvas filters, as
-// make_filter()'s color matrices (kind 2) with their clamp flags.
-fn send_filters(oracle Oracle, filters []cpuraster.MatrixColorFilter) {
+// send_filters() hands the oracle the next draw's canvas filters:
+// make_filter()'s color matrices (kind 2) with their clamp flags and blurs
+// (kind 0) with their radius.
+fn send_filters(oracle Oracle, filters []cpuraster.CanvasFilterStep) {
 	mut values := []i32{}
 	mut floats := []f32{}
 	for f in filters {
-		values << [i32(2), i32(int(f.clamp)), 0]
-		floats << [f32(0), 0, 0]
-		floats << f.matrix[..]
+		if f.kind == .blur {
+			values << [i32(0), 0, 0]
+			floats << [f.sigma, 0, 0]
+			floats << []f32{len: 20}
+		} else {
+			values << [i32(2), i32(int(f.matrix.clamp)), 0]
+			floats << [f32(0), 0, 0]
+			floats << f.matrix.matrix[..]
+		}
 	}
 	values << 0
 	floats << 0
@@ -2805,12 +2816,31 @@ fn random_color_matrix() cpuraster.MatrixColorFilter {
 	}
 }
 
-fn random_color_filters() []cpuraster.MatrixColorFilter {
-	mut filters := []cpuraster.MatrixColorFilter{}
+fn random_color_filters() []cpuraster.CanvasFilterStep {
+	mut filters := []cpuraster.CanvasFilterStep{}
 	for _ in 0 .. rand.intn(3) or { 0 } + 1 {
-		filters << random_color_matrix()
+		filters << cpuraster.CanvasFilterStep{
+			kind:   .matrix
+			matrix: random_color_matrix()
+		}
 	}
 	return filters
+}
+
+// A canvas blur(): its radius is the sigma, sometimes zero, tiny, large
+// or invalid (which drops the list before it).
+fn random_blur_step() cpuraster.CanvasFilterStep {
+	sigma := match rand.intn(8) or { 0 } {
+		0 { f32(0) }
+		1 { f32(rand.f64() * 0.05) }
+		2 { f32(rand.f64() * 40) }
+		3 { f32(-1) }
+		else { f32(rand.f64() * 6) }
+	}
+	return cpuraster.CanvasFilterStep{
+		kind:  .blur
+		sigma: sigma
+	}
 }
 
 // Fills, strokes (hairlines, thin and wide) and glyph runs under canvas
@@ -2818,7 +2848,7 @@ fn random_color_filters() []cpuraster.MatrixColorFilter {
 // then legacy or pipeline blitters), gradients and patterns (filter stages
 // after the shader), every composite operation and clips. Filters that
 // change transparent black need an image filter layer and must decline.
-fn check_color_filter_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, count int) !(int, int) {
+fn check_color_filter_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, count int, make_filters fn () []cpuraster.CanvasFilterStep) !(int, int) {
 	fonts := glyph_fonts(repo)
 	mut declined := 0
 	for i in 0 .. count {
@@ -2834,10 +2864,24 @@ fn check_color_filter_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo strin
 			1 { ?cpuraster.CanvasPaintStyle(random_pattern(width, height)) }
 			else { ?cpuraster.CanvasPaintStyle(none) }
 		}
-		filters := random_color_filters()
+		filters := make_filters()
 		color := random_composite_color()
 		global_alpha := random_composite_alpha()
-		transform := if rand.intn(2) or { 0 } == 0 { [f32(1), 0, 0, 1, 0, 0]! } else { random_stroke_matrix() }
+		transform := match rand.intn(4) or { 0 } {
+			0 {
+				[f32(1), 0, 0, 1, 0, 0]!
+			}
+			1 {
+				[f32(rand.f64() * 2 + 0.25), 0, 0, f32(rand.f64() * 2 + 0.25), f32(rand.f64() * 20 - 10),
+					f32(rand.f64() * 20 - 10)]!
+			}
+			2 {
+				[f32(1), 0, 0, 1, f32(rand.intn(21) or { 0 } - 10), f32(rand.intn(21) or { 0 } - 10)]!
+			}
+			else {
+				random_stroke_matrix()
+			}
+		}
 		match rand.intn(3) or { 0 } {
 			0 {
 				if compare_canvas_fill_or_decline(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
@@ -2915,11 +2959,45 @@ fn check_color_filter_cases(oracle Oracle, count int) {
 	library := C.dlopen(os.args[1].str, 2)
 	glyphs := unsafe { OracleCanvasGlyphs(oracle_symbol(library, 'oracle_canvas_glyphs')) }
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
-	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count) or {
+	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count, random_color_filters) or {
 		eprintln(err.msg())
 		exit(1)
 	}
 	println('color-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
+}
+
+// Blur filter lists: a lone blur (which draws through an image filter
+// layer), occasionally after or before color matrices or an invalid blur.
+fn random_layer_filters() []cpuraster.CanvasFilterStep {
+	return match rand.intn(8) or { 0 } {
+		0 {
+			mut f := random_color_filters()
+			f << random_blur_step()
+			f
+		}
+		1 {
+			mut f := [random_blur_step()]
+			f << random_color_filters()
+			f
+		}
+		2 {
+			[random_blur_step(), random_blur_step()]
+		}
+		else {
+			[random_blur_step()]
+		}
+	}
+}
+
+fn check_filter_layer_cases(oracle Oracle, count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	glyphs := unsafe { OracleCanvasGlyphs(oracle_symbol(library, 'oracle_canvas_glyphs')) }
+	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
+	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count, random_layer_filters) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('blur-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
 }
 
 type OracleImageBlur = fn (pixels &u8, values &i32, floats &f32, out &u8, info &i32)
