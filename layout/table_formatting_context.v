@@ -1759,11 +1759,11 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 		// Intrinsic widths are node-global, but every intrinsic probe owns a
 		// separate throwaway LayoutState. Reapply the collapsed-border winners so
 		// a cached max-content probe has the same table and cell edges as the
-		// min-content probe that populated the cache.
-		if state.subtree_root != none {
-			resolve_collapsed_table_borders(mut state, table, cached.rows, cached.placements,
-				cached.column_definitions, cached.column_count)
-		}
+		// min-content probe that populated the cache. A relayout's real state
+		// needs them too: the wrapper width adds the table's outer shares, and
+		// without them a cached relayout made GitHub's README tables 1px narrower.
+		resolve_collapsed_table_borders(mut state, table, cached.rows, cached.placements,
+			cached.column_definitions, cached.column_count)
 		return cached
 	}
 	intrinsic_timing_start := time.sys_mono_now()
