@@ -40,9 +40,13 @@ def main():
     function = None
     findings = []
     for line in open(out):
-        m = re.match(r'^_?([A-Za-z0-9_]+):', line)
+        m = re.match(r'^(_?)([A-Za-z0-9_]+):', line)
         if m:
-            function = m.group(1)
+            # Assembler-local labels (LBB0_3, Ltmp4, Lloh12, lCPI0_0) mark
+            # branch targets and constants inside the current function.
+            if not m.group(1) and m.group(2).startswith(('L', 'l')):
+                continue
+            function = m.group(2)
             continue
         if function and function.startswith(args.prefix) and fused.match(line):
             findings.append((function, line.strip()))
