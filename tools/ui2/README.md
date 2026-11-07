@@ -6,7 +6,13 @@ owners to their replacements and explains the retained native boundaries.
 `browserapp/browser_chrome.v`, `browserapp/browser_tabs_ui.v`, `bookmarkui/`,
 `browserapp/browser_settings.v`, and `browserui/` supply controls, layout, styling,
 actions, accessibility labels, popup state and shortcut decisions. Enter submits
-the address. Cmd+L focuses/selects it. Cmd+Shift+D toggles diagnostics;
+the address. Typing opens the address suggestions of `browserui/address_suggestions.v`,
+ranked from history and bookmarks: text typed at the start of a visited host is
+completed inline, Up/Down show rows in the field, Escape returns from a moved
+selection to the typed text, and Enter or a click opens the selected row. The
+adapter's `select_embedded_text_range` selects the completion in AppKit's field
+editor or the custom renderer's editor. Cmd+L focuses/selects the address.
+Cmd+Shift+D toggles diagnostics;
 Cmd+Shift+B toggles bookmarks; Cmd+D saves the committed page. Windows/Linux use
 Ctrl for those commands. Cmd+Option+I or F12 (Ctrl+Shift+I) toggles the docked
 [developer tools](../../devtools/README.md), Cmd+Shift+C (Ctrl+Shift+C) picks
