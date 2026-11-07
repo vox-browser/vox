@@ -73,6 +73,8 @@ mut:
 	// Source selected Shift_JIS retains its genuine lead in this Common owner.
 	shift_jis_decoder_         SourceShiftJisStreamingDecoder
 	shift_jis_decoder_present_ bool
+	// gb18030 and GBK share one decoder.
+	gb18030_decoder_ Gb18030Decoder
 }
 
 fn new_text_decoder_common(encoding_name string, options TextDecoderOptions) TextDecoderCommonMixin {
@@ -107,6 +109,8 @@ pub fn (mut decoder TextDecoderCommonMixin) set_decoder_to_new_instance_of_encod
 	} else if decoder.encoding_ == 'shift_jis' {
 		decoder.shift_jis_decoder_ = SourceShiftJisStreamingDecoder.create()
 		decoder.shift_jis_decoder_present_ = true
+	} else if decoder.encoding_ in ['gb18030', 'gbk'] {
+		decoder.gb18030_decoder_ = Gb18030Decoder{}
 	}
 }
 
@@ -139,6 +143,7 @@ fn decode_bytes_for_encoding(bytes []u8, encoding_name string, fatal bool) !stri
 		'utf-16le' { decode_utf16(bytes, false, fatal)! }
 		'utf-16be' { decode_utf16(bytes, true, fatal)! }
 		'x-user-defined' { decode_x_user_defined(bytes) }
+		'gb18030', 'gbk' { decode_gb18030(bytes, fatal)! }
 		else {
 			viconv.encoding_to_vstring(bytes, encoding_name) or {
 				if fatal {
@@ -174,6 +179,11 @@ fn (mut decoder TextDecoderCommonMixin) decode_item(input []u8, end_of_queue boo
 			panic('Source VERIFY: TextDecoderCommon owns its StreamingDecoder')
 		}
 		ok, decoded := decoder.shift_jis_decoder_.decode_owned_utf8(input, end_of_queue, decoder.fatal_)
+		if !ok { return error('TypeError: Decoding failed') }
+		return decoded
+	}
+	if decoder.encoding_ in ['gb18030', 'gbk'] {
+		ok, decoded := decoder.gb18030_decoder_.decode_owned_utf8(input, end_of_queue, decoder.fatal_)
 		if !ok { return error('TypeError: Decoding failed') }
 		return decoded
 	}
@@ -289,6 +299,13 @@ pub fn (decoder &TextDecoder) decode(input ?[]u8, options TextDecodeOptions) !st
 		// Source TextDecoder consumes the actual owner's direct UTF16
 		// destination; Common/Stream retain the same owner's UTF8 method.
 		ok, units := mutable_decoder.shift_jis_decoder_.decode_owned_utf16(bytes, !options.stream, mutable_decoder.fatal_)
+		if !options.stream { mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder() }
+		if !ok { return error('TypeError: Decoding failed') }
+		owned_result := libjs.utf16_string_from_code_units(units)
+		return owned_result.str()
+	}
+	if mutable_decoder.encoding_ in ['gb18030', 'gbk'] {
+		ok, units := mutable_decoder.gb18030_decoder_.decode_owned_utf16(bytes, !options.stream, mutable_decoder.fatal_)
 		if !options.stream { mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder() }
 		if !ok { return error('TypeError: Decoding failed') }
 		owned_result := libjs.utf16_string_from_code_units(units)
