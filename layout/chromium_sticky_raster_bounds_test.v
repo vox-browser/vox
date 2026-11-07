@@ -5,7 +5,7 @@ import html
 import os
 
 fn test_partial_sticky_rasters_use_the_container_origin_and_refresh_after_resizing() {
-	mut document := html.parse_document(os.read_file('${@VMODROOT}/../Tests/Browser/Brave/input/stackoverflow-sticky-raster-bounds.html') or { panic(err) })
+	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/stackoverflow-sticky-raster-bounds.html') or { panic(err) })
 	defer { document.finalize() }
 	document.set_font_rendering_policy(.chromium)
 	mut sidebar := css.query_selector(document.as_node(), '.sidebar') or { panic('missing sidebar') }

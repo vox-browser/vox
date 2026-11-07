@@ -9,4 +9,4 @@ clang -fobjc-arc -fblocks -Wall -Wextra -Werror -Wno-deprecated-declarations -fr
     "$repo_dir/tools/native_browser_window_state_test.m" -o "$output_dir/window-state-test"
 "$output_dir/window-state-test" "$profile_dir/window-state.plist"
 # V state, malformed saves, placement, fullscreen, and detach decisions.
-exec env VOX_CHROME_TEST_FILE=main_browser_window_state_test.v sh "$repo_dir/tools/test_address_bar.sh" "$@"
+exec env VOX_CHROME_TEST_FILE=browserapp/main_browser_window_state_test.v sh "$repo_dir/tools/test_address_bar.sh" "$@"

@@ -35,6 +35,7 @@ if [ ! -x "$browser" ] \
     || [ "$repo_dir/packaging/Info.plist" -nt "$browser" ] \
     || [ "$repo_dir/packaging/Vox.icns" -nt "$browser" ] \
     || [ "$repo_dir/build-prod-browser.sh" -nt "$browser" ] \
+    || [ "$repo_dir/v.mod" -nt "$browser" ] \
     || [ "$repo_dir/tools/prepare_http_compat.py" -nt "$browser" ] \
     || [ "$repo_dir/tools/prepare_ui2.py" -nt "$browser" ] \
     || find "$repo_dir/tools/ui2" -type f -newer "$browser" -print -quit | grep -q . \
