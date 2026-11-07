@@ -81,14 +81,67 @@ fn (iterator &InlineLevelIterator) chromium_context_run_for_text(text_node &Text
 	return context.restore_source_offsets(run)
 }
 
+enum ChromiumContextScript {
+	common
+	latin
+	cyrillic
+}
+
+// The script of a chunk's first Latin or Cyrillic letter. Spaces, digits,
+// punctuation and combining marks are common to both.
+fn chromium_context_chunk_script(view string) ChromiumContextScript {
+	if view.is_ascii() {
+		for character in view {
+			if (character >= `A` && character <= `Z`) || (character >= `a` && character <= `z`) {
+				return .latin
+			}
+		}
+		return .common
+	}
+	for character in view.runes() {
+		code_point := u32(character)
+		if code_point in u32(`A`) .. u32(`Z` + 1) || code_point in u32(`a`) .. u32(`z` + 1)
+			|| code_point in u32(0x00c0) .. u32(0x0300) {
+			return .latin
+		}
+		if code_point in u32(0x0400) .. u32(0x0530) { return .cyrillic }
+	}
+	return .common
+}
+
+// Blink itemizes text into script runs before shaping (ScriptRunIterator):
+// common characters continue the preceding letter's run and, before any
+// letter, join the following one. A space after Cyrillic text therefore never
+// shapes, or kerns, with a following Latin word, even in a shared face.
+fn chromium_context_chunk_scripts(chunks []TextNodeChunk) []ChromiumContextScript {
+	mut scripts := []ChromiumContextScript{len: chunks.len}
+	mut previous := ChromiumContextScript.common
+	mut leading := 0
+	for index, chunk in chunks {
+		script := chromium_context_chunk_script(chunk.view)
+		if script == .common {
+			scripts[index] = previous
+			continue
+		}
+		scripts[index] = script
+		if previous == .common {
+			for leading < index { scripts[leading] = script; leading++ }
+		}
+		previous = script
+	}
+	return scripts
+}
+
 // A fallback symbol must not remove the kerning context of later words in
 // the primary face. Keep each compatible, contiguous font segment independent;
 // unsupported scripts, bidi paths and multi-glyph clusters still fall back.
+// A script run boundary also ends a segment.
 fn (iterator &InlineLevelIterator) chromium_segmented_context_runs(text_node &TextNode,
 	chunks []TextNodeChunk) []ChromiumTextContextRun {
 	mut runs := []ChromiumTextContextRun{}
 	text := text_node.text_for_rendering()
 	units := if text.is_ascii() { []u16{} } else { utf16_code_units_for_line_box(text) }
+	scripts := chromium_context_chunk_scripts(chunks)
 	mut first := 0
 	for index, chunk in chunks {
 		eligible := chunk.font.font_rendering_policy == .chromium
@@ -96,6 +149,7 @@ fn (iterator &InlineLevelIterator) chromium_segmented_context_runs(text_node &Te
 			&& chromium_context_has_single_supported_script(chunk.view)
 		boundary := !eligible || (index > first
 			&& (voidptr(chunk.font) != voidptr(chunks[first].font)
+				|| scripts[index] != scripts[first]
 				|| chunk.start != chunks[index - 1].start + chunks[index - 1].length))
 		if boundary {
 			if run := iterator.chromium_context_segment(text_node, chunks[first..index], text, units) {

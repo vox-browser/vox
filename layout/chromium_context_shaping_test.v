@@ -312,3 +312,58 @@ fn test_fallback_symbols_separate_contexts_without_enabling_bidi_shaping() {
 	bidi_iterator := InlineLevelIterator{}
 	assert bidi_iterator.chromium_segmented_context_runs(text_node, chunks).len == 0
 }
+
+fn test_context_chunk_scripts_follow_blink_script_runs() {
+	views := [' ', '(V', 'й,', ' ', '12', 'A.', ' ']
+	chunks := views.map(TextNodeChunk{ view: it })
+	assert chromium_context_chunk_scripts(chunks) == [ChromiumContextScript.latin, .latin, .cyrillic,
+		.cyrillic, .cyrillic, .latin, .latin]
+	assert chromium_context_chunk_scripts([TextNodeChunk{ view: ' ' }, TextNodeChunk{ view: '42' }]) == [
+		ChromiumContextScript.common, .common]
+}
+
+// 2ch.su's catalog: PT Sans ships its Cyrillic and Latin subsets as separate
+// faces, so the space in "подразделений VK" selects the Latin face of "VK".
+// Blink still shapes that space in the preceding Cyrillic script run, without
+// the Latin face's space-V kern; a space after Latin text keeps its context.
+fn test_spaces_after_cyrillic_do_not_share_a_latin_words_context() {
+	mut document := html.parse_document('<!doctype html><div id="text" style="font:20px Arial">VA й VA</div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	element := css.query_selector(document.as_node(), '#text') or { panic('element') }
+	child := element.as_node().first_child() or { panic('text') }
+	bridge := child.layout_node() or { panic('layout') }
+	node := unsafe { &Node(bridge.real_layout_handle()) }
+	text_node := node.as_text_node() or { panic('text layout') }
+	cyrillic := &platform.Font{
+		family: 'Vox Cyrillic Context Test'
+		source_path: os.join_path(os.dir(os.dir(@FILE)), 'Tests/Browser/Brave/resources/cyrillic-context.ttf')
+		point_size: 20
+		font_rendering_policy: .chromium
+	}
+	latin := &platform.Font{
+		family: 'Times New Roman'
+		source_path: '/System/Library/Fonts/Supplemental/Times New Roman.ttf'
+		point_size: 20
+		font_rendering_policy: .chromium
+	}
+	if !os.exists(latin.source_path) { return }
+	mut chunks := []TextNodeChunk{}
+	mut splitter := TextNodeChunkIterator.new_with_direction(text_node, true, false, .unidirectional_left_to_right)
+	for {
+		chunk := splitter.next() or { break }
+		chunks << TextNodeChunk{ ...chunk, font: if chunk.view == 'й' { cyrillic } else { latin } }
+	}
+	assert chunks.map(it.view) == ['VA', ' ', 'й', ' ', 'VA']
+	// The face does kern space-V when both share a context.
+	assert platform.shape_text(0, 0, ' V', latin, .ltr).width() < platform.shape_text(0, 0, ' ', latin, .ltr).width()
+		+ platform.shape_text(0, 0, 'V', latin, .ltr).width()
+	iterator := InlineLevelIterator{ is_unidirectional_left_to_right: true }
+	runs := iterator.chromium_segmented_context_runs(text_node, chunks)
+	assert runs.len == 1
+	assert runs[0].start == 0 && runs[0].end == 3
+	mut cursor := ChromiumContextSliceCursor{}
+	assert chromium_segmented_context_slice_with_cursor(runs, chunks[3], mut cursor) == none
+	assert chromium_segmented_context_slice_with_cursor(runs, chunks[4], mut cursor) == none
+}
