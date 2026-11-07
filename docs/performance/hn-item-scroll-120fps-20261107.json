@@ -1,0 +1,1227 @@
+{
+  "date": "2026-11-07",
+  "page": "https://news.ycombinator.com/item?id=50391456 (live, ~1,980 comments)",
+  "protocol": {
+    "tool": "tools/measure_precise_scroll.py",
+    "viewport": [
+      1701,
+      948
+    ],
+    "chrome_height": 112,
+    "backing_scale": 2,
+    "inputs": 600,
+    "input_hz": 120,
+    "target_hz": 120,
+    "delta_css_px": 6,
+    "reverse_every": 300,
+    "settle_seconds": 10,
+    "required_title": "Cybertruck",
+    "network": "Live HTTPS; fresh private profile/cache; OS caches retained. *-i trials add --instructions (diagnostic counters). samp-*, *-gdiag, *-verify*, *-start trials are diagnostic only.",
+    "endpoint": "completed native frame installation after outer view paint; not physical scanout"
+  },
+  "builds": {
+    "h0": "private single-C bundle of HEAD 2c3cd2a88 plus dirty tree (parallel ring copy d58705ab1, Quartz scrollbars 109ee2507, previous round)",
+    "h1": "h0 + finish-frame lookup cache + start diagnostic + reused selected-step buffer (crashed on video pages; reverted, never committed)",
+    "h2": "h1 without the step buffer + square-rect CPU rule (ineffective by default, reverted)",
+    "shared": "Build/v/Vox.app 81adeff14041b7cb, built 20:38 at 0fc101886 after the revert"
+  },
+  "trials": [
+    {
+      "trial": "h0-a",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-a/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-a/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 117.71,
+      "median_interval_ms": 8.34,
+      "p95_interval_ms": 10.54,
+      "max_interval_ms": 76.1,
+      "fraction_over_8_33ms": 0.505,
+      "preparation_median_ms": 3.02,
+      "input_delivery_hz": 117.9,
+      "completed_inputs": 600,
+      "completed_publications": 604,
+      "input_free_publications": 4,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          12.2587890625,
+          12.4208984375,
+          17.001953125
+        ],
+        "load_average_after": [
+          12.2275390625,
+          12.4140625,
+          16.86669921875
+        ]
+      }
+    },
+    {
+      "trial": "h0-i1",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-i1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "1",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-i1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.42,
+      "median_interval_ms": 8.35,
+      "p95_interval_ms": 10.58,
+      "max_interval_ms": 16.67,
+      "fraction_over_8_33ms": 0.508,
+      "preparation_median_ms": 2.74,
+      "input_delivery_hz": 119.6,
+      "completed_inputs": 600,
+      "completed_publications": 600,
+      "input_free_publications": 0,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          12.2275390625,
+          12.4140625,
+          16.86669921875
+        ],
+        "load_average_after": [
+          11.61328125,
+          12.2646484375,
+          16.68408203125
+        ]
+      },
+      "instructions_per_input": 26130911.725,
+      "cpu_ms_per_input": 4.532
+    },
+    {
+      "trial": "h0-b",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-b/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-b/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.56,
+      "median_interval_ms": 8.39,
+      "p95_interval_ms": 10.53,
+      "max_interval_ms": 16.73,
+      "fraction_over_8_33ms": 0.521,
+      "preparation_median_ms": 2.97,
+      "input_delivery_hz": 120.0,
+      "completed_inputs": 600,
+      "completed_publications": 605,
+      "input_free_publications": 6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.48388671875,
+          12.22705078125,
+          16.64453125
+        ],
+        "load_average_after": [
+          11.625,
+          12.19873046875,
+          16.5302734375
+        ]
+      }
+    },
+    {
+      "trial": "samp-h0",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/samp-h0/profile",
+        "VOX_PRECISE_INPUTS": "1500",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/samp-h0/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 116.33,
+      "median_interval_ms": 8.36,
+      "p95_interval_ms": 11.57,
+      "max_interval_ms": 90.98,
+      "fraction_over_8_33ms": 0.513,
+      "preparation_median_ms": 3.57,
+      "input_delivery_hz": 116.7,
+      "completed_inputs": 1500,
+      "completed_publications": 1499,
+      "input_free_publications": 3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.54150390625,
+          12.15966796875,
+          16.46533203125
+        ],
+        "load_average_after": [
+          10.54736328125,
+          11.84130859375,
+          16.1748046875
+        ]
+      }
+    },
+    {
+      "trial": "h0-gdiag",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_DIAGNOSTICS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-gdiag/profile",
+        "VOX_PRECISE_INPUTS": "360",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-gdiag/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 116.68,
+      "median_interval_ms": 8.41,
+      "p95_interval_ms": 10.8,
+      "max_interval_ms": 69.66,
+      "fraction_over_8_33ms": 0.52,
+      "preparation_median_ms": 3.09,
+      "input_delivery_hz": 117.0,
+      "completed_inputs": 360,
+      "completed_publications": 363,
+      "input_free_publications": 3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          10.30322265625,
+          11.64990234375,
+          15.95361328125
+        ],
+        "load_average_after": [
+          11.04638671875,
+          11.748046875,
+          15.88916015625
+        ]
+      }
+    },
+    {
+      "trial": "h0-verify",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_VERIFY": "2",
+        "VOX_GPU_CANVAS_DIAGNOSTICS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-verify/profile",
+        "VOX_PRECISE_INPUTS": "240",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-verify/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 110.1,
+      "median_interval_ms": 8.17,
+      "p95_interval_ms": 17.71,
+      "max_interval_ms": 24.19,
+      "fraction_over_8_33ms": 0.466,
+      "preparation_median_ms": 3.32,
+      "input_delivery_hz": 111.5,
+      "completed_inputs": 240,
+      "completed_publications": 239,
+      "input_free_publications": 1,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          12.52880859375,
+          11.734375,
+          14.990234375
+        ],
+        "load_average_after": [
+          13.6962890625,
+          12.0615234375,
+          15.01318359375
+        ]
+      }
+    },
+    {
+      "trial": "h0-r1",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-r1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-r1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 118.91,
+      "median_interval_ms": 8.29,
+      "p95_interval_ms": 11.12,
+      "max_interval_ms": 19.18,
+      "fraction_over_8_33ms": 0.49,
+      "preparation_median_ms": 3.15,
+      "input_delivery_hz": 119.1,
+      "completed_inputs": 600,
+      "completed_publications": 607,
+      "input_free_publications": 7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          14.85986328125,
+          13.068359375,
+          15.0380859375
+        ],
+        "load_average_after": [
+          14.3642578125,
+          13.1064453125,
+          14.99462890625
+        ]
+      }
+    },
+    {
+      "trial": "h0-r2",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-r2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-r2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 118.45,
+      "median_interval_ms": 8.33,
+      "p95_interval_ms": 10.72,
+      "max_interval_ms": 25.82,
+      "fraction_over_8_33ms": 0.501,
+      "preparation_median_ms": 3.06,
+      "input_delivery_hz": 118.8,
+      "completed_inputs": 600,
+      "completed_publications": 605,
+      "input_free_publications": 6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          14.7353515625,
+          13.2041015625,
+          15.01806640625
+        ],
+        "load_average_after": [
+          14.03271484375,
+          13.19482421875,
+          14.9521484375
+        ]
+      }
+    },
+    {
+      "trial": "h0-r3",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-r3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-r3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.56,
+      "median_interval_ms": 8.29,
+      "p95_interval_ms": 10.79,
+      "max_interval_ms": 16.43,
+      "fraction_over_8_33ms": 0.485,
+      "preparation_median_ms": 2.89,
+      "input_delivery_hz": 119.8,
+      "completed_inputs": 600,
+      "completed_publications": 603,
+      "input_free_publications": 3,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          14.03271484375,
+          13.19482421875,
+          14.9521484375
+        ],
+        "load_average_after": [
+          12.5322265625,
+          12.91748046875,
+          14.779296875
+        ]
+      }
+    },
+    {
+      "trial": "h0-r4",
+      "executable_sha256": "07da2bdc6e663bcc30d61e45bcbaf52c61f5bc84e60d3807bcd8c5660fe978c5",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h0-r4/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h0-r4/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 118.74,
+      "median_interval_ms": 8.36,
+      "p95_interval_ms": 10.76,
+      "max_interval_ms": 19.63,
+      "fraction_over_8_33ms": 0.509,
+      "preparation_median_ms": 2.96,
+      "input_delivery_hz": 119.5,
+      "completed_inputs": 600,
+      "completed_publications": 599,
+      "input_free_publications": 2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.9287109375,
+          12.78564453125,
+          14.7216796875
+        ],
+        "load_average_after": [
+          11.8212890625,
+          12.6767578125,
+          14.61474609375
+        ]
+      }
+    },
+    {
+      "trial": "h1-new-1",
+      "executable_sha256": "b83b85bd3af2ac0b34bfbb31575763f9f4845ce2b4a04271f835b4765cc70b5c",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h1-new-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h1-new-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 112.79,
+      "median_interval_ms": 8.33,
+      "p95_interval_ms": 11.16,
+      "max_interval_ms": 159.97,
+      "fraction_over_8_33ms": 0.499,
+      "preparation_median_ms": 3.0,
+      "input_delivery_hz": 115.5,
+      "completed_inputs": 600,
+      "completed_publications": 595,
+      "input_free_publications": 8,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.07861328125,
+          11.36572265625,
+          12.31884765625
+        ],
+        "load_average_after": [
+          11.67578125,
+          11.48095703125,
+          12.33154296875
+        ]
+      }
+    },
+    {
+      "trial": "h1-off-1",
+      "executable_sha256": "b83b85bd3af2ac0b34bfbb31575763f9f4845ce2b4a04271f835b4765cc70b5c",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_REUSED_SELECTED_STEPS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h1-off-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h1-off-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.41,
+      "median_interval_ms": 8.3,
+      "p95_interval_ms": 10.55,
+      "max_interval_ms": 18.13,
+      "fraction_over_8_33ms": 0.483,
+      "preparation_median_ms": 2.76,
+      "input_delivery_hz": 119.6,
+      "completed_inputs": 600,
+      "completed_publications": 601,
+      "input_free_publications": 1,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.67578125,
+          11.48095703125,
+          12.33154296875
+        ],
+        "load_average_after": [
+          10.78515625,
+          11.28857421875,
+          12.232421875
+        ]
+      }
+    },
+    {
+      "trial": "h1-new-2",
+      "executable_sha256": "b83b85bd3af2ac0b34bfbb31575763f9f4845ce2b4a04271f835b4765cc70b5c",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h1-new-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h1-new-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 114.46,
+      "median_interval_ms": 8.34,
+      "p95_interval_ms": 10.5,
+      "max_interval_ms": 127.51,
+      "fraction_over_8_33ms": 0.501,
+      "preparation_median_ms": 2.67,
+      "input_delivery_hz": 116.4,
+      "completed_inputs": 600,
+      "completed_publications": 597,
+      "input_free_publications": 6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          10.78515625,
+          11.28857421875,
+          12.232421875
+        ],
+        "load_average_after": [
+          10.6640625,
+          11.2421875,
+          12.189453125
+        ]
+      }
+    },
+    {
+      "trial": "h1-off-2",
+      "executable_sha256": "b83b85bd3af2ac0b34bfbb31575763f9f4845ce2b4a04271f835b4765cc70b5c",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_DISABLE_REUSED_SELECTED_STEPS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h1-off-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h1-off-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 118.46,
+      "median_interval_ms": 8.38,
+      "p95_interval_ms": 10.9,
+      "max_interval_ms": 20.54,
+      "fraction_over_8_33ms": 0.515,
+      "preparation_median_ms": 2.86,
+      "input_delivery_hz": 119.5,
+      "completed_inputs": 600,
+      "completed_publications": 602,
+      "input_free_publications": 6,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          10.6640625,
+          11.2421875,
+          12.189453125
+        ],
+        "load_average_after": [
+          11.138671875,
+          11.3154296875,
+          12.18798828125
+        ]
+      }
+    },
+    {
+      "trial": "h1-i1",
+      "executable_sha256": "b83b85bd3af2ac0b34bfbb31575763f9f4845ce2b4a04271f835b4765cc70b5c",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h1-i1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "1",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h1-i1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 108.98,
+      "median_interval_ms": 8.39,
+      "p95_interval_ms": 11.37,
+      "max_interval_ms": 175.02,
+      "fraction_over_8_33ms": 0.516,
+      "preparation_median_ms": 2.91,
+      "input_delivery_hz": 112.9,
+      "completed_inputs": 600,
+      "completed_publications": 588,
+      "input_free_publications": 8,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.138671875,
+          11.3154296875,
+          12.18798828125
+        ],
+        "load_average_after": [
+          10.33935546875,
+          11.12548828125,
+          12.09375
+        ]
+      },
+      "instructions_per_input": 30218434.76,
+      "cpu_ms_per_input": 5.27
+    },
+    {
+      "trial": "h1-start",
+      "executable_sha256": "b83b85bd3af2ac0b34bfbb31575763f9f4845ce2b4a04271f835b4765cc70b5c",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_START_DIAGNOSTICS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h1-start/profile",
+        "VOX_PRECISE_INPUTS": "360",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h1-start/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 102.8,
+      "median_interval_ms": 8.37,
+      "p95_interval_ms": 11.28,
+      "max_interval_ms": 153.84,
+      "fraction_over_8_33ms": 0.51,
+      "preparation_median_ms": 2.98,
+      "input_delivery_hz": 110.2,
+      "completed_inputs": 360,
+      "completed_publications": 341,
+      "input_free_publications": 4,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          10.33935546875,
+          11.12548828125,
+          12.09375
+        ],
+        "load_average_after": [
+          10.34912109375,
+          11.0908203125,
+          12.0537109375
+        ]
+      }
+    },
+    {
+      "trial": "h2-new-1",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-new-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-new-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.36,
+      "median_interval_ms": 8.27,
+      "p95_interval_ms": 10.27,
+      "max_interval_ms": 19.79,
+      "fraction_over_8_33ms": 0.467,
+      "preparation_median_ms": 2.74,
+      "input_delivery_hz": 119.6,
+      "completed_inputs": 600,
+      "completed_publications": 607,
+      "input_free_publications": 7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.98583984375,
+          8.17431640625,
+          8.181640625
+        ],
+        "load_average_after": [
+          8.06982421875,
+          8.17626953125,
+          8.18017578125
+        ]
+      }
+    },
+    {
+      "trial": "h2-off-1",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_START_ON_RECTS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-off-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-off-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.56,
+      "median_interval_ms": 8.32,
+      "p95_interval_ms": 10.1,
+      "max_interval_ms": 17.69,
+      "fraction_over_8_33ms": 0.493,
+      "preparation_median_ms": 2.56,
+      "input_delivery_hz": 119.8,
+      "completed_inputs": 600,
+      "completed_publications": 604,
+      "input_free_publications": 4,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          8.06982421875,
+          8.17626953125,
+          8.18017578125
+        ],
+        "load_average_after": [
+          7.8291015625,
+          8.12548828125,
+          8.1611328125
+        ]
+      }
+    },
+    {
+      "trial": "h2-new-2",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-new-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-new-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.37,
+      "median_interval_ms": 8.32,
+      "p95_interval_ms": 10.31,
+      "max_interval_ms": 18.46,
+      "fraction_over_8_33ms": 0.499,
+      "preparation_median_ms": 2.56,
+      "input_delivery_hz": 119.8,
+      "completed_inputs": 600,
+      "completed_publications": 606,
+      "input_free_publications": 7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.8291015625,
+          8.12548828125,
+          8.1611328125
+        ],
+        "load_average_after": [
+          8.474609375,
+          8.2578125,
+          8.20751953125
+        ]
+      }
+    },
+    {
+      "trial": "h2-off-2",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_START_ON_RECTS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-off-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-off-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.78,
+      "median_interval_ms": 8.36,
+      "p95_interval_ms": 10.01,
+      "max_interval_ms": 13.78,
+      "fraction_over_8_33ms": 0.517,
+      "preparation_median_ms": 2.29,
+      "input_delivery_hz": 120.0,
+      "completed_inputs": 600,
+      "completed_publications": 601,
+      "input_free_publications": 1,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          8.474609375,
+          8.2578125,
+          8.20751953125
+        ],
+        "load_average_after": [
+          7.9404296875,
+          8.154296875,
+          8.17138671875
+        ]
+      }
+    },
+    {
+      "trial": "h2-new-3",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-new-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-new-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 117.41,
+      "median_interval_ms": 8.35,
+      "p95_interval_ms": 10.79,
+      "max_interval_ms": 80.52,
+      "fraction_over_8_33ms": 0.509,
+      "preparation_median_ms": 2.24,
+      "input_delivery_hz": 118.2,
+      "completed_inputs": 600,
+      "completed_publications": 602,
+      "input_free_publications": 5,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.9404296875,
+          8.154296875,
+          8.17138671875
+        ],
+        "load_average_after": [
+          7.08740234375,
+          7.93310546875,
+          8.08984375
+        ]
+      }
+    },
+    {
+      "trial": "h2-off-3",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_START_ON_RECTS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-off-3/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-off-3/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 118.77,
+      "median_interval_ms": 8.33,
+      "p95_interval_ms": 10.37,
+      "max_interval_ms": 16.84,
+      "fraction_over_8_33ms": 0.497,
+      "preparation_median_ms": 2.34,
+      "input_delivery_hz": 120.0,
+      "completed_inputs": 600,
+      "completed_publications": 597,
+      "input_free_publications": 2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.08740234375,
+          7.93310546875,
+          8.08984375
+        ],
+        "load_average_after": [
+          7.05615234375,
+          7.85693359375,
+          8.0576171875
+        ]
+      }
+    },
+    {
+      "trial": "h2-i-new",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-i-new/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "1",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-i-new/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.36,
+      "median_interval_ms": 8.31,
+      "p95_interval_ms": 10.81,
+      "max_interval_ms": 27.01,
+      "fraction_over_8_33ms": 0.492,
+      "preparation_median_ms": 2.35,
+      "input_delivery_hz": 119.6,
+      "completed_inputs": 600,
+      "completed_publications": 607,
+      "input_free_publications": 7,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.05615234375,
+          7.85693359375,
+          8.0576171875
+        ],
+        "load_average_after": [
+          6.8916015625,
+          7.767578125,
+          8.0205078125
+        ]
+      },
+      "instructions_per_input": 26296087.255,
+      "cpu_ms_per_input": 3.993
+    },
+    {
+      "trial": "h2-i-off",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_START_ON_RECTS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-i-off/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "1",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-i-off/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.51,
+      "median_interval_ms": 8.37,
+      "p95_interval_ms": 10.29,
+      "max_interval_ms": 17.31,
+      "fraction_over_8_33ms": 0.523,
+      "preparation_median_ms": 2.48,
+      "input_delivery_hz": 119.7,
+      "completed_inputs": 600,
+      "completed_publications": 604,
+      "input_free_publications": 4,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.06005859375,
+          7.78759765625,
+          8.02587890625
+        ],
+        "load_average_after": [
+          7.4375,
+          7.83154296875,
+          8.03564453125
+        ]
+      },
+      "instructions_per_input": 25765957.98666667,
+      "cpu_ms_per_input": 4.138
+    },
+    {
+      "trial": "h2-start",
+      "executable_sha256": "64cdb7f33a9272281caa24b02da3ba38d9f27dbd74f1ea3f55369866a8b5ddc8",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_GPU_CANVAS_START_DIAGNOSTICS": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/h2-start/profile",
+        "VOX_PRECISE_INPUTS": "360",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/h2-start/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.28,
+      "median_interval_ms": 8.36,
+      "p95_interval_ms": 10.47,
+      "max_interval_ms": 12.4,
+      "fraction_over_8_33ms": 0.52,
+      "preparation_median_ms": 2.5,
+      "input_delivery_hz": 119.6,
+      "completed_inputs": 360,
+      "completed_publications": 362,
+      "input_free_publications": 2,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          7.4375,
+          7.83154296875,
+          8.03564453125
+        ],
+        "load_average_after": [
+          7.62255859375,
+          7.84375,
+          8.033203125
+        ]
+      }
+    },
+    {
+      "trial": "shared-1",
+      "executable_sha256": "81adeff14041b7cb78bd381a16c0efb22a25e5320f2f6251d7d62f6810b41d8f",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/shared-1/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/shared-1/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 117.56,
+      "median_interval_ms": 8.34,
+      "p95_interval_ms": 10.57,
+      "max_interval_ms": 76.48,
+      "fraction_over_8_33ms": 0.5,
+      "preparation_median_ms": 2.2,
+      "input_delivery_hz": 118.1,
+      "completed_inputs": 600,
+      "completed_publications": 603,
+      "input_free_publications": 5,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          6.35693359375,
+          7.4658203125,
+          7.8798828125
+        ],
+        "load_average_after": [
+          6.283203125,
+          7.349609375,
+          7.82421875
+        ]
+      }
+    },
+    {
+      "trial": "shared-2",
+      "executable_sha256": "81adeff14041b7cb78bd381a16c0efb22a25e5320f2f6251d7d62f6810b41d8f",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/shared-2/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/shared-2/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 118.41,
+      "median_interval_ms": 8.36,
+      "p95_interval_ms": 10.65,
+      "max_interval_ms": 18.7,
+      "fraction_over_8_33ms": 0.528,
+      "preparation_median_ms": 2.17,
+      "input_delivery_hz": 119.6,
+      "completed_inputs": 600,
+      "completed_publications": 599,
+      "input_free_publications": 4,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          6.283203125,
+          7.349609375,
+          7.82421875
+        ],
+        "load_average_after": [
+          5.92578125,
+          7.18896484375,
+          7.7529296875
+        ]
+      }
+    },
+    {
+      "trial": "shared-i",
+      "executable_sha256": "81adeff14041b7cb78bd381a16c0efb22a25e5320f2f6251d7d62f6810b41d8f",
+      "env": {
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/hn-120b/shared-i/profile",
+        "VOX_PRECISE_INPUTS": "600",
+        "VOX_PRECISE_REVERSE": "300",
+        "VOX_PRECISE_HZ": "120.0",
+        "VOX_PRECISE_DELTA": "6",
+        "VOX_PRECISE_SETTLE": "10.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_INSTRUCTIONS": "1",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/hn-120b/shared-i/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "Cybertruck"
+      },
+      "mean_scroll_fps": 119.34,
+      "median_interval_ms": 8.35,
+      "p95_interval_ms": 10.54,
+      "max_interval_ms": 22.34,
+      "fraction_over_8_33ms": 0.522,
+      "preparation_median_ms": 2.21,
+      "input_delivery_hz": 119.5,
+      "completed_inputs": 600,
+      "completed_publications": 601,
+      "input_free_publications": 1,
+      "browser_exit": 0,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          5.92578125,
+          7.18896484375,
+          7.7529296875
+        ],
+        "load_average_after": [
+          5.6962890625,
+          7.060546875,
+          7.693359375
+        ]
+      },
+      "instructions_per_input": 27187399.845,
+      "cpu_ms_per_input": 3.863
+    }
+  ]
+}

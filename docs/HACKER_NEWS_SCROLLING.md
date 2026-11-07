@@ -329,3 +329,40 @@ still over 8.33 ms. At this size, the largest remaining cost is restoring the
 retained 26 MB viewport ring into each fresh frame buffer (~31% of the
 frame). Presenting the ring through Core Animation without that copy is the
 next step for a steady 120 Hz. Receipt: [`docs/performance/hn-item-scroll-120hz-20261107.json`](performance/hn-item-scroll-120hz-20261107.json).
+
+### 120 FPS (2026-11-07, evening)
+
+With the round above plus the parallel ring copy (`d58705ab1`), Quartz
+deferred scrollbars (`109ee2507`) and the moved-frame snapshot fix
+(`1861dc494`) from the Old Reddit work, the same thread now scrolls at the
+120 Hz input rate:
+
+| Build | Load | Mean scroll FPS | Median / p95 interval (ms) | Preparation median |
+| --- | --- | --- | --- | --- |
+| Private h0 (HEAD `2c3cd2a88` + tree) | 10–15 | 117.7–119.6 (7 runs) | 8.3–8.4 / 10.5–11.1 | 2.7–3.2 ms |
+| Private h2, control arm | 7–8 | 119.6, 119.8, 118.8 | 8.3–8.4 / 10.0–10.4 | 2.3–2.6 ms |
+| Shared bundle `81adeff1…` | 6 | 117.6, 118.4, 119.3 | 8.3–8.4 / 10.5–10.6 | 2.2 ms |
+
+About 97% of intervals are exactly one vsync. The ~10.5 ms p95 is
+publication jitter within it. "Over 8.33 ms" stays near 50% because
+publications sit on both sides of the boundary. Counters: 26–27 million
+instructions and 3.9–4.5 ms of process CPU per input across all threads.
+Input-free publications are 1–8 per 600 inputs.
+
+Committed here: `1161402e2` (the Graphite frame-finish entry is resolved
+once; dyld work showed up every frame) and `5a5d3f8ad`
+(`VOX_GPU_CANVAS_START_DIAGNOSTICS=1` names the command that starts a
+frame's GPU canvas). The diagnostic shows that ~20% of scrolled frames on
+this thread start the canvas for an antialiased skip-ink underline rect,
+paying an upload and a synchronous readback. A rule keeping such rects on
+the CPU was ineffective because isolated shapes are on by default, and it
+would have moved MSAA-tile edges onto a different raster path. It was
+reverted unmeasured for pixels; FPS was already at the input cap.
+
+A reused selected-step buffer (h1) grew inside the scene arena and crashed
+another session's shared bundle on Old Reddit video posts. It was reverted
+before any commit, and the next shared build (20:38) excludes it. Remaining
+per-frame costs, which matter under heavier host load: recording (~23%),
+the main thread waiting on the parallel ring restore (~13%), GPU-canvas
+readbacks in underline frames (~12%), glyph raster and frame keys. Receipt:
+[`docs/performance/hn-item-scroll-120fps-20261107.json`](performance/hn-item-scroll-120fps-20261107.json).
