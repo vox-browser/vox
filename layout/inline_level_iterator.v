@@ -698,12 +698,12 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		}
 		shaped := if run := context.chromium_context_run {
 			chromium_context_slice_with_cursor(run, chunk, mut context.chromium_slice_cursor) or {
-				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+				iterator.shape_chunk_text_for_layout(text_node, chunk.start, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 			}
 		} else {
 			chromium_segmented_context_slice_with_cursor(context.chromium_segment_runs, chunk,
 				mut context.chromium_slice_cursor) or {
-				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+				iterator.shape_chunk_text_for_layout(text_node, chunk.start, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 			}
 		}
 		glyph_run := shaped.glyph_run

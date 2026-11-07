@@ -372,11 +372,22 @@ fn test_spaces_after_cyrillic_do_not_share_a_latin_words_context() {
 // itemizes it into the script runs "й " and "VK" before shaping, so the
 // face's space-V kern never applies; one-script text still shapes whole.
 fn test_mixed_script_chunks_shape_each_blink_script_run_apart() {
-	assert chromium_script_run_starts('й VK') == [3]
-	assert chromium_script_run_starts(' VK й,') == [4]
-	assert chromium_script_run_starts('й,VKи') == [3, 5]
+	assert chromium_script_run_starts('й VK', .common) == [3]
+	assert chromium_script_run_starts(' VK й,', .common) == [4]
+	assert chromium_script_run_starts('й,VKи', .common) == [3, 5]
 	for text in ['VK', 'Что-то', '42 й', 'Wé Pay', 'й 😀 й', ''] {
-		assert chromium_script_run_starts(text) == [], text
+		assert chromium_script_run_starts(text, .common) == [], text
+	}
+	// Leading common characters continue the script before the text.
+	assert chromium_script_run_starts(' VK', .cyrillic) == [1]
+	assert chromium_script_run_starts(' VK', .latin) == []
+	assert chromium_script_run_starts(', й', .latin) == [2]
+	assert chromium_script_run_starts('VK', .cyrillic) == []
+	for text in [' VK', ', й', '42 V', ' й'] {
+		assert chromium_text_starts_with_common_character(text), text
+	}
+	for text in ['VK', 'й ', 'é', ''] {
+		assert !chromium_text_starts_with_common_character(text), text
 	}
 	times := '/System/Library/Fonts/Supplemental/Times New Roman.ttf'
 	if !os.exists(times) { return }
@@ -417,7 +428,53 @@ fn test_mixed_script_chunks_shape_each_blink_script_run_apart() {
 	}
 	// Other policies and right-to-left runs keep their single shaping run.
 	libweb := &platform.Font{ ...font, font_rendering_policy: .libweb }
-	assert chromium_script_itemized_shape(0, 0, 0, 'й VK', libweb, .ltr) == none
-	assert chromium_script_itemized_shape(0, 0, 0, 'й VK', font, .rtl) == none
-	assert chromium_script_itemized_shape(0, 0, 0, 'Что-то', font, .ltr) == none
+	assert chromium_script_itemized_shape(0, 0, 0, 'й VK', libweb, .ltr, .common) == none
+	assert chromium_script_itemized_shape(0, 0, 0, 'й VK', font, .rtl, .common) == none
+	assert chromium_script_itemized_shape(0, 0, 0, 'Что-то', font, .ltr, .common) == none
+}
+
+// 2ch.su's catalog: PT Sans splits "подразделений VK" into a Cyrillic-subset
+// "подразделений" and a Latin-subset " VK" chunk under white-space: pre. The
+// space continues the Cyrillic script run, so it shapes apart from "VK".
+fn test_a_chunks_leading_space_continues_the_script_before_it() {
+	times := '/System/Library/Fonts/Supplemental/Times New Roman.ttf'
+	if !os.exists(times) { return }
+	latin := &platform.Font{
+		family: 'Times New Roman'
+		source_path: times
+		point_size: 20
+		font_rendering_policy: .chromium
+	}
+	space := platform.shape_text_with_spacing(0, 0, 0, ' ', latin, .ltr).glyph_run
+	vk := platform.shape_text_with_spacing(0, 0, 0, 'VK', latin, .ltr).glyph_run
+	whole := platform.shape_text_with_spacing(0, 0, 0, ' VK', latin, .ltr).glyph_run
+	assert whole.width() < space.width() + vk.width()
+	for prefix in ['й', 'a'] {
+		mut document := html.parse_document('<!doctype html><div id="text" style="font:20px Arial;white-space:pre">${prefix} VK</div>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		_ = layout_document_typed_in_viewport(document, 320, 100)
+		element := css.query_selector(document.as_node(), '#text') or { panic('element') }
+		child := element.as_node().first_child() or { panic('text') }
+		bridge := child.layout_node() or { panic('layout') }
+		node := unsafe { &Node(bridge.real_layout_handle()) }
+		text_node := node.as_text_node() or { panic('text layout') }
+		assert chromium_script_before_offset(text_node, 1) == if prefix == 'й' { ChromiumContextScript.cyrillic } else { .latin }
+		iterator := InlineLevelIterator{ is_unidirectional_left_to_right: true }
+		shaped := iterator.shape_chunk_text_for_layout(text_node, utf16_code_units_for_line_box(prefix).len,
+			0, 0, 0, ' VK', latin, .ltr).glyph_run
+		if prefix == 'a' {
+			assert shaped.width() == whole.width()
+			continue
+		}
+		assert shaped.glyphs_.len == space.glyphs_.len + vk.glyphs_.len
+		assert shaped.glyphs_[0].advance == space.glyphs_[0].advance
+		for index, glyph in vk.glyphs_ {
+			placed := shaped.glyphs_[space.glyphs_.len + index]
+			assert placed.advance == glyph.advance
+			assert placed.position.x == f32(f64(space.glyphs_[0].advance) + f64(glyph.position.x))
+		}
+		// The first chunk of the node and a leading letter keep one run.
+		assert iterator.shape_chunk_text_for_layout(text_node, 0, 0, 0, 0, ' VK', latin, .ltr).glyph_run.width() == whole.width()
+	}
 }

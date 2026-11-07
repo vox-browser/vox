@@ -137,25 +137,26 @@ fn chromium_context_chunk_scripts(chunks []TextNodeChunk) []ChromiumContextScrip
 }
 
 // The UTF-8 byte offsets at which a new Blink script run begins in `text`,
-// after its first run. Common characters continue the preceding letter's run;
-// leading ones join the first letter's run.
-fn chromium_script_run_starts(text string) []int {
+// after its first run. Common characters continue the preceding letter's run,
+// which can precede the text in its node (`before`); otherwise leading ones
+// join the first letter's run.
+fn chromium_script_run_starts(text string, before ChromiumContextScript) []int {
 	mut starts := []int{}
 	// Only text holding both Latin and Cyrillic letters can change script.
-	mut has_latin := false
-	mut has_cyrillic := false
+	mut has_latin := before == .latin
+	mut has_cyrillic := before == .cyrillic
 	for byte_ in text {
 		has_latin = has_latin || (byte_ >= `A` && byte_ <= `Z`) || (byte_ >= `a` && byte_ <= `z`)
 			|| (byte_ >= 0xc3 && byte_ <= 0xcb)
 		has_cyrillic = has_cyrillic || (byte_ >= 0xd0 && byte_ <= 0xd4)
 	}
 	if !has_latin || !has_cyrillic { return starts }
-	mut script := ChromiumContextScript.common
+	mut script := before
 	mut offset := 0
 	for character in text.runes() {
 		current := chromium_context_code_point_script(u32(character))
 		if current != .common {
-			if script != .common && current != script { starts << offset }
+			if script != .common && current != script && offset > 0 { starts << offset }
 			script = current
 		}
 		offset += character.length_in_bytes()
@@ -166,11 +167,14 @@ fn chromium_script_run_starts(text string) []int {
 // Blink itemizes text into script runs before shaping (ScriptRunIterator). A
 // chunk mixing Latin and Cyrillic letters, such as a preserved "й VK" or an
 // unbreakable "й,VK", shapes each run apart and never kerns across their
-// boundary. Each run starts at the exact sum of the advances before it.
+// boundary. So does a chunk whose leading space continues Cyrillic text in a
+// different face, as a Latin-subset " VK" after it. Each run starts at the
+// exact sum of the advances before it.
 fn chromium_script_itemized_shape(initial_x f32, letter_spacing f32, word_spacing f32,
-	text string, font &platform.Font, text_type platform.GlyphRunTextType) ?platform.ShapedText {
-	if font.font_rendering_policy != .chromium || text_type != .ltr || text.is_ascii() { return none }
-	starts := chromium_script_run_starts(text)
+	text string, font &platform.Font, text_type platform.GlyphRunTextType,
+	before ChromiumContextScript) ?platform.ShapedText {
+	if font.font_rendering_policy != .chromium || text_type != .ltr { return none }
+	starts := chromium_script_run_starts(text, before)
 	if starts.len == 0 { return none }
 	mut glyphs := []platform.Glyph{}
 	mut pen := f64(initial_x)
@@ -205,10 +209,41 @@ fn chromium_script_itemized_shape(initial_x f32, letter_spacing f32, word_spacin
 fn chromium_shape_text_for_layout(initial_x f32, letter_spacing f32, word_spacing f32, text string,
 	font &platform.Font, text_type platform.GlyphRunTextType) platform.ShapedText {
 	if shaped := chromium_script_itemized_shape(initial_x, letter_spacing, word_spacing, text, font,
-		text_type) {
+		text_type, .common) {
 		return shaped
 	}
 	return platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
+}
+
+// Latin and Cyrillic letters are one- or two-byte UTF-8 sequences; decode only
+// the first character, without allocating.
+fn chromium_text_starts_with_common_character(text string) bool {
+	if text.len == 0 { return false }
+	first := text[0]
+	if first < 0x80 { return chromium_context_code_point_script(u32(first)) == .common }
+	if first & 0xe0 != 0xc0 || text.len < 2 { return true }
+	code_point := (u32(first & 0x1f) << 6) | u32(text[1] & 0x3f)
+	return chromium_context_code_point_script(code_point) == .common
+}
+
+// A chunk's leading common characters continue the script of the last letter
+// before it in its text node. Only that case depends on the chunk's position,
+// so it bypasses the per-node shape cache keyed by text.
+fn (iterator &InlineLevelIterator) shape_chunk_text_for_layout(text_node &TextNode, chunk_start int,
+	initial_x f32, letter_spacing f32, word_spacing f32, text string, font &platform.Font,
+	text_type platform.GlyphRunTextType) platform.ShapedText {
+	if chunk_start > 0 && !text_node.rendered_text_is_ascii_ && font.font_rendering_policy == .chromium
+		&& text_type == .ltr && chromium_text_starts_with_common_character(text) {
+		before := chromium_script_before_offset(text_node, chunk_start)
+		if before != .common {
+			if shaped := chromium_script_itemized_shape(initial_x, letter_spacing, word_spacing, text,
+				font, text_type, before) {
+				return shaped
+			}
+		}
+	}
+	return iterator.shape_text_for_layout(text_node, initial_x, letter_spacing, word_spacing, text, font,
+		text_type)
 }
 
 // A fallback symbol must not remove the kerning context of later words in

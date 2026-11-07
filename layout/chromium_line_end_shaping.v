@@ -112,13 +112,20 @@ struct ChromiumLineEndPrefix {
 }
 
 // The script of the last Latin or Cyrillic letter before this fragment in its
-// text node; scans back from the fragment start without copying the text.
+// text node.
 fn (fragment &LineBoxFragment) chromium_script_before_fragment() ChromiumContextScript {
 	if fragment.start_ <= 0 || fragment.block_ellipsis_text_ != none { return .common }
 	text_node := fragment.layout_node_.as_text_node() or { return .common }
+	return chromium_script_before_offset(text_node, fragment.start_)
+}
+
+// The script of the last Latin or Cyrillic letter before UTF-16 offset
+// `start` in a text node; scans back without copying the text.
+fn chromium_script_before_offset(text_node &TextNode, start int) ChromiumContextScript {
+	if start <= 0 { return .common }
 	value := text_node.text_for_rendering()
 	if text_node.rendered_text_is_ascii_ {
-		mut index := math.min(fragment.start_, value.len) - 1
+		mut index := math.min(start, value.len) - 1
 		for index >= 0 {
 			script := chromium_context_code_point_script(u32(value[index]))
 			if script != .common { return script }
@@ -127,7 +134,7 @@ fn (fragment &LineBoxFragment) chromium_script_before_fragment() ChromiumContext
 		return .common
 	}
 	units := text_node.cached_utf16_code_units_ or { utf16_code_units_for_line_box(value) }
-	mut index := math.min(fragment.start_, units.len) - 1
+	mut index := math.min(start, units.len) - 1
 	for index >= 0 {
 		script := chromium_context_code_point_script(u32(units[index]))
 		if script != .common { return script }
