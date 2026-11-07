@@ -1,5 +1,6 @@
 module main
 
+import browserjs
 import dom
 import html
 import platform
@@ -40,20 +41,26 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 			binding.encode_element_state(unsafe { &dom.Element(owner) })
 		} else { 'null' }
 	}
-	// click() reads the checkedness its native activation behavior produced.
-	if query.op == 'activationState' {
+	// Element state that native code can change behind the compact cache:
+	// attributes, and an input's checkedness and indeterminate flag.
+	if query.op == 'nativeState' {
 		node := binding.node_for_key(key) or {
 			binding.materialize_shadow_host(key, json2.Any(query.state))!
 		}
-		element := node.as_element() or { return error('TypeError: Invalid HTMLInputElement receiver') }
-		if !element.is_html_element() || element.local_name() != 'input' {
-			return error('TypeError: Invalid HTMLInputElement receiver')
+		element := node.as_element() or { return error('TypeError: Invalid Element receiver') }
+		attribute_records, attributes := browserjs.compact_attribute_state(element)
+		mut state := {
+			'attributes': json2.Any({
+				'records': json2.Any(attribute_records)
+				'values':  json2.Any(attributes)
+			})
 		}
-		input := unsafe { &dom.HTMLInputElement(element) }
-		return json2.encode({
-			'checked':       json2.Any(input.checked())
-			'indeterminate': json2.Any(input.indeterminate())
-		})
+		if element.is_html_element() && element.local_name() == 'input' {
+			input := unsafe { &dom.HTMLInputElement(element) }
+			state['checked'] = json2.Any(input.checked())
+			state['indeterminate'] = json2.Any(input.indeterminate())
+		}
+		return json2.encode(state)
 	}
 	if query.op in ['radioItems', 'radioValue', 'setRadioValue'] {
 		mut list := binding.radio_lists[query.id] or { return error('TypeError: Invalid RadioNodeList receiver') }

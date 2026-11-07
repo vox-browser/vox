@@ -27,8 +27,9 @@ const __compactCommonProperties={
  name:{get:function(){return __compactCommonPropertyState(this).attributes.name||"";},set:function(value){__setAttribute(__compactCommonPropertyState(this),"name",value);}},
  hidden:{get:function(){return Object.prototype.hasOwnProperty.call(__compactCommonPropertyState(this).attributes,"hidden");},set:function(value){const s=__compactCommonPropertyState(this);if(value)__setAttribute(s,"hidden","");else __removeAttribute(s,"hidden");}},
  disabled:{get:function(){return !!__compactCommonPropertyState(this).disabled;},set:function(value){const s=__compactCommonPropertyState(this);if(value)__setAttribute(s,"disabled","");else __removeAttribute(s,"disabled");}},
- checked:{get:function(){return !!__compactCommonPropertyState(this).checked;},set:function(value){const s=__compactCommonPropertyState(this);s.checked=!!value;s.checkedDirty=true;}},
- indeterminate:{get:function(){return !!__compactCommonPropertyState(this).indeterminate;},set:function(value){const s=__compactCommonPropertyState(this);s.indeterminate=!!value;s.indeterminateDirty=true;}},
+ // Activation, radio groups and form reset change these natively.
+ checked:{get:function(){const s=__compactCommonPropertyState(this);if(s.tagName==="input")__compactRefreshNativeState(s);return !!s.checked;},set:function(value){const s=__compactCommonPropertyState(this);s.checked=!!value;s.checkedDirty=true;}},
+ indeterminate:{get:function(){const s=__compactCommonPropertyState(this);if(s.tagName==="input")__compactRefreshNativeState(s);return !!s.indeterminate;},set:function(value){const s=__compactCommonPropertyState(this);s.indeterminate=!!value;s.indeterminateDirty=true;}},
  complete:{get:function(){const s=__compactCommonPropertyState(this);return s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"?__nativeImageGet(this,"complete"):!!s.complete;}},
  data:{get:function(){return __compactCommonPropertyState(this).attributes.data||"";},set:function(value){__setElementData(__compactCommonPropertyState(this),value);}},
  sheet:{get:function(){const s=__compactCommonPropertyState(this);return s.tagName==="style"||s.tagName==="link"?__linkStyleSheet(s):null;}}

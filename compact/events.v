@@ -69,6 +69,8 @@ window.__ladybirdDispatch = function (name, id, replay) {
  if(name==="click"){
   if(replay&&replay.nativeDispatched)nativePrevented=!!replay.nativeDefaultPrevented;
   else nativePrevented=!EventTarget.prototype.dispatchEvent.call(target,new MouseEvent("click",{bubbles:true,cancelable:true,view:window}));
+  // Activation may have toggled a checkbox or an ancestor <details>.
+  __compactRefreshActivatedStates(path);
  }
  const event = {type:name, target:target, currentTarget:null, bubbles:bubbles,
   cancelable:name !== "input" && name !== "change", defaultPrevented:nativePrevented, button:0, which:1,
@@ -133,11 +135,6 @@ fn compact_element_click_bootstrap() string {
   // Also commits pending compact mutations, such as a new href, before dispatch.
   try{return apply(matches,element,[":disabled"]);}catch(error){return false;}
  }
- function refreshActivationState(s){
-  if(s.tagName!=="input")return;
-  const request={op:"activationState"};if(s.created)request.state=s;
-  try{const state=__queryElements(s.bridgeKey,"formControls",JSON.stringify(request));s.checked=state.checked;s.indeterminate=state.indeterminate;s.checkedDirty=false;s.indeterminateDirty=false;}catch(error){}
- }
  Object.defineProperty(HTMLElement.prototype,"click",{value:function click(){
   const s=__elementApply(__elementRecordGet,__elementRecords,[this]);
   if(!s||s.namespaceURI!=="http://www.w3.org/1999/xhtml")throw new TypeError("Illegal HTMLElement receiver");
@@ -150,8 +147,8 @@ fn compact_element_click_bootstrap() string {
    preventDefault(){event.preventDefault();},
    stopPropagation(){this.cancelBubble=true;event.stopPropagation();},
    stopImmediatePropagation(){this.cancelBubble=true;this.immediateStopped=true;event.stopImmediatePropagation();}};
-  const relays=[];
-  for(const current of __compactEventPath(s,true)){
+  const relays=[],path=__compactEventPath(s,true);
+  for(const current of path){
    const receiver=current?__element(current):document,relay=function(){
     compact.immediateStopped=false;__compactRunEventHandlers(s,"click",compact,[current],null);
    };
@@ -162,7 +159,7 @@ fn compact_element_click_bootstrap() string {
   }finally{
    for(const [receiver,relay] of relays)apply(nativeRemove,receiver,["click",relay]);
    apply(clickingDelete,clicking,[s]);
-   refreshActivationState(s);
+   __compactRefreshActivatedStates(path);
   }
  },writable:true,enumerable:true,configurable:true});
 })();
