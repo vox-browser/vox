@@ -103,8 +103,11 @@ an explicitly empty value disables import for that process.
 Imported cookies retain domain/host-only, path, expiry, Secure and HttpOnly
 attributes. Netscape files cannot retain SameSite or partition keys, so
 partitioned cookies are excluded and imported cookies are sent only in a
-same-site context. This read-only import does not implement a complete
-persistent cookie store or replace DOM cookie APIs.
+same-site context. Navigation, subresource, WebSocket and credentialed
+Fetch/XMLHttpRequest requests all receive them after the in-memory session
+cookies; old Reddit answers a cookieless `/api/morechildren` POST ("load more
+comments") with a login redirect. This read-only import does not implement a
+complete persistent cookie store or replace DOM cookie APIs.
 
 ## SOCKS5 access
 
