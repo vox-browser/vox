@@ -47,8 +47,11 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   `capture_ab.py` run (pass `--candidate-env VOX_GG_DIAGNOSTICS=1`).
 - `minimize_scene.py` shrinks a failing corpus scene to the lines that still
   make gg.canvas differ from the oracle.
-- `fma_audit.py` fails if clang fuses multiply-adds in `canvas__*` functions;
-  Skia is compiled with `-ffp-contract=off`.
+- `fma_audit.py` fails if clang fuses multiply-adds in `canvas__*` functions
+  (or those of `--prefix`); Skia is compiled with `-ffp-contract=off`.
+  Instructions after assembler-local labels count toward their function. For
+  `cpuraster__` it lists the explicit `mad()`/`fma` calls that reproduce
+  Skia's raster pipeline and `SkCubics`; nothing else may appear.
 - `graphite_shape_oracle.mm` runs Vox's own `libVoxGraphite.dylib` entry point
   on shape descriptors and traces it. With a third argument it replays
   descriptors dumped from the browser (`NAME.shape.bin`, `NAME.args` and
@@ -75,7 +78,10 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   anti-aliased path fills; and random Canvas2D fills, hairline strokes and
   wider `SkStroke` strokes (every cap and join, miter limits around their
   thresholds, closed rects, cusps, degenerate curves, zero-length contours and
-  extreme widths) through the production `vox_skia_canvas_path()`. Inputs must
+  extreme widths), and `SkDashPathEffect` dashes (random, degenerate and
+  invalid intervals and phases, lines and rects culled to the device,
+  translations, too many dashes) through the production
+  `vox_skia_canvas_path()`. Inputs must
   stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes` to run only the stroke
   comparisons. The driver takes an optional seed after `COUNT`.
