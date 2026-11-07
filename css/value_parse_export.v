@@ -80,7 +80,9 @@ fn property_value_can_export(value StyleValue) bool {
 			property_values_can_export(value.values_)
 		}
 		RGBColorStyleValue {
-			property_value_can_export(value.r_[0]) && property_value_can_export(value.g_[0])
+			// A relative color keeps its origin, which the export does not copy.
+			value.relative_origin_.len == 0 && property_value_can_export(value.r_[0])
+				&& property_value_can_export(value.g_[0])
 				&& property_value_can_export(value.b_[0])
 				&& property_value_can_export(value.alpha_[0])
 		}

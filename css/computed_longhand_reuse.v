@@ -176,7 +176,8 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 			}
 		}
 		RGBColorStyleValue {
-			if value.r_.len != 1 || value.g_.len != 1 || value.b_.len != 1 || value.alpha_.len != 1 {
+			if value.relative_origin_.len != 0 || value.r_.len != 1 || value.g_.len != 1
+				|| value.b_.len != 1 || value.alpha_.len != 1 {
 				ComputedLonghandReuseValue{}
 			} else {
 				ComputedLonghandReuseValue{ kind: .rgb, color_syntax: value.color_syntax_,
@@ -268,6 +269,7 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 			snapshot.kind == .rgb && snapshot.children.len == 4
 				&& snapshot.color_syntax == value.color_syntax_
 				&& snapshot.has_name == (value.name_ != none) && snapshot.text == (value.name_ or { '' })
+				&& value.relative_origin_.len == 0
 				&& value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
 				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &value.r_[0])
 				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[1], &value.g_[0])
@@ -368,7 +370,7 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 				&& computed_longhand_reuse_typed_value_is_simple(&value.left_[0])
 		}
 		RGBColorStyleValue {
-			return computed_longhand_colors_enabled()
+			return computed_longhand_colors_enabled() && value.relative_origin_.len == 0
 				&& value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
 				&& computed_longhand_reuse_color_component_is_simple(&value.r_[0])
 				&& computed_longhand_reuse_color_component_is_simple(&value.g_[0])

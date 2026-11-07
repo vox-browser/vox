@@ -12596,7 +12596,7 @@ fn color_function_hue_interpolation_method_from_string(value string) ?HueInterpo
 }
 
 fn color_function_supported_color_space(value string) bool {
-	return to_ascii_lowercase(value) in ['srgb', 'srgb-linear', 'display-p3', 'a98-rgb',
+	return to_ascii_lowercase(value) in ['srgb', 'srgb-linear', 'display-p3', 'display-p3-linear', 'a98-rgb',
 		'prophoto-rgb', 'rec2020', 'xyz', 'xyz-d50', 'xyz-d65']
 }
 

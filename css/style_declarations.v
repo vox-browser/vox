@@ -1482,10 +1482,47 @@ fn style_value_logic_for_length_percentage(value LengthPercentage) StyleValue {
 fn cssom_resolve_color_style_value(style_value &dom.StyleValue, context ColorResolutionContext) &dom.StyleValue {
 	typed := style_value_logic_from_dom(.color, style_value) or { return unsafe { style_value } }
 	if typed is ColorFunctionStyleValue || typed is LabColorStyleValue || typed is OKLabColorStyleValue || typed is LCHColorStyleValue || typed is OKLCHColorStyleValue {
+		if !is_relative_color(typed) {
+			return unsafe { style_value }
+		}
+	}
+	if is_missing_component_form(typed) {
 		return unsafe { style_value }
+	}
+	if resolved := cssom_resolve_typed_color(typed, context) {
+		return dom_style_value_from_value_logic(resolved)
 	}
 	color := typed.to_color(context) or { return unsafe { style_value } }
 	return dom_style_value_from_value_logic(StyleValue(ColorStyleValue.create_from_color(color, .modern, none)))
+}
+
+// The resolved value of a color that keeps a form of its own: a relative
+// color, which only resolves with the current color of its use, and the
+// branch light-dark() selects.
+fn cssom_resolve_typed_color(typed StyleValue, context ColorResolutionContext) ?StyleValue {
+	if typed is LightDarkStyleValue {
+		dark := if scheme := context.color_scheme { scheme == .dark } else { false }
+		branch := if dark { typed.dark[0] } else { typed.light[0] }
+		resolved := cssom_resolve_typed_color(branch.absolutized(ComputationContext{
+			color_scheme: context.color_scheme
+		}), context) or {
+			color := branch.to_color(context)?
+			return StyleValue(ColorStyleValue.create_from_color(color, .modern, none))
+		}
+		return resolved
+	}
+	if is_relative_color(typed) {
+		resolved := resolve_relative_color_for_use(typed, context)
+		if is_relative_color(resolved) {
+			return none
+		}
+		return cssom_resolve_typed_color(resolved, context) or { resolved }
+	}
+	if typed is ColorFunctionStyleValue || typed is LabColorStyleValue || typed is OKLabColorStyleValue
+		|| typed is LCHColorStyleValue || typed is OKLCHColorStyleValue || is_missing_component_form(typed) {
+		return typed
+	}
+	return none
 }
 
 fn cssom_style_value_for_shadow(shadow_type ShadowType, shadows []ShadowData) &dom.StyleValue {

@@ -910,7 +910,10 @@ fn result_missing_components(state ColorInterpolationSpaceState) MissingColorCom
 	}
 }
 
-pub fn perform_color_interpolation(from StyleValue, to StyleValue, delta f64, method ?ColorInterpolationMethod, context ColorResolutionContext) ?InterpolatedColor {
+pub fn perform_color_interpolation(from_value StyleValue, to_value StyleValue, delta f64, method ?ColorInterpolationMethod, context ColorResolutionContext) ?InterpolatedColor {
+	// Relative colors take part with their resolved channels, missing ones included.
+	from := resolve_relative_color_for_use(from_value, context)
+	to := resolve_relative_color_for_use(to_value, context)
 	mut from_color := initialize_interpolation_color(from, context)
 	mut to_color := initialize_interpolation_color(to, context)
 	if !prepare_interpolation_color(from, mut from_color, context) || !prepare_interpolation_color(to, mut to_color, context) {

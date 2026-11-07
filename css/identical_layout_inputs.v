@@ -51,7 +51,8 @@ fn identical_layout_value_is_safe(value &StyleValue) bool {
 			value.parameter_.len == 1 && identical_layout_value_is_safe(&value.parameter_[0])
 		}
 		RGBColorStyleValue {
-			value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
+			value.relative_origin_.len == 0 && value.r_.len == 1 && value.g_.len == 1
+				&& value.b_.len == 1 && value.alpha_.len == 1
 				&& identical_layout_value_is_safe(&value.r_[0])
 				&& identical_layout_value_is_safe(&value.g_[0])
 				&& identical_layout_value_is_safe(&value.b_[0])

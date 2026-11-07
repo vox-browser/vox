@@ -34,7 +34,8 @@ fn computed_page_value_is_scalar(value &StyleValue) bool {
 			value.parameter_.len == 1 && computed_page_value_is_scalar(&value.parameter_[0])
 		}
 		RGBColorStyleValue {
-			value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
+			value.relative_origin_.len == 0 && value.r_.len == 1 && value.g_.len == 1
+				&& value.b_.len == 1 && value.alpha_.len == 1
 				&& computed_page_value_is_scalar(&value.r_[0])
 				&& computed_page_value_is_scalar(&value.g_[0])
 				&& computed_page_value_is_scalar(&value.b_[0])

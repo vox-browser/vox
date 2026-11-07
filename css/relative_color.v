@@ -364,13 +364,16 @@ fn relative_color_channels(origin StyleValue, target ConcreteColorType, context 
 	}
 	if same_space {
 		components := native or { return none }
+		// Missing components of an rgb(), hsl() or hwb() origin stay missing;
+		// the other functions resolve them to zero.
+		carries_missing := target in [ConcreteColorType.rgb, .hsl, .hwb]
 		origin_missing := extract_missing_components(origin)
 		for index in 0 .. 3 {
 			values[index] = components.component(index)
-			missing[index] = origin_missing.components[index]
+			missing[index] = carries_missing && origin_missing.components[index]
 		}
 		alpha = components.alpha()
-		alpha_missing = origin_missing.alpha
+		alpha_missing = carries_missing && origin_missing.alpha
 		// The origin contributes its computed value.
 		match target {
 			.lab, .lch {
@@ -566,6 +569,9 @@ fn resolve_relative_color_parts(parts RelativeColorParts, origin StyleValue, con
 fn absolutize_relative_color(style_value StyleValue, context ComputationContext) ?StyleValue {
 	// Every computed color passes through here; absolute ones leave at once.
 	if !is_relative_color(style_value) {
+		if is_missing_component_form(style_value) {
+			return style_value
+		}
 		return none
 	}
 	parts := relative_color_parts(style_value) or { return none }
@@ -584,8 +590,10 @@ fn absolutize_relative_color(style_value StyleValue, context ComputationContext)
 			abstract_element:          context.abstract_element
 		}
 	}
-	if resolved := resolve_relative_color_parts(parts, origin, color_context) {
-		return resolved
+	if !color_depends_on_current_color(origin) {
+		if resolved := resolve_relative_color_parts(parts, origin, color_context) {
+			return resolved
+		}
 	}
 	return relative_color_style_value(RelativeColorParts{
 		...parts
@@ -613,4 +621,42 @@ fn serialize_missing_component_form(function_name string, components []StyleValu
 		result += ' / ' + alpha.serialize(mode)
 	}
 	return result + ')'
+}
+
+// currentcolor resolves only once the color is used, so a color made from it
+// keeps its specified form as its computed value.
+fn color_depends_on_current_color(value StyleValue) bool {
+	match value {
+		KeywordStyleValue {
+			return value.keyword() == .currentcolor
+		}
+		ColorMixStyleValue {
+			return color_depends_on_current_color(value.first_component[0].color)
+				|| color_depends_on_current_color(value.second_component[0].color)
+		}
+		LightDarkStyleValue {
+			return color_depends_on_current_color(value.light[0])
+				|| color_depends_on_current_color(value.dark[0])
+		}
+		else {
+			if parts := relative_color_parts(value) {
+				return color_depends_on_current_color(parts.origin)
+			}
+			return false
+		}
+	}
+}
+
+// A relative color resolved with the context of its use, for interpolation
+// and resolved values; other colors are returned unchanged.
+fn resolve_relative_color_for_use(value StyleValue, context ColorResolutionContext) StyleValue {
+	parts := relative_color_parts(value) or { return value }
+	return resolve_relative_color_parts(parts, parts.origin, context) or { value }
+}
+
+fn is_missing_component_form(value StyleValue) bool {
+	return match value {
+		HSLColorStyleValue, HWBColorStyleValue { value.missing_component_form_ }
+		else { false }
+	}
 }
