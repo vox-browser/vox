@@ -47,6 +47,18 @@ fn chromium_paintable_box_border_radii_constrained(computed &css.ComputedValues,
 	top_right := chromium_paint_corner_radius(computed.border_top_right_radius(), context, width, height)
 	bottom_right := chromium_paint_corner_radius(computed.border_bottom_right_radius(), context, width, height)
 	bottom_left := chromium_paint_corner_radius(computed.border_bottom_left_radius(), context, width, height)
+	// An elliptical box (50% radii) stays an oval of the snapped box. Blink's
+	// common factor leaves it a hair short of one (13x15.93 on a 26x32 avatar
+	// laid out 26.11px wide), which looks the same in its analytic raster but
+	// would move Vox off its exact oval raster path.
+	half_width := f32(width.to_double()) / 2
+	half_height := f32(height.to_double()) / 2
+	if constraint_width > 0 && constraint_height > 0
+		&& [top_left, top_right, bottom_right, bottom_left].all(f32(it.x) == half_width
+		&& f32(it.y) == half_height) {
+		oval := CornerRadius{f64(constraint_width / 2), f64(constraint_height / 2)}
+		return BoxRadii{oval, oval, oval, oval}
+	}
 	// FloatRoundedRect::ConstrainRadii applies one common float factor.
 	horizontal := f32(math.max(f32(top_left.x) + f32(top_right.x), f32(bottom_left.x) + f32(bottom_right.x)))
 	vertical := f32(math.max(f32(top_left.y) + f32(bottom_left.y), f32(top_right.y) + f32(bottom_right.y)))

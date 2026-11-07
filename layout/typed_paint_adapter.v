@@ -3637,6 +3637,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut border_styles := solid_box_border_styles()
 	mut border_radius := 0.0
 	mut border_radii := BoxRadii{}
+	mut overflow_clip_radii := BoxRadii{}
 	mut outline_width := 0.0
 	mut outline_offset := 0.0
 	mut outline_color := text_color
@@ -3726,15 +3727,20 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		border_colors = computed_border_colors(computed)
 		border_color = border_colors.top
 		border_styles = computed_border_styles(computed)
-		raw_radii := if computed.has_noninitial_border_radii() && node.document().font_rendering_policy() == .chromium {
+		layout_radii := paintable_box_border_radii_data(computed, used.border_box_width(), used.border_box_height())
+		radius_context := css.LengthResolutionContext.for_computed_properties(computed)
+		raw_radii := if computed.has_noninitial_border_radii() && radius_context.use_chromium_geometry {
 			snapped := pixel_snapped_layout_rect_at_scale(LayoutRect{border_box_bounds.x,
 				border_box_bounds.y, border_box_bounds.width, border_box_bounds.height}, chromium_paint_pixel_scale(voidptr(node)))
-			chromium_paintable_box_border_radii_constrained(computed, css.LengthResolutionContext.for_computed_properties(computed),
+			chromium_paintable_box_border_radii_constrained(computed, radius_context,
 				used.border_box_width(), used.border_box_height(), f32(snapped.width), f32(snapped.height))
 		} else {
-			paintable_box_border_radii_data(computed, used.border_box_width(), used.border_box_height())
+			layout_radii
 		}
 		border_radii = paintable_box_normalized_border_radii_data(raw_radii, computed, .no)
+		// The overflow clip keeps the unsnapped rect, so it keeps the radii
+		// constrained against that rect: an elliptical avatar stays an oval.
+		overflow_clip_radii = paintable_box_normalized_border_radii_data(layout_radii, computed, .no)
 		border_radius = border_radii.top_left.x
 		if outline := paintable_box_outline_data(computed) {
 			outline_width = outline.top.width
@@ -4176,7 +4182,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		}
 	}
 	overlay := compatibility_overlay_data(node, computed, used)
-	mut overflow_clip := compatibility_overflow_clip(node, computed, used, paint_position, border_radii)
+	mut overflow_clip := compatibility_overflow_clip(node, computed, used, paint_position, overflow_clip_radii)
 	if is_svg_viewport_node(node) {
 		if clip := overflow_clip {
 			mut clip_position := paint_position
