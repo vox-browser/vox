@@ -388,3 +388,47 @@ Median publication intervals fall from 11.3–11.5 to 8.6–9.5 ms, p95 from
 the arms no more than repeated runs of one arm (live votes, thumb fade).
 The remaining cost is one synchronous GPU canvas readback per frame (about a
 fifth of the frame), leaf drawing, and the parallel ring restore.
+
+### Reaching the 120 Hz input rate
+
+Two more fixes bring the whole thread to the rate the precise input is
+delivered at (about 119.5 Hz on this host):
+
+- `7f7bee1f1` maps another shared IOSurface frame, up to six, while Core
+  Animation still holds every earlier one. A third of the frames had fallen
+  back to a CGImage that Core Animation copied in full (3402×2120) while
+  committing. Same executable, three alternating pairs: capped at three
+  117.8/107.4/93.6 fps, growing 118.6/117.3/101.4; median intervals 8.38–9.28
+  → 8.24–8.35 ms. Control: `VOX_SHARED_FRAME_BUFFERS=3`.
+- `fa079487f` lets the glyph raster cache reuse the subreddit header's
+  text-shadowed runs (`#header { text-shadow: 1px 1px 4px black }`). Each such
+  run rasterizes through a GPU picture with a synchronous Dawn readback, and
+  each scrolled frame missed the cache: its key held the f32 rounding residue
+  of the composed scroll offset, a strip repaint's backdrop outside the clip
+  still held the previous frame (including the run), and larger runs exceeded
+  the 32,768-pixel gate. Near the top of the page the hit rate rises from 46%
+  to 88% and picture readbacks fall from 61% to 38% of frame drawing.
+  Control: `VOX_EXACT_GLYPH_RASTER_KEYS=1`.
+
+Same private build (executable `5b97c9233f44d5c6…`), three alternating
+unprofiled pairs over the whole thread at load average 8–10:
+
+| | fps | median ms | p95 ms | max ms | input Hz |
+| --- | --- | --- | --- | --- | --- |
+| Exact glyph keys | 106.9 / 118.6 / 118.7 | 8.28–8.31 | 11.0–11.2 | 306 / 48 / 49 | 108.7 / 119.0 / 119.1 |
+| Default | 117.5 / 119.2 / 119.0 | 8.27–8.33 | 10.8–11.4 | 106 / 46 / 50 | 118.0 / 119.5 / 119.5 |
+
+What remains below the input rate:
+
+- When the trial returns to the top, two or three frames of 46–54 ms still
+  rasterize the header runs: runs straddling the viewport's top edge get a
+  different clipped raster each frame, so their first visit cannot hit.
+- Every ~0.5 s, for ~100 ms, AppKit runs the document's display pass on the
+  next vsync instead of right after the input's redraw request. The main
+  thread is idle in between, and no timer or Core Animation animation in the
+  process coincides with it (`VOX_FRAME_TIMELINE_DIAGNOSTICS=1`, added in
+  `b07daae5e`, timestamps wakes, layer updates, CF timers and
+  `addAnimation:forKey:` on the probe's clock). It costs about one frame per
+  burst, and one run had none at all, so it depends on the environment.
+- Occasional 100–130 ms frames elsewhere in the thread did not recur under
+  diagnostics; host load from other sessions also moves the input rate itself.
