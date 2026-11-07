@@ -257,6 +257,16 @@ static IOSurfaceRef native_scroll_tile_surface(CGImageRef image) {
             return native_scroll_tile_pool[index].surface;
     return NULL;
 }
+static CFTypeRef native_scroll_tile_image_fence(CGImageRef image) {
+    CGDataProviderRef provider = image ? CGImageGetDataProvider(image) : NULL;
+    if (!provider) return NULL;
+    for (size_t index=0; index<VOX_SCROLL_TILE_POOL_SLOTS; ++index)
+        if (__atomic_load_n(&native_scroll_tile_pool[index].provider,__ATOMIC_ACQUIRE)==provider)
+            // The image retains this provider, so its busy slot and fence
+            // cannot be recycled while a frame is inspecting them.
+            return native_scroll_tile_pool[index].fence;
+    return NULL;
+}
 
 static BOOL native_scroll_tiles_adopt(CGImageRef *, size_t, size_t, size_t, size_t,
     size_t, size_t, CGFloat, BOOL);
@@ -396,8 +406,22 @@ static BOOL native_scroll_tiles_export(CGContextRef context, size_t width, size_
     return native_scroll_tiles_export_with_schedule(context,width,height,row_origin,top,scale,dirty,present,release,NULL);
 }
 
+static BOOL native_scroll_tiles_have_fences(VoxScrollTileFrame *frame) {
+    if (frame->fence) return YES;
+    for (CFIndex index=0; frame->images && index<CFArrayGetCount(frame->images); ++index)
+        if (native_scroll_tile_image_fence((CGImageRef)CFArrayGetValueAtIndex(frame->images,index))) return YES;
+    return NO;
+}
 static BOOL native_scroll_tiles_ready(VoxScrollTileFrame *frame, const char *consumer) {
-    return !frame->fence || [(__bridge VoxScrollGpuFence *)frame->fence waitForConsumer:consumer];
+    if (frame->fence && ![(__bridge VoxScrollGpuFence *)frame->fence waitForConsumer:consumer]) return NO;
+    // Zero-damage exports have no new ticket, but their cached surfaces still
+    // belong to earlier producers. Direct CA IOSurface consumption bypasses
+    // the pixel provider, so resolve those inherited fences here as well.
+    for (CFIndex index=0; frame->images && index<CFArrayGetCount(frame->images); ++index) {
+        CFTypeRef fence = native_scroll_tile_image_fence((CGImageRef)CFArrayGetValueAtIndex(frame->images,index));
+        if (fence && ![(__bridge VoxScrollGpuFence *)fence waitForConsumer:consumer]) return NO;
+    }
+    return YES;
 }
 
 static CGImageRef native_scroll_tiles_flatten(VoxScrollTileFrame *frame) {

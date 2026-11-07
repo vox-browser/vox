@@ -1,6 +1,7 @@
 #include "../native_scroll_tile_presentation_darwin.h"
 #include <cassert>
 #include <cstdio>
+#include <initializer_list>
 static unsigned waits,releases;
 static bool succeeds=true, submit_error;
 static int schedule(void*) { ++waits; return succeeds; }
@@ -50,6 +51,27 @@ int main() { @autoreleasepool {
     native_scroll_tiles_clear();
     }
     assert(releases==1);
+    // A zero-damage frame has no new export ticket. Its retained tile still
+    // depends on the earlier producer, including that producer's failure.
+    for (bool ready : {true,false}) {
+        waits=releases=0;succeeds=ready;
+        @autoreleasepool {
+            frame(bitmap);
+            BOOL dirty[]={NO};
+            assert(native_scroll_tiles_export_with_schedule(bitmap,32,16,0,0,1,dirty,
+                submit,release_ticket,schedule));
+            auto cached=native_scroll_tile_pending;
+            assert(cached && !cached->fence && !waits && !releases);
+            assert(native_scroll_tiles_have_fences(cached));
+            cached->base=CGBitmapContextCreateImage(bitmap);cached->width=32;cached->height=16;
+            assert(native_scroll_tiles_ready(cached,"cached-publication")==ready);
+            assert(waits==1 && releases==1);
+            assert((native_scroll_tiles_flatten(cached)!=nullptr)==ready);
+            native_scroll_tiles_clear();
+        }
+        assert(releases==1);
+    }
+    succeeds=true;
     // A provider remains safe even when retained independently of its frame.
     waits=releases=0;CGImageRef retained=nullptr;
     @autoreleasepool { frame(bitmap);

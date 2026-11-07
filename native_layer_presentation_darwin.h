@@ -663,7 +663,7 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
         // First-document submission callbacks carry a borrowed V target. Keep
         // those synchronous; later immutable frames have no application owner
         // pointer and can safely outlive window/navigation work.
-        if (tiles && tiles->fence && !submission.callback && !native_layer_capture_scale
+        if (tiles && native_scroll_tiles_have_fences(tiles) && !submission.callback && !native_layer_capture_scale
             && getenv("VOX_GPU_FRAME_READINESS_QUEUE")) {
             native_frame_publication_enqueue(view,frame,native_layer_complete_frame,
                 native_layer_can_complete_frame);
