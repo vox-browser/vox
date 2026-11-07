@@ -709,7 +709,7 @@ fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
 		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
 		cap := rand.intn(3) or { 0 }
 		join := rand.intn(3) or { 0 }
-		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}, 0, 0},
+		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}, 0, 0, cpuraster.CanvasGradient{}},
 			'stroke ${i}')!
 		if is_hairline(transform, line_width) {
 			hairlines++
@@ -736,6 +736,7 @@ struct StrokeCase {
 	clips        []ClipCase
 	composite    int
 	blur         f32
+	gradient     cpuraster.CanvasGradient
 }
 
 // A device-space clip path in skia.Path's segment encoding.
@@ -876,13 +877,14 @@ fn compare_canvas_stroke_or_decline(oracle Oracle, initial []u8, c StrokeCase, l
 	values << i32(c.composite)
 	floats << clip_floats
 	floats << c.blur
+	append_gradient(mut values, mut floats, c.gradient)
 	if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, false)
 	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
-		path, c.transform, c.color, c.global_alpha, canvas_mode(c.composite), c.blur, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
+		path, c.transform, c.color, case_gradient(c.gradient), c.global_alpha, canvas_mode(c.composite), c.blur, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
 		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
@@ -1177,7 +1179,7 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		color := random_color()
 		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
 		global_alpha := random_global_alpha()
-		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}, 0, 0},
+		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}, 0, 0, cpuraster.CanvasGradient{}},
 			'canvas ${i}')!
 	}
 	return count
@@ -1196,6 +1198,7 @@ struct FillCase {
 	clips        []ClipCase
 	composite    int
 	blur         f32
+	gradient     cpuraster.CanvasGradient
 }
 
 fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! {
@@ -1216,13 +1219,14 @@ fn compare_canvas_fill_or_decline(oracle Oracle, initial []u8, c FillCase, label
 	values << i32(c.composite)
 	floats << clip_floats
 	floats << c.blur
+	append_gradient(mut values, mut floats, c.gradient)
 	if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
 	mut actual := initial.clone()
 	path := cpuraster.canvas_path(c.segments, c.even_odd)
 	if !cpuraster.fill_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type, path,
-		c.transform, c.color, c.global_alpha, canvas_mode(c.composite), c.blur, clip_paths(c.clips)) {
+		c.transform, c.color, case_gradient(c.gradient), c.global_alpha, canvas_mode(c.composite), c.blur, clip_paths(c.clips)) {
 		if actual != initial {
 			return error('${label}: cpuraster declined after changing pixels')
 		}
@@ -1253,7 +1257,7 @@ fn check_clipped_draws(oracle Oracle, count int) !(int, int) {
 			m := random_matrix()
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
 				0
-			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips, 0, 0},
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips, 0, 0, cpuraster.CanvasGradient{}},
 				'clipped fill ${i}')!
 			continue
 		}
@@ -1311,6 +1315,10 @@ fn main() {
 		check_shadow_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'gradients' {
+		check_gradient_cases(oracle, count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -1348,6 +1356,7 @@ fn main() {
 	check_stroke_cases(oracle, count)
 	check_composite_cases(oracle, count / 2)
 	check_shadow_cases(oracle, count / 2)
+	check_gradient_cases(oracle, count / 2)
 }
 
 fn random_dashes() []f32 {
@@ -1606,7 +1615,7 @@ fn check_composite_draws(oracle Oracle, count int) !(int, int) {
 			m := random_matrix()
 			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
 				0
-			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, color, global_alpha, clips, composite, 0},
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, color, global_alpha, clips, composite, 0, cpuraster.CanvasGradient{}},
 				'composite fill ${i}')!
 			continue
 		}
@@ -1788,7 +1797,7 @@ fn check_shadow_draws(oracle Oracle, count int) !(int, int, int) {
 		if rand.intn(2) or { 0 } == 0 {
 			if compare_canvas_fill_or_decline(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, rand.intn(4) or {
 				0
-			} == 0, transform, random_composite_color(), random_composite_alpha(), clips, composite, blur},
+			} == 0, transform, random_composite_color(), random_composite_alpha(), clips, composite, blur, cpuraster.CanvasGradient{}},
 				'shadow fill ${i}')!
 			{
 				declined++
@@ -1833,4 +1842,197 @@ fn check_shadow_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('blurred canvas shadows: ${shadows - shadow_declined} exact, ${shadow_declined} declined (${shadow_strokes} strokes)')
+}
+
+fn case_gradient(g cpuraster.CanvasGradient) ?cpuraster.CanvasGradient {
+	if g.kind == 0 {
+		return none
+	}
+	return g
+}
+
+// The oracle's gradient arguments: kind and stop count, then the geometry,
+// angle and stops.
+fn append_gradient(mut values []i32, mut floats []f32, g cpuraster.CanvasGradient) {
+	values << i32(g.kind)
+	values << i32(g.stops.len / 5)
+	floats << [g.x0, g.y0, g.r0, g.x1, g.y1, g.r1, g.angle]
+	floats << g.stops
+}
+
+// Gradient stops as Canvas2D hands them over: offsets in order, sometimes
+// repeated (hard stops), at 0 and 1 or inside, colors in byte / 255 units,
+// opaque, transparent or mixed, from one to nine stops.
+fn random_gradient_stops() []f32 {
+	count := match rand.intn(6) or { 0 } {
+		0 { 1 }
+		1, 2 { 2 }
+		3 { 3 }
+		else { rand.intn(8) or { 0 } + 2 }
+	}
+	opaque := rand.intn(3) or { 0 } == 0
+	mut offsets := []f32{}
+	for _ in 0 .. count {
+		offsets << match rand.intn(6) or { 0 } {
+			0 { f32(0) }
+			1 { f32(1) }
+			else { f32(rand.intn(21) or { 0 }) / 20 }
+		}
+	}
+	offsets.sort()
+	if rand.intn(3) or { 0 } == 0 && count > 1 {
+		// Evenly spaced.
+		for i in 0 .. count {
+			offsets[i] = f32(i) / f32(count - 1)
+		}
+	}
+	mut stops := []f32{}
+	for i in 0 .. count {
+		stops << offsets[i]
+		for _ in 0 .. 3 {
+			stops << f32(rand.intn(256) or { 0 }) / 255
+		}
+		alpha := if opaque { 255 } else { match rand.intn(4) or { 0 } {
+				0 { 0 }
+				1 { 255 }
+				else { rand.intn(256) or { 0 } }
+			} }
+		stops << f32(alpha) / 255
+	}
+	return stops
+}
+
+// Linear, radial and conic gradients, including degenerate ones: equal
+// points, zero and equal radii, concentric circles and focal points on,
+// inside and outside the end circle.
+fn random_gradient(width int, height int) cpuraster.CanvasGradient {
+	kind := rand.intn(3) or { 0 } + 1
+	px := fn [width] () f32 {
+		return f32(rand.f64() * f64(width) * 1.4 - f64(width) * 0.2)
+	}
+	py := fn [height] () f32 {
+		return f32(rand.f64() * f64(height) * 1.4 - f64(height) * 0.2)
+	}
+	mut x0 := px()
+	mut y0 := py()
+	mut x1 := px()
+	mut y1 := py()
+	mut r0 := f32(rand.f64() * f64(width) * 0.6)
+	mut r1 := f32(rand.f64() * f64(width) * 0.8)
+	match rand.intn(8) or { 0 } {
+		0 {
+			x1 = x0
+			y1 = y0
+		}
+		1 {
+			r0 = 0
+		}
+		2 {
+			r1 = r0
+		}
+		3 {
+			x1 = x0
+			y1 = y0
+			r0 = 0
+		}
+		4 {
+			// The focal point on the end circle.
+			angle := rand.f64() * 6.283
+			x0 = x1 + r1 * f32(math.cos(angle))
+			y0 = y1 + r1 * f32(math.sin(angle))
+			r0 = 0
+		}
+		5 {
+			// A zero end radius, which SkConicalGradient swaps.
+			r1 = 0
+		}
+		6 {
+			// Equal circles: a thin ring at the radius.
+			x1 = x0
+			y1 = y0
+			r1 = r0
+		}
+		else {
+			if rand.intn(10) or { 0 } == 0 {
+				r0 = -1
+			}
+		}
+	}
+	return cpuraster.CanvasGradient{
+		kind:  kind
+		x0:    x0
+		y0:    y0
+		r0:    r0
+		x1:    x1
+		y1:    y1
+		r1:    r1
+		angle: f32(rand.f64() * 12.566 - 6.283)
+		stops: if rand.intn(40) or { 0 } == 0 { []f32{} } else { random_gradient_stops() }
+	}
+}
+
+// Gradient fills and strokes through vox_skia_canvas_path()'s
+// SkGradientShader, with every composite operation, global alphas and
+// clips. Returns the comparisons and how many were strokes.
+fn check_gradient_draws(oracle Oracle, count int) !(int, int) {
+	mut strokes := 0
+	for i in 0 .. count {
+		width := rand.intn(90) or { 0 } + 1
+		height := rand.intn(90) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		composite := if rand.intn(2) or { 0 } == 0 { rand.intn(26) or { 0 } } else { 0 }
+		clips := if rand.intn(5) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
+		initial := random_composite_bitmap(width, height, pitch, alpha_type)
+		gradient := random_gradient(width, height)
+		transform := match rand.intn(40) or { 0 } {
+			0 { [f32(1), 0, 0, 0, 3, 2]! }
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 { [f32(1), 0, 0, 1, 0, 0]! }
+			else { random_stroke_matrix() }
+		}
+		segments := if rand.intn(3) or { 0 } == 0 {
+			rect_segments(Rect4{0, 0, f32(width), f32(height)}, false)
+		} else {
+			random_canvas_segments(width, height)
+		}
+		if rand.intn(3) or { 0 } != 0 {
+			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, rand.intn(4) or {
+				0
+			} == 0, transform, 0, random_composite_alpha(), clips, composite, 0, gradient},
+				'gradient fill ${i}')!
+			continue
+		}
+		line_width := match rand.intn(3) or { 0 } {
+			0 { f32(1) }
+			1 { f32(rand.f64()) }
+			else { random_wide_line_width() }
+		}
+		c := StrokeCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			segments:     segments
+			transform:    transform
+			global_alpha: random_composite_alpha()
+			line_width:   line_width
+			miter:        10
+			cap:          rand.intn(3) or { 0 }
+			join:         rand.intn(3) or { 0 }
+			clips:        clips
+			composite:    composite
+			gradient:     gradient
+		}
+		compare_canvas_stroke(oracle, initial, c, 'gradient stroke ${i}')!
+		strokes++
+	}
+	return count, strokes
+}
+
+fn check_gradient_cases(oracle Oracle, count int) {
+	gradients, gradient_strokes := check_gradient_draws(oracle, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('gradient canvas draws: ${gradients} exact (${gradient_strokes} strokes)')
 }
