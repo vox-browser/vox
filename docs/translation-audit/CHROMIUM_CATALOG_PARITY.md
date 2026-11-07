@@ -603,3 +603,58 @@ and [cosmetic filtering explanation](https://brave.com/privacy-updates/2-third-p
 No per-site rendering override or default filter-policy change is part of
 these fixes. The controlled replay uses the same explicit cosmetic policy
 in both browsers. Uncontrolled live pixel parity remains unestablished.
+
+## Script-built catalog and live page (2026-11-07)
+
+The earlier oracle froze the scripted DOM. This round replays the live
+catalog's own HTML and scripts (`catalog.min.1025.js`, `core.min.1128.js`,
+Cloudflare's JavaScript Detections) from a loopback mirror under
+`Build/4chan-catalog/`, with the ad-loader script removed and every
+CDN URL, including script-built thumbnail and stylesheet URLs, rewritten to
+the mirror. Both browsers therefore run the catalog script and build the
+same thread grid from the same bytes. The mirror serves HTTP/1.1 with a
+512-connection backlog; Python's default backlog of five reset bursts of
+image connections and produced broken thumbnails that were not browser bugs.
+
+Fixes found on this page:
+
+- `4504fb1f9` reflects `HTMLIFrameElement.frameBorder`, `marginHeight`,
+  `marginWidth`, `scrolling`, `allow`, `loading` and related properties. The
+  ad loader's frames kept a 2px inset border because `frame.frameBorder = 0`
+  never reached the DOM.
+- `c3c9c12eb` applies Blink's one-LayoutUnit line-fit tolerance
+  (`LineBreaker::AvailableWidthToFit`). A teaser line measuring
+  150.015625px wrapped its last word in Vox but not in Brave.
+- `dd732c9d1` loads lazy script-inserted images through the document's image
+  loader. Every one of the 201 `loading=lazy` thumbnails previously started a
+  background request at once; over the SOCKS proxy the live catalog waited
+  about 40 seconds for all of them before it was complete.
+- `ddf231ebf` keeps device-density layout beside an embedding whose own used
+  visibility is hidden. Cloudflare's hidden 1×1 detection frame otherwise
+  dropped the whole catalog to CSS-pixel layout on a Retina display for up to
+  ten seconds (174,685 differing native pixels in the first viewport).
+- `033a12b62` and `961c7ace4` add `VOX_TRACE_CAPTURE_READINESS` and
+  `VOX_TRACE_IMAGE_FAILURES` diagnostics.
+
+Results with the bundle built from `39b612ac4`: all 19 scale-1 viewports of
+the script-built catalog equal some fresh Brave capture, except inside JPEG
+thumbnails, where Brave itself alternates between its RGB and YUV decode paths
+from run to run on the same loopback bytes (maximum channel error 7–28); Vox
+matches one of Brave's renderings for every thumbnail. At native scale 2 the
+first viewport differs from the best of three Brave captures at 40 of
+3,145,728 pixels: six at the corners of the sort `select` (3 levels) and the
+rest ±1 inside one thumbnail. Across all 19 scale-2 viewports the best Brave
+run differs by 2 to 33,381 pixels, every one with a maximum channel error of
+at most 41 and confined to thumbnail photos; the counts swing between Brave
+runs (for example 26,805 / 59,609 / 135,933 at offset 10752), so no text,
+border or layout difference remains in the script-built page.
+
+Open differences on the unmodified live page:
+
+- Vox's bundled EasyList rule `4chan.org##.danbo-slot` hides the 728×90
+  advertisement slot; Brave shows it, so everything below starts about
+  100px lower in Brave. Changing this is an ad-blocking policy decision.
+- Network images inside iframes are not painted (text and data-URL images
+  are), so even an unhidden slot would stay blank.
+- Thread content, the random banner and the advertisements change between
+  loads, so live captures cannot be compared pixel for pixel.
