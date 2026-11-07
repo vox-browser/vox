@@ -174,14 +174,35 @@ ORACLE void oracle_fill_path(uint8_t* pixels, int const* a, float const* f)
 
 #include <vector>
 
-// An optional gradient style after the other arguments: ints are its kind
-// (0 for the solid color) and stop count, floats x0, y0, r0, x1, y1, r1, the
-// angle and 5 floats per stop.
-static void oracle_gradient(VoxCanvasStyle& style, int const* a, float const* f)
+static uint8_t const* oracle_pattern_pixels = nullptr;
+
+// The pixels of the next pattern style.
+ORACLE void oracle_pattern(uint8_t const* pixels)
+{
+    oracle_pattern_pixels = pixels;
+}
+
+// An optional style after the other arguments: ints are its kind (0 for the
+// solid color), then a gradient's stop count, with floats x0, y0, r0, x1,
+// y1, r1, the angle and 5 floats per stop, or a pattern's width, height,
+// pitch, alpha type, color space and repetition, with its transform.
+static void oracle_style(VoxCanvasStyle& style, int const* a, float const* f)
 {
     if (a[0] == 0)
         return;
     style.kind = a[0];
+    if (a[0] == 4) {
+        style.pattern = oracle_pattern_pixels;
+        style.pattern_width = a[1];
+        style.pattern_height = a[2];
+        style.pattern_pitch = a[3];
+        style.pattern_alpha = a[4];
+        style.pattern_color_space = a[5];
+        style.repetition = a[6];
+        for (int i = 0; i < 6; ++i)
+            style.pattern_transform[i] = f[i];
+        return;
+    }
     style.stop_count = a[1];
     style.x0 = f[0];
     style.y0 = f[1];
@@ -215,9 +236,9 @@ static std::vector<VoxCanvasPath> oracle_clips(int const* a, float const* f)
 }
 
 // arguments: width, height, pitch, alpha type, even-odd, segment count,
-// SkColor, the clips, the composite operation, then the gradient's ints.
+// SkColor, the clips, the composite operation, then the style's ints.
 // floats: the transform, global alpha, 12 floats per segment, the clip
-// segments, the shadow blur, then the gradient's floats.
+// segments, the shadow blur, then the style's floats.
 ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -233,15 +254,15 @@ ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
     command.clip_count = int(clips.size());
     command.composite = a[8 + a[7] * 2];
     command.blur = f[7 + a[5] * 12 + oracle_clip_floats(a + 7)];
-    oracle_gradient(command.style, a + 9 + a[7] * 2, f + 8 + a[5] * 12 + oracle_clip_floats(a + 7));
+    oracle_style(command.style, a + 9 + a[7] * 2, f + 8 + a[5] * 12 + oracle_clip_floats(a + 7));
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
 
 // arguments: width, height, pitch, alpha type, segment count, SkColor, cap,
-// join, dash count, the clips, the composite operation, then the gradient's
+// join, dash count, the clips, the composite operation, then the style's
 // ints. floats: the transform, global alpha, line width, miter limit, 12 floats
 // per segment, the dash offset and intervals, the clip segments, the shadow
-// blur, then the gradient's floats.
+// blur, then the style's floats.
 ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -265,6 +286,6 @@ ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
     command.join = a[7];
     command.composite = a[10 + a[9] * 2];
     command.blur = f[10 + a[4] * 12 + a[8] + oracle_clip_floats(a + 9)];
-    oracle_gradient(command.style, a + 11 + a[9] * 2, f + 11 + a[4] * 12 + a[8] + oracle_clip_floats(a + 9));
+    oracle_style(command.style, a + 11 + a[9] * 2, f + 11 + a[4] * 12 + a[8] + oracle_clip_floats(a + 9));
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
