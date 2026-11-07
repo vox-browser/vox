@@ -300,3 +300,57 @@ original assertions still fail. `tail-native-baseline/identity.json` pins
 the source headers, `tail-native-baseline/result.json` records the output,
 and `tail-native-baseline-guard.json` records the guarded execution. These
 baseline failures remain reported as failures.
+
+## Page zoom
+
+Viewport reuse used to require 100% page zoom. A user keeping
+`old.reddit.com` at 175% therefore repainted the whole viewport on every
+scrolled frame. Since `1db11f03b` zoomed frames use the ring. Keys, content
+damage and the skip plan stay in the CSS pixels of the recorded commands; the
+damage rectangles are scaled to view pixels and widened to whole pixels.
+Keys remove the scroll translation the scroll state snapshot actually applied,
+which is stored in f32: a zoomed view scrolls by fractional CSS pixels, and the
+unrounded offset left a per-frame residue that mismatched every key.
+`VOX_DISABLE_ZOOMED_SCROLL_RASTER=1` restores complete repaints. A complete
+zoomed repaint does not use the GPU canvas: most of its rectangle edges are
+fractional, and each declined leaf read the whole viewport back.
+
+`309cd34d1` keeps zoomed fills and raster background images (Old Reddit's
+vote-arrow sprites) on the GPU canvas instead of reading it back for their CPU
+rasters. Canvas edges differ from Quartz only in partially covered pixels.
+`VOX_DISABLE_FRACTIONAL_GPU_CANVAS=1` and
+`VOX_DISABLE_FRACTIONAL_GPU_CANVAS_IMAGES=1` are same-binary controls.
+`bf9c16d11` restores the arrival invalidation described above for content-damage
+reuse: one run kept the r/europe header banner missing below the exposed strips.
+
+Measured with `tools/measure_precise_scroll.py` on 2026-11-07 against the live
+thread `/r/europe/comments/1xpp08u/`, logged in through the imported cookies,
+in a private profile seeded with `--zoom old.reddit.com=1.75`, a 1701×948
+document viewport at 2× and 600 precise wheel inputs at 60 Hz after an 8 s
+settle. "Top" uses the default 2 px inputs reversing every 60; "sweep" uses
+6 px inputs reversing every 300 and reaches the comments. Values are mean
+scroll-changing publications per second over the input window; private bundles
+built from the shared working tree, pairs alternated on one executable.
+
+| Configuration | Top | Sweep |
+| --- | ---: | ---: |
+| Complete repaints (`VOX_DISABLE_ZOOMED_SCROLL_RASTER=1`) | 4.4–5.0 | 5.7–8.9 |
+| Zoomed reuse, fractional canvas off | 41.5–44.5 | 48.4–50.4 |
+| Zoomed reuse, fills on the canvas | – | 54.2–55.2 |
+| Zoomed reuse, fills and images on the canvas | 56.0–56.7 | 57.1–59.6 |
+
+With everything enabled the sweep's median publication interval is 16.6 ms and
+its p95 21 ms, against 18 ms and 33–35 ms with the canvas change disabled;
+input delivery returns to 59–60 Hz. Load averages were 10–21 on 18 cores. Later,
+with `mediaanalysisd`, Finder, WindowServer and video decoding busy, the same
+configuration measured 47.6–49.5 FPS, complete repaints 3.5–6.4 FPS, and the
+sweep at 100% zoom 34.0 FPS.
+
+Final frames of complete-repaint and reuse runs at the same scroll position match
+except for live vote counts; the 24 px band under the status bar is white in
+every reuse frame and is not document viewport. GPU canvas verification
+(`VOX_GPU_CANVAS_VERIFY=2`) shows fills within 4 levels; vote-arrow sprites
+differ by up to 29 levels in about seven pixels of their clipped edge column.
+The remaining frame cost is shared with unzoomed scrolling at this window size:
+restoring the retained rows, copying the frame for AppKit and the per-leaf
+text pictures.
