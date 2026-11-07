@@ -51,12 +51,15 @@ fn collect_simple_svg_dom_inputs(element &dom.Element, mut result []RetainedSVGE
 			if attribute.local_name() == 'href' || attribute.value().contains('url(') {
 				return false
 			}
+			// Attribute strings are immutable and owned by the document; a
+			// mutation installs a new string. Comparing against the strings
+			// themselves avoids copying long path data on every layout pass.
 			attributes << RetainedSVGAttribute{
-				name: attribute.name().clone()
-				local_name: attribute.local_name().clone()
+				name: attribute.name()
+				local_name: attribute.local_name()
 				namespace_uri: attribute.namespace_uri()
 				prefix: attribute.prefix__
-				value: attribute.value().clone()
+				value: attribute.value()
 			}
 		}
 	}
