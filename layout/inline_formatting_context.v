@@ -336,11 +336,30 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 					if is_whitespace {
 						next_width = iterator.next_non_whitespace_sequence_width()
 					}
+					if is_whitespace && next_width.raw_value() > 0
+						&& node.document().font_rendering_policy() == .chromium
+						&& style.white_space_collapse() == .break_spaces {
+						// Blink breaks after every break-spaces space and lets none
+						// of them hang: the space stays with the preceding word, and
+						// the next word must fit together with its own spaces.
+						line_builder.append_text_item(item, style.line_height())
+						segment := iterator.next_unhangable_text_segment_items()
+						if segment.len == 0 { continue }
+						line_builder.note_soft_wrap_opportunity()
+						segment_width := line_builder.projected_text_sequence_width_for_line_break(segment[0],
+							segment[1..])
+						if iterator.next_non_whitespace_text_allows_overflow_break() {
+							line_builder.break_if_needed_before_overflow_breakable_item(segment_width)
+						} else {
+							line_builder.break_if_needed(segment_width)
+						}
+						continue
+					}
 					if is_whitespace && next_width.raw_value() > 0 {
 						line_builder.note_soft_wrap_opportunity()
 						sequence_width := if node.document().font_rendering_policy() == .chromium {
 							line_builder.projected_text_sequence_width_for_line_break(item,
-								iterator.next_non_whitespace_sequence_items())
+								iterator.next_unhangable_text_segment_items())
 						} else { item.border_box_width().plus(next_width) }
 						remaining := line_builder.remaining_width_for_overflow_break() or { CSSPixels.new(0) }
 						can_hyphenate := available_space.width.is_definite()

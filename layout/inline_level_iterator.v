@@ -463,6 +463,21 @@ fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_items() []Inline
 	return iterator.items[iterator.next_item_index..end]
 }
 
+// The next word sequence plus any break-spaces white space after it. Those
+// spaces cannot hang, so Chromium's next break opportunity follows them and
+// the whole segment must fit on the line.
+fn (iterator &InlineLevelIterator) next_unhangable_text_segment_items() []InlineLevelItem {
+	mut end := iterator.next_item_index + iterator.next_non_whitespace_sequence_items().len
+	for end < iterator.items.len {
+		item := unsafe { &iterator.items[end] }
+		if item.type_ != .text || !item.is_all_whitespace { break }
+		node := item.node or { break }
+		if node.computed_values().white_space_collapse() != .break_spaces { break }
+		end++
+	}
+	return iterator.items[iterator.next_item_index..end]
+}
+
 pub fn (iterator &InlineLevelIterator) next_non_whitespace_text_allows_overflow_break() bool {
 	if iterator.next_item_index >= iterator.items.len {
 		return false
