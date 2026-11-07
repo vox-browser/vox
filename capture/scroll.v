@@ -1,5 +1,6 @@
 module main
 
+import math
 import os
 
 // Diagnostic: reach the capture offset in CSS-pixel steps, one per frame, so
@@ -32,6 +33,18 @@ fn capture_scroll_retry_needs_frame(target voidptr) int {
 // the requested capture offset there would clamp it to zero and consume it
 // before the document exists.
 fn (mut app BrowserApp) apply_screenshot_scroll_if_ready(window_height int) {
+	// Scripts can build the content after installation, as 2ch.su's catalog
+	// does from its JSON. The document's viewport clamps an offset its content
+	// cannot reach yet, and the shell adopts that clamped offset. Move to the
+	// requested offset again once the content reaches it, like a reference
+	// capture that scrolls after the page has loaded.
+	if app.screenshot_scroll_awaits_content && app.document != unsafe { nil } {
+		if app.screenshot_content_maximum_scroll(window_height) >= f64(app.screenshot_scroll_y) {
+			app.screenshot_scroll_awaits_content = false
+			app.set_scroll_y(f64(app.screenshot_scroll_y), window_height)
+		}
+		return
+	}
 	if app.screenshot_path == '' || app.screenshot_scroll_applied || app.document == unsafe { nil }
 		|| app.load_status.starts_with('Loading ') {
 		return
@@ -48,5 +61,12 @@ fn (mut app BrowserApp) apply_screenshot_scroll_if_ready(window_height int) {
 		return
 	}
 	app.screenshot_scroll_applied = true
+	app.screenshot_scroll_awaits_content =
+		app.screenshot_content_maximum_scroll(window_height) < f64(app.screenshot_scroll_y)
 	app.set_scroll_y(f64(app.screenshot_scroll_y), window_height)
+}
+
+// The document's own scroll range, without the screenshot strip's extension.
+fn (app &BrowserApp) screenshot_content_maximum_scroll(window_height int) f64 {
+	return math.max(app.content_height + f64(app.chrome_height()) - f64(window_height), 0.0)
 }

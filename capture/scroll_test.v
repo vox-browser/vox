@@ -95,3 +95,40 @@ fn test_requested_capture_scroll_waits_for_loading_and_then_clamps_to_final_cont
 	assert app.scroll_y > 0
 	assert document.viewport_rect().y == app.scroll_y
 }
+
+// 2ch.su's catalog builds its cards from JSON after installation. A jump
+// capture applied while the document is still short is clamped back by the
+// document's viewport; once the cards reach the offset, it scrolls there again.
+fn test_requested_capture_scroll_returns_once_script_content_reaches_it() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}div{height:100px}</style><div>header</div>')
+	defer { document.finalize() }
+	mut app := BrowserApp{
+		document:            document
+		screenshot_path:     'capture.png'
+		screenshot_scroll_y: 3000
+	}
+	app.relayout(800, 600)
+	app.apply_screenshot_scroll_if_ready(600)
+	assert app.screenshot_scroll_applied
+	assert app.screenshot_scroll_awaits_content
+	// The short document's viewport clamps the offset and the shell adopts it.
+	app.set_scroll_y(0, 600)
+	app.apply_screenshot_scroll_if_ready(600)
+	assert app.scroll_y == 0
+	assert app.screenshot_scroll_awaits_content
+	mut body := document.body() or { panic('body') }
+	for _ in 0 .. 40 {
+		mut card := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+		body.as_node().append_child(card.as_node()) or { panic(err) }
+	}
+	app.relayout(800, 600)
+	assert app.screenshot_content_maximum_scroll(600) >= 3000
+	app.apply_screenshot_scroll_if_ready(600)
+	assert !app.screenshot_scroll_awaits_content
+	assert app.scroll_y == 3000
+	assert document.viewport_rect().y == 3000
+	// Later scrolls stay with whoever made them.
+	app.set_scroll_y(400, 600)
+	app.apply_screenshot_scroll_if_ready(600)
+	assert app.scroll_y == 400
+}

@@ -524,6 +524,7 @@ mut:
 	screenshot_viewport_height          int
 	screenshot_scroll_y                 int
 	screenshot_scroll_applied           bool
+	screenshot_scroll_awaits_content    bool
 	screenshot_initial_viewport_ready   bool
 	layout_tree_only                    bool
 	// A windowed macOS launch installs its first page before the native
@@ -3874,6 +3875,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.restore_browser_zoom(loaded.url)
 	// A screenshot strip scrolls the replacement document to its offset again.
 	app.screenshot_scroll_applied = false
+	app.screenshot_scroll_awaits_content = false
 	app.screenshot_initial_viewport_ready = false
 	app.initial_layout_pending = false
 	app.defer_initial_rendering_opportunity(false)
