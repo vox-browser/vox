@@ -40,6 +40,20 @@ fn message_channel_binding_factory() string {
   return operate("post",this,message,transfer);
  },start(){return operate("start",this);},close(){return operate("close",this);}};
  for(const name of ["postMessage","start","close"])define(MessagePort.prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
+ // HTML WindowOrWorkerGlobalScope: structuredClone(value, options) and reportError(e).
+ const globals={structuredClone(value){
+  if(arguments.length<1)throw new T("structuredClone requires one argument");
+  const options=arguments[1];let transfer=[];
+  if(options!=null){
+   if(!object(options))throw new T("StructuredSerializeOptions must be an object");
+   const list=options.transfer;if(list!==undefined)transfer=sequence(list);
+  }
+  return operate("structuredClone",global,value,transfer);
+ },reportError(e){
+  if(arguments.length<1)throw new T("reportError requires one argument");
+  operate("reportError",global,e);
+ }};
+ for(const name of ["structuredClone","reportError"])define(global,name,{value:globals[name],writable:true,enumerable:true,configurable:true});
  for(const name of ["onmessage","onmessageerror"]){
   const attributes=descriptor({get [name](){return operate("getHandler",this,name.slice(2));},set [name](value){operate("setHandler",this,name.slice(2),value);}},name);
   define(MessagePort.prototype,name,{get:attributes.get,set:attributes.set,enumerable:true,configurable:true});

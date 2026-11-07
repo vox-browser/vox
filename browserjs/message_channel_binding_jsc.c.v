@@ -87,6 +87,24 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 			channel.port2()
 		})
 	}
+	if method == 'structuredClone' {
+		length := int(binding.clone.number(binding.clone.engine('list_length', [args[3]])!)!)
+		mut transfers := []voidptr{cap: length}
+		for index in 0 .. length {
+			transfers << binding.clone.engine('list_item', [args[3], C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
+		}
+		record := binding.transfer.serialize(args[2], transfers)!
+		// deserialize returns a rooted value; the host call's stack keeps it
+		// alive until the caller receives it.
+		clone := binding.transfer.deserialize(record)!
+		runtime.release_javascript_value(clone)
+		return clone
+	}
+	if method == 'reportError' {
+		settings := runtime.scripting_settings_ or { return error('reportError requires its owning settings') }
+		settings.report_an_exception(dom.js_webidl_value(runtime.webidl_value(args[2])!), false)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
+	}
 	mut port := binding.ports[receiver] or { return runtime.event_binding_type_error('Illegal MessagePort receiver') }
 	match method {
 		'brand' {}

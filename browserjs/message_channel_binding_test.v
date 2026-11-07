@@ -172,3 +172,37 @@ fn test_message_channel_messages_and_events_outlive_temporary_allocations() {
 	gc_collect()
 	assert runtime.evaluate_host('saved.target===channel.port1&&saved.data.text==="Санкт-Петербург 😀".repeat(64)&&saved.data.nested.value===42')! == 'true'
 }
+
+fn test_structured_clone_and_report_error_are_window_or_worker_globals() {
+	$if !darwin && !linux {
+		return
+	}
+	mut runtime, mut document := native_channel_fixture()!
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	runtime.install_message_channel_binding()!
+	assert runtime.evaluate_host(r'(()=>{
+ const original={text:"before",map:new Map([["key",7n]]),bytes:new Uint8Array([1,2,3]),date:new Date(5)};original.self=original;
+ const copy=structuredClone(original);original.text="after";original.bytes[0]=9;
+ const buffer=new ArrayBuffer(4),moved=structuredClone(buffer,{transfer:[buffer]});
+ let cloneError=false,argumentError=false,optionsError=false;
+ try{structuredClone(()=>0)}catch(error){cloneError=error instanceof DOMException&&error.name==="DataCloneError";}
+ try{structuredClone()}catch(error){argumentError=error instanceof TypeError;}
+ try{structuredClone(1,7)}catch(error){optionsError=error instanceof TypeError;}
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,"structuredClone");
+ return copy!==original&&copy.self===copy&&copy.text==="before"&&copy.map.get("key")===7n&&copy.bytes[0]===1&&copy.date.getTime()===5
+  &&moved.byteLength===4&&buffer.byteLength===0&&structuredClone(null)===null&&structuredClone(undefined,undefined)===undefined
+  &&cloneError&&argumentError&&optionsError&&descriptor.writable&&descriptor.configurable&&descriptor.enumerable
+  &&structuredClone.length===1&&reportError.length===1;
+})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{
+ globalThis.reported=[];globalThis.marker=new TypeError("reported");
+ addEventListener("error",event=>{reported.push(event);event.preventDefault();});
+ const result=reportError(marker);reportError(42);
+ let argumentError=false;try{reportError()}catch(error){argumentError=error instanceof TypeError;}
+ return result===undefined&&argumentError&&reported.length===2&&reported[0] instanceof ErrorEvent&&reported[0].error===marker
+  &&reported[0].message.includes("reported")&&reported[1].error===42;
+})()')! == 'true'
+}
