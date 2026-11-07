@@ -1,6 +1,7 @@
 module main
 
 import animations
+import css
 import dom
 import x.json2
 
@@ -179,6 +180,28 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 		compact_web_animation_refresh(mut animation, element.document())
 		return json2.encode(compact_web_animation_state(animation_key, animation))
 	}
+	if op == 'documentList' {
+		// https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations
+		mut items := []json2.Any{}
+		for record in css.document_css_animations(binding.document) {
+			items << json2.Any({
+				'css':           json2.Any(true)
+				'transition':    json2.Any(record.is_transition)
+				'key':           json2.Any('__css_${u64(record.handle):x}')
+				'name':          json2.Any(record.name)
+				'pseudoElement': json2.Any(record.pseudo_element)
+				'playState':     json2.Any(record.play_state)
+				'target':        binding.element_state(record.element)
+			})
+		}
+		for animation_key, handle in binding.web_animations {
+			animation := unsafe { &animations.Animation(handle) }
+			if animation.is_relevant() {
+				items << compact_web_animation_state(animation_key, animation)
+			}
+		}
+		return json2.encode(items)
+	}
 	if op == 'list' {
 		node := binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 		element := node.as_element() or { return error('TypeError: Invalid Element receiver') }
@@ -354,11 +377,58 @@ fn compact_web_animations_bootstrap() string {
   const created=call(target.bridgeKey,{op:"animate",keyframes:keyframes(frames),options:options(settings)});
   return wrap(created,this);
  },writable:true,enumerable:true,configurable:true});
- Object.defineProperty(Element.prototype,"getAnimations",{value:function getAnimations(){
+ // CSS transitions and animations keep one wrapper per native animation.
+ function CSSTransition(){throw new TypeError("Illegal CSSTransition constructor");}
+ function CSSAnimation(){throw new TypeError("Illegal CSSAnimation constructor");}
+ const cssWrappers=new Map(),cssStates=new WeakMap();
+ function cssState(receiver){const own=__elementApply(get,cssStates,[receiver]);if(!own)throw new TypeError("Illegal "+(receiver instanceof CSSTransition?"CSSTransition":"CSSAnimation")+" receiver");return own;}
+ for(const [constructor,name,member] of [[CSSTransition,"CSSTransition","transitionProperty"],[CSSAnimation,"CSSAnimation","animationName"]]){
+  Object.setPrototypeOf(constructor.prototype,Animation.prototype);
+  Object.setPrototypeOf(constructor,Animation);
+  Object.defineProperty(constructor.prototype,member,{get(){return cssState(this).name;},enumerable:true,configurable:true});
+  Object.defineProperties(constructor.prototype,{
+   playState:{get(){return cssState(this).playState;},enumerable:true,configurable:true},
+   effect:{get(){return cssState(this).effect;},enumerable:true,configurable:true},
+   pending:{get(){cssState(this);return false;},enumerable:true,configurable:true},
+   id:{get(){cssState(this);return "";},set(value){},enumerable:true,configurable:true}
+  });
+  Object.defineProperty(constructor,"prototype",{writable:false});
+  Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
+  Object.defineProperty(globalThis,name,{value:constructor,writable:true,configurable:true});
+ }
+ function cssWrap(item){
+  let object=cssWrappers.get(item.key),own=object&&cssStates.get(object);
+  if(!object){
+   object=Object.create((item.transition?CSSTransition:CSSAnimation).prototype);
+   const effect=Object.create(KeyframeEffect.prototype);
+   Object.defineProperty(effect,"target",{value:__queryElement(item.target),enumerable:true});
+   Object.defineProperty(effect,"pseudoElement",{value:item.pseudoElement||null,enumerable:true});
+   own={effect};
+   __elementApply(set,cssStates,[object,own]);
+   cssWrappers.set(item.key,object);
+  }
+  own.name=item.name;own.playState=item.playState;
+  return object;
+ }
+ function documentAnimations(){
+  return call("",{op:"documentList"}).map(item=>item.css?cssWrap(item):wrappers.get(item.key)).filter(Boolean);
+ }
+ function getAnimations(options){
+  if(this===document||(typeof Document==="function"&&this instanceof Document))return documentAnimations();
   const target=__elementApply(__elementRecordGet,__elementRecords,[this]);
   if(!target)throw new TypeError("Illegal Element receiver");
-  return call(target.bridgeKey,{op:"list"}).map(item=>wrap(item,this));
- },writable:true,enumerable:true,configurable:true});
+  const subtree=!!(options&&options.subtree);
+  const css=documentAnimations().filter(animation=>{
+   if(!(animation instanceof CSSTransition||animation instanceof CSSAnimation))return false;
+   const effect=animation.effect,owner=effect.target;
+   if(owner===this)return subtree||effect.pseudoElement===null;
+   return subtree&&owner!==null&&typeof this.contains==="function"&&this.contains(owner);
+  });
+  return css.concat(call(target.bridgeKey,{op:"list"}).map(item=>wrap(item,this)));
+ }
+ Object.defineProperty(Element.prototype,"getAnimations",{value:getAnimations,writable:true,enumerable:true,configurable:true});
+ Object.defineProperty(document,"getAnimations",{value:getAnimations,writable:true,enumerable:false,configurable:true});
+ if(typeof Document==="function"&&Document.prototype&&Document.prototype!==Object.prototype)Object.defineProperty(Document.prototype,"getAnimations",{value:getAnimations,writable:true,enumerable:true,configurable:true});
 })();
 '
 }

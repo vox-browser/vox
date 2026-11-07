@@ -1141,6 +1141,85 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 	return style_computer
 }
 
+// A CSS transition or animation of a document, for Document.getAnimations().
+pub struct DocumentCSSAnimation {
+pub:
+	element        &dom.Element = unsafe { nil }
+	pseudo_element string
+	is_transition  bool
+	// The transition property or the animation name.
+	name       string
+	play_state string
+	handle     voidptr
+}
+
+fn web_animation_play_state_name(state WebAnimationPlayState) string {
+	return match state {
+		.idle { 'idle' }
+		.running { 'running' }
+		.paused { 'paused' }
+		.finished { 'finished' }
+	}
+}
+
+fn document_css_animation_pseudo(abstract_element dom.AbstractElement) string {
+	pseudo := abstract_element.pseudo_element_ or { return '' }
+	return '::' + dom.pseudo_element_name(pseudo)
+}
+
+// The document's relevant CSS transitions, then its CSS animations, each in
+// the order they were created.
+// https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations
+pub fn document_css_animations(document &dom.Document) []DocumentCSSAnimation {
+	dom_style_computer := document.style_computer
+	if dom_style_computer == unsafe { nil } || dom_style_computer.css_handle == unsafe { nil } {
+		return []DocumentCSSAnimation{}
+	}
+	style_computer := unsafe { &StyleComputer(dom_style_computer.css_handle) }
+	mut transitions := []&CSSTransition{}
+	mut transition_targets := map[voidptr]dom.AbstractElement{}
+	if style_computer.css_transition_storage_ != unsafe { nil } {
+		for _, bucket in style_computer.css_transition_storage_.associated_transitions {
+			for entry in bucket.entries {
+				if entry.transition == unsafe { nil } { continue }
+				if entry.transition.play_state_ !in [.running, .paused] { continue }
+				transitions << entry.transition
+				transition_targets[voidptr(entry.transition)] = entry.abstract_element
+			}
+		}
+	}
+	transitions.sort(a.global_animation_list_order_ < b.global_animation_list_order_)
+	mut result := []DocumentCSSAnimation{cap: transitions.len}
+	for transition in transitions {
+		target := transition_targets[voidptr(transition)] or { continue }
+		if !target.element_.as_node().is_connected() { continue }
+		result << DocumentCSSAnimation{
+			element:        target.element_
+			pseudo_element: document_css_animation_pseudo(target)
+			is_transition:  true
+			name:           transition.transition_property()
+			play_state:     web_animation_play_state_name(transition.play_state_)
+			handle:         voidptr(transition)
+		}
+	}
+	if style_computer.css_animation_storage_ != unsafe { nil } {
+		for entry in style_computer.css_animation_storage_.entries {
+			if entry.animation == unsafe { nil } { continue }
+			state := entry.animation.play_state()
+			if state !in [.running, .paused] { continue }
+			if !entry.abstract_element.element_.as_node().is_connected() { continue }
+			result << DocumentCSSAnimation{
+				element:        entry.abstract_element.element_
+				pseudo_element: document_css_animation_pseudo(entry.abstract_element)
+				name:           entry.name
+				play_state:     web_animation_play_state_name(state)
+				handle:         voidptr(entry.animation)
+			}
+		}
+	}
+	return result
+}
+
 // Whether the browser host needs to schedule another rendering update for a
 // running CSS animation or transition owned by this document.
 pub fn document_has_running_css_animations(document &dom.Document) bool {

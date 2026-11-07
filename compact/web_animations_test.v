@@ -51,3 +51,38 @@ console.log("web animations passed");
 '], runtime, mut messages)
 	assert messages == ['web animations passed']
 }
+
+fn test_compact_document_get_animations_lists_css_transitions() {
+	$if !darwin {
+		return
+	}
+	mut document := parse_browser_navigation_document('<!doctype html><style>.t{width:10px;transition:width 10s linear}.t.to{width:20px}</style><div id="target" class="t"></div><div id="other"></div>',
+		dom.URL{ value: 'https://example.test/' }, none)
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+const fail=message=>{throw new Error(message);};
+const target=document.getElementById("target");
+getComputedStyle(target).width;
+if(document.getAnimations().length!==0)fail("animations before the change");
+target.className="t to";
+getComputedStyle(target).width;
+const list=document.getAnimations();
+if(list.length!==1)fail("count "+list.length);
+const transition=list[0];
+if(!(transition instanceof CSSTransition)||!(transition instanceof Animation))fail("interface");
+if(transition.transitionProperty!=="width"||transition.playState!=="running")fail("state "+transition.transitionProperty+" "+transition.playState);
+if(transition.effect.target!==target||transition.effect.pseudoElement!==null)fail("effect");
+if(document.getAnimations()[0]!==transition)fail("identity");
+if(target.getAnimations().length!==1||target.getAnimations()[0]!==transition)fail("element list");
+if(document.getElementById("other").getAnimations().length!==0)fail("other element");
+let threw=false;try{new CSSTransition();}catch(error){threw=error instanceof TypeError;}
+if(!threw)fail("constructor");
+console.log("css transitions listed");
+'], runtime, mut messages)
+	assert messages == ['css transitions listed']
+}
