@@ -24,6 +24,11 @@ fn compact_computed_style_query(root &dom.Node, source string) !string {
 	window_pointer := document.get_window() or { return error('getComputedStyle requires its owning Window') }
 	window := unsafe { &html.WindowModel(window_pointer) }
 	query := compact_decode_query[CompactComputedStyleQuery](source)!
+	// Computed values include the current effect of script-driven animations.
+	if query.op in ['value', 'named'] {
+		mut owner := unsafe { &dom.Document(document) }
+		owner.update_animated_style_if_needed()
+	}
 	declaration := window.get_computed_style(element, query.pseudo)
 	match query.op {
 		'access' { return 'true' }
