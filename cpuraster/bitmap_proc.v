@@ -109,10 +109,10 @@ fn just_trans_integral(m SkAffine) bool {
 }
 
 fn new_bitmap_proc_state(image ImageShader, alpha int) BitmapProcState {
-	// The context keeps the shader's linear sampling: tweak_sampling() is
+	// The context keeps the shader's requested sampling: tweak_sampling() is
 	// the raster pipeline's.
 	mut m := image.matrix
-	mut bilerp := true
+	mut bilerp := image.linear
 	mut integral := just_trans_integral(m)
 	if !integral {
 		// SkMatrixPriv::PostIDiv() into unit texture coordinates for repeat.
@@ -607,45 +607,57 @@ fn new_legacy_shader_blitter(mut pixels []u8, row_bytes int, state BitmapProcSta
 	}
 }
 
+// SkBlitRow::Factory32(kSrcPixelAlpha_Flag32) for full coverage and with
+// kGlobalAlpha_Flag32 for partial coverage alpha: blends count premultiplied
+// span colors into pixels from offset.
+fn blit_row_s32a(mut pixels []u8, offset int, span []u32, count int, alpha u32) {
+	if alpha == 255 {
+		blit_row_s32a_opaque(mut pixels, offset, span, count)
+	} else {
+		blit_row_s32a_blend(mut pixels, offset, span, count, alpha)
+	}
+}
+
 // SkPMSrcOver_neon: per byte, src + SkMulDiv255Round(255 - src alpha, dst)
 // saturated.
-fn (mut b LegacyShaderBlitter) s32a_opaque(offset int, count int) {
+fn blit_row_s32a_opaque(mut pixels []u8, offset int, span []u32, count int) {
 	for i in 0 .. count {
 		o := offset + i * 4
-		s := b.span[i]
+		s := span[i]
 		inv_a := 255 - (s >> 24)
 		for c in 0 .. 4 {
 			sc := (s >> (8 * u32(c))) & 0xff
-			v := sc + mul_div255_round(inv_a, u32(b.pixels[o + c]))
-			b.pixels[o + c] = u8(if v > 255 { u32(255) } else { v })
+			v := sc + mul_div255_round(inv_a, u32(pixels[o + c]))
+			pixels[o + c] = u8(if v > 255 { u32(255) } else { v })
 		}
 	}
 }
 
 // blit_row_s32a_blend() on NEON: an odd first pixel with the exact
 // SkAlphaMulInv256(), then pairs with its 16-bit approximation.
-fn (mut b LegacyShaderBlitter) s32a_blend(offset int, count int, alpha u32) {
+fn blit_row_s32a_blend(mut pixels []u8, offset int, span []u32, count int, alpha u32) {
 	alpha256 := alpha + 1
 	mut i := 0
 	if count & 1 != 0 {
-		b.blend_pixel(offset, b.span[0], alpha256, alpha_mul_inv256(b.span[0] >> 24, alpha256))
+		blend_scaled_pixel(mut pixels, offset, span[0], alpha256, alpha_mul_inv256(span[0] >> 24,
+			alpha256))
 		i = 1
 	}
 	for ; i < count; i++ {
-		sa := b.span[i] >> 24
+		sa := span[i] >> 24
 		mut scale := (u32(0xff00) - sa * alpha256) & 0xffff
 		scale = (scale + (scale >> 8)) & 0xffff
 		scale = (1 + (scale >> 8)) & 0xffff
-		b.blend_pixel(offset + i * 4, b.span[i], alpha256, scale)
+		blend_scaled_pixel(mut pixels, offset + i * 4, span[i], alpha256, scale)
 	}
 }
 
 @[inline]
-fn (mut b LegacyShaderBlitter) blend_pixel(o int, s u32, src_scale u32, dst_scale u32) {
+fn blend_scaled_pixel(mut pixels []u8, o int, s u32, src_scale u32, dst_scale u32) {
 	for c in 0 .. 4 {
 		sc := ((s >> (8 * u32(c))) & 0xff) * src_scale
-		dc := u32(b.pixels[o + c]) * dst_scale
-		b.pixels[o + c] = u8(((sc + dc) & 0xffff) >> 8)
+		dc := u32(pixels[o + c]) * dst_scale
+		pixels[o + c] = u8(((sc + dc) & 0xffff) >> 8)
 	}
 }
 
@@ -658,7 +670,7 @@ fn (mut b LegacyShaderBlitter) shade(x int, y int, count int) {
 
 fn (mut b LegacyShaderBlitter) blit_h(x int, y int, width int) {
 	b.shade(x, y, width)
-	b.s32a_opaque(y * b.row_bytes + x * 4, width)
+	blit_row_s32a(mut b.pixels, y * b.row_bytes + x * 4, b.span, width, 255)
 }
 
 fn (mut b LegacyShaderBlitter) blit_rect(x int, y int, width int, height int) {
@@ -678,11 +690,7 @@ fn (mut b LegacyShaderBlitter) blit_anti_h(x_in int, y int, mut aa []u8, mut run
 		a := aa[i]
 		if a != 0 {
 			b.shade(x, y, count)
-			if a == 255 {
-				b.s32a_opaque(y * b.row_bytes + x * 4, count)
-			} else {
-				b.s32a_blend(y * b.row_bytes + x * 4, count, a)
-			}
+			blit_row_s32a(mut b.pixels, y * b.row_bytes + x * 4, b.span, count, u32(a))
 		}
 		i += count
 		x += count
@@ -692,11 +700,7 @@ fn (mut b LegacyShaderBlitter) blit_anti_h(x_in int, y int, mut aa []u8, mut run
 fn (mut b LegacyShaderBlitter) blit_v(x int, y int, height int, alpha u8) {
 	for row in 0 .. height {
 		b.shade(x, y + row, 1)
-		if alpha == 255 {
-			b.s32a_opaque((y + row) * b.row_bytes + x * 4, 1)
-		} else {
-			b.s32a_blend((y + row) * b.row_bytes + x * 4, 1, alpha)
-		}
+		blit_row_s32a(mut b.pixels, (y + row) * b.row_bytes + x * 4, b.span, 1, u32(alpha))
 	}
 }
 

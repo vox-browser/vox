@@ -1149,9 +1149,15 @@ fn nearly_integral(x_in f32) bool {
 }
 
 // SkRasterClip::op(rect, identity, kIntersect, doAA).
-fn (mut rc RasterClip) op_rect(local Rect, do_aa_in bool) bool {
+fn (mut rc RasterClip) op_rect(local Rect, do_aa bool) bool {
 	// SkMatrix::mapRect() for the identity: translate by zero, then sort.
-	dev := sort_as_rect(Rect{local.left + 0, local.top + 0, local.right + 0, local.bottom + 0})
+	return rc.op_device_rect(sort_as_rect(Rect{local.left + 0, local.top + 0, local.right + 0,
+		local.bottom + 0}), do_aa)
+}
+
+// SkRasterClip::op(rect, matrix, kIntersect, doAA) for a scale-translate
+// matrix once mapRect() has mapped the rect to dev.
+fn (mut rc RasterClip) op_device_rect(dev Rect, do_aa_in bool) bool {
 	mut do_aa := do_aa_in
 	if rc.is_bw && do_aa {
 		if nearly_integral(dev.left) && nearly_integral(dev.top) && nearly_integral(dev.right)

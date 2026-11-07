@@ -2,17 +2,38 @@ module cpuraster
 
 import math
 
-// SkImageShader (google/skia ee20d565) for Canvas2D patterns as
-// skia/canvas_raster.cpp's apply_style() makes them: an RGBA_8888 image in
-// sRGB or Display P3, unpremultiplied or premultiplied, repeated or decal on
-// each axis (kDecal for the axes CanvasPattern's repetition does not
-// repeat), sampled with SkFilterMode::kLinear through the canvas transform
-// and the pattern's own transform. appendStages() selects nearest sampling
-// for integer translations, the tiling stages, gather_8888 or the bilinear
-// sampler (bilinear_setup, four bilinear_[np]x/[np]y samples and
-// accumulate), the clamp-clamp bilerp_clamp_8888 fast path, then the
-// SkColorSpaceXformSteps to premultiplied sRGB. Lowp exists only for the
-// decal and clamp nearest stages, bilerp_clamp_8888 and premul.
+// SkImageShader (google/skia ee20d565) for Canvas2D patterns and images:
+// an RGBA_8888 image in sRGB or Display P3, unpremultiplied or
+// premultiplied. Patterns are repeated or decal on each axis (kDecal for the
+// axes CanvasPattern's repetition does not repeat) and sampled with
+// SkFilterMode::kLinear through the canvas transform and the pattern's own
+// transform, as skia/canvas_raster.cpp's apply_style() makes them;
+// drawImage() clamps, with nearest or linear sampling. appendStages()
+// selects nearest sampling for integer translations, the tiling stages,
+// gather_8888 or the bilinear sampler (bilinear_setup, four
+// bilinear_[np]x/[np]y samples and accumulate), the clamp-clamp
+// bilerp_clamp_8888 fast path, then the SkColorSpaceXformSteps to
+// premultiplied sRGB. Lowp exists only for the decal and clamp nearest
+// stages, bilerp_clamp_8888 and premul.
+
+// RGBA_8888 image pixels, as skia.Style's kind 4 fields describe them.
+pub struct CanvasBitmap {
+pub:
+	pixels        []u8
+	width         int
+	height        int
+	pitch         int
+	premultiplied bool
+	// Display P3 instead of sRGB.
+	display_p3 bool
+}
+
+// SkBitmap::installPixels() accepts a non-empty image with rows at least
+// as long as its width.
+fn (b &CanvasBitmap) installs() bool {
+	return b.width > 0 && b.height > 0 && b.pitch >= b.width * 4
+		&& b.pixels.len >= b.pitch * (b.height - 1) + b.width * 4
+}
 
 // A Canvas2D pattern in skia.Style's kind 4 encoding: RGBA_8888 pixels.
 pub struct CanvasPattern {
@@ -31,6 +52,17 @@ pub:
 	transform [6]f32
 }
 
+fn (p &CanvasPattern) bitmap() CanvasBitmap {
+	return CanvasBitmap{
+		pixels:        p.pixels
+		width:         p.width
+		height:        p.height
+		pitch:         p.pitch
+		premultiplied: p.premultiplied
+		display_p3:    p.display_p3
+	}
+}
+
 // The paint's non-solid source.
 pub type CanvasPaintStyle = CanvasGradient | CanvasPattern
 
@@ -46,8 +78,11 @@ struct ImageShader {
 	height int
 	// GatherCtx::stride: row bytes in pixels.
 	stride int
-	// The inverse of the canvas transform concatenated with the pattern's.
-	matrix  SkAffine
+	// The inverse of the canvas transform concatenated with the local matrix.
+	matrix SkAffine
+	// The requested SkFilterMode::kLinear, and the nearest sampling the
+	// raster pipeline uses (tweak_sampling()).
+	linear  bool
 	nearest bool
 	tile_x  TileMode
 	tile_y  TileMode
@@ -67,6 +102,17 @@ fn optimize_tile(mode TileMode, dimension int) TileMode {
 	return if mode != .decal && dimension == 1 { TileMode.clamp } else { mode }
 }
 
+fn matrix_affine(m Matrix) SkAffine {
+	return SkAffine{
+		sx: m.a
+		kx: m.c
+		tx: m.e
+		ky: m.b
+		sy: m.d
+		ty: m.f
+	}
+}
+
 // canvas_pattern_shader is apply_style()'s SkImage::makeShader() for pattern
 // under the canvas matrix m.
 fn canvas_pattern_shader(pattern CanvasPattern, m Matrix) CanvasShader {
@@ -81,39 +127,38 @@ fn canvas_pattern_shader(pattern CanvasPattern, m Matrix) CanvasShader {
 		sy: t[3]
 		ty: t[5]
 	}
-	ctm := SkAffine{
-		sx: m.a
-		kx: m.c
-		tx: m.e
-		ky: m.b
-		sy: m.d
-		ty: m.f
-	}
-	// MatrixRec::totalInverse(): the CTM concatenated with the local matrix.
-	inverse := affine_invert(sk_concat(ctm, local)) or {
+	return new_image_shader(pattern.bitmap(), if repeat_x { TileMode.repeat } else { .decal },
+		if repeat_y { TileMode.repeat } else { .decal }, true, sk_concat(matrix_affine(m), local))
+}
+
+// new_image_shader is SkImageShader::Make() for bitmap with its tile modes
+// and requested sampling, under the total matrix (the CTM concatenated with
+// the local matrix) MatrixRec::totalInverse() inverts.
+fn new_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode, linear bool, total SkAffine) CanvasShader {
+	inverse := affine_invert(total) or {
 		return CanvasShader{
 			kind: .empty
 		}
 	}
 	// tweak_sampling(): bilinear sampling of an integer translation is
 	// nearest-neighbor sampling.
-	nearest := inverse.type_mask() <= affine_translate_mask && int_cast_preserves(inverse.tx)
-		&& int_cast_preserves(inverse.ty)
-	opaque_source := false
+	nearest := !linear || (inverse.type_mask() <= affine_translate_mask
+		&& int_cast_preserves(inverse.tx) && int_cast_preserves(inverse.ty))
 	return CanvasShader{
 		kind:  .image
 		image: ImageShader{
-			pixels:     pattern.pixels
-			width:      pattern.width
-			height:     pattern.height
-			stride:     pattern.pitch / 4
+			pixels:     bitmap.pixels
+			width:      bitmap.width
+			height:     bitmap.height
+			stride:     bitmap.pitch / 4
 			matrix:     inverse
+			linear:     linear
 			nearest:    nearest
-			tile_x:     optimize_tile(if repeat_x { TileMode.repeat } else { .decal }, pattern.width)
-			tile_y:     optimize_tile(if repeat_y { TileMode.repeat } else { .decal }, pattern.height)
-			unpremul:   pattern.display_p3 && pattern.premultiplied
-			display_p3: pattern.display_p3
-			premul:     !opaque_source && (pattern.display_p3 || !pattern.premultiplied)
+			tile_x:     optimize_tile(tile_x, bitmap.width)
+			tile_y:     optimize_tile(tile_y, bitmap.height)
+			unpremul:   bitmap.display_p3 && bitmap.premultiplied
+			display_p3: bitmap.display_p3
+			premul:     bitmap.display_p3 || !bitmap.premultiplied
 		}
 	}
 }
@@ -332,11 +377,7 @@ fn (s &ImageShader) shade_lowp(px int, py int) [4]u32 {
 	x, y := apply_matrix(s.matrix, sx, sy, false)
 	mut c := [u32(0), 0, 0, 0]!
 	if s.fast_bilerp() {
-		// bilerp_clamp_8888 of the one-pixel image the clamped axes come
-		// from: its fixed-point lerps of equal pixels return the pixel.
-		for i in 0 .. 4 {
-			c[i] = u32(s.pixels[i])
-		}
+		c = s.lowp_bilerp(x, y)
 	} else {
 		// decal_x, decal_y or decal_x_and_y: [0, limit) on each axis.
 		wx := f32(s.width)
@@ -354,6 +395,58 @@ fn (s &ImageShader) shade_lowp(px int, py int) [4]u32 {
 		for i in 0 .. 3 {
 			c[i] = div255_accurate(c[i] * c[3])
 		}
+	}
+	return c
+}
+
+// vqrdmulhq_s16(): (2ab + 2^15) >> 16, saturated.
+fn scaled_mult(a i16, b i16) i16 {
+	p := (i64(a) * i64(b) * 2 + 0x8000) >> 16
+	return if p > 32767 { i16(32767) } else { i16(p) }
+}
+
+// bilerp_clamp_8888's lerpX(): the 16-bit interpolation by tx in Q15,
+// halved into [0, 1/2).
+fn lerp_x(left u32, right u32, tx i16) u32 {
+	width := i16(u16(right - left) << 7)
+	middle := u16((right + left) << 7)
+	v2 := u16(u32(middle) + u32(u16(scaled_mult(tx, width))) + 1)
+	return u32(v2 >> 1)
+}
+
+// lerpY(): the same in the other axis, rounded down to [0, 255].
+fn lerp_y(top u32, bottom u32, ty i16) u32 {
+	width := i16(i16(bottom) - i16(top))
+	middle := u16(bottom + top)
+	blend := u16(u32(middle) + u32(u16(scaled_mult(ty, width))) + 0x80)
+	return u32(blend >> 8)
+}
+
+// The lowp bilerp_clamp_8888 stage: 16.16 sample coordinates, the four
+// clamped pixels and fixed-point lerps.
+fn (s &ImageShader) lowp_bilerp(x f32, y f32) [4]u32 {
+	scaled_x := f32(65536.0) * x
+	scaled_y := f32(65536.0) * y
+	qx := neon_trunc(floor_f32(scaled_x + f32(0.5))) - 32768
+	qy := neon_trunc(floor_f32(scaled_y + f32(0.5))) - 32768
+	sx := int(qx >> 16)
+	sy := int(qy >> 16)
+	tx := i16(qx ^ 0x8000)
+	ty := i16(qy ^ 0x8000)
+	pixel := fn [s] (x int, y int) int {
+		cx := if x < 0 { 0 } else if x > s.width - 1 { s.width - 1 } else { x }
+		cy := if y < 0 { 0 } else if y > s.height - 1 { s.height - 1 } else { y }
+		return (cy * s.stride + cx) * 4
+	}
+	l0 := pixel(sx, sy)
+	r0 := pixel(sx + 1, sy)
+	l1 := pixel(sx, sy + 1)
+	r1 := pixel(sx + 1, sy + 1)
+	mut c := [u32(0), 0, 0, 0]!
+	for i in 0 .. 4 {
+		top := lerp_x(u32(s.pixels[l0 + i]), u32(s.pixels[r0 + i]), tx)
+		bottom := lerp_x(u32(s.pixels[l1 + i]), u32(s.pixels[r1 + i]), tx)
+		c[i] = lerp_y(top, bottom, ty)
 	}
 	return c
 }

@@ -561,3 +561,113 @@ fn test_pattern_canvas_draws_match_skia() {
 	}
 	assert expected.any(it != 0 && it != 255)
 }
+
+// clearRect() and unfiltered drawImage() take the Skia-free rasterizer:
+// legacy, pipeline and sprite image draws and a clear must match Skia's
+// drawImageRect() and clear().
+fn test_bitmap_commands_match_skia() {
+	mut pixels := []u8{len: 6 * 4 * 4}
+	for i in 0 .. 24 {
+		a := if i % 5 == 0 { 0 } else { (i * 41 + 30) % 256 }
+		for c in 0 .. 3 {
+			pixels[i * 4 + c] = u8(((i * 23 + c * 70) % 256) * a / 255)
+		}
+		pixels[i * 4 + 3] = u8(a)
+	}
+	premultiplied := &dom.Bitmap_{
+		width:      6
+		height:     4
+		pitch:      24
+		alpha_type: 2
+		data:       pixels
+	}
+	unpremultiplied := &dom.Bitmap_{
+		width:      6
+		height:     4
+		pitch:      24
+		alpha_type: 1
+		data:       pixels.map(if it == 0 { u8(90) } else { it })
+	}
+	mut sources := []&ImageBitmap{}
+	for bitmap in [premultiplied, unpremultiplied, premultiplied] {
+		mut image := ImageBitmap.create()
+		image.set_bitmap(bitmap)
+		sources << image
+	}
+	destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
+	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
+		CanvasAffineTransform{}]
+	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over]
+	mut context := cpu_raster_test_context()
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i in 0 .. 4 {
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut target := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		context.drawing_state.transform = if i < 3 {
+			transforms[i]
+		} else {
+			CanvasAffineTransform{
+				e: 4
+				f: -2
+			}
+		}
+		context.drawing_state.global_alpha = if i == 1 { 0.6 } else { 1 }
+		context.drawing_state.image_smoothing_enabled = i == 0
+		context.drawing_state.current_compositing_and_blending_operator = if i < 3 {
+			operations[i]
+		} else {
+			.source_over
+		}
+		state := context.drawing_state
+		mut style := skia.Style{}
+		mut destination := [f32(40), 20, 50, 30]!
+		if i < 3 {
+			source := sources[i].bitmap() or { panic('missing image bitmap') }
+			d := destinations[i]
+			destination = [f32(d[0]), f32(d[1]), f32(d[2]), f32(d[3])]!
+			style = skia.Style{
+				kind:           4
+				pattern:        source.data.clone()
+				pattern_width:  6
+				pattern_height: 4
+				pattern_pitch:  24
+				pattern_alpha:  int(source.alpha_type)
+			}
+		}
+		command := skia.Command{
+			operation:    if i < 3 { 2 } else { 1 }
+			destination:  destination
+			source:       [f32(0), 0, 6, 4]!
+			smoothing:    state.image_smoothing_enabled
+			style:        style
+			transform:    canvas_skia_transform(state.transform)
+			composite:    int(state.current_compositing_and_blending_operator)
+			global_alpha: f32(state.global_alpha)
+		}
+		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			command)
+		expected = target.clone()
+		expected_alpha_type = 2
+		if i < 3 {
+			d := destinations[i]
+			context.draw_image_internal(CanvasDrawImageRequest{
+				image:              ImageBitmapCanvasSource{
+					value: sources[i]
+				}
+				source_width:       6
+				source_height:      4
+				destination_x:      d[0]
+				destination_y:      d[1]
+				destination_width:  d[2]
+				destination_height: d[3]
+			}) or { panic(err) }
+		} else {
+			context.clear_rect(40, 20, 50, 30)
+		}
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'bitmap command ${i} differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}

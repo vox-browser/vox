@@ -372,6 +372,40 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(o
 		image := frame.bitmap()
 		style = skia.Style{ kind: 4, pattern: image.data.clone(), pattern_width: image.width, pattern_height: image.height, pattern_pitch: image.pitch, pattern_alpha: int(image.alpha_type), pattern_color_space: int(frame.color_space()) }
 	}
+	filters := context.canvas_skia_filters()
+	transform := canvas_skia_transform(state.transform)
+	destination := [f32(destination_rect.x), f32(destination_rect.y), f32(destination_rect.width),
+		f32(destination_rect.height)]!
+	source_values := [f32(math.round(source_rect.x)), f32(math.round(source_rect.y)),
+		f32(math.round(source_rect.width)), f32(math.round(source_rect.height))]!
+	// Clears and unfiltered image draws use the Skia-free rasterizer, which
+	// reproduces SkCanvas::clear() and drawImageRect(); filtered draws stay
+	// on Skia.
+	if operation == 1 || (operation == 2 && style.kind == 4 && filters.len == 0) {
+		cpu_clips := clips.map(cpuraster.canvas_path(it.segments, it.even_odd))
+		mut painted := false
+		if operation == 1 {
+			painted = cpuraster.clear_canvas_rect(mut mutable_bitmap.data, bitmap.width,
+				bitmap.height, bitmap.pitch, int(bitmap.alpha_type), transform, destination,
+				style.color, cpu_clips)
+		} else if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
+			painted = cpuraster.draw_canvas_image(mut mutable_bitmap.data, bitmap.width,
+				bitmap.height, bitmap.pitch, int(bitmap.alpha_type), transform, cpuraster.CanvasBitmap{
+				pixels:        style.pattern
+				width:         style.pattern_width
+				height:        style.pattern_height
+				pitch:         style.pattern_pitch
+				premultiplied: style.pattern_alpha == 2
+				display_p3:    style.pattern_color_space == 1
+			}, source_values, destination, state.image_smoothing_enabled, f32(state.global_alpha),
+				mode, cpu_clips)
+		}
+		if painted {
+			mutable_bitmap.alpha_type = 2
+			mutable_bitmap.native_rows_are_top_down = true
+			return
+		}
+	}
 	chromium := if document := context.font_resolution_document() {
 		document.font_rendering_policy() == .chromium
 	} else {
@@ -380,17 +414,15 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_bitmap_command(o
 	command := skia.Command{
 		operation:    operation
 		chromium:     chromium
-		destination:  [f32(destination_rect.x), f32(destination_rect.y), f32(destination_rect.width),
-			f32(destination_rect.height)]!
-		source:       [f32(math.round(source_rect.x)), f32(math.round(source_rect.y)),
-			f32(math.round(source_rect.width)), f32(math.round(source_rect.height))]!
+		destination:  destination
+		source:       source_values
 		smoothing:    state.image_smoothing_enabled
 		style:        style
-		transform:    canvas_skia_transform(state.transform)
+		transform:    transform
 		clips:        clips
 		composite:    int(state.current_compositing_and_blending_operator)
 		global_alpha: f32(state.global_alpha)
-		filters:      context.canvas_skia_filters()
+		filters:      filters
 	}
 	painted := skia.draw_path(mut mutable_bitmap.data, bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), command)
 	assert painted

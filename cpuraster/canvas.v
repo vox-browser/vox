@@ -430,8 +430,7 @@ fn canvas_paint_source(color u32, style ?CanvasPaintStyle, blur f32) (u32, f32) 
 fn canvas_style_installs(style ?CanvasPaintStyle) bool {
 	s := style or { return true }
 	if s is CanvasPattern {
-		return s.width > 0 && s.height > 0 && s.pitch >= s.width * 4
-			&& s.pixels.len >= s.pitch * (s.height - 1) + s.width * 4
+		return s.bitmap().installs()
 	}
 	return true
 }
