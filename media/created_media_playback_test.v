@@ -2,7 +2,10 @@ module main
 
 import browserjs
 import dom
+import html
 import page
+import os
+import platform
 import time
 
 fn created_media_playback_document(markup string) &dom.Document {
@@ -77,4 +80,46 @@ fn test_fragment_parsed_video_gets_native_playback_once() {
 	assert player.element.local_name() == 'video' && player.element.has_attribute('muted')
 	assert player.media.error() == none
 	assert player.handle != unsafe { nil }
+}
+
+// End to end on macOS: a script-created muted autoplay video decodes real
+// frames from a local file through the native AVFoundation player.
+fn test_document_created_autoplay_video_decodes_native_frames() {
+	$if !macos {
+		return
+	}
+	ffmpeg := os.find_abs_path_of_executable('ffmpeg') or { return }
+	directory := os.join_path(os.temp_dir(), 'vox-created-media-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory) or { panic(err) }
+	defer { os.rmdir_all(directory) or {} }
+	movie := os.join_path(directory, 'movie.mp4')
+	generated := os.execute('${os.quoted_path(ffmpeg)} -v error -y -f lavfi -i testsrc2=size=64x36:rate=24:duration=2 -c:v libx264 -pix_fmt yuv420p -movflags +faststart ${os.quoted_path(movie)}')
+	assert generated.exit_code == 0, generated.output
+	owner := page.Page.create(1) or { panic(err) }
+	mut app := &BrowserApp{
+		document: parse_browser_navigation_document_for_page_with_response_time('<div id="root"></div>',
+			dom.URL{ value: 'file://${directory}/page.html' }, none, none, unsafe { &dom.Page(owner) },
+			time.sys_mono_now())
+	}
+	defer {
+		app.close_media_playback()
+		app.js_runtime.close()
+	}
+	created_media_playback_run(mut app, 'var v=document.createElement("video");v.setAttribute("autoplay","autoplay");document.getElementById("root").appendChild(v);v.muted=true;v.setAttribute("src","movie.mp4");v.load();')
+	assert app.media_players.len == 1
+	player := app.media_players[0]
+	settings := unsafe { &html.EnvironmentSettingsObject(app.document.relevant_settings_object()) }
+	mut event_loop := settings.responsible_event_loop()
+	deadline := time.sys_mono_now() + 10 * time.second
+	for time.sys_mono_now() < deadline {
+		platform.pump_native_events(0.01)
+		app.poll_media_playback()
+		event_loop.process()
+		if player.frame != none && player.media.current_time() > 0.1 { break }
+	}
+	assert player.media.error() == none
+	frame := player.frame or { panic('no decoded video frame') }
+	assert frame.width == 64 && frame.height == 36
+	assert !player.media.paused()
+	assert player.media.current_time() > 0.1
 }
