@@ -1228,56 +1228,48 @@ fn clamp_content_height_for_node(mut state LayoutState, node &NodeWithStyle, use
 	} else {
 		0.0
 	}
+	// CSS 2 §10.7: apply max-height, then min-height, so a minimum wins over a
+	// smaller maximum. This holds for intrinsic keywords as well, as in
+	// `min-height: 44px; max-height: fit-content` on cybersport.ru's rows.
 	mut result := value
-	max_size_for_clamp := computed.size_value(.max_height)
-	if !(max_size_for_clamp.contains_percentage() && containing_block_height == none) {
-		if specified_max := computed.length_percentage_to_px(.max_height, containing_block_height or {
-			0
-		}) {
-			maximum := css_px(if specified_max > adjustment {
-				specified_max - adjustment
-			} else {
-				0.0
-			})
-			result = css_pixels_min(result, maximum)
+	if maximum := content_height_limit_for_node(mut state, node, used_values, .max_height,
+		adjustment, containing_block_height) {
+		result = css_pixels_min(result, maximum)
+	}
+	if minimum := content_height_limit_for_node(mut state, node, used_values, .min_height,
+		adjustment, containing_block_height) {
+		result = css_pixels_max(result, minimum)
+	}
+	return result
+}
+
+// The content-box limit set by `min-height` or `max-height`, or none when the
+// property does not constrain the height (auto, none, or an unresolvable
+// percentage).
+fn content_height_limit_for_node(mut state LayoutState, node &NodeWithStyle, used_values &UsedValues, property css.PropertyID, adjustment f64, containing_block_height ?f64) ?CSSPixels {
+	computed := node.computed_values()
+	size := computed.size_value(property)
+	if !(size.contains_percentage() && containing_block_height == none) {
+		if specified := computed.length_percentage_to_px(property, containing_block_height or { 0 }) {
+			return css_px(if specified > adjustment { specified - adjustment } else { 0.0 })
 		}
 	}
-	min_size_for_clamp := computed.size_value(.min_height)
-	if !(min_size_for_clamp.contains_percentage() && containing_block_height == none) {
-		if specified_min := computed.length_percentage_to_px(.min_height, containing_block_height or {
-			0
-		}) {
-			minimum := css_px(if specified_min > adjustment {
-				specified_min - adjustment
-			} else {
-				0.0
-			})
-			result = css_pixels_max(result, minimum)
-		}
+	if !size.is_min_content() && !size.is_max_content() && !size.is_fit_content() {
+		return none
 	}
-	box := unsafe { &Node(node) }.as_box() or { return result }
+	box := unsafe { &Node(node) }.as_box() or { return none }
+	if size.is_min_content() {
+		return calculate_min_content_height(mut state, box, used_values.content_width())
+	}
+	if size.is_max_content() {
+		return calculate_max_content_height(mut state, box, used_values.content_width())
+	}
 	available_height := if height := containing_block_height {
 		AvailableSize.make_definite(css_px(height))
 	} else {
 		AvailableSize.make_indefinite()
 	}
-	max_size := computed.size_value(.max_height)
-	if max_size.is_min_content() {
-		result = css_pixels_min(result, calculate_min_content_height(mut state, box, used_values.content_width()))
-	} else if max_size.is_max_content() {
-		result = css_pixels_min(result, calculate_max_content_height(mut state, box, used_values.content_width()))
-	} else if max_size.is_fit_content() {
-		result = css_pixels_min(result, calculate_fit_content_height(mut state, box, used_values.content_width(), available_height))
-	}
-	min_size := computed.size_value(.min_height)
-	if min_size.is_min_content() {
-		result = css_pixels_max(result, calculate_min_content_height(mut state, box, used_values.content_width()))
-	} else if min_size.is_max_content() {
-		result = css_pixels_max(result, calculate_max_content_height(mut state, box, used_values.content_width()))
-	} else if min_size.is_fit_content() {
-		result = css_pixels_max(result, calculate_fit_content_height(mut state, box, used_values.content_width(), available_height))
-	}
-	return result
+	return calculate_fit_content_height(mut state, box, used_values.content_width(), available_height)
 }
 
 // The in-flow blocks that interrupt `container`'s inline formatting context.
