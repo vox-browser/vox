@@ -21,11 +21,18 @@ fn (mut state DocumentSelectorQueryState) parse(selector_text string) ?SelectorL
 	if parsed := state.parsed[selector_text] {
 		return parsed
 	}
-	parsed := parse_query_selector_list(selector_text) or {
-		state.invalid[selector_text] = true
+	// The document keeps parsed selectors for its lifetime. The first query
+	// for a selector can come from a temporary scope, such as select sizing
+	// inside a flex item's intrinsic layout probe: parse and grow both maps
+	// outside it, from a persistent copy of the text the selector may slice.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	key := selector_text.clone()
+	parsed := parse_query_selector_list(key) or {
+		state.invalid[key] = true
 		return none
 	}
-	state.parsed[selector_text] = parsed
+	state.parsed[key] = parsed
 	return parsed
 }
 
@@ -134,10 +141,12 @@ pub fn install_document_selector_query_hook(document &dom.Document) {
 			return
 		}
 	}
+	persistent := platform.enter_persistent()
 	state := &DocumentSelectorQueryState{
 		parsed:  map[string]SelectorList{}
 		invalid: map[string]bool{}
 	}
+	platform.leave_persistent(persistent)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_selector_query_hook(dom.DocumentSelectorQueryHook{
 		target:                   voidptr(state)
