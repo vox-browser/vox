@@ -7,7 +7,16 @@ const __xhrObjects=new Map(),__xhrNodes=new Map(),__xhrEvents=new Map();
 let __xhrNextCallback=0;
 const __xhrConstructionToken={};
 const __xhrBlobNative=__ladybirdXHRBlob;
-function __xhrThrow(error){const match=/^([A-Za-z]+Error):\s*(.*)/.exec(error.message);if(match){error.name=match[1];error.message=match[2];}throw error;}
+function __xhrThrow(error){
+ const match=/^([A-Za-z]+Error):\s*(.*)/.exec(error&&error.message);
+ const name=match?match[1]:error&&error.name,message=match?match[2]:error&&error.message;
+ // XMLHttpRequest reports everything but conversion failures as DOMExceptions.
+ if(typeof name==="string"&&/.Error$/.test(name)&&name!=="TypeError"&&name!=="RangeError"&&typeof DOMException==="function")throw new DOMException(message,name);
+ if(match){error.name=name;error.message=message;}
+ throw error;
+}
+// https://webidl.spec.whatwg.org/#es-ByteString
+function __xhrByteString(value){const string=String(value);for(let index=0;index<string.length;index++)if(string.charCodeAt(index)>255)throw new TypeError("Value is not a valid ByteString");return string;}
 function __xhrCall(key,method,args,extra){
  try{return JSON.parse(__ladybirdXHR(JSON.stringify(Object.assign({key:key,method:method,args:args||[]},extra||{}))));}
  catch(error){__xhrThrow(error);}
@@ -81,7 +90,7 @@ class XMLHttpRequestUpload extends XMLHttpRequestEventTarget{constructor(token){
 class XMLHttpRequest extends XMLHttpRequestEventTarget {
  constructor(){super(__xhrConstructionToken);const key=__xhrCall(0,"create");__xhrInitializeTarget(this,key,false);const upload=new XMLHttpRequestUpload(__xhrConstructionToken);__xhrInitializeTarget(upload,key,true);Object.defineProperty(this,"upload",{value:upload,enumerable:true});this.__responseCache=undefined;__xhrObjects.set(key,this);}
  open(method,url,async,username,password){if(arguments.length<2)throw new TypeError("open requires two arguments");this.__responseCache=undefined;__xhrCall(this.__key,"open",[String(method),String(url),arguments.length<3?true:!!async,username==null?null:String(username),password==null?null:String(password)]);}
- setRequestHeader(name,value){if(arguments.length<2)throw new TypeError("setRequestHeader requires two arguments");__xhrCall(this.__key,"setRequestHeader",[String(name),String(value)]);}
+ setRequestHeader(name,value){if(arguments.length<2)throw new TypeError("setRequestHeader requires two arguments");__xhrCall(this.__key,"setRequestHeader",[__xhrByteString(name),__xhrByteString(value)]);}
  send(body){
   if(body==null)return __xhrCall(this.__key,"send");
   if(__xhrBlobCall("send",this.__key,body))return;

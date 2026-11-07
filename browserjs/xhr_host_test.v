@@ -102,3 +102,17 @@ fn test_compact_xhr_listener_removal_and_native_reentrant_abort_preserve_event_o
 	if connection := host.connection { assert connection.active_request_count() == 0 }
 	assert !(host.requests[1] or { panic('missing owner') }).request.send_flag
 }
+
+fn test_compact_xhr_header_errors_are_dom_exceptions_and_byte_string_type_errors() {
+	$if !darwin { return }
+	mut runtime, _ := xhr_host_runtime('http://127.0.0.1:9/owning-document')
+	defer { runtime.close() }
+	runtime.evaluate_host(r'
+ globalThis.DOMException=function DOMException(message,name){this.message=message;this.name=name;};
+ const request=new XMLHttpRequest();request.open("GET","/headers");
+ globalThis.headerError=null;try{request.setRequestHeader("(","x");}catch(error){headerError=error;}
+ globalThis.byteError=null;try{request.setRequestHeader("X-ﾃ","x");}catch(error){byteError=error;}
+ ')!
+	assert runtime.evaluate_host('headerError instanceof DOMException&&headerError.name==="SyntaxError"&&headerError.message==="Header contains invalid characters"')! == 'true'
+	assert runtime.evaluate_host('byteError instanceof TypeError')! == 'true'
+}
