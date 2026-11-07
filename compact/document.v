@@ -295,6 +295,34 @@ for(const name of ["name","publicId","systemId"])Object.defineProperty(DocumentT
  const state=__elementApply(__compactNodeGet,__compactNodeRecords,[this]);if(!state||state.nodeType!==10)throw new TypeError("Illegal DocumentType receiver");
  return __queryElements(state.bridgeKey,"doctypeValue",name,true);
 },enumerable:true,configurable:true});
+function StyleSheetList(){throw new TypeError("Illegal StyleSheetList constructor");}
+Object.defineProperty(StyleSheetList,"prototype",{writable:false});
+Object.defineProperty(StyleSheetList.prototype,Symbol.toStringTag,{value:"StyleSheetList",configurable:true});
+Object.defineProperty(globalThis,"StyleSheetList",{value:StyleSheetList,writable:true,configurable:true});
+const __compactStyleSheetLists=new WeakMap(),__compactStyleSheetReaders=new WeakMap();
+function __compactStyleSheetRead(receiver){const read=__elementApply(__compactNodeGet,__compactStyleSheetReaders,[receiver]);if(!read)throw new TypeError("Illegal StyleSheetList receiver");return read();}
+Object.defineProperty(StyleSheetList.prototype,"length",{get:function(){return __compactStyleSheetRead(this).length;},enumerable:true,configurable:true});
+Object.defineProperty(StyleSheetList.prototype,"item",{value:function item(index){if(arguments.length===0)throw new TypeError("StyleSheetList.item requires an index");return __compactStyleSheetRead(this)[(+index)>>>0]||null;},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(StyleSheetList.prototype,Symbol.iterator,{value:function*values(){yield* __compactStyleSheetRead(this);},writable:true,configurable:true});
+function __compactStyleSheetList(owner,state){
+ const cached=__elementApply(__compactNodeGet,__compactStyleSheetLists,[owner]);if(cached)return cached;
+ const read=()=>__queryElements(state.bridgeKey,"documentStyleSheets","",true).map(__cssSheet);
+ const indexed=key=>typeof key==="string"&&/^(0|[1-9][0-9]*)$/.test(key)&&Number(key)<4294967295;
+ const list=new Proxy(Object.create(StyleSheetList.prototype),{
+  get(target,key,receiver){return indexed(key)?read()[Number(key)]:Reflect.get(target,key,receiver);},
+  has(target,key){return indexed(key)?Number(key)<read().length:Reflect.has(target,key);},
+  ownKeys(target){return read().map((_,index)=>String(index)).concat(Reflect.ownKeys(target));},
+  getOwnPropertyDescriptor(target,key){if(indexed(key)){const sheet=read()[Number(key)];return sheet?{value:sheet,writable:false,enumerable:true,configurable:true}:undefined;}return Reflect.getOwnPropertyDescriptor(target,key);},
+  set(target,key,value,receiver){return indexed(key)?false:Reflect.set(target,key,value,receiver);},
+  defineProperty(target,key,descriptor){return indexed(key)?false:Reflect.defineProperty(target,key,descriptor);},
+  deleteProperty(target,key){return indexed(key)?false:Reflect.deleteProperty(target,key);}
+ });
+ __elementApply(__elementRecordSet,__compactStyleSheetReaders,[list,read]);
+ __elementApply(__elementRecordSet,__compactStyleSheetLists,[owner,list]);
+ return list;
+}
+Object.defineProperty(Document.prototype,"styleSheets",{get:function(){return __compactStyleSheetList(this,__compactDocumentState(this));},enumerable:true,configurable:true});
+if(typeof ShadowRoot==="function")Object.defineProperty(ShadowRoot.prototype,"styleSheets",{get:function(){const state=__compactNodeState(this);if(!state.isShadowRoot)throw new TypeError("Illegal ShadowRoot receiver");return __compactStyleSheetList(this,state);},enumerable:true,configurable:true});
 function __compactDocumentWrapper(state){
  if(state.bridgeKey==="")return document;if(state.__object)return state.__object;
  const object=Object.create(HTMLDocument.prototype);

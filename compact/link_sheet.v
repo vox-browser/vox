@@ -2,6 +2,7 @@ module main
 
 import browserjs
 import css
+import dom
 import platform
 import x.json2
 
@@ -65,6 +66,24 @@ fn (mut binding CompactElementQueryBinding) link_sheet_query(key string) !string
 		&& (!element.is_html_element() || element.local_name() != 'link') { return 'null' }
 	sheet := css.style_sheet_for_owner_node(element.document(), element) or { return 'null' }
 	return json2.encode(binding.sheet_key(sheet))
+}
+
+// https://drafts.csswg.org/cssom/#dom-documentorshadowroot-stylesheets
+// The document or shadow root CSS style sheets, in tree order of their owner
+// nodes. Adopted style sheets are not part of this list.
+fn (mut binding CompactElementQueryBinding) document_style_sheets_query(root &dom.Node) !string {
+	if !root.is_document() && !root.is_shadow_root() {
+		return error('TypeError: Illegal DocumentOrShadowRoot receiver')
+	}
+	mut allocations := binding.document.enter_native_storage()
+	defer { allocations.finish() }
+	mut keys := []json2.Any{}
+	for element in css.query_selector_all(root, 'style, link') {
+		if voidptr(element.root()) != voidptr(root) { continue }
+		sheet := css.style_sheet_for_owner_node(element.document(), element) or { continue }
+		keys << json2.Any(binding.sheet_key(sheet))
+	}
+	return json2.encode(keys)
 }
 
 fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !string {
