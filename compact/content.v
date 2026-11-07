@@ -25,6 +25,8 @@ mut:
 	radio_lists map[string]&html.RadioNodeList
 	web_animations map[string]voidptr
 	node_iterators map[string]&dom.NodeIterator
+	ranges map[string]&dom.Range
+	range_keys map[voidptr]string
 	next_key int
 	scroll_promises map[string]&dom.Promise
 	next_scroll_promise int
@@ -245,6 +247,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'registerProperty' { return binding.register_property_query(selector) }
 	if action == 'xpath' { return binding.xpath_query(key, selector) }
 	if action == 'textSelection' { return binding.text_selection_query(key, selector) }
+	if action == 'range' { return binding.range_query(key, selector) }
+	if action == 'selection' { return binding.selection_query(key, selector) }
+	if action == 'editing' { return binding.editing_query(key, selector) }
 	if action == 'compressionTransform' { return compact_compression_query(selector) }
 	if action == 'isEqualNode' { return binding.equal_node_query(key, selector) }
 	if action == 'compareDocumentPosition' { return binding.node_position_query(key, selector) }
