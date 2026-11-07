@@ -444,6 +444,11 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 						|| !optional_strings_equal(child.element.get_attribute('srcdoc'), srcdoc) {
 						return
 					}
+					// The initial about:blank document fires load only for a frame that
+					// still has no source; a navigation already replaced it otherwise.
+					if active.get_is_initial_about_blank() && !browser_child_frame_stays_blank(child.element) {
+						return
+					}
 					child.element.as_node().dispatch_event(dom.Event.create('load', dom.EventInit{}))
 				})
 			}
@@ -451,6 +456,14 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 		}
 	}
 	return changed
+}
+
+fn browser_child_frame_stays_blank(element &dom.Element) bool {
+	if element.get_attribute('srcdoc') != none {
+		return false
+	}
+	src := element.get_attribute_value('src')
+	return src == '' || src == 'about:blank'
 }
 
 fn optional_strings_equal(a ?string, b ?string) bool {

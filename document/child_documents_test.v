@@ -530,3 +530,23 @@ fn test_initial_about_blank_load_skips_listeners_of_a_later_navigation() {
 	loads := runtime.evaluate_host('loads.join("|")')!
 	assert loads == 'about:srcdoc next', '${loads} ${messages.join('\n')}'
 }
+
+// The initial about:blank document fires load only while its frame has no
+// source. A frame that has one is already navigating, so a load queued for the
+// initial document while it is still active must not reach the next page's
+// listeners.
+fn test_initial_about_blank_load_requires_a_frame_without_a_source() {
+	$if !darwin {
+		return
+	}
+	document := html.parse_document('<!doctype html><body><iframe id=a></iframe><iframe id=b src="about:blank"></iframe><iframe id=c src="https://parent.example/next"></iframe><iframe id=d srcdoc="<p>x"></iframe></body>')
+	for id, blank in {
+		'a': true
+		'b': true
+		'c': false
+		'd': false
+	} {
+		element := document.get_element_by_id(id) or { panic('missing ${id}') }
+		assert browser_child_frame_stays_blank(element) == blank, id
+	}
+}
